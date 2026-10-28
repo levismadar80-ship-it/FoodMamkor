@@ -16,7 +16,9 @@
  */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+// MEH-2491: focus trap + return for the two confirm dialogs below.
+import useDialogFocus from "@/hooks/useDialogFocus";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { CaretDown, CaretUp, Package, Pencil, Plus, Star, Trash, X } from "@phosphor-icons/react";
@@ -467,6 +469,14 @@ export default function ProductsSection({
     }
   };
 
+  // MEH-2491: both dialogs declare aria-modal; this keeps Tab inside them and
+  // returns focus to the button that opened them (the row's delete, or the
+  // add form's submit).
+  const deleteDialogRef = useRef(null);
+  const duplicateDialogRef = useRef(null);
+  useDialogFocus(deleteDialogRef, !!confirmDelete);
+  useDialogFocus(duplicateDialogRef, confirmDuplicate);
+
   // MEH-1447: Escape closes the delete-confirm dialog unless a delete is in
   // flight. Mirrors admin/producers DeleteConfirmDialog (MEH-1023/1027).
   useEffect(() => {
@@ -916,6 +926,7 @@ export default function ProductsSection({
       {confirmDelete && (
         <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40 px-4">
           <div
+            ref={deleteDialogRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="product-delete-title"
@@ -937,6 +948,7 @@ export default function ProductsSection({
               </button>
               <button
                 type="button"
+                data-autofocus
                 disabled={deletingId != null}
                 onClick={() => setConfirmDelete(null)}
                 className="px-4 py-2 rounded-[10px] text-sm border border-border text-fg-muted hover:bg-gray-50 transition disabled:opacity-50"
@@ -955,6 +967,7 @@ export default function ProductsSection({
       {confirmDuplicate && (
         <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40 px-4">
           <div
+            ref={duplicateDialogRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="product-duplicate-title"
@@ -979,6 +992,7 @@ export default function ProductsSection({
               <button
                 type="button"
                 data-testid="duplicate-cancel"
+                data-autofocus
                 disabled={saving}
                 onClick={() => setConfirmDuplicate(false)}
                 className="px-4 py-2 rounded-[10px] text-sm border border-border text-fg-muted hover:bg-gray-50 transition disabled:opacity-50"

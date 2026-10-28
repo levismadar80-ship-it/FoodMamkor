@@ -2,6 +2,7 @@
 
 import { Link, useRouter } from "@/i18n/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import * as Sentry from "@sentry/nextjs";
 import { useTranslations, useLocale } from "next-intl";
 import { ShoppingCart } from "@phosphor-icons/react";
 import { formatEventDate } from "@/lib/format-date";
@@ -21,6 +22,8 @@ import UnverifiedEmailNotice from "@/components/UnverifiedEmailNotice";
 import BackLink from "@/components/ui/BackLink";
 // MEH-1640: shared status colours across the four tools spokes.
 import { STATUS_CLASSES } from "@/lib/dashboard-status-classes";
+// MEH-2491: focus trap + return for the confirm dialog (shared with ProductsSection).
+import useDialogFocus from "@/hooks/useDialogFocus";
 import { GroupBuyStatusResultSchema, OwnerGroupBuySchema } from "@/lib/api-schemas";
 
 const STATUS_CLS = {
@@ -309,8 +312,12 @@ function ownerActions(gb, deadlinePassed) {
 // Same dialog contract as the product delete confirm (ProductsSection.jsx,
 // MEH-1447): a state flag rather than window.confirm, aria-modal, Escape and
 // «חזרה» close it, both buttons locked while the request is in flight.
+// MEH-2491: Tab stays inside it, and focus goes back to the card's button
+// when it closes (useDialogFocus).
 function GroupBuyActionDialog({ pending, busy, stale, error, onConfirm, onClose }) {
   const t = useTranslations("group_buys.dashboard.actions");
+  const dialogRef = useRef(null);
+  useDialogFocus(dialogRef, true);
 
   useEffect(() => {
     const onKey = (e) => {
@@ -325,6 +332,7 @@ function GroupBuyActionDialog({ pending, busy, stale, error, onConfirm, onClose 
   return (
     <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40 px-4">
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="group-buy-action-title"
@@ -359,10 +367,11 @@ function GroupBuyActionDialog({ pending, busy, stale, error, onConfirm, onClose 
             {action === "cancel" ? t("cancel_confirm") : t(action)}
           </button>
           {/* Focus lands on the safe choice, so a keyboard user starts inside
-              the dialog and Enter never confirms by accident. */}
+              the dialog and Enter never confirms by accident. data-autofocus,
+              not autoFocus: see useDialogFocus on why the two don't mix. */}
           <button
             type="button"
-            autoFocus
+            data-autofocus
             disabled={busy}
             onClick={onClose}
             className="px-4 py-2 min-h-[44px] rounded-[10px] text-sm border border-border text-fg-muted hover:bg-gray-50 transition disabled:opacity-50"
@@ -423,14 +432,29 @@ export default function ProducerGroupBuysPage() {
       // Rule 19, per row (the /favorites precedent): one malformed group buy
       // costs its own card, not the owner's whole list.
       const rows = Array.isArray(gbRes.data) ? gbRes.data : [];
-      setItems(
-        rows.flatMap((row) => {
-          const parsed = OwnerGroupBuySchema.safeParse(row);
-          return parsed.success ? [{ ...row, ...parsed.data }] : [];
-        }),
-      );
+      const dropped = [];
+      const kept = rows.flatMap((row) => {
+        const parsed = OwnerGroupBuySchema.safeParse(row);
+        if (parsed.success) return [{ ...row, ...parsed.data }];
+        dropped.push({ id: row?.id, issues: parsed.error.issues });
+        return [];
+      });
+      // MEH-2491: a dropped row used to vanish without a trace — the owner
+      // sees one group fewer and nobody learns the API and the schema
+      // disagree. One warning per load (the useProducerData.js precedent).
+      if (dropped.length) {
+        Sentry.captureMessage("Owner group-buy rows failed schema validation", {
+          level: "warning",
+          extra: { dropped },
+        });
+      }
+      setItems(kept);
     } catch {
-      setItems([]);
+      // MEH-2491: a failed RE-load (after an unreadable PATCH answer, or a
+      // 409) keeps the list already on screen; emptying it would show «אין
+      // עדיין קבוצות» to an owner who has some. Only a failed first load,
+      // with nothing to keep, lands on the empty list.
+      setItems((prev) => prev ?? []);
     }
   };
 

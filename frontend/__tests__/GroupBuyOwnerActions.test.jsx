@@ -38,6 +38,9 @@ vi.mock("@/lib/auth-context", () => ({
   useAuth: () => ({ user: stableUser, loading: false }),
 }));
 
+const captureMessage = vi.fn();
+vi.mock("@sentry/nextjs", () => ({ captureMessage: (...a) => captureMessage(...a) }));
+
 const toastSuccess = vi.fn();
 vi.mock("@/lib/toast", () => ({
   showToast: { success: (...a) => toastSuccess(...a), error: vi.fn(), info: vi.fn() },
@@ -62,12 +65,17 @@ const groupBuy = (over = {}) => ({
 });
 
 const fixture = { groupBuys: [] };
+const getFails = { groupBuys: false };
 const patch = vi.fn();
 const get = vi.fn((url) => {
   if (url === "/producers/me/dashboard") {
     return Promise.resolve({ data: { producer: { id: "p1", city: "חדרה", status: "approved" } } });
   }
-  if (url === "/producers/me/group-buys") return Promise.resolve({ data: fixture.groupBuys });
+  if (url === "/producers/me/group-buys") {
+    return getFails.groupBuys
+      ? Promise.reject(new Error("network"))
+      : Promise.resolve({ data: fixture.groupBuys });
+  }
   return Promise.resolve({ data: [] });
 });
 
@@ -100,6 +108,8 @@ beforeEach(() => {
   get.mockClear();
   patch.mockReset();
   toastSuccess.mockReset();
+  captureMessage.mockReset();
+  getFails.groupBuys = false;
 });
 
 describe("which buttons each card shows", () => {
@@ -287,5 +297,75 @@ describe("Rule 19: the list is validated per row", () => {
     const cards = screen.getAllByTestId("manage-group-buy-card");
     expect(cards).toHaveLength(1);
     expect(screen.queryByText("שבורה")).toBeNull();
+  });
+});
+
+// MEH-2491 item 2: a dropped row is reported, once per load, never silently.
+describe("dropped rows are reported (MEH-2491)", () => {
+  it("one Sentry warning naming the dropped row", async () => {
+    await renderWith([groupBuy({ id: "ok" }), groupBuy({ id: "bad", status: "deleted" })]);
+    expect(captureMessage).toHaveBeenCalledTimes(1);
+    const [, opts] = captureMessage.mock.calls[0];
+    expect(opts.level).toBe("warning");
+    expect(opts.extra.dropped.map((d) => d.id)).toEqual(["bad"]);
+  });
+
+  it("nothing is reported when every row is valid", async () => {
+    await renderWith([groupBuy({ id: "a" }), groupBuy({ id: "b" })]);
+    expect(captureMessage).not.toHaveBeenCalled();
+  });
+});
+
+// MEH-2491 item 3: an unreadable PATCH answer reloads the list; if that reload
+// fails too, the cards already on screen stay rather than the list emptying.
+describe("a failed reload keeps the list (MEH-2491)", () => {
+  it("unreadable PATCH answer + failed reload: both cards stay", async () => {
+    patch.mockResolvedValue({ data: "<html>proxy error</html>" });
+    await renderWith([groupBuy({ id: "a", title: "ראשונה" }), groupBuy({ id: "b", title: "שנייה" })]);
+    getFails.groupBuys = true;
+    const before = get.mock.calls.filter(([u]) => u === "/producers/me/group-buys").length;
+    fireEvent.click(screen.getAllByTestId("group-buy-action-cancel")[0]);
+    fireEvent.click(screen.getByTestId("group-buy-action-confirm"));
+    await waitFor(() =>
+      expect(get.mock.calls.filter(([u]) => u === "/producers/me/group-buys").length).toBe(before + 1),
+    );
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(screen.getAllByTestId("manage-group-buy-card")).toHaveLength(2);
+    expect(screen.getByText("ראשונה")).toBeInTheDocument();
+    expect(screen.getByText("שנייה")).toBeInTheDocument();
+  });
+});
+
+// MEH-2491 item 1: Tab stays inside the dialog; closing gives focus back.
+describe("the confirm dialog keeps and returns focus (MEH-2491)", () => {
+  async function open() {
+    await renderWith([groupBuy()]);
+    const trigger = screen.getByTestId("group-buy-action-cancel");
+    trigger.focus();
+    fireEvent.click(trigger);
+    return trigger;
+  }
+
+  it("Tab from «חזרה» (last) wraps to confirm (first), Shift+Tab back", async () => {
+    await open();
+    const back = screen.getByText(`${A}.back`);
+    const confirm = screen.getByTestId("group-buy-action-confirm");
+    expect(document.activeElement).toBe(back);
+    fireEvent.keyDown(window, { key: "Tab" });
+    expect(document.activeElement).toBe(confirm);
+    fireEvent.keyDown(window, { key: "Tab", shiftKey: true });
+    expect(document.activeElement).toBe(back);
+  });
+
+  it("«חזרה» returns focus to the card's button", async () => {
+    const trigger = await open();
+    fireEvent.click(screen.getByText(`${A}.back`));
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it("Escape returns focus to the card's button", async () => {
+    const trigger = await open();
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(document.activeElement).toBe(trigger);
   });
 });
