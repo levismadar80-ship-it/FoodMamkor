@@ -132,6 +132,30 @@ stmt = select(Producer).where(
 )
 ```
 
+#### 3a. ✅ הצ'אט קורא נתונים חיים דרך `mcp_reader` (MEH-586)
+
+`backend/app/services/chat_db_tools.py` מריץ ארבע שאילתות **קבועות** בלבד
+(`count_producers_in_city`, `list_producers_by_category`, `get_site_stats`,
+`list_upcoming_events`). המודל לא כותב SQL — הוא בוחר כלי וממלא פרמטרים
+דרך structured output (`chat_intent_router.py`), והפרמטרים נקשרים כ-bind
+params. הגנה בשכבות:
+
+| שכבה | מה | איפה |
+|---|---|---|
+| Role | `mcp_reader` — `NOLOGIN`, `SELECT` **ברמת עמודה** רק על העמודות שארבעת הכלים קוראים (`producers`: id, name, city, slug, status, kind · `categories` · `producer_categories` · `producer_locations`: producer_id, kind, city · `events`). `producers.phone` / `contact_email` / `contact_name` / `address` / `whatsapp_group` **לא** מוענקות — שכבת ההרשאות עצמה חוסמת PII, לא רק ה-SQL הקבוע. אין גישה ל-`users` / `home_products` / `reports`. | revision `a29c7a4a41e7` · `chat_db_tools.READER_COLUMNS` |
+| טרנזקציה | `SET TRANSACTION READ ONLY` + `SET LOCAL ROLE mcp_reader` + `SET LOCAL statement_timeout = 5000` | `chat_db_tools.reader_transaction()` |
+| קלט | שם כלי מתוך enum סגור, `LIMIT` מוגבל ל-20, עיר/slug נקשרים — לעולם לא f-string | `chat_intent_router.decision_from_parsed()`, `chat_db_tools._clamp_limit()` |
+| קצב | 5/דקה ל-IP על מסלול ה-DB, מעל 10/דקה + 30/שעה של ה-route | `routers/chat.py::_db_query_allowed` |
+| Prompt injection | הנתונים נכנסים לפרומפט בתוך `<live_data>` עם הוראה מפורשת שזה מידע ולא הוראות; `<` / `>` מקודדים ב-JSON כך שכותרת אירוע לא יכולה לסגור את התגית. כותרות אירועים לא עוברות מודרציה, לכן זה הכרחי. | `routers/chat.py::_fence_live_data` |
+| כשל | כל שגיאה (timeout, הרשאה, JSON, router) → המסלול הרגיל של הצ'אט, אף פעם לא 5xx; ה-classifier עם timeout של 8 שניות | `routers/chat.py::chat`, `chat_intent_router.CLASSIFY_TIMEOUT_S` |
+
+למה `NOLOGIN` + `SET ROLE` ולא משתמש נפרד עם סיסמה: אותו גבול הרשאות, בלי
+secret נוסף ב-Railway. `GRANT mcp_reader TO CURRENT_USER` במיגרציה הוא מי
+שמריץ אותה בפועל (משתמש האפליקציה ב-boot). טסטים: `tests/test_chat_db_tools.py`
+(4 happy + 3 injection + INSERT נדחה בשתי השכבות, `users` ו-5 עמודות PII נדחים, וטסט drift שמשווה את ה-grants בקוד למיגרציה מילה במילה).
+
+**ידוע ולא מטופל כאן:** `backup-restore-verify.yml` משחזר עם `--no-acl`, כך שמופע משוחזר מקבל את ה-role בלי ה-grants והצ'אט נופל ל-flow הרגיל עד שמריצים שוב את ה-GRANTs.
+
 ### 4. חשיפת מידע רגיש ב-API
 
 ```python
