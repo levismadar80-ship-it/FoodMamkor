@@ -25,6 +25,8 @@ const D = he.admin.producers.table.draft_claim;
 const URL_ = "https://www.mehamakor.co.il/claim/tok.en.sig";
 const LINK = { url: URL_, expires_at: "2026-11-11T10:00:00+00:00" };
 const MESSAGE = D.message.replace("{url}", URL_);
+// The mint is bounded (AdminDraftClaimActions MINT_TIMEOUT_MS).
+const MINT_OPTS = { timeout: 20000 };
 
 let seq = 0;
 function row(status, has_owner) {
@@ -175,7 +177,7 @@ describe("«העתקת הודעה עם קישור»", () => {
     fireEvent.click(copyButtons()[0]);
 
     // Synchronous with the click — before the mint has answered (Safari).
-    expect(api.post).toHaveBeenCalledWith("/admin/producers/p-1/claim-link");
+    expect(api.post).toHaveBeenCalledWith("/admin/producers/p-1/claim-link", undefined, MINT_OPTS);
     expect(write).toHaveBeenCalledTimes(1);
 
     resolvePost({ data: LINK });
@@ -295,7 +297,7 @@ describe("«העתקת הודעה עם קישור»", () => {
     renderTable([row("draft", false), row("draft", true), row("draft", false)]);
     const rows = screen.getAllByRole("row").slice(1);
     fireEvent.click(within(rows[2]).getByTestId("draft-copy-claim-message"));
-    expect(api.post).toHaveBeenCalledWith("/admin/producers/p-3/claim-link");
+    expect(api.post).toHaveBeenCalledWith("/admin/producers/p-3/claim-link", undefined, MINT_OPTS);
     await waitFor(() => expect(showToast.success).toHaveBeenCalled());
   });
 
@@ -324,6 +326,61 @@ describe("«העתקת הודעה עם קישור»", () => {
     }
   });
 
+  it("404 (deleted by another admin meanwhile) also reloads the stale list", async () => {
+    api.post.mockRejectedValue({ response: { status: 404, data: { detail: "בית העסק לא נמצא" } } });
+    setClipboard({ writeText: vi.fn() });
+    globalThis.ClipboardItem = undefined;
+    const onRetryLoad = vi.fn();
+
+    renderTable([row("draft", false)], { onRetryLoad });
+    fireEvent.click(copyButtons()[0]);
+
+    await waitFor(() => expect(showToast.error).toHaveBeenCalledWith("בית העסק לא נמצא"));
+    expect(onRetryLoad).toHaveBeenCalledTimes(1);
+  });
+
+  it("a ClipboardItem constructor that throws synchronously cannot strand the lock", async () => {
+    api.post.mockResolvedValue({ data: LINK });
+    setClipboard({ write: vi.fn() });
+    globalThis.ClipboardItem = class {
+      constructor() {
+        throw new TypeError("promise values not supported");
+      }
+    };
+
+    renderTable([row("draft", false), row("draft", false)]);
+    fireEvent.click(copyButtons()[0]);
+
+    // Treated as a refused clipboard: the box opens once the mint answers…
+    expect(await screen.findByTestId("draft-claim-message-manual")).toHaveValue(MESSAGE);
+    // …and the lock is released, so the next row still works.
+    const b = copyButtons()[1];
+    expect(b).not.toBeDisabled();
+    fireEvent.click(b);
+    expect(api.post).toHaveBeenLastCalledWith("/admin/producers/p-2/claim-link", undefined, MINT_OPTS);
+    await waitFor(() => expect(screen.getAllByTestId("draft-claim-message-manual")).toHaveLength(2));
+  });
+
+  it("does not steal focus from a text field the admin moved into while the mint ran", async () => {
+    let resolvePost;
+    api.post.mockReturnValue(new Promise((r) => (resolvePost = r)));
+    setClipboard({ write: vi.fn().mockRejectedValue(new Error("NotAllowedError")) });
+    globalThis.ClipboardItem = FakeClipboardItem;
+
+    renderTable([row("draft", false)]);
+    fireEvent.click(copyButtons()[0]);
+    const field = document.createElement("input");
+    document.body.appendChild(field);
+    field.focus();
+    try {
+      resolvePost({ data: LINK });
+      await screen.findByTestId("draft-claim-message-manual");
+      expect(field).toHaveFocus();
+    } finally {
+      field.remove();
+    }
+  });
+
   it("a non-409 failure toasts but does not reload", async () => {
     api.post.mockRejectedValue({ response: { status: 500, data: {} } });
     setClipboard({ writeText: vi.fn() });
@@ -337,7 +394,7 @@ describe("«העתקת הודעה עם קישור»", () => {
     expect(onRetryLoad).not.toHaveBeenCalled();
   });
 
-  it("one mint at a time across rows: row B's click is ignored while row A's is in flight", async () => {
+  it("one mint at a time across rows: every other row's button is disabled while row A's is in flight", async () => {
     let resolveA;
     api.post.mockReturnValueOnce(new Promise((r) => (resolveA = r)));
     const writeText = vi.fn().mockResolvedValue(undefined);
@@ -347,18 +404,21 @@ describe("«העתקת הודעה עם קישור»", () => {
     renderTable([row("draft", false), row("draft", false)]);
     const [a, b] = copyButtons();
     fireEvent.click(a);
+    // Visible, not silent: B is disabled for as long as A's mint runs.
+    expect(b).toBeDisabled();
     fireEvent.click(b);
     expect(api.post).toHaveBeenCalledTimes(1);
-    expect(api.post).toHaveBeenCalledWith("/admin/producers/p-1/claim-link");
+    expect(api.post).toHaveBeenCalledWith("/admin/producers/p-1/claim-link", undefined, MINT_OPTS);
 
     resolveA({ data: LINK });
     await waitFor(() => expect(showToast.success).toHaveBeenCalledTimes(1));
     expect(writeText).toHaveBeenCalledTimes(1);
+    expect(b).not.toBeDisabled();
 
     // Once A has settled, B works.
     api.post.mockResolvedValueOnce({ data: { ...LINK, url: `${URL_}-b` } });
     fireEvent.click(b);
-    expect(api.post).toHaveBeenLastCalledWith("/admin/producers/p-2/claim-link");
+    expect(api.post).toHaveBeenLastCalledWith("/admin/producers/p-2/claim-link", undefined, MINT_OPTS);
     await waitFor(() => expect(showToast.success).toHaveBeenCalledTimes(2));
   });
 });
