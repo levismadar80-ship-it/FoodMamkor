@@ -211,6 +211,18 @@ function ProducerTags({ producer }) {
   const t = useTranslations("admin");
   return (
     <div className="flex gap-1 flex-wrap">
+      {/* MEH-2459: an organizer (markets / events, sells nothing) stays in the
+          queue so the admin can approve it, but it is not a business — no
+          license, no products, never «מאומת». The chip says so up front. */}
+      {producer.kind === "organizer" && (
+        <span
+          title={t("producers.table.tags.organizer_title")}
+          aria-label={t("producers.table.tags.organizer_title")}
+          className="inline-flex items-center rounded-full bg-primary/10 text-primary px-1.5 py-0.5 text-[10px] font-medium"
+        >
+          {t("producers.table.tags.organizer")}
+        </span>
+      )}
       {producer.verification_tier === "verified" && <span title={t("producers.table.tags.verified")}><Seal size={ICON_SIZE_SM} weight="fill" className="text-primary" aria-hidden="true" /></span>}
       {producer.organic_certified && <span title={t("producers.table.tags.organic_certified")}><Leaf size={ICON_SIZE_SM} className="text-primary" aria-hidden="true" /></span>}
       {producer.grass_fed && <span title={t("producers.table.tags.grass_fed")}><Cow size={ICON_SIZE_SM} className="text-primary" aria-hidden="true" /></span>}

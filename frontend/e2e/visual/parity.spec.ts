@@ -724,6 +724,11 @@ test.describe("Visual parity — MEH-991", () => {
   // sections now RENDER where the old frame was blank (MEH-1514 on mobile);
   // map (desktop+mobile) = the second chip row משלוח · איסוף עצמי · סינון
   // (pickup_points promoted to all surfaces) + «בתיאום אישי» on the cards.
+  // 27/10/2026 («בתיאום אישי» research follow-up): map-desktop re-captured
+  // (vrt-update run 40577844470) — the card tag now reads «בתיאום מראש»; the
+  // change sat inside the 2% tolerance, so the old PNG was removed to force a
+  // fresh frame, then read: only the five tag labels differ. map-mobile shows
+  // no cards and was not regenerated.
   // TWO desktop frames were NOT regenerated because their gates fail before
   // the screenshot is taken, on staging as well: `about` desktop trips the
   // reveal-gate (one section stays at opacity < 1 after the full scroll pass —

@@ -63,6 +63,10 @@ export const ProducerListSchema = z.object({
   verified_at: z.string().nullable().optional(),
   verification_doc_type: z.enum(["license", "exemption", "cosmetics"]).nullable().optional(),
   plan: z.string().optional(),
+  // MEH-2459: 'producer' | 'organizer'. Public business feeds never carry an
+  // organizer (is_business() filters it server-side); the dashboard and the
+  // admin queue read it. Optional so pre-migration payloads still parse.
+  kind: z.enum(["producer", "organizer"]).optional(),
   images: z.array(z.string()).optional().default([]),
   // MEH-826: weekly hours string ("Sun-Thu 09:00-18:00, …") — without this the
   // z.object strip would drop it before MapProducerCard's open/closed line.
@@ -167,6 +171,8 @@ export const ProducerListSchema = z.object({
     // served field the parse silently drops is the same trap either way — but
     // it is a LATENT gap, not a repaired feature. Stated so nobody inherits
     // "we fixed click-to-call" from this comment.
+    // MEH-2477 (28/10): now built — DeliveryBlock.jsx PickupRow renders it as a
+    // tel: link. The paragraph above is the history of why it was missing.
     //
     // Permissive per field, like every sibling above: a partial row must never
     // drop a whole producer from the all-or-nothing parse.
@@ -445,8 +451,8 @@ export const ProducersResponseSchema = z.array(ProducerSchema);
 
 // Read by app/[locale]/events/[id]/page.js generateMetadata (title,
 // description, image_url) + lib/seo.js buildEventJsonLd (:458-529 — id,
-// event_date, event_time, location, city, lat, lng, producer_name,
-// producer_id, price, registration_url).
+// event_date, event_time, end_time, location, city, lat, lng, producer_name,
+// producer_id, price, registration_url, owner_kind, owner_slug).
 export const EventMetadataSchema = z.object({
   id: z.union([z.string(), z.number()]),
   title: z.string(),
@@ -456,12 +462,56 @@ export const EventMetadataSchema = z.object({
   description: z.string().nullable().optional(),
   image_url: z.string().nullable().optional(),
   event_time: z.string().nullable().optional(),
+  end_time: z.string().nullable().optional(), // MEH-2469
   location: z.string().nullable().optional(),
   city: z.string().nullable().optional(),
   lat: z.number().nullable().optional(),
   lng: z.number().nullable().optional(),
   producer_name: z.string().nullable().optional(),
   registration_url: z.string().nullable().optional(),
+  // MEH-2461: buildEventJsonLd picks the owner URL from these two.
+  owner_kind: z.string().optional(),
+  owner_slug: z.string().nullable().optional(),
+});
+
+// MEH-2461: read by app/[locale]/organizers/[slug]/page.js (render + metadata).
+// Mirrors OrganizerPublicOut (backend/app/schemas/schemas.py) for the fields
+// the page reads; a probe, like EventMetadataSchema — the page renders the raw
+// payload either way.
+export const OrganizerPageSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  slug: z.string(),
+  description: z.string().nullable().optional(),
+  short_description: z.string().nullable().optional(),
+  city: z.string().nullable().optional(),
+  images: z.array(z.string()).optional(),
+  phone: z.string().nullable().optional(),
+  instagram: z.string().nullable().optional(),
+  website: z.string().nullable().optional(),
+  facebook: z.string().nullable().optional(),
+  // MEH-2475: the dashboard's profile + contact fields.
+  owner_bio: z.string().nullable().optional(),
+  owner_photo_url: z.string().nullable().optional(),
+  contact_name: z.string().nullable().optional(),
+  established_year: z.number().int().nullable().optional(),
+  primary_contact_method: z.string().nullable().optional(),
+  contact_email: z.string().nullable().optional(),
+  whatsapp_group: z.string().nullable().optional(),
+  external_order_form: z.string().nullable().optional(),
+  upcoming_events: z
+    .array(
+      z.object({
+        id: z.union([z.string(), z.number()]),
+        title: z.string(),
+        event_date: z.string(),
+        event_time: z.string().nullable().optional(), // MEH-2469
+        end_time: z.string().nullable().optional(), // MEH-2469
+        city: z.string().nullable().optional(),
+        image_url: z.string().nullable().optional(), // MEH-2468
+      }),
+    )
+    .optional(),
 });
 
 // Read by app/[locale]/group-buys/[id]/page.js generateMetadata. No JSON-LD on

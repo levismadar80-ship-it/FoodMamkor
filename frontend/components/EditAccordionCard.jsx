@@ -24,7 +24,14 @@
 import { CaretDown } from "@phosphor-icons/react";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import { useTranslations } from "next-intl";
+import { createContext, useContext } from "react";
 import { chipKeyFor } from "@/lib/edit-accordion-chips";
+
+// MEH-2460: whose gate the chips read — "producer" (default) or "organizer".
+// A context, not a prop, so the edit page sets it ONCE and none of its card
+// mounts can forget it (the same registry-drift reasoning as deriving the chip
+// from anchorId below).
+export const EditAccordionKindContext = createContext("producer");
 
 // ============================================================
 // MEH-1158: header content-preview primitives. Presentational only — the
@@ -136,7 +143,8 @@ export default function EditAccordionCard({
   // (lib/edit-accordion-chips). Derived from `anchorId` rather than passed in
   // by the page, so a card added to the JSX cannot ship without one — the
   // registry-drift class .claude/rules/testing.md documents.
-  const chipKey = chipKeyFor(anchorId);
+  const kind = useContext(EditAccordionKindContext);
+  const chipKey = chipKeyFor(anchorId, kind);
   const required = chipKey === "chip_required";
   return (
     <section

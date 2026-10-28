@@ -153,6 +153,18 @@ class Producer(Base):
     # invisible draft that simply never gets submitted. Loud and harmless
     # instead of quiet and wrong.
     status = Column(String(20), default="draft")
+    # MEH-2459: 'producer' (a business that sells) | 'organizer' (a market /
+    # event organizer that sells nothing). An organizer is a Producer row, not
+    # a second entity — `events.producer_id` is NOT NULL and 24 routers hang
+    # off Producer, so a parallel table would be workflow smell #1. The row is
+    # hidden from every business surface by `producer_listing.is_business()`
+    # and reachable only through its events. NOT NULL + server_default so the
+    # five create-from-payload sites and psql all mint a business unless they
+    # say otherwise. Values locked by CHECK `producer_kind_values`
+    # (migration f1a2b3c4d5e6). ADR-036.
+    kind = Column(
+        String(20), nullable=False, default="producer", server_default="producer"
+    )
     # MEH-2100: the instant the owner pressed "שליחה לבדיקה" and this row
     # moved draft -> pending. That instant, NOT created_at, is when the
     # 3-business-day review SLA starts once the submit gate ships.
@@ -663,6 +675,12 @@ class Producer(Base):
             "has_physical_location OR offers_delivery",
             name="producer_location_mode",
         ),
+        # MEH-2459: the only two kinds. Mirrors migration f1a2b3c4d5e6 so a
+        # bootstrapped DB (`create_all`, CI) carries the same guard as staging.
+        CheckConstraint(
+            "kind IN ('producer', 'organizer')",
+            name="producer_kind_values",
+        ),
         CheckConstraint(
             "NOT (delivery_nationwide AND array_length(delivery_cities, 1) > 0)",
             name="delivery_nationwide_xor_cities",
@@ -693,6 +711,7 @@ class Producer(Base):
 
 class User(Base):
     __tablename__ = "users"
+    __mapper_args__ = {"exclude_properties": ["referral_code"]}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email = Column(String(200), unique=True, nullable=False)
@@ -717,8 +736,11 @@ class User(Base):
     # counts on the /admin/dashboard. Nullable for pre-existing users who
     # haven't made a request yet after this column was added.
     last_active_at = Column(DateTime, nullable=True, index=True)
-    # MEH-49: referral code — unique 8-char code generated at registration.
-    # Used to build /ref/{code} links that credit the referrer.
+    # MEH-2393 chunk 2: unread and unwritten since #3639/#3690. The column
+    # stays in the TABLE (so `alembic check` matches the DB) but is excluded
+    # from the MAPPER (see __mapper_args__): no ORM SELECT or INSERT names it,
+    # so chunk 3 can drop it while this code is still serving. `deferred()`
+    # is not enough — the ORM INSERT still lists every mapped column.
     referral_code = Column(String(20), unique=True, nullable=True, index=True)
     # MEH-143: one account / multiple roles. True once the user has ever
     # registered a producer, even if role is later changed by admin.
@@ -1385,38 +1407,6 @@ class AlertLog(Base):
     sent_at = Column(DateTime, default=utc_now, nullable=False)
 
 
-class ProducerFollower(Base):
-    """docs/archive/FEEDBACK_FIXES.md new feature — follow a producer to get notified
-    about new products / back-in-stock events. Distinct from Favorite:
-    favorites are for bookmarking, follows are for push notifications.
-    The notification transport itself (Twilio/FCM) is NOT wired up yet —
-    this is the data-only foundation.
-    """
-
-    __tablename__ = "producer_followers"
-    __table_args__ = (
-        UniqueConstraint(
-            "user_id", "producer_id", name="uq_one_follow_per_user_producer"
-        ),
-    )
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
-    )
-    producer_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("producers.id", ondelete="CASCADE"),
-        nullable=False,
-    )
-    notify_new_products = Column(Boolean, default=True)
-    notify_back_in_stock = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=utc_now)
-
-    user = relationship("User")
-    producer = relationship("Producer")
-
-
 # MEH-587: Recipe + RecipeIngredient removed (chunk 0/4) ahead of the
 # producer-recipes feature. Tables verified empty on staging AND
 # production before drop. See backend/alembic/versions/
@@ -1559,6 +1549,9 @@ class Event(Base):
     description = Column(Text)
     event_date = Column(Date, nullable=False)
     event_time = Column(Time, nullable=True)
+    # MEH-2469: optional end time ("09:30–15:00"); end > event_time is
+    # enforced in the request schemas + update route, not by a DB CHECK.
+    end_time = Column(Time, nullable=True)
     location = Column(String(300))  # "בחווה שלנו" / full address
     city = Column(String(100))
     lat = Column(Float)
@@ -2015,32 +2008,6 @@ class ContactClick(Base):
     __table_args__ = (
         Index("ix_contact_clicks_producer_at", "producer_id", "clicked_at"),
     )
-
-
-class ReferralClick(Base):
-    """MEH-49: tracks when a referee registers via a referrer's /ref/{code} link."""
-
-    __tablename__ = "referral_clicks"
-    # MEH-773: one referral credit per referee (matches migration
-    # 382128b23383).
-    __table_args__ = (
-        UniqueConstraint("referee_id", name="uq_referral_one_per_referee"),
-    )
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    referrer_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
-    )
-    referee_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("users.id", ondelete="SET NULL"),
-        nullable=True,
-        index=True,
-    )
-    created_at = Column(DateTime, default=utc_now, nullable=False)
 
 
 class GroupBuy(Base):
