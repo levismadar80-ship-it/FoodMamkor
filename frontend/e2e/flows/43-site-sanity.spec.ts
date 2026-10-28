@@ -14,7 +14,8 @@ import { test, expect, type Page } from "./_cloudinary-stub";
  *             2. no letter-spaced Hebrew (DESIGN.md; MEH-2488);
  *             3. no Hebrew glyph rendered in a system face — measured with CDP
  *                `CSS.getPlatformFontsForNode`, the faces actually used, once per
- *                distinct (family, weight, style) so the walk stays cheap; the
+ *                distinct (family, weight, style) so the walk stays cheap — one
+ *                key resolves Hebrew to one face, so a sample per key is enough; the
  *                probe goes on the element of that key with the fewest typed
  *                symbols, so a symbol allowance cannot hide a stray face
  *                (MEH-2488: Hebrew inside .font-english fell to Liberation Serif);
@@ -47,6 +48,8 @@ const ROUTES = [
 
 // Faces allowed to render text in a Hebrew-bearing element: the two Hebrew
 // faces, plus the latin faces that set the digits and latin runs beside them.
+// Source of truth: app/fonts.js — a face added there turns every route red here,
+// naming the face in the failure, until it is added to this list.
 const BRAND_FACES = /^(Frank Ruhl Libre|Heebo|DM Sans|Cormorant Garamond)/i;
 
 type Sweep = {
@@ -100,19 +103,22 @@ async function sweep(page: Page): Promise<Sweep> {
 
 async function strayFaces(page: Page, probes: Sweep["fontProbes"]): Promise<string[]> {
   const cdp = await page.context().newCDPSession(page);
-  await cdp.send("DOM.enable");
-  await cdp.send("CSS.enable");
-  const { root } = await cdp.send("DOM.getDocument", { depth: -1 });
   const stray: string[] = [];
-  for (const { id, symbols } of probes) {
-    const { nodeId } = await cdp.send("DOM.querySelector", { nodeId: root.nodeId, selector: `[data-sanity-probe="${id}"]` });
-    if (!nodeId) continue;
-    const { fonts } = await cdp.send("CSS.getPlatformFontsForNode", { nodeId });
-    const off = (fonts as { familyName: string; glyphCount: number }[]).filter((f) => !BRAND_FACES.test(f.familyName));
-    const glyphs = off.reduce((a, f) => a + f.glyphCount, 0);
-    if (glyphs > symbols) stray.push(`probe ${id}: ${off.map((f) => `${f.familyName} ×${f.glyphCount}`).join(", ")} (symbols ${symbols})`);
+  try {
+    await cdp.send("DOM.enable");
+    await cdp.send("CSS.enable");
+    const { root } = await cdp.send("DOM.getDocument", { depth: -1 });
+    for (const { id, symbols } of probes) {
+      const { nodeId } = await cdp.send("DOM.querySelector", { nodeId: root.nodeId, selector: `[data-sanity-probe="${id}"]` });
+      if (!nodeId) continue;
+      const { fonts } = await cdp.send("CSS.getPlatformFontsForNode", { nodeId });
+      const off = (fonts as { familyName: string; glyphCount: number }[]).filter((f) => !BRAND_FACES.test(f.familyName));
+      const glyphs = off.reduce((a, f) => a + f.glyphCount, 0);
+      if (glyphs > symbols) stray.push(`probe ${id}: ${off.map((f) => `${f.familyName} ×${f.glyphCount}`).join(", ")} (symbols ${symbols})`);
+    }
+  } finally {
+    await cdp.detach();
   }
-  await cdp.detach();
   await page.evaluate(() => document.querySelectorAll("[data-sanity-probe]").forEach((el) => el.removeAttribute("data-sanity-probe")));
   return stray;
 }
