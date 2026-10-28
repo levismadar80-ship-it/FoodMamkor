@@ -6,7 +6,7 @@ Touches:  group_buys (status), group_buy_commits + users (read, for recipients),
           Resend via group_buy_notifications (background task).
 Does NOT: decide WHEN a business leaves the site — the admin routes that
           move a producer out of 'approved' (admin.toggle_producer_status,
-          admin.reject_producer, admin_update_producer) and the two routes that
+          admin.reject_producer) and the two routes that
           delete one (admin.admin_delete_producer, auth.delete_account — MEH-2503)
           call this. Does not commit: the caller commits the producer change and
           these cancellations together.
