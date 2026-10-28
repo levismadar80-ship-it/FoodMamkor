@@ -4,19 +4,20 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
-## 2026-10-28 11:10 — הצ'אט: דוכני שוק בידע הקבוע (#3703 + #3710, מוזגו) ונתונים חיים (#3706, מוכן, חסום על תווית)
+## 2026-10-28 11:40 — הצ'אט: דוכני שוק בידע הקבוע (#3703 + #3710) ונתונים חיים (#3706) — שלושתם מוזגו
 
-**‏שורה אחת:** ‏#3703 ו-#3710 מוזגו, MEH-2457 Done. ‏#3706 (MEH-586) עבר 3 סבבי adversarial, CI ירוק על head `54581b2`, והדבר היחיד שחוסם הוא תווית `do-not-merge` ש-CC שמה ולא רשאית להסיר (כלל 30). המיגרציה `a29c7a4a41e7` יוצרת role בלבד, לא טבלאות; CI הריץ אותה דרך Alembic.
+**‏שורה אחת:** MEH-2457 Done; MEH-586 — #3706 `f661193a` מוזג אחרי 3 סבבי adversarial, הסרת `do-not-merge` ע"י ספיר, ושני תיקונים של הרגע האחרון: שרשור מחדש של `a29c7a4a41e7` על `f1a2b3c4d5e6` (#3708 נכנס במקביל → שני heads), והחלת ADR-036 (`kind='producer'`) על כלי העסקים של הצ'אט. נשאר: DoD live ב-staging.
 
 **‏מה צריך לדעת לפני עבודה:**
 - `mcp_reader` הוא role `NOLOGIN` עם `SELECT` **ברמת עמודה** (`chat_db_tools.READER_COLUMNS`); הקוד עושה `SET LOCAL ROLE` בתוך READ ONLY + `statement_timeout=5000`. כלי חדש לצ'אט = פונקציה ב-`chat_db_tools.py` + שם ב-`TOOL_NAMES` + **כל עמודה חדשה שהוא קורא ב-`READER_COLUMNS` וגם ב-`GRANTS` של המיגרציה** (טסט drift משווה ביניהם) + שורה ב-`docs/DATA.md`; לעולם לא SQL מהמודל.
+- כלי צ'אט שסופר/מציג עסקים חייב `_IS_BUSINESS` (`status='approved' AND kind='producer'`, ADR-036); כלי האירועים בכוונה לא — אירועי מארגנים הם הסיבה ל-`kind`.
 - נתונים מה-DB נכנסים לפרומפט רק דרך `_fence_live_data` (תגית `<live_data>`, `<`/`>` מקודדים) — כותרות אירועים לא עוברות מודרציה.
 - הטסטים ב-`tests/test_chat_db_tools.py` מריצים את `READER_ROLE_SQL` (מראה של המיגרציה) לפני כל טסט — function-scoped כי `drop_all` ב-`test_lifespan_init` מוחק grants. יצירת role מקבילה ב-xdist זורקת `unique_violation`, לא `duplicate_object` — שניהם מטופלים.
 - `.claude/rules/backend.md:47` אומר httpx 0.27.2; ה-pin בפועל הוא `httpx==0.28.1` (`backend/pyproject.toml:22`, נמצא בסבב 3). לא תוקן — לא בscope.
 - אומת 28/10 (Railway MCP, בלי לקרוא סודות): שירות ה-Postgres ב-staging הוא `ghcr.io/railwayapp-templates/postgres-ssl:18`, האפליקציה מתחברת כ-`POSTGRES_USER` = superuser של ה-bootstrap → `CREATE ROLE` יעבור. החלופה (login role + `CHAT_DB_READER_URL`) מתועדת בכרטיס ולא נדרשת.
 - ה-sandbox של הסשן הזה חסום ל-PyPI → pytest רק ב-CI. GraphQL של GitHub חסום (REST עובד) → אין auto-merge מכאן.
 
-**‏ממתין לספיר:** להסיר `do-not-merge` מ-#3706 ולמזג (או לכתוב «מסירה do-not-merge מ-#3706» ו-CC ימזג); אחריו למזג את #3707 (הקובץ הזה); ב-staging: «כמה עסקים יש?» / «מתי השוק הבא?» / `'; DROP TABLE producers; --` → תשובה, לא שגיאה.
+**‏ממתין לספיר:** למזג את #3707 (הקובץ הזה) — docs-only; ב-staging: «כמה עסקים יש?» / «מתי השוק הבא?» / `'; DROP TABLE producers; --` → תשובה, לא שגיאה.
 ## 2026-10-28 00:20 — release v1.2.3 בפרודקשן (#3580 → `90a4f9c0`): זרימת «אני ממלאת, הבעלים רק מאשר» חיה; שני אדומים בדרך תוקנו (#3705, ‏#3704)
 
 **‏שורה אחת:** ‏main = staging של 27/10 ערב (161 קומיטים, כולל #3702 שמוזג מ-session מקביל ב-22:08Z תוך כדי). כל שרשרת ההזמנה — טיוטה ע"י אדמין (MEH‑2325), קטלוג על טיוטה (MEH‑2326), ‏`/claim/<token>` (MEH‑2324) — בפרודקשן. אפשר לשלוח קישורי הזמנה לבעלות עסק.
