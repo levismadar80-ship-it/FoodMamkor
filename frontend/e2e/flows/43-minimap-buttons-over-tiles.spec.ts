@@ -17,7 +17,8 @@ import { openDetail, pickProducer, watchPageErrors, type FeedProducer } from "./
  *
  * ── Why the tiles are stubbed ─────────────────────────────────────────────────
  * The assertion is only discriminating when a tile actually sits under the
- * button. With no tile there the button paints on top before AND after the fix — the two-causes-for-one-green shape `.claude/rules/testing.md` names.
+ * button. With no tile there the button paints on top before AND after the
+ * fix — the two-causes-for-one-green shape `.claude/rules/testing.md` names.
  * So every OSM tile is fulfilled with a solid magenta PNG, and the test waits
  * for a loaded tile whose box contains the button's centre before it reads the
  * button's pixels.
@@ -42,18 +43,24 @@ const HAS_LOCATION = {
   matches: (p: FeedProducer) => p.lat != null && p.lng != null,
 };
 
-/** Is a LOADED tile under the centre of the button named `name`? */
-async function tileUnderButton(page: Page, name: string) {
+/**
+ * Zoom levels of the LOADED tiles under the centre of the button named `name`,
+ * read off the tile URL (`/{z}/{x}/{y}.png`). Empty = nothing under it yet.
+ */
+async function tileZoomsUnderButton(page: Page, name: string): Promise<number[]> {
   return page.evaluate((label) => {
     const btn = document.querySelector(`button[aria-label="${label}"]`);
-    if (!btn) return false;
+    if (!btn) return [];
     const b = btn.getBoundingClientRect();
     const x = b.x + b.width / 2;
     const y = b.y + b.height / 2;
-    return Array.from(btn.parentElement?.querySelectorAll("img.leaflet-tile-loaded") ?? []).some((t) => {
-      const r = t.getBoundingClientRect();
-      return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
-    });
+    return Array.from(btn.parentElement?.querySelectorAll<HTMLImageElement>("img.leaflet-tile-loaded") ?? [])
+      .filter((t) => {
+        const r = t.getBoundingClientRect();
+        return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+      })
+      .map((t) => Number(/\/(\d+)\/\d+\/\d+\.png/.exec(t.src)?.[1]))
+      .filter((z) => Number.isFinite(z));
   }, name);
 }
 
@@ -87,15 +94,31 @@ async function tileShareOver(page: Page, name: string) {
   return tilePx / (data.length / info.channels);
 }
 
-async function expectButtonOverTiles(page: Page, name: string) {
+/**
+ * Waits for a loaded tile under the button — at `zoom` when given, so a check
+ * after a zoom cannot pass on a stale tile from the previous level — then reads
+ * the button's pixels. Returns the zoom level it saw.
+ */
+async function expectButtonOverTiles(page: Page, name: string, zoom?: number): Promise<number> {
+  let seen: number[] = [];
   await expect
-    .poll(() => tileUnderButton(page, name), {
-      message: `no loaded tile under "${name}" — the pixel check would not discriminate`,
-      timeout: 15_000,
-    })
+    .poll(
+      async () => {
+        seen = await tileZoomsUnderButton(page, name);
+        return zoom === undefined ? seen.length > 0 : seen.includes(zoom);
+      },
+      {
+        message: `no loaded tile${zoom === undefined ? "" : ` at z=${zoom}`} under "${name}" — the pixel check would not discriminate`,
+        timeout: 15_000,
+      },
+    )
     .toBe(true);
+  // Leaflet removes the previous level's tiles once the new ones are in; until
+  // then a stale tile could sit on top. Wait for the zoom animation to finish.
+  await expect(page.locator(".leaflet-zoom-anim")).toHaveCount(0);
   // A visible button reads 0 here; a covered one reads ~1.
   expect(await tileShareOver(page, name), `"${name}" is painted over by map tiles`).toBeLessThan(0.05);
+  return zoom ?? Math.max(...seen);
 }
 
 test.describe("MiniMap — expand and close buttons paint above the tiles", () => {
@@ -114,13 +137,12 @@ test.describe("MiniMap — expand and close buttons paint above the tiles", () =
     await expand.click();
     const close = page.getByRole("button", { name: "סגירת המפה במסך מלא" });
     await expect(close).toBeVisible();
-    await expectButtonOverTiles(page, "סגירת המפה במסך מלא");
+    const z0 = await expectButtonOverTiles(page, "סגירת המפה במסך מלא");
 
     // The reported path: a zoom re-tiles the whole viewport, including the
     // corner the X lives in.
     await page.locator('[role="dialog"] .leaflet-control-zoom-in').click();
-    await page.waitForTimeout(400); // zoom animation (leaflet default 250ms)
-    await expectButtonOverTiles(page, "סגירת המפה במסך מלא");
+    await expectButtonOverTiles(page, "סגירת המפה במסך מלא", z0 + 1);
 
     await close.click();
     await expect(page.locator('[role="dialog"] .leaflet-container')).toHaveCount(0);
