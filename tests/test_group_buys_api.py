@@ -300,6 +300,9 @@ class TestCreate:
             ("empty", _valid_create_payload(fulfillment_note="")),
             ("whitespace", _valid_create_payload(fulfillment_note="   \n ")),
             ("null", _valid_create_payload(fulfillment_note=None)),
+            # Not blank, still no answer: the free-text letter floor (MEH-555).
+            ("punctuation", _valid_create_payload(fulfillment_note=". - ?")),
+            ("two letters", _valid_create_payload(fulfillment_note="כן")),
         ]
 
     def test_create_without_fulfillment_note_is_422_and_creates_nothing(
@@ -326,6 +329,16 @@ class TestCreate:
         )
         assert resp.status_code == 422
         assert "יש לכתוב מתי ואיך מקבלים את המוצרים" in resp.text
+
+    def test_three_letter_note_is_accepted(self, client, db):
+        # The floor's edge, so a stricter floor shows up here.
+        _, user = _producer_user(db)
+        resp = client.post(
+            "/group-buys",
+            json=_valid_create_payload(fulfillment_note="משק"),
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 201, resp.text
 
     def test_fulfillment_note_is_stored_stripped(self, client, db):
         _, user = _producer_user(db)

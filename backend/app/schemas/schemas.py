@@ -4028,8 +4028,10 @@ class GroupBuyCreate(BaseModel):
     @field_validator("fulfillment_note")
     @classmethod
     def _require_fulfillment_note(cls, v: str) -> str:
+        # Blank, or no real words ("." / "כן"): the MEH-555 letter floor, with
+        # the field's own message rather than the generic one.
         v = v.strip()
-        if not v:
+        if len(_LETTER_REGEX.sub("", v)) < 3:
             raise ValueError("יש לכתוב מתי ואיך מקבלים את המוצרים")
         return v
 

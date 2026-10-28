@@ -23,7 +23,9 @@ PRIVACY CONTRACT (MEH-1651, Amendment 13 to the Privacy Protection Law):
 no message body composed here may carry a phone number or an email address of
 any party. The business learns a participant COUNT, never a roster; each
 participant learns the business NAME, never its contact record. Both messages
-point at the public group page, which is the only place contact happens. The
+point at the public group page; the participant message also links the public
+business page (MEH-2453), which shows what that page already shows anyone. No
+contact detail is ever written INTO a body. The
 guard for this is an absence assertion over the rendered bodies in
 tests/test_group_buys_api.py — extend it alongside any new template here.
 

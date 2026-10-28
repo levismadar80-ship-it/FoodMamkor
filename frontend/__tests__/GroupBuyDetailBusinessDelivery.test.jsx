@@ -60,7 +60,7 @@ const producer = (over = {}) => ({
 });
 
 const fixture = { producer: null, producerError: null };
-const get = vi.fn((url) => {
+const defaultGet = (url) => {
   if (url === "/group-buys/gb-1") return Promise.resolve({ data: { ...GB, ...fixture.gb } });
   if (url === "/producers/p-1") {
     return fixture.producerError
@@ -68,7 +68,8 @@ const get = vi.fn((url) => {
       : Promise.resolve({ data: fixture.producer });
   }
   return Promise.reject(new Error(`unexpected GET ${url}`));
-});
+};
+const get = vi.fn(defaultGet);
 vi.mock("@/lib/api", () => ({ default: { get: (...a) => get(...a), post: vi.fn(), delete: vi.fn() } }));
 
 const by = (name) => `group_buys.detail.by_producer:${JSON.stringify({ name })}`;
@@ -80,6 +81,7 @@ async function renderPage() {
 
 beforeEach(() => {
   get.mockClear();
+  get.mockImplementation(defaultGet);
   fixture.producer = producer();
   fixture.producerError = null;
   fixture.gb = {};
@@ -113,6 +115,25 @@ describe("the business link", () => {
     await renderPage();
     expect(get).not.toHaveBeenCalledWith("/producers/null");
     expect(get.mock.calls.filter(([u]) => u.startsWith("/producers/"))).toHaveLength(0);
+  });
+});
+
+describe("moving to another group", () => {
+  it("drops the previous business before the next one loads", async () => {
+    const { rerender } = render(<GroupBuyDetailClient id="gb-1" />);
+    await screen.findByRole("link", { name: by(GB.producer_name) });
+    // The second group belongs to another business whose fetch never settles.
+    get.mockImplementation((url) => {
+      if (url === "/group-buys/gb-2") {
+        return Promise.resolve({ data: { ...GB, id: "gb-2", producer_id: "p-2", producer_name: "רפת הגליל" } });
+      }
+      if (url === "/producers/p-2") return new Promise(() => {});
+      return Promise.reject(new Error(`unexpected GET ${url}`));
+    });
+    rerender(<GroupBuyDetailClient id="gb-2" />);
+    await screen.findByText(by("רפת הגליל"));
+    expect(screen.queryByRole("link", { name: by("רפת הגליל") })).toBeNull();
+    expect(screen.queryByTestId("delivery-checker")).toBeNull();
   });
 });
 

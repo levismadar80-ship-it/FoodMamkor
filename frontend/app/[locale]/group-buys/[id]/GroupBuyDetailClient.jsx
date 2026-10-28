@@ -158,6 +158,9 @@ export default function GroupBuyDetailClient({ id }) {
   // delivery areas do not move while someone reads the page.
   const producerId = gb?.producer_id;
   useEffect(() => {
+    // Drop the previous business first: if this instance is reused for another
+    // group, its link and checker must not sit beside the new group meanwhile.
+    setProducer(null);
     if (!producerId) return undefined;
     let alive = true;
     api

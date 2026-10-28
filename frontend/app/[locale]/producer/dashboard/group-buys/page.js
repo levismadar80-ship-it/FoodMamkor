@@ -30,6 +30,14 @@ const STATUS_CLS = {
   fulfilled: STATUS_CLASSES.success,
 };
 
+// MEH-2453: the server's floor for the fulfillment note (GroupBuyCreate,
+// MEH-555 pattern): at least 3 letters once stripped, counted over the same
+// scripts as _LETTER_REGEX (Hebrew, Latin, Arabic). "." or "כן" is not an
+// answer to "how do I get this".
+const NOTE_MIN_LETTERS = 3;
+const NOTE_LETTER = /[\u05d0-\u05eaa-zA-Z\u0621-\u063f\u0641-\u064a\u066e-\u066f\u0671-\u06d3]/g;
+const countLetters = (text) => (text.match(NOTE_LETTER) || []).length;
+
 function NewGroupBuyForm({ producerCity, onCreated }) {
   const t = useTranslations("group_buys.dashboard.form");
   // MEH-848: shared generic error copy (collapsed from group_buys.dashboard.form.errors.generic).
@@ -71,7 +79,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
     setError("");
     setUnverified(false);
     const fulfillmentNote = form.fulfillment_note.trim();
-    if (!fulfillmentNote) {
+    if (countLetters(fulfillmentNote) < NOTE_MIN_LETTERS) {
       setNoteError(true);
       noteRef.current?.focus();
       return;
@@ -248,6 +256,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
             }}
             placeholder={t("fulfillment_placeholder")}
             required
+            maxLength={1000}
             aria-invalid={noteError || undefined}
             aria-describedby={
               noteError ? "gb-fulfillment-helper gb-fulfillment-error" : "gb-fulfillment-helper"

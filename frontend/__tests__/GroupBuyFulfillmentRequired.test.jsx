@@ -66,6 +66,8 @@ describe("the fulfillment note on the create form", () => {
   it("is a required field with the helper text tied to it", async () => {
     const { note } = await openForm();
     expect(note).toBeRequired();
+    // Same cap as the server (GroupBuyCreate max_length=1000).
+    expect(note).toHaveAttribute("maxLength", "1000");
     const helper = screen.getByText(`${F}.fulfillment_helper`);
     expect(note.getAttribute("aria-describedby")).toContain(helper.id);
     // The label carries the same visual marker as every other required field.
@@ -85,6 +87,9 @@ describe("the fulfillment note on the create form", () => {
     ["empty", ""],
     ["spaces", "   "],
     ["newlines", " \n \n"],
+    // Not blank, still no answer: the server's 3-letter floor (MEH-555).
+    ["punctuation", ". - ?"],
+    ["two-letter", "כן"],
   ]) {
     it(`a ${label} note does not send and says why next to the field`, async () => {
       const { note, form } = await openForm();

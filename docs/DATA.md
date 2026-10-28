@@ -586,7 +586,8 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 >
 > **MEH-2453 (MEH-2435 chunk 5) — how a participant from another city gets the
 > product.** `POST /group-buys`: `fulfillment_note` is now **required** — a
-> string, stripped, 1–1000 chars; missing / `null` / blank → 422, blank with
+> string, stripped, ≤1000 chars, at least 3 letters (the MEH-555 floor, so "."
+> or «כן» is refused too); missing / `null` → 422, too few letters → 422 with
 > «יש לכתוב מתי ואיך מקבלים את המוצרים» (`GroupBuyCreate._require_fulfillment_note`).
 > The column stays nullable (no migration): rows created before this keep NULL
 > and the public page keeps hiding an empty note. The funded email to each
