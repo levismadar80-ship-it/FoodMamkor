@@ -65,7 +65,9 @@ def _certificate_expiry(expires_on) -> datetime:
 
 
 @router.post("/kashrut/{request_id}/approve")
+@limiter.limit("60/minute")
 def approve_kashrut_request(
+    request: Request,
     request_id: UUID,
     body: KashrutApproveIn,
     user: User = Depends(require_admin),
@@ -139,7 +141,9 @@ def reject_kashrut_request(
 
 
 @router.post("/kashrut/{request_id}/revoke")
+@limiter.limit("60/minute")
 def revoke_kashrut_badge(
+    request: Request,
     request_id: UUID,
     body: KashrutRevokeIn,
     user: User = Depends(require_admin),
