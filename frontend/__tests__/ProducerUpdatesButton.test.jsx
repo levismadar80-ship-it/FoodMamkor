@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { act, render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import he from "../messages/he.json";
 import en from "../messages/en.json";
@@ -150,6 +150,37 @@ describe("MEH-2526 · ProducerUpdatesButton", () => {
     // No delivery channel yet → the channel picker opens so the user can pick one.
     expect(onOpenAlerts).toHaveBeenCalledTimes(1);
     expect(api.delete).not.toHaveBeenCalled();
+  });
+
+  it("not saved: a prefs read that fails mid-save does not leave the button inert after the PUT", async () => {
+    // The save flips the shared favorites state, which re-reads the prefs
+    // while the alerts PUT is still in flight. The row does not exist yet, so
+    // that read can fail; the successful PUT is then the known state.
+    mockUser.current = { id: "u1" };
+    let readFails = false;
+    api.get.mockImplementation((url) => {
+      if (url === "/users/me/favorites") return Promise.resolve({ data: [] });
+      if (url === ALERTS_URL) {
+        return readFails ? Promise.reject(new Error("404")) : Promise.resolve({ data: OFF });
+      }
+      return Promise.reject(new Error(`unexpected GET ${url}`));
+    });
+    let finishPut;
+    api.put.mockImplementation(() => new Promise((r) => { finishPut = () => r({ data: {} }); }));
+    renderButton({ onOpenAlerts: vi.fn() });
+    await waitFor(() => expect(button()).not.toBeDisabled());
+
+    readFails = true;
+    const reads = api.get.mock.calls.filter(([u]) => u === ALERTS_URL).length;
+    fireEvent.click(button());
+    await waitFor(() => expect(api.put).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(api.get.mock.calls.filter(([u]) => u === ALERTS_URL).length).toBeGreaterThan(reads),
+    );
+    await act(async () => { finishPut(); });
+
+    await waitFor(() => expect(button()).not.toBeDisabled());
+    expect(button()).toHaveAttribute("aria-pressed", "true");
   });
 
   it("saved, updates OFF: turns updates on without re-saving", async () => {

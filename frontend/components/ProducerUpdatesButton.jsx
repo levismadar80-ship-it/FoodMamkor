@@ -157,6 +157,10 @@ export default function ProducerUpdatesButton({
       await api.put(`/users/me/favorites/${producerId}/alerts`, body);
       writeVersion.current += 1;
       setPrefs({ ...(prefs || {}), ...body, enabled: true });
+      // The save above re-triggers the prefs read (favorites subscription)
+      // while the PUT is in flight; if that read failed, the write we just
+      // made is the known state now — the button must not stay inert.
+      setLoadFailed(false);
       // Lets the page re-read an AlertPrefsPanel that is open right now —
       // otherwise its Save would PUT the pre-write values back.
       onChanged?.();

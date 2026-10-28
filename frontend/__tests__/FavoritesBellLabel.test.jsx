@@ -80,10 +80,15 @@ describe("MEH-2526 · favorites bell label", () => {
   it.each([1, 3])("%i card(s), panel closed → one labelled bell per card", async (n) => {
     await renderWith(n);
     expect(bells()).toHaveLength(n);
+    bells().forEach((bell, i) =>
+      expect(bell.getAttribute("aria-label")).toContain(`עסק ${i + 1}`),
+    );
     for (const bell of bells()) {
       expect(within(bell).getByText(LABEL)).toBeInTheDocument();
       expect(bell).toHaveAttribute("aria-expanded", "false");
-      expect(bell.getAttribute("aria-label") ?? bell.textContent).toContain(LABEL);
+      // Label-in-name: the accessible name starts with the visible label, and
+      // carries the business name so several bells are told apart.
+      expect(bell.getAttribute("aria-label")).toMatch(new RegExp(`^${LABEL}`));
     }
   });
 

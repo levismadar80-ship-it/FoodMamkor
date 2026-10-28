@@ -59,9 +59,11 @@ function FavoriteCardWrapper({ fav, open, onToggle, onClose }) {
       <button
         ref={bellRef}
         onClick={onToggle}
-        // MEH-2526: the visible bell_label text is now the accessible name
-        // (WCAG 2.5.3 label-in-name), so aria-label is gone; the longer
+        // MEH-2526: the accessible name starts with the visible bell_label
+        // (WCAG 2.5.3 label-in-name) and adds the business name, so the bells
+        // on a page of cards are told apart by a screen reader. The longer
         // alerts_aria copy stays as the hover title.
+        aria-label={`${t("bell_label")} — ${fav.producer?.name ?? ""}`.trim()}
         title={t("alerts_aria")}
         aria-haspopup="dialog"
         aria-expanded={open}
