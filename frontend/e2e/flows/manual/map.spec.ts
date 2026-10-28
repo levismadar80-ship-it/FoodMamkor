@@ -1269,7 +1269,9 @@ test.describe("manual › map z-index token system + UI bugfixes", () => {
     // MEH-2510 PEEK is max(14vh, nav clearance + 3.5rem), which on this
     // project's 393×727 viewport is the floor (~128px), not 14vh (~102px).
     await settleSheet(shell);
-    expect((await box(bottomSheet(shell))).height, "the sheet must be at PEEK, not HALF").toBeLessThan(0.3 * (await page.evaluate(() => window.innerHeight)));
+    // ≤ 20vh: the floor is 128px = 17.6vh here; 0.3 (the first version) only
+    // proved "not HALF" and would pass a sheet stuck at 25vh (CI review, #3761).
+    expect((await box(bottomSheet(shell))).height, "the sheet must be at PEEK").toBeLessThanOrEqual(0.2 * (await page.evaluate(() => window.innerHeight)));
     // MT:z:a1 — rides the PEEK edge by the MEH-1365 rule (6px above the sheet
     // height, measured from the container's bottom) and clears the cards.
     // FINDING (04/09): on this project's 393×727 viewport the container's
@@ -1422,8 +1424,8 @@ test.describe("manual › /map PEEK sheet count clears the nav pill on short pho
       const row = await box(count);
       const nav = await box(page.getByTestId("bottom-nav"));
       expect(row.y + row.height + 4, `count row bottom ${row.y + row.height} vs nav top ${nav.y}`).toBeLessThanOrEqual(nav.y);
-      // …and the floor did not push the sheet to HALF territory.
-      expect((await box(bottomSheet(shell))).height).toBeLessThan(0.3 * vp.height);
+      // …and the floor stays a PEEK: 128px is 19.2vh at 667, the tallest share.
+      expect((await box(bottomSheet(shell))).height, "the floored sheet must stay ≤ 20vh").toBeLessThanOrEqual(0.2 * vp.height);
     });
   }
 });
