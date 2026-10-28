@@ -1128,7 +1128,7 @@ POST /chat                       public — one-shot Claude Haiku Q&A about the 
 | | |
 |---|---|
 | Login | none (`NOLOGIN`; assumed via `SET LOCAL ROLE` inside a READ ONLY transaction) |
-| SELECT (column-level) | `producers` (id, name, city, slug, status) · `categories` (id, name, slug) · `producer_categories` (producer_id, category_id) · `producer_locations` (producer_id, kind, city) · `events` (producer_id, title, event_date, event_time, city, location, category, is_active) |
+| SELECT (column-level) | `producers` (id, name, city, slug, status, kind) · `categories` (id, name, slug) · `producer_categories` (producer_id, category_id) · `producer_locations` (producer_id, kind, city) · `events` (producer_id, title, event_date, event_time, city, location, category, is_active) |
 | Everything else | denied — including `producers.phone/contact_email/contact_name/address/whatsapp_group`, `users`, `home_products`, `reports` and all writes |
 | statement_timeout | 5000 ms, per transaction |
 | Tools | `count_producers_in_city(city)` · `list_producers_by_category(category_slug, city?, limit?)` · `get_site_stats()` · `list_upcoming_events(city?, limit?)` — `LIMIT` clamped to 20 |

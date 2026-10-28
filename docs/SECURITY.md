@@ -142,7 +142,7 @@ params. הגנה בשכבות:
 
 | שכבה | מה | איפה |
 |---|---|---|
-| Role | `mcp_reader` — `NOLOGIN`, `SELECT` **ברמת עמודה** רק על העמודות שארבעת הכלים קוראים (`producers`: id, name, city, slug, status · `categories` · `producer_categories` · `producer_locations`: producer_id, kind, city · `events`). `producers.phone` / `contact_email` / `contact_name` / `address` / `whatsapp_group` **לא** מוענקות — שכבת ההרשאות עצמה חוסמת PII, לא רק ה-SQL הקבוע. אין גישה ל-`users` / `home_products` / `reports`. | revision `a29c7a4a41e7` · `chat_db_tools.READER_COLUMNS` |
+| Role | `mcp_reader` — `NOLOGIN`, `SELECT` **ברמת עמודה** רק על העמודות שארבעת הכלים קוראים (`producers`: id, name, city, slug, status, kind · `categories` · `producer_categories` · `producer_locations`: producer_id, kind, city · `events`). `producers.phone` / `contact_email` / `contact_name` / `address` / `whatsapp_group` **לא** מוענקות — שכבת ההרשאות עצמה חוסמת PII, לא רק ה-SQL הקבוע. אין גישה ל-`users` / `home_products` / `reports`. | revision `a29c7a4a41e7` · `chat_db_tools.READER_COLUMNS` |
 | טרנזקציה | `SET TRANSACTION READ ONLY` + `SET LOCAL ROLE mcp_reader` + `SET LOCAL statement_timeout = 5000` | `chat_db_tools.reader_transaction()` |
 | קלט | שם כלי מתוך enum סגור, `LIMIT` מוגבל ל-20, עיר/slug נקשרים — לעולם לא f-string | `chat_intent_router.decision_from_parsed()`, `chat_db_tools._clamp_limit()` |
 | קצב | 5/דקה ל-IP על מסלול ה-DB, מעל 10/דקה + 30/שעה של ה-route | `routers/chat.py::_db_query_allowed` |

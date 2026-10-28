@@ -1,8 +1,8 @@
 """meh586_mcp_reader_role
 
 Revision ID: a29c7a4a41e7
-Revises: e5b2d8f4a913
-Create Date: 2026-10-28 00:00:00.000000+00:00
+Revises: f1a2b3c4d5e6
+Create Date: 2026-10-28 12:00:00.000000+00:00
 
 MEH-586 (Chatbot v2, live data): a least-privilege Postgres role for the
 chat's four bounded read-only tools (app/services/chat_db_tools.py).
@@ -23,7 +23,9 @@ chat's four bounded read-only tools (app/services/chat_db_tools.py).
   on boot, `postgres` in CI.
 
 No table or column changes: EXPECTED_TABLES (41) and `alembic check` are
-unaffected. Idempotent on the role (roles are cluster-wide; CI's per-worker
+unaffected. Re-chained 28/10 12:00 onto f1a2b3c4d5e6 (MEH-2459, #3708 landed
+on staging in parallel) so the chain keeps a single head; never applied
+anywhere before the re-chain. Idempotent on the role (roles are cluster-wide; CI's per-worker
 databases share one cluster).
 
 Assumption NOT verified from the CC sandbox (Railway unreachable, MEH-2090):
@@ -40,14 +42,14 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "a29c7a4a41e7"
-down_revision: Union[str, None] = "e5b2d8f4a913"
+down_revision: Union[str, None] = "f1a2b3c4d5e6"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 ROLE = "mcp_reader"
 TABLES = "producers, categories, producer_categories, producer_locations, events"
 GRANTS = (
-    "GRANT SELECT (id, name, city, slug, status) ON producers TO mcp_reader",
+    "GRANT SELECT (id, name, city, slug, status, kind) ON producers TO mcp_reader",
     "GRANT SELECT (id, name, slug) ON categories TO mcp_reader",
     "GRANT SELECT (producer_id, category_id) ON producer_categories TO mcp_reader",
     "GRANT SELECT (producer_id, kind, city) ON producer_locations TO mcp_reader",

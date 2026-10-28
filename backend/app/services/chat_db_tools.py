@@ -45,7 +45,7 @@ READER_ROLE = "mcp_reader"
 #: a tool query means adding it here AND in the migration (the drift test in
 #: tests/test_chat_db_tools.py compares the two).
 READER_COLUMNS: dict[str, tuple[str, ...]] = {
-    "producers": ("id", "name", "city", "slug", "status"),
+    "producers": ("id", "name", "city", "slug", "status", "kind"),
     "categories": ("id", "name", "slug"),
     "producer_categories": ("producer_id", "category_id"),
     "producer_locations": ("producer_id", "kind", "city"),
@@ -153,6 +153,14 @@ def _clean(value: str | None) -> str | None:
     return cleaned[:100] or None
 
 
+# ADR-036 / MEH-2459: a business is `status='approved' AND kind='producer'`.
+# An organizer row (kind='organizer', e.g. a market organizer) is a Producer
+# only so its events have an owner; it is never counted or listed as a
+# business. Mirrors producer_listing.is_business() — the events tool below
+# deliberately does NOT use it (organizer events are the point of the kind).
+# REUSES: backend/app/services/producer_listing.py:114
+_IS_BUSINESS = "p.status = 'approved' AND p.kind = 'producer'"
+
 # A producer "is in" a city when its own city matches OR any of its
 # location rows (branch / pickup / market_stand) is in that city — so a
 # business from Lotem with a market stand in Tel Aviv is found for "תל אביב"
@@ -175,7 +183,7 @@ def count_producers_in_city(city: str) -> dict[str, Any]:
             text(
                 f"""
                 SELECT COUNT(*) FROM producers p
-                WHERE p.status = 'approved' AND {_IN_CITY}
+                WHERE {_IS_BUSINESS} AND {_IN_CITY}
                 """
             ),
             {"city": city_value},
@@ -208,7 +216,7 @@ def list_producers_by_category(
                 FROM producers p
                 JOIN producer_categories pc ON pc.producer_id = p.id
                 JOIN categories c ON c.id = pc.category_id
-                WHERE p.status = 'approved' AND c.slug = :slug {city_clause}
+                WHERE {_IS_BUSINESS} AND c.slug = :slug {city_clause}
                 ORDER BY p.name
                 LIMIT :limit
                 """
@@ -237,23 +245,23 @@ def list_producers_by_category(
 def get_site_stats() -> dict[str, Any]:
     with reader_transaction() as conn:
         producers = conn.execute(
-            text("SELECT COUNT(*) FROM producers WHERE status = 'approved'")
+            text(f"SELECT COUNT(*) FROM producers p WHERE {_IS_BUSINESS}")
         ).scalar_one()
         cities = conn.execute(
             text(
-                """
-                SELECT COUNT(DISTINCT city) FROM producers
-                WHERE status = 'approved' AND city IS NOT NULL AND city <> ''
+                f"""
+                SELECT COUNT(DISTINCT p.city) FROM producers p
+                WHERE {_IS_BUSINESS} AND p.city IS NOT NULL AND p.city <> ''
                 """
             )
         ).scalar_one()
         categories = conn.execute(
             text(
-                """
+                f"""
                 SELECT COUNT(DISTINCT pc.category_id)
                 FROM producer_categories pc
                 JOIN producers p ON p.id = pc.producer_id
-                WHERE p.status = 'approved'
+                WHERE {_IS_BUSINESS}
                 """
             )
         ).scalar_one()

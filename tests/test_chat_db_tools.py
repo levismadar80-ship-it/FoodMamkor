@@ -24,7 +24,7 @@ from app.utils.clock import israel_today
 INJECTION = "'; DROP TABLE producers; --"
 MIGRATION = (
     Path(__file__).resolve().parents[1]
-    / "backend/alembic/versions/20261028_0000_a29c7a4a41e7_meh586_mcp_reader_role.py"
+    / "backend/alembic/versions/20261028_1200_a29c7a4a41e7_meh586_mcp_reader_role.py"
 )
 
 
@@ -191,6 +191,49 @@ def test_list_upcoming_events_filters_past_inactive_pending_and_city(db):
     assert [e["title"] for e in haifa["results"]] == ["מחר בחיפה"]
 
 
+def test_organizer_is_not_a_business_but_its_events_are_visible(db):
+    # ADR-036 (MEH-2459): kind='organizer' rows exist only to own events. The
+    # three business tools must not count or list them; the events tool must.
+    # Shown red against the pre-ADR filter (status='approved' alone): the
+    # organizer below is approved, so counts would read 2 / 1 and the slug
+    # listing would include «שוק גלם».
+    bread = _category(db, "לחם", "bread")
+    business = make_producer(db, name="לחם לוטם", city="תל אביב")
+    _attach(db, business, bread)
+    organizer = make_producer(db, name="שוק גלם", city="תל אביב")
+    organizer.kind = "organizer"
+    db.add(ProducerCategory(producer_id=organizer.id, category_id=bread.id))
+    db.add(
+        Event(
+            producer_id=organizer.id,
+            title="שוק גלם בנמל",
+            event_date=israel_today() + timedelta(days=3),
+            city="תל אביב",
+            category="שוק",
+            is_active=True,
+        )
+    )
+    db.commit()
+
+    assert chat_db_tools.count_producers_in_city("תל אביב")["count"] == 1
+    names = [
+        r["name"] for r in chat_db_tools.list_producers_by_category("bread")["results"]
+    ]
+    assert names == ["לחם לוטם"]
+    stats = chat_db_tools.get_site_stats()
+    assert (
+        stats["approved_producers"],
+        stats["cities"],
+        stats["categories_in_use"],
+    ) == (1, 1, 1)
+    # ...and the organizer's market is exactly what the events tool is for.
+    assert stats["upcoming_events"] == 1
+    events = chat_db_tools.list_upcoming_events(city="תל אביב")["results"]
+    assert [(e["title"], e["producer"]) for e in events] == [
+        ("שוק גלם בנמל", "שוק גלם")
+    ]
+
+
 # ---------- injection attempts: bound parameters, empty results, no error ----------
 
 
@@ -290,6 +333,9 @@ def test_mcp_reader_cannot_read_producer_pii(db, column):
     # so the denial below is the column boundary, not a role with no grants.
     with chat_db_tools.reader_transaction() as conn:
         assert conn.execute(text("SELECT name FROM producers")).scalar_one() == "חווה"
+        assert (
+            conn.execute(text("SELECT kind FROM producers")).scalar_one() == "producer"
+        )
     with (
         pytest.raises(chat_db_tools.ChatDbToolError, match="permission denied"),
         chat_db_tools.reader_transaction() as conn,
