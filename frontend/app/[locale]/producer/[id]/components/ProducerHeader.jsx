@@ -15,7 +15,7 @@ import {
   isFavorited as isFavoritedCache,
   subscribeFavorites,
 } from "@/lib/favorites-cache";
-import { allBadges } from "@/lib/badges";
+import { allBadges, isKashrutCurrent } from "@/lib/badges";
 import { getOrderWindowStatus } from "@/lib/orderWindow";
 import ReviewExcerpt from "./ReviewExcerpt";
 import { getVacationReturnDate } from "../lib/producer-format";
@@ -294,7 +294,9 @@ export default function ProducerHeader({
             certs={producer.kashrut_certs}
             producerId={producer.id}
           />
-        ) : producer.kashrut_verified_at ? (
+        ) : isKashrutCurrent(producer) ? (
+          /* MEH-2518: same expiry gate as the strip — this line used to check
+             kashrut_verified_at only, so a lapsed certificate still read «כשר». */
           <p className="flex items-center gap-1.5 text-[12.5px] text-muted">
             <StarOfDavid size={14} aria-hidden="true" />
             {t("producer.detail.header.attr.kosher")}
