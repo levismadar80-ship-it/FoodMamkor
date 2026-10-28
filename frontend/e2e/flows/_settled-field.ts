@@ -1,4 +1,4 @@
-import type { Page, Locator } from "@playwright/test";
+import type { Page, Locator } from "./_cloudinary-stub";
 
 // MEH-2323 — a full `goto` onto a streamed page does not leave the form in ONE
 // settled state: the server segment can arrive hidden while React commits a
