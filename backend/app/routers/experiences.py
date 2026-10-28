@@ -55,6 +55,28 @@ def _compute_spots_left(ex: Experience) -> int | None:
     return max(0, ex.max_participants - (ex.participants_count or 0))
 
 
+def _serialize_host(host: User | None) -> dict | None:
+    """MEH-2476: the host + her business when that business is public
+    (approved, kind='producer' — the same rule as is_business()). A pending
+    business's page 404s for everyone else, so no link is built to it."""
+    if host is None:
+        return None
+    out = {"id": host.id, "name": host.name}
+    producer = host.producer
+    if (
+        producer is not None
+        and producer.status == "approved"
+        and producer.kind == "producer"
+    ):
+        out.update(
+            producer_id=producer.id,
+            producer_slug=producer.slug,
+            producer_name=producer.name,
+            producer_phone=producer.phone,
+        )
+    return out
+
+
 def _serialize_list(ex: Experience) -> dict:
     """Public shape — no private fields (address, moderation context)."""
     return {
@@ -75,7 +97,7 @@ def _serialize_list(ex: Experience) -> dict:
         "is_recurring": bool(ex.is_recurring),
         "recurring_schedule": ex.recurring_schedule,
         "status": ex.status,
-        "host": ({"id": ex.host.id, "name": ex.host.name} if ex.host else None),
+        "host": _serialize_host(ex.host),
         "created_at": ex.created_at,
     }
 
@@ -151,7 +173,7 @@ def _publicly_visible_query(db: Session):
     """
     return (
         db.query(Experience)
-        .options(joinedload(Experience.host))
+        .options(joinedload(Experience.host).joinedload(User.producer))
         .join(User, Experience.host_user_id == User.id)
         .join(Producer, User.producer_id == Producer.id)
         .filter(
@@ -243,7 +265,7 @@ def list_my_experiences(
 ):
     rows = (
         db.query(Experience)
-        .options(joinedload(Experience.host))
+        .options(joinedload(Experience.host).joinedload(User.producer))
         .filter(Experience.host_user_id == user.id)
         .order_by(Experience.created_at.desc())
         .all()
@@ -265,7 +287,7 @@ def get_experience(
 ):
     ex = (
         db.query(Experience)
-        .options(joinedload(Experience.host))
+        .options(joinedload(Experience.host).joinedload(User.producer))
         .filter(Experience.id == experience_id)
         .first()
     )
@@ -381,7 +403,7 @@ def submit_experience(
     # Reload with host relation so _serialize_detail can fill it in.
     ex = (
         db.query(Experience)
-        .options(joinedload(Experience.host))
+        .options(joinedload(Experience.host).joinedload(User.producer))
         .filter(Experience.id == ex.id)
         .first()
     )
@@ -461,7 +483,7 @@ def update_experience(
 
     ex = (
         db.query(Experience)
-        .options(joinedload(Experience.host))
+        .options(joinedload(Experience.host).joinedload(User.producer))
         .filter(Experience.id == ex.id)
         .first()
     )
