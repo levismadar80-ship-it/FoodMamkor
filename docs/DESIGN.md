@@ -506,7 +506,11 @@ reads as a rendering bug (the ghost-strip class). Rules:
 - **Don't** set Frank Ruhl Libre in `italic` or letter-space Hebrew. The font
   ships no italic face, so the browser fakes a slant; tracking pulls Hebrew
   letters apart. Emphasis in a headline = weight or the `accent` colour
-  (MEH-2439).
+  (MEH-2439). **Enforced since MEH-2487** by one rule in `app/globals.css`:
+  under `[dir="rtl"]`, `.italic` / `<em>` / `<i>` render upright; only a
+  `dir="ltr"` island (the Cormorant numerals, English) keeps its real italic.
+  Write it as `[dir]` selectors, never `:dir(rtl)` — the CSS minifier rewrites
+  `:dir()` into `:lang(he)`, which also straightens the `ltr` islands.
 - **Do** end a page on the full brand green when it closes with a CTA band
   (`bg-primary text-background`, cream button `bg-background text-primary`,
   gold separators `text-gold-on-dark`). Small text on that green is
@@ -514,6 +518,15 @@ reads as a rendering bug (the ghost-strip class). Rules:
   focus ring is `ring-gold-on-dark ring-offset-primary` (`ring-primary/40`
   disappears on green). **Don't** use mint `green-50` as a section band — it
   reads off-palette next to the cream (MEH-2439: `/about`, `/about/process`).
+  When that green band is the **last** thing on the page, mark it
+  `data-meets-footer` so it runs straight into the footer without the footer's
+  64px cream top margin (MEH-2487, `/about/process`). `/about` is not marked:
+  its contact form follows the green close.
+- **Do** clamp a card's preview text with `line-clamp-N`, and show it at a
+  breakpoint with `sm:[display:-webkit-box]`, never `sm:block`: line-clamp only
+  works on `-webkit-box`, so `sm:block` silently lets the text wrap without
+  limit. The producer card's description is at most 2 lines (and 80 chars + «…»;
+  the owner can type 160) (MEH-2487).
 
 ### Why we don't have a state-color palette
 

@@ -1935,6 +1935,37 @@ test.describe("manual › producer grid geometry (MEH-1142 · task 9)", () => {
     const [scrollW, clientW] = await inner.evaluate((el) => [el.scrollWidth, (el as HTMLElement).clientWidth]);
     expect(scrollW, "the long city line is genuinely being clipped").toBeGreaterThan(clientW);
   });
+
+  // MEH-2487 — the description under the card is at most two lines on desktop.
+  //   `sm:block` used to replace line-clamp's display:-webkit-box, so the clamp
+  //   never applied and the text wrapped without limit. Mobile hides the row.
+  test("the card description is clamped to two lines on desktop and hidden on mobile", async ({ page }, testInfo) => {
+    await gotoFixtureFeed(page);
+    await expect(cards(page)).toHaveCount(PAGE_SIZE, FIRST_PAINT);
+    const long = cards(page).filter({ has: page.getByRole("heading", { level: 3, name: P5.name, exact: true }) });
+    await expect(long).toHaveCount(1);
+    const desc = long.getByTestId("card-description");
+    await expect(desc).toHaveCount(1);
+    if (!isDesktop(testInfo)) {
+      await expect(desc).toBeHidden();
+      return;
+    }
+    await desc.scrollIntoViewIfNeeded();
+    const m = await desc.evaluate((el) => {
+      const cs = getComputedStyle(el);
+      return {
+        display: cs.display,
+        clamp: cs.getPropertyValue("-webkit-line-clamp"),
+        height: el.getBoundingClientRect().height,
+        lineHeight: parseFloat(cs.lineHeight),
+      };
+    });
+    // An active clamp reads "-webkit-box", or "flow-root" in newer Chromium
+    // (measured on 153); the bug read "block", where the clamp does nothing.
+    expect(["-webkit-box", "flow-root"], "line-clamp needs display:-webkit-box").toContain(m.display);
+    expect(m.clamp).toBe("2");
+    expect(m.height, `at most two lines (${m.lineHeight}px each)`).toBeLessThanOrEqual(m.lineHeight * 2 + 1);
+  });
 });
 
 /**
@@ -2206,10 +2237,23 @@ test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-6
     for (const id of ["trust-lead", "trust-secondary"]) {
       const line = scope(page).getByTestId(id);
       await expect(line).toBeVisible(FIRST_PAINT);
-      expect(await line.textContent(), `${id} carries Hebrew`).toMatch(/[֐-׿]/);
+      expect(await line.textContent(), `${id} carries Hebrew`).toMatch(/[\u0590-\u05FF]/);
       const spacing = await line.evaluate((el) => getComputedStyle(el).letterSpacing);
       expect(spacing, `${id} letter-spacing`).toMatch(/^(normal|0px)$/);
     }
+  });
+
+  // MEH-2487 control: the global "Hebrew is never slanted" rule must not reach
+  // the dir="ltr" Cormorant numerals, which have a real italic face.
+  test("the counter numerals keep their real Cormorant italic inside the Hebrew page", async ({ page }) => {
+    await consent(page);
+    await stubTiles(page);
+    await mockApi(page, PRODUCERS, { stats: STATS_ABOVE });
+    await gotoHome(page);
+    const num = scope(page).getByTestId("trust-secondary").locator('[dir="ltr"]').first();
+    await expect(num).toBeVisible(FIRST_PAINT);
+    expect(await num.evaluate((el) => getComputedStyle(el).fontStyle)).toBe("italic");
+    expect(await page.locator("html").getAttribute("dir")).toBe("rtl");
   });
 });
 
