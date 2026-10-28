@@ -901,6 +901,9 @@ test.describe("manual › near-me pill + empty-near-me guard, mobile (MEH-970)",
     const filters = await bar.getByTestId("map-filters-button").boundingBox();
     const tag = await label.boundingBox();
     expect(tag!.y).toBeGreaterThan(filters!.y + filters!.height);
+    // …and the ✕'s 44px hit area (negative margin) stays off the filter buttons.
+    const clearBox = await bar.getByTestId("clear-user-location").boundingBox();
+    expect(clearBox!.y).toBeGreaterThanOrEqual(filters!.y + filters!.height);
     await bar.getByTestId("clear-user-location").click();
     await expect(bar.getByTestId("sort-origin-label")).toHaveCount(0);
   });
