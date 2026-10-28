@@ -555,6 +555,12 @@ export default function MapPage() {
   // language as the active-filter strip, with the ✕ keeping a 44px hit area
   // through negative margin (the MEH-825 tag pattern), so the bar grows by
   // mt-3 + the 20px tag + mb-1 instead of a 44px row (map.spec pins the ✕ box).
+  // One label for the chip and the MEH-2525 live region, so they cannot drift.
+  const originLabel = userLoc
+    ? userLoc.source === SOURCE_CITY
+      ? t("map.client.sort.origin_city", { city: userLoc.city })
+      : t("map.client.sort.origin_gps")
+    : "";
   const originChip = (compact) =>
     cityOriginPending || (userLoc && !geoSortPending) ? (
       <div
@@ -575,6 +581,7 @@ export default function MapPage() {
           // (MEH-2506): the ✕ alone keeps 44px via -my-3, and FilterChipsBar's
           // origin row (mt-3 mb-1) is what keeps that hit area clear.
           <span
+            data-testid="sort-origin-chip"
             className={
               compact
                 ? "inline-flex items-center gap-1 max-w-full rounded-md bg-green-50 text-primary ps-2 text-[11px]"
@@ -587,9 +594,7 @@ export default function MapPage() {
               <MapPinLine size={14} weight="bold" aria-hidden="true" className="shrink-0 text-primary" />
             )}
             <span className="min-w-0 truncate" data-testid="sort-origin-label">
-              {userLoc.source === SOURCE_CITY
-                ? t("map.client.sort.origin_city", { city: userLoc.city })
-                : t("map.client.sort.origin_gps")}
+              {originLabel}
             </span>
             <button
               type="button"
@@ -964,11 +969,7 @@ export default function MapPage() {
           empties it, which assistive tech does not announce. The ✕ keeps its
           own name, so the clear action itself is still labelled. */}
       <p className="sr-only" aria-live="polite" data-testid="sort-origin-live">
-        {userLoc && !geoSortPending && !cityOriginPending
-          ? userLoc.source === SOURCE_CITY
-            ? t("map.client.sort.origin_city", { city: userLoc.city })
-            : t("map.client.sort.origin_gps")
-          : ""}
+        {!geoSortPending && !cityOriginPending ? originLabel : ""}
       </p>
 
       {/* MEH-58 Phase 3: city picker overlay for "משלוח אליי" chip when no city saved */}

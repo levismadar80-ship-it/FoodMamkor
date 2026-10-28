@@ -400,7 +400,7 @@ describe("MEH-2525 — the origin is announced, and the desktop chip keeps its t
     const bar = screen.getByTestId("map-mobile-bar");
     const desktop = screen.getAllByTestId("sort-origin").filter((el) => !bar.contains(el));
     expect(desktop).toHaveLength(1);
-    const chip = within(desktop[0]).getByTestId("sort-origin-label").parentElement;
+    const chip = within(desktop[0]).getByTestId("sort-origin-chip");
     expect(chip.className).toContain("min-h-[44px]");
     expect(chip.className).toMatch(/(^|\s)border(\s|$)/);
   });
