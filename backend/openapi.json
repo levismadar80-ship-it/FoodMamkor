@@ -9040,6 +9040,11 @@
             "title": "Trust Tier",
             "type": "integer"
           },
+          "upcoming_events_count": {
+            "default": 0,
+            "title": "Upcoming Events Count",
+            "type": "integer"
+          },
           "updated_at": {
             "anyOf": [
               {
@@ -9644,6 +9649,15 @@
               }
             ],
             "title": "Instagram"
+          },
+          "kind": {
+            "default": "producer",
+            "enum": [
+              "producer",
+              "organizer"
+            ],
+            "title": "Kind",
+            "type": "string"
           },
           "lat": {
             "anyOf": [
@@ -11676,6 +11690,17 @@
               }
             ],
             "title": "Producer Id"
+          },
+          "producer_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Producer Kind"
           },
           "producer_rejection_reason": {
             "anyOf": [
