@@ -795,13 +795,9 @@
       "header": {
         "review_count": "{count, plural, =0 {אין ביקורות} one {ביקורת אחת} two {שתי ביקורות} other {# ביקורות}}",
         "review_excerpt_aria": "מעבר לכל הביקורות",
-        "premium": "פרמיום",
         "favorites_count": "{count, plural, one {אחת שמרה את העסק הזה} two {שניים שמרו את העסק הזה} other {# שמרו את העסק הזה}}",
         "behind": "מאחורי העסק: {name}",
         "attr": {
-          "grass_fed": "מרעה חופשי",
-          "organic": "אורגני מוסמך",
-          "delivery": "משלוח",
           "kosher": "כשר"
         },
         "gluten_facility": {
@@ -1976,7 +1972,8 @@
       "status": {
         "pending": "ממתינות",
         "approved": "מאושרות",
-        "rejected": "נדחות"
+        "rejected": "נדחות",
+        "revoked": "בוטלו"
       },
       "load_error": "שגיאה בטעינת הבקשות",
       "no_requests": "אין בקשות",
@@ -1995,7 +1992,8 @@
       "no_cert": "לא הועלתה",
       "actions": {
         "approve": "אשרי",
-        "reject": "דחי"
+        "reject": "דחי",
+        "revoke": "בטלי תג"
       },
       "reject_modal": {
         "title": "דחיית בקשה",
@@ -2015,6 +2013,21 @@
         "row_sent": "נשלח",
         "row_failed": "נכשל",
         "sent_toast": "נשלחו {count} תזכורות"
+      },
+      "revoked_toast": "התג בוטל",
+      "approve_modal": {
+        "title": "אישור תג כשרות",
+        "date_label": "תוקף התעודה (כפי שמודפס עליה)",
+        "hint": "אחרי התאריך הזה התג יורד מהאתר מעצמו.",
+        "submit": "אשרי",
+        "submitting": "מאשרת..."
+      },
+      "revoke_modal": {
+        "title": "ביטול תג כשרות",
+        "body": "התג יירד מהעמוד של בית העסק מיד, ובעלת העסק תראה את הסיבה בלוח הבקרה שלה.",
+        "placeholder": "סיבה (למשל: התעודה בוטלה)",
+        "submit": "בטלי את התג",
+        "submitting": "מבטלת..."
       }
     },
     "reports": {
@@ -2929,14 +2942,6 @@
     }
   },
   "trust": {
-    "tier_2": {
-      "label": "✓ מספר מאומת",
-      "tooltip": "מספר הטלפון של בית העסק אומת באמצעות קוד חד-פעמי"
-    },
-    "tier_3": {
-      "label": "עסק מאומת",
-      "tooltip": "בית העסק עבר אימות ידני על ידי צוות מהמקור"
-    },
     "tier_4": {
       "label": "מובילת קהילה",
       "tooltip": "10+ ביקורות עם דירוג ממוצע 4.5 ומעלה"
@@ -3070,7 +3075,6 @@
   "reviews": {
     "section_heading": "מה אומרות הלקוחות",
     "anonymous_fallback": "לקוחה",
-    "user_anonymous": "אנונימית",
     "star_aria": "{value, plural, one {כוכב אחד} two {{value} כוכבים} other {{value} כוכבים}}",
     "summary_based_on": "{total, plural, one {מבוסס על ביקורת אחת} two {מבוסס על {total} ביקורות} other {מבוסס על {total} ביקורות}}",
     "summary_count": "{count, plural, one {חוות דעת אחת} two {{count} חוות דעת} other {{count} חוות דעת}}",
@@ -4611,6 +4615,7 @@
         "error_submit": "שליחת הבקשה לא הצליחה — נסו שוב.",
         "status_pending": "ממתינה לאישור",
         "status_rejected": "נדחתה",
+        "status_revoked": "התג הוסר",
         "empty": "עוד אין תג כשרות לעסק. אפשר לבקש אחד כאן.",
         "filter_hint": "כדי שהעסק יופיע בסינון \"כשר\", יש להעלות תעודת כשרות לאימות.",
         "missing_cert": "התג {badge} מופיע בעמוד העסק בלי תעודה. העלו למטה צילום של התעודה, והלקוחות יוכלו ללחוץ על התג ולראות אותה."

@@ -33,6 +33,7 @@ ADMIN_MUTATING_ENDPOINTS = [
     # they now 404, so there is no require_admin guard left to regression-test.
     ("post", f"/admin/kashrut/{_U}/approve"),
     ("post", f"/admin/kashrut/{_U}/reject"),
+    ("post", f"/admin/kashrut/{_U}/revoke"),  # MEH-2518
     ("post", f"/admin/experiences/{_U}/approve"),
     ("post", f"/admin/experiences/{_U}/reject"),
     ("post", f"/admin/recipes/{_U}/approve"),
