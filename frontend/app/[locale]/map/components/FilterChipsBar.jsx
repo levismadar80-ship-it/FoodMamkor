@@ -41,6 +41,11 @@ export default function FilterChipsBar({
   // MEH-2046 PR-6: the active city refinement, needed only to gate + address
   // the day-bridge banner below (Option C refined state = delivery + city).
   cityFilter,
+  // MEH-2506: the mobile shell's distance-origin tag (MapClient
+  // `mobileOriginTag`). It shares one row with the active-filter strip, ahead
+  // of it, instead of opening a row of its own. It is not a filter: it stays
+  // outside the strip (its testid, its live region, «נקו הכל»).
+  originTag = null,
 }) {
   const t = useTranslations();
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -73,6 +78,48 @@ export default function FilterChipsBar({
   // was set (the optional refinement, MEH-2046 decision 1). Unscoped delivery
   // (chip on, no city) gets no banner — there is no single city to caption.
   const showDeliveryContextBanner = !!chipState.has_delivery && !!cityFilter;
+  // MEH-2506: the strip renders either alone (mt-2 under the chips) or inside
+  // the origin row, which owns the spacing — so `inRow` drops the margin.
+  const tagStrip = (inRow) =>
+    activeFilterTags.length > 0 && (
+      <div
+        dir="rtl"
+        data-testid="map-active-filter-tags"
+        className={`${inRow ? "" : "mt-2 "}flex flex-wrap items-center gap-1.5`}
+        aria-live="polite"
+      >
+        {activeFilterTags.map((tag) => (
+          // MEH-825: ≥44px hit area via the transparent button (min-h-[44px]
+          // + -my-2.5 keeps the visible row compact); the visible pill is the
+          // inner span (~24px, AA floor).
+          <button
+            key={`${tag.kind}:${tag.key}`}
+            type="button"
+            // MEH-1368: the tag strip is attributes-only now (a category
+            // selection is exited via the "כל" chip, never shown as a tag),
+            // so every removable tag is a toggle-off.
+            onClick={() => onToggleChipClick(tag.key)}
+            data-testid="map-active-filter-tag"
+            aria-label={t("map.filter.aria.remove", { label: tag.label })}
+            className="group inline-flex items-center min-h-[44px] -my-2.5"
+          >
+            <span className="inline-flex items-center gap-1 rounded-md bg-green-50 text-primary px-2 py-1 text-[11px] group-hover:bg-green-50/80 transition">
+              <span aria-hidden="true">×</span>
+              {tag.label}
+            </span>
+          </button>
+        ))}
+        <button
+          type="button"
+          onClick={resetAllFilters}
+          data-testid="map-clear-all"
+          className="inline-flex items-center min-h-[44px] -my-2.5 text-primary text-[11px] no-underline hover:opacity-80 transition"
+        >
+          {t("map.filter.clear_all")}
+        </button>
+      </div>
+    );
+
   return (
     <div dir="rtl" className="min-w-0">
       {/* MEH-1368: consolidated to ONE row — the scrollable category chips
@@ -145,43 +192,18 @@ export default function FilterChipsBar({
       {showDeliveryContextBanner && (
         <DeliveryContextBanner key={cityFilter} city={cityFilter} />
       )}
-      {activeFilterTags.length > 0 && (
-        <div
-          dir="rtl"
-          data-testid="map-active-filter-tags"
-          className="mt-2 flex flex-wrap items-center gap-1.5"
-          aria-live="polite"
-        >
-          {activeFilterTags.map((tag) => (
-            // MEH-825: ≥44px hit area via the transparent button (min-h-[44px]
-            // + -my-2.5 keeps the visible row compact); the visible pill is the
-            // inner span (~24px, AA floor).
-            <button
-              key={`${tag.kind}:${tag.key}`}
-              type="button"
-              // MEH-1368: the tag strip is attributes-only now (a category
-              // selection is exited via the "כל" chip, never shown as a tag),
-              // so every removable tag is a toggle-off.
-              onClick={() => onToggleChipClick(tag.key)}
-              data-testid="map-active-filter-tag"
-              aria-label={t("map.filter.aria.remove", { label: tag.label })}
-              className="group inline-flex items-center min-h-[44px] -my-2.5"
-            >
-              <span className="inline-flex items-center gap-1 rounded-md bg-green-50 text-primary px-2 py-1 text-[11px] group-hover:bg-green-50/80 transition">
-                <span aria-hidden="true">×</span>
-                {tag.label}
-              </span>
-            </button>
-          ))}
-          <button
-            type="button"
-            onClick={resetAllFilters}
-            data-testid="map-clear-all"
-            className="inline-flex items-center min-h-[44px] -my-2.5 text-primary text-[11px] no-underline hover:opacity-80 transition"
-          >
-            {t("map.filter.clear_all")}
-          </button>
+      {originTag ? (
+        // mt-3 / mb-1: the origin ✕ keeps a 44px hit area that reaches 12px
+        // past the tag on both sides — clear of the buttons above, and inside
+        // the bar's measured height below (else the map takes those pixels).
+        // min-w-0 max-w-full: a long city truncates instead of pushing the ✕
+        // off-screen in this flex-wrap row (320px, «מודיעין-מכבים-רעות»).
+        <div data-testid="map-origin-row" className="mt-3 mb-1 flex flex-wrap items-center gap-x-1.5 gap-y-2">
+          <div className="min-w-0 max-w-full">{originTag}</div>
+          {tagStrip(true)}
         </div>
+      ) : (
+        tagStrip(false)
       )}
     </div>
   );

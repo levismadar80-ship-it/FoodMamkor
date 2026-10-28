@@ -61,7 +61,9 @@ vi.mock("@/components/CitySearch", () => ({ default: () => null }));
 vi.mock("@/components/LocationModal", () => ({ default: () => null }));
 vi.mock("@/components/MapBottomSheet", () => ({ default: () => null }));
 vi.mock("@/app/[locale]/map/components/CityPickerModal", () => ({ default: () => null }));
-vi.mock("@/app/[locale]/map/components/FilterChipsBar", () => ({ default: () => null }));
+// MEH-2506: the mobile origin tag is handed to FilterChipsBar, so the stub
+// renders it — otherwise the mobile shell's ✕ would vanish from this test.
+vi.mock("@/app/[locale]/map/components/FilterChipsBar", () => ({ default: ({ originTag }) => originTag ?? null }));
 vi.mock("@/app/[locale]/map/components/MapCardList", () => ({ default: () => null }));
 vi.mock("@/app/[locale]/map/components/MapPane", () => ({ default: () => null }));
 vi.mock("@/app/[locale]/map/components/MobileSheetSelectedCard", () => ({ default: () => null }));
