@@ -279,8 +279,12 @@ describe("MEH-2467 transient refresh failure keeps the session", () => {
     installAdapter({ refreshResult: "network", protectedScript: ["401", "401"] });
     await expect(api.get("/users/me/favorites")).rejects.toMatchObject({ code: "ERR_NETWORK" });
 
-    // Same module-level counters, deliberately not reset: the second round
-    // must add exactly one refresh call on top of the first round's one.
+    // refreshCalls is deliberately NOT reset: the second round must add
+    // exactly one refresh on top of the first round's. protectedCalls IS
+    // reset — the adapter indexes its script by that list's length, so a
+    // carried-over entry would answer round two's first call with "200" and
+    // the 401 → refresh path under test would never run.
+    protectedCalls = [];
     installAdapter({ refreshResult: "ok", protectedScript: ["401", "200"] });
     const res = await api.get("/users/me/favorites");
 
