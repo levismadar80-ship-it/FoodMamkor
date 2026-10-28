@@ -8,6 +8,7 @@ from app.auth import get_current_user
 from app.database import get_db
 from app.models import Favorite, Producer, User
 from app.schemas.schemas import FavoriteOut
+from app.services.producer_listing import is_business
 from app.services.producer_queries import attach_badge_fields, attach_favorites_counts
 
 router = APIRouter(prefix="/users/me/favorites", tags=["favorites"])
@@ -40,7 +41,10 @@ def get_favorites(
         # MEH-2465: an organizer is never a business card (ADR-036) — a
         # favorite written before the add-gate below existed stays in the
         # table but is not served.
-        .filter(Favorite.user_id == user.id, Producer.kind == "producer")
+        # MEH-2513: same for a business that left `approved` after it was
+        # saved (suspended / rejected): the row stays, so a reinstated
+        # business comes back to the list on its own.
+        .filter(Favorite.user_id == user.id, is_business())
         .all()
     )
     # MEH-1660: ProducerListOut serialises computed badge fields
@@ -62,9 +66,11 @@ def add_favorite(
     db: Session = Depends(get_db),
 ):
     # MEH-2465: an organizer cannot be saved as a business (ADR-036).
+    # MEH-2513: nor can a business that is not live (suspended, rejected,
+    # draft, pending) — same 404 as a missing one.
     producer = (
         db.query(Producer)
-        .filter(Producer.id == producer_id, Producer.kind == "producer")
+        .filter(Producer.id == producer_id, is_business())
         .first()
     )
     if not producer:

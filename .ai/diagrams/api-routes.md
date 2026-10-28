@@ -79,8 +79,8 @@ graph TD
     Account[/settings page] --> Me[GET /auth/me<br/>🔑 current user]
     Account --> Delete[DELETE /users/me<br/>🔑 cascade delete<br/>App Store requirement]
 
-    Favorites[/favorites page] --> ListFavs[GET /users/me/favorites<br/>🔑]
-    Favorites --> AddFav[POST /users/me/favorites/{id}<br/>🔑 404 for an organizer MEH-2465]
+    Favorites[/favorites page] --> ListFavs[GET /users/me/favorites<br/>🔑 skips not-live businesses MEH-2513]
+    Favorites --> AddFav[POST /users/me/favorites/{id}<br/>🔑 404 for an organizer MEH-2465<br/>or a not-live business MEH-2513]
     Favorites --> DelFav[DELETE /users/me/favorites/{id}<br/>🔑]
 ```
 
