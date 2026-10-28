@@ -118,7 +118,7 @@ async function sweep(page: Page): Promise<Sweep> {
 type Layout = { controls: number; offscreen: string[]; covered: string[]; overflowX: number };
 
 /**
- * Checks 5–7 (MEH-2515). `withCovered` is off for the 320 pass: the hit-test
+ * Checks 6–7, plus the page-scroll measure the 320 pass asserts (MEH-2515). `withCovered` is off for the 320 pass: the hit-test
  * scrolls every control, and covered-ness is not width-specific the way
  * off-screen is.
  */
@@ -171,7 +171,9 @@ async function layout(page: Page, withCovered: boolean): Promise<Layout> {
         // pill. Skip a hit inside fixed chrome the control is not part of.
         let chrome: Element | null = hit;
         while (chrome && !["fixed", "sticky"].includes(getComputedStyle(chrome).position)) chrome = chrome.parentElement;
-        if (chrome && !chrome.contains(el)) continue;
+        // Only CHROME-sized: a fixed layer at least half the viewport tall (a
+        // modal backdrop, a stretched banner) is a real cover and still counts.
+        if (chrome && !chrome.contains(el) && chrome.getBoundingClientRect().height < window.innerHeight / 2) continue;
         const labels = (el as HTMLInputElement).labels;
         if (labels && [...labels].some((l) => l.contains(hit))) continue;
         out.covered.push(`${label(el)} under ${label(hit)}`);
@@ -234,6 +236,23 @@ test.describe("site sanity — Hebrew typesetting and layout on every static pag
     const l = await layout(page, true);
     expect(l.offscreen.join(" | ")).toContain("planted-offscreen");
     expect(l.covered.join(" | ")).toContain("planted-covered");
+  });
+
+  // The fixed-chrome skip above must not swallow a full-screen fixed layer.
+  test("control: a full-screen fixed layer over a control is still reported", async ({ page, browserName }) => {
+    test.skip(browserName !== "chromium", "same engine as the sweep");
+    await page.goto("/about");
+    await expect(page.locator("main h1").first()).toBeVisible({ timeout: 15_000 });
+    await page.evaluate(() => {
+      const btn = document.createElement("button");
+      btn.textContent = "planted-under-fixed";
+      document.querySelector("main")!.prepend(btn);
+      const veil = document.createElement("div");
+      veil.style.cssText = "position:fixed;inset:0;z-index:99999;background:transparent";
+      document.body.append(veil);
+    });
+    const l = await layout(page, true);
+    expect(l.covered.join(" | ")).toContain("planted-under-fixed");
   });
 
   for (const path of ROUTES) {
