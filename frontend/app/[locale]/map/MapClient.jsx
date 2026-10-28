@@ -553,8 +553,8 @@ export default function MapPage() {
   // (Sapir 28/10: the full-height row above them read as one more filter, and
   // a chip grown out of the near-me button looked wrong) — the same green tag
   // language as the active-filter strip, with the ✕ keeping a 44px hit area
-  // through negative margin (the MEH-825 tag pattern), so the bar grows by 36px
-  // (mt-3 + 20 + mb-1, measured) instead of 52.
+  // through negative margin (the MEH-825 tag pattern), so the bar grows by
+  // mt-3 + the 20px tag + mb-1 instead of a 44px row (map.spec pins the ✕ box).
   const originChip = (compact) =>
     cityOriginPending || (userLoc && !geoSortPending) ? (
       <div
