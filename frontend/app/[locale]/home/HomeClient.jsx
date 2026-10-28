@@ -144,14 +144,14 @@ export default function HomeClient({
           ========================= */}
       {!statsLoaded && (
         <section className="bg-background border-y border-border py-8 text-center" aria-busy="true" data-testid="home-trust-band">
-          <p className="font-body-md text-base tracking-wide opacity-60">
+          <p className="font-body-md text-base opacity-60">
             <span className="inline-block w-48 h-5 align-middle rounded-lg bg-text/10 animate-pulse" />
           </p>
         </section>
       )}
       {statsLoaded && (
         <section className="bg-background border-y border-border py-8 text-center" data-testid="home-trust-band">
-          <p className="font-body-md text-base text-text tracking-wide" data-testid="trust-lead">
+          <p className="font-body-md text-base text-text" data-testid="trust-lead">
             {showTrustCount
               ? t.rich("home.trust.lead_count", {
                   count: statsProducersCount,
@@ -164,7 +164,7 @@ export default function HomeClient({
               : t("home.trust.lead")}
           </p>
           {showStatsCounter && (
-            <p className="font-body-sm text-sm text-fg-muted tracking-wide mt-1" data-testid="trust-secondary">
+            <p className="font-body-sm text-sm text-fg-muted mt-1" data-testid="trust-secondary">
               {/* MEH-1692: the business count is suppressed here once the LEAD
                   above carries it, so the number is stated once in the band and
                   not twice. Below the trust threshold the lead is a sentence and
