@@ -16,6 +16,7 @@ Three surfaces, single owner (workflow.md "two parallel mechanisms" rule):
 
 import logging
 import os
+import time
 
 import httpx
 from fastapi import APIRouter, Request
@@ -81,9 +82,22 @@ def _places_probe() -> tuple[int, dict]:
     return 503, {"status": "error", "http": resp.status_code, "code": code}
 
 
+# MEH-2482 review finding: the endpoint is public and rate-limited per IP, so
+# during an outage a hammered probe could turn one incident into thousands of
+# Sentry events. One report per process per window is all the alert needs.
+_REPORT_WINDOW_SECONDS = 600
+_last_places_report_at: float = 0.0
+
+
 def _report_places_error(body: dict) -> None:
     """One Sentry issue per Google status word, so the alert rule fires on the
-    first failure and the next occurrences group under it. Never raises."""
+    first failure and the next occurrences group under it. Throttled to one
+    event per `_REPORT_WINDOW_SECONDS` per process. Never raises."""
+    global _last_places_report_at  # noqa: PLW0603 — a process-local throttle, nothing else
+    now = time.monotonic()
+    if now - _last_places_report_at < _REPORT_WINDOW_SECONDS:
+        return
+    _last_places_report_at = now
     try:
         import sentry_sdk  # noqa: PLC0415 — optional at import time, like moderation_fail_open
 

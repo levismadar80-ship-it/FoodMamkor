@@ -87,3 +87,34 @@ def test_503_when_google_does_not_answer(client: TestClient, monkeypatch):
         r = client.get(URL)
     assert r.status_code == 503
     assert r.json() == {"status": "error", "http": None, "code": "ConnectTimeout"}
+
+
+def test_sentry_report_is_throttled_to_one_per_window(monkeypatch):
+    # Review finding on #3730: a public, per-IP-limited endpoint hammered during
+    # an outage must not turn one incident into thousands of Sentry events.
+    # Discriminates: with the window removed, `captured` reads 3.
+    captured = []
+
+    class _Scope:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def set_tag(self, *a):
+            pass
+
+    import sentry_sdk
+
+    monkeypatch.setattr(sentry_sdk, "new_scope", lambda: _Scope(), raising=False)
+    monkeypatch.setattr(sentry_sdk, "capture_message", lambda *a, **k: captured.append(a), raising=False)
+    monkeypatch.setattr(HEALTH, "_last_places_report_at", 0.0)
+    body = {"status": "error", "http": 403, "code": "PERMISSION_DENIED"}
+    for _ in range(3):
+        HEALTH._report_places_error(body)
+    assert len(captured) == 1
+    # And a new window reports again.
+    monkeypatch.setattr(HEALTH, "_last_places_report_at", 0.0)
+    HEALTH._report_places_error(body)
+    assert len(captured) == 2
