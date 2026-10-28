@@ -76,8 +76,10 @@ describe("ChatWidgetLazy", () => {
     },
   );
 
-  it("does not match a path that only shares a prefix (/contact-us)", async () => {
-    mockUsePathname.mockReturnValue("/contact-us");
+  it("does not match a path that only shares a prefix (/contact-us/faq)", async () => {
+    // two segments: a single-segment "/contact-us" is slug-shaped and would be
+    // gated as a business page (isProducerDetail), proving nothing here.
+    mockUsePathname.mockReturnValue("/contact-us/faq");
     render(<ChatWidgetLazy />);
     expect(await screen.findByTestId("chat-widget-stub")).toHaveAttribute("data-hide-on-mobile", "false");
   });
