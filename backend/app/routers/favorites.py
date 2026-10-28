@@ -69,9 +69,7 @@ def add_favorite(
     # MEH-2513: nor can a business that is not live (suspended, rejected,
     # draft, pending) — same 404 as a missing one.
     producer = (
-        db.query(Producer)
-        .filter(Producer.id == producer_id, is_business())
-        .first()
+        db.query(Producer).filter(Producer.id == producer_id, is_business()).first()
     )
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")

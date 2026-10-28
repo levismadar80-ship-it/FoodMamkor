@@ -379,16 +379,14 @@ def create_review_nested(
       4. Body is moderated by Haiku (fail-open).
     """
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
-    if not producer:
+    # MEH-2513: a business that is not live (suspended, rejected, draft,
+    # pending) takes no new reviews — same 404 as a missing one, since its
+    # public page is a 404 too.
+    if not producer or producer.status != "approved":
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
     # MEH-2465: a review is about a business; an organizer is not one (ADR-036).
     if producer.kind != "producer":
         raise HTTPException(status_code=409, detail="אי אפשר לכתוב ביקורת על מארגן")
-    # MEH-2513: a business that is not live (suspended, rejected, draft,
-    # pending) takes no new reviews — same 404 as a missing one, since its
-    # public page is a 404 too.
-    if producer.status != "approved":
-        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
 
     # Guard: owner cannot review themselves
     if user.producer_id is not None and str(user.producer_id) == str(producer_id):

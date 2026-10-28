@@ -48,7 +48,10 @@ def test_favorites_list_hides_business_suspended_after_save(client, db):
     db.commit()
     assert names() == {"עסק מאושר"}
     # the saved row is kept, so a reinstated business comes back on its own
-    assert db.query(Favorite).filter(Favorite.producer_id == later_suspended.id).count() == 1
+    assert (
+        db.query(Favorite).filter(Favorite.producer_id == later_suspended.id).count()
+        == 1
+    )
 
     later_suspended.status = "approved"
     db.commit()
@@ -100,7 +103,11 @@ def test_fire_alerts_silent_for_unapproved(db, monkeypatch, status):
         )
     db.commit()
 
-    fire_alerts(db, business.id, "new_product", AlertContent(title="t", body="b", url="/ok"))
+    fire_alerts(
+        db, business.id, "new_product", AlertContent(title="t", body="b", url="/ok")
+    )
     assert calls == ["/ok"]  # control
-    fire_alerts(db, hidden.id, "new_product", AlertContent(title="t", body="b", url="/no"))
+    fire_alerts(
+        db, hidden.id, "new_product", AlertContent(title="t", body="b", url="/no")
+    )
     assert calls == ["/ok"]
