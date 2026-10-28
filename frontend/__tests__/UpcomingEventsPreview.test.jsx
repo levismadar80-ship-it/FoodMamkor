@@ -5,7 +5,8 @@ import { render, screen, waitFor } from "@testing-library/react";
 // then maps the result into cards. Mock next-intl (useTranslations + useLocale)
 // and @/lib/api per the AdminNullGuards.test.jsx precedent.
 vi.mock("next-intl", () => ({
-  useTranslations: () => (key, vars) => {
+  useTranslations: (ns) => (k, vars) => {
+    const key = ns ? `${ns}.${k}` : k;
     if (key === "events.list.organizer_line") return `מארגן: ${vars.name}`;
     const flat = {
       "home.events.heading": "אירועים קרובים",
@@ -15,6 +16,16 @@ vi.mock("next-intl", () => ({
     return flat[key] ?? key;
   },
   useLocale: () => "he",
+}));
+
+// MEH-2497: the rows link through next-intl's Link (keeps /en). The stub marks
+// its anchors, so a plain next/link anchor (which drops /en) is told apart.
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ children, href, ...props }) => (
+    <a data-intl-link="" href={typeof href === "string" ? href : "#"} {...props}>
+      {children}
+    </a>
+  ),
 }));
 
 const apiResponseRef = { current: { data: [] } };
@@ -59,7 +70,7 @@ describe("UpcomingEventsPreview", () => {
     await waitFor(() => expect(container.querySelector("section")).toBeNull());
   });
 
-  it("shows the canonical placeholder for an imageless event and none for an imaged one", async () => {
+  it("MEH-2497: a thumbnail only for the event with a photo — no placeholder box for the one without", async () => {
     apiResponseRef.current = { data: [IMAGED, IMAGELESS] };
     render(<UpcomingEventsPreview />);
     // Both titles render once the fetch resolves.
@@ -67,11 +78,19 @@ describe("UpcomingEventsPreview", () => {
       expect(screen.getByText("סדנת מאפים ביתיים")).toBeInTheDocument()
     );
     expect(screen.getByText("ארוחת שף בגינה")).toBeInTheDocument();
-    // MEH-1143: the imageless event ALWAYS renders a fixed image area — the
-    // canonical Leaf + "מהמקור" placeholder — exactly one, for the single
-    // imageless event (the imaged one shows a CSS-background div, no testid).
-    expect(screen.getAllByTestId("event-image-missing")).toHaveLength(1);
-    expect(screen.getByText(BRAND_NAME)).toBeInTheDocument();
+    // The /events row (MEH-2468): one thumbnail, for the one imaged event.
+    expect(screen.getAllByTestId("event-row-image")).toHaveLength(1);
+    // MEH-1143's fixed image area (Leaf + «מהמקור») is gone.
+    expect(screen.queryByTestId("event-image-missing")).toBeNull();
+    expect(screen.queryByText(BRAND_NAME)).toBeNull();
+  });
+
+  it("MEH-2497: rows and «all events» link through next-intl's Link (keeps /en)", async () => {
+    apiResponseRef.current = { data: [IMAGELESS] };
+    const { container } = render(<UpcomingEventsPreview />);
+    await waitFor(() => expect(screen.getByText("סדנת מאפים ביתיים")).toBeInTheDocument());
+    const links = [...container.querySelectorAll("a")].map((a) => [a.getAttribute("href"), a.hasAttribute("data-intl-link")]);
+    expect(links).toEqual([["/events", true], ["/events/2", true]]);
   });
 
   it("MEH-2468: an organizer's event reads «מארגן: {name}»; a business keeps its bare name", async () => {

@@ -1,18 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { Calendar, Leaf } from "@phosphor-icons/react";
-import { useTranslations, useLocale } from "next-intl";
+// MEH-2497: next-intl's Link keeps /en on «לכל האירועים» (next/link dropped it).
+import { Link } from "@/i18n/navigation";
+import { Calendar } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 import api from "@/lib/api";
-// MEH-785: locale-aware dates via the shared helper — replaces the local
-// formatEventDate that hardcoded "he-IL" (escaped the MEH-753/MEH-777 sweeps).
-import { formatEventDate } from "@/lib/format-date";
-import { formatTimeRange } from "@/lib/time-range";
-// MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
-import { formatPrice } from "@/lib/utils";
-import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
-import { BRAND_NAME } from "@/lib/constants";
+import EventEntryRow, { toEventEntry } from "@/components/EventEntryRow";
 
 /**
  * Small inline component for "upcoming events" homepage preview.
@@ -21,7 +15,7 @@ import { BRAND_NAME } from "@/lib/constants";
  */
 export function UpcomingEventsPreview() {
   const t = useTranslations();
-  const locale = useLocale();
+  const tList = useTranslations("events.list");
   const [events, setEvents] = useState([]);
   useEffect(() => {
     api
@@ -43,57 +37,14 @@ export function UpcomingEventsPreview() {
           {t("home.events.all_events")}
         </Link>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* MEH-2497: the /events date-rail rows, not cards — a row without a
+          photo has no image area at all (MEH-2468), so a photo-less event no
+          longer fills a third of the card with a leaf placeholder. Phone: one
+          list. Desktop: up to three rows side by side, so a 1280px-wide row
+          doesn't strand the price at the far end. */}
+      <div className="border-t border-border lg:border-t-0 lg:grid lg:grid-cols-3 lg:gap-x-8 lg:[&>*]:border-t">
         {events.map((ev) => (
-          <Link
-            key={ev.id}
-            href={`/events/${ev.id}`}
-            // MEH-1143 (Assembly v2): flat surface-card, 1px border, sharp corners,
-            // NO shadow-lift — hover = border color shift only. Mirrors RecipeCard:42.
-            className="bg-surface-card border border-border rounded-none overflow-hidden transition-colors duration-base ease-quart hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40"
-          >
-            {ev.image_url ? (
-              <div
-                className="h-40 bg-cover bg-center"
-                style={{ backgroundImage: `url(${optimizeCloudinary(ev.image_url, { aspectRatio: IMAGE_RATIOS.banner, width: 800 })})` }}
-              />
-            ) : (
-              // MEH-1143: canonical no-photo state — fixed h-40 area always renders;
-              // cream surface + Leaf glyph + brand name. Mirrors RecipeCard:56-64.
-              <div
-                className="h-40 flex flex-col items-center justify-center bg-background gap-2"
-                data-testid="event-image-missing"
-              >
-                <Leaf size={40} weight="light" className="text-primary/70" aria-hidden="true" />
-                <span className="font-headline-md text-sm font-bold text-primary/80">
-                  {BRAND_NAME}
-                </span>
-              </div>
-            )}
-            <div className="p-4">
-              <p className="text-primary text-sm font-semibold mb-1">
-                {formatEventDate(ev.event_date, locale, { day: "numeric", month: "long" })} {ev.event_time && (
-                  <>
-                    {"· "}
-                    <span dir="ltr">{formatTimeRange(ev.event_time, ev.end_time)}</span>
-                  </>
-                )}
-              </p>
-              <h3 className="font-headline-md text-xl font-bold text-text mb-1">{ev.title}</h3>
-              <p className="text-sm text-fg-muted mb-2">
-                {/* MEH-2468: an organizer's event names its organizer with the
-                    approved «מארגן: {name}» line, as /events does (MEH-2461). */}
-                {ev.owner_kind === "organizer" && ev.producer_name
-                  ? t("events.list.organizer_line", { name: ev.producer_name })
-                  : ev.producer_name}{" "}
-                · {ev.city}
-              </p>
-              <p className="text-sm text-accent font-semibold">
-                {/* MEH-1031: bidi-isolate the price (currency+number) so it can't flip in RTL */}
-                {ev.price > 0 ? <span dir="ltr">{formatPrice(ev.price)}</span> : t("home.events.free")}
-              </p>
-            </div>
-          </Link>
+          <EventEntryRow key={ev.id} entry={toEventEntry(ev, "events", tList)} freeLabel={t("home.events.free")} />
         ))}
       </div>
     </section>
