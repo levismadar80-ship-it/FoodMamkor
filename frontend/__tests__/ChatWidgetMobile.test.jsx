@@ -99,6 +99,27 @@ describe("ChatWidget on mobile (MEH-2499, was desktop-only MEH-1410)", () => {
     expect(screen.queryByText(he.chat.launcher_pill)).not.toBeInTheDocument();
   });
 
+  // MEH-2512: form pages pass hideOnMobile — nothing on a phone, desktop keeps it.
+  it("renders nothing on mobile when hideOnMobile is set (form pages)", () => {
+    mockMatchMedia(false);
+    const { container } = render(
+      <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
+        <ChatWidget hideOnMobile />
+      </NextIntlClientProvider>,
+    );
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("still renders on desktop when hideOnMobile is set", () => {
+    mockMatchMedia(true);
+    render(
+      <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
+        <ChatWidget hideOnMobile />
+      </NextIntlClientProvider>,
+    );
+    expect(screen.getByTestId("chat-launcher")).toBeInTheDocument();
+  });
+
   it("hides on scroll down and comes back on scroll up", () => {
     mockMatchMedia(false);
     renderWidget();
