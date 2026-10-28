@@ -333,6 +333,10 @@ def send_due_followups(db: Session) -> dict[int, int]:
             db.query(Producer)
             .filter(
                 Producer.status == _ELIGIBLE_STATUS,
+                # MEH-2460 (review #3711 F8): the sequence is about products,
+                # photos and the catalog — an organizer (ADR-036) sells
+                # nothing. Narrows the audience; no copy changes.
+                Producer.kind == "producer",
                 Producer.created_at <= cutoff,
                 column.is_(None),
             )

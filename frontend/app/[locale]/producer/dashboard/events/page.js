@@ -86,7 +86,11 @@ export default function ManageEventsPage() {
       {/* MEH-1655: min-h pins the row at CTA height so the h1 doesn't grow
           when the button unmounts. */}
       <div className="flex items-center justify-between gap-3 mt-1 mb-6 min-h-[44px]">
-        <h1 className="font-headline-lg text-3xl font-bold text-text">{t("heading")}</h1>
+        {/* MEH-2460: an organizer's events page carries the organizer
+            dashboard heading approved on MEH-2458. */}
+        <h1 className="font-headline-lg text-3xl font-bold text-text">
+          {user?.producer_kind === "organizer" ? t("organizer_heading") : t("heading")}
+        </h1>
         {/* MEH-999: single-CTA pattern (MEH-1097 F14 / MEH-1420) — the header
             CTA hides while the list is empty so the EmptyState's own CTA is the
             only "create" button. MEH-1655: also hidden while loading

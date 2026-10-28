@@ -12,6 +12,7 @@ from app.auth import create_review_invite_token, require_producer
 from app.config import settings
 from app.constants import MAX_PRODUCER_RESUBMISSIONS
 from app.database import engine, get_db
+from app.services.producer_listing import is_business  # MEH-2459
 from app.rate_limit import limiter
 from app.services.availability_validation import (
     AvailabilityValidationError,
@@ -42,6 +43,7 @@ import string
 from app.models.models import PhoneOtpToken, KashrutBadgeRequest
 from app.schemas.schemas import (
     AVAILABILITY_STATES,
+    clean_display_city,
     AvailabilityStateUpdate,
     AvailabilityStatusUpdate,
     BioGenerateIn,
@@ -65,7 +67,10 @@ from app.services.auth_notifications import (
     notify_admin_producer_sensitive_edit,
 )
 from app.services.submission_confirmation import send_submission_confirmation
-from app.services.submission_gate import submission_missing_items
+from app.services.submission_gate import (
+    attach_upcoming_events_count,
+    submission_missing_items,
+)
 from app.services.delivery_validation import (
     ensure_exclusion_requires_nationwide,
     ensure_nationwide_requires_delivery,
@@ -99,6 +104,7 @@ def get_my_producer(
     )
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    attach_upcoming_events_count(producer)  # MEH-2460
     return producer
 
 
@@ -544,6 +550,21 @@ def _resolve_top_product(db, producer, payload: dict) -> None:
     payload["top_product_name"] = product.name
 
 
+def _apply_organizer_city(producer, raw) -> bool:
+    """MEH-2475: write an organizer's display city under the registration rule
+    (`clean_display_city`: bleach, 100 chars, ≥1 letter). A blank or
+    letterless value is refused rather than stored — the page shows the city
+    line and registration requires one. Returns whether the city changed, so
+    the caller can ping the admin for an approved organizer (review #3728)."""
+    try:
+        city = clean_display_city(raw)
+    except ValueError:
+        raise HTTPException(status_code=422, detail="יש לבחור עיר") from None
+    changed = city != (producer.city or "")
+    producer.city = city
+    return changed
+
+
 @router.put("", response_model=ProducerOwnerOut)
 @limiter.limit("30/hour")
 def update_my_producer(
@@ -786,6 +807,18 @@ def update_my_producer(
     # gone, DB still references them) if commit raises.
     old_images = list(producer.images or [])
 
+    # MEH-2475: an ORGANIZER's city. `city` stays out of the set above for a
+    # business (ruling A: its city follows the primary location row, and a PUT
+    # would be a second writer racing that sync). An organizer has no location
+    # rows at all (MEH-2460), so for her this PUT is the only writer, and its
+    # editor ships in the same PR (OrganizerCityCard.jsx) — the standing rule
+    # the blocks above state.
+    organizer_city_changed = (
+        producer.kind == "organizer"
+        and "city" in payload
+        and _apply_organizer_city(producer, payload["city"])
+    )
+
     for field, value in payload.items():
         if field in _PRODUCER_WRITABLE_FIELDS:
             setattr(producer, field, value)
@@ -852,7 +885,13 @@ def update_my_producer(
     # MEH-2073: notification only — runs after the commit above, adds a
     # BackgroundTask, and touches neither the response nor any column.
     _maybe_fire_sensitive_edit(background_tasks, producer, sensitive_before)
+    # MEH-2475 (review #3728): an approved organizer moving her city is the same
+    # admin-visible event as a business moving its primary location (the
+    # locations CRUD pings "city" through the same gate).
+    if organizer_city_changed:
+        _fire_sensitive_edit(background_tasks, producer, ["city"])
 
+    attach_upcoming_events_count(producer)  # MEH-2460
     return producer
 
 
@@ -1138,7 +1177,7 @@ def _rank_in_city(db: Session, producer, israel_day):
                 ProducerPageView.created_at >= cutoff_30d,
             ),
         )
-        .filter(Producer.city == producer.city, Producer.status == "approved")
+        .filter(Producer.city == producer.city, is_business())  # MEH-2459
         .group_by(Producer.id)
         .order_by(rank_views.desc())
         .all()
@@ -1290,9 +1329,9 @@ def producer_analytics(
     contact_clicks = windowed(ContactClick, ContactClick.clicked_at)
 
     # Followers — MEH-1364 (decision A, MEH-1362): counted from `favorites`,
-    # the canonical interest record, since MEH-1363 removed the follow button
-    # and producer_followers stopped receiving writes (Expand half only —
-    # the table stays until the Contract ticket; the endpoints went in MEH-2370).
+    # the canonical interest record, since MEH-1363 removed the follow button.
+    # The follow endpoints went in MEH-2370 and the producer_followers table
+    # was dropped in MEH-2392.
     # favorites has a composite PK (user_id, producer_id) and NO id column —
     # count on a key column (REUSES: :510 func.count(Favorite.producer_id)).
     follower_count = (

@@ -31,6 +31,8 @@ RESERVED_SLUGS: frozenset[str] = frozenset(
         # Producer management
         "producer",
         "producers",
+        # MEH-2461: public organizer pages live at /organizers/{slug}.
+        "organizers",
         # Admin
         "admin",
         # Content/legal

@@ -31,15 +31,19 @@ router = APIRouter(tags=["reports"])
 
 def _resolve_producer(db: Session, identifier: str) -> Producer | None:
     """Match a custom slug first; fall back to the UUID id path so producers
-    without a slug (reported via /producer/<uuid>) still resolve."""
-    producer = db.query(Producer).filter(Producer.slug == identifier).first()
+    without a slug (reported via /producer/<uuid>) still resolve.
+
+    MEH-2465: business pages only — an organizer row never resolves (ADR-036).
+    """
+    businesses = db.query(Producer).filter(Producer.kind == "producer")
+    producer = businesses.filter(Producer.slug == identifier).first()
     if producer:
         return producer
     try:
         pid = UUID(identifier)
     except (ValueError, AttributeError):
         return None
-    return db.query(Producer).filter(Producer.id == pid).first()
+    return businesses.filter(Producer.id == pid).first()
 
 
 @router.post("/reports/producer-info", status_code=204)
