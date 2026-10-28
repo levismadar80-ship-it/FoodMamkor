@@ -222,14 +222,19 @@ describe("ChipScrollRow — category glyph tint (MEH-1465 Direction A)", () => {
     expect(glyphWrapper("glyph-dairy")).toHaveStyle({ color: "#3b72ad" });
   });
 
-  it("SELECTED category chip → glyph STAYS tinted (Direction A: glyph carries the colour)", () => {
+  it("SELECTED category chip → a ✓ replaces its glyph, still in the category tint (MEH-2500)", () => {
     render(
       <ChipScrollRow variant="category" activeKey="meat" chips={TINT_CHIPS} onChipClick={() => {}} />,
     );
-    // Direction A: the selected chip is NOT a solid white fill, so the glyph keeps
-    // the category tint (unlike the old radio-fill behaviour where it went white).
-    expect(glyphWrapper("glyph-meat")).toHaveStyle({ color: "#c04040" });
-    // A different, inactive chip in the same row also stays tinted.
+    // MEH-2500: colour alone was the only selection cue (WCAG 1.4.1) — the
+    // selected chip now shows a check where its glyph was ...
+    expect(screen.queryByTestId("glyph-meat")).toBeNull();
+    const meat = screen.getByRole("button", { name: "בשר" });
+    const mark = meat.querySelector('span[aria-hidden="true"]');
+    expect(mark.querySelector("svg")).not.toBeNull();
+    // ... and Direction A still holds: the mark carries the category colour.
+    expect(mark).toHaveStyle({ color: "#c04040" });
+    // A different, inactive chip in the same row keeps its own tinted glyph.
     expect(glyphWrapper("glyph-dairy")).toHaveStyle({ color: "#3b72ad" });
   });
 
