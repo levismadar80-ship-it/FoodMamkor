@@ -76,6 +76,12 @@ describe("ChatWidgetLazy", () => {
     },
   );
 
+  it("does not match a path that only shares a prefix (/contact-us)", async () => {
+    mockUsePathname.mockReturnValue("/contact-us");
+    render(<ChatWidgetLazy />);
+    expect(await screen.findByTestId("chat-widget-stub")).toHaveAttribute("data-hide-on-mobile", "false");
+  });
+
   it("does not ask it on a content page (control)", async () => {
     mockUsePathname.mockReturnValue("/about");
     render(<ChatWidgetLazy />);

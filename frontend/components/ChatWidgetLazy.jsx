@@ -16,6 +16,10 @@ const ChatWidget = dynamic(() => import("@/components/ChatWidget"), {
   ssr: false,
 });
 
+// MEH-2512: form pages whose primary control sits under the mobile launcher.
+// Exact path or a subpath ("/register/producer"), never a shared prefix.
+const FORM_ROUTES = ["/login", "/register", "/forgot-password", "/reset-password", "/contact"];
+
 // MEH-1168 P3: the global chat FAB is suppressed on the public producer detail
 // page (/producer/[id]) ONLY — that page already carries a primary contact CTA
 // + a sticky contact bar, so the FAB was a second green action that overlapped
@@ -25,8 +29,6 @@ const ChatWidget = dynamic(() => import("@/components/ChatWidget"), {
 // The dashboard subtree (/producer/dashboard/...) keeps the FAB.
 // MEH-1203: /favorites joins /map + /producer/[id] in the gate — the FAB
 // overlapped the first card of the canonical 2-col favorites grid.
-const FORM_ROUTES = ["/login", "/register", "/forgot-password", "/reset-password", "/contact"];
-
 export default function ChatWidgetLazy() {
   const pathname = usePathname();
   // /map is the second page where the FAB does damage instead of good: the
