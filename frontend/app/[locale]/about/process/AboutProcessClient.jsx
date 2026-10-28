@@ -151,6 +151,7 @@ export default function AboutProcessClient() {
               >
                 <span
                   aria-hidden
+                  dir="ltr"
                   className="numeric w-11 h-11 rounded-full border border-accent bg-background grid place-items-center font-english italic font-semibold text-[20px] text-accent"
                 >
                   {`0${i + 1}`}

@@ -756,6 +756,16 @@ test.describe("manual › design leftovers (MEH-2487)", () => {
     });
   }
 
+  // Control: the upright rule is for Hebrew only. The step numerals 01–04 are
+  // Cormorant digits with a real italic face, so they are a dir="ltr" island and
+  // stay italic — without `dir="ltr"` the rtl rule straightened them too.
+  test("/about/process: the step numerals keep their real Cormorant italic", async ({ page }) => {
+    await gotoProcess(page);
+    const numeral = page.locator('[data-testid="process-steps"] span.numeric').first();
+    await expect(numeral).toHaveText(/^\d+$/);
+    expect(await numeral.evaluate((el) => getComputedStyle(el).fontStyle)).toBe("italic");
+  });
+
   // /about/process ends on its green CTA band. (/about does NOT: its contact
   // form follows the green close, so it keeps the footer margin — control below.)
   test("/about/process: the green close runs straight into the footer — no cream strip", async ({ page }) => {
