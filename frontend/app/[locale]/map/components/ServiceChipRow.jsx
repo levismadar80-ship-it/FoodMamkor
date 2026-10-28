@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { Check } from "@phosphor-icons/react";
 
 import { chipIcon } from "@/lib/chip-icons";
 import { SERVICE_CHIP_KEYS as SERVICE_KEYS, TOGGLE_CHIPS } from "@/lib/map-chips";
@@ -72,7 +73,9 @@ export default function ServiceChipRow({ chipState, onToggleChip, children }) {
                 : "bg-white text-text border-border hover:border-primary hover:text-primary"
             }`}
           >
-            <span aria-hidden="true">{chip.icon}</span>
+            {/* MEH-2500: on = ✓ in place of the glyph, same cue as a selected
+                category chip (ChipScrollRow) — the wash alone was too quiet. */}
+            <span aria-hidden="true">{active ? <Check size={16} weight="bold" /> : chip.icon}</span>
             {chip.label}
           </button>
         );
