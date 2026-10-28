@@ -25,7 +25,7 @@ import CollectionNotice from "@/components/CollectionNotice";
  *   Mobile (MEH-2499): icon-only circle, hides on scroll-down, pinned to
  *     the end/inline edge. MEH-850: bottom = safe-area + pill-clearance +
  *     var(--cookie-banner-h, 0) via calc() — it self-clears the cookie banner
- *     when shown and sits just above the BottomNav pill when dismissed. z-9999.
+ *     when shown and sits just above the BottomNav pill when dismissed. z 1050 (desktop launcher + panel: 9999).
  *   Desktop: pill with text on first visit, icon-only after user has opened
  *     once (chatWasOpened in localStorage). Inline style — 24px bottom, 24px
  *     inline-end. MEH-1135: positioned with logical `insetInlineEnd` (was
@@ -303,7 +303,8 @@ export default function ChatWidget() {
       <button
         type="button"
         onClick={open ? () => setOpen(false) : handleOpen}
-        // A hidden launcher reached by a screen-reader cursor comes back.
+        // Programmatic / screen-reader-cursor focus only (tabIndex is -1 while
+        // hidden): a hidden launcher that still receives focus comes back.
         onFocus={() => setScrollHidden(false)}
         ref={launcherRef}
         style={launcherStyle}
