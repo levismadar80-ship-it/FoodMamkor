@@ -1760,15 +1760,15 @@ Conditional-required field on `/register/producer` Step 2 + admin `ProducerForm`
 - ✅ → admin-recipes-kebab.spec.ts («ביטול» and Escape close without deleting; Escape mid-delete does nothing) — ביטול — "ביטול" סוגר בלי מחיקה; Escape סוגר גם כן (אך לא באמצע מחיקה).
 - ✅ → admin-recipes-kebab.spec.ts (confirming deletes: one DELETE, «מוחקים…» with both buttons locked, then the row is gone) — אישור — "מחקו" בדיאלוג מוחק (הכפתור מציג "מוחקים…" בזמן הקריאה, שני הכפתורים נעולים), הדיאלוג נסגר והרשימה מתרעננת. התנהגות MEH-747 (FK מנותק) ללא שינוי.
 - ✅ → admin-recipes-kebab.spec.ts (a failed DELETE shows the error toast and keeps the dialog open) — כשל מחיקה — אם ה-DELETE נכשל: toast שגיאה והדיאלוג נשאר פתוח לניסיון חוזר/ביטול.
-- ✅ → admin-recipes-kebab.spec.ts (a busy menu item is aria-disabled, still focusable, and a click on it fires nothing — exercised on the ambassador toggle, the one busy item reachable while the menu is open) — a11y kebab (fold-in) — פריט תפריט busy נשאר נגיש במקלדת (focusable, `aria-disabled`) אך לחיצה לא מפעילה; **רגרסיה ב-/admin/users:** אין — פריטי התפריט שם מתנהגים בדיוק כמו קודם (אין להם מצב busy).
+- ✅ → admin-recipes-kebab.spec.ts (a busy menu item is aria-disabled, still focusable, and a click on it fires nothing — exercised on «השהה» (toggle-status) since MEH-2509 removed the ambassador toggle) — a11y kebab (fold-in) — פריט תפריט busy נשאר נגיש במקלדת (focusable, `aria-disabled`) אך לחיצה לא מפעילה; **רגרסיה ב-/admin/users:** אין — פריטי התפריט שם מתנהגים בדיוק כמו קודם (אין להם מצב busy).
 - [ ] נייד (iOS Safari + Chrome) — הדיאלוג ממורכז, כפתורים נגישים בטאץ'.
 
 ### MEH-1027 Chunk A — תפריט פעולות (overflow menu) ב-/admin/producers
-- ✅ → admin-recipes-kebab.spec.ts (suspend / ambassador / story / delete are not inline — only «✓ אשר», «בקשת השלמה», «עריכה» and ⋮ are) — Kebab במקום inline — `/admin/producers` — איך לבדוק: בעמודת "פעולות" יש ⋮ בכל שורה; **תוצאה מצופה:** "השהה/הפעל", "שגריר", "סטורי" ו"מחקו" כבר לא inline — רק בתוך התפריט. "עריכה" (+"צפה" כשיש slug) נשארים inline.
+- ✅ → admin-recipes-kebab.spec.ts (suspend / story / delete are not inline — only «✓ אשר», «בקשת השלמה», «עריכה» and ⋮ are) — Kebab במקום inline — `/admin/producers` — איך לבדוק: בעמודת "פעולות" יש ⋮ בכל שורה; **תוצאה מצופה:** "השהה/הפעל", "סטורי" ו"מחקו" כבר לא inline — רק בתוך התפריט. "עריכה" (+"צפה" כשיש slug) נשארים inline.
 - ✅ → admin-recipes-kebab.spec.ts (a pending row's menu holds «דחייה» and «מחקו» only — ⚠️ STALE: «דחייה» joined the menu in MEH-226; it is no longer «מחקו» alone) — שורה ממתינה (pending) — סנני `pending`; **תוצאה מצופה:** "✓ אשר" + "בקשת השלמה" + "עריכה" inline ליד ⋮; בתפריט רק "מחקו" (אין השהה/שגריר/סטורי לעסק לא-מאושר).
-- ✅ → admin-recipes-kebab.spec.ts (an approved row's menu holds suspend, ambassador, story and a red delete) — שורה מאושרת — **תוצאה מצופה:** בתפריט: השהה · שגריר (☆/⭐) · 📸 סטורי · מחקו (אדום, danger).
+- ✅ → admin-recipes-kebab.spec.ts (an approved row's menu holds suspend, story and a red delete) — שורה מאושרת — **תוצאה מצופה:** בתפריט: השהה · 📸 סטורי · מחקו (אדום, danger). אין «שגריר» (MEH-2509).
 - ✅ → admin-recipes-kebab.spec.ts («סטורי» opens the story-card panel under the row; its close button removes it) — סטורי מהתפריט — ⋮ → "📸 סטורי"; **תוצאה מצופה:** ה-StoryCardCanvas נפתח מתחת לשורה בדיוק כמו קודם (התנהגות ללא שינוי — רק המיקום זז).
-- ✅ → admin-recipes-kebab.spec.ts («הגדרה כשגרירה» POSTs ambassador:true and the menu then offers the removal) — שגריר מהתפריט — ⋮ → "☆ שגריר" על עסק מאושר; **תוצאה מצופה:** trust tier מתעדכן כמו קודם (toggle זהה, רק מהתפריט).
+- ~~שגריר מהתפריט~~ — הוסר ב-MEH-2509 (כפילות של «בחירת העורכת»).
 - ✅ → admin-recipes-kebab.spec.ts («מחקו» opens a modal dialog naming the business — no browser confirm) — מחיקה מהתפריט — ⋮ → "מחקו"; **תוצאה מצופה:** נפתח dialog מודאלי עם שם בית העסק (Chunk B, MEH-1027) — לא חלון confirm של הדפדפן.
 - ✅ → admin-recipes-kebab.spec.ts (a second click, a click outside and Escape close the menu; Escape returns focus to ⋮) — פתיחה/סגירה — לחיצה שנייה על ⋮ / לחיצה בחוץ / Escape סוגרים (Escape מחזיר פוקוס ל-⋮); בשולי הטבלה התפריט עשוי להיחתך ע"י מסגרת הטבלה (תכונה מוכרת של התפריט, זהה ל-/admin/users).
 - [ ] נייד (iOS Safari + Chrome) — ⋮ נפתח ונסגר בטאץ'; הפעולות עובדות מהתפריט.
@@ -2030,7 +2030,7 @@ CC רץ אחרי Tier 1 — לכל מה ש-Tier 1 לא יכול אבל אינו 
 
 - [ ] ProducerCard: tier 3 producer shows "✅ עסק מאומת" green pill — סמני `is_verified=true` בDB לעסק → ProducerCard צריכה להציג badge ירוק
 - [ ] ProducerCard: tier 1/2 producer shows no badge — עסק עם phone_verified=false, is_verified=false → אין badge
-- [ ] ProducerCard: tier 5 (ambassador=true) shows "🏅 שגרירת מהמקור" dark pill
+- [ ] ProducerCard: ambassador=true לא מציג שום תג ולא משנה trust_tier (MEH-2509)
 - [ ] ProducerDetail: TrustBadge shows next to name in header badge row
 - [ ] ProducerDetail: KashrutBadgeStrip shows below highlights strip when kashrut_badges non-empty — הוסיפי `kashrut_badges=["badatz"]` בDB → strip עם "בדצ׳ה" מופיע
 - [ ] KashrutBadgeStrip: expiry warning pill shows when kashrut_expires_at within 30 days — שיני expires_at ל-7 ימים קדימה → "⚠️ תעודה פגה בקרוב"
@@ -2044,7 +2044,7 @@ CC רץ אחרי Tier 1 — לכל מה ש-Tier 1 לא יכול אבל אינו 
 - [ ] /admin/kashrut: אשרי button → badge added to producer.kashrut_badges in DB + kashrut_verified_at set
 - [ ] /admin/kashrut: דחי button → opens modal with notes input → reject saves notes to DB
 - [ ] /admin/kashrut: filter by status (pending/approved/rejected)
-- [ ] POST /admin/producers/{id}/set-ambassador → ambassador=true → trust_tier=5 in GET /producers response
+- [ ] POST /admin/producers/{id}/set-ambassador → ambassador=true → trust_tier נשאר כמו קודם (MEH-2509)
 - [ ] Rate limiting: 3 OTP sends per 10 min per producer, 3 confirms per minute (MEH-1176 F5: doc said 5 confirms; code always enforced 3/min — stricter wins, pinned by tests/test_meh1176_otp_confirm_rate_limit.py)
 
 רשימת בדיקות ידניות על הסביבה החיה לפני שחרור לפרודקשן.

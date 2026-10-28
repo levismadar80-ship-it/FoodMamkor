@@ -100,7 +100,7 @@ left in v1" vs "what's planned for v2".
 | Status | Version | Feature | Where |
 |---|---|---|---|
 | ✅ | v1 | Dashboard with 4 stat cards | `frontend/app/admin/page.js` |
-| ✅ | v1 | Producers management — search, approve, edit, ambassador toggle | `frontend/app/admin/producers/` |
+| ✅ | v1 | Producers management — search, approve, edit (ambassador toggle removed MEH-2509) | `frontend/app/admin/producers/` |
 | ✅ | v1 | Users management | `frontend/app/admin/users/` |
 | ✅ | v1 | Reports — 3 tabs (user reports / FLAGGED home-products / hidden) | `frontend/app/admin/reports/` |
 | ✅ | v1 | Content / static pages | `frontend/app/admin/content/` |

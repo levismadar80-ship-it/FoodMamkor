@@ -1539,9 +1539,6 @@
           "view": "View",
           "suspend": "Suspend",
           "activate": "Activate",
-          "remove_ambassador_title": "Remove ambassador role",
-          "set_ambassador_title": "Set as ambassador",
-          "ambassador_tooltip": "Manual flag for a leading business — promotes to Trust Tier 5 with a public badge",
           "story_card_title": "Create Instagram card",
           "story_card": "Story",
           "delete": "Delete",
@@ -2976,10 +2973,6 @@
     "tier_4": {
       "label": "Community leader",
       "tooltip": "10+ reviews with an average rating of 4.5 or above"
-    },
-    "tier_5": {
-      "label": "Mehamakor ambassador",
-      "tooltip": "The leading business owner in the area — selected manually by Mehamakor"
     }
   },
   "forms": {

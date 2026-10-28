@@ -16,9 +16,11 @@ import Tooltip from "@/components/ui/Tooltip";
 // verification_tier (ADR-022), so rendering tier 3 next to the BadgeRow
 // "מאומת" seal duplicated the same signal in two styles (MEH-602 debt), and
 // "מספר מאומת" read as business verification (ADR-022 gate 1).
+// MEH-2509: tier 5 ("שגרירת מהמקור", ambassador) is retired — it duplicated
+// «בחירת העורכת». The backend no longer computes it; a stale 5 falls back to
+// tier 4 below.
 const TIER_CLASSNAME = {
   4: "bg-amber-50 text-amber-700 border-amber-200",
-  5: "bg-state-selected/10 text-state-selected border-state-selected/20",
 };
 
 export default function TrustBadge({ tier, compact = false, avoidRef = null }) {
