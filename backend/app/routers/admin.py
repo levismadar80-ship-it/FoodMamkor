@@ -393,6 +393,31 @@ def _apply_delivery_cities(db: Session, producer: Producer, cities: list[str]):
         db.add(DeliveryArea(producer_id=producer.id, city=city))
 
 
+def _attach_has_owner(db: Session, producers) -> None:
+    """MEH-2495 — hydrate `has_owner` for every row in ONE query.
+
+    `users.producer_id` has no unique index (producer_claim.py residual risks),
+    so this asks "is there at least one" with DISTINCT rather than joining —
+    a join would duplicate rows. Called by every route that returns
+    `ProducerAdminOut`: the field defaults to False, and a route that skipped
+    this would report a claimed draft as ownerless, offering a claim link the
+    server then 409s.
+    """
+    ids = [p.id for p in producers]
+    owned = (
+        {
+            pid
+            for (pid,) in db.query(User.producer_id)
+            .filter(User.producer_id.in_(ids))
+            .distinct()
+        }
+        if ids
+        else set()
+    )
+    for p in producers:
+        p.has_owner = p.id in owned
+
+
 def _attach_aging(producer) -> None:
     """MEH-2110 — hydrate `business_days_waiting` for an admin list row.
 
@@ -528,6 +553,7 @@ def list_producers(
     for p in results:
         attach_badge_fields(p)
         _attach_aging(p)
+    _attach_has_owner(db, results)
     return results
 
 
@@ -646,6 +672,7 @@ def admin_create_producer(
     db.commit()
     db.refresh(producer)
     attach_badge_fields(producer)
+    _attach_has_owner(db, [producer])
     return producer
 
 
@@ -893,6 +920,7 @@ def admin_update_producer(
         )
 
     attach_badge_fields(producer)
+    _attach_has_owner(db, [producer])
     return producer
 
 
@@ -1075,6 +1103,7 @@ def pending_producers(
     for p in results:
         attach_badge_fields(p)
         _attach_aging(p)
+    _attach_has_owner(db, results)
     return results
 
 
@@ -1297,6 +1326,7 @@ def admin_get_producer(
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
     attach_badge_fields(producer)
     _attach_aging(producer)
+    _attach_has_owner(db, [producer])
     return producer
 
 

@@ -10,6 +10,7 @@ import StoryCardCanvas from "@/components/StoryCardCanvas";
 import InfoTooltip from "@/components/InfoTooltip";
 import AdminRowMenu from "@/components/admin/AdminRowMenu";
 import AdminReviewChecklist from "./AdminReviewChecklist";
+import { CopyClaimMessageButton, DraftOwnerBadge } from "./AdminDraftClaimActions";
 import { SLA_STATUSES } from "./sla-statuses";
 import { getProducerStatusLabel, getProducerStatusColor } from "@/lib/producer-status";
 import { optimizeCloudinary } from "@/lib/cloudinary";
@@ -396,6 +397,10 @@ export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onAppro
           },
         ]}
       />
+      {/* MEH-2495: ownerless drafts only — mint a claim link and copy the
+          ready message in one click. Last, on its own line (basis-full), so
+          the manual-copy box it may open sits under the row's actions. */}
+      <CopyClaimMessageButton producer={p} />
     </div>
   );
 }
@@ -518,6 +523,8 @@ function AdminProducersRow({ producer, isStoryOpen, handlers, checklist }) {
         <td className="px-4 py-3">
           <div className="flex flex-col items-start gap-1">
             <StatusBadge status={p.status} />
+            {/* MEH-2495: drafts only — has the owner claimed it yet? */}
+            <DraftOwnerBadge producer={p} />
             <AwaitingCompletionBadge producer={p} />
             <ResubmissionBadge producer={p} />
             <WaitingBadge producer={p} />

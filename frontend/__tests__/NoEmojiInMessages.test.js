@@ -57,8 +57,10 @@ const EXEMPT_KEYS = {
     "Producer share payload (ShareButton.jsx → navigator.share / wa.me), sent to WhatsApp.",
   "story.canvas.caption_prefix":
     "Instagram story caption copied to clipboard (StoryCardCanvas.jsx), social payload not UI.",
+  "admin.producers.table.draft_claim.message":
+    "MEH-2495 claim-link WhatsApp message copied to clipboard (AdminDraftClaimActions.jsx), pasted to the owner — never rendered as UI.",
 };
-const EXPECTED_EMOJI_KEYS = Object.keys(EXEMPT_KEYS).length; // 5
+const EXPECTED_EMOJI_KEYS = Object.keys(EXEMPT_KEYS).length; // 6
 
 function collectEmojiKeys(node, prefix = "", acc = []) {
   if (typeof node === "string") {

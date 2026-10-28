@@ -4885,6 +4885,11 @@
             "title": "Has No Added Sugar Products",
             "type": "boolean"
           },
+          "has_owner": {
+            "default": false,
+            "title": "Has Owner",
+            "type": "boolean"
+          },
           "has_physical_location": {
             "default": true,
             "title": "Has Physical Location",
