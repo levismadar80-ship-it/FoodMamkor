@@ -4,6 +4,22 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-10-28 15:00 — מארגנים (MEH-2458), אירועים: תמונות/שיתוף/יומן/שעת סיום, ואודיט שדות-שלא-מוצגים — הכל מוזג
+
+**‏שורה אחת:** ‏9 PR-ים מוזגו ל-staging (#3708, #3711, #3712, #3716–#3721); שתי מיגרציות Expand (`f1a2b3c4d5e6`, ‏`b7e3c1d9a2f4`) רצו בעליית Railway. ‏MEH-2458 נשאר פתוח רק בגלל הילד MEH-2465 (Backlog).
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏מארגן = שורת `producers` עם `kind='organizer'` (ADR-036). כל משטח שמונה/מציג עסקים חייב `producer_listing.is_business()`; שער השליחה למארגן ב-`submission_gate._organizer_missing_items`, ראי `SubmissionGateParity.test.js` (פרסר על קוד ה-Python).
+- ‏זמן אירוע מוצג רק דרך `formatTimeRange` בתוך `<span dir="ltr">` — מקף בין מספרים ב-RTL מתהפך («15:00–09:30»). ‏`event_time`/`end_time` נשמרים כ-wall-clock; offset נזרק בגבול.
+- ‏`openapi.json` / ‏`api.zod.js` / manifest נכתבו ידנית בסשן (אין venv/npm ב-sandbox); ה-snapshot test ב-CI ירוק. כדאי `orval --write` בסביבה עם רשת — צריך לצאת zero-diff.
+- ‏Vercel preview לענף feature: ‏commit עם `[preview]` + `create_deployment` עם `gitSource` ‏(sha). ‏ה-sandbox לא מגיע ל-`*.vercel.app` — צילומים רק בכרום של ספיר; החלון ממוקסם → אין 375.
+- ‏CC לא מקליד סיסמאות — הרשמה/לוח בקרה של מארגן לא צולמו.
+
+**‏ממתין לספיר:**
+- ‏נוסח: ל-`pending_nudge` אין נוסח ל-`description`/`upcoming_event`; ‏aria-label של `ShareButton` אומר «לעסק» גם בעמוד אירוע; כרטיסים MEH-2475 (עמוד מארגן — שדות), ‏MEH-2476 (חוויות), ‏MEH-2477 (טלפון מיקום) מחכים לנוסח/החלטה.
+- ‏MEH-2465: להחליט אם נשאר ילד של MEH-2458 (חוסם סגירה אוטומטית).
+- ‏בדיקה בנייד: הרשמה כמארגן, לוח הבקרה שלו, ושעת סיום באירוע (רייל 64px ב-375 — ייתכן שבירה אחרי המקף).
+
 ## 2026-10-28 11:40 — הצ'אט: דוכני שוק בידע הקבוע (#3703 + #3710) ונתונים חיים (#3706) — שלושתם מוזגו
 
 **‏שורה אחת:** MEH-2457 Done; MEH-586 — #3706 `f661193a` מוזג אחרי 3 סבבי adversarial, הסרת `do-not-merge` ע"י ספיר, ושני תיקונים של הרגע האחרון: שרשור מחדש של `a29c7a4a41e7` על `f1a2b3c4d5e6` (#3708 נכנס במקביל → שני heads), והחלת ADR-036 (`kind='producer'`) על כלי העסקים של הצ'אט. נשאר: DoD live ב-staging.
