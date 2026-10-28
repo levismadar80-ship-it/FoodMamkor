@@ -55,6 +55,13 @@ vi.mock("@phosphor-icons/react", () => ({
   StarOfDavid: () => <span />,
 }));
 
+// MEH-2526: the permanent updates button (its own suite:
+// ProducerUpdatesButton.test.jsx) is stubbed so the icon map above stays the
+// retired-bell guard for ProducerHeader's OWN imports.
+vi.mock("@/components/ProducerUpdatesButton", () => ({
+  default: () => <button data-testid="producer-updates-button" />,
+}));
+
 vi.mock("@/components/AlertPrefsPanel", () => ({
   default: ({ onClose }) => (
     <div data-testid="alert-prefs-panel">

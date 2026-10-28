@@ -883,6 +883,7 @@
       },
       "favorites": {
         "saved_login_prompt": "Saved — log in to see all your favorites",
+        "saved_toast": "Saved to favorites. Want updates from this business? You can turn them on in Favorites.",
         "login_cta": "Log in",
         "remove": "Remove from favorites",
         "add": "Add to favorites",
@@ -3179,6 +3180,7 @@
   },
   "favorites": {
     "alerts_aria": "Set up alerts",
+    "bell_label": "Updates",
     "breadcrumb_home": "Home",
     "breadcrumb_favorites": "Favorites",
     "title": "My favorites",
@@ -3186,6 +3188,9 @@
     "empty_subtitle": "Tap the heart on a business card to save it here for quick access.",
     "empty_cta": "Discover businesses",
     "list_alerts_hint": "Tap the <icon></icon> on any card to get alerts about new events and products",
+    "updates_button": {
+      "label": "Get updates"
+    },
     "button": {
       "saved_toast_first_time": "Saved! Find all your favorites on the Favorites page in the menu",
       "saved_toast": "Saved to favorites",
@@ -4769,6 +4774,7 @@
       "push_blocked": "Push notifications blocked in the browser",
       "push_enable": "Get updates even when the site is closed",
       "push_active": "Push notifications active",
+      "channel_required": "For updates to reach you, choose at least one way: WhatsApp or browser notifications.",
       "save_cta": "Save settings",
       "saving": "Saving…",
       "save_success_toast": "Settings updated",

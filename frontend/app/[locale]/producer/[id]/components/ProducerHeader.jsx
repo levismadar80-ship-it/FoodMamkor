@@ -7,6 +7,7 @@ import AlertPrefsPanel from "@/components/AlertPrefsPanel";
 import BadgeRow from "@/components/BadgeRow";
 import FavoriteButton from "@/components/FavoriteButton";
 import KashrutBadgeStrip from "@/components/KashrutBadgeStrip";
+import ProducerUpdatesButton from "@/components/ProducerUpdatesButton";
 import ShareButton from "@/components/ShareButton";
 import { useAuth } from "@/lib/auth-context";
 import {
@@ -361,6 +362,19 @@ export default function ProducerHeader({
           description={producer.description}
           city={producer.city}
           category={primaryCategory?.name}
+        />
+      </div>
+
+      {/* MEH-2526: the permanent updates toggle — the owner could not find
+          the alerts switch, so it no longer appears only after a save. Every
+          viewport (unlike the desktop-only actions row above), in normal flow
+          directly above the panel it opens, so the panel lands under it. It
+          is the re-entry control the MEH-1693 trade-off note below asks for. */}
+      <div className="mt-3">
+        <ProducerUpdatesButton
+          producerId={producer.id}
+          onOpenAlerts={onOpenAlerts}
+          refreshSignal={alertsOpen}
         />
       </div>
 
