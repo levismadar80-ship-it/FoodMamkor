@@ -109,7 +109,7 @@ describe("admin layout + home share one /admin/dashboard fetch (MEH-2399)", () =
     await waitFor(() => expect(dashboardCalls()).toBe(2));
   });
 
-  it("a failed fetch → the home shows the error line, the request is not retried by the page", async () => {
+  it("a failed fetch → the home shows the error line from the one shared request (no second fetch by the page)", async () => {
     apiMock.get.mockImplementation(() => Promise.reject({ response: { status: 500, data: {} } }));
     const { default: AdminLayout } = await import("@/app/[locale]/admin/layout");
     const { default: AdminHome } = await import("@/app/[locale]/admin/page");
