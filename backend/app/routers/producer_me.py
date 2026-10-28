@@ -639,13 +639,11 @@ def update_my_producer(
         "owner_bio",
         "owner_photo_url",
         "grass_fed",
-        "organic_certified",
         # MEH-1508 ch2: owner declares business-level dietary scope. Values are
         # enum-validated in ProducerUpdate (schemas.py); this opens the write path.
         "vegan_scope",
         "vegetarian_scope",
         "gluten_free_facility",
-        "has_delivery",
         # MEH-1856 (dispositions from MEH-1851): `address`, `slug`,
         # `lactose_free_facility` and `pickup_points` were REMOVED from this set.
         # Each was writable here with no editor anywhere in the owner dashboard —
@@ -685,6 +683,12 @@ def update_my_producer(
         #                          desync this row was blocking a raw PUT from
         #                          creating is no longer reachable. The
         #                          column's removal is MEH-2273, not this.
+        # MEH-2521: two more closed, same reason — no owner editor exists:
+        #   organic_certified    → no owner UI writes it, and its public badge
+        #                          was removed by MEH-1259 — no surface renders it.
+        #   has_delivery         → superseded by delivery areas
+        #                          (offers_delivery + delivery_areas /
+        #                          delivery_nationwide); column drop is MEH-1850.
         # MEH-1242 PR5: owner permission-surface extension — location mode +
         # opening hours (previously admin-only). delivery_area_cities is still
         # popped + processed separately below. The (has_physical_location OR
