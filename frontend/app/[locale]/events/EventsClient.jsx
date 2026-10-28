@@ -118,6 +118,9 @@ function toEntry(row, tab, t) {
         ? t("organizer_line", { name: row.producer_name })
         : row.producer_name,
     city: row.city,
+    // MEH-2476: a recurring experience names its schedule in the meta line,
+    // so the date rail reads as the first occasion, not the only one.
+    schedule: isExp && row.is_recurring ? row.recurring_schedule?.trim() || null : null,
     category: row.category,
     price: isExp ? row.price_per_person : row.price,
     description: row.description,
@@ -528,7 +531,7 @@ function EntryRow({ entry, freeLabel }) {
   const month = formatEventDate(entry.date, locale, { month: "long" });
   // MEH-2469: «09:30–15:00» when the event has an end time.
   const time = formatTimeRange(entry.time, entry.endTime);
-  const meta = [entry.who, entry.city].filter(Boolean).join(" · ");
+  const meta = [entry.who, entry.city, entry.schedule].filter(Boolean).join(" · ");
   const isFree = !(entry.price > 0);
 
   // MEH-2468: a third column only when there is an image — a row without one
@@ -565,7 +568,9 @@ function EntryRow({ entry, freeLabel }) {
         <h3 className="font-headline-md text-lg md:text-2xl font-bold text-text leading-snug">
           {entry.title}
         </h3>
-        {meta && <p className="text-sm text-fg-muted mt-1">{meta}</p>}
+        {/* MEH-2476: line-clamp — a long recurring schedule must not stack
+            several lines into a 375px row. */}
+        {meta && <p className="text-sm text-fg-muted mt-1 line-clamp-2">{meta}</p>}
         {entry.description && (
           <p className="text-sm text-text/85 line-clamp-2 mt-2 leading-relaxed">{entry.description}</p>
         )}
