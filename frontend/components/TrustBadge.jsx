@@ -17,17 +17,19 @@ import Tooltip from "@/components/ui/Tooltip";
 // "מאומת" seal duplicated the same signal in two styles (MEH-602 debt), and
 // "מספר מאומת" read as business verification (ADR-022 gate 1).
 // MEH-2509: tier 5 ("שגרירת מהמקור", ambassador) is retired — it duplicated
-// «בחירת העורכת». The backend no longer computes it; a stale 5 falls back to
-// tier 4 below.
+// «בחירת העורכת». The backend no longer computes it. Only tier 4 renders:
+// a stale 5 (or any unknown tier) renders nothing, because the tier-4 label
+// claims "10+ reviews" and must never land on a business that didn't earn it.
 const TIER_CLASSNAME = {
   4: "bg-amber-50 text-amber-700 border-amber-200",
 };
 
 export default function TrustBadge({ tier, compact = false, avoidRef = null }) {
   const t = useTranslations("trust");
-  // < 4 → nothing (tiers 2/3 verification live in BadgeRow/ADR-022 now).
-  if (!tier || tier < 4) return null;
-  const tierKey = TIER_CLASSNAME[tier] ? tier : 4;
+  // Only known recognition tiers render (today: 4). Tiers 2/3 verification
+  // live in BadgeRow/ADR-022; 5 is retired (MEH-2509).
+  if (!TIER_CLASSNAME[tier]) return null;
+  const tierKey = tier;
   const tooltip = t(`tier_${tierKey}.tooltip`);
 
   // MEH-792: explainer routes through the ui/Tooltip primitive (hover/focus/

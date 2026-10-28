@@ -6,7 +6,7 @@ import { render, screen } from "@testing-library/react";
 // tier 4 (community-leader) and nothing for the verification tiers 2/3,
 // which are owned by BadgeRow / verification_tier (ADR-022).
 // MEH-2509: tier 5 (ambassador) is retired — the backend no longer computes
-// it, and a stale 5 renders as tier 4 via the unknown-tier fallback.
+// it, and a stale 5 (or any unknown tier) renders nothing.
 vi.mock("next-intl", () => ({
   useTranslations: () => (key) => {
     const flat = {
@@ -43,16 +43,14 @@ describe("TrustBadge (MEH-1120 recognition-only)", () => {
     );
   });
 
-  it("never renders the retired ambassador label for tier 5 (MEH-2509)", () => {
-    render(<TrustBadge tier={5} />);
-    expect(screen.queryByText("tier_5.label")).not.toBeInTheDocument();
-    expect(screen.getByText("מובילת קהילה").className).toContain("bg-amber-50");
+  // MEH-2509: a stale tier 5 must not borrow the tier-4 «מובילת קהילה»
+  // badge — that label claims 10+ reviews the business may not have.
+  it("renders nothing for the retired ambassador tier 5 (MEH-2509)", () => {
+    expect(render(<TrustBadge tier={5} />).container.innerHTML).toBe("");
   });
 
-  it("falls back to tier-4 label + styling for an unknown tier ≥ 4", () => {
-    render(<TrustBadge tier={99} />);
-    // unknown tier resolves tierKey → 4 (label + class set both from tier 4)
-    expect(screen.getByText("מובילת קהילה").className).toContain("bg-amber-50");
+  it("renders nothing for an unknown tier above 4", () => {
+    expect(render(<TrustBadge tier={99} />).container.innerHTML).toBe("");
   });
 
   it("applies the compact size when compact", () => {
