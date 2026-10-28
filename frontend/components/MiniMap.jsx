@@ -345,10 +345,18 @@ function singlePointHandlers({ draggableMarker, onMarkerDragEnd, onExpand }) {
 // data. `mapKey` gives the overlay its own MapContainer instance: Leaflet must
 // measure a container that already has its final size, and the overlay's box
 // only exists once it is open.
+//
+// `isolate` on the container keeps Leaflet's own z scale (panes 400, controls
+// 1000 — leaflet.css) INSIDE the map, so the expand/close button's `z-10`
+// sibling outranks every tile. Without it the map pane (`z-index: 400`)
+// competes with that button in the parent's stacking context and wins: the
+// button stayed visible only over the grey not-yet-loaded area, and vanished as
+// soon as a pan or zoom put tiles under it — the overlay lost its only exit.
 function MapSurface({ interactive, onExpand, mapKey, center, points, lat, lng, name, fallbackLabel, producer, zoom, draggableMarker, onMarkerDragEnd }) {
   return (
     <MapContainer
       key={mapKey}
+      className="isolate"
       center={[Number(center.lat), Number(center.lng)]}
       zoom={zoom}
       style={{ height: "100%", width: "100%" }}

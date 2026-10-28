@@ -47,6 +47,8 @@ export type FeedProducer = {
   contact_email?: string | null;
   primary_contact_method?: string | null;
   images?: string[] | null;
+  lat?: number | null;
+  lng?: number | null;
 };
 
 /**
