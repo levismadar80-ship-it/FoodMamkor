@@ -76,7 +76,7 @@ const CHAT_LAUNCHER_NAME = new RegExp(
  *           of them `.catch()`-swallowed. Measured against a backend-less
  *           `next start` in the CC sandbox: the whole page renders — hero,
  *           mini-map, trust band, category grid, the producers section with its
- *           `empty-generic` block, how-it-works, the comparison teaser and the
+ *           `empty-generic` block, (until MEH-2441) how-it-works and the comparison teaser, and the
  *           closing CTA. So every copy / geometry / order row below runs against
  *           the REAL page with no interception at all.
  *
@@ -216,9 +216,7 @@ const SEARCH_PH = he.home.search.placeholders;
 const HERO_SEARCH = he.search.hero;
 const PROD = he.home.producers;
 const CATS_COPY = he.home.categories;
-const HOW = he.home.how_it_works;
 const CTA = he.home.cta;
-const TEASER = he.home.comparison_teaser;
 const RECENT = he.home.recent;
 const TRUST = he.home.trust;
 const STATS = he.home.stats;
@@ -1652,7 +1650,7 @@ test.describe("manual › «קרוב אליי» is real geolocation (MEH-1269 ·
 test.describe("manual › category cards — caption strip + hover zoom (MEH-1224)", () => {
   const catCards = (page: Page) => scope(page).getByTestId("home-category-card");
 
-  // MT:1224:1 — the numeral + name sit on a solid strip BELOW the photo, and no
+  // MT:1224:1 — the name sits on a solid strip BELOW the photo, and no
   //   text is painted over the image. Asserted geometrically (caption box
   //   entirely below the image box) plus the token claim that the strip is
   //   opaque — not as a hex literal.
@@ -2200,30 +2198,6 @@ test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-6
 
 // ════════════════════════════════════════════════════════════════════════════
 test.describe("manual › static home blocks (overnight design batch)", () => {
-  // MT:ODB:3 — the how-it-works eyebrow + heading + three steps, with no
-  //   terminal period on any heading.
-  test("how-it-works renders its eyebrow, heading and three steps with no terminal period", async ({ page }) => {
-    await consent(page);
-    await stubTiles(page);
-    await gotoHome(page);
-    const block = scope(page).getByTestId("home-how-it-works");
-    await expect(block).toHaveCount(1, FIRST_PAINT);
-    await expect(block.getByRole("heading", { level: 2, name: HOW.heading })).toBeVisible();
-    await expect(block).toContainText(HOW.eyebrow);
-    const steps = [
-      [HOW.step01_title, HOW.step01_text],
-      [HOW.step02_title, HOW.step02_text],
-      [HOW.step03_title, HOW.step03_text],
-    ];
-    await expect(block.getByTestId("home-how-step")).toHaveCount(steps.length);
-    for (const [title, text] of steps) {
-      await expect(block).toContainText(title);
-      await expect(block).toContainText(text);
-      expect(title.endsWith("."), `«${title}» must not end with a period`).toBe(false);
-    }
-    expect(HOW.heading.endsWith("."), "the section heading must not end with a period").toBe(false);
-  });
-
   // MT:ODB:4 — the closing business block: heading + three body lines + button.
   test("the closing CTA renders its heading, three body lines and button", async ({ page }) => {
     await consent(page);
@@ -2249,19 +2223,19 @@ test.describe("manual › static home blocks (overnight design batch)", () => {
     expect(text, "…and it does name the brand year line").toMatch(/©/);
   });
 
-  // MT:ODB:2 (STALE, asserted as an absence beside a presence so it
-  //   discriminates) + the home half of MEH-841 that chunk 3 deferred here: the
-  //   comparison TEASER lives on home and links to /about, and the full
-  //   comparison TABLE is gone from home.
-  test("home carries the comparison teaser linking to /about, and no comparison table", async ({ page }) => {
+  // MT:ODB:2 / MT:ODB:3 (STALE since MEH-2441) — "איך זה עובד" and the
+  //   comparison teaser both left home (Sapir 27/10: /about carries the full
+  //   comparison since MEH-841, /about/process the real four steps). Asserted
+  //   as absences beside a presence (the closing CTA), so a page that failed
+  //   to render can't pass it; the full comparison TABLE stays off home too.
+  test("home carries no how-it-works block, no comparison teaser and no comparison table", async ({ page }) => {
     await consent(page);
     await stubTiles(page);
     await gotoHome(page);
-    const teaser = scope(page).getByTestId("home-comparison-teaser");
-    await expect(teaser).toHaveCount(1, FIRST_PAINT);
-    await expect(teaser.getByRole("heading", { level: 2, name: TEASER.heading })).toBeVisible();
-    await expect(teaser).toContainText(TEASER.eyebrow);
-    await expect(teaser.getByRole("link", { name: new RegExp(TEASER.cta) })).toHaveAttribute("href", /\/about$/);
+    await expect(scope(page).getByTestId("home-cta"), "control: the page rendered").toHaveCount(1, FIRST_PAINT);
+    await expect(scope(page).getByTestId("home-how-it-works")).toHaveCount(0);
+    await expect(page.locator("#how-it-works")).toHaveCount(0);
+    await expect(scope(page).getByTestId("home-comparison-teaser")).toHaveCount(0);
     await expect(scope(page).locator("table"), "the full comparison table moved to /about (MEH-841)").toHaveCount(0);
   });
 

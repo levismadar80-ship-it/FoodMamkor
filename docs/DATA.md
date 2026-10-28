@@ -818,6 +818,12 @@ DELETE /favorites/{producer_id}    auth
 
 ### Home products — מהמטבח של השכן (`app/routers/home_products.py`)
 
+> **Not served.** The router is unmounted since MEH-1406 (brand LOCK kill-switch,
+> `router_registry.py` comments out its `include_router`) — every route below
+> answers FastAPI's `404 {"detail":"Not Found"}`. Kept for the decommission card
+> MEH-796. The static contract audit ignores unmounted routers (MEH-2411), so a
+> frontend call to any of these is reported as an orphan.
+
 ```
 GET    /home-products                     public — filter: city
 GET    /home-products/{product_id}        public

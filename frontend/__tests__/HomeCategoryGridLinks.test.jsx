@@ -67,12 +67,13 @@ describe("homepage category cards → links (MEH-1080)", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
+  // MEH-2441 (Sapir 27/10): same ten labels; ירקות + לחמים ואפייה lead (the two large tiles).
   it("the 10-card set matches the Sapir-approved labels verbatim", () => {
     expect(CATEGORY_CARDS.map((c) => c.name)).toEqual([
-      "בשר",
       "ירקות",
-      "חלב וגבינות",
       "לחמים ואפייה",
+      "בשר",
+      "חלב וגבינות",
       "שמנים",
       "סבונים טבעיים",
       "דגים",

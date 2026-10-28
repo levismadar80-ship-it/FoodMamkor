@@ -476,14 +476,8 @@
     },
     "featured": {
       "eyebrow": "Get to know",
-      "heading": "Behind the scenes",
       "cta_meet": "Meet {name}",
       "cta_write": "Message {name}"
-    },
-    "comparison_teaser": {
-      "eyebrow": "The difference",
-      "heading": "What changes along the way",
-      "cta": "See the difference"
     },
     "categories": {
       "eyebrow": "Categories",
@@ -529,16 +523,6 @@
     },
     "recent": {
       "heading": "Recently viewed"
-    },
-    "how_it_works": {
-      "eyebrow": "How it works",
-      "heading": "Three steps",
-      "step01_title": "Find",
-      "step01_text": "Discover businesses near you",
-      "step02_title": "Contact the business",
-      "step02_text": "Talk directly with the business",
-      "step03_title": "Buy",
-      "step03_text": "Straight from the source, however suits you"
     },
     "cta": {
       "heading": "Have a business? Join us",
