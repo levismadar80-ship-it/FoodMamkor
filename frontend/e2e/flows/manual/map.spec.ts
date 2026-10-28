@@ -1416,8 +1416,13 @@ test.describe("manual › /map service row fits narrow phones (MEH-2514)", () =>
           await expect(sheetPanel(page)).toHaveCount(0);
           await expect(filtersButton(shell)).toContainText("2");
         }
-        // The word may be visually hidden under 360, never from AT.
+        // The word may be visually hidden under 360, never from AT — and the
+        // breakpoint itself is pinned: the geometry above would stay green if
+        // `max-[359px]` drifted to 360 or 400 (CI review, #3762).
         await expect(filtersButton(shell)).toHaveAccessibleName(new RegExp(`^${FILTERS_BTN}`));
+        const wordWidth = (await box(filtersButton(shell).getByText(FILTERS_BTN, { exact: true }))).width;
+        if (width < 360) expect(wordWidth, `«${FILTERS_BTN}» is sr-only under 360`).toBeLessThanOrEqual(1);
+        else expect(wordWidth, `«${FILTERS_BTN}» shows its word at ${width}`).toBeGreaterThan(10);
         const row = await box(filtersButton(shell).locator("xpath=ancestor::div[@dir='rtl'][1]"));
         // Same height as the chips beside it — an icon-only button collapsed to
         // 38px next to 42px chips before the min-h.
