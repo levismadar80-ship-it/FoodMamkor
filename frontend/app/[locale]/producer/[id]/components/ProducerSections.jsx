@@ -631,7 +631,8 @@ export default function ProducerSections({
 
       {/* MEH-1334 chunk 3: owner card — between delivery and reviews per the
           approved mockup (a NEW section; the MEH-1146 order of existing
-          sections is untouched). Self-gates on contact_name (null without). */}
+          sections is untouched). Self-gates: null only when there is no contact_name, owner_bio
+          or owner_photo_url (MEH-2471). */}
       <OwnerCard producer={producer} />
 
       {/* Reviews — IO-lazy: only mounts the fetch when the section

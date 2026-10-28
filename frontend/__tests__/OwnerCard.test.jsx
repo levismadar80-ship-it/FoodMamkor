@@ -57,4 +57,43 @@ describe("OwnerCard (MEH-1334 chunk 3)", () => {
     expect(screen.getByTestId("owner-photo")).toBeInTheDocument();
     expect(screen.queryByTestId("owner-initial")).not.toBeInTheDocument();
   });
+
+  // MEH-2471: self-registration never writes contact_name, so the card must
+  // not depend on it — a photo or a bio alone is the person behind the business.
+  describe("MEH-2471 — no contact_name, but the owner told her story", () => {
+    it("photo + bio, no name: photo (alt = business name) + bio, no name line", () => {
+      render(
+        <OwnerCard
+          producer={{
+            name: "משק הגליל",
+            city: "קצרין",
+            owner_bio: "גדלתי בין העיזים.",
+            owner_photo_url: "https://res.cloudinary.com/x/noa.jpg",
+          }}
+        />,
+      );
+      expect(screen.getByTestId("owner-card")).toBeInTheDocument();
+      expect(screen.getByTestId("owner-photo").getAttribute("alt")).toBe("משק הגליל");
+      expect(screen.getByText("גדלתי בין העיזים.")).toBeInTheDocument();
+      expect(screen.queryByRole("heading", { level: 3 })).not.toBeInTheDocument();
+    });
+
+    it("bio only, no name: the bio, no avatar", () => {
+      render(<OwnerCard producer={{ name: "משק", city: "קצרין", owner_bio: "ביו" }} />);
+      expect(screen.getByText("ביו")).toBeInTheDocument();
+      expect(screen.queryByTestId("owner-initial")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("owner-photo")).not.toBeInTheDocument();
+    });
+
+    it("photo only, no name: the photo", () => {
+      render(<OwnerCard producer={{ name: "משק", owner_photo_url: "https://res.cloudinary.com/x/a.jpg" }} />);
+      expect(screen.getByTestId("owner-photo")).toBeInTheDocument();
+    });
+
+    it("blank bio and photo strings still count as nothing", () => {
+      render(<OwnerCard producer={{ name: "משק", owner_bio: "  ", owner_photo_url: " " }} />);
+      expect(screen.queryByTestId("owner-card")).not.toBeInTheDocument();
+    });
+  });
 });
+
