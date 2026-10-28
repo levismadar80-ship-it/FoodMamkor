@@ -204,5 +204,17 @@ describe("MEH-2468 — event cover image on the /events row", () => {
     await mount();
     expect(screen.getAllByTestId("event-row-image")).toHaveLength(2);
   });
-});
 
+  it("MEH-2476: a recurring experience row names its schedule; a one-off does not", async () => {
+    unfilteredRows = [
+      { id: 5, title: "x", event_date: "2026-11-05", city: "חיפה", category: "בישול", price_per_person: 0,
+        is_recurring: true, recurring_schedule: "כל יום שישי", host: { name: "נועה" } },
+      { id: 6, title: "y", event_date: "2026-11-06", city: "עכו", category: "בישול", price_per_person: 0,
+        is_recurring: false, recurring_schedule: "כל יום ראשון", host: { name: "דנה" } },
+    ];
+    render(<EventsClient initialTab="experiences" />);
+    await waitFor(() => expect(screen.queryByRole("status")).toBeNull());
+    expect(screen.getByText("נועה · חיפה · כל יום שישי")).toBeInTheDocument();
+    expect(screen.getByText("דנה · עכו")).toBeInTheDocument();
+  });
+});
