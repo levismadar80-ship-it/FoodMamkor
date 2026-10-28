@@ -79,6 +79,7 @@ import { detailToMessage } from "@/lib/errors";
 import ProductsSection from "@/components/ProductsSection";
 import LocationsEditor from "./LocationsEditor";
 import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, PricingCard, DeliveryCard, OffersCard, LicenseCard, KashrutCard, BusinessNameCard, ViewOnPageLink } from "./cards";
+import OrganizerCityCard from "./OrganizerCityCard";
 // MEH-1508 ch2 Phase B: owner-facing business-level dietary scope (own file —
 // cards.jsx is already >1600 lines).
 import DietaryScopeCard from "./DietaryScopeCard";
@@ -675,6 +676,9 @@ function EditPageInner() {
     orderWindow: t("order_window.heading"),
     specialHours: t("special_hours.heading"),
     questions: t("custom_questions.heading"),
+    // MEH-2475 (review #3728): the organizer's city card reports dirty state;
+    // without a name the banner would flag unsaved work without saying where.
+    organizerCity: t("organizer_city.heading"),
     // MEH-2433: both cards already reported dirty state, but had no name here,
     // so the banner flagged unsaved work without saying where. Now that each
     // is its own card with its own anchor, the jump link has somewhere to go.
@@ -683,7 +687,7 @@ function EditPageInner() {
   };
   // Stable order (matches the accordion render order below), filtered to dirty.
   const DIRTY_ORDER = [
-    "images", "categories", "license", "bio", "products", "contact", "pricing", "dietaryScope", "grassFed", "delivery", "orderWindow", "specialHours", "questions",
+    "images", "categories", "license", "bio", "products", "contact", "pricing", "dietaryScope", "grassFed", "delivery", "orderWindow", "specialHours", "questions", "organizerCity",
   ];
   const dirtyKeys = DIRTY_ORDER.filter((k) => dirtyMap[k]);
 
@@ -1177,6 +1181,24 @@ function EditPageInner() {
             onMethodChange={setLiveContactMethod}
           />
         </EditAccordionCard>
+
+        {/* MEH-2475: an organizer's city — shown on her public page, and she
+            has no locations editor (the location group is hidden for her). */}
+        {isOrganizer && (
+          <EditAccordionCard
+            anchorId="organizer-city"
+            title={t("organizer_city.heading")}
+            summary={profile.city || ""}
+            open={openKey === "organizerCity"}
+            onToggle={() => toggleKey("organizerCity")}
+          >
+            <OrganizerCityCard
+              profile={profile}
+              onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+              reportDirty={reportDirty}
+            />
+          </EditAccordionCard>
+        )}
 
         {/* ⑦ MEH-210 Phase 2 — custom WhatsApp question chips */}
         <EditAccordionCard

@@ -11,7 +11,7 @@ Does NOT: list organizers as businesses (producer_listing.is_business() keeps
 Related:  backend/app/routers/events.py (_serialize — the EventOut shape the
           page's event list reuses), backend/app/routers/producers.py
           (by-slug — the business twin this deliberately does not share).
-History:  MEH-2461 (creation).
+History:  MEH-2461 (creation); MEH-2475 (profile + contact fields).
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
@@ -95,5 +95,14 @@ def get_organizer(
         instagram=organizer.instagram,
         website=organizer.website,
         facebook=organizer.facebook,
+        # MEH-2475: the profile + contact fields the dashboard collects.
+        owner_bio=organizer.owner_bio,
+        owner_photo_url=organizer.owner_photo_url,
+        contact_name=organizer.contact_name,
+        established_year=organizer.established_year,
+        primary_contact_method=organizer.primary_contact_method,
+        contact_email=organizer.contact_email,
+        whatsapp_group=organizer.whatsapp_group,
+        external_order_form=organizer.external_order_form,
         upcoming_events=[serialize_event(ev) for ev in events],
     )

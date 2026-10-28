@@ -250,6 +250,15 @@ def _special_hours_validator(v):
     return normalized
 
 
+def clean_display_city(value: str | None) -> str:
+    """MEH-2475 (review #3728): the registration city rule as a plain function
+    — bleach (`sanitize_text`, 100 chars) then ≥1 letter — for the one write
+    path that is not a Pydantic field (an organizer's PUT /producers/me city).
+    REUSES: ProducerRegister._sanitize_city + _validate_city_letters below.
+    Raises ValueError like the field validators do."""
+    return _min_letters_validator(sanitize_text(value, max_length=100), min_count=1)
+
+
 def _min_letters_validator(value: str | None, min_count: int = 3) -> str:
     # HOT-003 (MEH-772): a stacked `_sanitize_title` validator runs first and
     # returns None when bleach reduces the input to empty (e.g. "<b></b>" or a
@@ -4407,6 +4416,17 @@ class OrganizerPublicOut(BaseModel):
     instagram: str | None = None
     website: str | None = None
     facebook: str | None = None
+    # MEH-2475: what the organizer fills in the dashboard's profile + contact
+    # groups. All already public on the business page (ProducerDetailOut);
+    # null when unfilled so the page renders nothing for them.
+    owner_bio: str | None = None
+    owner_photo_url: str | None = None
+    contact_name: str | None = None
+    established_year: int | None = None
+    primary_contact_method: str | None = None
+    contact_email: str | None = None
+    whatsapp_group: str | None = None
+    external_order_form: str | None = None
     upcoming_events: list[EventOut] = []
 
 
