@@ -45,6 +45,11 @@ describe("buildJsonLd — sameAs and foundingDate", () => {
     ]);
   });
 
+  it("the same URL as website and Facebook appears once", () => {
+    const b = business({ ...base, website: "https://facebook.com/farm", facebook: "https://facebook.com/farm" });
+    expect(b.sameAs).toEqual(["https://facebook.com/farm"]);
+  });
+
   it("instagram only → sameAs carries just it", () => {
     expect(business({ ...base, instagram: "farm_galil" }).sameAs).toEqual(["https://instagram.com/farm_galil"]);
   });

@@ -297,7 +297,8 @@ export function buildJsonLd(producer, locale = "he") {
     instagramUrl(producer.instagram),
     /^https?:\/\//i.test(producer.facebook?.trim() || "") ? producer.facebook.trim() : null,
   ].filter(Boolean);
-  if (social.length) business.sameAs = [...(business.sameAs || []), ...social];
+  // Deduped: an owner may enter the same URL as website and Facebook.
+  if (social.length) business.sameAs = [...new Set([...(business.sameAs || []), ...social])];
   if (/^\d{4}$/.test(String(producer.established_year ?? ""))) {
     business.foundingDate = String(producer.established_year);
   }
