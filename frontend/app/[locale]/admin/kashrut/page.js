@@ -38,6 +38,12 @@ export default function AdminKashrutPage() {
   const [statusFilter, setStatusFilter] = useState("pending");
   const [rejectModal, setRejectModal] = useState(null); // request id
   const [rejectNotes, setRejectNotes] = useState("");
+  // MEH-2518: approve asks for the expiry printed on the certificate (it used
+  // to invent approval + 365 days); revoke takes an approved badge down.
+  const [approveModal, setApproveModal] = useState(null); // request id
+  const [approveDate, setApproveDate] = useState("");
+  const [revokeModal, setRevokeModal] = useState(null); // request id
+  const [revokeNotes, setRevokeNotes] = useState("");
   const [busy, setBusy] = useState(false);
   // MEH-1673: expiry reminders. `reminders` holds the LAST response — dry-run
   // or real — and `remindersSent` says which, so the panel can never show a
@@ -58,10 +64,13 @@ export default function AdminKashrutPage() {
   useEffect(() => { load(); }, [load]);
 
   async function approve(id) {
+    if (!approveDate) return;
     setBusy(true);
     try {
-      await api.post(`/admin/kashrut/${id}/approve`);
+      await api.post(`/admin/kashrut/${id}/approve`, { expires_on: approveDate });
       showToast.success(t("kashrut.approved_toast"));
+      setApproveModal(null);
+      setApproveDate("");
       load();
     } catch (e) {
       showToast.error(detailToMessage(e.response?.data?.detail) || t("common.error_generic"));
@@ -76,6 +85,20 @@ export default function AdminKashrutPage() {
       showToast.success(t("kashrut.rejected_toast"));
       setRejectModal(null);
       setRejectNotes("");
+      load();
+    } catch (e) {
+      showToast.error(detailToMessage(e.response?.data?.detail) || t("common.error_generic"));
+    }
+    setBusy(false);
+  }
+
+  async function revoke(id) {
+    setBusy(true);
+    try {
+      await api.post(`/admin/kashrut/${id}/revoke`, { notes: revokeNotes });
+      showToast.success(t("kashrut.revoked_toast"));
+      setRevokeModal(null);
+      setRevokeNotes("");
       load();
     } catch (e) {
       showToast.error(detailToMessage(e.response?.data?.detail) || t("common.error_generic"));
@@ -207,6 +230,7 @@ export default function AdminKashrutPage() {
           <option value="pending">{t("kashrut.status.pending")}</option>
           <option value="approved">{t("kashrut.status.approved")}</option>
           <option value="rejected">{t("kashrut.status.rejected")}</option>
+          <option value="revoked">{t("kashrut.status.revoked")}</option>
         </select>
       </div>
 
@@ -225,7 +249,7 @@ export default function AdminKashrutPage() {
                 <th className="text-start px-4 py-3 font-semibold">{t("kashrut.columns.cert")}</th>
                 <th className="text-start px-4 py-3 font-semibold">{t("kashrut.columns.date")}</th>
                 <th className="text-start px-4 py-3 font-semibold">{t("kashrut.columns.notes")}</th>
-                {statusFilter === "pending" && (
+                {(statusFilter === "pending" || statusFilter === "approved") && (
                   <th className="text-start px-4 py-3 font-semibold">{t("kashrut.columns.actions")}</th>
                 )}
               </tr>
@@ -259,7 +283,7 @@ export default function AdminKashrutPage() {
                     <td className="px-4 py-3" data-cell="actions">
                       <div className="flex gap-2">
                         <button
-                          onClick={() => approve(row.id)}
+                          onClick={() => { setApproveModal(row.id); setApproveDate(""); }}
                           disabled={busy}
                           className="bg-primary text-white text-xs px-3 py-1.5 rounded-full hover:bg-primary-dark transition disabled:opacity-50"
                         >
@@ -275,10 +299,88 @@ export default function AdminKashrutPage() {
                       </div>
                     </td>
                   )}
+                  {statusFilter === "approved" && (
+                    <td className="px-4 py-3" data-cell="actions">
+                      <button
+                        onClick={() => { setRevokeModal(row.id); setRevokeNotes(""); }}
+                        disabled={busy}
+                        className="bg-white border border-red-300 text-red-600 text-xs px-3 py-1.5 rounded-full hover:bg-red-50 transition disabled:opacity-50"
+                      >
+                        {t("kashrut.actions.revoke")}
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* MEH-2518: approve modal — the expiry printed on the certificate. */}
+      {approveModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[9000] p-4">
+          <div className="bg-white rounded-[16px] p-6 w-full max-w-md shadow-xl" dir="rtl">
+            <h2 className="font-semibold text-lg mb-3">{t("kashrut.approve_modal.title")}</h2>
+            <label htmlFor="kashrut-expires-on" className="text-sm font-medium block mb-1.5">
+              {t("kashrut.approve_modal.date_label")}
+            </label>
+            <input
+              id="kashrut-expires-on"
+              type="date"
+              required
+              value={approveDate}
+              onChange={(e) => setApproveDate(e.target.value)}
+              className="w-full border rounded-[8px] p-3 text-sm"
+            />
+            <p className="text-xs text-fg-muted mt-2">{t("kashrut.approve_modal.hint")}</p>
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={() => setApproveModal(null)}
+                className="flex-1 border border-border rounded-full py-2 text-sm"
+              >
+                {t("common.cancel")}
+              </button>
+              <button
+                onClick={() => approve(approveModal)}
+                disabled={busy || !approveDate}
+                className="flex-1 bg-primary text-white rounded-full py-2 text-sm disabled:opacity-50"
+              >
+                {busy ? t("kashrut.approve_modal.submitting") : t("kashrut.approve_modal.submit")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MEH-2518: revoke modal — takes an approved badge down. */}
+      {revokeModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[9000] p-4">
+          <div className="bg-white rounded-[16px] p-6 w-full max-w-md shadow-xl" dir="rtl">
+            <h2 className="font-semibold text-lg mb-3">{t("kashrut.revoke_modal.title")}</h2>
+            <p className="text-sm text-fg-muted mb-3">{t("kashrut.revoke_modal.body")}</p>
+            <textarea
+              value={revokeNotes}
+              onChange={(e) => setRevokeNotes(e.target.value)}
+              placeholder={t("kashrut.revoke_modal.placeholder")}
+              className="w-full border rounded-[8px] p-3 text-sm resize-none h-24"
+            />
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={() => setRevokeModal(null)}
+                className="flex-1 border border-border rounded-full py-2 text-sm"
+              >
+                {t("common.cancel")}
+              </button>
+              <button
+                onClick={() => revoke(revokeModal)}
+                disabled={busy}
+                className="flex-1 bg-red-500 text-white rounded-full py-2 text-sm disabled:opacity-50"
+              >
+                {busy ? t("kashrut.revoke_modal.submitting") : t("kashrut.revoke_modal.submit")}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

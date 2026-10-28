@@ -3243,11 +3243,31 @@ class LicenseExpiryReminderOut(BaseModel):
     rows: list[LicenseExpiryReminderRow] = []
 
 
-class KashrutApproveIn(BaseModel):
-    pass
-
-
 class KashrutRejectIn(BaseModel):
+    notes: str | None = None
+
+
+# MEH-2518: kashrut certificates carry a printed expiry, usually 3-12 months
+# out. The approve action takes that date from the certificate instead of
+# inventing approval + 365 days. 400 days is a typo guard, not a policy.
+KASHRUT_EXPIRY_MAX_DAYS = 400
+
+
+class KashrutApproveIn(BaseModel):
+    expires_on: date
+
+    @field_validator("expires_on")
+    @classmethod
+    def _expires_on_in_range(cls, v: date) -> date:
+        today = israel_today()
+        if v <= today:
+            raise ValueError("תאריך התוקף של התעודה חייב להיות אחרי היום")
+        if v > today + timedelta(days=KASHRUT_EXPIRY_MAX_DAYS):
+            raise ValueError("תאריך התוקף רחוק מדי — בדקי את התאריך שמודפס על התעודה")
+        return v
+
+
+class KashrutRevokeIn(BaseModel):
     notes: str | None = None
 
 
