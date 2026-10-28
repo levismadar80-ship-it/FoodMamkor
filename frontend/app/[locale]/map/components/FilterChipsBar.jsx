@@ -41,6 +41,11 @@ export default function FilterChipsBar({
   // MEH-2046 PR-6: the active city refinement, needed only to gate + address
   // the day-bridge banner below (Option C refined state = delivery + city).
   cityFilter,
+  // MEH-2506: the mobile shell's distance-origin tag (MapClient
+  // `mobileOriginTag`). It shares one row with the active-filter strip, ahead
+  // of it, instead of opening a row of its own. It is not a filter: it stays
+  // outside the strip (its testid, its live region, «נקו הכל»).
+  originTag = null,
 }) {
   const t = useTranslations();
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -145,11 +150,28 @@ export default function FilterChipsBar({
       {showDeliveryContextBanner && (
         <DeliveryContextBanner key={cityFilter} city={cityFilter} />
       )}
-      {activeFilterTags.length > 0 && (
+      {originTag ? (
+        // mt-3 / mb-1: the origin ✕ keeps a 44px hit area that reaches 12px
+        // past the tag on both sides — clear of the buttons above, and inside
+        // the bar's measured height below (else the map takes those pixels).
+        // min-w-0 max-w-full: a long city truncates instead of pushing the ✕
+        // off-screen in this flex-wrap row (320px, «מודיעין-מכבים-רעות»).
+        <div data-testid="map-origin-row" className="mt-3 mb-1 flex flex-wrap items-center gap-x-1.5 gap-y-2">
+          <div className="min-w-0 max-w-full">{originTag}</div>
+          {renderTagStrip("")}
+        </div>
+      ) : (
+        renderTagStrip("mt-2 ")
+      )}
+    </div>
+  );
+
+  function renderTagStrip(spacing) {
+    return activeFilterTags.length > 0 && (
         <div
           dir="rtl"
           data-testid="map-active-filter-tags"
-          className="mt-2 flex flex-wrap items-center gap-1.5"
+          className={`${spacing}flex flex-wrap items-center gap-1.5`}
           aria-live="polite"
         >
           {activeFilterTags.map((tag) => (
@@ -182,7 +204,6 @@ export default function FilterChipsBar({
             {t("map.filter.clear_all")}
           </button>
         </div>
-      )}
-    </div>
-  );
+    );
+  }
 }
