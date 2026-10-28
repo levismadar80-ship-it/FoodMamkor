@@ -523,10 +523,11 @@ test.describe("manual › category glyph tint (MEH-1452)", () => {
   //   carries the category colour as a ring + wash and the glyph KEEPS the tint
   //   (ChipScrollRow.jsx `isCategorySelected`; __tests__/ChipScrollRow.test.jsx
   //   :225). Asserted as the page renders today, against the registry colour.
-  // MT:MEH-1452:3 — a category with no CATEGORY_STYLES row keeps currentColor
-  //   (ring falls back to the default category green).
+  // MT:MEH-1452:3 — a category with no CATEGORY_STYLES row: ring AND the
+  //   selected ✓ fall back to the default category green (MEH-2500 / MEH-2531;
+  //   it used to keep currentColor before the ✓ replaced the glyph).
   // MT:MEH-1452:4 — «הכל» has no glyph.
-  test("selected «בשר» carries #c04040 as ring + glyph; «ביצים» (no style row) stays currentColor; «הכל» has no glyph", async ({
+  test("selected «בשר» carries #c04040 as ring + glyph; «ביצים» (no style row) takes the default green; «הכל» has no glyph", async ({
     page,
   }) => {
     await gotoFiltered(page, "/producers?category=1&category=3");
@@ -538,16 +539,20 @@ test.describe("manual › category glyph tint (MEH-1452)", () => {
     // The label stays neutral — the tint is on the glyph, not the text.
     await expect(meat).not.toHaveCSS("color", MEAT_TINT);
 
+    // MEH-2531: since MEH-2500 (#3754) a SELECTED category chip swaps its
+    // glyph for a ✓ in the ring colour (ChipScrollRow `catRing`). A category
+    // with no style row falls back to DEFAULT_CAT_RING for ring AND ✓ — the
+    // old "inherits currentColor" read no longer holds for a selected chip.
     const eggs = categoryChip(page, CAT_EGGS.name);
     await expect(eggs).toHaveCSS("border-top-color", DEFAULT_CAT_RING);
     const eggsGlyph = eggs.locator("span[aria-hidden]");
     await expect(eggsGlyph).toHaveCount(1);
-    const [glyphColor, buttonColor] = await Promise.all([
-      eggsGlyph.evaluate((el) => getComputedStyle(el).color),
-      eggs.evaluate((el) => getComputedStyle(el).color),
-    ]);
-    expect(glyphColor, "an unstyled category's glyph inherits the button colour").toBe(buttonColor);
-    expect(glyphColor).not.toBe(MEAT_TINT);
+    await expect(eggsGlyph, "an unstyled category's ✓ carries the default ring colour").toHaveCSS(
+      "color",
+      DEFAULT_CAT_RING,
+    );
+    await expect(eggs, "the label stays neutral").not.toHaveCSS("color", DEFAULT_CAT_RING);
+    await expect(eggsGlyph).not.toHaveCSS("color", MEAT_TINT);
 
     await expect(allChip(page).locator("span")).toHaveCount(0);
   });
