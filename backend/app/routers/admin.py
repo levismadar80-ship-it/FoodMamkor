@@ -953,6 +953,7 @@ def toggle_producer_status(
 @router.delete("/producers/{producer_id}")
 def admin_delete_producer(
     producer_id: UUID,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
@@ -981,6 +982,11 @@ def admin_delete_producer(
     # its destroy below needs no bypass. Same orphan class as story_card:
     # overwrite=True on upload prevents duplicates, not delete-orphans.
     old_owner_photo_url = producer.owner_photo_url
+
+    # MEH-2503: a live group buy's participants are told before the cascade
+    # removes it — same delisted email as a suspension (MEH-2498). Runs before
+    # the unlink below: it reads User.producer_id to skip the owner herself.
+    cancel_live_group_buys(db, producer, background_tasks)
 
     # MEH-747: unlink any user pointing at this producer BEFORE db.delete.
     # User.producer_id has no ondelete (models.py), so deleting the producer
