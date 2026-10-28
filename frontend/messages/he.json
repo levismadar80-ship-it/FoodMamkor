@@ -1165,7 +1165,23 @@
         "submit": "צרו קבוצת רכש",
         "toast_created": "קבוצת הרכש נוצרה ופתוחה להצטרפות"
       },
-      "status_deadline_passed": "המועד עבר"
+      "status_deadline_passed": "המועד עבר",
+      "actions": {
+        "cancel": "ביטול הקבוצה",
+        "close": "סגירת הקבוצה",
+        "deliver": "סימון שנמסר",
+        "back": "חזרה",
+        "cancel_title": "לבטל את קבוצת הרכש?",
+        "cancel_body": "הקבוצה תוסר מהאתר ואי אפשר לפתוח אותה מחדש.",
+        "cancel_funded_note": "{count} משתתפות כבר הצטרפו ומחכות למשלוח.",
+        "cancel_confirm": "כן, לבטל",
+        "close_title": "לסגור את קבוצת הרכש?",
+        "close_body": "הקבוצה לא הגיעה למינימום עד המועד ותירשם כמבוטלת.",
+        "deliver_title": "לסמן שהקבוצה נמסרה?",
+        "deliver_body": "הקבוצה תעבור להושלמו.",
+        "toast_cancelled": "קבוצת הרכש בוטלה",
+        "toast_fulfilled": "קבוצת הרכש סומנה כנמסרה"
+      }
     },
     "availability": {
       "status_label": {
