@@ -86,7 +86,6 @@ describe("FilterChipsBar — service filter on", () => {
     resultCount: 0,
     activeFilterTags: [],
     resetAllFilters: vi.fn(),
-    activeAttributeCount: 2,
     cityFilter: null,
   };
 

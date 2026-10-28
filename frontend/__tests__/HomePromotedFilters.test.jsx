@@ -4,6 +4,7 @@ import { HomeProducersGrid } from "@/app/[locale]/home/HomeProducersGrid";
 import { useHomePage } from "@/lib/use-home-page";
 import { CHIPS_CONFIG } from "@/lib/producer-filters";
 import api from "@/lib/api";
+import { Check } from "@phosphor-icons/react";
 
 /**
  * MEH-2173 — the homepage filter row as "promoted + all".
@@ -132,6 +133,23 @@ describe("MEH-2173 — the promoted row", () => {
     render(<HomeProducersGrid {...props({ chips: { verified: true } })} />);
     expect(screen.getByTestId("home-promoted-chip-verified").getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByTestId("home-promoted-chip-has_delivery").getAttribute("aria-pressed")).toBe("false");
+  });
+
+  // MEH-2500: selection is not colour-only — a lit promoted chip swaps its
+  // glyph for a check; an unlit one keeps its own glyph.
+  it("a lit promoted chip shows a check in place of its glyph", () => {
+    const check = (() => {
+      const { container, unmount } = render(<Check size={16} weight="bold" />);
+      const html = container.querySelector("svg").innerHTML;
+      unmount();
+      return html;
+    })();
+    render(<HomeProducersGrid {...props({ chips: { verified: true } })} />);
+    const svgOf = (key) => screen.getByTestId(`home-promoted-chip-${key}`).querySelectorAll("svg");
+    expect(svgOf("verified")).toHaveLength(1);
+    expect(svgOf("verified")[0].innerHTML).toBe(check);
+    expect(svgOf("has_delivery")).toHaveLength(1);
+    expect(svgOf("has_delivery")[0].innerHTML).not.toBe(check);
   });
 
   // MEH-2500 reversed "promoted included": a lit promoted chip sits beside the

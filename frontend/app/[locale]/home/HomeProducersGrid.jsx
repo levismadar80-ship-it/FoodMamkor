@@ -244,7 +244,7 @@ export function HomeProducersGrid({
   // (MEH-2173): with a promoted chip lit beside it, «סינון · 1» read as one
   // more filter hidden in the sheet (Sapir 28/10, on /map's identical row).
   // /producers already excluded its visible city chip for the same reason.
-  const activeAttributeCount = tagChips.length;
+  const sheetOnlyCount = tagChips.length;
   return (
     <section id="producers-grid" className="max-w-7xl mx-auto px-4 pb-20">
       {/* MEH-2394: the first-visit coach-mark tour (step 0 here, step 1 by the
@@ -336,8 +336,8 @@ export function HomeProducersGrid({
             <Faders size={16} aria-hidden="true" />
             {t("filters.button")}
             {/* `.numeric` = tabular/LTR digits inside the RTL button. */}
-            {activeAttributeCount > 0 && (
-              <span className="numeric">{` · ${activeAttributeCount}`}</span>
+            {sheetOnlyCount > 0 && (
+              <span className="numeric">{` · ${sheetOnlyCount}`}</span>
             )}
           </button>
           <FilterSheet
