@@ -1123,6 +1123,12 @@ GET  /search/trending   public — top 5 queries with results_count>0, cached 1h
                                  rate-limited 30/minute per IP
 ```
 
+**What a producer hit matches on (MEH-2478).** `GET /search` matches a business on
+`name` · `description` · `short_description` (the card tagline); `GET /producers?q=`
+matches the same three plus `city`, category names, product names + descriptions and
+delivery-area cities (`producer_listing._token_search_filter`). Both use the same
+per-token ilike patterns (`hebrew_search.token_patterns`, escaped).
+
 ### Chat widget (`app/routers/chat.py`)
 
 ```

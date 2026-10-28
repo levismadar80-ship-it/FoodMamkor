@@ -6,6 +6,7 @@ import { GroupBuyMetadataSchema } from "@/lib/schemas"; // MEH-1885: minimal met
 import { API_URL } from "@/lib/env";
 import { serverFetch } from "@/lib/server-fetch"; // MEH-977: timeout + transient-retry
 import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
+import { buildGroupBuyJsonLd, serializeJsonLd } from "@/lib/seo"; // MEH-2478: Product + Offer JSON-LD
 
 // MEH-476 PR 3b2: per-page hreflang + per-locale title. Was no metadata at all.
 // Fetches group-buy title server-side for D1 title format; gracefully falls
@@ -107,13 +108,38 @@ export async function generateMetadata(props) {
     openGraph: {
       type: "article",
       locale: OG_LOCALE[locale],
-      images: groupBuy?.image_url ? [groupBuy.image_url] : ["/og-image.png"],
+      // MEH-2478: was `groupBuy?.image_url`, a field GroupBuyOut does not have,
+      // so the branch never fired. The payload carries no image and no
+      // producer images either, so the share image is the site's own.
+      images: ["/og-image.png"],
     },
     alternates,
   };
 }
 
+// MEH-2478: server-rendered Product + Offer + BreadcrumbList JSON-LD — same
+// pattern as events/[id]/page.js EventJsonLd.
+function GroupBuyJsonLd({ groupBuy, locale }) {
+  const jsonLd = buildGroupBuyJsonLd(groupBuy, locale);
+  if (!jsonLd) return null;
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
+    />
+  );
+}
+
 export default async function GroupBuyDetailPage(props) {
   const params = await props.params;
-  return <GroupBuyDetailClient id={params.id} />;
+  // Same request as generateMetadata (revalidate:60 dedupes it), which already
+  // 404s a missing group buy; belt-and-braces for the body.
+  const groupBuy = await getGroupBuy(params.id);
+  if (!groupBuy) notFound();
+  return (
+    <>
+      <GroupBuyJsonLd groupBuy={groupBuy} locale={params.locale} />
+      <GroupBuyDetailClient id={params.id} />
+    </>
+  );
 }
