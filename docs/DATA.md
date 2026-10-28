@@ -619,7 +619,9 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > /group-buys` (and through it the sitemap) lists a group buy only while its
 > business passes `producer_listing.is_business()` (approved, `kind='producer'`).
 > `GET /group-buys/{id}` answers a stranger the same `404 קבוצת הרכש לא נמצאה`
-> when it does not — the owner and admin still get `200`. `POST
+> when it does not — the owner and admin still get `200` from the API (the
+> public page is server-rendered without auth, so it 404s for them as well).
+> `DELETE …/commit` (leaving) is deliberately not gated. `POST
 > /group-buys/{id}/commit` is `404` for a non-public group buy too, so a held
 > link cannot join it. One helper, `group_buys._public_group_buys`. The owner's
 > list above and the admin list are unchanged. No schema change.

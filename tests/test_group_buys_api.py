@@ -130,7 +130,8 @@ class TestApprovedBusinessOnly:
     def test_list_hides_a_non_approved_business(self, client, db):
         approved, _ = _producer_user(db, email="gb-ok@test.com")
         _make_group_buy(db, approved, city="approved-city")
-        for i, status in enumerate(("pending", "rejected")):
+        # "inactive" is what the admin suspend action writes (admin.py).
+        for i, status in enumerate(("pending", "rejected", "inactive")):
             hidden, _ = _producer_user(
                 db, email=f"gb-hidden{i}@test.com", status=status
             )
@@ -139,6 +140,7 @@ class TestApprovedBusinessOnly:
         assert "approved-city" in cities
         assert "pending-city" not in cities
         assert "rejected-city" not in cities
+        assert "inactive-city" not in cities
 
     def test_detail_is_404_for_a_stranger_when_the_business_is_not_approved(
         self, client, db
@@ -174,6 +176,29 @@ class TestApprovedBusinessOnly:
             headers=auth_header(buyer),
         )
         assert resp.status_code == 404
+        assert db.query(GroupBuyCommit).filter_by(group_buy_id=gb.id).count() == 0
+
+    def test_another_business_owner_does_not_get_the_owner_carve_out(self, client, db):
+        hidden, _ = _producer_user(db, email="gb-a@test.com", status="inactive")
+        gb = _make_group_buy(db, hidden)
+        _, other_owner = _producer_user(db, email="gb-b@test.com")
+        resp = client.get(f"/group-buys/{gb.id}", headers=auth_header(other_owner))
+        assert resp.status_code == 404
+
+    def test_a_participant_can_still_leave_after_the_business_is_hidden(self, client, db):
+        # Guard against over-gating: leaving is never blocked by the visibility
+        # rule, only joining is.
+        producer, _ = _producer_user(db, email="gb-leave@test.com")
+        gb = _make_group_buy(db, producer, min_participants=5)
+        buyer = make_user(db, email="gb-leaver@test.com")
+        joined = client.post(
+            f"/group-buys/{gb.id}/commit", json={"quantity": 1}, headers=auth_header(buyer)
+        )
+        assert joined.status_code == 201
+        producer.status = "inactive"
+        db.commit()
+        left = client.delete(f"/group-buys/{gb.id}/commit", headers=auth_header(buyer))
+        assert left.status_code == 200
         assert db.query(GroupBuyCommit).filter_by(group_buy_id=gb.id).count() == 0
 
 
