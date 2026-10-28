@@ -952,7 +952,7 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, P
 def _token_search_filter(db: Session, token: str):
     """MEH-1664 — the match condition for ONE search token.
 
-    OR across the six searchable sources; within each source, OR across the
+    OR across the seven searchable sources (tagline added by MEH-2478); within each source, OR across the
     token's variants. The caller AND-s one of these per token.
 
     Every pattern comes from token_patterns (escape_like-escaped); the
@@ -1002,8 +1002,15 @@ def _token_search_filter(db: Session, token: str):
         )
         .exists()
     )
+    # MEH-2478: short_description (the card tagline) joins name/description —
+    # a business is findable by the one line it chose to describe itself.
     return (
-        _any(Producer.name, Producer.description, Producer.city)
+        _any(
+            Producer.name,
+            Producer.description,
+            Producer.short_description,
+            Producer.city,
+        )
         | has_category
         | has_product
         | has_delivery_city
@@ -1013,7 +1020,7 @@ def _token_search_filter(db: Session, token: str):
 def _apply_search_filter(
     db: Session, q, count_q, search_q: str | None, *, geo_search: bool
 ):
-    """MEH-99 cross-field search: name · description · city · category names · product names + descriptions · delivery cities.
+    """MEH-99 cross-field search: name · description · tagline (MEH-2478) · city · category names · product names + descriptions · delivery cities.
 
     Adds relevance ordering in non-geo mode (exact-match first, then
     prefix, then rating, then created_at) — geo mode keeps distance ASC.
@@ -1023,7 +1030,7 @@ def _apply_search_filter(
     own Producer.city differs (the city the owner typed under "אזורי משלוח").
 
     MEH-1664: matching is per token, not one literal substring. Each token
-    contributes its own OR-over-all-six-sources condition and the tokens are
+    contributes its own OR-over-all-seven-sources condition and the tokens are
     AND-ed, so "גבינה עיזים" matches a product named "גבינת עיזים" in either
     word order while "גבינה חיפה" does NOT match a Tel-Aviv cheese business.
     The has_product EXISTS also covers Product.description now, so this path

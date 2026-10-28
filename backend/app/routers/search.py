@@ -96,11 +96,18 @@ def smart_search(
     # so the relevance boosts keep comparing against what the user typed.
     tokens = tokenize(q_clean)
 
-    # -------- Producers (approved only, name + description) --------
+    # -------- Producers (approved only, name + description + tagline) --------
+    # MEH-2478: short_description (the card tagline) is searched too, same as
+    # the /producers?q= path (producer_listing._token_search_filter).
     producer_rows = (
         db.query(Producer)
         .filter(is_business())  # MEH-2459
-        .filter(*_token_conditions(tokens, [Producer.name, Producer.description]))
+        .filter(
+            *_token_conditions(
+                tokens,
+                [Producer.name, Producer.description, Producer.short_description],
+            )
+        )
         # Exact-name match first, then alphabetically. SQLite doesn't
         # support nullslast everywhere, so we use a simple CASE.
         .order_by((Producer.name != q_clean), Producer.name.asc())

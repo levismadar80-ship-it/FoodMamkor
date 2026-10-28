@@ -74,7 +74,14 @@ function jsonLdPayloadFrom(element) {
   const kids = element?.props?.children;
   const list = Array.isArray(kids) ? kids : [kids];
   return list
-    .map((child) => child?.props?.producer ?? child?.props?.event)
+    // MEH-2478: group-buy and experience pages now render JSON-LD too.
+    .map(
+      (child) =>
+        child?.props?.producer ??
+        child?.props?.event ??
+        child?.props?.groupBuy ??
+        child?.props?.experience,
+    )
     .filter(Boolean);
 }
 
@@ -147,7 +154,8 @@ const ROUTES = [
       return rest;
     })(),
     params: { id: GROUP_BUY_OK.id, locale: "he" },
-    rendersJsonLd: false,
+    undeclaredKey: "product_name",
+    rendersJsonLd: true, // MEH-2478: Product + Offer
   },
   {
     name: "experiences",
@@ -158,7 +166,8 @@ const ROUTES = [
       return rest;
     })(),
     params: { id: EXPERIENCE_OK.id, locale: "he" },
-    rendersJsonLd: false,
+    undeclaredKey: "location_type",
+    rendersJsonLd: true, // MEH-2478: Event (when dated)
   },
 ];
 
