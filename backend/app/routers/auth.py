@@ -39,6 +39,10 @@ from app.services.auth_emails import (
 from app.services.auth_notifications import (
     notify_producer_registered,
 )
+from app.services.group_buy_delist import (  # MEH-2503
+    cancel_live_group_buys,
+    withdraw_user_commits,
+)
 from app.services.producer_risk import score_producer
 from app.services.oauth_verifiers import (
     # Aliases preserve the legacy underscore-prefixed module attribute
@@ -1504,6 +1508,7 @@ def resend_verify(
 @limiter.limit("3/hour")
 def delete_account(
     request: Request,
+    background_tasks: BackgroundTasks,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -1608,10 +1613,19 @@ def delete_account(
     #    row first (User.producer_id has no ondelete, so deleting the
     #    producer while the user still points at it would violate the
     #    constraint), then delete the producer — children cascade.
+    # MEH-2503: a participant leaving the site leaves her live group buys the
+    # way /group-buys/{id}/commit DELETE does (funded → open below minimum).
+    withdraw_user_commits(db, user)
+
     if producer_id is not None:
+        producer = db.query(Producer).filter(Producer.id == producer_id).first()
+        if producer is not None:
+            # MEH-2503: her own live group buys are cancelled and their
+            # participants told, as on a suspension (MEH-2498) — before the
+            # unlink, since the helper skips users linked to this producer.
+            cancel_live_group_buys(db, producer, background_tasks)
         user.producer_id = None
         db.flush()
-        producer = db.query(Producer).filter(Producer.id == producer_id).first()
         if producer is not None:
             # MEH-816: phone_otp_tokens cascade via the DB FK (ondelete=CASCADE)
             # plus passive_deletes=True on the Producer.otp_tokens backref
