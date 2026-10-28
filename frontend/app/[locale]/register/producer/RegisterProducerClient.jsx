@@ -1041,6 +1041,11 @@ function RegisterProducerPageBody() {
               onChange={set("name")}
               required
               dir="rtl"
+              // MEH-2481: without these, Chrome's autofill put the saved
+              // EMAIL into the name field and the saved PASSWORD into the
+              // new-password field (measured on staging, 28/10). The
+              // attributes tell the browser which slot is which.
+              autoComplete="name"
             />
             <Input
               id="producer-account-email"
@@ -1052,6 +1057,7 @@ function RegisterProducerPageBody() {
               onChange={set("email")}
               required
               dir="ltr"
+              autoComplete="email"
             />
             {/* MEH-328 Chunk C: emailExistsWarning render block removed
                 with handleEmailBlur. emailExistsSubmitError block below
@@ -1074,6 +1080,7 @@ function RegisterProducerPageBody() {
                 className="w-full border rounded-md px-3 py-2 min-h-[44px]"
                 dir="ltr"
                 minLength={12}
+                autoComplete="new-password"
               />
               <PasswordStrength password={form.password} />
             </div>
@@ -2256,7 +2263,11 @@ function RegisterProducerPageBody() {
             </div>
             <h2 className="font-headline-lg text-3xl font-black text-text mb-2">{t("auth.register.producer.success.inbox_title")}</h2>
             <p className="text-fg-muted text-sm mb-3">{t("auth.register.producer.success.inbox_body")}</p>
-            <p className="text-fg-muted text-xs mb-6">{t("auth.register.producer.success.inbox_hint")}</p>
+            <p className="text-fg-muted text-xs mb-3">{t("auth.register.producer.success.inbox_hint")}</p>
+            {/* MEH-2492: say the next step up front — the link verifies, it does not log in. */}
+            <p className="text-text text-sm font-medium mb-6" data-testid="register-confirm-next-step">
+              {t("auth.register.producer.success.inbox_next")}
+            </p>
             <p className="text-xs text-fg-muted mb-6 text-center leading-relaxed">{t("auth.register.producer.success.tier_trust")}</p>
             <button
               onClick={() => router.push("/")}
