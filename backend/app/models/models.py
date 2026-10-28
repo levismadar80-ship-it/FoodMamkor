@@ -2040,7 +2040,12 @@ class GroupBuy(Base):
     funded_notified_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=utc_now, nullable=False)
 
-    producer = relationship("Producer", backref="group_buys")
+    # MEH-2503: passive_deletes defers to the DB ON DELETE CASCADE. Without it
+    # db.delete(producer) tried to NULL the NOT NULL producer_id → 500 on
+    # every delete of a business that ever had a group buy (MEH-816 class).
+    producer = relationship(
+        "Producer", backref=backref("group_buys", passive_deletes=True)
+    )
     commits = relationship(
         "GroupBuyCommit", back_populates="group_buy", cascade="all, delete-orphan"
     )
@@ -2073,7 +2078,11 @@ class GroupBuyCommit(Base):
     )
 
     group_buy = relationship("GroupBuy", back_populates="commits")
-    user = relationship("User", backref="group_buy_commits")
+    # MEH-2503: same as GroupBuy.producer — a user who ever joined a group buy
+    # could not delete her account (NotNullViolation on user_id).
+    user = relationship(
+        "User", backref=backref("group_buy_commits", passive_deletes=True)
+    )
 
 
 class PhoneOtpToken(Base):
@@ -2197,7 +2206,10 @@ class ProducerNameChangeRequest(Base):
     created_at = Column(DateTime, default=utc_now, nullable=False)
     reviewed_at = Column(DateTime, nullable=True)
 
-    producer = relationship("Producer", backref="name_change_requests")
+    # MEH-2503: same NOT NULL + no-cascade shape as GroupBuy.producer.
+    producer = relationship(
+        "Producer", backref=backref("name_change_requests", passive_deletes=True)
+    )
 
 
 class SearchQuery(Base):
