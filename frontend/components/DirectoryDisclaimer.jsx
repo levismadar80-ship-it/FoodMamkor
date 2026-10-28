@@ -31,7 +31,7 @@ export default function DirectoryDisclaimer({ className = "" }) {
       role="note"
     >
       <span className="font-semibold text-text">{BRAND_NAME}</span> {t("body")}{" "}
-      <Link href="/terms" className="underline text-primary whitespace-nowrap">
+      <Link href="/terms" className="underline text-primary inline-block max-w-full">
         {t("terms_link")}
       </Link>
     </div>
