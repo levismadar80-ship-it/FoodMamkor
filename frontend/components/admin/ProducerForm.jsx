@@ -14,6 +14,7 @@ import { israelToday } from "@/lib/israel-date";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { MIN_ESTABLISHED_YEAR, currentIsraelYear } from "@/lib/established-year";
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";
+import CitySearch from "@/components/CitySearch";
 import AddressSearch from "@/components/AddressSearch";
 import InfoTooltip from "@/components/InfoTooltip";
 import Input from "@/components/ui/Input";
@@ -632,10 +633,17 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             placeholder={t("producers.form.fields.external_order_form_placeholder")}
             dir="ltr"
           />
-          <Input
+          {/* MEH-2452: the same city list as registration and the owner's
+              locations editor (LocationsEditor.jsx), not free text — the city
+              filter matches exactly, so an off-list spelling hid the business
+              under its own city. */}
+          <CitySearch
+            id="admin-producer-city"
+            labelVisible
             label={t("producers.form.fields.city")}
+            placeholder=""
             value={form.city}
-            onChange={(e) => update("city", e.target.value)}
+            onChange={(v) => update("city", v)}
           />
           <Input
             label={t("producers.form.fields.slug")}
