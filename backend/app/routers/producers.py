@@ -719,7 +719,9 @@ def _servable_kashrut_certs(
     KashrutBadgeStrip hides the whole strip on (MEH-1260). A legacy NULL
     expiry stays visible, matching that component exactly.
     """
-    if producer.status != "approved":
+    # MEH-2465: `kind` too — an organizer row never serves a kashrut cert,
+    # whatever is stored against it (ADR-036).
+    if producer.status != "approved" or producer.kind != "producer":
         return []
     expires_at = producer.kashrut_expires_at
     if expires_at is not None and expires_at <= utc_now():

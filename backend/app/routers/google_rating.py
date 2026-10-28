@@ -110,9 +110,14 @@ def get_google_rating(
 
     204 (empty, no layout hole client-side) when: no mapped place_id, the live
     profile has < MIN_REVIEWS reviews, no server key, or any Google API error.
-    404 only when the producer id itself does not exist.
+    404 when the producer id does not exist or is an organizer (MEH-2465).
     """
-    row = db.query(Producer.google_place_id).filter(Producer.id == producer_id).first()
+    # MEH-2465: an organizer is not a business — no Google trust line (ADR-036).
+    row = (
+        db.query(Producer.google_place_id)
+        .filter(Producer.id == producer_id, Producer.kind == "producer")
+        .first()
+    )
     if row is None:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
 

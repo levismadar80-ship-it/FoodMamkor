@@ -1597,7 +1597,10 @@ def upload_story_card(
 @router.get("/stats")
 def get_stats(user: User = Depends(require_admin), db: Session = Depends(get_db)):
     return {
-        "total_producers": db.query(Producer).count(),
+        # MEH-2465 (review #3723): businesses only, matching /admin/dashboard.
+        "total_producers": db.query(Producer)
+        .filter(Producer.kind == "producer")
+        .count(),
         "pending_producers": db.query(Producer)
         .filter(Producer.status == "pending")
         .count(),
