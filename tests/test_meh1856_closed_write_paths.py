@@ -1,8 +1,9 @@
 """
 Module:   test_meh1856_closed_write_paths
 Purpose:  Lock the ownerless write paths closed — address, slug,
-          lactose_free_facility, pickup_points, name and is_available_today
-          are no longer writable through PUT /producers/me.
+          lactose_free_facility, pickup_points, name, is_available_today,
+          organic_certified and has_delivery are no longer writable through
+          PUT /producers/me.
           Each was accepted by the API with no editor anywhere in the owner
           dashboard (MEH-1851 dispositions).
 Does NOT: test the admin (`admin.py`) or import (`producer_import.py`) write
@@ -20,6 +21,10 @@ History:  MEH-1856 (creation), implementing the first four REMOVE-WRITE
           MEH-1855 chunk 2 (revision 9849fab1637a) then DROPPED the
           starting_price_label column outright — it left CLOSED_FIELDS (a
           closed write path presumes a column) and is asserted ABSENT below.
+          MEH-2521 (extension) added organic_certified and has_delivery: no
+          owner editor writes either (organic's public badge was removed by
+          MEH-1259; has_delivery is superseded by delivery areas, its column
+          drop is MEH-1850). 6 → 8 closed fields.
 """
 
 import pytest
@@ -46,6 +51,10 @@ CLOSED_FIELDS = {
     # test_dropped_price_alias_is_absent_everywhere below.
     "name": "שם עסק אחר לגמרי",
     "is_available_today": True,
+    # MEH-2521: both are booleans, so the fixture seeds False and the attempt
+    # is True — "unchanged" is then a real assertion, not falsy == falsy.
+    "organic_certified": True,
+    "has_delivery": True,
 }
 
 # MEH-1855 chunk 2: the alias column this file used to lock closed. Kept as a
@@ -72,6 +81,8 @@ def owner_and_producer(db):
     producer.pickup_points = False
     producer.name = "השם המקורי של העסק"
     producer.is_available_today = False
+    producer.organic_certified = False
+    producer.has_delivery = False
     db.commit()
     db.refresh(producer)
     return user, producer
@@ -143,15 +154,16 @@ def test_a_still_writable_field_does_change(client, db, owner_and_producer):
 def test_whitelist_does_not_contain_any_closed_field():
     """Absence assertion — every closed field appears 0 times in the whitelist.
 
-    Numeric form (removal spec, per_ticket_protocol.2): 6 fields checked,
+    Numeric form (removal spec, per_ticket_protocol.2): 8 fields checked,
     expected exactly 0 present, not 1. MEH-1856 closed 4; MEH-1851 rows
     1/19/39 closed 3 more, and MEH-1855 chunk 2 then dropped row 19's column
     (so it is no longer a "closed write path" — it is no column at all).
+    MEH-2521 closed 2 more (organic_certified, has_delivery).
     """
     whitelist = read_producer_writable_fields()
 
-    assert len(CLOSED_FIELDS) == 6, (
-        f"expected 6 closed fields, got {len(CLOSED_FIELDS)} — update this count "
+    assert len(CLOSED_FIELDS) == 8, (
+        f"expected 8 closed fields, got {len(CLOSED_FIELDS)} — update this count "
         f"deliberately when a disposition adds one, so the absence assertion "
         f"cannot silently shrink"
     )
