@@ -49,16 +49,17 @@ def test_no_deprecated_field_is_owner_writable():
 
 
 def test_the_registry_has_the_expected_size():
-    """Numeric form: exactly 11, not 'at least 11'.
+    """Numeric form: exactly 13, not 'at least 13'.
 
     A set that silently SHRINKS would make the intersection test pass for the
     wrong reason — the guard would be green because it stopped checking, which
     is the failure this whole file is aimed at. Bump this deliberately when a
     disposition adds a field. (12 → 11 on MEH-1855 chunk 2: the price alias
     left the registry because its COLUMN was dropped — the test below is why
-    a dropped column cannot stay listed.)
+    a dropped column cannot stay listed. 11 → 13 on MEH-2521:
+    organic_certified and has_delivery closed to the owner.)
     """
-    assert len(DEPRECATED_OWNER_WRITE_FIELDS) == 11, sorted(
+    assert len(DEPRECATED_OWNER_WRITE_FIELDS) == 13, sorted(
         DEPRECATED_OWNER_WRITE_FIELDS
     )
 

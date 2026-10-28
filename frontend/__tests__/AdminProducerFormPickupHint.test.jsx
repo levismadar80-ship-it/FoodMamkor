@@ -48,9 +48,12 @@ describe("Admin ProducerForm — pickup is managed in locations (MEH-2048)", () 
     expect(screen.queryByLabelText(FIELDS.pickup_points)).toBeNull();
   });
 
-  it("keeps the has_delivery checkbox (control — the section itself is intact)", async () => {
+  // MEH-2521: this used to be a control asserting the has_delivery checkbox
+  // stayed. That checkbox is now gone too (see AdminProducerFormDeadFields),
+  // so the control is the grass_fed checkbox — a control the form still has.
+  it("keeps a sibling checkbox (control — checkbox rendering is intact)", async () => {
     renderForm();
-    const delivery = await screen.findByLabelText(FIELDS.has_delivery);
-    expect(delivery).toHaveAttribute("type", "checkbox");
+    const grass = await screen.findByRole("checkbox", { name: FIELDS.grass_fed });
+    expect(grass).toHaveAttribute("type", "checkbox");
   });
 });

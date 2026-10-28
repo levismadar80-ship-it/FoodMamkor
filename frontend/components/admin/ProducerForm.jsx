@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { ArrowSquareOut, Cow, Leaf, X } from "@phosphor-icons/react";
+import { ArrowSquareOut, Cow, X } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { HEALTH_MINISTRY_FOOD_REGISTRY_URL } from "@/lib/official-registries";
 import { useAdminAction } from "@/lib/use-admin-action";
@@ -24,8 +24,6 @@ import {
   requiresProducerLicense,
 } from "@/lib/license-required-categories";
 
-const KOSHER_OPTIONS = ["", "כשר", "כשר למהדרין", "לא כשר"];
-
 // MEH-1297: a producer may hold at most 3 categories; the first-selected is the
 // primary (drives categories[0] on the card/map pin). Mirrors the backend cap
 // (schemas.MAX_PRODUCER_CATEGORIES) and the register CategorySelector.
@@ -35,14 +33,6 @@ const MAX_CATEGORIES = 3;
 // public rating line won't render for them (mirrors backend MIN_REVIEWS=20).
 // Still selectable — the admin decides.
 const GOOGLE_MIN_REVIEWS = 20;
-
-// MEH-475 PR-B: map kosher option value → i18n key (label resolved at render)
-const KOSHER_LABEL_KEYS = {
-  "": "producers.form.fields.kosher_none",
-  "כשר": "producers.form.fields.kosher_kosher",
-  "כשר למהדרין": "producers.form.fields.kosher_mehadrin",
-  "לא כשר": "producers.form.fields.kosher_not_kosher",
-};
 
 /**
  * MEH-530: license-number input with the same required/optional branching
@@ -180,10 +170,14 @@ const EMPTY = {
   // MEH-1541: self-reported founding year → the public "מאז {שנה}" masthead line.
   established_year: "",
   category_ids: [],
-  has_delivery: false,
-  kosher: "",
+  // MEH-2521: has_delivery, kosher and organic_certified are gone from this
+  // form. None of the three reached any public surface any more (delivery is
+  // derived from the delivery areas, kosher only from VERIFIED kashrut —
+  // MEH-986 — and the organic badge was removed by MEH-1259), so a control
+  // here only told the admin she was setting something she was not. The
+  // columns stay; the payload simply omits the keys, and the admin PUT is
+  // exclude_unset, so an edit never clears a stored value.
   grass_fed: false,
-  organic_certified: false,
   // MEH-1508 ch2: business-level dietary scope (admin cross-check selects).
   // `...initial` overrides these from ProducerAdminOut on edit; defaults here
   // cover the admin-create path.
@@ -257,7 +251,6 @@ export default function ProducerForm({ initial = null, producerId = null }) {
   // MEH-1508 ch2: the admin cross-check selects reuse the owner form's locked
   // dietary-scope copy (§6.5) — one SoT, no admin-specific strings.
   const tDiet = useTranslations("dashboard.producer.dietaryScope");
-  const kosherLabel = (value) => t(KOSHER_LABEL_KEYS[value] ?? "producers.form.fields.kosher_none");
   const router = useRouter();
   const { run, isBusy } = useAdminAction();
   const [form, setForm] = useState(EMPTY);
@@ -297,7 +290,6 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         google_place_id: initial.google_place_id ?? "",
         category_ids: initial.categories?.map((c) => c.id) ?? [],
         images: initial.images ?? [],
-        kosher: initial.kosher ?? "",
         // MEH-530: GET /admin/producers/{id} returns ProducerAdminOut, which
         // exposes the raw producer_license_number; null becomes "".
         //
@@ -474,10 +466,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
           ? null
           : Number(form.established_year),
       category_ids: form.category_ids,
-      has_delivery: form.has_delivery,
-      kosher: form.kosher,
       grass_fed: form.grass_fed,
-      organic_certified: form.organic_certified,
       // MEH-1508 ch2: admin sets/cross-checks the declared dietary scope.
       vegan_scope: form.vegan_scope,
       vegetarian_scope: form.vegetarian_scope,
@@ -821,15 +810,6 @@ export default function ProducerForm({ initial = null, producerId = null }) {
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <input
               type="checkbox"
-              checked={form.organic_certified}
-              onChange={(e) => update("organic_certified", e.target.checked)}
-              className="w-4 h-4 accent-primary"
-            />
-            <Leaf size={16} className="inline align-[-2px] text-primary" aria-hidden="true" /> {t("producers.form.fields.organic_certified")}
-          </label>
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <input
-              type="checkbox"
               checked={form.grass_fed}
               onChange={(e) => update("grass_fed", e.target.checked)}
               className="w-4 h-4 accent-primary"
@@ -922,19 +902,6 @@ export default function ProducerForm({ initial = null, producerId = null }) {
               {t("producers.form.fields.in_season_until_hint")}
             </p>
           </div>
-          <Field label={t("producers.form.fields.kosher")}>
-            <select
-              value={form.kosher}
-              onChange={(e) => update("kosher", e.target.value)}
-              className={inputClass}
-            >
-              {KOSHER_OPTIONS.map((k) => (
-                <option key={k} value={k}>
-                  {kosherLabel(k)}
-                </option>
-              ))}
-            </select>
-          </Field>
           {/* MEH-1508 ch2: business-level dietary scope — admin sees + cross-checks
               the owner's declaration during manual approval. YES/NO → all/some for
               vegan/vegetarian; 3-way facility state for gluten. Lactose omitted
@@ -1076,15 +1043,6 @@ export default function ProducerForm({ initial = null, producerId = null }) {
 
       <Section title={t("producers.form.sections.delivery_pickup")}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <input
-              type="checkbox"
-              checked={form.has_delivery}
-              onChange={(e) => update("has_delivery", e.target.checked)}
-              className="w-4 h-4 accent-primary"
-            />
-            {t("producers.form.fields.has_delivery")}
-          </label>
           {/* MEH-2048: the pickup checkbox is gone. Since MEH-2046 the filter,
               the card tag and the map pin all derive pickup from
               ProducerLocation rows (the locations editor above), and admin.py
