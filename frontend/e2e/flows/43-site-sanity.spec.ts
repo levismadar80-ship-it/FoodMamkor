@@ -14,13 +14,17 @@ import { test, expect, type Page } from "./_cloudinary-stub";
  *             2. no letter-spaced Hebrew (DESIGN.md; MEH-2488);
  *             3. no Hebrew glyph rendered in a system face — measured with CDP
  *                `CSS.getPlatformFontsForNode`, the faces actually used, once per
- *                distinct (family, weight, style) so the walk stays cheap
+ *                distinct (family, weight, style) so the walk stays cheap; the
+ *                probe goes on the element of that key with the fewest typed
+ *                symbols, so a symbol allowance cannot hide a stray face
  *                (MEH-2488: Hebrew inside .font-english fell to Liberation Serif);
  *             4. no active line-clamp switched off by its display (MEH-2487:
  *                `sm:block` beat `line-clamp-2`);
  *             5. no horizontal page scroll.
  * Control:  each route must render > 10 Hebrew-bearing elements in <main>, so a
  *           page that failed to render cannot pass every check by being empty.
+ *           The five checks are soft, so one failing route reports all of them.
+ * Browser:  Chromium only — the face probe is CDP, which WebKit does not expose.
  * Routes:   static editorial and auth pages only — no API data, so the gate is
  *           deterministic. Both projects (375 mobile, 1440 desktop) run it.
  */
@@ -58,8 +62,7 @@ async function sweep(page: Page): Promise<Sweep> {
   return page.evaluate(() => {
     const HEB = /[֐-׿]/;
     const out: Sweep = { hebrewCount: 0, italic: [], tracking: [], clampOff: [], overflowX: 0, fontProbes: [] };
-    const seen = new Set<string>();
-    let probe = 0;
+    const byKey = new Map<string, { el: HTMLElement; symbols: number }>();
     for (const el of document.querySelectorAll<HTMLElement>("main *")) {
       const r = el.getBoundingClientRect();
       const cs = getComputedStyle(el);
@@ -78,15 +81,17 @@ async function sweep(page: Page): Promise<Sweep> {
       if (cs.fontStyle !== "normal") out.italic.push(label);
       if (parseFloat(cs.letterSpacing) > 0) out.tracking.push(`${label} ${cs.letterSpacing}`);
       const key = `${cs.fontFamily}|${cs.fontWeight}|${cs.fontStyle}`;
-      if (!seen.has(key)) {
-        seen.add(key);
-        probe += 1;
-        el.setAttribute("data-sanity-probe", String(probe));
-        // Typed symbols («←», «★») have no glyph in any brand face and fall to a
-        // system face by design; only glyphs beyond their count are a finding.
-        const symbols = [...own].filter((ch) => !/[\u0590-\u05FFA-Za-z0-9\s.,:;!?'"()\[\]\-–—·״׳/&%+@#*]/.test(ch)).length;
-        out.fontProbes.push({ id: String(probe), symbols });
-      }
+      // Typed symbols («←», «★») have no glyph in any brand face and fall to a
+      // system face by design; only glyphs beyond their count are a finding.
+      const symbols = [...own].filter((ch) => !/[\u0590-\u05FFA-Za-z0-9\s.,:;!?'"()\[\]\-–—·״׳/&%+@#*]/.test(ch)).length;
+      const prev = byKey.get(key);
+      if (!prev || symbols < prev.symbols) byKey.set(key, { el, symbols });
+    }
+    let probe = 0;
+    for (const { el, symbols } of byKey.values()) {
+      probe += 1;
+      el.setAttribute("data-sanity-probe", String(probe));
+      out.fontProbes.push({ id: String(probe), symbols });
     }
     out.overflowX = document.documentElement.scrollWidth - window.innerWidth;
     return out;
@@ -108,23 +113,25 @@ async function strayFaces(page: Page, probes: Sweep["fontProbes"]): Promise<stri
     if (glyphs > symbols) stray.push(`probe ${id}: ${off.map((f) => `${f.familyName} ×${f.glyphCount}`).join(", ")} (symbols ${symbols})`);
   }
   await cdp.detach();
+  await page.evaluate(() => document.querySelectorAll("[data-sanity-probe]").forEach((el) => el.removeAttribute("data-sanity-probe")));
   return stray;
 }
 
 test.describe("site sanity — Hebrew typesetting and layout on every static page (MEH-2493)", () => {
   for (const path of ROUTES) {
-    test(`${path}`, async ({ page }) => {
+    test(`${path}`, async ({ page, browserName }) => {
+      test.skip(browserName !== "chromium", "the face probe is CDP, Chromium only");
       await page.goto(path);
       await expect(page.locator("main h1").first()).toBeVisible({ timeout: 15_000 });
       await page.evaluate(() => document.fonts.ready.then(() => undefined));
       const s = await sweep(page);
       expect(s.hebrewCount, "control: the page renders Hebrew in <main>").toBeGreaterThan(10);
-      expect(s.italic, "Hebrew in a faked italic").toEqual([]);
-      expect(s.tracking, "letter-spaced Hebrew").toEqual([]);
-      expect(s.clampOff, "line-clamp switched off by display").toEqual([]);
-      expect(s.overflowX, "horizontal page scroll (px)").toBeLessThanOrEqual(0);
+      expect.soft(s.italic, "Hebrew in a faked italic").toEqual([]);
+      expect.soft(s.tracking, "letter-spaced Hebrew").toEqual([]);
+      expect.soft(s.clampOff, "line-clamp switched off by display").toEqual([]);
+      expect.soft(s.overflowX, "horizontal page scroll (px)").toBeLessThanOrEqual(0);
       expect(s.fontProbes.length, "control: at least one font probe ran").toBeGreaterThan(0);
-      expect(await strayFaces(page, s.fontProbes), "Hebrew-bearing text in a non-brand face").toEqual([]);
+      expect.soft(await strayFaces(page, s.fontProbes), "Hebrew-bearing text in a non-brand face").toEqual([]);
     });
   }
 });
