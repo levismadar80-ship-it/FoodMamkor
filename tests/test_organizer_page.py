@@ -12,7 +12,7 @@ from datetime import timedelta
 from app.models.models import Event, Producer
 from app.slug_utils import is_reserved
 from app.utils.clock import israel_today
-from conftest import make_producer
+from conftest import auth_header, make_producer, make_user
 
 ORG_SLUG = "meh2461-market"
 
@@ -129,3 +129,118 @@ class TestOrganizerSitemapSource:
 def test_organizers_is_a_reserved_slug():
     """/organizers is a real route — a business must not be able to take it."""
     assert is_reserved("organizers")
+
+
+class TestOrganizerPageCarriesWhatSheFills:
+    """MEH-2475 — the dashboard's profile + contact groups reach the page.
+
+    Every field below is one an organizer can fill (owner story, contact
+    channels, founding year). Before this card the serializer dropped all of
+    them, so the page could not show them whatever the frontend did.
+    """
+
+    FILLED = {
+        "owner_bio": "התחלנו בחצר של סבתא, היום מגיעים אלינו 40 דוכנים",
+        "owner_photo_url": "https://res.cloudinary.com/x/image/upload/owner.jpg",
+        "contact_name": "נועה",
+        "established_year": 2015,
+        "primary_contact_method": "email",
+        "contact_email": "market@example.com",
+        "whatsapp_group": "https://chat.whatsapp.com/AbCdEf123",
+        "external_order_form": "https://forms.example.com/stand",
+    }
+
+    def test_filled_fields_are_served(self, client, db):
+        org = _organizer(db)
+        for field, value in self.FILLED.items():
+            setattr(org, field, value)
+        db.commit()
+        body = client.get(f"/organizers/{ORG_SLUG}").json()
+        for field, value in self.FILLED.items():
+            assert body[field] == value, field
+
+    def test_unfilled_fields_are_null_not_missing(self, client, db):
+        _organizer(db)
+        body = client.get(f"/organizers/{ORG_SLUG}").json()
+        for field in self.FILLED:
+            if field == "primary_contact_method":
+                # the column defaults to WhatsApp (models.py), never null
+                assert body[field] == "whatsapp"
+                continue
+            assert field in body and body[field] is None, field
+
+
+def _owner_of(db, producer, email):
+    user = make_user(db, role="producer", email=email)
+    user.producer_id = producer.id
+    db.commit()
+    return user
+
+
+class TestOrganizerCityIsEditable:
+    """MEH-2475 — the page shows `city`, so the organizer must be able to
+    change it. A business still cannot write `city` through this PUT: its city
+    follows the primary location row (MEH-1938 ruling A), and an organizer has
+    no location rows (MEH-2460), so for her this is the only writer."""
+
+    def test_organizer_updates_her_city(self, client, db):
+        org = _organizer(db)
+        owner = _owner_of(db, org, "meh2475-org@example.com")
+        resp = client.put(
+            "/producers/me", json={"city": "  עכו  "}, headers=auth_header(owner)
+        )
+        assert resp.status_code == 200
+        assert client.get(f"/organizers/{ORG_SLUG}").json()["city"] == "עכו"
+
+    def test_organizer_blank_city_is_rejected(self, client, db):
+        org = _organizer(db)
+        owner = _owner_of(db, org, "meh2475-blank@example.com")
+        resp = client.put("/producers/me", json={"city": "   "}, headers=auth_header(owner))
+        assert resp.status_code == 422
+        db.refresh(org)
+        assert org.city == "חיפה"
+
+    def test_organizer_city_is_sanitized_like_registration(self, client, db):
+        """Review #3728: the same bleach + ≥1-letter rule as ProducerRegister.city."""
+        org = _organizer(db)
+        owner = _owner_of(db, org, "meh2475-clean@example.com")
+        ok = client.put(
+            "/producers/me", json={"city": "<b>עכו</b>"}, headers=auth_header(owner)
+        )
+        assert ok.status_code == 200
+        db.refresh(org)
+        assert org.city == "עכו"
+        for bad in ("123", "---"):
+            resp = client.put(
+                "/producers/me", json={"city": bad}, headers=auth_header(owner)
+            )
+            assert resp.status_code == 422, bad
+        db.refresh(org)
+        assert org.city == "עכו"
+
+    def test_approved_organizer_city_change_pings_admin(self, client, db, monkeypatch):
+        """Review #3728: same admin signal a business gets for a city move."""
+        import app.routers.producer_me as pm
+
+        calls = []
+        monkeypatch.setattr(
+            pm, "_sensitive_edit_task", lambda name, changed: calls.append(changed)
+        )
+        org = _organizer(db)
+        owner = _owner_of(db, org, "meh2475-ping@example.com")
+        client.put("/producers/me", json={"city": "עכו"}, headers=auth_header(owner))
+        assert ["city"] in calls
+        calls.clear()
+        client.put("/producers/me", json={"city": "עכו"}, headers=auth_header(owner))
+        assert calls == []  # unchanged value → no ping
+
+    def test_business_city_still_ignored(self, client, db):
+        business = make_producer(db, name="חוות הבקרה", status="approved")
+        before = business.city
+        owner = _owner_of(db, business, "meh2475-biz@example.com")
+        resp = client.put(
+            "/producers/me", json={"city": "עכו"}, headers=auth_header(owner)
+        )
+        assert resp.status_code == 200
+        db.refresh(business)
+        assert business.city == before
