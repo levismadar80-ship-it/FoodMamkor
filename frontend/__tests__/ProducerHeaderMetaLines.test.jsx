@@ -119,6 +119,14 @@ describe("ProducerHeader kosher fallback line — expiry gate (MEH-2518)", () =>
     expect(screen.queryByText(KOSHER)).toBeNull();
   });
 
+  it("naive-UTC wire format (no Z) is read as UTC, not local time", () => {
+    // The backend sends kashrut_expires_at without a zone. 2h ago in UTC,
+    // spelled the way the API spells it: lapsed in every viewer timezone.
+    const past = new Date(Date.now() - 2 * 3600000).toISOString().replace("Z", "");
+    render(<ProducerHeader producer={{ ...verified, kashrut_expires_at: past }} primaryCategory={category} hasImages />);
+    expect(screen.queryByText(KOSHER)).toBeNull();
+  });
+
   it("legacy NULL expiry (MEH-1260): the line renders", () => {
     render(<ProducerHeader producer={{ ...verified, kashrut_expires_at: null }} primaryCategory={category} hasImages />);
     expect(screen.getByText(KOSHER)).toBeInTheDocument();

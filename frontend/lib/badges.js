@@ -76,6 +76,8 @@
  * -- not because anything currently differs.
  */
 
+import { parseNaiveUtc } from "./dates";
+
 export const BADGE_CONFIG = {
   verified: {
     key: "verified",
@@ -427,6 +429,6 @@ export function badgeCount(producer) {
 export function isKashrutCurrent(producer, now = new Date()) {
   return (
     !!producer?.kashrut_verified_at &&
-    (!producer.kashrut_expires_at || new Date(producer.kashrut_expires_at) > now)
+    (!producer.kashrut_expires_at || parseNaiveUtc(producer.kashrut_expires_at) > now)
   );
 }

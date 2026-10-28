@@ -1016,7 +1016,10 @@ POST   /admin/kashrut/{id}/approve             admin — body {expires_on: date}
                                                (MEH-2518; 422 unless after today and ≤ today+400d). Activates the badge in
                                                kashrut_badges[]; kashrut_expires_at = end of that day in Israel (naive UTC).
                                                With another badge still live the EARLIER date wins (one expiry per
-                                               business); approving the only badge replaces it.
+                                               business); approving the only badge replaces it. KNOWN LIMIT (fail-closed):
+                                               with no per-badge date, renewing one badge while another is live, or
+                                               revoking one of two, cannot move the date LATER — the badge may drop
+                                               early, never late. Per-badge expiry needs an Alembic expand (follow-up).
 POST   /admin/kashrut/{id}/revoke              admin — MEH-2518: body {notes?}. 409 unless approved. Marks every approved
                                                request for that badge code "revoked", drops the code from kashrut_badges[];
                                                no badge left → kashrut_verified_at/expires_at cleared.

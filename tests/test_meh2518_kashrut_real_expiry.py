@@ -221,3 +221,40 @@ def test_revoke_requires_admin(client, db):
     assert r.status_code == 403
     db.refresh(producer)
     assert producer.kashrut_badges == ["rabanut"]
+
+
+def test_revoke_and_reject_notes_are_bounded(client, db):
+    _, admin, req = _setup(db)
+    long_notes = "א" * 1001
+    r = client.post(
+        f"/admin/kashrut/{req.id}/reject",
+        json={"notes": long_notes},
+        headers=auth_header(admin),
+    )
+    assert r.status_code == 422
+    assert _approve(client, admin, req, 90).status_code == 200
+    r = client.post(
+        f"/admin/kashrut/{req.id}/revoke",
+        json={"notes": long_notes},
+        headers=auth_header(admin),
+    )
+    assert r.status_code == 422
+
+
+def test_cert_proxy_lists_the_newest_certificate_first_after_renewal(db):
+    from app.routers.producers import _servable_kashrut_certs
+
+    producer, admin, first = _setup(db, code="rabanut")
+    first.status = "approved"
+    first.cert_url = "https://res.cloudinary.com/demo/old.jpg"
+    first.created_at = utc_now() - timedelta(days=200)
+    renewal = _new_request(db, producer, "rabanut")
+    renewal.status = "approved"
+    renewal.cert_url = "https://res.cloudinary.com/demo/new.jpg"
+    producer.status = "approved"
+    producer.kashrut_badges = ["rabanut"]
+    producer.kashrut_verified_at = utc_now()
+    producer.kashrut_expires_at = utc_now() + timedelta(days=90)
+    db.commit()
+    certs = _servable_kashrut_certs(db, producer)
+    assert certs[0].cert_url.endswith("new.jpg")

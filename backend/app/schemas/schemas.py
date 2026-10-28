@@ -3244,7 +3244,8 @@ class LicenseExpiryReminderOut(BaseModel):
 
 
 class KashrutRejectIn(BaseModel):
-    notes: str | None = None
+    # MEH-2518: the owner reads this in her dashboard — bound it.
+    notes: str | None = Field(None, max_length=1000)
 
 
 # MEH-2518: kashrut certificates carry a printed expiry, usually 3-12 months
@@ -3268,7 +3269,7 @@ class KashrutApproveIn(BaseModel):
 
 
 class KashrutRevokeIn(BaseModel):
-    notes: str | None = None
+    notes: str | None = Field(None, max_length=1000)
 
 
 class OtpConfirmIn(BaseModel):

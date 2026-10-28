@@ -21,6 +21,13 @@ function formatDate(iso, locale) {
   return formatEventDate(iso, locale, { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
+// MEH-2518: the server accepts tomorrow … today+400 (Israel calendar,
+// KASHRUT_EXPIRY_MAX_DAYS); the picker offers the same window.
+function israelDateOffset(days) {
+  const d = new Date(Date.now() + days * 86400000);
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jerusalem" }).format(d);
+}
+
 export default function AdminKashrutPage() {
   const t = useTranslations("admin");
   // MEH-1852 chunk B: the certification pill reads the CANONICAL kashrut
@@ -329,6 +336,8 @@ export default function AdminKashrutPage() {
               id="kashrut-expires-on"
               type="date"
               required
+              min={israelDateOffset(1)}
+              max={israelDateOffset(400)}
               value={approveDate}
               onChange={(e) => setApproveDate(e.target.value)}
               className="w-full border rounded-[8px] p-3 text-sm"
