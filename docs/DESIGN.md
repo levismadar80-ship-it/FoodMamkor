@@ -415,6 +415,28 @@ front matter for the normative token bindings.
   The active pill follows the scroll (IntersectionObserver, `aria-current`);
   `prefers-reduced-motion` → instant jump. RTL logical props only.
 
+### Home page — section rhythm (MEH-2441, Sapir 27/10)
+
+- **Order:** hero → mini-map → category grid → businesses grid → **היכרות** (featured
+  business) → seasonal → events → recently viewed → closing CTA. "איך זה עובד"
+  and the comparison teaser are **not** on home: `/about` carries the full
+  comparison (MEH-841) and `/about/process` the real four steps.
+- **Featured business ("היכרות")** = the page's one strong colour moment: a
+  full-bleed `bg-primary` band, `text-background`. h2 "היכרות" with a short
+  `gold-on-dark` rule above it; photo 7/12 columns at 4:3 (`IMAGE_RATIOS.featured`);
+  then, in the 5/12 column: place line `city · category` in
+  `text-background/90` 13px semibold (not gold: `gold-on-dark` on `primary` is
+  4.04:1, under AA for small text) → the name in Frank Ruhl black 38/60px (`keep-all`) → the
+  business's `short_description` as a quote with a `gold-on-dark`
+  `border-s-2` → "להכיר את {name}" as an underlined text link. No sub-heading,
+  no long description (the producer page owns the story). Missing photo or a
+  failed load → a `primary-dark` tonal plate.
+- **Category grid:** layout A — 2 large + 8 small on desktop, the phone rail
+  unchanged (MEH-2412). Photos stay. The two large tiles are **ירקות** and
+  **לחמים ואפייה** (growers are the core of "from the source"; bakeries are the
+  largest share of the Wave 1 leads). Captions are the name only — no 01–10
+  numerals.
+
 ## Action hierarchy
 
 **Exactly one primary-styled action per viewport; new page actions enter as

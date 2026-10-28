@@ -89,7 +89,7 @@ export function optimizeCloudinary(url, opts = {}) {
 //     crop would collapse that ratio and break the logo path.
 export const IMAGE_RATIOS = {
   card: "4:3", // ProducerCard grid tile · dashboard-edit photo grid · recipe card
-  featured: "4:5", // HomeFeaturedProducer editorial portrait (reference — MEH-1214; do not change)
+  featured: "4:3", // HomeFeaturedProducer — landscape on the green band (MEH-2441, Sapir 27/10; was the 4:5 MEH-1214 portrait)
   strip: "16:10", // horizontal producer strips (home recently-viewed, friday-delivery)
   square: "1:1", // square thumbnails: products, map-marker popup, event/product thumbs
   banner: "16:9", // wide bg-cover banners: map bottom-sheet, event & experience images
