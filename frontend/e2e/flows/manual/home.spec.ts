@@ -959,6 +959,26 @@ test.describe("manual › hero search placeholders (MEH-1800)", () => {
 });
 
 // ════════════════════════════════════════════════════════════════════════════
+test.describe("manual › chat launcher on mobile (MEH-2499)", () => {
+  // The launcher is back on phones above the BottomNav pill and steps aside on
+  // scroll-down, returning on scroll-up. Desktop never hides (unit-tested).
+  test("mobile: visible at the top, hidden after scrolling down, back after scrolling up", async ({ page }, info) => {
+    mobileOnly(info, "the hide-on-scroll behavior is mobile-only");
+    await consent(page);
+    await stubTiles(page);
+    await mockApi(page);
+    await gotoHome(page);
+    const launcher = page.getByTestId("chat-launcher");
+    await expect(launcher).toBeVisible(FIRST_PAINT);
+    await expect(launcher).toHaveAttribute("data-hidden", "false");
+    await page.evaluate(() => window.scrollTo(0, 900));
+    await expect(launcher).toHaveAttribute("data-hidden", "true");
+    await page.evaluate(() => window.scrollTo(0, 600));
+    await expect(launcher).toHaveAttribute("data-hidden", "false");
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
 test.describe("manual › floating back-to-top (MEH-1309)", () => {
   // MT:1309:1 — hidden on load, before any scroll.
   test("it is absent before the page is scrolled", async ({ page }) => {

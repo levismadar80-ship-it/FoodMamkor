@@ -494,6 +494,13 @@ test.describe("Visual parity — MEH-991", () => {
   //      baseline predates that commit. NOT a hydration race: ChatWidgetLazy's
   //      route gate does not cover "/", but the viewport gate one component
   //      deeper does, deterministically, on every run.
+  //      MEH-2499 (2026-10-28) REVERSED MEH-1410: the 48px launcher renders on
+  //      mobile again, above the BottomNav pill. A `vrt-regen:home` run on that
+  //      PR (40749759167) PASSED home-mobile within tolerance and rewrote
+  //      nothing, so this baseline still predates the launcher — a green here
+  //      is not evidence of it. Its presence and hide-on-scroll are pinned by
+  //      ChatWidgetMobile.test.jsx and the home.spec "chat launcher on mobile"
+  //      flow, not by this image.
   // Ratified by RESTORING the blob 3680b928 already committed — the on-runner
   // regen of 2026-07-23, captured after BOTH changes above, which 52ab77da
   // ("undo PR #2102 contamination") reverted to a 2026-07-21 image by mistake.
