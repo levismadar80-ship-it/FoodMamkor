@@ -3268,6 +3268,17 @@ export const LivenessHealthLivenessHeadResponse = /*#__PURE__*/ zod.record(/*#__
 
 
 /**
+ * MEH-2482 — is the Google Places key answering right now?
+ *
+ * Unauthenticated so a cron (docs/ci/places-health-probe.patch.md) or an
+ * uptime monitor can hit it; rate-limited so it cannot be used to spend the
+ * key's quota. 503 is the alerting signal.
+ * @summary Places Health
+ */
+export const PlacesHealthHealthPlacesGetResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
  * @summary Readiness
  */
 export const ReadinessHealthReadinessGetResponse = /*#__PURE__*/ zod.unknown()
