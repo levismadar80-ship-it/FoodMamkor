@@ -741,7 +741,7 @@ test.describe("manual › /map filter IA: chips + FilterSheet (MEH-1075 · two-r
   // MEH-2425: a lit service chip is NOT repeated as a "× איסוף עצמי" tag under
   //   it (Sapir 27/10 — the same filter in two places). The chip is its own
   //   off switch; «× נקו הכל» is covered with sheet-only filters in the next test.
-  test("category row + service row + «סינון» with no count; a service chip lights itself and makes no tag strip", async ({ page }, info) => {
+  test("category row + service row + «סינון» with no count; a service chip lights itself and adds no count or tag", async ({ page }, info) => {
     await stubExternal(page);
     await gotoMap(page);
     const shell = shellOf(page, info);
@@ -755,7 +755,9 @@ test.describe("manual › /map filter IA: chips + FilterSheet (MEH-1075 · two-r
     // delivery chip would open the CityPickerModal here (MEH-1075 row 8 below).
     await serviceChip(shell, "pickup_points").click();
     await expect(serviceChip(shell, "pickup_points")).toHaveAttribute("aria-pressed", "true");
-    await expect(filtersButton(shell)).toContainText("1");
+    // MEH-2500: a lit service chip is on the bar already, so «סינון» adds no
+    // count for it — «סינון · 1» read as a filter hidden in the sheet.
+    await expect(filtersButton(shell)).toHaveText(FILTERS_BTN);
     await expect(shell.getByTestId("map-active-filter-tags")).toHaveCount(0);
 
     await serviceChip(shell, "pickup_points").click();

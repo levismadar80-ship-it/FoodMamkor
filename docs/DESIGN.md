@@ -602,6 +602,15 @@ only 6-digit-hex colors, spacing, and type; it silently drops `cubic-bezier`,
   >   - `--cat-ring:` the category's registry tint = `textColor ?? color`
   >     (`lib/category-registry.js` `CATEGORY_STYLES`). Every value clears WCAG
   >     1.4.11 ≥3:1 on **both** white and cream `#F5F0E8` (MEH-1181 audit).
+  >   - **a ✓ replaces the chip's glyph, in `--cat-ring`** (MEH-2500). The tint
+  >     alone was the only selection cue, and each category has its own, so a
+  >     selected red chip next to a selected green one read as decoration, not
+  >     as a choice (WCAG 1.4.1 — colour is never the only cue; Material filter
+  >     chips do the same). The promoted service chips (`/map` משלוח · איסוף
+  >     עצמי, home מאומת · משלוח) show the same ✓ when on.
+  > - **«סינון · N» counts only what is not already on screen** (MEH-2500) —
+  >   the sheet-only attributes, i.e. the tag strip. A lit promoted chip sits
+  >   beside the button, and counting it read as a filter hidden in the sheet.
   > - **ATTRIBUTE / toggle chips, `FilterSheet`, `CategoryTag`, and every OTHER
   >   chip surface:** UNCHANGED — solid `state-selected`/primary fill, white
   >   text. The deviation is scoped to category chips; nothing else moves.

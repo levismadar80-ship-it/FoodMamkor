@@ -38,7 +38,6 @@ export default function FilterChipsBar({
   resultCount,
   activeFilterTags,
   resetAllFilters,
-  activeAttributeCount,
   // MEH-2046 PR-6: the active city refinement, needed only to gate + address
   // the day-bridge banner below (Option C refined state = delivery + city).
   cityFilter,
@@ -112,12 +111,14 @@ export default function FilterChipsBar({
           >
             <Faders size={16} aria-hidden="true" />
             {t("filters.button")}
-            {/* MEH-1368: inline "· N" count of active attribute filters, replacing
-                the old corner badge. N now counts ALL active toggles (the inline
-                quick-chip row is gone). `.numeric` = tabular/LTR digit in the RTL
-                button, matching the corner badge's prior digit treatment. */}
-            {activeAttributeCount > 0 && (
-              <span className="numeric">{` · ${activeAttributeCount}`}</span>
+            {/* MEH-1368: inline "· N" count, replacing the old corner badge.
+                MEH-2500: N counts only what is NOT already on the bar — the
+                sheet-only toggles, i.e. exactly the tag strip below. With both
+                service chips lit it used to read «סינון · 2», which looked like
+                two hidden filters (Sapir 28/10). `.numeric` = tabular/LTR digit
+                in the RTL button, matching the corner badge's prior treatment. */}
+            {activeFilterTags.length > 0 && (
+              <span className="numeric">{` · ${activeFilterTags.length}`}</span>
             )}
           </button>
           <FilterSheet
