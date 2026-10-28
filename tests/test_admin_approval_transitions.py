@@ -22,7 +22,10 @@ notification hooks fail-open in the test config; we monkeypatch
 notify_producer_approved to assert fire-count (exactly once on the legit
 path, zero on a blocked toggle).
 """
+import pytest
+
 import app.routers.admin as admin_module
+from app.models.models import Producer
 from app.constants import LICENSE_REQUIRED_CATEGORIES
 from conftest import auth_header, make_category, make_producer, make_user
 
@@ -509,3 +512,49 @@ def test_no_audit_line_when_the_override_is_not_needed(client, db, monkeypatch, 
     assert not [
         r for r in caplog.records if "unverified-phone override" in r.getMessage()
     ], "an override was audited although the gate would have passed anyway"
+
+
+# --- MEH-2502: the admin edit PUT is not a fourth way to change status ------
+#
+# ProducerAdminUpdate inherits `status` from ProducerUpdate (the owner PUT
+# filters it out). Before MEH-2502 the admin PUT's setattr loop wrote it, so
+# `PUT {"status": "approved"}` approved a rejected/pending business with no
+# gate and no MEH-509 hooks — the hole MEH-769 closed on toggle-status.
+
+_STATUSES = ["approved", "inactive", "pending", "rejected", "draft"]
+
+
+def _put(client, producer_id, admin, body):
+    return client.put(
+        f"/admin/producers/{producer_id}", json=body, headers=auth_header(admin)
+    )
+
+
+@pytest.mark.parametrize("source", _STATUSES)
+@pytest.mark.parametrize("target", ["approved", "inactive", "rejected"])
+def test_admin_put_refuses_status(client, db, monkeypatch, source, target):
+    calls = []
+    monkeypatch.setattr(
+        admin_module, "notify_producer_approved", lambda *a, **k: calls.append(a)
+    )
+    producer = make_producer(db, name="מאפיית הגליל", status=source)
+    pid = producer.id
+    resp = _put(client, pid, _admin(db), {"status": target, "name": "שם חדש לגמרי"})
+    assert resp.status_code == 422, resp.text
+    assert "אישור" in resp.json()["detail"]
+    db.expire_all()
+    after = db.query(Producer).filter(Producer.id == pid).one()
+    # nothing in the body lands, not only the status
+    assert (after.status, after.name) == (source, "מאפיית הגליל")
+    assert calls == []
+
+
+def test_admin_put_without_status_still_edits(client, db):
+    """Control: the same PUT minus `status` is a normal edit."""
+    producer = make_producer(db, name="מאפיית הגליל", status="pending")
+    pid = producer.id
+    resp = _put(client, pid, _admin(db), {"name": "שם חדש לגמרי"})
+    assert resp.status_code == 200, resp.text
+    db.expire_all()
+    after = db.query(Producer).filter(Producer.id == pid).one()
+    assert (after.status, after.name) == ("pending", "שם חדש לגמרי")

@@ -873,7 +873,8 @@ def _seed_one(db, biz: dict, confirm: bool) -> tuple[str, bool]:
     # registration / admin / import writers use (it reads the flushed
     # instance, so the row mirrors these columns by construction). A
     # coordinate-less fixture gets no row, which is the helper's contract.
-    # REUSES: backend/app/services/producer_import.py:397
+    # REUSES: the same helper admin.py uses (the Excel importer that also
+    # called it was deleted in MEH-2516)
     create_primary_branch_location(db, producer)
     db.add(ProducerCategory(producer_id=producer.id, category_id=category.id))
 

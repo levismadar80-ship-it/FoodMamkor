@@ -631,9 +631,7 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > **MEH-2498 — taking a business off the site cancels its live group buys.**
 > When an admin moves a business out of `approved` — `POST
 > /admin/producers/{id}/toggle-status` (approved→inactive), `POST
-> /admin/producers/{id}/reject` (approved→rejected), or `PUT
-> /admin/producers/{id}` with a `status` other than `approved` (the admin
-> schema accepts it) — every group buy of it in
+> /admin/producers/{id}/reject` (approved→rejected) — every group buy of it in
 > `open` / `funded` becomes `cancelled` in the same commit
 > (`services/group_buy_delist.cancel_live_group_buys`), and each participant
 > except the business's own users gets the **delisted-cancel email**
@@ -641,6 +639,25 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > מופיע במהמקור», no link, no contact details). `fulfilled` / `cancelled` are
 > untouched; re-activation un-cancels nothing; a failing email never fails the
 > admin action. No schema change.
+>
+> **MEH-2502 — the admin edit cannot change status.** `PUT
+> /admin/producers/{id}` with `status` in the body → **422** «לא ניתן לשנות
+> סטטוס בעריכה — יש להשתמש באישור, בדחייה או בהשעיה.», nothing written. Status
+> moves only through approve / reject / toggle-status, which carry the approval
+> gate, the MEH-509 hooks and the MEH-2498 cancel. `ProducerAdminUpdate` still
+> declares the inherited field; the route refuses it. No schema change.
+>
+> **MEH-2503 — deleting a business or an account with group buys.** `DELETE
+> /admin/producers/{id}` and the owner's `DELETE /auth/me` first run the same
+> cancel + delisted email on the business's `open` / `funded` group buys, then
+> the DB cascade removes them. A participant's `DELETE /auth/me` removes her
+> commits (DB cascade) and reverts any `funded` group that drops below
+> `min_participants` to `open`, as leaving does
+> (`group_buy_delist.withdraw_user_commits`). Before this all three deletes
+> 500'd: `Producer.group_buys`, `Producer.name_change_requests` and
+> `User.group_buy_commits` lacked `passive_deletes` on a NOT NULL FK. A mapper
+> scan in `tests/test_meh2503_delete_with_group_buys.py` guards the class. No
+> schema change.
 >
 > **MEH-1164 sub-chunk B — structured 403 detail.** The unverified-email 403
 > `detail` is now an **object** `{"code": "email_unverified", "message": "יש
@@ -1021,7 +1038,6 @@ POST   /admin/producers/{id}/reject            admin — terminal → status=rej
                                                preset_key is ALSO persisted to producers.rejection_reason_code
                                                (NULL for a free-text-only body); approve clears both columns.
 POST   /admin/producers/{id}/request-changes   admin — MEH-1011: feedback required (empty → 400); pending-only (409 if status != pending, MEH-769 precedent; MEH-2124 dropped the second status); NON-terminal (status stays pending), sets requested_changes + changes_requested_at (tz-aware), emails producer + WhatsApp admin; cleared on approve
-POST   /admin/producers/import                 admin — Excel/CSV upload, dry_run=true by default
 
 # Home products moderation
 GET    /admin/home-products/flagged            admin
@@ -1317,7 +1333,8 @@ See [DEPLOYMENT.md](./DEPLOYMENT.md) §1 for the full setup matrix.
 ## Apple App Store compliance
 
 - `DELETE /auth/me` — deletes the user row + cascaded rows (favorites,
-  home_products, home_product_ratings, producer_reviews, experiences).
+  home_products, home_product_ratings, producer_reviews, experiences,
+  group_buy_commits — MEH-2503).
   Events hosted by the user's producer are NOT
   cascaded — they belong to the producer record.
 - `POST /auth/apple` — identity token verification + user create/link.

@@ -4,6 +4,17 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-10-28 21:52 — מקרי קצה בסטטוס בתי עסק: מועדפים/ביקורות/התראות, מחיקות, ועריכת אדמין (#3763, #3765, #3767)
+
+**‏שורה אחת:** עסק שהושעה, נדחה או נמחק כבר לא משאיר קצוות פתוחים: לא נשמר במועדפים, לא מקבל ביקורות, לא שולח התראות, נמחק בלי 500, ועריכת אדמין לא משנה סטטוס.
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏«עסק חי» = `is_business()` ב-`services/producer_listing.py` (approved + producer). כל משטח חדש שפונה לצרכניות מסנן דרכו.
+- ‏סטטוס של עסק משתנה רק ב-approve / reject / toggle-status. ה-PUT של האדמין מחזיר 422 על `status`.
+- ‏relationship חדש ל-FK שהוא NOT NULL צריך `cascade` או `passive_deletes`, אחרת מחיקה נופלת ב-500. `tests/test_meh2503_delete_with_group_buys.py` תופס את זה.
+
+**‏לא עכשיו:** שימוש חוזר ב-slug אחרי מחיקה; עמוד «כבר לא מופיע» לעסק שהוסר (צריך נוסח מספיר).
+
 ## 2026-10-28 18:40 — לוח הבקרה של בעלת העסק + קבוצות רכש בידי העסק: כל חמשת השלבים מוזגו
 
 **‏שורה אחת:** בעלת עסק מבטלת, סוגרת ומסמנת «נמסר» לקבוצת רכש שלה מהלוח. המשתתפות מקבלות מייל כשהיא מבטלת. «מתי ואיך מקבלים» הוא שדה חובה, ובדף הקבוצה מוצג «מגיעים אלייך?». ‏PR-ים #3680, ‏#3682, ‏#3683, ‏#3685, ‏#3688, ‏#3693, ‏#3699, ‏#3700, ‏#3739.
