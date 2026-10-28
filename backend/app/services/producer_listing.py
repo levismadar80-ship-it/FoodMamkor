@@ -87,6 +87,33 @@ def catalog_default_availability_condition():
     return Producer.availability_state != ON_VACATION
 
 
+def is_business():
+    """The ONE rule for "this row is a live business" (MEH-2459, ADR-036).
+
+    ``status == 'approved' AND kind == 'producer'``. Every surface that lists,
+    counts, searches, maps or resolves businesses composes THIS condition,
+    so an organizer row (``kind='organizer'`` — a market / event organizer
+    that sells nothing) is invisible as a business on all of them at once:
+
+      - ``_build_base_queries``                (GET /producers: list, ?q=, geo/map, X-Total-Count)
+      - ``GET /producers/count`` · ``/cities`` · ``/random`` · ``/by-slug/{slug}``
+      - ``GET /search`` (legacy)              · ``GET /stats``            · ``cities.py``
+      - public experiences and recipes joins · the dashboard city rank
+      - admin analytics / stats business counts and the admin map pins
+
+    Deliberately NOT applied to the events feed (an organizer exists to be
+    seen through its events) and NOT to the admin queue (admins must see
+    organizers to approve them). Same shape and same reasoning as
+    ``catalog_default_availability_condition`` above: one owner for the
+    decision, or the surfaces drift apart one reader at a time.
+
+    NULL-safety: ``producers.kind`` is ``nullable=False`` with
+    ``server_default 'producer'`` (models.py, migration f1a2b3c4d5e6), so the
+    equality cannot silently drop a row the way it would on a nullable column.
+    """
+    return and_(Producer.status == "approved", Producer.kind == "producer")
+
+
 # (key in filters dict, attribute on Producer model) — covers the simple
 # `if v is not None: q = q.filter(Producer.<attr> == v)` pattern. The
 # remaining filter pairs (kosher, category, delivery_city, has_delivery,
@@ -224,12 +251,12 @@ def _build_base_queries(
                 # or the property fires one query per producer on every list page.
                 selectinload(Producer.offers),
             )
-            .filter(Producer.status == "approved")
+            .filter(is_business())  # MEH-2459
         )
         count_q = (
             db.query(func.count(Producer.id.distinct()))
             .select_from(Producer)
-            .filter(Producer.status == "approved")
+            .filter(is_business())  # MEH-2459
         )
         if require_physical:
             # MEH-213 map-pin semantics: pinnable producers only. MEH-1282
@@ -309,13 +336,13 @@ def _build_base_queries(
             # or the property fires one query per producer on every list page.
             selectinload(Producer.offers),
         )
-        .filter(Producer.status == "approved")
+        .filter(is_business())  # MEH-2459
         .order_by(*order)
     )
     count_q = (
         db.query(func.count(Producer.id.distinct()))
         .select_from(Producer)
-        .filter(Producer.status == "approved")
+        .filter(is_business())  # MEH-2459
     )
     return q, count_q
 

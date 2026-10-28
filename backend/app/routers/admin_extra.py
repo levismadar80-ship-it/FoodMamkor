@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 from app.auth import require_admin
 from app.constants import LICENSE_REQUIRED_CATEGORIES
 from app.database import get_db
+from app.services.producer_listing import is_business  # MEH-2459
 from app.models import (
     AdminSetting,
     Category,
@@ -462,7 +463,7 @@ def _primary_location_points(db: Session, *, limit: int | None = None):
         db.query(Producer.id, Producer.name, ProducerLocation.lat, ProducerLocation.lng)
         .join(ProducerLocation, ProducerLocation.producer_id == Producer.id)
         .filter(
-            Producer.status == "approved",
+            is_business(),  # MEH-2459
             ProducerLocation.is_primary.is_(True),
             ProducerLocation.lat.isnot(None),
             ProducerLocation.lng.isnot(None),
@@ -508,7 +509,7 @@ def get_analytics(
     cat_rows = (
         db.query(Category.name, Category.emoji, func.count(Producer.id))
         .join(Category.producers)
-        .filter(Producer.status == "approved")
+        .filter(is_business())  # MEH-2459
         .group_by(Category.id, Category.name, Category.emoji)
         .order_by(func.count(Producer.id).desc())
         .all()
@@ -521,7 +522,7 @@ def get_analytics(
     # Producers per city
     city_rows = (
         db.query(Producer.city, func.count(Producer.id))
-        .filter(Producer.status == "approved", Producer.city.isnot(None))
+        .filter(is_business(), Producer.city.isnot(None))  # MEH-2459
         .group_by(Producer.city)
         .order_by(func.count(Producer.id).desc())
         .limit(10)
@@ -533,7 +534,7 @@ def get_analytics(
     top_rows = (
         db.query(Producer.id, Producer.name, func.count(Favorite.user_id).label("favs"))
         .outerjoin(Favorite, Favorite.producer_id == Producer.id)
-        .filter(Producer.status == "approved")
+        .filter(is_business())  # MEH-2459
         .group_by(Producer.id, Producer.name)
         .order_by(func.count(Favorite.user_id).desc())
         .limit(10)
@@ -837,7 +838,7 @@ def get_dashboard(
     stats = {
         "total_producers": db.query(func.count(Producer.id)).scalar() or 0,
         "approved_producers": db.query(func.count(Producer.id))
-        .filter(Producer.status == "approved")
+        .filter(is_business())  # MEH-2459
         .scalar()
         or 0,
         "pending_producers": int(pending_producers),
