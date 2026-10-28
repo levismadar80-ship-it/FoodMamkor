@@ -14,7 +14,7 @@ from alembic import context
 # ── ORM setup ────────────────────────────────────────────────────────────────
 # Import Base first, then the models module.  Importing the module (not just
 # the __init__ re-exports) guarantees that every class defined in models.py —
-# including City, ReferralClick, GroupBuy, GroupBuyCommit, CategoryRequest —
+# including City, GroupBuy, GroupBuyCommit, CategoryRequest —
 # is registered with Base.metadata before autogenerate runs.
 from app.database import Base
 import app.models.models  # noqa: F401

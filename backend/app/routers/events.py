@@ -25,7 +25,13 @@ from app.auth import (
 from app.database import get_db
 from app.models import Event, Producer, User
 from app.rate_limit import limiter
-from app.schemas.schemas import EventCreate, EventFilters, EventOut, EventUpdate
+from app.schemas.schemas import (
+    EventCreate,
+    EventFilters,
+    EventOut,
+    EventUpdate,
+    event_end_time_problem,
+)
 from app.utils.clock import israel_today, utc_now
 
 router = APIRouter(tags=["events"])
@@ -47,10 +53,14 @@ def _serialize(event: Event) -> EventOut:
         id=event.id,
         producer_id=event.producer_id,
         producer_name=event.producer.name if event.producer else None,
+        # MEH-2459: the event card links to the owner's page by kind.
+        owner_kind=event.producer.kind if event.producer else "producer",
+        owner_slug=event.producer.slug if event.producer else None,
         title=event.title,
         description=event.description,
         event_date=event.event_date,
         event_time=event.event_time,
+        end_time=event.end_time,
         location=event.location,
         city=event.city,
         lat=event.lat,
@@ -212,6 +222,7 @@ def create_event(
         description=data.description,
         event_date=data.event_date,
         event_time=data.event_time,
+        end_time=data.end_time,
         location=data.location,
         city=data.city,
         lat=data.lat,
@@ -269,7 +280,17 @@ def update_event(
     if event.producer_id != user.producer_id:
         raise HTTPException(status_code=404, detail="Event not found")
 
-    for field, value in data.model_dump(exclude_unset=True).items():
+    changes = data.model_dump(exclude_unset=True)
+    # MEH-2469: a PUT may carry only one of the pair, so the end-time rule is
+    # checked against the values the row will hold after the update — never
+    # against the payload alone.
+    problem = event_end_time_problem(
+        changes.get("event_time", event.event_time),
+        changes.get("end_time", event.end_time),
+    )
+    if problem:
+        raise HTTPException(status_code=422, detail=problem)
+    for field, value in changes.items():
         if field == "category" and value not in VALID_CATEGORIES:
             raise HTTPException(status_code=400, detail="קטגוריה לא תקינה")
         setattr(event, field, value)

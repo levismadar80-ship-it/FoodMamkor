@@ -47,7 +47,6 @@ from app.models import (
     InboundMessage,
     PhoneOtpToken,
     Producer,
-    ProducerFollower,
     ProducerReview,
     Product,
     Report,
@@ -155,8 +154,8 @@ def check_otp_tokens(db) -> None:
 
 
 def check_relationship_tables(db) -> None:
-    """Check #5: favorites / reviews / reports / followers -> missing parents."""
-    _header("5. favorites / producer_reviews / reports / producer_followers")
+    """Check #5: favorites / reviews / reports -> missing parents."""
+    _header("5. favorites / producer_reviews / reports")
     specs = [
         FkCheck("favorites -> missing user", Favorite, Favorite.user_id, User,
                 User.id, lambda r: f"user={r.user_id},producer={r.producer_id}", False),
@@ -172,11 +171,6 @@ def check_relationship_tables(db) -> None:
                 User, User.id, lambda r: str(r.id), False),
         FkCheck("reports -> missing producer", Report, Report.producer_id,
                 Producer, Producer.id, lambda r: str(r.id), False),
-        FkCheck("producer_followers -> missing user", ProducerFollower,
-                ProducerFollower.user_id, User, User.id, lambda r: str(r.id), False),
-        FkCheck("producer_followers -> missing producer", ProducerFollower,
-                ProducerFollower.producer_id, Producer, Producer.id,
-                lambda r: str(r.id), False),
     ]
     for spec in specs:
         _run_fk_check(db, spec)

@@ -58,7 +58,7 @@ Sentry Session Replay רץ עם `maskAllText: false` ו-`replaysOnErrorSampleRat
 | פניות טופס יצירת קשר | `models.py:800-802` (`ContactMessage.name/email/message`) · טופס | Postgres | Resend (התראה) | כן — `data.items.ugc` |
 | דוא״ל ניוזלטר | `models.py:792` (`NewsletterSubscriber.email`) · הרשמה לניוזלטר | Postgres | Resend | כן — `data.items.ugc`/`why.notifications` |
 | OTP טלפון | `models.py:1082` (`PhoneOtpToken.phone/code`) · אימות טלפון | Postgres | Meta WhatsApp | משתמע — `data.items.identity` |
-| הפניית referral | `models.py:985-1005` (`ReferralClick`) · הרשמה עם `/ref/{code}` | Postgres | — | לא במפורש |
+| הפניית referral | `models.py:985-1005` (`ReferralClick`) · הרשמה עם `/ref/{code}` — **הוסר**: הטבלה נמחקה ב-MEH-2393 (10/2026), `users.referral_code` נמחק בשלב 3 | Postgres | — | לא במפורש |
 | מיקום מקורב (דפדפן) | client geolocation (opt-in) · מפה | לא נשמר בשרת | — | כן — `data.items.location` |
 | Session Replay (טקסט גלוי) | `frontend/sentry.client.config.js:14-20` · בכל שגיאה | **Sentry (צד ג׳)** | **Sentry** | **לא** (CMP-02) |
 | אנליטיקת התנהגות | `frontend/components/ClarityScript.jsx:25` · consent=all | Microsoft Clarity | **Microsoft** (אך חסום CSP — CMP-09) | **לא** (CMP-01/09) |

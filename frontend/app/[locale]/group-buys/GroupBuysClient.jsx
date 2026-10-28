@@ -52,6 +52,13 @@ function GroupBuyCard({ gb }) {
           )}
         </div>
 
+        {/* MEH-2472: what is being bought — required on create, and until
+            now shown only in the owner's own list. */}
+        {gb.product_name && (
+          <p className="text-sm font-medium text-text" data-testid="group-buy-product-name">
+            {gb.product_name}
+          </p>
+        )}
         {gb.producer_name && (
           <p className="text-sm text-fg-muted">{t("by_producer", { name: gb.producer_name })}</p>
         )}

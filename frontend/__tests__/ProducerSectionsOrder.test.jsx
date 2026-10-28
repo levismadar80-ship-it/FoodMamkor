@@ -266,3 +266,74 @@ describe("ProducerSections → OrderWindowScheduleBlock special_hours pass-throu
     }
   });
 });
+
+// MEH-2438 follow-up («בתיאום אישי» research, 27/10): a business with a place
+// to visit but no hours showed Waze/Google buttons and nothing else — an
+// invitation to turn up unannounced at a home producer. The location section
+// now says to coordinate first. Cells: hours × location.
+describe("ProducerSections — no-hours line in the location section", () => {
+  const renderWith = (extra) =>
+    render(
+      <ProducerSections
+        producer={{
+          id: 3,
+          name: "חוות",
+          slug: "z",
+          description: "תיאור",
+          products: [],
+          offers_delivery: false,
+          delivery_areas: [],
+          categories: [],
+          has_physical_location: true,
+          ...extra,
+        }}
+        events={[]}
+        similarProducers={[]}
+        sectionRefs={{ current: {} }}
+        reviewsContainerRef={{ current: null }}
+        reviewsVisible={true}
+      />,
+    );
+  const pin = { kind: "branch", is_primary: true, lat: 32, lng: 34, precision: "exact", id: 1 };
+
+  it("location without hours → the coordinate-first line", () => {
+    renderWith({ locations: [pin] });
+
+    expect(screen.getByTestId("minimap")).toBeInTheDocument();
+    expect(screen.getByTestId("location-no-hours").textContent).toBe(
+      "producer.detail.sections.location_no_hours",
+    );
+  });
+
+  it("location with hours → no line", () => {
+    renderWith({ locations: [{ ...pin, opening_hours: "Sun-Thu 09:00-18:00" }] });
+
+    expect(screen.getByTestId("minimap")).toBeInTheDocument();
+    expect(screen.queryByTestId("location-no-hours")).toBeNull();
+  });
+
+  it("only a secondary location has hours → the line still shows (store hours are the primary's)", () => {
+    // resolveStoreHours reads the PRIMARY row (then the legacy column); a pickup
+    // point's hours are not the shop's, and DeliveryBlock lists them separately.
+    renderWith({
+      locations: [pin, { kind: "pickup", is_primary: false, lat: 32.1, lng: 34.1, id: 2, opening_hours: "Fri 08:00-13:00" }],
+    });
+
+    expect(screen.getByTestId("location-no-hours")).toBeInTheDocument();
+  });
+
+  it("hours without a location → no line (nowhere to arrive at)", () => {
+    renderWith({ has_physical_location: false, locations: [], opening_hours: "Fri 08:00-13:00" });
+
+    expect(screen.queryByTestId("minimap")).toBeNull();
+    expect(screen.queryByTestId("location-no-hours")).toBeNull();
+  });
+
+  it("the Hebrew line is the approved wording", async () => {
+    const he = (await import("@/messages/he.json")).default;
+    const en = (await import("@/messages/en.json")).default;
+
+    expect(he.producer.detail.sections.location_no_hours).toBe("אין שעות קבועות — כדאי לתאם לפני שמגיעים");
+    expect(en.producer.detail.sections.location_no_hours.trim()).not.toBe("");
+  });
+});
