@@ -41,3 +41,12 @@ def test_system_prompt_knows_market_stands_and_events():
     assert "אני מוכר/ת בשווקים או בדוכנים — איך מוסיפים את זה?" in chat.SYSTEM_PROMPT
     assert "איפה רואים שווקים ואירועים?" in chat.SYSTEM_PROMPT
     assert "«דוכן שוק»" in chat.SYSTEM_PROMPT
+
+
+def test_system_prompt_names_the_dashboard_events_screen_as_it_is_titled():
+    # The owner-dashboard events screen is titled «האירועים שלי»
+    # (frontend/messages/he.json dashboard.producer.manage_events.heading).
+    # Directions that name a screen the dashboard does not have send owners
+    # looking for the wrong thing.
+    assert "במסך «האירועים שלי»" in chat.SYSTEM_PROMPT
+    assert "במסך «אירועים»" not in chat.SYSTEM_PROMPT
