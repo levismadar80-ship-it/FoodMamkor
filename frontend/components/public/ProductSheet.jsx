@@ -84,6 +84,9 @@ const DIET_FLAGS = [
   { field: "is_vegan", key: "vegan" },
   { field: "is_vegetarian", key: "vegetarian" },
   { field: "is_lactose_free", key: "lactose_free" },
+  // MEH-2473: owner-declared per product (ProductsSection); previously it lit
+  // only the business-level badge and never showed on the product.
+  { field: "is_no_added_sugar", key: "no_added_sugar" },
 ];
 
 const FOCUSABLE =

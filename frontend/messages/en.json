@@ -788,7 +788,8 @@
             "gluten_free": "Gluten-free",
             "vegan": "Vegan",
             "vegetarian": "Vegetarian",
-            "lactose_free": "Lactose-free"
+            "lactose_free": "Lactose-free",
+            "no_added_sugar": "No added sugar"
           },
           "sheet_open_aria": "Details about {name}",
           "sheet_close_aria": "Close product details",

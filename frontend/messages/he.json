@@ -788,7 +788,8 @@
             "gluten_free": "ללא גלוטן",
             "vegan": "טבעוני",
             "vegetarian": "צמחוני",
-            "lactose_free": "ללא לקטוז"
+            "lactose_free": "ללא לקטוז",
+            "no_added_sugar": "ללא סוכר מוסף"
           },
           "sheet_open_aria": "פרטים על {name}",
           "sheet_close_aria": "סגירת פרטי המוצר",
