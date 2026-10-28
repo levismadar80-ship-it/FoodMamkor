@@ -104,14 +104,21 @@ function formatTime(t) {
 // Normalize an event OR experience row into one shape the rail renderer
 // understands. Field names diverge between the two APIs; the accent
 // ("green" event / "gold" experience) drives the species styling.
-function toEntry(row, tab) {
+function toEntry(row, tab, t) {
   const isExp = tab === "experiences";
+  // MEH-2461: an organizer-owned event names its organizer with the approved
+  // «מארגן: {name}» line; a business keeps the bare business name.
+  const isOrganizerEvent = !isExp && row.owner_kind === "organizer" && row.producer_name;
   return {
     id: row.id,
     title: row.title,
     date: row.event_date,
     time: row.event_time,
-    who: isExp ? row.host?.name : row.producer_name,
+    who: isExp
+      ? row.host?.name
+      : isOrganizerEvent
+        ? t("organizer_line", { name: row.producer_name })
+        : row.producer_name,
     city: row.city,
     category: row.category,
     price: isExp ? row.price_per_person : row.price,
@@ -489,7 +496,7 @@ export default function EventsPage({ initialTab = "events" }) {
                 </div>
                 <div>
                   {group.items.map((row) => (
-                    <EntryRow key={row.id} entry={toEntry(row, tab)} freeLabel={t("free")} />
+                    <EntryRow key={row.id} entry={toEntry(row, tab, t)} freeLabel={t("free")} />
                   ))}
                 </div>
               </section>

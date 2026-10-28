@@ -10,6 +10,7 @@ from pydantic import (
     BaseModel,
     EmailStr,
     Field,
+    ValidationInfo,
     field_validator,
     model_validator,
 )
@@ -834,6 +835,10 @@ class ProducerRegister(BaseModel):
     # MEH-17: flexible contact methods.
     primary_contact_method: str = "whatsapp"
     contact_email: EmailStr | None = None
+    # MEH-2460: 'organizer' registers a market / events organizer (ADR-036).
+    # Declared BEFORE category_ids on purpose: the category validator reads it
+    # from `info.data`, and Pydantic v2 only exposes fields declared earlier.
+    kind: Literal["producer", "organizer"] = "producer"
     # MEH-1153: server-side parity with the client's ≥1-category gate.
     # validate_default=True runs _require_categories_validator on the absent
     # case (default []) too, so both "missing" and "[]" 422.
@@ -1050,7 +1055,11 @@ class ProducerRegister(BaseModel):
 
     @field_validator("category_ids")
     @classmethod
-    def _require_categories(cls, v):
+    def _require_categories(cls, v, info: ValidationInfo):
+        # MEH-2460: an organizer carries no food category (ADR-036, decision 4)
+        # — whatever was sent is dropped, and the ≥1 rule does not apply.
+        if info.data.get("kind") == "organizer":
+            return []
         # MEH-1297: enforce the ≤3 cap alongside the MEH-1153 ≥1 requirement.
         return _cap_categories_validator(_require_categories_validator(v))
 
@@ -1073,6 +1082,28 @@ class ProducerRegister(BaseModel):
     # live filter. See the router-side comment at auth.py for the write.
     @model_validator(mode="after")
     def _validate_location_mode(self):
+        # MEH-2460: an organizer has no fixed address and delivers nothing, so
+        # the form does not ask (address / map / delivery are hidden for it). The DB CHECK producer_location_mode
+        # (has_physical_location OR offers_delivery) still applies to the row,
+        # so the server writes the one shape that satisfies it and claims no
+        # delivery: physical=True, delivery off. The row is never shown as a
+        # business (is_business()), so the flag carries no public meaning.
+        # License fields are cleared for the same reason — nothing to license.
+        if self.kind == "organizer":
+            self.has_physical_location = True
+            self.offers_delivery = False
+            self.delivery_nationwide = False
+            self.delivery_cities = []
+            self.delivery_areas = []
+            self.producer_license_number = None
+            self.license_pending = False
+            # Review #3711 F5: no street address and no map point — the form
+            # does not ask, and coordinates would mint a producer_locations
+            # row (create_primary_branch_location skips when lat/lng is None).
+            self.address = None
+            self.lat = None
+            self.lng = None
+            return self
         if not self.has_physical_location and not self.offers_delivery:
             raise ValueError("חייב לפחות אחד: חנות פיזית או משלוחים")
         if self.delivery_nationwide and len(self.delivery_cities) > 0:
@@ -3008,6 +3039,10 @@ class ProducerOwnerOut(ProducerDetailOut):
     rejection_reason_code: str | None = None
     resubmission_count: int = 0
     resubmitted_at: datetime | None = None
+    # MEH-2460: the organizer submission gate needs ≥1 upcoming event; the
+    # client mirror (lib/submission-gate.js) reads this count. Filled by
+    # GET/PUT /producers/me; 0 for every other serializer path.
+    upcoming_events_count: int = 0
 
 
 # --- MEH-51: Kashrut badge requests ---
@@ -3291,6 +3326,9 @@ class UserOut(BaseModel):
     # the user has a linked producer. Used by /settings to show the
     # correct business tab state (pending/approved/rejected/suspended).
     producer_status: str | None = None
+    # MEH-2460: 'producer' | 'organizer' — the dashboard layout branches its
+    # tab set on this, same reason producer_status rides here (no extra fetch).
+    producer_kind: str | None = None
     producer_rejection_reason: str | None = None
     # MEH-2210: the structured code beside the free text, plus how many
     # resubmissions the business has used — the dashboard's rejected banner
@@ -4287,6 +4325,32 @@ class EventOut(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+# --- MEH-2461: public organizer page (kind='organizer', ADR-036) ---
+class OrganizerSlugOut(BaseModel):
+    """One sitemap entry for /organizers/{slug}."""
+
+    slug: str
+    name: str
+
+
+class OrganizerPublicOut(BaseModel):
+    """GET /organizers/{slug}. Public fields only — no street address, no
+    license, nothing business-shaped (no products, categories or delivery)."""
+
+    id: UUID
+    name: str
+    slug: str
+    description: str | None = None
+    short_description: str | None = None
+    city: str | None = None
+    images: list[str] = []
+    phone: str | None = None
+    instagram: str | None = None
+    website: str | None = None
+    facebook: str | None = None
+    upcoming_events: list[EventOut] = []
 
 
 class EventFilters(BaseModel):
