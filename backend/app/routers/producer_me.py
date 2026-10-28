@@ -12,6 +12,7 @@ from app.auth import create_review_invite_token, require_producer
 from app.config import settings
 from app.constants import MAX_PRODUCER_RESUBMISSIONS
 from app.database import engine, get_db
+from app.services.producer_listing import is_business  # MEH-2459
 from app.rate_limit import limiter
 from app.services.availability_validation import (
     AvailabilityValidationError,
@@ -1138,7 +1139,7 @@ def _rank_in_city(db: Session, producer, israel_day):
                 ProducerPageView.created_at >= cutoff_30d,
             ),
         )
-        .filter(Producer.city == producer.city, Producer.status == "approved")
+        .filter(Producer.city == producer.city, is_business())  # MEH-2459
         .group_by(Producer.id)
         .order_by(rank_views.desc())
         .all()

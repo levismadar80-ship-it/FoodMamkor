@@ -27,6 +27,7 @@ from app.auth import (
     require_verified_producer,
 )
 from app.database import get_db
+from app.services.producer_listing import is_business  # MEH-2459
 from app.models import Experience, Producer, User
 from app.rate_limit import limiter
 from app.schemas.schemas import (
@@ -155,7 +156,7 @@ def _publicly_visible_query(db: Session):
         .join(Producer, User.producer_id == Producer.id)
         .filter(
             Experience.status == "approved",
-            Producer.status == "approved",
+            is_business(),  # MEH-2459
         )
     )
 

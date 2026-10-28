@@ -58,6 +58,7 @@ erDiagram
         float lat "LEGACY(2026-10-15, MEH-1938): mirror of the primary producer_locations row, no reader since 5a, drop in 5b"
         float lng
         string status "pending|approved|rejected"
+        string kind "MEH-2459 — producer|organizer; NOT NULL default producer; CHECK producer_kind_values (ADR-036)"
         float avg_rating "cached aggregate"
         int reviews_count "cached aggregate"
         boolean is_available_today "legacy — preserved during MEH-291 overlap"
