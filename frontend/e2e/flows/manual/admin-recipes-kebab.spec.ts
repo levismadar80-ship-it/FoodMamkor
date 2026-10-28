@@ -461,9 +461,12 @@ test.describe("approvals queue — overflow menu", () => {
     // `height:100%` canvas inside the row's <td> fell back to its intrinsic
     // 1920px — measured 270×1920 inside a 270×480 frame, i.e. stretched ×4 and
     // clipped. Chromium resolved it either way, so this discriminates only on
-    // the webkit-* projects (e2e-webkit job).
+    // the webkit-* projects (e2e-webkit job, which is a non-voting shadow
+    // run — so this guards by report, not by blocking a merge).
     const box = await page.locator("canvas").boundingBox();
     expect(box, "the story canvas has a layout box").not.toBeNull();
+    // A 0×0 box would satisfy the ratio check below; the preview is 270 wide.
+    expect(box!.width, "the story canvas is laid out at preview width").toBeGreaterThan(200);
     expect(Math.abs(box!.height - (box!.width * 16) / 9), `canvas ${box!.width}×${box!.height} is not 9:16`).toBeLessThanOrEqual(2);
     await page.getByRole("button", { name: "סגירת פאנל הסטורי" }).click();
     await expect(panel).toHaveCount(0);
