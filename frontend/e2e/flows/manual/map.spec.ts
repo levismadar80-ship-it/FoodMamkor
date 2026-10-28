@@ -1302,7 +1302,13 @@ test.describe("manual › map z-index token system + UI bugfixes", () => {
     await expect(shell.getByTestId("map-legend-toggle")).toBeHidden();
     await expect(shell.getByTestId("map-legend-panel")).toHaveCount(0);
     await expect(attribution(shell)).toBeVisible();
-    await sheetSettledAt(page, shell, 0.14); // PEEK (MapBottomSheet.jsx)
+    // PEEK (MapBottomSheet.jsx). Not `sheetSettledAt(…, 0.14)` any more: since
+    // MEH-2510 PEEK is max(14vh, nav clearance + 3.5rem), which on this
+    // project's 393×727 viewport is the floor (~128px), not 14vh (~102px).
+    await settleSheet(shell);
+    // ≤ 20vh: the floor is 128px = 17.6vh here; 0.3 (the first version) only
+    // proved "not HALF" and would pass a sheet stuck at 25vh (CI review, MEH-2510).
+    expect((await box(bottomSheet(shell))).height, "the sheet must be at PEEK").toBeLessThanOrEqual(0.2 * (await page.evaluate(() => window.innerHeight)));
     // MT:z:a1 — rides the PEEK edge by the MEH-1365 rule (6px above the sheet
     // height, measured from the container's bottom) and clears the cards.
     // FINDING (04/09): on this project's 393×727 viewport the container's
@@ -1479,4 +1485,33 @@ test.describe("manual › /map service row fits narrow phones (MEH-2514)", () =>
     const { shell } = await gotoWithCatalog(page, info);
     await expect(filtersButton(shell).getByText(FILTERS_BTN, { exact: true })).toBeVisible();
   });
+});
+
+// MEH-2510 — at PEEK the sheet shows one line, «N בתי עסק מקומיים באזור», and
+// on a short phone that line sat under the floating nav pill: PEEK was a flat
+// 14vh while the pill is a fixed-px band. Measured on staging before the fix:
+// count-row top 595.6 vs nav top 595 at 375×667 (all 20px hidden), 675.6 vs
+// 688 at 375×760 (8px hidden). The viewports are set explicitly because the
+// project's own 393×727 is neither of the two phones the card names.
+test.describe("manual › /map PEEK sheet count clears the nav pill on short phones (MEH-2510)", () => {
+  for (const vp of [
+    { width: 375, height: 667 },
+    { width: 375, height: 760 },
+    { width: 390, height: 844 },
+  ]) {
+    test(`${vp.width}×${vp.height}: the PEEK count row sits fully above the nav pill, with ≥4px air`, async ({ page }, info) => {
+      mobileOnly(info, "the bottom sheet and the nav pill are the mobile shell's");
+      await page.setViewportSize(vp);
+      const { shell } = await gotoWithCatalog(page, info);
+      await settleSheet(shell);
+      // At PEEK first, so a wrong snap fails with its own message: the floor
+      // stays a PEEK — 128px is 19.2vh at 667, the tallest share.
+      expect((await box(bottomSheet(shell))).height, "the floored sheet must stay ≤ 20vh").toBeLessThanOrEqual(0.2 * vp.height);
+      const count = shell.getByTestId("sheet-count");
+      await expect(count).toHaveText(icu(he.map.bottom_sheet.count, PRODUCERS.length));
+      const row = await box(count);
+      const nav = await box(page.getByTestId("bottom-nav"));
+      expect(row.y + row.height + 4, `count row bottom ${row.y + row.height} vs nav top ${nav.y}`).toBeLessThanOrEqual(nav.y);
+    });
+  }
 });
