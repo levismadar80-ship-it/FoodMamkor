@@ -187,6 +187,25 @@ export default async function sitemap() {
     // ignore
   }
 
+  // MEH-2461: organizer pages are public (approved organizers only, via
+  // GET /organizers) — listed under /organizers, never under /producers.
+  let organizerPages = [];
+  try {
+    const res = await serverFetch(`${API_URL}/organizers`);
+    if (res.ok) {
+      const organizers = await res.json();
+      organizerPages = organizers.flatMap((o) =>
+        localizeEntry(`/organizers/${o.slug}`, {
+          lastModified: now,
+          priority: 0.6,
+          changeFrequency: "weekly",
+        }),
+      );
+    }
+  } catch {
+    // API unavailable during build — skip organizer pages.
+  }
+
   return [
     ...staticPages,
     ...producerIndexPages,
@@ -194,5 +213,6 @@ export default async function sitemap() {
     ...producerPages,
     ...recipePages,
     ...eventPages,
+    ...organizerPages,
   ];
 }
