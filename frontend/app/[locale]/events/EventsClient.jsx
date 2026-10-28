@@ -123,6 +123,9 @@ function toEntry(row, tab, t) {
     description: row.description,
     accent: isExp ? "gold" : "green",
     href: isExp ? `/experiences/${row.id}` : `/events/${row.id}`,
+    // MEH-2468: the cover image the owner uploaded (EventForm, MEH-988) —
+    // until now it showed only on the event page itself.
+    image: row.image_url || null,
   };
 }
 
@@ -528,10 +531,16 @@ function EntryRow({ entry, freeLabel }) {
   const meta = [entry.who, entry.city].filter(Boolean).join(" · ");
   const isFree = !(entry.price > 0);
 
+  // MEH-2468: a third column only when there is an image — a row without one
+  // keeps today's two-column layout (no empty placeholder box).
+  const cols = entry.image
+    ? "grid-cols-[64px_1fr_auto] md:grid-cols-[104px_1fr_auto]"
+    : "grid-cols-[64px_1fr] md:grid-cols-[104px_1fr]";
+
   return (
     <Link
       href={entry.href}
-      className="relative grid grid-cols-[64px_1fr] md:grid-cols-[104px_1fr] border-b border-border transition hover:bg-surface-card"
+      className={`relative grid ${cols} border-b border-border transition hover:bg-surface-card`}
     >
       {/* species tick — start edge, full height */}
       <span aria-hidden="true" className={`absolute start-0 inset-y-0 w-[3px] ${tickBg}`} />
@@ -576,6 +585,15 @@ function EntryRow({ entry, freeLabel }) {
           )}
         </div>
       </div>
+      {entry.image && (
+        // Decorative: the row is a link already named by its title.
+        <div
+          aria-hidden="true"
+          data-testid="event-row-image"
+          className="my-4 md:my-5 me-4 w-20 h-20 md:w-28 md:h-28 rounded-[10px] bg-border bg-cover bg-center"
+          style={{ backgroundImage: `url(${optimizeCloudinary(entry.image, { aspectRatio: "1:1", width: 224 })})` }}
+        />
+      )}
     </Link>
   );
 }
