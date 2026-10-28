@@ -2560,7 +2560,7 @@
       "breadcrumb_experiences": "Experiences",
       "duration_minutes": "{count} min",
       "duration_hours": "{count, plural, one {# hour} other {# hours}}",
-      "duration_hours_half": "{count, plural, other {#.5 hours}}",
+      "duration_hours_half": "{count, plural, one {#.5 hours} other {#.5 hours}}",
       "duration_mixed": "{hours} {minutes} min",
       "recurring": "Recurring: {schedule}",
       "recurring_bare": "Recurring",
