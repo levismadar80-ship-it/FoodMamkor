@@ -109,12 +109,12 @@ def test_sentry_report_is_throttled_to_one_per_window(monkeypatch):
 
     monkeypatch.setattr(sentry_sdk, "new_scope", lambda: _Scope(), raising=False)
     monkeypatch.setattr(sentry_sdk, "capture_message", lambda *a, **k: captured.append(a), raising=False)
-    monkeypatch.setattr(HEALTH, "_last_places_report_at", 0.0)
+    monkeypatch.setattr(HEALTH, "_last_places_report_at", None)
     body = {"status": "error", "http": 403, "code": "PERMISSION_DENIED"}
     for _ in range(3):
         HEALTH._report_places_error(body)
     assert len(captured) == 1
     # And a new window reports again.
-    monkeypatch.setattr(HEALTH, "_last_places_report_at", 0.0)
+    monkeypatch.setattr(HEALTH, "_last_places_report_at", None)
     HEALTH._report_places_error(body)
     assert len(captured) == 2

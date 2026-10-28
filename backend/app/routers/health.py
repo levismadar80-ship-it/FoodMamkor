@@ -86,7 +86,9 @@ def _places_probe() -> tuple[int, dict]:
 # during an outage a hammered probe could turn one incident into thousands of
 # Sentry events. One report per process per window is all the alert needs.
 _REPORT_WINDOW_SECONDS = 600
-_last_places_report_at: float = 0.0
+# None = never reported. Not 0.0: time.monotonic() is seconds since boot, and on a
+# fresh CI runner that is < 600, so `now - 0.0 < window` read as "already sent".
+_last_places_report_at: float | None = None
 
 
 def _report_places_error(body: dict) -> None:
@@ -95,7 +97,7 @@ def _report_places_error(body: dict) -> None:
     event per `_REPORT_WINDOW_SECONDS` per process. Never raises."""
     global _last_places_report_at  # noqa: PLW0603 — a process-local throttle, nothing else
     now = time.monotonic()
-    if now - _last_places_report_at < _REPORT_WINDOW_SECONDS:
+    if _last_places_report_at is not None and now - _last_places_report_at < _REPORT_WINDOW_SECONDS:
         return
     _last_places_report_at = now
     try:
