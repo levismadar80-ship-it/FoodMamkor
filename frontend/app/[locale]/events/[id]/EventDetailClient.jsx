@@ -80,6 +80,9 @@ export default function EventDetailClient() {
     );
   }
 
+  // MEH-2461: who owns this event — a business or an organizer (ADR-036).
+  const isOrganizerEvent = event.owner_kind === "organizer";
+
   return (
     <div>
       {event.image_url && (
@@ -163,7 +166,9 @@ export default function EventDetailClient() {
             >
               {t("register")}
             </a>
-          ) : (
+          ) : isOrganizerEvent ? null : (
+            // MEH-2461: «יצירת קשר עם בית העסק» names a business; an
+            // organizer is reached through the «מארגן:» link below instead.
             <Link
               href={`/producer/${event.producer_id}`}
               className="bg-primary text-white px-6 py-3 rounded-sm font-medium hover:bg-primary-dark transition"
@@ -179,7 +184,23 @@ export default function EventDetailClient() {
           </Link>
         </div>
 
-        {event.producer_name && (
+        {/* MEH-2461: an organizer's event links to /organizers/{slug} (its
+            business page 404s since MEH-2459) with the approved line. */}
+        {event.producer_name && isOrganizerEvent && (
+          <p className="text-sm text-fg-muted mt-8" data-testid="event-organizer-line">
+            {event.owner_slug ? (
+              <Link
+                href={`/organizers/${event.owner_slug}`}
+                className="text-primary hover:underline"
+              >
+                {t("organizer_line", { name: event.producer_name })}
+              </Link>
+            ) : (
+              t("organizer_line", { name: event.producer_name })
+            )}
+          </p>
+        )}
+        {event.producer_name && !isOrganizerEvent && (
           <p className="text-sm text-fg-muted mt-8">
             {t("organized_by")}{" "}
             <Link href={`/producer/${event.producer_id}`} className="text-primary hover:underline">

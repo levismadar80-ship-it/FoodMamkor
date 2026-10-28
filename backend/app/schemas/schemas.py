@@ -4327,6 +4327,32 @@ class EventOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+# --- MEH-2461: public organizer page (kind='organizer', ADR-036) ---
+class OrganizerSlugOut(BaseModel):
+    """One sitemap entry for /organizers/{slug}."""
+
+    slug: str
+    name: str
+
+
+class OrganizerPublicOut(BaseModel):
+    """GET /organizers/{slug}. Public fields only — no street address, no
+    license, nothing business-shaped (no products, categories or delivery)."""
+
+    id: UUID
+    name: str
+    slug: str
+    description: str | None = None
+    short_description: str | None = None
+    city: str | None = None
+    images: list[str] = []
+    phone: str | None = None
+    instagram: str | None = None
+    website: str | None = None
+    facebook: str | None = None
+    upcoming_events: list[EventOut] = []
+
+
 class EventFilters(BaseModel):
     """MEH-447: query-param bag for GET /events. Used via
     Annotated[EventFilters, Depends()] so FastAPI exposes each field as
