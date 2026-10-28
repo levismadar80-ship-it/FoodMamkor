@@ -205,11 +205,14 @@ class TestRejectCancelsLiveGroupBuys:
         assert sent == []
 
 
-class TestAdminEditCancelsLiveGroupBuys:
-    """The admin PUT accepts `status` (ProducerUpdate.status) — the third way a
-    business leaves 'approved'. Found in the adversarial review of #3750."""
+class TestAdminEditCannotDelist:
+    """The admin PUT used to accept `status` (ProducerUpdate.status) — a third
+    way out of 'approved', found in the adversarial review of #3750. Since
+    MEH-2502 it refuses `status` outright, so it cancels nothing."""
 
-    def test_put_status_inactive_cancels_and_mails(self, client, db, monkeypatch):
+    def test_put_status_inactive_refused_and_touches_nothing(
+        self, client, db, monkeypatch
+    ):
         sent = _capture(monkeypatch)
         producer, _ = _business(db)
         gb = _group(db, producer)
@@ -221,9 +224,9 @@ class TestAdminEditCancelsLiveGroupBuys:
             json={"status": "inactive"},
             headers=auth_header(admin),
         )
-        assert resp.status_code == 200
-        assert _statuses(db, gb) == ["cancelled"]
-        assert [to for to, _, _ in sent] == ["buyer-put@example.com"]
+        assert resp.status_code == 422
+        assert _statuses(db, gb) == ["open"]
+        assert sent == []
 
     def test_put_without_status_change_touches_nothing(self, client, db, monkeypatch):
         sent = _capture(monkeypatch)
