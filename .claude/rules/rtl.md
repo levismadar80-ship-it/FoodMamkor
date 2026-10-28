@@ -113,9 +113,9 @@ cases, always use logical properties.
 ```
 tiles:0 → markers:400 → tooltips:500 → bottom-sheet:600 →
 legend:800 → controls/zoom/search:1000 → BottomNav pill:1000 →
-address suggestions:1010 → global header/nav (+ account dropdown):1050 →
+address suggestions:1010 → global header/nav (+ account dropdown, mobile chat launcher):1050 →
 cookie banner:1100 → filter-sheet:1200 → Toaster (toast stack):2000 →
-modals:9000 → interrupt modals:9500 → chat FAB / tooltips:9999 →
+modals:9000 → interrupt modals:9500 → chat panel + desktop FAB / tooltips:9999 →
 skip link:10000 → custom cursor dot:10001 (top of the scale, MEH-2300)
 ```
 
