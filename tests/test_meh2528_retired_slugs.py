@@ -154,3 +154,16 @@ def test_deleting_a_renamed_business_keeps_its_old_slug_reserved(client, db):
     assert db.get(RetiredSlug, SLUG).producer_id is None
     assert _ensure_unique_slug(db, SLUG) == f"{SLUG}-2"
     assert _ensure_unique_slug(db, "מאפייה-חדשה") == "מאפייה-חדשה-2"
+
+
+def test_a_deleted_tombstone_is_not_exempt_for_any_business(client, db):
+    """The NULL-owner branch: a deleted business's tombstone has no owner, so
+    no business — passing its own id as `exclude_id` — can match it."""
+    producer = _business(db)
+    resp = client.delete(
+        f"/admin/producers/{producer.id}", headers=auth_header(_admin(db))
+    )
+    assert resp.status_code == 200, resp.text
+
+    other = make_producer(db, name="עסק אחר")
+    assert _ensure_unique_slug(db, SLUG, exclude_id=other.id) == f"{SLUG}-2"
