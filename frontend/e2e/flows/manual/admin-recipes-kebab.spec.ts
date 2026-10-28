@@ -10,13 +10,13 @@ import type { Route } from "@playwright/test";
  *             MT:MEH-530:52-55    the request-changes entry point (1011 chunk 2)
  * Touches:  NO backend. Recipes live in a per-test store the five tabs read
  *           from and the three actions move rows through; the queue's DELETE,
- *           set-ambassador, request-changes and approve are captured and
+ *           toggle-status, request-changes and approve are captured and
  *           answered, and the row list re-reads the mutated store. Session via
  *           addInitScript — the chunk-11/12 pattern. Default CI target, no
  *           DEMO_* fixture, no storageState.
  * Does NOT: send anything to a server. Approving a real recipe publishes it,
- *           deleting a real business is irreversible, and an ambassador toggle
- *           changes a public trust tier — every one a write against the RAILWAY
+ *           deleting a real business is irreversible, and a suspend takes a
+ *           business off the public site — every one a write against the RAILWAY
  *           STAGING backend the storageState specs share
  *           (.github/workflows/e2e.yml:229-233), forbidden by the 13/07 ruling.
  * Related:  app/[locale]/admin/recipes/page.js · components/admin/AdminRowMenu.jsx ·
@@ -141,7 +141,7 @@ type StubOpts = {
   /** MEH-2359: the admin's-turn recipe count (`recipes_awaiting_review`) — the number on the «מתכונים» queue entry. */
   pendingModeration?: number;
   deleteStatus?: number;
-  /** Delay before DELETE / set-ambassador answer — the in-flight window. */
+  /** Delay before DELETE / toggle-status answer — the in-flight window. */
   delayMs?: number;
   writes?: Rec[];
 };
@@ -196,12 +196,13 @@ async function stubAdmin(page: Page, opts: StubOpts = {}): Promise<void> {
     rows = rows.map((x) => (x.id === id ? { ...x, requested_changes: feedback, changes_requested_at: "2026-09-05T10:00:00Z" } : x));
     return json(r, { ok: true });
   });
-  await page.route("**/admin/producers/*/set-ambassador", async (r) => {
+  // MEH-2509: the ambassador toggle is gone; suspend (toggle-status) is the
+  // in-flight write the busy-item case below exercises.
+  await page.route("**/admin/producers/*/toggle-status", async (r) => {
     rec(r, writes);
-    const id = Number(new URL(r.request().url()).pathname.match(/producers\/(\d+)\/set-ambassador/)![1]);
-    const { ambassador } = r.request().postDataJSON() as { ambassador: boolean };
+    const id = Number(new URL(r.request().url()).pathname.match(/producers\/(\d+)\/toggle-status/)![1]);
     await sleep(delayMs);
-    rows = rows.map((x) => (x.id === id ? { ...x, ambassador } : x));
+    rows = rows.map((x) => (x.id === id ? { ...x, status: x.status === "approved" ? "inactive" : "approved" } : x));
     return json(r, { ok: true });
   });
   // DELETE /admin/producers/{id}. Registered BEFORE the presets route so the
@@ -415,11 +416,11 @@ test.describe("recipes moderation — /admin/recipes", () => {
 
 test.describe("approvals queue — overflow menu", () => {
   // MT:MEH-530:36 — the secondary actions live in ⋮, not inline.
-  test("suspend / ambassador / story / delete are not inline — only «✓ אשר», «בקשת השלמה», «עריכה» and ⋮ are", async ({ page }) => {
+  test("suspend / story / delete are not inline — only «✓ אשר», «בקשת השלמה», «עריכה» and ⋮ are", async ({ page }) => {
     await stubAdmin(page, { rows: [row(), approvedRow()] });
     await openQueue(page);
     for (const name of ["עסק לבדיקה", "עסק מאושר"]) {
-      await expect(rowOf(page, name).getByRole("button", { name: /^(השהה|הפעל|הגדרה כשגרירה|הסרת תפקיד שגרירה|סטורי|מחקו)$/ })).toHaveCount(0);
+      await expect(rowOf(page, name).getByRole("button", { name: /^(השהה|הפעל|סטורי|מחקו)$/ })).toHaveCount(0);
       await expect(kebab(page, name)).toBeVisible();
     }
     const pending = rowOf(page, "עסק לבדיקה");
@@ -437,12 +438,12 @@ test.describe("approvals queue — overflow menu", () => {
     await expect(item(page, "מחקו")).toHaveClass(/text-red-600/);
   });
 
-  // MT:MEH-530:38 — an approved row's menu: suspend · ambassador · story · delete (red).
-  test("an approved row's menu holds suspend, ambassador, story and a red delete", async ({ page }) => {
+  // MT:MEH-530:38 — an approved row's menu: suspend · story · delete (red). MEH-2509 removed ambassador.
+  test("an approved row's menu holds suspend, story and a red delete", async ({ page }) => {
     await stubAdmin(page, { rows: [approvedRow()] });
     await openQueue(page);
     await openKebab(page, "עסק מאושר");
-    await expect(menu(page).getByRole("menuitem")).toHaveText(["השהה", "הגדרה כשגרירה", "סטורי", "מחקו"]);
+    await expect(menu(page).getByRole("menuitem")).toHaveText(["השהה", "סטורי", "מחקו"]);
     await expect(item(page, "מחקו")).toHaveClass(/text-red-600/);
     await expect(item(page, "השהה")).not.toHaveClass(/text-red-600/);
   });
@@ -459,21 +460,6 @@ test.describe("approvals queue — overflow menu", () => {
     await expect(page.getByRole("button", { name: "הורד" })).toBeVisible({ timeout: 15_000 });
     await page.getByRole("button", { name: "סגירת פאנל הסטורי" }).click();
     await expect(panel).toHaveCount(0);
-  });
-
-  // MT:MEH-530:40 — «הגדרה כשגרירה» POSTs the toggle; after the reload the item reads the opposite action.
-  test("«הגדרה כשגרירה» POSTs ambassador:true and the menu then offers the removal", async ({ page }) => {
-    const writes: Rec[] = [];
-    await stubAdmin(page, { rows: [approvedRow()], writes });
-    await openQueue(page);
-    await openKebab(page, "עסק מאושר");
-    await item(page, "הגדרה כשגרירה").click();
-    await expect.poll(() => posts(writes, "/set-ambassador").length).toBe(1);
-    expect(posts(writes, "/set-ambassador")[0]).toMatchObject({ url: "/admin/producers/502/set-ambassador", body: { ambassador: true } });
-    await expect(menu(page)).toHaveCount(0);
-    await openKebab(page, "עסק מאושר");
-    await expect(item(page, "הסרת תפקיד שגרירה")).toBeVisible();
-    await expect(item(page, "הגדרה כשגרירה")).toHaveCount(0);
   });
 
   // MT:MEH-530:41 · MT:MEH-530:30 — «מחקו» opens the modal dialog with the name; never window.confirm.
@@ -579,10 +565,10 @@ test.describe("approvals queue — delete dialog", () => {
     await stubAdmin(page, { rows: [approvedRow()], delayMs: 8_000, writes });
     await openQueue(page);
     await openKebab(page, "עסק מאושר");
-    await item(page, "הגדרה כשגרירה").click();
-    await expect.poll(() => posts(writes, "/set-ambassador").length).toBe(1);
+    await item(page, "השהה").click();
+    await expect.poll(() => posts(writes, "/toggle-status").length).toBe(1);
     await openKebab(page, "עסק מאושר");
-    const busy = item(page, "הגדרה כשגרירה");
+    const busy = item(page, "השהה");
     await expect(busy).toHaveAttribute("aria-disabled", "true");
     await expect(busy).not.toHaveAttribute("disabled", /.*/);
     await busy.focus();
@@ -593,7 +579,7 @@ test.describe("approvals queue — delete dialog", () => {
     // about a click that lands on the busy item, so the wait is bypassed.
     await busy.click({ force: true });
     await expect(menu(page), "a no-op click must not close the menu either").toBeVisible();
-    const second = await expect.poll(() => posts(writes, "/set-ambassador").length, { timeout: 1_500 }).toBeGreaterThan(1).then(() => true).catch(() => false);
+    const second = await expect.poll(() => posts(writes, "/toggle-status").length, { timeout: 1_500 }).toBeGreaterThan(1).then(() => true).catch(() => false);
     expect(second, "the busy item must not fire a second toggle").toBe(false);
   });
 });

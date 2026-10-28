@@ -288,7 +288,7 @@ function ReferralSource({ producer }) {
   );
 }
 
-export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onApproveWithoutLicense, onRequestChanges, onReject, onToggleStatus, onToggleAmbassador, onDeleteProducer, onToggleStoryCard, isBusy }) {
+export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onApproveWithoutLicense, onRequestChanges, onReject, onToggleStatus, onDeleteProducer, onToggleStoryCard, isBusy }) {
   const t = useTranslations("admin");
   const p = producer;
   // UIS Pattern A (MEH-228): disable the in-flight action's button. `isBusy`
@@ -323,7 +323,8 @@ export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onAppro
       {/* MEH-1027 Chunk A: secondary + destructive actions live in the kebab
           (MEH-1023 pattern) — same guards, same handlers, same busy keys as
           the inline buttons they replace; only the trigger location moved.
-          Ambassador + story-card behavior is unchanged (reposition only). */}
+          Story-card behavior is unchanged (reposition only). MEH-2509 removed
+          the ambassador item (it duplicated «בחירת העורכת»). */}
       <AdminRowMenu
         ariaLabel={t("producers.table.actions.menu_aria")}
         items={[
@@ -333,24 +334,6 @@ export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onAppro
                 label: p.status === "approved" ? t("producers.table.actions.suspend") : t("producers.table.actions.activate"),
                 disabled: busy(`status:${p.id}`),
                 onSelect: () => onToggleStatus(p.id),
-              }]
-            : []),
-          ...(p.status === "approved"
-            ? [{
-                key: "ambassador",
-                // MEH-1267: title explains the ambassador action (Trust Tier 5)
-                // for admins who don't know what "שגריר" means.
-                // MEH-1681: the label names the ACTION the click performs, not the
-                // current state. It previously read "שגרירה" / "☆ שגריר" — state
-                // descriptions, where only the ☆ glyph carried the direction, so an
-                // admin could not tell whether clicking would set or remove the role.
-                label: (
-                  <span title={t("producers.table.actions.ambassador_tooltip")}>
-                    {p.ambassador ? t("producers.table.actions.remove_ambassador_title") : t("producers.table.actions.set_ambassador_title")}
-                  </span>
-                ),
-                disabled: busy(`ambassador:${p.id}`),
-                onSelect: () => onToggleAmbassador(p.id, p.ambassador),
               }]
             : []),
           ...(p.status === "approved" && p.slug
@@ -621,14 +604,14 @@ function EmptyRow({ incompleteOnly }) {
 
 export default function AdminProducersTable({
   rows, incompleteOnly, storyCardOpenId, onSetStoryCardOpenId, loadError, onRetryLoad,
-  onQuickApprove, onApproveWithoutLicense, onRequestChanges, onReject, onToggleStatus, onToggleAmbassador, onDeleteProducer,
+  onQuickApprove, onApproveWithoutLicense, onRequestChanges, onReject, onToggleStatus, onDeleteProducer,
   onUploadStoryCard, isBusy, checklist,
   page, totalPages, perPage, onPageChange, onPerPageChange, visibleCount,
 }) {
   const onToggleStoryCard = (id) =>
     onSetStoryCardOpenId((prev) => (prev === id ? null : id));
   const handlers = {
-    onQuickApprove, onApproveWithoutLicense, onRequestChanges, onReject, onToggleStatus, onToggleAmbassador, onDeleteProducer,
+    onQuickApprove, onApproveWithoutLicense, onRequestChanges, onReject, onToggleStatus, onDeleteProducer,
     onUploadStoryCard, onToggleStoryCard, isBusy,
   };
   return (

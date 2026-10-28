@@ -200,13 +200,8 @@ function useProducerActions(loadAllProducers, deps) {
       t("producers.table.delete_error"),
     );
   };
-  const toggleAmbassador = (id, current) =>
-    run(`ambassador:${id}`, async () => {
-      await api.post(`/admin/producers/${id}/set-ambassador`, { ambassador: !current });
-      loadAllProducers();
-    });
   return {
-    quickApprove, toggleStatus, deleteProducer, toggleAmbassador,
+    quickApprove, toggleStatus, deleteProducer,
     // MEH-1027 Chunk B: delete confirm dialog controller.
     confirmDelete, closeDeleteConfirm, confirmDeleteProducer,
   };
