@@ -77,6 +77,7 @@ vi.mock("@phosphor-icons/react", () => {
     CaretDown: Stub,
     CaretUp: Stub,
     NavigationArrow: Stub,
+    Phone: Stub,
     ChatCircle: Stub,
   };
 });
@@ -289,6 +290,34 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
     const nav = screen.getAllByRole("link", { name: "פתיחה ב-Waze" });
     expect(nav).toHaveLength(2);
     expect(nav[0]).toHaveAttribute("href", expect.stringContaining("waze.com/ul?ll="));
+  });
+
+  // MEH-2477: the per-location phone the owner types in LocationsEditor is
+  // served publicly since MEH-1509 and was rendered nowhere. One location with
+  // a phone and one without, so the count proves the link follows the field.
+  it("MEH-2477: a location's phone is a tap-to-call link; a location without one shows none", () => {
+    render(
+      <DeliveryBlock
+        nationwide={false}
+        areas={[]}
+        pickup={true}
+        producer={{
+          ...producer,
+          locations: [
+            { kind: "market_stand", label: "דוכן בשוק הכרמל", city: "תל אביב", lat: 32.07, lng: 34.77, phone: "052-123 4567" },
+            { kind: "pickup", label: "החווה", city: "עתלית", lat: 32.7, lng: 34.9 },
+          ],
+        }}
+      />,
+    );
+    const calls = screen
+      .getAllByRole("link")
+      .filter((a) => (a.getAttribute("href") || "").startsWith("tel:"));
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toHaveAttribute("href", "tel:0521234567");
+    expect(calls[0]).toHaveTextContent("052-123 4567");
+    // a phone number reads left-to-right inside the RTL row
+    expect(calls[0]).toHaveAttribute("dir", "ltr");
   });
 
   it("MEH-1512: label falls back to city when label is null", () => {
