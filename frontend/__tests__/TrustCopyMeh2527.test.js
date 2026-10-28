@@ -45,6 +45,7 @@ describe("MEH-2527 trust copy", () => {
     expect(he.about.consumer.community_leader.body).toContain("10 ביקורות");
     expect(he.about.consumer.community_leader.body).toContain("4.5");
     expect(en.about.consumer.community_leader.body).toContain("10 reviews");
+    expect(en.about.consumer.community_leader.heading).toBe(en.trust.tier_4.label);
   });
 
   it("the stated 10 / 4.5 thresholds are the ones the backend computes", () => {
