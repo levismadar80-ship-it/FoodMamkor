@@ -34,6 +34,11 @@ function StatusSelect({ value, onChange }) {
       <option value="pending">{t("producers.toolbar.pending")}</option>
       <option value="inactive">{t("producers.toolbar.suspended")}</option>
       <option value="rejected">{t("producers.toolbar.rejected")}</option>
+      {/* MEH-2466: the backend has taken `?status=draft` since MEH-2100 (the
+          "all"-without-param default deliberately hides drafts from the
+          queue); without this option an owner-claim draft (MEH-2322) was
+          reachable only by its edit URL. */}
+      <option value="draft">{t("producers.toolbar.drafts")}</option>
     </select>
   );
 }

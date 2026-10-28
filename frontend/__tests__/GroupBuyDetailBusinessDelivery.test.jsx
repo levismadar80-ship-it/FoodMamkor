@@ -1,11 +1,12 @@
 /**
- * MEH-2453 (MEH-2435 chunk 5) — the public group page links the business and
- * answers "מגיעים אלייך?" from the business's own delivery data.
+ * MEH-2453 (MEH-2435 chunk 5) — the public group page answers «מגיעים אלייך?»
+ * from the business's own delivery data.
  *
- * A participant from another city needs two things before she joins: who the
- * business is (its page shows pickup points and areas) and whether it delivers
- * to her. The page fetches the public GET /producers/{id} once per group and
- * validates the delivery subset with Zod (rule 19) before using it.
+ * A participant from another city needs to know, before she joins, whether the
+ * product reaches her. The page fetches the public GET /producers/{id} once per
+ * group and validates the delivery subset with Zod (rule 19) before using it.
+ * (The «מאת {name}» link to the business page is MEH-2472's, tested in
+ * GroupBuyFields.test.jsx.)
  *
  * Cells: producer fetch ok / fails / returns a malformed body × business that
  * delivers to listed cities / nationwide with exclusions / does not deliver.
@@ -87,33 +88,26 @@ beforeEach(() => {
   fixture.gb = {};
 });
 
-describe("the business link", () => {
-  it("links the business name to its page", async () => {
-    await renderPage();
-    const link = await screen.findByRole("link", { name: by(GB.producer_name) });
-    expect(link).toHaveAttribute("href", "/producer/p-1");
-  });
-
-  it("stays plain text when the business page cannot be fetched", async () => {
+// The «מאת {name}» link itself is MEH-2472's (GroupBuyFields.test.jsx); these
+// cover the business fetch that feeds the checker.
+describe("the business fetch", () => {
+  it("a failed fetch leaves no checker (and the page still renders)", async () => {
     fixture.producerError = { response: { status: 404 } };
     await renderPage();
     await waitFor(() => expect(get).toHaveBeenCalledWith("/producers/p-1"));
-    expect(screen.getByText(by(GB.producer_name)).closest("a")).toBeNull();
     expect(screen.queryByTestId("delivery-checker")).toBeNull();
   });
 
-  it("stays plain text, with no checker, when the body fails validation", async () => {
+  it("a body that fails validation leaves no checker", async () => {
     fixture.producer = producer({ delivery_areas: "חדרה" });
     await renderPage();
     await waitFor(() => expect(get).toHaveBeenCalledWith("/producers/p-1"));
-    expect(screen.getByText(by(GB.producer_name)).closest("a")).toBeNull();
     expect(screen.queryByTestId("delivery-checker")).toBeNull();
   });
 
   it("fetches nothing when the group carries no producer id", async () => {
     fixture.gb = { producer_id: null };
     await renderPage();
-    expect(get).not.toHaveBeenCalledWith("/producers/null");
     expect(get.mock.calls.filter(([u]) => u.startsWith("/producers/"))).toHaveLength(0);
   });
 });
@@ -121,7 +115,8 @@ describe("the business link", () => {
 describe("moving to another group", () => {
   it("drops the previous business before the next one loads", async () => {
     const { rerender } = render(<GroupBuyDetailClient id="gb-1" />);
-    await screen.findByRole("link", { name: by(GB.producer_name) });
+    // Control: the first business's checker is on screen.
+    await screen.findByTestId("delivery-checker");
     // The second group belongs to another business whose fetch never settles.
     get.mockImplementation((url) => {
       if (url === "/group-buys/gb-2") {
@@ -132,7 +127,6 @@ describe("moving to another group", () => {
     });
     rerender(<GroupBuyDetailClient id="gb-2" />);
     await screen.findByText(by("רפת הגליל"));
-    expect(screen.queryByRole("link", { name: by("רפת הגליל") })).toBeNull();
     expect(screen.queryByTestId("delivery-checker")).toBeNull();
   });
 });
@@ -156,7 +150,8 @@ describe("«מגיעים אלייך?» on the group page", () => {
   it("is absent for a business with no delivery (pickup only)", async () => {
     fixture.producer = producer({ offers_delivery: false, delivery_areas: [] });
     await renderPage();
-    await screen.findByRole("link", { name: by(GB.producer_name) });
+    await waitFor(() => expect(get).toHaveBeenCalledWith("/producers/p-1"));
+    await act(async () => {});
     expect(screen.queryByTestId("delivery-checker")).toBeNull();
   });
 

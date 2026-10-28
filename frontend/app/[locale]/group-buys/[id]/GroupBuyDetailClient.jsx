@@ -123,10 +123,9 @@ export default function GroupBuyDetailClient({ id }) {
   const [error, setError] = useState("");
   const [showConfetti, setShowConfetti] = useState(false);
   const prevStatusRef = useRef(null);
-  // MEH-2453: the business behind the group — its public page (for the link)
-  // and its delivery data (for «מגיעים אלייך?»). Null until fetched and valid;
-  // on any failure the name stays plain text and the checker stays away, so a
-  // business whose page is not public never gets a link to a 404.
+  // MEH-2453: the business's delivery data, for «מגיעים אלייך?». Null until
+  // fetched and valid; on any failure the checker simply stays away. (The
+  // «מאת {name}» link to its page is MEH-2472's and needs no fetch.)
   const [producer, setProducer] = useState(null);
 
   const load = async () => {
@@ -365,19 +364,25 @@ export default function GroupBuyDetailClient({ id }) {
             <h1 className="font-headline-md text-2xl font-bold text-text mt-2 mb-1">
               {gb.title}
             </h1>
-            {gb.producer_name && (
-              <p className="text-sm text-fg-muted">
-                {/* MEH-2453: the business page carries its pickup points and
-                    delivery areas — the answer to "how do I get this". */}
-                {producer ? (
-                  <Link href={`/producer/${producer.id}`} className="text-primary hover:underline">
-                    {t("by_producer", { name: gb.producer_name })}
-                  </Link>
-                ) : (
-                  t("by_producer", { name: gb.producer_name })
-                )}
+            {/* MEH-2472: the product being bought, and a way to the business
+                that sells it (both were in the payload and never rendered). */}
+            {gb.product_name && (
+              <p className="text-base font-medium text-text" data-testid="group-buy-product-name">
+                {gb.product_name}
               </p>
             )}
+            {gb.producer_name &&
+              (gb.producer_id ? (
+                <Link
+                  href={`/producer/${gb.producer_id}`}
+                  data-testid="group-buy-producer-link"
+                  className="inline-block text-sm text-primary hover:underline"
+                >
+                  {t("by_producer", { name: gb.producer_name })}
+                </Link>
+              ) : (
+                <p className="text-sm text-fg-muted">{t("by_producer", { name: gb.producer_name })}</p>
+              ))}
             {gb.description && (
               <p className="text-sm text-text mt-3 leading-relaxed">{gb.description}</p>
             )}

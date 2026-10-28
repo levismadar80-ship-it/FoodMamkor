@@ -4,6 +4,101 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-10-28 17:40 — בדיקת קישור ההזמנה ב-staging עברה; טופס האדמין: שמות ריקים (#3684) ועיר מהרשימה (#3733)
+
+**‏שורה אחת:** התחברות עם Google מקישור הזמנה עובדת מקצה לקצה ב-staging (בדיקה בכרום, 27/10). שני באגים בטופס האדמין שהבדיקה מצאה תוקנו ומוזגו.
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏בבדיקת קישור הזמנה צריך חשבון Google **שני**: `claim` מחזיר 403 לאדמין ו-409 לחשבון שכבר יש לו עסק. הפרומפט לכרום: `claim/chrome-google-claim-test.md` בקבצי הפרויקט.
+- ‏עסק בטיוטה מופיע ברשימת האדמין רק בסינון «טיוטות». «כל הסטטוסים» מסתיר טיוטות בכוונה.
+
+**‏פתוח:**
+- ‏עסק הבדיקה «בדיקת קישור הזמנה – למחוק» עדיין ב-staging, משויך לחשבון ה-Google השני. למחוק דרך «טיוטות» ← ⋮ ← מחיקה.
+- ‏בלוח הבקרה, טיוטה שנתבעה לא כתובה כ«טיוטה» (רואים «מוכן 0%» ו«שליחה לבדיקה»). שינוי קופי — רק אם ספיר תרצה.
+
+## 2026-10-28 17:30 — סקירת הפרויקט: פיצ'רי הפניות ומעקב נמחקו עד הסוף, «בתיאום אישי» תוקן
+
+**‏שורה אחת:** כל ממצאי הסקירה שאושרו מוזגו: #3687, #3689, #3690, #3691, #3692, #3698, #3734, #3735. ‏MEH-2392, ‏MEH-2393, ‏MEH-2438 ב-Done.
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏`users.referral_code`, ‏`producer_followers` ו-`referral_clicks` כבר לא קיימים (revisions `e5b2d8f4a913`, `1cd44149cc20`). אין להחזיר אותם.
+- ‏מחיקת עמודה בבטחה = deploy אחד עם `__mapper_args__ = {"exclude_properties": [...]}`, ורק ב-deploy הבא ה-drop. `deferred()` לא מספיק — ה-INSERT של ה-ORM עדיין מונה כל עמודה ממופה.
+- ‏קנייה/איסוף בכרטיס המפה: «קנייה במקום» רק כש-`has_physical_location === true` ויש שעות (`resolveStoreHours`). אחרת «בתיאום מראש».
+- ‏commit שכרום עושה בלי שורת `Builder-Model:` נכשל ב-Repo guards. כרום כותב שורה אמיתית משלו, או `guard-ok: edited by Claude in Chrome at Sapir's request; it cannot attest its model id`. אסור לכתוב שאדם ערך.
+
+**‏פתוח:**
+- ‏**E2E של PR-ים מתבטל** מאז 28/10 17:09 (שעון ישראל) — באג של #3687: קבוצת concurrency ברמת ה-job מחזיקה ממתין אחד בלבד. אדום ב-E2E gate על PR כרגע הוא לא של ה-PR, ול-E2E אין הצבעה. התיקון `queue: max` ב-`.github/workflows/e2e.yml` מחכה לספיר: `sapir-tasks/chrome-prompt-e2e-queue-2026-10-28.md` (ענף `feature/meh-2398-e2e-queue`).
+
+## 2026-10-28 17:00 — סבב «תחליט ותבדוק»: כל מה שחיכה לספיר הוכרע ומוזג (#3723–#3726, #3728, #3731)
+
+**‏שורה אחת:** ‏ספיר האצילה («כל מה שנשאר עליי — תחליט ותבדוק») ← כל ההחלטות הפתוחות מהסעיף של 15:00 נסגרו לפי מה שאתרים גדולים עושים, ושישה PR-ים מוזגו אחרי adversarial ו-CI ירוק. ‏MEH-2458, ‏2465, ‏2475, ‏2476, ‏2477, ‏2478, ‏2483 ב-Done. נשאר פתוח: MEH-2484.
+
+**‏מה הוחלט (תחת האצלה — אפשר להפוך):**
+- ‏MEH-2465 נשאר ילד של MEH-2458 ונסגר בקוד (#3723): מארגן לא מקבל מועדפים, ביקורות (409), דירוג Google, תעודות כשרות ולא נספר בסטטיסטיקות אדמין/דוחות.
+- ‏נוסח `pending_nudge` למארגן (#3724): שורות «מיקום או אזורי משלוח», «כמה מילים על השוק או האירועים», «אירוע קרוב אחד לפחות», ונושא/גוף «העמוד שלכם» במקום «העסק שלכם». ‏aria-label של שיתוף בעמוד אירוע = «שתפו את האירוע» (`share.modal_title_event`).
+- ‏MEH-2477 (#3725): טלפון של נקודת איסוף = קישור `tel:` ‏44px, ‏`dir="ltr"`.
+- ‏MEH-2475 (#3728): עמוד מארגן מציג את כל ערוצי הקשר שמולאו, הערוץ הראשי ראשון; «מאחורי האירועים» (OwnerCard); «פעילים מאז {year}»; כרטיס «העיר שלכם» בלוח הבקרה של מארגן (CitySearch בלבד, ‏422 «יש לבחור עיר» על טקסט חופשי, פינג לאדמין כשהעיר משתנה).
+- ‏MEH-2476 (#3731): עמוד חוויה מציג משך («3 שעות וחצי»), «חוזר», «החל מ-», וקישור לבית העסק המארח רק כשהוא approved + `kind='producer'`. ב-/events מוצג ה-`schedule` בשורת המטא (line-clamp-2).
+- ‏MEH-2478 (#3726): קבוצות רכש פעילות וחוויות ב-sitemap; JSON-LD ‏Event/Product; Offer עם תאריך ישראלי ו-`SoldOut` כשהקבוצה מלאה.
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏שערי «קיום-בלבד» (מועדפים, ביקורות, דירוג, כשרות, ספירות) חייבים `kind == "producer"` — לא רק `status == "approved"`. ‏`TestOrganizerRefusedByExistenceOnlyGates` ב-`tests/test_organizer_kind.py` מכסה את הקיימים; משטח חדש = שורה חדשה שם.
+- ‏`seo.js` מפרש datetime נאיבי כ-UTC (`parseNaiveUtc`) ומציג תאריך ב-Asia/Jerusalem (`israelDate`). ‏`GroupBuyOfferFacts.test.js` מוכיח את זה עם אדום שנדחף לפני התיקון.
+- ‏ה-manifest של ה-codegen מתנגש בכל PR שנוגע ב-openapi אחרי מיזוג של PR אחר — אחרי `git merge origin/staging` לחשב מחדש את ה-sha256 של שני הקבצים.
+- ‏`normalizePhone` מקבל רק סלולרי: קישור WhatsApp לטלפון קווי נופל בחזרה לטלפון. בכוונה.
+
+**‏פתוח:**
+- ‏MEH-2484 — קבוצות רכש לא בודקות שהעסק approved (נמצא ב-adversarial של #3726). לא מומש: session מקביל עובד על `group_buys.py` (#3699, ‏#3700).
+- ‏session מקביל פתח את #3727, ‏#3729, ‏#3730 (MEH-2480–2482). לא נגעתי בהם.
+- ‏הרשמה ולוח בקרה של מארגן לא צולמו (CC לא מקליד סיסמאות). כרטיס «העיר שלכם» מכוסה ב-`OrganizerCityCard.test.jsx` בלבד.
+- ‏אין ב-staging אירוע עם שעת סיום — הטווח «09:30–15:00» ב-375 מכוסה בטסטי קומפוננטה, לא בצילום.
+- ‏צולם ב-staging ‏375/1440 (sandbox של Vercel): ‏/he/events ועמוד אירוע — בלי גלישה אופקית. אין ב-staging חוויות, אז עמוד החוויה מכוסה בטסטי קומפוננטה בלבד.
+
+## 2026-10-28 15:00 — מארגנים (MEH-2458), אירועים: תמונות/שיתוף/יומן/שעת סיום, ואודיט שדות-שלא-מוצגים — הכל מוזג
+
+**‏שורה אחת:** ‏9 PR-ים מוזגו ל-staging (#3708, #3711, #3712, #3716–#3721); שתי מיגרציות Expand (`f1a2b3c4d5e6`, ‏`b7e3c1d9a2f4`) רצו בעליית Railway. ‏MEH-2458 נשאר פתוח רק בגלל הילד MEH-2465 (Backlog).
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏מארגן = שורת `producers` עם `kind='organizer'` (ADR-036). כל משטח שמונה/מציג עסקים חייב `producer_listing.is_business()`; שער השליחה למארגן ב-`submission_gate._organizer_missing_items`, ראי `SubmissionGateParity.test.js` (פרסר על קוד ה-Python).
+- ‏זמן אירוע מוצג רק דרך `formatTimeRange` בתוך `<span dir="ltr">` — מקף בין מספרים ב-RTL מתהפך («15:00–09:30»). ‏`event_time`/`end_time` נשמרים כ-wall-clock; offset נזרק בגבול.
+- ‏`openapi.json` / ‏`api.zod.js` / manifest נכתבו ידנית בסשן (אין venv/npm ב-sandbox); ה-snapshot test ב-CI ירוק. כדאי `orval --write` בסביבה עם רשת — צריך לצאת zero-diff.
+- ‏Vercel preview לענף feature: ‏commit עם `[preview]` + `create_deployment` עם `gitSource` ‏(sha). ‏ה-sandbox לא מגיע ל-`*.vercel.app` — צילומים רק בכרום של ספיר; החלון ממוקסם → אין 375.
+- ‏CC לא מקליד סיסמאות — הרשמה/לוח בקרה של מארגן לא צולמו.
+
+**‏ממתין לספיר:** אין — כל מה שהיה כאן הוכרע ומוזג בסעיף של 17:00 למעלה.
+
+## 2026-10-28 11:40 — הצ'אט: דוכני שוק בידע הקבוע (#3703 + #3710) ונתונים חיים (#3706) — שלושתם מוזגו
+
+**‏שורה אחת:** MEH-2457 Done; MEH-586 — #3706 `f661193a` מוזג אחרי 3 סבבי adversarial, הסרת `do-not-merge` ע"י ספיר, ושני תיקונים של הרגע האחרון: שרשור מחדש של `a29c7a4a41e7` על `f1a2b3c4d5e6` (#3708 נכנס במקביל → שני heads), והחלת ADR-036 (`kind='producer'`) על כלי העסקים של הצ'אט. נשאר: DoD live ב-staging.
+
+**‏מה צריך לדעת לפני עבודה:**
+- `mcp_reader` הוא role `NOLOGIN` עם `SELECT` **ברמת עמודה** (`chat_db_tools.READER_COLUMNS`); הקוד עושה `SET LOCAL ROLE` בתוך READ ONLY + `statement_timeout=5000`. כלי חדש לצ'אט = פונקציה ב-`chat_db_tools.py` + שם ב-`TOOL_NAMES` + **כל עמודה חדשה שהוא קורא ב-`READER_COLUMNS` וגם ב-`GRANTS` של המיגרציה** (טסט drift משווה ביניהם) + שורה ב-`docs/DATA.md`; לעולם לא SQL מהמודל.
+- כלי צ'אט שסופר/מציג עסקים חייב `_IS_BUSINESS` (`status='approved' AND kind='producer'`, ADR-036); כלי האירועים בכוונה לא — אירועי מארגנים הם הסיבה ל-`kind`.
+- נתונים מה-DB נכנסים לפרומפט רק דרך `_fence_live_data` (תגית `<live_data>`, `<`/`>` מקודדים) — כותרות אירועים לא עוברות מודרציה.
+- הטסטים ב-`tests/test_chat_db_tools.py` מריצים את `READER_ROLE_SQL` (מראה של המיגרציה) לפני כל טסט — function-scoped כי `drop_all` ב-`test_lifespan_init` מוחק grants. יצירת role מקבילה ב-xdist זורקת `unique_violation`, לא `duplicate_object` — שניהם מטופלים.
+- `.claude/rules/backend.md:47` אומר httpx 0.27.2; ה-pin בפועל הוא `httpx==0.28.1` (`backend/pyproject.toml:22`, נמצא בסבב 3). לא תוקן — לא בscope.
+- אומת 28/10 (Railway MCP, בלי לקרוא סודות): שירות ה-Postgres ב-staging הוא `ghcr.io/railwayapp-templates/postgres-ssl:18`, האפליקציה מתחברת כ-`POSTGRES_USER` = superuser של ה-bootstrap → `CREATE ROLE` יעבור. החלופה (login role + `CHAT_DB_READER_URL`) מתועדת בכרטיס ולא נדרשת.
+- ה-sandbox של הסשן הזה חסום ל-PyPI → pytest רק ב-CI. GraphQL של GitHub חסום (REST עובד) → אין auto-merge מכאן.
+
+**‏ממתין לספיר:** למזג את #3707 (הקובץ הזה) — docs-only; ב-staging: «כמה עסקים יש?» / «מתי השוק הבא?» / `'; DROP TABLE producers; --` → תשובה, לא שגיאה.
+## 2026-10-28 00:20 — release v1.2.3 בפרודקשן (#3580 → `90a4f9c0`): זרימת «אני ממלאת, הבעלים רק מאשר» חיה; שני אדומים בדרך תוקנו (#3705, ‏#3704)
+
+**‏שורה אחת:** ‏main = staging של 27/10 ערב (161 קומיטים, כולל #3702 שמוזג מ-session מקביל ב-22:08Z תוך כדי). כל שרשרת ההזמנה — טיוטה ע"י אדמין (MEH‑2325), קטלוג על טיוטה (MEH‑2326), ‏`/claim/<token>` (MEH‑2324) — בפרודקשן. אפשר לשלוח קישורי הזמנה לבעלות עסק.
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏PR ריליס נגד `main` מריץ שני דברים ש-PR רגיל לא: ‏`pip-audit` (רק כש-`deps == true`, והריליס תמיד נוגע ב-lock) ו-`secrets-scan-guard` על **כל** הריליס (‏`BASE=HEAD~1` = tip של main). שניהם היו אדומים על #3580 ולא על אף PR רגיל.
+- ‏`secrets-scan-guard.sh` עושה עכשיו pre-filter אחד על הדיף ומפעיל את ה-classifier רק על שורות-מועמדות (#3705). ‏1.8 ש' על דיף של 32K שורות, במקום timeout. אותם patterns, אותו ALLOW, אותם verdicts — טבלת 7 מקרי הבקרה ב-PR.
+- ‏`uv.lock` נכתב ידנית ב-#3704 (PyPI חסום גם ב-sandbox של claude.ai, לא רק ב-CC): בלוקי `[[package]]` מה-JSON של PyPI, ‏upload-time נחתך ל-ms (כמו uv), ‏cp310 הושמט (requires-python ≥3.11), wheels ממוינים לפי שם. ‏`uv lock --check` ב-Deploy gate אישר. זה תקף כדרך חירום; הדרך הרגילה נשארת `uv lock --upgrade-package`.
+- ‏CVE-2026-114605 (dnspython) ו-CVE-2026-114613 (msgpack) — שתי תלויות עקיפות (email-validator, cachecontrol). ‏Dependabot לא פתח עליהן PR (הוא לא מרענן uv.lock, MEH‑1527).
+- ‏`Adversarial review (calibration)` נפל על #3704 ו-#3705 עם `is_error:true` של ה-action עצמו (לא ממצא). ‏continue-on-error, לא חוסם. אם זה חוזר על PR שלישי — כרטיס.
+- ‏`mehamakor.co.il` **לא** נגיש מה-sandbox של claude.ai (CONNECT 403), בניגוד ל-CC. ‏`smoke_production.py` יוצא שם עם exit 2 (control נכשל) — זה נכון, לא תקלה בסקריפט. ה-smoke אחרי הריליס רץ דרך Claude בכרום.
+- **‏נמדד אחרי ה-deploy (28/10 00:15):** ‏Vercel READY, ‏Railway production redeploy 67 ש' ירוק. ‏`/api/health/readiness` → `ready`, ‏`migrations: e5b2d8f4a913` (ה-head של הריפו). ‏13 נתיבים ציבוריים ו-API → 200 (‏/, ‏/he, ‏/claim, ‏/claim/<bad>, ‏/producers, ‏/map, ‏/about, ‏/login, ‏/register, ‏liveness, ‏/api/producers, ‏/api/events/upcoming, ‏/api/cities?q=תל ← «תל אביב-יפו» ראשונה, #3702 חי), control `/__smoke-control-must-404__` → 404. ‏`POST /api/producer-claim/preview` עם token שגוי → 404 עם הקופי העברי. ‏Sentry: אפס issues חדשים אחרי ה-deploy (השלושה הפתוחים מלפני: Resend דוחה `example.com` ב-`/auth/register` מה-E2E, שני N+1 באדמין).
+
+**‏ממתין לספיר:**
+- **סימולציית הזמנה בפרודקשן** (היא בודקת): ‏Admin → בתי עסק → עסק חדש עם «טיוטה שבעלת העסק תקבל בקישור הזמנה» → בעמוד העריכה «יצירת קישור» → לפתוח בחלון פרטי, להירשם/להתחבר עם חשבון בלי עסק, לסמן ולאשר → לוח בקרה. צ'קליסט מלא: `docs/MANUAL_TESTING.md` §MEH‑2325 ו-§MEH‑2324.
+- ‏`API contract probe (staging)` אדום על ה-push האחרונים ל-staging (לא required ל-main). לא נחקר הלילה — כרטיס אם נמשך.
+- הודעת ה-WhatsApp לצ'ופצ'יק / חגי והלחם / עלעלים — הנוסח לא הגיע בשיחה; לאשר נוסח לפני שליחה (כלל 22).
+
 ## 2026-10-27 15:35 — טבלאות האדמין בנייד: שורה = כרטיס (#3678, MEH-2426)
 
 **‏שורה אחת:** כל טבלאות האדמין נשאות `.table-stack` (globals.css): מתחת ל-md כל שורה כרטיס, וכל תא «תווית: ערך» מ-`data-label`. הבאנר «המסך הזה זמין במחשב» הוסר. ‏A-narrow של MEH-2070 כבר לא בתוקף.
@@ -196,6 +291,12 @@
 - ב-375 התווית נחתכה וב-1440 לא, כי ב-1440 הגרף מוגבל בגובה ויש לו מרווח בצדדים. בדיקה ב-1440 בלבד הייתה מחמיצה את הבאג.
 - `--grep` של Playwright מחבר את חלקי הכותרת ברווחים, לא ב-`›`. regen של VRT עם `›` בתבנית לא מצא אף טסט ולא שמר כלום.
 - ריצת E2E שבוטלה בגבול הזמן אינה כישלון טסט: התקנת Chromium לקחה 6 דקות (cache miss). ריצה חוזרת אחת עברה.
+
+## 2026-10-24 22:10 — release v1.2.2 בייצור (#3571), סיבוב הסודות הסתיים
+
+**‏שורה אחת:** ‏main = `add01d33` (v1.2.2). ה-healthcheck של Railway הוא עכשיו `/health/readiness`: deploy ש-`db_init` שלו נכשל לא יעלה. הסודות סובבו (MEH-2291 Done). מה שלא סובב, בהחלטה: WhatsApp access/app secret, ‏Google Places (ה-billing סגור, אפשר לשחזר עד 15/11), ‏VAPID וסיסמת Postgres.
+
+**‏מה צריך לדעת:** ‏`RESEND_API_KEY` בייצור צריך להיות מהצוות שבו `mehamakor.co.il` מאומת (MEH-2341). ‏staging→main נעשה ב-merge commit.
 
 ## 2026-10-24 19:30 — הכנות להשקה: ייצור עודכן ל-v1.2.0 ול-v1.2.1, תיקון rate limiter (כבוי עד הגדרת סוד), נגישות, והחלפת סודות בתהליך
 

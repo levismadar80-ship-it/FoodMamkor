@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.auth import require_producer, require_verified_producer
 from app.database import get_db
+from app.services.producer_listing import is_business  # MEH-2459
 from app.models import Producer, ProducerRecipe, Product, User
 from app.rate_limit import limiter
 from app.schemas.schemas import (
@@ -337,7 +338,7 @@ def _resolve_producer_by_slug(db: Session, slug: str) -> Producer:
     404 instead of 403 to avoid leaking pending/rejected producers."""
     producer = (
         db.query(Producer)
-        .filter(Producer.slug == slug, Producer.status == "approved")
+        .filter(Producer.slug == slug, is_business())  # MEH-2459
         .first()
     )
     if not producer:
