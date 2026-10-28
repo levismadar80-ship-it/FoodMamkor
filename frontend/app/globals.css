@@ -274,6 +274,33 @@ h1, h2, h3 {
   font-family: var(--font-latin), 'Cormorant Garamond', serif;
 }
 
+/* MEH-2487: Hebrew is never slanted. No Hebrew face we ship (Frank Ruhl Libre,
+   Heebo) has an italic, so `italic` / <em> on Hebrew made the browser fake a
+   slant. Emphasis on Hebrew is carried by colour or weight instead.
+   Plain [dir] selectors on purpose, not :dir(rtl): the CSS minifier rewrites
+   :dir() into :lang(he), which would also straighten the dir="ltr" islands.
+   Those islands (Cormorant numerals, English) keep their real italic via the
+   second rule, which outranks the first; /en (dir="ltr") is untouched. */
+[dir="rtl"] .italic,
+[dir="rtl"] em,
+[dir="rtl"] i {
+  font-style: normal;
+}
+[dir="rtl"] [dir="ltr"].italic,
+[dir="rtl"] [dir="ltr"] .italic,
+[dir="rtl"] [dir="ltr"] em,
+[dir="rtl"] [dir="ltr"] i {
+  font-style: italic;
+}
+
+/* MEH-2487: a page whose last band is full colour (marked data-meets-footer)
+   runs straight into the footer, without the footer's 64px cream top margin.
+   Kept here rather than in Footer.jsx (central component) and keyed on the
+   marker, so every other page keeps the margin. */
+body:has([data-meets-footer]) footer[data-site-footer] {
+  margin-top: 0;
+}
+
 /* Leaflet map fixes */
 .leaflet-container {
   height: 100%;

@@ -504,6 +504,17 @@ describe("ProducerCard — Phase B anatomy", () => {
     expect(desc.textContent.length).toBeLessThanOrEqual(81);
   });
 
+  it("the description clamps to two lines on desktop — no display utility overrides the clamp (MEH-2487)", () => {
+    render(<ProducerCard producer={fullProducer} />);
+    const cls = screen.getByTestId("card-description").className.split(/\s+/);
+    // line-clamp works only on display:-webkit-box. A `sm:block` (or any
+    // display utility at sm+) replaces it and the text wraps without limit.
+    expect(cls).toContain("line-clamp-2");
+    expect(cls).toContain("hidden");
+    expect(cls).toContain("sm:[display:-webkit-box]");
+    expect(cls.filter((c) => /^sm:(block|flex|grid|inline)/.test(c))).toEqual([]);
+  });
+
   it("renders the verified badge via BadgeRow when verification_tier='verified'", () => {
     render(<ProducerCard producer={fullProducer} />);
     const badge = screen.getByRole("button", { name: /מאומת/ });
