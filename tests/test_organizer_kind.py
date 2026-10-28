@@ -18,6 +18,7 @@ from datetime import timedelta
 from app.models.models import Event, Producer, ProducerLocation
 from app.utils.clock import israel_today, utc_now
 from conftest import auth_header, make_producer, make_user
+from sqlalchemy import text
 
 ORGANIZER_NAME = "שוק גלם — בדיקה"
 ORGANIZER_SLUG = "meh2459-organizer"
@@ -143,12 +144,20 @@ class TestOrganizerAbsentFromBusinessSurfaces:
         assert BUSINESS_NAME in names
         assert ORGANIZER_NAME not in names
 
-    def test_absent_from_count_cities_stats(self, client, db):
+    def test_absent_from_count(self, client, db):
         _organizer(db)
         _business(db)
         assert client.get("/producers/count").json()["count"] == 1
+
+    def test_absent_from_cities(self, client, db):
+        _organizer(db)
+        _business(db)
         cities = client.get("/producers/cities").json()
         assert sum(c["count"] for c in cities) == 1
+
+    def test_absent_from_stats(self, client, db):
+        _organizer(db)
+        _business(db)
         assert client.get("/stats").json()["producers_count"] == 1
 
     def test_random_is_404_when_only_an_organizer_exists(self, client, db):
@@ -169,6 +178,9 @@ class TestOrganizerAbsentFromBusinessSurfaces:
         """sitemap.js builds producer URLs from GET /producers (above) and the
         page itself resolves through /producers/by-slug — both must miss."""
         _organizer(db)
+        _business(db)
+        # control: the route is live for a business
+        assert client.get(f"/producers/by-slug/{BUSINESS_SLUG}").status_code == 200
         resp = client.get(f"/producers/by-slug/{ORGANIZER_SLUG}")
         assert resp.status_code == 404
 
@@ -183,13 +195,31 @@ class TestOrganizerAbsentFromBusinessSurfaces:
         assert resp.json()["kind"] == "organizer"
 
     def test_producer_kind_default_is_producer(self, client, db):
-        """A business minted without `kind` carries the column default — read
-        back from the DB row, not from the Pydantic default."""
+        """A business minted through the ORM without `kind` reads back as
+        'producer' from the DB row (ORM default), not only from the Pydantic
+        default. The server_default for raw SQL is pinned by the next test."""
         business = _business(db)
         db.expire(business)
         assert business.kind == "producer"
         resp = client.get("/producers")
         assert resp.json()[0]["kind"] == "producer"
+
+    def test_server_default_applies_to_raw_sql_inserts(self, client, db):
+        """psql / seeds / imports omit `kind` — the column's server_default
+        (migration f1a2b3c4d5e6) must still mint a business."""
+        row = db.execute(
+            text(
+                # Every NOT NULL column without a server_default is listed;
+                # `kind` is deliberately omitted.
+                "INSERT INTO producers (id, name, status, has_physical_location, "
+                "offers_delivery, delivery_nationwide, delivery_cities) "
+                "VALUES (gen_random_uuid(), 'raw-sql row', 'draft', true, "
+                "false, false, '{}'::text[]) "
+                "RETURNING kind"
+            )
+        ).scalar_one()
+        db.rollback()
+        assert row == "producer"
 
     def test_page_view_gate_agrees_with_get_by_id(self, client, db):
         """producers.py: the POST /view must share the GET's gate — a
@@ -268,6 +298,8 @@ class TestOrganizerNeverVerified:
             headers=auth_header(owner),
         )
         assert resp.status_code == 403
+        # pin the 403 to the kind gate, not to auth or the status gate
+        assert resp.json()["detail"] == "מארגן שווקים ואירועים לא יכול לפתוח קבוצת רכש"
 
     def test_admin_queue_still_lists_organizer_with_kind(self, client, db):
         organizer = _organizer(db)

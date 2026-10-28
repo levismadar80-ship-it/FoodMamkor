@@ -2694,6 +2694,7 @@ export const SubmitContactContactPostResponse = /*#__PURE__*/ zod.unknown()
  * @summary List Events
  */
 export const listEventsEventsGetResponseOwnerKindDefault = `producer`;
+
 export const ListEventsEventsGetResponseItem = /*#__PURE__*/ zod.object({
   "category": /*#__PURE__*/ zod.string(),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -2723,6 +2724,7 @@ export const ListEventsEventsGetResponse = /*#__PURE__*/ zod.array(ListEventsEve
  * @summary Create Event
  */
 export const createEventEventsPostResponseOwnerKindDefault = `producer`;
+
 export const CreateEventEventsPostResponse = /*#__PURE__*/ zod.object({
   "category": /*#__PURE__*/ zod.string(),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -2751,6 +2753,7 @@ export const CreateEventEventsPostResponse = /*#__PURE__*/ zod.object({
  * @summary List My Events
  */
 export const listMyEventsEventsMineGetResponseOwnerKindDefault = `producer`;
+
 export const ListMyEventsEventsMineGetResponseItem = /*#__PURE__*/ zod.object({
   "category": /*#__PURE__*/ zod.string(),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -2780,6 +2783,7 @@ export const ListMyEventsEventsMineGetResponse = /*#__PURE__*/ zod.array(ListMyE
  * @summary Upcoming Events
  */
 export const upcomingEventsEventsUpcomingGetResponseOwnerKindDefault = `producer`;
+
 export const UpcomingEventsEventsUpcomingGetResponseItem = /*#__PURE__*/ zod.object({
   "category": /*#__PURE__*/ zod.string(),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -2815,6 +2819,7 @@ export const DeleteEventEventsEventIdDeleteResponse = /*#__PURE__*/ zod.unknown(
  * @summary Get Event
  */
 export const getEventEventsEventIdGetResponseOwnerKindDefault = `producer`;
+
 export const GetEventEventsEventIdGetResponse = /*#__PURE__*/ zod.object({
   "category": /*#__PURE__*/ zod.string(),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -2843,6 +2848,7 @@ export const GetEventEventsEventIdGetResponse = /*#__PURE__*/ zod.object({
  * @summary Update Event
  */
 export const updateEventEventsEventIdPutResponseOwnerKindDefault = `producer`;
+
 export const UpdateEventEventsEventIdPutResponse = /*#__PURE__*/ zod.object({
   "category": /*#__PURE__*/ zod.string(),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
