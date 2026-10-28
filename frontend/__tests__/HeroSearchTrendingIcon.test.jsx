@@ -50,6 +50,7 @@ describe("hero search trending rows (MEH-2508)", () => {
     const rows = await within(await screen.findByTestId("hero-search-history")).findAllByRole("option");
     expect(rows.map((r) => r.textContent)).toEqual(["חלה", "גבינות"]);
     for (const row of rows) {
+      expect(row.querySelectorAll("svg")).toHaveLength(1);
       const svg = row.querySelector("svg");
       expect(svg.innerHTML).toBe(trend);
       expect(svg.getAttribute("class")).toContain("text-fg-muted");
