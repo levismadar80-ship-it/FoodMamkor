@@ -84,24 +84,17 @@ const SHOW_VERIFICATION = true;
 const CONTACT_TOPICS = ["general", "business", "correction", "other"];
 
 const TIP_KEYS = ["eggs", "grass_fed", "honey"];
-// gold Cormorant numerals — decorative, aria-hidden
-const BENEFITS = [
-  { key: "local", n: "01" },
-  { key: "trust", n: "02" },
-  { key: "community", n: "03" },
-];
-const VALUES = [
-  { key: "transparency", n: "01" },
-  { key: "proximity", n: "02" },
-  { key: "quality", n: "03" },
-  { key: "safety", n: "04" },
-];
+// MEH-2439: the decorative 01–04 numerals were removed — they numbered
+// nothing a reader acts on, and "01/02/03" on every block is the generic
+// template tell this pass set out to remove.
+const BENEFITS = [{ key: "local" }, { key: "trust" }, { key: "community" }];
+const VALUES = [{ key: "transparency" }, { key: "proximity" }, { key: "quality" }, { key: "safety" }];
 // MEH-841: 3-stop comparison path (gold-dot spine). Order is the locked
 // editorial order — do not re-sort.
 const COMPARE_STOPS = ["row1", "row2", "row3"];
 
-// MEH-1130: the numbered chapter mark that replaces the plain eyebrow on the
-// five narrative sections — "0N · <label>" in gold, then a hairline gold rule
+// MEH-1130: the chapter mark that replaces the plain eyebrow on the
+// five narrative sections — "<label>" in gold, then a hairline gold rule
 // running to the section's end edge, so the page reads as a magazine longread
 // rather than a stack of blocks.
 //
@@ -114,10 +107,9 @@ const COMPARE_STOPS = ["row1", "row2", "row3"];
 // recorded from the other end (it fell back to fg-muted for it); gold-deep
 // keeps the gold the card asked for and the contrast the axe spec requires.
 //
-// The numeral is aria-hidden — an ordinal ornament, exactly how the BENEFITS
-// and VALUES numerals are already treated — so where this renders as the
-// section's own heading (Benefits, as="h2") the accessible name stays the
-// label alone rather than picking up the "03 · " prefix.
+// MEH-2439 dropped the "0N · " numeral prefix (it was aria-hidden, so the
+// accessible name was already the label alone). Where this renders as the
+// section's own heading (Benefits, as="h2") that name is the label.
 //
 // That name is UNCHANGED from before, but not automatically, and the
 // distinction matters: the old <Eyebrow as="h2"> announced
@@ -131,11 +123,10 @@ const COMPARE_STOPS = ["row1", "row2", "row3"];
 // asserts the equality for all four reused labels in both locales, and fails
 // if a sixth chapter is added without a mirror entry. (Chapter 01 is exempt:
 // the story section had no eyebrow, so "הסיפור" is genuinely new copy.)
-function Chapter({ num, label, as: Tag = "p" }) {
+function Chapter({ label, as: Tag = "p" }) {
   return (
     <div className="flex items-center gap-3 mb-3 md:mb-4">
       <Tag className="block font-body-md text-[13px] font-semibold text-gold-deep shrink-0">
-        <span aria-hidden="true">{`${num} · `}</span>
         {label}
       </Tag>
       <span aria-hidden="true" className="h-px flex-1 bg-accent/35" />
@@ -316,7 +307,7 @@ export default function AboutPage() {
           container any more, so there is no 50vw overshoot left to clip. */}
       <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
         <div className="max-w-3xl mx-auto px-4 md:px-12">
-          <Chapter num="01" label={tAbout("chapter.1.label")} />
+          <Chapter label={tAbout("chapter.1.label")} />
           <div className="font-body-md text-[17px] text-text/90 leading-[1.75] space-y-5">
             {/* Chapter 01's h2. It carries `about-story-h2` so the chapter-02
                 heading below can be asserted to share these exact classes —
@@ -440,7 +431,7 @@ export default function AboutPage() {
              string is unchanged on both locales. */}
       <FadeInSection as="section" data-testid="about-comparison" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
         <div className="max-w-3xl mx-auto px-4 md:px-12">
-          <Chapter num="02" label={tAbout("chapter.2.label")} />
+          <Chapter label={tAbout("chapter.2.label")} />
           <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight !mb-6">
             {t("parallax.quote")}
           </h2>
@@ -473,13 +464,10 @@ export default function AboutPage() {
       {/* ======== 03 — Benefits (alt-tone block w/ Values · centered gold numerals) ======== */}
       <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background-alt py-9 md:py-14 scroll-mt-24">
         <div className="max-w-6xl mx-auto px-4 md:px-12">
-          <Chapter num="03" label={tAbout("chapter.3.label")} as="h2" />
+          <Chapter label={tAbout("chapter.3.label")} as="h2" />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-12">
-            {BENEFITS.map(({ key, n }) => (
+            {BENEFITS.map(({ key }) => (
               <div key={key} className="text-center">
-                <span aria-hidden className="font-english italic font-semibold text-accent text-3xl md:text-[34px] block mb-3.5">
-                  {n}
-                </span>
                 <h3 className="font-headline-md font-bold text-text text-[22px] leading-tight mb-2.5">
                   {t(`benefits.${key}.title`)}
                 </h3>
@@ -544,7 +532,7 @@ export default function AboutPage() {
       {/* ======== 04 — Values (bordered editorial container · gold numerals) ======== */}
       <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background-alt py-9 md:py-14 scroll-mt-24">
         <div className="max-w-3xl mx-auto px-4 md:px-12">
-          <Chapter num="04" label={tAbout("chapter.4.label")} />
+          <Chapter label={tAbout("chapter.4.label")} />
           <div className="border-2 border-accent/30 rounded-3xl p-8 md:p-14">
             <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight">
               {t("values.heading")}
@@ -553,11 +541,8 @@ export default function AboutPage() {
               {t("values.intro")}
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-7 md:gap-x-14 md:gap-y-9 mt-8">
-              {VALUES.map(({ key, n }) => (
+              {VALUES.map(({ key }) => (
                 <article key={key}>
-                  <span aria-hidden className="font-english italic font-semibold text-accent text-2xl block mb-1">
-                    {n}
-                  </span>
                   <h3 className="font-headline-md font-bold text-text text-[21px]">
                     {t(`values.${key}.title`)}
                   </h3>
@@ -621,7 +606,7 @@ export default function AboutPage() {
       {/* ======== 05 — Tips accordion ======== */}
       <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
         <div className="max-w-3xl mx-auto px-4 md:px-12">
-          <Chapter num="05" label={tAbout("chapter.5.label")} />
+          <Chapter label={tAbout("chapter.5.label")} />
           <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight">
             {t("tips.heading")}
           </h2>
@@ -635,7 +620,7 @@ export default function AboutPage() {
                   aria-expanded={openTip === i}
                   aria-controls={`tip-panel-${i}`}
                 >
-                  <span>{t(`tips.${key}.question`)}</span>
+                  <span className="text-start">{t(`tips.${key}.question`)}</span>
                   <CaretDown
                     size={20}
                     weight="bold"
@@ -682,44 +667,47 @@ export default function AboutPage() {
       )}
 
       {/* ======== 07 — Close (consumer-primary CTA · business demoted) ======== */}
-      <FadeInSection as="section" {...REVEAL_PRESET} className="bg-green-50 border-y border-border py-9 md:py-14 scroll-mt-24">
+      <FadeInSection as="section" {...REVEAL_PRESET} className="bg-primary text-background py-12 md:py-20 scroll-mt-24">
+        {/* MEH-2439: the close sits on the full brand green (was the off-palette
+            mint green-50) with the button inverted to cream, so the page ends on
+            the same colour the home featured block and footer use. */}
         <div className="max-w-2xl mx-auto px-4 text-center">
           {/* single primary CTA — consumer */}
           <Link
             href="/map"
-            className="inline-flex items-center gap-2 min-h-[56px] px-9 py-4 bg-primary text-white rounded-lg font-semibold text-lg hover:bg-primary-dark transition-colors duration-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
+            className="inline-flex items-center gap-2 min-h-[56px] px-9 py-4 bg-background text-primary rounded-lg font-semibold text-lg hover:bg-background-alt transition-colors duration-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-on-dark focus-visible:ring-offset-2 focus-visible:ring-offset-primary"
           >
             {t("cta.explore")}
             <ArrowLeft size={20} aria-hidden="true" />
           </Link>
-          {/* business pitch line — muted lead-in for the demoted actions (cta.heading verbatim) */}
-          <p className="mt-6 font-body-md text-sm text-fg-muted max-w-[44ch] mx-auto leading-relaxed">
+          {/* business pitch line — lead-in for the demoted actions below (cta.heading verbatim). MEH-2439: set in the headline face on the green so the band reads as an ending, still after the one primary button. */}
+          <p className="mt-7 font-headline-md font-bold text-[20px] text-background max-w-[44ch] mx-auto leading-relaxed">
             {t("cta.heading")}
           </p>
           {/* MEH-1112: two secondary actions (business hub + MEH-534 acceptance-process
               cross-link) demoted to one quiet muted row — small, underlined, non-bold —
               so only "גלו עסקים קרובים" reads as the primary CTA (per MEH-1049/MEH-907). */}
-          <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 font-body-md text-sm text-fg-muted">
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 font-body-md text-sm text-background/90">
             <Link
               href="/about/for-businesses"
-              className="underline underline-offset-4 hover:text-primary rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="underline underline-offset-4 hover:text-background rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-on-dark"
             >
               {t("cta.register")}
             </Link>
-            <span aria-hidden="true" className="text-border">·</span>
+            <span aria-hidden="true" className="text-gold-on-dark">·</span>
             <Link
               href="/about/process"
               data-testid="about-close-process-link"
-              className="underline underline-offset-4 hover:text-primary rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="underline underline-offset-4 hover:text-background rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-on-dark"
             >
               {tProcess("crosslink_from_about")}
             </Link>
             {/* MEH-1289: reader-facing "why local" editorial cross-link. */}
-            <span aria-hidden="true" className="text-border">·</span>
+            <span aria-hidden="true" className="text-gold-on-dark">·</span>
             <Link
               href="/about/why-local"
               data-testid="about-close-why-local-link"
-              className="underline underline-offset-4 hover:text-primary rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="underline underline-offset-4 hover:text-background rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-on-dark"
             >
               {t("cta.why_local_link")}
             </Link>
