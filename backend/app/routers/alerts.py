@@ -28,7 +28,8 @@ from sqlalchemy.orm import Session, joinedload
 from app.auth import get_current_user
 from app.data.cities import city_key
 from app.database import get_db
-from app.models import AlertLog, Favorite, FavoriteAlert, User
+from app.models import AlertLog, Favorite, FavoriteAlert, Producer, User
+from app.services.producer_listing import is_business
 from app.services.whatsapp import send_template
 from app.services.whatsapp_templates import FavoriteAlertHeV1
 
@@ -299,9 +300,15 @@ def fire_alerts(
                 joinedload(FavoriteAlert.user),
                 joinedload(FavoriteAlert.producer),
             )
+            # MEH-2513: a business that is not live (suspended, rejected,
+            # draft, pending) alerts no one — every alert links to its page,
+            # which is a 404 for the public. One gate here covers every
+            # caller (new product / event / delivery area / recipe).
+            .join(Producer, Producer.id == FavoriteAlert.producer_id)
             .filter(
                 FavoriteAlert.producer_id == producer_id,
                 getattr(FavoriteAlert, col_name).is_(True),
+                is_business(),
             )
             .all()
         )
