@@ -18,6 +18,8 @@ import { itemsForSurface } from "@/lib/nav-registry";
 // MEH-2359 / MEH-2431: subtrees with their own nav, where the pill never
 // renders. Shared by the render gates and the clearance publish (MEH-2490).
 const isAdminRoute = (p) => p === "/admin" || (p || "").startsWith("/admin/");
+// MEH-2490: what those routes publish instead of removing the var.
+const NO_PILL_CLEARANCE = "calc(env(safe-area-inset-bottom, 0px) + 12px)";
 const isOwnerDashboardRoute = (p) =>
   p === "/producer/dashboard" || (p || "").startsWith("/producer/dashboard/");
 
@@ -272,7 +274,9 @@ export default function BottomNav() {
   // gates at the end of this component). Removing the var there let every
   // consumer fall back to the expanded-pill value, so the owner dashboard and
   // /admin kept ~80px of dead padding under the last row at 375 for a pill
-  // that never renders. On these routes the clearance is the safe area alone.
+  // that never renders. On these routes the clearance is the safe area plus a
+  // 12px gutter: Toaster reads this var with no gap of its own, so a bare
+  // safe-area value set toasts flush on the screen edge (review on #3783).
   // The producer-detail gate is NOT in this set: its StickyContactBar is a
   // bottom layer, and the fallback is what keeps content clear of it.
   const noBottomChrome = isAdminRoute(pathname) || isOwnerDashboardRoute(pathname);
@@ -281,7 +285,7 @@ export default function BottomNav() {
     const nav = navRef.current;
     if (!nav) {
       if (noBottomChrome) {
-        root.style.setProperty("--bottom-nav-clearance", "env(safe-area-inset-bottom, 0px)");
+        root.style.setProperty("--bottom-nav-clearance", NO_PILL_CLEARANCE);
         return () => root.style.removeProperty("--bottom-nav-clearance");
       }
       root.style.removeProperty("--bottom-nav-clearance");

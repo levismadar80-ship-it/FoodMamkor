@@ -173,11 +173,11 @@ describe("bottom clearance on routes without a pill (MEH-2490)", () => {
   });
 
   it.each(["/producer/dashboard", "/producer/dashboard/group-buys", "/admin", "/admin/reviews"])(
-    "%s publishes the safe area only",
+    "%s publishes the safe area + gutter, not the pill fallback",
     (path) => {
       pathnameRef.current = path;
       render(<BottomNav />);
-      expect(clearance()).toBe("env(safe-area-inset-bottom, 0px)");
+      expect(clearance()).toBe("calc(env(safe-area-inset-bottom, 0px) + 12px)");
     },
   );
 
