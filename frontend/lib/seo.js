@@ -696,8 +696,28 @@ export function buildExperienceJsonLd(experience, locale = "he") {
  */
 export function isGroupBuyLive(groupBuy, now = new Date()) {
   if (groupBuy?.status !== "open" || !groupBuy.deadline) return false;
-  const deadline = new Date(groupBuy.deadline);
-  return !Number.isNaN(deadline.getTime()) && deadline > now;
+  const deadline = parseNaiveUtc(groupBuy.deadline);
+  return deadline != null && deadline > now;
+}
+
+/** Review #3726: the backend stores deadlines as naive UTC (utc_now()), so a
+ *  string without a zone is read as UTC — never as the runtime's local time. */
+function parseNaiveUtc(value) {
+  if (typeof value !== "string") return null;
+  const hasZone = /(?:Z|[+-]\d{2}:?\d{2})$/.test(value);
+  const d = new Date(hasZone || !value.includes("T") ? value : `${value}Z`);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+/** The Israel calendar date ("YYYY-MM-DD") of an instant. */
+function israelDate(d) {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jerusalem" }).format(d);
+}
+
+/** Review #3726: commits at the cap — joining is refused, so it is not InStock. */
+function isGroupBuyFull(groupBuy) {
+  const max = Number(groupBuy?.max_participants);
+  return Number.isFinite(max) && max > 0 && Number(groupBuy?.commits_count ?? 0) >= max;
 }
 
 /**
@@ -720,15 +740,17 @@ export function buildGroupBuyJsonLd(groupBuy, locale = "he", now = new Date()) {
     "@type": "Offer",
     price,
     priceCurrency: "ILS",
-    availability: isGroupBuyLive(groupBuy, now)
-      ? "https://schema.org/InStock"
-      : "https://schema.org/OutOfStock",
+    availability: !isGroupBuyLive(groupBuy, now)
+      ? "https://schema.org/OutOfStock"
+      : isGroupBuyFull(groupBuy)
+        ? "https://schema.org/SoldOut"
+        : "https://schema.org/InStock",
     url,
   };
-  // The date the page shows: the client renders the naive deadline as-is.
-  if (typeof groupBuy.deadline === "string" && ISO_DATE.test(groupBuy.deadline)) {
-    offer.priceValidUntil = groupBuy.deadline.slice(0, 10);
-  }
+  // Review #3726: the deadline's ISRAEL date — a naive-UTC 22:30 on 1 Nov is
+  // 2 Nov here, and slicing the string would state the day before.
+  const deadline = parseNaiveUtc(groupBuy.deadline);
+  if (deadline) offer.priceValidUntil = israelDate(deadline);
   if (groupBuy.producer_name) {
     offer.seller = { "@type": "Organization", name: groupBuy.producer_name };
     if (producerUrl) offer.seller.url = producerUrl;
