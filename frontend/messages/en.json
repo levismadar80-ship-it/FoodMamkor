@@ -297,6 +297,8 @@
           "address_pick_from_list": "Pick an address from the list so your business shows on the map.",
           "multi_location_label": "More than one sales or pickup point?",
           "multi_location_hint": "You can add all your points from the dashboard after signing up.",
+          "organizer_label": "I organize markets or events (I don't sell products)",
+          "organizer_hint": "Organizers get a page with their events. They don't appear in the business list or on the map.",
           "tagline_label": "In one sentence",
           "tagline_placeholder": "The most important thing to know about you",
           "description_label": "Tell us about your business",
@@ -2470,7 +2472,8 @@
       "empty_browse_producers": "Meanwhile, explore the businesses",
       "no_results_title": "No results found",
       "no_results_cta": "Clear filters",
-      "free": "Free"
+      "free": "Free",
+      "organizer_line": "Organizer: {name}"
     },
     "categories": {
       "all": "All",
@@ -2500,7 +2503,8 @@
       "participants_limit": "Up to {n} participants",
       "free": "Free",
       "breadcrumb_home": "Home",
-      "breadcrumb_events": "Events"
+      "breadcrumb_events": "Events",
+      "organizer_line": "Organizer: {name}"
     },
     "calendar": {
       "previous_month": "Previous month",
@@ -4053,7 +4057,8 @@
         "edit": "Edit",
         "insights": "Insights",
         "tools": "Tools",
-        "view_page": "View page"
+        "view_page": "View page",
+        "organizer_events": "Your events"
       },
       "load_error": {
         "title": "We couldn't load your dashboard",
@@ -4637,6 +4642,7 @@
       },
       "manage_events": {
         "heading": "My events",
+        "organizer_heading": "Your events",
         "create_cta": "New event",
         "empty_title": "No events yet",
         "empty_description": "An open day, a market stall or a harvest — a one-time event that appears on your business page and brings in new customers.",
@@ -4719,7 +4725,9 @@
           "product": "Your first catalog product",
           "category": "At least one category",
           "location": "A location or delivery areas",
-          "phone_verified": "WhatsApp number verification"
+          "phone_verified": "WhatsApp number verification",
+          "description": "A few words about the market or events",
+          "upcoming_event": "At least one upcoming event"
         }
       },
       "request_review": {
@@ -5389,5 +5397,15 @@
       "switch_account": "Switch account"
     },
     "submit_error": "We could not link the page. Try again in a moment."
+  },
+  "organizers": {
+    "page": {
+      "events_heading": "Upcoming events",
+      "empty": "No upcoming events right now",
+      "whatsapp": "WhatsApp",
+      "instagram": "Instagram",
+      "website": "Website",
+      "facebook": "Facebook"
+    }
   }
 }

@@ -66,7 +66,10 @@ from app.services.auth_notifications import (
     notify_admin_producer_sensitive_edit,
 )
 from app.services.submission_confirmation import send_submission_confirmation
-from app.services.submission_gate import submission_missing_items
+from app.services.submission_gate import (
+    attach_upcoming_events_count,
+    submission_missing_items,
+)
 from app.services.delivery_validation import (
     ensure_exclusion_requires_nationwide,
     ensure_nationwide_requires_delivery,
@@ -100,6 +103,7 @@ def get_my_producer(
     )
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    attach_upcoming_events_count(producer)  # MEH-2460
     return producer
 
 
@@ -854,6 +858,7 @@ def update_my_producer(
     # BackgroundTask, and touches neither the response nor any column.
     _maybe_fire_sensitive_edit(background_tasks, producer, sensitive_before)
 
+    attach_upcoming_events_count(producer)  # MEH-2460
     return producer
 
 

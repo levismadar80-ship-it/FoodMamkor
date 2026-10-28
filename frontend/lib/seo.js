@@ -492,6 +492,16 @@ export function buildProducerMetadata(producer) {
   };
 }
 
+/** MEH-2461: the page of whoever runs the event. A business → /producer/{id};
+ *  an organizer → /organizers/{slug} (its /producer/{id} 404s since MEH-2459),
+ *  or no URL at all when the organizer has no slug yet. */
+function eventOwnerUrl(event) {
+  if (event.owner_kind === "organizer") {
+    return event.owner_slug ? `${SITE_URL}/organizers/${event.owner_slug}` : null;
+  }
+  return event.producer_id ? `${SITE_URL}/producer/${event.producer_id}` : null;
+}
+
 /**
  * MEH-1062: schema.org/Event JSON-LD for the /events/[id] detail page (which
  * previously carried no structured data — only metadata + OG). Emits a
@@ -546,9 +556,8 @@ export function buildEventJsonLd(event, locale = "he") {
 
   if (event.producer_name) {
     ev.organizer = { "@type": "Organization", name: event.producer_name };
-    if (event.producer_id) {
-      ev.organizer.url = `${SITE_URL}/producer/${event.producer_id}`;
-    }
+    const ownerUrl = eventOwnerUrl(event);
+    if (ownerUrl) ev.organizer.url = ownerUrl;
   }
 
   // offers — price is a required int on EventOut (0 = free); emit the real
@@ -566,11 +575,9 @@ export function buildEventJsonLd(event, locale = "he") {
   const crumbs = [
     { name: COUNTRY_LABEL[locale] ?? COUNTRY_LABEL.he, item: SITE_URL },
   ];
-  if (event.producer_name && event.producer_id) {
-    crumbs.push({
-      name: event.producer_name,
-      item: `${SITE_URL}/producer/${event.producer_id}`,
-    });
+  const ownerCrumbUrl = eventOwnerUrl(event);
+  if (event.producer_name && ownerCrumbUrl) {
+    crumbs.push({ name: event.producer_name, item: ownerCrumbUrl });
   }
   crumbs.push({ name: event.title, item: eventUrl });
 

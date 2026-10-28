@@ -297,6 +297,8 @@
           "address_pick_from_list": "בחרו כתובת מהרשימה כדי שהעסק יופיע במפה.",
           "multi_location_label": "יש לכם יותר מנקודת מכירה או איסוף אחת?",
           "multi_location_hint": "אפשר להוסיף את כל הנקודות בלוח הבקרה אחרי ההרשמה.",
+          "organizer_label": "אני מארגן/ת שווקים או אירועים (לא מוכר/ת מוצרים)",
+          "organizer_hint": "מארגנים מקבלים עמוד עם האירועים שלהם. הם לא מופיעים ברשימת בתי העסק ובמפה.",
           "tagline_label": "במשפט אחד",
           "tagline_placeholder": "מה שהכי חשוב שידעו עליכם",
           "description_label": "ספרו על העסק שלכם",
@@ -2470,7 +2472,8 @@
       "empty_browse_producers": "בינתיים, גלו את בתי העסק",
       "no_results_title": "לא נמצאו תוצאות",
       "no_results_cta": "נקו סינון",
-      "free": "חינם"
+      "free": "חינם",
+      "organizer_line": "מארגן: {name}"
     },
     "categories": {
       "all": "הכל",
@@ -2500,7 +2503,8 @@
       "participants_limit": "עד {n} משתתפים",
       "free": "חינם",
       "breadcrumb_home": "בית",
-      "breadcrumb_events": "אירועים"
+      "breadcrumb_events": "אירועים",
+      "organizer_line": "מארגן: {name}"
     },
     "calendar": {
       "previous_month": "חודש קודם",
@@ -4049,7 +4053,8 @@
         "edit": "עריכה",
         "insights": "תובנות",
         "tools": "כלים",
-        "view_page": "צפייה בדף"
+        "view_page": "צפייה בדף",
+        "organizer_events": "האירועים שלכם"
       },
       "load_error": {
         "title": "לא הצלחנו לטעון את לוח הבקרה",
@@ -4633,6 +4638,7 @@
       },
       "manage_events": {
         "heading": "האירועים שלי",
+        "organizer_heading": "האירועים שלכם",
         "create_cta": "אירוע חדש",
         "empty_title": "עדיין אין אירועים",
         "empty_description": "יום פתוח, דוכן בשוק או קטיף — אירוע חד-פעמי שמופיע בעמוד העסק שלך ומביא לקוחות חדשות.",
@@ -4715,7 +4721,9 @@
           "product": "מוצר ראשון בקטלוג",
           "category": "קטגוריה אחת לפחות",
           "location": "מיקום או אזורי משלוח",
-          "phone_verified": "אימות מספר הוואטסאפ"
+          "phone_verified": "אימות מספר הוואטסאפ",
+          "description": "כמה מילים על השוק או האירועים",
+          "upcoming_event": "אירוע קרוב אחד לפחות"
         }
       },
       "request_review": {
@@ -5385,5 +5393,15 @@
       "switch_account": "החלפת חשבון"
     },
     "submit_error": "לא הצלחנו לשייך את העמוד. נסו שוב בעוד רגע."
+  },
+  "organizers": {
+    "page": {
+      "events_heading": "אירועים קרובים",
+      "empty": "אין אירועים קרובים כרגע",
+      "whatsapp": "וואטסאפ",
+      "instagram": "אינסטגרם",
+      "website": "אתר",
+      "facebook": "פייסבוק"
+    }
   }
 }

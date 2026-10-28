@@ -586,6 +586,9 @@ async def register_producer(
             # The city list is instead folded into the delivery_areas write
             # below, the same live mechanism admin.py/producer_me.py's own
             # _apply_delivery_cities use for a flat city list.
+            # MEH-2460: organizer vs business (ADR-036); the schema already
+            # normalised an organizer's location/license fields.
+            kind=data.kind,
             has_physical_location=data.has_physical_location,
             offers_delivery=data.offers_delivery,
             delivery_nationwide=data.delivery_nationwide,
@@ -785,6 +788,9 @@ async def register_producer(
             status="draft",
             # MEH-1838 chunk A: see the upgrade branch above — same fields,
             # same reason (delivery_cities NOT written — see the note there).
+            # MEH-2460: organizer vs business (ADR-036); the schema already
+            # normalised an organizer's location/license fields.
+            kind=data.kind,
             has_physical_location=data.has_physical_location,
             offers_delivery=data.offers_delivery,
             delivery_nationwide=data.delivery_nationwide,
@@ -1235,6 +1241,7 @@ def get_me(
         producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
         if producer:
             out.producer_status = producer.status
+            out.producer_kind = producer.kind  # MEH-2460
             out.producer_rejection_reason = producer.rejection_reason
             # MEH-2210: the code + resubmission count ride with the reason.
             out.producer_rejection_reason_code = producer.rejection_reason_code

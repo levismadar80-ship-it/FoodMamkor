@@ -11,6 +11,7 @@ Tests the public entry point app.services.onboarding_followup.send_due_followups
 send_email is monkeypatched at the onboarding_followup module surface to a
 list-append spy, so no Resend HTTP calls are attempted from the test process.
 """
+
 from __future__ import annotations
 
 import uuid
@@ -127,13 +128,11 @@ def test_step5_variant_a_for_licensed_approved(db, sent_log):
     # The point of this test is the Email-5 subject, not the count shape.
     assert counts[5] == 1
     # Pull the step-5 send out of the log (any send whose subject matches).
-    step5_sends = [
-        s for s in sent_log if s[1] == onboarding_followup._EMAIL_5A_SUBJECT
-    ]
+    step5_sends = [s for s in sent_log if s[1] == onboarding_followup._EMAIL_5A_SUBJECT]
     assert len(step5_sends) == 1, "expected exactly one variant-A send"
-    assert not [
-        s for s in sent_log if s[1] == onboarding_followup._EMAIL_5B_SUBJECT
-    ], "variant B must not fire for an approved+licensed producer"
+    assert not [s for s in sent_log if s[1] == onboarding_followup._EMAIL_5B_SUBJECT], (
+        "variant B must not fire for an approved+licensed producer"
+    )
 
     db.refresh(producer)
     assert producer.email_followup_5_sent_at is not None
@@ -303,3 +302,22 @@ def test_approval_mid_sequence_resumes_from_step_two(db, sent_log):
 
     assert onboarding_followup.send_due_followups(db) == {2: 1, 3: 1, 4: 1, 5: 1}
     assert len(sent_log) == 4
+
+
+def test_organizer_never_enters_the_product_sequence(db, sent_log):
+    """MEH-2460: an approved organizer (kind='organizer', ADR-036) sells
+    nothing — the product / catalog follow-ups must not reach it. Control: the
+    same-aged business in the same run still gets its step-2 email."""
+    organizer, _ = _make_producer_user(db, days_old=2, email_local="meh2460-org")
+    organizer.kind = "organizer"
+    db.commit()
+    _business, business_user = _make_producer_user(
+        db, days_old=2, email_local="meh2460-biz"
+    )
+
+    counts = onboarding_followup.send_due_followups(db)
+
+    assert counts == {2: 1, 3: 0, 4: 0, 5: 0}
+    assert [to for to, _, _ in sent_log] == [business_user.email]
+    db.refresh(organizer)
+    assert organizer.email_followup_2_sent_at is None
