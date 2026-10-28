@@ -23,7 +23,11 @@ type AxeResults = Awaited<ReturnType<AxeBuilder["analyze"]>>;
 
 async function analyze(page: Page): Promise<AxeResults> {
   return new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+    // MEH-2517: `wcag22aa` adds exactly one rule in axe 4.13, `target-size`
+    // (WCAG 2.5.8, 24px, serious). axe applies the spacing exception, so a
+    // 16px link with nothing within its 24px circle passes, and two tiny
+    // targets side by side fail.
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
     // Leaflet markers render as role=button divIcons with no accessible name
     // (aria-command-name, serious), on / and /map. Deferred to a MapComponent
     // sub-MEH (wire each business name into the marker aria-label); excluded
