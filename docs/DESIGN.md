@@ -191,7 +191,8 @@ instead, and *Do's and Don'ts* for why.
   (`green-900` sheets/footers), where `accent` fails contrast (≈1.6:1 on
   `green-900`'s family). Same role as `accent`, lighter expression — numerals,
   small glyph accents on dark panels (MEH-730; first consumer: the account
-  sheet). Never use it on cream/white — there it's the drift, `accent` is the
+  sheet; also the separators and focus ring on the `bg-primary` closing bands,
+  MEH-2439). Never use it on cream/white — there it's the drift, `accent` is the
   token.
 - **Border (`#E5DFD3`):** Warm hairline for card borders and dividers on cream.
   Low-contrast by design; structure should be felt, not drawn.
@@ -325,6 +326,13 @@ front matter for the normative token bindings.
     `after:bg-accent` underline is a **nav-only** active indicator, deliberately
     not on the card (Sapir, v4). The v4 mock showed it on name-hover; it was
     intentionally not shipped. A future re-port must not reintroduce it.
+  - **Place first (MEH-2440, Sapir 27/10/2026):** the line above the name is the
+    **city** (`accent` gold, 12px semibold) with the distance beside it; the
+    category sits in the muted line under the name. No city → no place line.
+  - **No photo (MEH-2440):** a typographic name plate — the business name in
+    Frank Ruhl 900 (22px / 30px sm+), `background-alt` fill, bottom-aligned
+    above the badge row. Replaces the MEH-643 leaf glyph + wordmark on
+    `green-50`, which read as a template when most cards had no photo.
 - **Inputs:** white `surface`, `text` foreground, `border` hairline, 8px
   radius. Dividers use the `border` token.
 - **Price tags / premium accents:** `accent` gold, used sparingly with
@@ -480,6 +488,21 @@ reads as a rendering bug (the ghost-strip class). Rules:
   hard-code hex values in JSX.
 - **Don't** add gradient orbs, blurred/glass backgrounds, or hover shadow lift —
   all signal "app", the opposite of "magazine" (BRAND.md §3).
+- **Don't** number blocks that aren't a sequence. "01 / 02 / 03" over benefit
+  cards, values or section marks is the generic template tell; numerals stay
+  only where they order something the reader follows (the 4 steps on
+  `/about/process`, `/join`, the register wizard) (MEH-2439).
+- **Don't** set Frank Ruhl Libre in `italic` or letter-space Hebrew. The font
+  ships no italic face, so the browser fakes a slant; tracking pulls Hebrew
+  letters apart. Emphasis in a headline = weight or the `accent` colour
+  (MEH-2439).
+- **Do** end a page on the full brand green when it closes with a CTA band
+  (`bg-primary text-background`, cream button `bg-background text-primary`,
+  gold separators `text-gold-on-dark`). Small text on that green is
+  `text-background/90` at least (4.99:1; `/80` is 4.34:1 and fails AA), and the
+  focus ring is `ring-gold-on-dark ring-offset-primary` (`ring-primary/40`
+  disappears on green). **Don't** use mint `green-50` as a section band — it
+  reads off-palette next to the cream (MEH-2439: `/about`, `/about/process`).
 
 ### Why we don't have a state-color palette
 

@@ -296,8 +296,8 @@ delivery_areas (id, producer_id FK, city, min_order int, delivery_day,
 favorites      (user_id FK, producer_id FK, PK(both), created_at)
 
 -- producer_followers (MEH-2392) and referral_clicks (MEH-2393): dropped in
--- e5b2d8f4a913. users.referral_code: unwritten since #3690, excluded from the
--- User mapper, dropped in MEH-2393 chunk 3.
+-- e5b2d8f4a913. users.referral_code (+ ix_users_referral_code): dropped in
+-- 1cd44149cc20 (MEH-2393 chunk 3).
 
 producer_reviews (
   id uuid PK, producer_id FK, user_id FK,
