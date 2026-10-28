@@ -117,6 +117,18 @@ describe("duplicate-name confirm — focus (MEH-2491)", () => {
     expect(document.activeElement).toBe(screen.getByTestId("duplicate-cancel"));
   });
 
+  // CI review on #3780: confirming starts the save, which disables the submit
+  // that opened the dialog — focus() on a disabled button is a no-op.
+  it("confirming (save in flight, submit disabled) puts focus on the section", async () => {
+    api.post.mockReturnValue(new Promise(() => {}));
+    const { submit } = await openDuplicate();
+    fireEvent.click(screen.getByTestId("duplicate-confirm"));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(submit).toBeDisabled();
+    expect(document.activeElement).not.toBe(document.body);
+    expect(document.activeElement.contains(screen.getByText(P.section_heading))).toBe(true);
+  });
+
   it("Escape returns focus to the add form's submit", async () => {
     const { submit } = await openDuplicate();
     fireEvent.keyDown(window, { key: "Escape" });

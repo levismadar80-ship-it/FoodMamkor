@@ -479,7 +479,7 @@ export default function ProductsSection({
   // section, not its heading: embedded mode renders no heading).
   const sectionRef = useRef(null);
   useDialogFocus(deleteDialogRef, !!confirmDelete, () => sectionRef.current);
-  useDialogFocus(duplicateDialogRef, confirmDuplicate);
+  useDialogFocus(duplicateDialogRef, confirmDuplicate, () => sectionRef.current);
 
   // MEH-1447: Escape closes the delete-confirm dialog unless a delete is in
   // flight. Mirrors admin/producers DeleteConfirmDialog (MEH-1023/1027).

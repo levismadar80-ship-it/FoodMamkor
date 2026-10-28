@@ -29,7 +29,10 @@
  * focusing a detached node silently does nothing. That is the dialog's most
  * common exit, so the caller passes `fallback`: a function returning where
  * focus goes instead (an element that can take focus, e.g. tabIndex={-1}).
- * Without it focus would drop to <body>, the top of the page.
+ * Without it focus would drop to <body>, the top of the page. The same holds
+ * for a trigger that is disabled at close time. `fallback` is read from the
+ * render that opened the dialog: a caller must close and reopen, not swap
+ * what the dialog is about while it stays open.
  */
 import { useEffect } from "react";
 
@@ -41,7 +44,7 @@ export default function useDialogFocus(ref, open, fallback) {
     if (!open) return undefined;
     const trigger = document.activeElement;
     const focusables = () => Array.from(ref.current?.querySelectorAll(FOCUSABLE) ?? []);
-    const initial = ref.current?.querySelector("[data-autofocus]") ?? focusables()[0];
+    const initial = ref.current?.querySelector("[data-autofocus]:not([disabled])") ?? focusables()[0];
     initial?.focus();
 
     const onKey = (e) => {
@@ -65,7 +68,9 @@ export default function useDialogFocus(ref, open, fallback) {
     window.addEventListener("keydown", onKey);
     return () => {
       window.removeEventListener("keydown", onKey);
-      if (trigger instanceof HTMLElement && document.contains(trigger)) {
+      // A disabled trigger cannot take focus either (the duplicate-name
+      // confirm starts the save, which disables the add form's submit).
+      if (trigger instanceof HTMLElement && document.contains(trigger) && !trigger.disabled) {
         trigger.focus();
         return;
       }

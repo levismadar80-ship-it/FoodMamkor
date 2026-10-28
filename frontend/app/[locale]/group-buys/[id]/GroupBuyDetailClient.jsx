@@ -169,7 +169,7 @@ export default function GroupBuyDetailClient({ id }) {
         const parsed = GroupBuyProducerDeliverySchema.safeParse(r.data);
         // MEH-2491: the checker hiding is the right fallback, but a payload
         // the schema refuses is a contract drift someone should hear about.
-        if (!parsed.success) {
+        if (alive && !parsed.success) {
           Sentry.captureMessage("Group-buy business delivery payload failed schema validation", {
             level: "warning",
             extra: { producerId, issues: parsed.error.issues },
