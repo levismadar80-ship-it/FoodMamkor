@@ -14,8 +14,15 @@ const notFoundMock = vi.fn(() => {
   throw new Error("NEXT_NOT_FOUND");
 });
 vi.mock("next/navigation", () => ({ notFound: () => notFoundMock() }));
+const setRequestLocaleMock = vi.fn();
 vi.mock("next-intl/server", () => ({
   getTranslations: async ({ namespace }) => (k) => `${namespace}.${k}`,
+  setRequestLocale: (l) => setRequestLocaleMock(l),
+}));
+const captureMessage = vi.fn();
+vi.mock("@sentry/nextjs", () => ({
+  captureMessage: (...a) => captureMessage(...a),
+  captureException: vi.fn(),
 }));
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ children, href, ...rest }) => (
@@ -120,6 +127,37 @@ describe("MEH-2461 organizer page", () => {
     respond(503, {});
     await expect(renderPage()).rejects.toThrow(/organizer lookup failed: 503/);
     expect(notFoundMock).not.toHaveBeenCalled();
+  });
+
+  it("a protocol-less website / facebook becomes an https link (review #3712 F6)", async () => {
+    respond(200, { ...ORG, website: "gelem.co.il", facebook: "  https://facebook.com/gelem " });
+    await renderPage();
+    expect(screen.getByTestId("organizer-contact-website").getAttribute("href")).toBe(
+      "https://gelem.co.il",
+    );
+    expect(screen.getByTestId("organizer-contact-facebook").getAttribute("href")).toBe(
+      "https://facebook.com/gelem",
+    );
+  });
+
+  it("sets the request locale (static rendering, review #3712 F8)", async () => {
+    respond(200, ORG);
+    await renderPage();
+    expect(setRequestLocaleMock).toHaveBeenCalledWith("he");
+  });
+
+  it("Rule 19: a contract-breaking payload is reported and still renders (review #3712 F4)", async () => {
+    respond(200, { ...ORG, slug: undefined });
+    await renderPage();
+    expect(captureMessage).toHaveBeenCalledTimes(1);
+    expect(captureMessage.mock.calls[0][0]).toBe("SSR payload failed schema validation");
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("שוק גלם");
+  });
+
+  it("control: a valid payload reports nothing", async () => {
+    respond(200, { ...ORG, upcoming_events: [ev("e1", "2026-11-10")] });
+    await renderPage();
+    expect(captureMessage).not.toHaveBeenCalled();
   });
 
   it("a scanner-shaped slug never reaches the API", async () => {

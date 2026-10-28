@@ -1,23 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
+import { render, screen, waitFor, cleanup } from "@testing-library/react";
 import EventsClient from "@/app/[locale]/events/EventsClient";
 
-// MEH-1865 — /events renders TWO different zeros and used to render one surface
-// for both:
-//   • empty dataset      — nothing exists for this tab. Zero filter controls,
-//                          the editorial empty state, a link to /producers.
-//   • filtered to zero    — rows exist, the filters matched none. The filter
-//                          controls STAY (hiding them traps the reader with no
-//                          way back but editing the URL) + "clear filters".
-//
-// The matrix below is (0 rows / 1 row / many rows) × (filters off / filters on)
-// per tab — cells, not two lists (CLAUDE.md § conditional-UI states). The
-// absence assertions are the load-bearing half: each state must NOT render the
-// other state's affordance, which is exactly what the pre-MEH-1865 component
-// got wrong.
-//
-// Harness mirrors __tests__/EventsUrlSync.test.jsx (jsdom + a full component
-// render) — only the api mock differs, because emptiness is the subject here.
+// MEH-2461 — the «מארגן: {name}» line on the /events list card. The harness
+// below (params / api mock / row factory) is copied from the MEH-1865 empty-
+// states suite so the cases render the real EventsClient; the matrix this file
+// covers is the one in the describe block's header further down.
 
 let params = {}; // drives useSearchParams().get(key)
 

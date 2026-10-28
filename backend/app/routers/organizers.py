@@ -40,7 +40,7 @@ def _public_organizer_query(db: Session):
 
 
 @router.get("/organizers", response_model=list[OrganizerSlugOut])
-@limiter.limit("60/minute")
+@limiter.limit("120/minute")
 def list_organizer_slugs(
     request: Request, response: Response, db: Session = Depends(get_db)
 ):
@@ -58,7 +58,7 @@ def list_organizer_slugs(
 
 
 @router.get("/organizers/{slug}", response_model=OrganizerPublicOut)
-@limiter.limit("60/minute")
+@limiter.limit("120/minute")
 def get_organizer(
     slug: str, request: Request, response: Response, db: Session = Depends(get_db)
 ):

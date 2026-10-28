@@ -3450,6 +3450,143 @@
         "title": "NewsletterUnsubscribeIn",
         "type": "object"
       },
+      "OrganizerPublicOut": {
+        "description": "GET /organizers/{slug}. Public fields only — no street address, no\nlicense, nothing business-shaped (no products, categories or delivery).",
+        "properties": {
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "facebook": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Facebook"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "images": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Images",
+            "type": "array"
+          },
+          "instagram": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Instagram"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "short_description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Short Description"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          },
+          "upcoming_events": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/EventOut"
+            },
+            "title": "Upcoming Events",
+            "type": "array"
+          },
+          "website": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Website"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "slug"
+        ],
+        "title": "OrganizerPublicOut",
+        "type": "object"
+      },
+      "OrganizerSlugOut": {
+        "description": "One sitemap entry for /organizers/{slug}.",
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          }
+        },
+        "required": [
+          "slug",
+          "name"
+        ],
+        "title": "OrganizerSlugOut",
+        "type": "object"
+      },
       "OtpConfirmIn": {
         "properties": {
           "code": {
@@ -17642,6 +17779,75 @@
         "summary": "Unsubscribe Newsletter",
         "tags": [
           "marketing"
+        ]
+      }
+    },
+    "/organizers": {
+      "get": {
+        "description": "Slugs of every public organizer — the sitemap's source for\n/organizers/{slug} (MEH-2461: organizer pages are public, so they are\nlisted; never under /producers).",
+        "operationId": "list_organizer_slugs_organizers_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/OrganizerSlugOut"
+                  },
+                  "title": "Response List Organizer Slugs Organizers Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Organizer Slugs",
+        "tags": [
+          "organizers"
+        ]
+      }
+    },
+    "/organizers/{slug}": {
+      "get": {
+        "description": "An approved organizer's page: profile + its upcoming events.\n\n404 for a business slug, a pending organizer and an unknown slug alike —\nthe business has its own page, and a pending row is not consented-to-public\n(MEH-254). Upcoming = active and dated today-or-later in Israel, soonest\nfirst; past events are not listed.",
+        "operationId": "get_organizer_organizers__slug__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizerPublicOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Organizer",
+        "tags": [
+          "organizers"
         ]
       }
     },

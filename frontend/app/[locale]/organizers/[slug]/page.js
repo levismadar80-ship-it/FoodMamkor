@@ -10,10 +10,12 @@
  *           404 an organizer since MEH-2459). Never listed under /producers.
  * Related:  app/[locale]/[slug]/page.js (the business twin whose fetch / 404 /
  *           metadata contract this mirrors), backend/app/routers/organizers.py.
- * History:  MEH-2461 (creation).
+ * History:  MEH-2461 (creation; review #3712: Rule 19 probe, safe links,
+ *           setRequestLocale).
  */
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import * as Sentry from "@sentry/nextjs";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { API_URL } from "@/lib/env";
 import { serverFetch } from "@/lib/server-fetch";
@@ -22,6 +24,9 @@ import { isSlugShaped } from "@/lib/slug";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { getWhatsAppHref, normalizePhone } from "@/lib/utils";
 import { instagramUrl } from "@/lib/social-links";
+import { OrganizerPageSchema } from "@/lib/schemas";
+
+const ROUTE = "/[locale]/organizers/[slug]";
 
 // REUSES: app/[locale]/[slug]/page.js:25 (MEH-1754) — `null` means ONE thing,
 // "no such public organizer". Every other failure throws to error.js, so a
@@ -39,7 +44,27 @@ async function getOrganizer(slug) {
     err.slug = slug;
     throw err;
   }
-  return res.json();
+  const data = await res.json();
+  // REUSES: app/[locale]/events/[id]/page.js (MEH-1885) — Rule 19 as a probe:
+  // a contract break is reported, and the raw payload still renders (never
+  // `parsed.data`, never a throw or notFound()).
+  const parsed = OrganizerPageSchema.safeParse(data);
+  if (!parsed.success) {
+    Sentry.captureMessage("SSR payload failed schema validation", {
+      level: "warning",
+      extra: { route: ROUTE, slug, issues: parsed.error.issues },
+    });
+  }
+  return data;
+}
+
+// REUSES: app/[locale]/producer/[id]/components/ContactCard.jsx:124 — httpUrl.
+// A stored website / facebook value without a scheme becomes an https link
+// (and never an in-site relative path).
+function httpUrl(raw) {
+  const v = (raw || "").trim();
+  if (!v) return null;
+  return v.startsWith("http") ? v : `https://${v}`;
 }
 
 export async function generateMetadata(props) {
@@ -88,8 +113,16 @@ function ContactLinks({ organizer, t }) {
       href: instagramUrl(organizer.instagram),
       label: t("instagram"),
     },
-    organizer.website && { key: "website", href: organizer.website, label: t("website") },
-    organizer.facebook && { key: "facebook", href: organizer.facebook, label: t("facebook") },
+    httpUrl(organizer.website) && {
+      key: "website",
+      href: httpUrl(organizer.website),
+      label: t("website"),
+    },
+    httpUrl(organizer.facebook) && {
+      key: "facebook",
+      href: httpUrl(organizer.facebook),
+      label: t("facebook"),
+    },
   ].filter(Boolean);
   if (links.length === 0) return null;
   return (
@@ -113,6 +146,7 @@ function ContactLinks({ organizer, t }) {
 
 export default async function OrganizerPage(props) {
   const { slug, locale } = await props.params;
+  setRequestLocale(locale);
   const organizer = await getOrganizer(slug);
   if (!organizer) notFound();
   const t = await getTranslations({ locale, namespace: "organizers.page" });

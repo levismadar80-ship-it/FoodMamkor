@@ -107,6 +107,28 @@ class TestOrganizerSitemapSource:
         slugs = [row["slug"] for row in client.get("/organizers").json()]
         assert slugs == ["meh2461-a"]
 
+    def test_ordered_by_name_and_slugless_rows_skipped(self, client, db):
+        """Review #3712 F9: the sitemap source is name-ordered, and an
+        approved organizer without a slug has no page to list."""
+        _organizer(db, slug="meh2461-b")
+        _organizer(db, slug="meh2461-a")
+        _organizer(db, slug=None)
+        resp = client.get("/organizers")
+        assert resp.status_code == 200
+        assert [row["slug"] for row in resp.json()] == ["meh2461-a", "meh2461-b"]
+
+    def test_both_routes_are_edge_cacheable(self, client, db):
+        _organizer(db)
+        for path in ("/organizers", f"/organizers/{ORG_SLUG}"):
+            resp = client.get(path)
+            assert resp.status_code == 200
+            assert "s-maxage=30" in resp.headers["Cache-Control"], path
+
+    def test_a_404_is_not_edge_cached(self, client, db):
+        resp = client.get("/organizers/meh2461-nobody")
+        assert resp.status_code == 404
+        assert "s-maxage" not in resp.headers.get("Cache-Control", "")
+
 
 def test_organizers_is_a_reserved_slug():
     """/organizers is a real route — a business must not be able to take it."""
