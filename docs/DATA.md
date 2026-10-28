@@ -584,6 +584,21 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > cancelled is final in `OWNER_TRANSITIONS`, so a repeat is a 409 and sends
 > nothing. No latch column. An admin cancel (admin route) sends nothing.
 >
+> **MEH-2453 (MEH-2435 chunk 5) — how a participant from another city gets the
+> product.** `POST /group-buys`: `fulfillment_note` is now **required** — a
+> string, stripped, 1–1000 chars; missing / `null` / blank → 422, blank with
+> «יש לכתוב מתי ואיך מקבלים את המוצרים» (`GroupBuyCreate._require_fulfillment_note`).
+> The column stays nullable (no migration): rows created before this keep NULL
+> and the public page keeps hiding an empty note. The funded email to each
+> participant gains «לדף העסק: {frontend_url}/producer/{producer_id}» above the
+> group link — a link, never contact details (privacy contract unchanged). The
+> public group page reads `GET /producers/{producer_id}` once (not on its
+> 30-second refresh), validates the delivery slice with
+> `GroupBuyProducerDeliverySchema`, then links «מאת {name}» to the business
+> page and mounts the same «מגיעים אלייך?» `DeliveryChecker` as the business
+> page. If that fetch fails (e.g. a business that is not public → 404), the
+> name stays plain text and no checker shows. No new route.
+>
 > **MEH-2437 — the business's own group buys.** `GET /producers/me/group-buys`
 > (`require_producer`; a producer user with no business → 403 `לא נמצא עסק
 > מקושר`, like `/producers/me/recipes`). Returns `list[GroupBuyOut]` — the same

@@ -1157,6 +1157,8 @@
         "city_label": "City",
         "fulfillment_label": "When and how do buyers receive the products?",
         "fulfillment_placeholder": "e.g. Pickup from the farm on Friday after the group closes, or home delivery within 3 days",
+        "fulfillment_helper": "Participants see this before they join. Say where to pick up and which cities get delivery.",
+        "fulfillment_required": "Say when and how buyers receive the products",
         "submitting": "Creating...",
         "submit": "Create group buy",
         "toast_created": "Group buy created and open for joining"
@@ -1174,7 +1176,7 @@
         "close_title": "Close this group buy?",
         "close_body": "The group did not reach the minimum by the deadline and will be recorded as cancelled.",
         "deliver_title": "Mark this group as delivered?",
-        "deliver_body": "The group will move to completed.",
+        "deliver_body": "The group will be marked as completed.",
         "toast_cancelled": "Group buy cancelled",
         "toast_fulfilled": "Group buy marked as delivered"
       }

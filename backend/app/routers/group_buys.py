@@ -168,6 +168,7 @@ def _maybe_notify_funded(
         gb.title,
         gb.producer.name if gb.producer else "",
         str(gb.id),
+        str(gb.producer_id),
     )
 
 

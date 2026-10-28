@@ -2670,16 +2670,9 @@
             "title": "Description"
           },
           "fulfillment_note": {
-            "anyOf": [
-              {
-                "maxLength": 1000,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Fulfillment Note"
+            "maxLength": 1000,
+            "title": "Fulfillment Note",
+            "type": "string"
           },
           "max_participants": {
             "anyOf": [
@@ -2753,7 +2746,8 @@
           "price_per_unit_regular",
           "price_per_unit_group",
           "min_participants",
-          "deadline"
+          "deadline",
+          "fulfillment_note"
         ],
         "title": "GroupBuyCreate",
         "type": "object"

@@ -49,6 +49,12 @@ def _group_buy_url(group_buy_id: str) -> str:
     return f"{settings.frontend_url}/group-buys/{group_buy_id}"
 
 
+def _producer_url(producer_id: str) -> str:
+    # The UUID route, not the slug: it always resolves, and the email has no
+    # DB access to read a slug (see the module header).
+    return f"{settings.frontend_url}/producer/{producer_id}"
+
+
 # --- Templates ---
 
 
@@ -72,7 +78,11 @@ def notify_producer_funded(
 
 
 def notify_participant_funded(
-    participant_email: str, title: str, producer_name: str, group_buy_id: str
+    participant_email: str,
+    title: str,
+    producer_name: str,
+    group_buy_id: str,
+    producer_id: str,
 ) -> None:
     """Fired on the open->funded transition, once per participant.
 
@@ -85,18 +95,24 @@ def notify_participant_funded(
         f"שלום,\n\n"
         f'הקבוצה שהצטרפת אליה, "{title}", הגיעה ליעד.\n'
         f"לתיאום ההזמנה צרו קשר עם {producer_name}.\n\n"
+        # MEH-2453: the business page shows its delivery areas and pickup
+        # points. A link to the page, never its contact record.
+        f"לדף העסק: {_producer_url(producer_id)}\n"
         f"לצפייה בקבוצה ובפרטי ההזמנה: {_group_buy_url(group_buy_id)}\n\n"
         f"בברכה,\nצוות מהמקור"
     )
     _send_email(participant_email, subject, body)
 
 
-def send_funded_notifications(
+# noqa below: a BackgroundTasks entry point takes plain data only (no DB access,
+# see the module header), so every value the two templates need is an argument.
+def send_funded_notifications(  # noqa: PLR0913
     producer_email: str | None,
     participant_emails: list[str],
     title: str,
     producer_name: str,
     group_buy_id: str,
+    producer_id: str,
 ) -> None:
     """BackgroundTasks entry point — dispatches both sides, never raises.
 
@@ -128,7 +144,7 @@ def send_funded_notifications(
             continue
         try:
             notify_participant_funded(
-                participant_email, title, producer_name, group_buy_id
+                participant_email, title, producer_name, group_buy_id, producer_id
             )
         except Exception:  # noqa: BLE001 — one failure must not stop the rest
             logger.exception(

@@ -4008,8 +4008,12 @@ class GroupBuyCreate(BaseModel):
     max_participants: int | None = Field(None, ge=2)
     deadline: datetime
     city: str | None = Field(None, max_length=100)
-    # MEH-1457: optional free-text "מתי ואיך מקבלים" (OFN "Ready for").
-    fulfillment_note: str | None = Field(None, max_length=1000)
+    # MEH-1457: free-text "מתי ואיך מקבלים" (OFN "Ready for").
+    # MEH-2453: required. A participant from another city reads it before she
+    # joins; without it she cannot tell whether the product reaches her.
+    # Existing rows keep NULL (the column stays nullable); only new creates
+    # must carry it.
+    fulfillment_note: str = Field(..., max_length=1000)
 
     # MEH-1626 chunk 1: description gets the same bleach every other
     # description field in this module has (EventCreate:2528, HomeProductCreate,
@@ -4020,6 +4024,14 @@ class GroupBuyCreate(BaseModel):
     @classmethod
     def _sanitize_description(cls, v):
         return sanitize_text(v, max_length=2000)
+
+    @field_validator("fulfillment_note")
+    @classmethod
+    def _require_fulfillment_note(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("יש לכתוב מתי ואיך מקבלים את המוצרים")
+        return v
 
     @field_validator("deadline")
     @classmethod

@@ -12,7 +12,9 @@ import { showToast } from "@/lib/toast";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
 import { formatPrice } from "@/lib/utils";
 import Input from "@/components/ui/Input";
+import DeliveryChecker from "@/components/DeliveryChecker";
 import api from "@/lib/api";
+import { GroupBuyProducerDeliverySchema } from "@/lib/api-schemas";
 
 // MEH-975: schema bounds for GroupBuyCommitRequest.quantity
 // (backend/app/schemas/schemas.py:1602 — int, ge=1, le=100). Clamp the
@@ -121,6 +123,11 @@ export default function GroupBuyDetailClient({ id }) {
   const [error, setError] = useState("");
   const [showConfetti, setShowConfetti] = useState(false);
   const prevStatusRef = useRef(null);
+  // MEH-2453: the business behind the group — its public page (for the link)
+  // and its delivery data (for «מגיעים אלייך?»). Null until fetched and valid;
+  // on any failure the name stays plain text and the checker stays away, so a
+  // business whose page is not public never gets a link to a 404.
+  const [producer, setProducer] = useState(null);
 
   const load = async () => {
     try {
@@ -146,6 +153,26 @@ export default function GroupBuyDetailClient({ id }) {
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  // MEH-2453: once per business, not on the 30-second refresh above — the
+  // delivery areas do not move while someone reads the page.
+  const producerId = gb?.producer_id;
+  useEffect(() => {
+    if (!producerId) return undefined;
+    let alive = true;
+    api
+      .get(`/producers/${producerId}`)
+      .then((r) => {
+        const parsed = GroupBuyProducerDeliverySchema.safeParse(r.data);
+        if (alive) setProducer(parsed.success ? parsed.data : null);
+      })
+      .catch(() => {
+        if (alive) setProducer(null);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [producerId]);
 
   const handleCommit = async (e) => {
     e.preventDefault();
@@ -336,7 +363,17 @@ export default function GroupBuyDetailClient({ id }) {
               {gb.title}
             </h1>
             {gb.producer_name && (
-              <p className="text-sm text-fg-muted">{t("by_producer", { name: gb.producer_name })}</p>
+              <p className="text-sm text-fg-muted">
+                {/* MEH-2453: the business page carries its pickup points and
+                    delivery areas — the answer to "how do I get this". */}
+                {producer ? (
+                  <Link href={`/producer/${producer.id}`} className="text-primary hover:underline">
+                    {t("by_producer", { name: gb.producer_name })}
+                  </Link>
+                ) : (
+                  t("by_producer", { name: gb.producer_name })
+                )}
+              </p>
             )}
             {gb.description && (
               <p className="text-sm text-text mt-3 leading-relaxed">{gb.description}</p>
@@ -393,6 +430,20 @@ export default function GroupBuyDetailClient({ id }) {
               </p>
             )}
           </div>
+
+          {/* MEH-2453: «מגיעים אלייך?» from the business's own delivery data,
+              same component and copy as its page. It hides itself for a
+              business that does not deliver, or whose answer is the same for
+              every city (DeliveryChecker gates 1–3). */}
+          {producer && (
+            <DeliveryChecker
+              offersDelivery={producer.offers_delivery}
+              nationwide={producer.delivery_nationwide}
+              excluded={producer.delivery_excluded_cities}
+              areas={producer.delivery_areas}
+              producer={producer}
+            />
+          )}
 
           {/* Commit form */}
           {open && !expired && !gb.user_committed && (
