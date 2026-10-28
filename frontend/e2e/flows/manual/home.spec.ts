@@ -2226,6 +2226,23 @@ test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-6
     await expect(secondary).toContainText(STATS.countrywide);
   });
 
+  // MEH-2488: Hebrew is never letter-spaced (DESIGN.md) — tracking pulls the
+  // letters of a word apart. The band carried `tracking-wide` (0.4px / 0.35px).
+  // Both lines are checked, above the threshold, so neither can pass by being absent.
+  test("the trust band's Hebrew lines are not letter-spaced", async ({ page }) => {
+    await consent(page);
+    await stubTiles(page);
+    await mockApi(page, PRODUCERS, { stats: STATS_ABOVE });
+    await gotoHome(page);
+    for (const id of ["trust-lead", "trust-secondary"]) {
+      const line = scope(page).getByTestId(id);
+      await expect(line).toBeVisible(FIRST_PAINT);
+      expect(await line.textContent(), `${id} carries Hebrew`).toMatch(/[\u0590-\u05FF]/);
+      const spacing = await line.evaluate((el) => getComputedStyle(el).letterSpacing);
+      expect(spacing, `${id} letter-spacing`).toMatch(/^(normal|0px)$/);
+    }
+  });
+
   // MEH-2487 control: the global "Hebrew is never slanted" rule must not reach
   // the dir="ltr" Cormorant numerals, which have a real italic face.
   test("the counter numerals keep their real Cormorant italic inside the Hebrew page", async ({ page }) => {

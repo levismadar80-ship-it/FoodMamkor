@@ -256,6 +256,19 @@ DESIGN.md token transform briefly dropped it). The document root
 
 **Cormorant Garamond** is reserved for Latin pull-quotes only (not tokenized).
 Hebrew punctuation must be correct (`״`, `׳`, em-dash `—`).
+Cormorant has **no Hebrew glyphs**, and its size-adjusted fallback face
+(`local(Times New Roman)`, no unicode-range) catches every glyph it lacks — so
+Hebrew set in `.font-english` used to render in a system serif. Since MEH-2488
+the `.font-english` stack leads with Frank Ruhl's Hebrew half
+(`var(--font-headline)`, Hebrew unicode-range only): Hebrew gets the brand face,
+Latin and digits still get Cormorant. The change is global — it reaches every
+`.font-english` use (home, process, events, join, producer sign-up, account
+sheet) — but it only moves Hebrew glyphs, which had no brand face there before.
+
+**Headings never strand one word on the last line** — `h1, h2, h3` carry
+`text-wrap: balance` in `globals.css` (MEH-2488). **Hebrew is never
+letter-spaced** (no `tracking-*` on Hebrew; MEH-2488 removed the last two:
+the home trust band and the admin help ToC label).
 
 ## Layout
 

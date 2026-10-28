@@ -140,7 +140,7 @@ export default function AboutProcessClient() {
       <section className="bg-background py-12 md:py-20 scroll-mt-24">
         <div className="max-w-5xl mx-auto px-4 md:px-12">
           <Marker>{t("steps.marker")}</Marker>
-          <p className="font-english italic text-[19px] text-fg-muted mb-8 max-w-[48ch]">
+          <p data-testid="process-steps-lead" className="font-english italic text-[19px] text-fg-muted mb-8 max-w-[48ch]">
             {t("steps.lead")}
           </p>
           <ol data-testid="process-steps" className="grid grid-cols-1 md:grid-cols-4 gap-8">
