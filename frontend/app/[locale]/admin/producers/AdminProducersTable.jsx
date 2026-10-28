@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { Cow, Leaf, Package, Seal, Truck, Circle, StarOfDavid, Warning } from "@phosphor-icons/react";
+import { Cow, Seal, Circle, StarOfDavid, Warning } from "@phosphor-icons/react";
 import Pagination from "@/components/Pagination";
 import AdminLoadError from "@/components/admin/AdminLoadError";
 import StoryCardCanvas from "@/components/StoryCardCanvas";
@@ -13,6 +13,7 @@ import AdminReviewChecklist from "./AdminReviewChecklist";
 import { SLA_STATUSES } from "./sla-statuses";
 import { getProducerStatusLabel, getProducerStatusColor } from "@/lib/producer-status";
 import { optimizeCloudinary } from "@/lib/cloudinary";
+import { BADGE_CONFIG } from "@/lib/badges";
 
 // Phosphor icon size used in trait tags + the action row.
 const ICON_SIZE_SM = 16;
@@ -207,7 +208,19 @@ function CompletenessBadge({ missing, priority }) {
   );
 }
 
-function ProducerTags({ producer }) {
+// MEH-2521: the admin ✡ follows VERIFIED kashrut — the same predicate the
+// public kosher badge uses (lib/badges.js, case "kosher": MEH-986 + MEH-1260
+// expiry) — never the free-text `producer.kosher` string, which no public
+// surface renders. Inlined because badges.js exports no named predicate.
+function isKashrutCurrent(producer) {
+  return (
+    !!producer.kashrut_verified_at &&
+    (!producer.kashrut_expires_at ||
+      new Date(producer.kashrut_expires_at) > new Date())
+  );
+}
+
+export function ProducerTags({ producer }) {
   const t = useTranslations("admin");
   return (
     <div className="flex gap-1 flex-wrap">
@@ -224,11 +237,16 @@ function ProducerTags({ producer }) {
         </span>
       )}
       {producer.verification_tier === "verified" && <span title={t("producers.table.tags.verified")}><Seal size={ICON_SIZE_SM} weight="fill" className="text-primary" aria-hidden="true" /></span>}
-      {producer.organic_certified && <span title={t("producers.table.tags.organic_certified")}><Leaf size={ICON_SIZE_SM} className="text-primary" aria-hidden="true" /></span>}
       {producer.grass_fed && <span title={t("producers.table.tags.grass_fed")}><Cow size={ICON_SIZE_SM} className="text-primary" aria-hidden="true" /></span>}
-      {producer.has_delivery && <span title={t("producers.table.tags.delivery")}><Truck size={ICON_SIZE_SM} className="text-primary" aria-hidden="true" /></span>}
-      {producer.pickup_points && <span title={t("producers.table.tags.pickup_points")}><Package size={ICON_SIZE_SM} className="text-primary" aria-hidden="true" /></span>}
-      {producer.kosher && <span title={producer.kosher}><StarOfDavid size={ICON_SIZE_SM} className="text-primary" aria-hidden="true" /></span>}
+      {/* MEH-2521: the organic (Leaf), delivery (Truck) and pickup (Package)
+          tags are gone — each read a column no public surface shows any more
+          (MEH-1259 organic; delivery is derived from delivery areas; pickup
+          from ProducerLocation rows, MEH-2046/2060). */}
+      {isKashrutCurrent(producer) && (
+        <span data-testid="admin-tag-kashrut" title={BADGE_CONFIG.kosher.label}>
+          <StarOfDavid size={ICON_SIZE_SM} className="text-primary" aria-hidden="true" />
+        </span>
+      )}
       {/* MEH-971 chunk 3: license-pending flag — license-required category with
           no license number. Unmissable text badge so the admin verifies before
           approving (the chunk-4 guard blocks approval without an override). */}
