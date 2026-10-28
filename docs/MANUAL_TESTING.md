@@ -1769,6 +1769,8 @@ Conditional-required field on `/register/producer` Step 2 + admin `ProducerForm`
 - ✅ → admin-recipes-kebab.spec.ts (a pending row's menu holds «דחייה» and «מחקו» only — ⚠️ STALE: «דחייה» joined the menu in MEH-226; it is no longer «מחקו» alone) — שורה ממתינה (pending) — סנני `pending`; **תוצאה מצופה:** "✓ אשר" + "בקשת השלמה" + "עריכה" inline ליד ⋮; בתפריט רק "מחקו" (אין השהה/שגריר/סטורי לעסק לא-מאושר).
 - ✅ → admin-recipes-kebab.spec.ts (an approved row's menu holds suspend, story and a red delete) — שורה מאושרת — **תוצאה מצופה:** בתפריט: השהה · 📸 סטורי · מחקו (אדום, danger). אין «שגריר» (MEH-2509).
 - ✅ → admin-recipes-kebab.spec.ts («סטורי» opens the story-card panel under the row; its close button removes it) — סטורי מהתפריט — ⋮ → "📸 סטורי"; **תוצאה מצופה:** ה-StoryCardCanvas נפתח מתחת לשורה בדיוק כמו קודם (התנהגות ללא שינוי — רק המיקום זז).
+- ✅ → admin-recipes-kebab.spec.ts (same test — the canvas box is 9:16 ±2px and >200px wide; discriminates only on the webkit-* projects, i.e. the non-voting e2e-webkit job) — MEH-2511 — כרטיס הסטורי ב-iPhone — ⋮ → "סטורי" ב-Safari בנייד; **תוצאה מצופה:** התצוגה המקדימה ביחס 9:16, רואים תמונה, שם, עיר ולוגו — לא מתוחה ולא חתוכה.
+- ✅ → admin-recipes-kebab.spec.ts («הגדרה כשגרירה» POSTs ambassador:true and the menu then offers the removal) — שגריר מהתפריט — ⋮ → "☆ שגריר" על עסק מאושר; **תוצאה מצופה:** trust tier מתעדכן כמו קודם (toggle זהה, רק מהתפריט).
 - ~~שגריר מהתפריט~~ — הוסר ב-MEH-2509 (כפילות של «בחירת העורכת»).
 - ✅ → admin-recipes-kebab.spec.ts («מחקו» opens a modal dialog naming the business — no browser confirm) — מחיקה מהתפריט — ⋮ → "מחקו"; **תוצאה מצופה:** נפתח dialog מודאלי עם שם בית העסק (Chunk B, MEH-1027) — לא חלון confirm של הדפדפן.
 - ✅ → admin-recipes-kebab.spec.ts (a second click, a click outside and Escape close the menu; Escape returns focus to ⋮) — פתיחה/סגירה — לחיצה שנייה על ⋮ / לחיצה בחוץ / Escape סוגרים (Escape מחזיר פוקוס ל-⋮); בשולי הטבלה התפריט עשוי להיחתך ע"י מסגרת הטבלה (תכונה מוכרת של התפריט, זהה ל-/admin/users).
@@ -4086,6 +4088,9 @@ ROLLBACK;   -- חובה. הבדיקה היא האם ה-DELETE נכשל, לא ה�
 - [ ] בית עסק מאושר עם קבוצת רכש פתוחה ומשתתפת → אדמין «השעיה» — **תוצאה מצופה:** הקבוצה ב«בוטלה» באדמין/בלוח; למשתתפת מייל «…בוטלה כי בית העסק {שם} כבר לא מופיע במהמקור»
 - [ ] אותו דבר עם «דחייה» לבית עסק שהיה מאושר — **תוצאה מצופה:** כנ"ל, ובעלת העסק מקבלת רק את מייל הדחייה
 - [ ] «הפעלה מחדש» של בית העסק — **תוצאה מצופה:** הקבוצה נשארת מבוטלת (לא חוזרת)
+
+## MEH-2502 — עריכת אדמין לא משנה סטטוס (28/10/2026)
+- [ ] `PUT /admin/producers/{id}` עם `"status"` בגוף — **תוצאה מצופה:** 422, שום שדה לא נשמר; עריכה רגילה מטופס האדמין ממשיכה לעבוד
 
 ## MEH-2503 — מחיקת בית עסק או חשבון עם קבוצות רכש (28/10/2026)
 - [ ] בית עסק עם קבוצת רכש פתוחה ומשתתפת → אדמין «מחיקה» — **תוצאה מצופה:** נמחק בלי שגיאה; למשתתפת מייל «…כבר לא מופיע במהמקור»
