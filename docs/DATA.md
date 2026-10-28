@@ -626,6 +626,20 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > link cannot join it. One helper, `group_buys._public_group_buys`. The owner's
 > list above and the admin list are unchanged. No schema change.
 >
+> **MEH-2498 — taking a business off the site cancels its live group buys.**
+> When an admin moves a business out of `approved` — `POST
+> /admin/producers/{id}/toggle-status` (approved→inactive), `POST
+> /admin/producers/{id}/reject` (approved→rejected), or `PUT
+> /admin/producers/{id}` with a `status` other than `approved` (the admin
+> schema accepts it) — every group buy of it in
+> `open` / `funded` becomes `cancelled` in the same commit
+> (`services/group_buy_delist.cancel_live_group_buys`), and each participant
+> except the business's own users gets the **delisted-cancel email**
+> (`notify_participant_cancelled_delisted`: «…בוטלה כי בית העסק {name} כבר לא
+> מופיע במהמקור», no link, no contact details). `fulfilled` / `cancelled` are
+> untouched; re-activation un-cancels nothing; a failing email never fails the
+> admin action. No schema change.
+>
 > **MEH-1164 sub-chunk B — structured 403 detail.** The unverified-email 403
 > `detail` is now an **object** `{"code": "email_unverified", "message": "יש
 > לאמת את כתובת האימייל תחילה"}` (all four gated creates — the three above plus
