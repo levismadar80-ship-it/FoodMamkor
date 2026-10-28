@@ -5,7 +5,7 @@ Purpose:  Owner-claim link — an admin prepares a DRAFT business with no owner,
           account and her own declaration. Nobody at Mehamakor creates or
           transmits a password.
 Touches:  producers (declared_at, declaration_version — read status, locked
-          FOR UPDATE on claim), users (producer_id, role, is_producer,
+          FOR UPDATE on claim; claim_link_sent_at — stamped FOR UPDATE on mint), users (producer_id, role, is_producer,
           terms_accepted_at, terms_version — the claimant's row locked FOR
           UPDATE first). Background: WhatsApp welcome to the business phone,
           producer welcome email, risk score. products (admin create / delete
@@ -21,7 +21,8 @@ Related:  backend/app/auth.py create/decode_producer_claim_token ·
           stamps, for a business the owner creates herself) ·
           backend/app/routers/admin.py admin_create_producer (`as_draft`).
 History:  MEH-2322 (MEH-2321 chunk A, creation). MEH-2326 (chunk D): admin
-          adds / deletes products on an ownerless draft.
+          adds / deletes products on an ownerless draft. MEH-2496: the mint
+          stamps producers.claim_link_sent_at (its only DB write).
 """
 
 from datetime import datetime, timezone
@@ -110,7 +111,17 @@ def create_claim_link(
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    producer = db.query(Producer).filter(Producer.id == producer_id).first()
+    # MEH-2496: FOR UPDATE because this route now writes. It serialises the
+    # stamp with a concurrent claim (claim_producer locks this row too), so a
+    # mint cannot stamp a draft whose claim committed between our owner check
+    # and our commit. Only this one row is locked — no lock-order cycle with
+    # the claim, which takes the users row first and then this one.
+    producer = (
+        db.query(Producer)
+        .filter(Producer.id == producer_id)
+        .with_for_update()
+        .first()
+    )
     if not producer:
         raise HTTPException(status_code=404, detail="בית העסק לא נמצא")
     if producer.status != "draft":
@@ -121,6 +132,13 @@ def create_claim_link(
     if _has_owner(db, producer.id):
         raise HTTPException(status_code=409, detail=_ALREADY_CLAIMED)
     token, expires_at = create_producer_claim_token(producer.id)
+    # MEH-2496: the stamp the drafts list reads («קישור נשלח ב-…»). Every 409
+    # above raises before this line, so a refused mint stamps nothing. It
+    # records the LATEST link only — an earlier link stays valid until its own
+    # expiry (links are not revoked), and the latest is always the
+    # last-expiring one, so «בתוקף עד» derived from it is the true horizon.
+    producer.claim_link_sent_at = datetime.now(timezone.utc)
+    db.commit()
     logger.info(
         "producer_claim.link_created",
         producer_id=str(producer.id),
