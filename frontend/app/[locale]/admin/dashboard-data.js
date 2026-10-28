@@ -34,6 +34,11 @@ export function AdminDashboardProvider({ enabled = true, refreshKey, children })
       setErrorDetail(null);
       return;
     }
+    // A retry starts without the previous failure: the home shows its loading
+    // state, not an old error, while the new request is in flight. `data` is
+    // left alone — clearing it would read as "unknown" and flash every queue.
+    setLoadError(false);
+    setErrorDetail(null);
     let cancelled = false;
     api
       .get("/admin/dashboard")
