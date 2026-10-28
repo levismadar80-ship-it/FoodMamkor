@@ -207,5 +207,4 @@ export default function FilterChipsBar({
       )}
     </div>
   );
-
 }
