@@ -134,9 +134,16 @@ describe("MEH-2173 — the promoted row", () => {
     expect(screen.getByTestId("home-promoted-chip-has_delivery").getAttribute("aria-pressed")).toBe("false");
   });
 
-  it("counts ACTIVE attribute axes on the trigger, promoted included", () => {
+  // MEH-2500 reversed "promoted included": a lit promoted chip sits beside the
+  // trigger, so counting it read as one more filter hidden in the sheet.
+  it("counts only the active axes NOT on screen — a lit promoted chip is not in « · N»", () => {
     render(<HomeProducersGrid {...props({ chips: { verified: true, vegan: true } })} />);
-    expect(screen.getByTestId("home-filters-button").textContent).toContain("2");
+    expect(screen.getByTestId("home-filters-button").textContent).toMatch(/· 1$/);
+  });
+
+  it("a promoted chip alone → no count on the trigger", () => {
+    render(<HomeProducersGrid {...props({ chips: { verified: true } })} />);
+    expect(screen.getByTestId("home-filters-button").textContent).not.toMatch(/\d/);
   });
 
   it("shows no count at all when nothing is active", () => {

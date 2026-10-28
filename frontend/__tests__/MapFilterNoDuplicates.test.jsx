@@ -94,6 +94,24 @@ describe("FilterChipsBar — service filter on", () => {
     render(<FilterChipsBar {...props} />);
     expect(screen.queryByTestId("service-filter-note")).toBeNull();
   });
+
+  // MEH-2500: both service chips lit used to read «סינון · 2» — two filters
+  // that looked hidden in the sheet but were the two chips beside the button.
+  it("both service chips on, nothing else → «סינון» carries no count", () => {
+    render(<FilterChipsBar {...props} />);
+    expect(screen.getByTestId("map-filters-button").textContent).not.toMatch(/\d/);
+  });
+
+  it("a sheet-only filter on → the count is that filter alone, services not added", () => {
+    render(
+      <FilterChipsBar
+        {...props}
+        chipState={{ ...props.chipState, vegan: true }}
+        activeFilterTags={[{ kind: "toggle", key: "vegan", label: "טבעוני" }]}
+      />,
+    );
+    expect(screen.getByTestId("map-filters-button").textContent).toMatch(/· 1$/);
+  });
 });
 
 describe("MapBottomSheet — zero results", () => {

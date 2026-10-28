@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Faders, Info, Leaf, MapPin, X } from "@phosphor-icons/react";
+import { Check, Faders, Info, Leaf, MapPin, X } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import ProducerCard from "@/components/ProducerCard";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
@@ -215,10 +215,6 @@ export function HomeProducersGrid({
   );
   // The sheet gets the gated list plus its group metadata (MEH-1862's seam).
   const sheetChips = useMemo(() => withChipGroups(gatedChips), [gatedChips]);
-  // The "· N" on the trigger counts ACTIVE ATTRIBUTE axes, promoted included:
-  // the button stands for the whole attribute surface, and a visitor who
-  // switched on a promoted chip has one filter active, not zero.
-  const activeAttributeCount = gatedChips.filter((c) => chips[c.key]).length;
 
   // MEH-1174: derive the active category once — drives both the dynamic
   // heading and the removable applied-filters tag. `null` when no category
@@ -243,6 +239,12 @@ export function HomeProducersGrid({
   const tagChips = gatedChips.filter(
     (c) => chips[c.key] && !PROMOTED_KEYS.includes(c.key),
   );
+  // The "· N" on the trigger counts what is NOT already on screen — the same
+  // non-promoted set as the strip. MEH-2500 reversed "promoted included"
+  // (MEH-2173): with a promoted chip lit beside it, «סינון · 1» read as one
+  // more filter hidden in the sheet (Sapir 28/10, on /map's identical row).
+  // /producers already excluded its visible city chip for the same reason.
+  const activeAttributeCount = tagChips.length;
   return (
     <section id="producers-grid" className="max-w-7xl mx-auto px-4 pb-20">
       {/* MEH-2394: the first-visit coach-mark tour (step 0 here, step 1 by the
@@ -305,7 +307,8 @@ export function HomeProducersGrid({
                   : "bg-white text-text border-border hover:border-primary hover:text-primary"
               }`}
             >
-              <span aria-hidden="true">{chip.icon}</span>
+              {/* MEH-2500: on = ✓ in place of the glyph, as on /map. */}
+              <span aria-hidden="true">{active ? <Check size={16} weight="bold" /> : chip.icon}</span>
               {chip.label}
             </button>
           );
