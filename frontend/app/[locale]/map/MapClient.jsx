@@ -956,6 +956,21 @@ export default function MapPage() {
         </MapBottomSheet>
       </div>
 
+      {/* MEH-2525: the origin chip mounts only once an origin exists, so a
+          live region inside it would not exist when its text changes, and
+          setting the origin was silent to screen readers. This region is
+          always mounted, once for both shells (one per shell would announce
+          twice), and repeats the chip's own label: no new copy. Clearing
+          empties it, which assistive tech does not announce. The ✕ keeps its
+          own name, so the clear action itself is still labelled. */}
+      <p className="sr-only" aria-live="polite" data-testid="sort-origin-live">
+        {userLoc && !geoSortPending && !cityOriginPending
+          ? userLoc.source === SOURCE_CITY
+            ? t("map.client.sort.origin_city", { city: userLoc.city })
+            : t("map.client.sort.origin_gps")
+          : ""}
+      </p>
+
       {/* MEH-58 Phase 3: city picker overlay for "משלוח אליי" chip when no city saved */}
       <CityPickerModal
         open={showCityPicker}
