@@ -143,3 +143,27 @@ export const DraftProductSchema = z.object({
   price_min: z.union([z.string(), z.number()]).nullable().optional(),
   price_max: z.union([z.string(), z.number()]).nullable().optional(),
 });
+
+// MEH-2435 (chunk 3): GET /producers/me/group-buys → list[GroupBuyOut], read by
+// the owner's group-buys page. Only the fields the card renders or acts on are
+// declared. status is the closed set the action buttons branch on, so an
+// unknown value fails the row instead of rendering a card with no actions.
+// Prices are Decimal on the backend and arrive as strings.
+export const OwnerGroupBuySchema = z.object({
+  id: z.string().min(1),
+  title: z.string(),
+  product_name: z.string(),
+  price_per_unit_regular: z.union([z.string(), z.number()]),
+  price_per_unit_group: z.union([z.string(), z.number()]),
+  min_participants: z.number(),
+  commits_count: z.number(),
+  deadline: z.string(),
+  status: z.enum(["open", "funded", "cancelled", "fulfilled"]),
+});
+
+// MEH-2435 (chunk 3): PATCH /group-buys/{id}/status → GroupBuyStatusOut. The
+// page writes the returned status into the card, so it must be one of the four.
+export const GroupBuyStatusResultSchema = z.object({
+  detail: z.string(),
+  status: z.enum(["open", "funded", "cancelled", "fulfilled"]),
+});
