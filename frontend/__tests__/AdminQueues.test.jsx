@@ -107,6 +107,20 @@ describe("admin layout + home share one /admin/dashboard fetch (MEH-2399)", () =
       rerender(<AdminLayout><div>kashrut page</div></AdminLayout>);
     });
     await waitFor(() => expect(dashboardCalls()).toBe(2));
+    // Settled at 2, not passing through 2 on the way to 3.
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+    expect(dashboardCalls()).toBe(2);
+  });
+
+  it("enabled=false (not an admin) → no request at all", async () => {
+    const { AdminDashboardProvider } = await import("@/app/[locale]/admin/dashboard-data");
+    render(<AdminDashboardProvider enabled={false}><div>x</div></AdminDashboardProvider>);
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+    expect(dashboardCalls()).toBe(0);
   });
 
   it("a failed fetch → the home shows the error line from the one shared request (no second fetch by the page)", async () => {

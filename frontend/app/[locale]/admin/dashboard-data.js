@@ -26,7 +26,14 @@ export function AdminDashboardProvider({ enabled = true, refreshKey, children })
   const [errorDetail, setErrorDetail] = useState(null);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled) {
+      // Logged out / not an admin: drop what an earlier admin session loaded,
+      // so a later login never starts from it.
+      setData(null);
+      setLoadError(false);
+      setErrorDetail(null);
+      return;
+    }
     let cancelled = false;
     api
       .get("/admin/dashboard")
