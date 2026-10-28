@@ -439,7 +439,7 @@ def get_producer(
     # MEH-2459 — an organizer is never a public business either: same
     # owner/admin carve-out, same 404 for everyone else (its public face is
     # /organizers/{slug}, chunk 3).
-    if producer.status != "approved":  # RED PROBE
+    if producer.status != "approved" or producer.kind != "producer":
         is_admin = getattr(viewer, "role", None) == "admin"
         is_owner = viewer is not None and viewer.producer_id == producer.id
         if not (is_admin or is_owner):
@@ -519,7 +519,7 @@ def record_producer_view(
     # MEH-2459: `or kind != "producer"` mirrors the GET's gate above — an
     # organizer is 404 to strangers there, so it is 404 here too.
     if (
-        producer.status != "approved"  # RED PROBE
+        producer.status != "approved" or producer.kind != "producer"
     ) and not is_internal_viewer(current_user, producer_id):
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
 
