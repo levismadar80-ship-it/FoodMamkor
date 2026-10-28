@@ -108,7 +108,18 @@ api.interceptors.response.use(
         // token on the retry because it reads localStorage fresh each time.
         error.config._retry = true;
         return api(error.config);
-      } catch {
+      } catch (refreshErr) {
+        // MEH-2467: only a server VERDICT on the refresh (401/403) ends the
+        // session. A refresh that never reached the server, timed out, or
+        // met a 5xx says nothing about the credentials — discarding the
+        // token on it logged the admin out during a Railway redeploy with
+        // no 401 anywhere in the logs. Reject with the refresh error (the
+        // caller sees "could not reach the server", which is the truth) and
+        // leave token, cookie and user untouched: the next 401 refreshes again.
+        const verdict = refreshErr?.response?.status;
+        if (verdict !== 401 && verdict !== 403) {
+          return Promise.reject(refreshErr);
+        }
         _expireSession();
         // MEH-1627: the session is gone, but the resource may well be public
         // — a guest browsing with a stale localStorage token was previously
