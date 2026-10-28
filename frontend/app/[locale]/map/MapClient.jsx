@@ -622,7 +622,6 @@ export default function MapPage() {
       resultCount={filters.visibleProducers.length}
       activeFilterTags={filters.activeFilterTags}
       resetAllFilters={filters.resetAllFilters}
-      activeAttributeCount={filters.activeAttributeCount}
       cityFilter={filters.cityFilter}
     />
   );
