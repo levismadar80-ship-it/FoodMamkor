@@ -4631,6 +4631,18 @@
             ],
             "title": "City"
           },
+          "claim_link_sent_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Claim Link Sent At"
+          },
           "contact_email": {
             "anyOf": [
               {
