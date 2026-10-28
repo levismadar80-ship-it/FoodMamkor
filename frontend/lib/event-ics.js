@@ -4,12 +4,12 @@
  *           open in Google / Apple / Outlook calendar — the «הוספה ליומן»
  *           button on the event page.
  * Touches:  nothing (pure string building; the page does the download).
- * Does NOT: know about recurrence or an end time — events have a date and an
- *           optional start time only (end time: a separate card). A timed event
- *           is written with DTSTART only; a date-only event is an all-day entry.
+ * Does NOT: know about recurrence. A timed event gets DTSTART, plus DTEND when
+ *           it has an end time (MEH-2469); without one it is written with
+ *           DTSTART only. A date-only event is an all-day entry.
  * Related:  app/[locale]/events/[id]/EventDetailClient.jsx (the button),
  *           lib/seo.js buildEventJsonLd (the same fields for Google).
- * History:  MEH-2468 (creation).
+ * History:  MEH-2468 (creation); MEH-2469 (DTEND from end_time).
  */
 
 const ISRAEL_TZ = "Asia/Jerusalem";
@@ -115,6 +115,9 @@ export function buildEventIcs(event, { url = "", now = new Date() } = {}) {
   ];
   if (event.event_time) {
     lines.push(`DTSTART:${israelLocalToUtcStamp(event.event_date, event.event_time)}`);
+    if (event.end_time) {
+      lines.push(`DTEND:${israelLocalToUtcStamp(event.event_date, event.end_time)}`);
+    }
   } else {
     lines.push(
       `DTSTART;VALUE=DATE:${event.event_date.replaceAll("-", "")}`,

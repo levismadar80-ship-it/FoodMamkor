@@ -1549,6 +1549,9 @@ class Event(Base):
     description = Column(Text)
     event_date = Column(Date, nullable=False)
     event_time = Column(Time, nullable=True)
+    # MEH-2469: optional end time ("09:30–15:00"); end > event_time is
+    # enforced in the request schemas + update route, not by a DB CHECK.
+    end_time = Column(Time, nullable=True)
     location = Column(String(300))  # "בחווה שלנו" / full address
     city = Column(String(100))
     lat = Column(Float)

@@ -57,6 +57,12 @@ describe("buildEventIcs", () => {
     expect(l.filter((x) => x.startsWith("DTEND"))).toHaveLength(0);
   });
 
+  it("MEH-2469: an end time becomes DTEND (UTC, same day)", () => {
+    const l = lines(buildEventIcs({ ...base, end_time: "15:00:00" }, { now: NOW }));
+    expect(l).toContain("DTSTART:20261031T073000Z");
+    expect(l).toContain("DTEND:20261031T130000Z");
+  });
+
   it("date-only event: an all-day entry (DTEND is the next day)", () => {
     const l = lines(buildEventIcs({ ...base, event_time: null }, { now: NOW }));
     expect(l).toContain("DTSTART;VALUE=DATE:20261031");

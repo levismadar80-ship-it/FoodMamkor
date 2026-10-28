@@ -25,6 +25,7 @@ import { useTranslations, useLocale } from "next-intl";
 import api from "@/lib/api";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { formatEventDate } from "@/lib/format-date";
+import { formatTimeRange } from "@/lib/time-range";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
 import { formatPrice } from "@/lib/utils";
 import CitySearch from "@/components/CitySearch";
@@ -96,10 +97,6 @@ const CATEGORY_ICON = {
   "חקלאות": Plant,
 };
 
-function formatTime(t) {
-  if (!t) return "";
-  return t.slice(0, 5);
-}
 
 // Normalize an event OR experience row into one shape the rail renderer
 // understands. Field names diverge between the two APIs; the accent
@@ -114,6 +111,7 @@ function toEntry(row, tab, t) {
     title: row.title,
     date: row.event_date,
     time: row.event_time,
+    endTime: row.end_time ?? null, // MEH-2469
     who: isExp
       ? row.host?.name
       : isOrganizerEvent
@@ -528,7 +526,8 @@ function EntryRow({ entry, freeLabel }) {
   const day = formatEventDate(entry.date, locale, { day: "2-digit" });
   const weekday = formatEventDate(entry.date, locale, { weekday: "long" });
   const month = formatEventDate(entry.date, locale, { month: "long" });
-  const time = formatTime(entry.time);
+  // MEH-2469: «09:30–15:00» when the event has an end time.
+  const time = formatTimeRange(entry.time, entry.endTime);
   const meta = [entry.who, entry.city].filter(Boolean).join(" · ");
   const isFree = !(entry.price > 0);
 
