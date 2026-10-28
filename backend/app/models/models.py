@@ -811,6 +811,40 @@ class User(Base):
         return not self.password_hash
 
 
+class RetiredSlug(Base):
+    """MEH-2528 — a public business URL that must never pass to another row.
+
+    `producers.slug` is UNIQUE, but deletion is a hard delete, so the moment a
+    business is deleted (or an admin changes its slug) the old `/p/<slug>` is
+    free again and the next business with that name inherits every link still
+    circulating in WhatsApp, Instagram and search results. This table is the
+    tombstone: `_ensure_unique_slug` (routers/admin.py) treats a retired slug
+    exactly like a taken one and suffixes past it.
+
+    `producer_id` is the business that owns the URL's history — set when the
+    slug was retired by a rename (the business still exists, so a later 301
+    can follow it), NULL when the business was deleted. ON DELETE SET NULL, so
+    deleting a renamed business leaves its old URLs reserved, not freed.
+
+    Only slugs that were ever public are retired (`retire_slug` in
+    services/retired_slugs.py checks the status): a draft that was never
+    approved had no live URL, and reserving its slug would only push a
+    re-created business onto `-2`.
+    """
+
+    __tablename__ = "retired_slugs"
+
+    slug = Column(String(100), primary_key=True)
+    producer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("producers.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    reason = Column(String(20), nullable=False)  # deleted | renamed
+    retired_at = Column(DateTime, default=utc_now, nullable=False)
+
+
 class AdminSetting(Base):
     __tablename__ = "admin_settings"
 
