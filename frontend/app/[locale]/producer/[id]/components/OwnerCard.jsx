@@ -47,6 +47,9 @@ export default function OwnerCard({ producer }) {
       <h2 className="font-headline-md text-2xl font-bold text-text mb-4">{t("heading")}</h2>
       <div className="bg-white border border-border rounded-lg p-5 flex flex-col gap-3">
         {/* Avatar at the inline-start on ALL viewports (mockup lock). */}
+        {/* MEH-2471: the avatar/name row only when it has something in it —
+            a bio-only card with no city would otherwise open with a blank gap. */}
+        {(photo || name || producer.city) && (
         <div className="flex items-center gap-4">
           {photo ? (
             <ImageWithFallback
@@ -74,6 +77,7 @@ export default function OwnerCard({ producer }) {
             {producer.city && <p className="text-[12.5px] text-muted mt-0.5">{producer.city}</p>}
           </div>
         </div>
+        )}
         {bio && <p className="text-sm leading-relaxed text-text">{bio}</p>}
       </div>
     </section>

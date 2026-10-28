@@ -528,7 +528,7 @@
 - [ ] **אינטראקציה מלאה במסך מלא** — במסך המלא: גררי, צבטי (pinch), הקישי פעמיים, גלגלי עכבר בדסקטופ — **תוצאה מצופה:** הכול עובד; ייחוס OpenStreetMap גלוי גם כאן.
 - [ ] **סגירה** — הקישי X (פינה עליונה) או Esc במקלדת — **תוצאה מצופה:** המפה נסגרת, הפוקוס חוזר לכפתור ההגדלה, והעמוד מתחת חוזר להיגלל.
 - [ ] **אותו דבר באירועים וחוויות** — פתחי `/events/[id]` ו-`/experiences/[id]` עם מיקום — **תוצאה מצופה:** אותה התנהגות בדיוק (זום, הגדלה, סגירה).
-- [ ] **מאחורי העסק** — עסק עם contact_name — **תוצאה מצופה:** כרטיס עם אווטאר אות אחת + שם + עיר; עסק בלי contact_name — הסקשן לא מופיע כלל.
+- [ ] **מאחורי העסק** — עסק עם contact_name — **תוצאה מצופה:** כרטיס עם אווטאר אות אחת + שם + עיר; עסק בלי contact_name אבל עם ביו או תמונת בעלים — הכרטיס מופיע עם הביו/התמונה, בלי שורת שם (MEH-2471); עסק בלי שם, ביו ותמונה — הסקשן לא מופיע כלל.
 
 ### MEH-1682 — tooltip של פין במיני-מפה צמוד לפין ב-RTL (27/07)
 
@@ -2056,7 +2056,7 @@ CC רץ אחרי Tier 1 — לכל מה ש-Tier 1 לא יכול אבל אינו 
 - ✅ → `frontend/e2e/flows/manual/producer-detail.spec.ts` (MT:PDP:9) — Reviews: not fetched until section scrolls into view — עם בקרת מקליט (ה-fetch של הפרטים חייב להיקלט, אחרת האפס חסר משמעות)
 - [ ] Gallery dots: 44px tap targets on mobile — Inspect element → כל dot button `min-h-[44px] min-w-[44px]`
 - ✅ → `frontend/e2e/flows/manual/producer-detail.spec.ts` (MT:PDP:11) — Review dates: display correctly in RTL — כל תאריך ביקורת נושא `dir="ltr"`
-- ✅ → `frontend/e2e/flows/manual/producer-detail.spec.ts` (MT:PDP:12) — contact_name shows in main column (**drift:** מאז MEH-1334 החלטה 4 זו סקציית OwnerCard "מאחורי העסק" עם השם ככותרת h3, לא שורה מתחת ל-short_description; נבדקים שני המצבים — יש שם / אין שם)
+- ✅ → `frontend/e2e/flows/manual/producer-detail.spec.ts` (MT:PDP:12) — contact_name shows in main column (**drift:** מאז MEH-1334 החלטה 4 זו סקציית OwnerCard "מאחורי העסק" עם השם ככותרת h3, לא שורה מתחת ל-short_description; נבדקים שני המצבים — יש שם / אין שם; מאז MEH-2471 «אין שם» עם ביו או תמונה כן מציג את הכרטיס)
 - [ ] highlights strip shows correct chips — grass_fed=true → 🌾 מרעה חופשי; delivery_areas non-empty → 🚚 משלוח **(STALE — MEH-1334 החלטה 4 הסירה את רצועת ה-highlight chips מהכותרת; מדווח, לא הומר; ראו docs/qa/conversion-progress.md chunk 8)**
 
 ---
