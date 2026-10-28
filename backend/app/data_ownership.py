@@ -12,7 +12,8 @@ Does NOT: police admin (`admin.py`), import (`producer_import.py`) or seed
 Related:  docs/DATA_OWNERSHIP.md (the prose registry this mirrors),
           backend/app/routers/producer_me.py (`_PRODUCER_WRITABLE_FIELDS`),
           tests/test_data_ownership.py (the fitness function).
-History:  MEH-2145 (creation, MEH-1938 batch B6).
+History:  MEH-2145 (creation, MEH-1938 batch B6). MEH-2521 added
+          organic_certified and has_delivery.
 """
 
 # Fields REMOVED from `_PRODUCER_WRITABLE_FIELDS` in producer_me.py, each
@@ -49,5 +50,11 @@ DEPRECATED_OWNER_WRITE_FIELDS = frozenset(
         "lat",
         "lng",
         "city",
+        # MEH-2521: no owner editor for either. organic_certified's public
+        # badge was removed by MEH-1259; has_delivery is superseded by the
+        # delivery areas (offers_delivery + delivery_areas/nationwide) and its
+        # column drop is MEH-1850 — when that lands, this row leaves with it.
+        "organic_certified",
+        "has_delivery",
     }
 )
