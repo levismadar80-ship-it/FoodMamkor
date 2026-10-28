@@ -122,8 +122,8 @@ describe("organizer gate — client", () => {
   });
 
   it("zero upcoming events → the event item (count absent reads as 0, fail-closed)", () => {
-    // eslint-disable-next-line no-unused-vars
-    const { upcoming_events_count, ...noCount } = ORG_COMPLETE;
+    const noCount = { ...ORG_COMPLETE };
+    delete noCount.upcoming_events_count;
     expect(submissionMissingItems({ ...ORG_COMPLETE, upcoming_events_count: 0 })).toEqual([
       ORGANIZER_MISSING_EVENT,
     ]);

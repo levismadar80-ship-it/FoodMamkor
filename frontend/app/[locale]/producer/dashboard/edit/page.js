@@ -68,6 +68,7 @@ import { useAuth } from "@/lib/auth-context";
 import InfoTooltip from "@/components/InfoTooltip";
 import WhatsThis from "@/components/WhatsThis";
 import EditAccordionCard, {
+  EditAccordionKindContext,
   PreviewThumbs,
   PreviewChips,
   PreviewEmpty,
@@ -402,6 +403,10 @@ function EditPageInner() {
       const key = ANCHOR_TO_KEY[window.location.hash.replace(/^#/, "")];
       if (!key) return;
       const g = KEY_TO_GROUP[key];
+      // MEH-2460: a deep link into a group an organizer never sees (#products,
+      // #license) stays on the hub — no hidden group in the URL, no openKey on
+      // a card she cannot reach.
+      if (profile.kind === "organizer" && g && !ORGANIZER_GROUP_KEYS.includes(g)) return;
       // Deep link arriving outside its group → switch first (replace, so the
       // link doesn't leave a hub entry in history); the group-change effect
       // below opens + scrolls once the target group renders.
@@ -699,6 +704,8 @@ function EditPageInner() {
   );
 
   return (
+    // MEH-2460: the chips read the organizer's gate when she is one.
+    <EditAccordionKindContext.Provider value={profile.kind ?? "producer"}>
     <div className="max-w-5xl mx-auto px-4 py-12 space-y-6">
       {/* MEH-1100 + MEH-1237: sticky unsaved-changes banner — sits just under
           the layout's sticky tab nav (top-0 z-10, ~46px tall). Names the dirty
@@ -1252,6 +1259,7 @@ function EditPageInner() {
         </EditAccordionCard>
       </div>
     </div>
+    </EditAccordionKindContext.Provider>
   );
 }
 

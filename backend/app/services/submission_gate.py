@@ -70,14 +70,15 @@ SUBMISSION_REQUIREMENTS: tuple[str, ...] = (
 # description and its events, so those two are what must exist before review.
 # Prefixed ORGANIZER_ so frontend/__tests__/SubmissionGateParity.test.js's
 # `^MISSING_` parser keeps comparing the business set exactly; the organizer
-# set has its own parity check beside it.
+# tuple has its own parity check in that same test file (MEH-2460 block).
 ORGANIZER_MISSING_DESCRIPTION = "description"
 ORGANIZER_MISSING_EVENT = "upcoming_event"
 
 # Review #3711 F4: the registration STORY step's «אכתוב אחר כך» writes this
 # placeholder (he.json / en.json auth.register.producer.default_description);
 # it is not a description. Mirrors DEFAULT_PRODUCER_DESCRIPTIONS in
-# frontend/lib/producer-completeness.js — the parity test reads both.
+# frontend/lib/producer-completeness.js — SubmissionGateParity.test.js parses
+# this frozenset and compares it to the JS list.
 DEFAULT_PRODUCER_DESCRIPTIONS: frozenset[str] = frozenset(
     {
         "בית עסק מקומי. עוד פרטים בקרוב.",

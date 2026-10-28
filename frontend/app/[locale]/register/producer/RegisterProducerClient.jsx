@@ -687,11 +687,14 @@ function RegisterProducerPageBody() {
         // MEH-853: frame-01 (DETAILS) — sent on both registration + upgrade
         // paths (shared body above the !isUpgrade branch).
         city: form.city,
-        address: form.address,
+        // MEH-2460: an organizer has no address step — a stale value typed
+        // before she toggled must not 422 on a field she can no longer see
+        // (the server drops it for her anyway).
+        address: isOrganizer ? null : form.address,
         // MEH-1808: sending these is what makes the "המיקום זוהה" confirmation
         // a true statement rather than a promise the payload breaks.
-        lat: form.lat,
-        lng: form.lng,
+        lat: isOrganizer ? null : form.lat,
+        lng: isOrganizer ? null : form.lng,
         // MEH-2460: kind decides the server's validation branch; an organizer
         // sends no categories (any it had selected before toggling are dropped).
         kind: form.kind,

@@ -360,6 +360,23 @@ describe("MEH-2460 — register as a markets / events organizer", () => {
     expect(body.category_ids).toEqual([]);
   });
 
+  it("an address typed before switching to organizer is not sent (review #3711 R2-5)", async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    fireEvent.change(ph("address"), { target: { value: "---" } });
+    fireEvent.click(screen.getByTestId("register-organizer-toggle"));
+    fillDetailsFields();
+    fireEvent.click(nextBtn());
+    await screen.findByPlaceholderText(STORY_MARKER);
+    screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
+    fireEvent.click(screen.getByText(`${K}.actions.submit`));
+    await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
+    const [, body] = api.post.mock.calls[0];
+    expect(body.address).toBeNull();
+    expect(body.lat).toBeNull();
+    expect(body.lng).toBeNull();
+  });
+
   it("a business submit still carries kind='producer'", async () => {
     await renderWizard();
     await fillAccountToDetails();
