@@ -18,7 +18,6 @@ from app.services.city_centroid import city_centroid
 from app.services.submission_gate import MISSING_LOCATION, submission_missing_items
 from tests.conftest import auth_header, make_category, make_producer, make_user
 
-SAFE_PASSWORD = "Zx7Yp9Mq2Lr4"
 TLV = ("תל אביב-יפו", 32.0853, 34.7818)
 HAIFA = ("חיפה", 32.7940, 34.9896)
 
