@@ -89,7 +89,7 @@ left in v1" vs "what's planned for v2".
 
 | Status | Version | Feature | Where |
 |---|---|---|---|
-| ✅ | v1 | AI Q&A chat widget (Hebrew, claude-haiku-5-5 via `AI_FAST_MODEL`, desktop only) | `backend/app/routers/chat.py`, `frontend/components/ChatWidget.jsx` |
+| ✅ | v1 | AI Q&A chat widget (Hebrew, claude-haiku-5-5 via `AI_FAST_MODEL`, desktop + mobile — mobile icon-only, hides on scroll-down, MEH-2499) | `backend/app/routers/chat.py`, `frontend/components/ChatWidget.jsx` |
 | ✅ | v1 | Auto-moderation for `/neighbor` listings (Anthropic, fail-open) | `backend/app/services/home_product_moderation.py` |
 | 📋 | v2 | AI search agent — natural-language search ("בשר grass-fed בחיפה") | [ROADMAP.md](./ROADMAP.md) |
 | 📋 | v2 | Migrate chat widget to `claude-agent-sdk` with tool use | [ROADMAP.md](./ROADMAP.md) |
