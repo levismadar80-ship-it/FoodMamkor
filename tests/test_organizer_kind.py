@@ -359,7 +359,7 @@ class TestOrganizerRefusedByExistenceOnlyGates:
         user = make_user(db, email="meh2465-review@example.com")
         resp = client.post(
             f"/producers/{organizer.id}/reviews",
-            json={"rating": 5, "body": "שוק מצוין, הכול היה טרי ונעים"},
+            json={"stars": 5, "body": "שוק מצוין, הכול היה טרי ונעים"},
             headers=auth_header(user),
         )
         assert resp.status_code == 409
@@ -380,7 +380,7 @@ class TestOrganizerRefusedByExistenceOnlyGates:
                 ProducerReview(
                     producer_id=producer.id,
                     user_id=user.id,
-                    rating=5,
+                    stars=5,
                     body="ביקורת שנכתבה לפני השער",
                 )
             )
@@ -459,10 +459,7 @@ class TestOrganizerRefusedByExistenceOnlyGates:
         stats = dash.json()["stats"]
         assert stats["total_producers"] == 1
         assert stats["new_producers_this_week"] == 1
-        month = israel_today().strftime("%Y-%m")
-        dash_month = {m["month"]: m for m in dash.json()["monthly_producers"]}
-        if month in dash_month:
-            assert dash_month[month]["producers"] == 1
+        assert sum(m["producers"] for m in dash.json()["monthly_producers"]) == 1
         analytics = client.get("/admin/analytics", headers=auth_header(admin))
         assert analytics.status_code == 200
         assert sum(m["producers"] for m in analytics.json()["monthly"]) == 1
