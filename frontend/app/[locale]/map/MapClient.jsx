@@ -548,8 +548,16 @@ export default function MapPage() {
   // card labels change meaning silently (MEH-1307 dropped the "ממך" suffix, so
   // a label is a bare magnitude). Naming the active origin is what keeps the
   // numbers readable; the clear button is unchanged beneath it.
+  // MEH-2506: the origin label is shared by the desktop control below and the
+  // mobile NearMePill, which now carries the origin itself (one control).
+  const originLabel = userLoc
+    ? userLoc.source === SOURCE_CITY
+      ? t("map.client.sort.origin_city", { city: userLoc.city })
+      : t("map.client.sort.origin_gps")
+    : null;
+  const showOrigin = cityOriginPending || (userLoc && !geoSortPending);
   const clearLocationControl =
-    cityOriginPending || (userLoc && !geoSortPending) ? (
+    showOrigin ? (
       <div
         className="flex flex-wrap items-center gap-x-2 gap-y-1"
         data-testid="sort-origin"
@@ -568,9 +576,7 @@ export default function MapPage() {
           <span className="inline-flex items-center gap-1.5 min-h-[44px] max-w-full rounded-full border border-border bg-surface-card ps-3 text-xs text-fg-muted">
             <MapPinLine size={14} weight="bold" aria-hidden="true" className="shrink-0 text-primary" />
             <span className="min-w-0 truncate" data-testid="sort-origin-label">
-              {userLoc.source === SOURCE_CITY
-                ? t("map.client.sort.origin_city", { city: userLoc.city })
-                : t("map.client.sort.origin_gps")}
+              {originLabel}
             </span>
             <button
               type="button"
@@ -870,11 +876,10 @@ export default function MapPage() {
           <div className="mb-2">
             <CitySearch id="map-city-search-mobile" label={t("map.client.city_search.label")} value={filters.cityFilter} onChange={filters.setCityFilter} onSubmit={filters.handleCityFilter} placeholder={t("map.client.city_search.placeholder")} />
           </div>
-          {/* MEH-2014: the mobile half of the clear affordance. There is no sort
-              <select> on this shell, but the NearMePill writes a location here,
-              and a persisted fix with no way out is the failure this ticket's
-              "explicit clear" requirement exists to prevent. */}
-          {clearLocationControl && <div className="mb-2">{clearLocationControl}</div>}
+          {/* MEH-2014: the mobile half of the clear affordance used to sit here
+              as its own row. MEH-2506 moved it into the NearMePill (Sapir 28/10):
+              the pill is what SETS the origin, so it is where the origin is named
+              and cleared — and the bar loses a full row above the map. */}
           {filterChipsBar}
         </div>
 
@@ -913,7 +918,12 @@ export default function MapPage() {
         {/* MEH-970 chunk 2-lite: quiet persistent "קרוב אליי" pill — floats
             above the PEEK bottom sheet, routes to the shared handleGoToMyLocation
             (same goToMyLocation path as the filter-bar crosshair). */}
-        <NearMePill onClick={handleGoToMyLocation} />
+        <NearMePill
+          onClick={handleGoToMyLocation}
+          originLabel={showOrigin && !cityOriginPending ? originLabel : null}
+          originPending={cityOriginPending}
+          onClearOrigin={handleClearLocation}
+        />
 
         {/* Bottom sheet. MEH-1054 (MAP-16): loading rides the feed's initial
             fetch so the sheet shows a list skeleton instead of flashing an

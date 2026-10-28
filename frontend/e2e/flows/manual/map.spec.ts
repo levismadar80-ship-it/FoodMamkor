@@ -884,6 +884,22 @@ test.describe("manual › near-me pill + empty-near-me guard, mobile (MEH-970)",
     await expect(cards(shell)).toHaveCount(PRODUCERS.length);
   });
 
+  // MEH-2506 — the mobile origin lives in the near-me pill: after a fix the pill
+  //   names it with a ✕, and the filter bar above the map carries no origin row.
+  test("mobile: after near me the pill names the origin and clears it; the bar has no origin row", async ({ page, context }, info) => {
+    mobileOnly(info, "the pill is mounted inside the mobile shell only");
+    await grantGps(context, GPS_NEAR);
+    const { shell } = await gotoWithCatalog(page, info);
+    const nearMe = shell.getByTestId("map-near-me");
+    await expect(nearMe.getByTestId("sort-origin-label")).toHaveCount(0);
+    await shell.getByTestId("map-near-me-pill").click();
+    await expect(nearMe.getByTestId("sort-origin-label")).toHaveText(MC.sort.origin_gps);
+    await expect(shell.getByTestId("map-mobile-bar").getByTestId("sort-origin-label")).toHaveCount(0);
+    await nearMe.getByTestId("clear-user-location").click();
+    await expect(nearMe.getByTestId("sort-origin-label")).toHaveCount(0);
+    await expect(shell.getByTestId("map-near-me-pill")).toBeVisible();
+  });
+
   // MT:MEH-970:3 — nothing within 25 km: the toast, the camera back on the
   //   default view (zoom 8), and ALL businesses still listed — never a blank map.
   test("mobile: near me with nothing within 25 km toasts, returns to the default view and keeps every business", async ({ page, context }, info) => {

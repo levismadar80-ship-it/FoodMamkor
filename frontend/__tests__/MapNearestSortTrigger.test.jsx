@@ -65,7 +65,8 @@ vi.mock("@/app/[locale]/map/components/FilterChipsBar", () => ({ default: () => 
 vi.mock("@/app/[locale]/map/components/MapCardList", () => ({ default: () => null }));
 vi.mock("@/app/[locale]/map/components/MapPane", () => ({ default: () => null }));
 vi.mock("@/app/[locale]/map/components/MobileSheetSelectedCard", () => ({ default: () => null }));
-vi.mock("@/app/[locale]/map/components/NearMePill", () => ({ default: () => null }));
+// MEH-2506: NearMePill is NOT mocked — it is the mobile shell's origin
+// control now (label + ✕), so "one per shell" counts the real pill.
 
 // --- state hooks: minimal shapes MapClient destructures. ---
 vi.mock("@/app/[locale]/map/state/useFirstVisitHints", () => ({

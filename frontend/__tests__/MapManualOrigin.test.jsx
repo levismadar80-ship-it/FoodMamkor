@@ -31,7 +31,7 @@
  * (MapSsrFallback.test.jsx carries the standing reason).
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, act } from "@testing-library/react";
+import { render, screen, fireEvent, act, within } from "@testing-library/react";
 import he from "../messages/he.json";
 import { STORAGE_KEY } from "@/lib/user-location";
 
@@ -91,7 +91,8 @@ vi.mock("@/app/[locale]/map/components/MapPane", () => ({
   ),
 }));
 vi.mock("@/app/[locale]/map/components/MobileSheetSelectedCard", () => ({ default: () => null }));
-vi.mock("@/app/[locale]/map/components/NearMePill", () => ({ default: () => null }));
+// MEH-2506: NearMePill is NOT mocked — it is the mobile shell's origin
+// control now (label + ✕), so "one per shell" counts the real pill.
 
 vi.mock("@/app/[locale]/map/state/useFirstVisitHints", () => ({
   useFirstVisitHints: () => ({
@@ -252,6 +253,10 @@ describe("MEH-2014 PR 2 — a picked city becomes the sort origin", () => {
     // One per shell — desktop + mobile are both mounted, CSS hides one.
     expect(labels).toHaveLength(2);
     expect(labels[0]).toHaveTextContent("מרחק מ: חיפה");
+    // MEH-2506: the mobile one lives in the NearMePill, not as a row in the
+    // filter bar above the map.
+    expect(within(screen.getByTestId("map-near-me")).getByTestId("sort-origin-label")).toHaveTextContent("מרחק מ: חיפה");
+    expect(within(screen.getByTestId("map-mobile-bar")).queryByTestId("sort-origin-label")).toBeNull();
   });
 
   it("still applies the city FILTER when the geocode fails", async () => {
