@@ -73,7 +73,8 @@ const FIT_MAX_ZOOM = 15;
  *     primary). Replaces the MEH-638 name-monogram.
  *   - Border: 2px primary; selected (active) → 3px primary-dark.
  *   - Verified badge: FROZEN (MEH-762 handoff) — white-on-green ✓, bottom-end.
- *   - Rings: hover → subtle primary; active → primary glow; premium → gold.
+ *   - Rings: hover → subtle primary; active → primary glow. (MEH-2519 removed
+ *     the premium gold ring: no paid visual boost — «אין קידום בתשלום».)
  *   - No "visited" state: MEH-2423 removed the MEH-14 / MEH-1277 grey-out of
  *     recently viewed businesses — on a 36px circle it read as "closed".
  *
@@ -141,7 +142,6 @@ function createCategoryMarker(
   // S5 FINAL: all markers are uniform 36px circles; state shows via border +
   // rings, not size (drops the old 28/32/36 size jump).
   const size = 36;
-  const isPremium = producer.plan === "premium";
   const isVerified = producer.verification_tier === "verified"; // MEH-766 ch1: doc-verification tier
 
   // Round photo (square crop), else MEH-936 category-glyph fallback.
@@ -207,12 +207,9 @@ function createCategoryMarker(
   const borderColor = active ? "#2E4A2E" : "#2e6853";
 
   // Single box-shadow value (avoids cascade overwrite): drop shadow + state ring
-  // (active glow / hover ring) + premium gold ring (6px, outside the others).
+  // (active glow / hover ring).
   const activeRing = active ? ",0 0 0 4px rgba(46,104,83,0.22)" : "";
   const hoverRing = hovered && !active ? ",0 0 0 3px rgba(46,104,83,0.18)" : "";
-  // MEH-1065: accent token value #896714 (retired the stale gold that failed AA, MEH-917).
-  // Inline hex required — Leaflet divIcon renders raw HTML, no Tailwind class here.
-  const premiumRing = isPremium ? ",0 0 0 6px #896714" : "";
   // MEH-1412: precision=approximate (e.g. a private home) → soft outer halo so
   // the pin reads as "around here", not a pinpoint address. Inline rgba is the
   // primary token (#2e6853), same divIcon raw-HTML exception noted above.
@@ -222,7 +219,7 @@ function createCategoryMarker(
   // complaint this ticket fixes. 4px keeps the "around here" read without the
   // pile-up. Same value in createSecondaryMarker; keep the two in step.
   const approxRing = approximate ? ",0 0 0 4px rgba(46,104,83,0.14)" : "";
-  const boxShadow = `0 2px 8px rgba(0,0,0,0.2)${activeRing}${hoverRing}${premiumRing}${approxRing}`;
+  const boxShadow = `0 2px 8px rgba(0,0,0,0.2)${activeRing}${hoverRing}${approxRing}`;
 
   const html = `
     <div style="position:relative;width:${size}px;height:${size}px;">
