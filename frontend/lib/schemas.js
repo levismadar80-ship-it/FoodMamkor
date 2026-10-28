@@ -63,6 +63,10 @@ export const ProducerListSchema = z.object({
   verified_at: z.string().nullable().optional(),
   verification_doc_type: z.enum(["license", "exemption", "cosmetics"]).nullable().optional(),
   plan: z.string().optional(),
+  // MEH-2459: 'producer' | 'organizer'. Public business feeds never carry an
+  // organizer (is_business() filters it server-side); the dashboard and the
+  // admin queue read it. Optional so pre-migration payloads still parse.
+  kind: z.enum(["producer", "organizer"]).optional(),
   images: z.array(z.string()).optional().default([]),
   // MEH-826: weekly hours string ("Sun-Thu 09:00-18:00, …") — without this the
   // z.object strip would drop it before MapProducerCard's open/closed line.

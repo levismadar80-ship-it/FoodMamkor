@@ -297,6 +297,14 @@ def create_group_buy(
         raise HTTPException(
             status_code=403, detail="רק בעלי עסק מאושרים יכולים לפתוח קבוצת רכש"
         )
+    # MEH-2459: a group buy is selling, and an organizer sells nothing
+    # (ADR-036). Same 403 shape as the status gate above; the public
+    # GET /group-buys serializes producer_name, so this is the one place an
+    # organizer could otherwise surface as a seller.
+    if producer.kind != "producer":
+        raise HTTPException(
+            status_code=403, detail="מארגן שווקים ואירועים לא יכול לפתוח קבוצת רכש"
+        )
 
     if data.price_per_unit_group >= data.price_per_unit_regular:
         raise HTTPException(

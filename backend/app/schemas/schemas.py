@@ -2463,6 +2463,11 @@ class ProducerListOut(BaseModel):
     lat: float | None = None
     lng: float | None = None
     status: str = "pending"
+    # MEH-2459: 'producer' | 'organizer'. Public business surfaces never
+    # serialize an organizer (is_business() filters it out); the field is
+    # read by the owner dashboard and the admin queue. Default mirrors the
+    # column's server_default so pre-migration fixtures still validate.
+    kind: str = "producer"
     # MEH-766 ch5: is_verified removed from the public contract — the tier
     # surface is verification_tier/verified_at (ADR-022). Column drops in ch6.
     plan: str = "free"
@@ -4259,6 +4264,12 @@ class EventOut(BaseModel):
     id: UUID
     producer_id: UUID
     producer_name: str | None = None
+    # MEH-2459: who owns the event — a business ('producer', link to its
+    # business page) or an organizer ('organizer', link to /organizers/{slug},
+    # chunk 3). owner_slug is the owner's slug either way; None before approval
+    # mints one.
+    owner_kind: str = "producer"
+    owner_slug: str | None = None
     title: str
     description: str | None = None
     event_date: date

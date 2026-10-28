@@ -47,6 +47,9 @@ def _serialize(event: Event) -> EventOut:
         id=event.id,
         producer_id=event.producer_id,
         producer_name=event.producer.name if event.producer else None,
+        # MEH-2459: the event card links to the owner's page by kind.
+        owner_kind=event.producer.kind if event.producer else "producer",
+        owner_slug=event.producer.slug if event.producer else None,
         title=event.title,
         description=event.description,
         event_date=event.event_date,

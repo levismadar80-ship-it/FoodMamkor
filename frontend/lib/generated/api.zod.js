@@ -736,6 +736,7 @@ export const listProducersAdminProducersGetResponseIsAvailableTodayDefault = fal
 export const listProducersAdminProducersGetResponseIsRecommendedDefault = false;
 export const listProducersAdminProducersGetResponseKashrutBadgesDefault = [];
 export const listProducersAdminProducersGetResponseKashrutCertsDefault = [];
+export const listProducersAdminProducersGetResponseKindDefault = `producer`;
 export const listProducersAdminProducersGetResponseLactoseFreeFacilityDefault = `unknown`;
 export const listProducersAdminProducersGetResponseLicensePendingDefault = false;
 export const listProducersAdminProducersGetResponseLocationsItemIsPrimaryDefault = false;
@@ -842,6 +843,7 @@ export const ListProducersAdminProducersGetResponseItem = /*#__PURE__*/ zod.obje
 }).check(/*#__PURE__*/ zod.describe('MEH-1672: a badge whose approved certificate photo can be served.\n\nIntentionally ONE field. The certificate is fetched through\n`GET \/producers\/{producer_id}\/kashrut-cert\/{badge_code}`, which re-checks\napproval + expiry + producer status on every request. No URL crosses the\nwire, so revocation is immediate and the permanent Cloudinary address is\nnever published.'))), listProducersAdminProducersGetResponseKashrutCertsDefault),
   "kashrut_expires_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "kashrut_verified_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "kind": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listProducersAdminProducersGetResponseKindDefault),
   "kosher": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "lactose_free_facility": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listProducersAdminProducersGetResponseLactoseFreeFacilityDefault),
   "lat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
@@ -960,6 +962,7 @@ export const adminCreateProducerAdminProducersPostResponseIsAvailableTodayDefaul
 export const adminCreateProducerAdminProducersPostResponseIsRecommendedDefault = false;
 export const adminCreateProducerAdminProducersPostResponseKashrutBadgesDefault = [];
 export const adminCreateProducerAdminProducersPostResponseKashrutCertsDefault = [];
+export const adminCreateProducerAdminProducersPostResponseKindDefault = `producer`;
 export const adminCreateProducerAdminProducersPostResponseLactoseFreeFacilityDefault = `unknown`;
 export const adminCreateProducerAdminProducersPostResponseLicensePendingDefault = false;
 export const adminCreateProducerAdminProducersPostResponseLocationsItemIsPrimaryDefault = false;
@@ -1066,6 +1069,7 @@ export const AdminCreateProducerAdminProducersPostResponse = /*#__PURE__*/ zod.o
 }).check(/*#__PURE__*/ zod.describe('MEH-1672: a badge whose approved certificate photo can be served.\n\nIntentionally ONE field. The certificate is fetched through\n`GET \/producers\/{producer_id}\/kashrut-cert\/{badge_code}`, which re-checks\napproval + expiry + producer status on every request. No URL crosses the\nwire, so revocation is immediate and the permanent Cloudinary address is\nnever published.'))), adminCreateProducerAdminProducersPostResponseKashrutCertsDefault),
   "kashrut_expires_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "kashrut_verified_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "kind": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminCreateProducerAdminProducersPostResponseKindDefault),
   "kosher": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "lactose_free_facility": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminCreateProducerAdminProducersPostResponseLactoseFreeFacilityDefault),
   "lat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
@@ -1188,6 +1192,7 @@ export const pendingProducersAdminProducersPendingGetResponseIsAvailableTodayDef
 export const pendingProducersAdminProducersPendingGetResponseIsRecommendedDefault = false;
 export const pendingProducersAdminProducersPendingGetResponseKashrutBadgesDefault = [];
 export const pendingProducersAdminProducersPendingGetResponseKashrutCertsDefault = [];
+export const pendingProducersAdminProducersPendingGetResponseKindDefault = `producer`;
 export const pendingProducersAdminProducersPendingGetResponseLactoseFreeFacilityDefault = `unknown`;
 export const pendingProducersAdminProducersPendingGetResponseLicensePendingDefault = false;
 export const pendingProducersAdminProducersPendingGetResponseLocationsItemIsPrimaryDefault = false;
@@ -1294,6 +1299,7 @@ export const PendingProducersAdminProducersPendingGetResponseItem = /*#__PURE__*
 }).check(/*#__PURE__*/ zod.describe('MEH-1672: a badge whose approved certificate photo can be served.\n\nIntentionally ONE field. The certificate is fetched through\n`GET \/producers\/{producer_id}\/kashrut-cert\/{badge_code}`, which re-checks\napproval + expiry + producer status on every request. No URL crosses the\nwire, so revocation is immediate and the permanent Cloudinary address is\nnever published.'))), pendingProducersAdminProducersPendingGetResponseKashrutCertsDefault),
   "kashrut_expires_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "kashrut_verified_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "kind": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), pendingProducersAdminProducersPendingGetResponseKindDefault),
   "kosher": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "lactose_free_facility": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), pendingProducersAdminProducersPendingGetResponseLactoseFreeFacilityDefault),
   "lat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
@@ -1472,6 +1478,7 @@ export const adminGetProducerAdminProducersProducerIdGetResponseIsAvailableToday
 export const adminGetProducerAdminProducersProducerIdGetResponseIsRecommendedDefault = false;
 export const adminGetProducerAdminProducersProducerIdGetResponseKashrutBadgesDefault = [];
 export const adminGetProducerAdminProducersProducerIdGetResponseKashrutCertsDefault = [];
+export const adminGetProducerAdminProducersProducerIdGetResponseKindDefault = `producer`;
 export const adminGetProducerAdminProducersProducerIdGetResponseLactoseFreeFacilityDefault = `unknown`;
 export const adminGetProducerAdminProducersProducerIdGetResponseLicensePendingDefault = false;
 export const adminGetProducerAdminProducersProducerIdGetResponseLocationsItemIsPrimaryDefault = false;
@@ -1578,6 +1585,7 @@ export const AdminGetProducerAdminProducersProducerIdGetResponse = /*#__PURE__*/
 }).check(/*#__PURE__*/ zod.describe('MEH-1672: a badge whose approved certificate photo can be served.\n\nIntentionally ONE field. The certificate is fetched through\n`GET \/producers\/{producer_id}\/kashrut-cert\/{badge_code}`, which re-checks\napproval + expiry + producer status on every request. No URL crosses the\nwire, so revocation is immediate and the permanent Cloudinary address is\nnever published.'))), adminGetProducerAdminProducersProducerIdGetResponseKashrutCertsDefault),
   "kashrut_expires_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "kashrut_verified_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "kind": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminGetProducerAdminProducersProducerIdGetResponseKindDefault),
   "kosher": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "lactose_free_facility": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminGetProducerAdminProducersProducerIdGetResponseLactoseFreeFacilityDefault),
   "lat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
@@ -1693,6 +1701,7 @@ export const adminUpdateProducerAdminProducersProducerIdPutResponseIsAvailableTo
 export const adminUpdateProducerAdminProducersProducerIdPutResponseIsRecommendedDefault = false;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseKashrutBadgesDefault = [];
 export const adminUpdateProducerAdminProducersProducerIdPutResponseKashrutCertsDefault = [];
+export const adminUpdateProducerAdminProducersProducerIdPutResponseKindDefault = `producer`;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseLactoseFreeFacilityDefault = `unknown`;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseLicensePendingDefault = false;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseLocationsItemIsPrimaryDefault = false;
@@ -1799,6 +1808,7 @@ export const AdminUpdateProducerAdminProducersProducerIdPutResponse = /*#__PURE_
 }).check(/*#__PURE__*/ zod.describe('MEH-1672: a badge whose approved certificate photo can be served.\n\nIntentionally ONE field. The certificate is fetched through\n`GET \/producers\/{producer_id}\/kashrut-cert\/{badge_code}`, which re-checks\napproval + expiry + producer status on every request. No URL crosses the\nwire, so revocation is immediate and the permanent Cloudinary address is\nnever published.'))), adminUpdateProducerAdminProducersProducerIdPutResponseKashrutCertsDefault),
   "kashrut_expires_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "kashrut_verified_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "kind": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminUpdateProducerAdminProducersProducerIdPutResponseKindDefault),
   "kosher": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "lactose_free_facility": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminUpdateProducerAdminProducersProducerIdPutResponseLactoseFreeFacilityDefault),
   "lat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
@@ -2683,6 +2693,8 @@ export const SubmitContactContactPostResponse = /*#__PURE__*/ zod.unknown()
 /**
  * @summary List Events
  */
+export const listEventsEventsGetResponseOwnerKindDefault = `producer`;
+
 export const ListEventsEventsGetResponseItem = /*#__PURE__*/ zod.object({
   "category": /*#__PURE__*/ zod.string(),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -2697,6 +2709,8 @@ export const ListEventsEventsGetResponseItem = /*#__PURE__*/ zod.object({
   "lng": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
   "location": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "max_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "owner_kind": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listEventsEventsGetResponseOwnerKindDefault),
+  "owner_slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price": /*#__PURE__*/ zod.int(),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "producer_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -2709,6 +2723,8 @@ export const ListEventsEventsGetResponse = /*#__PURE__*/ zod.array(ListEventsEve
 /**
  * @summary Create Event
  */
+export const createEventEventsPostResponseOwnerKindDefault = `producer`;
+
 export const CreateEventEventsPostResponse = /*#__PURE__*/ zod.object({
   "category": /*#__PURE__*/ zod.string(),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -2723,6 +2739,8 @@ export const CreateEventEventsPostResponse = /*#__PURE__*/ zod.object({
   "lng": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
   "location": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "max_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "owner_kind": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), createEventEventsPostResponseOwnerKindDefault),
+  "owner_slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price": /*#__PURE__*/ zod.int(),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "producer_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -2734,6 +2752,8 @@ export const CreateEventEventsPostResponse = /*#__PURE__*/ zod.object({
 /**
  * @summary List My Events
  */
+export const listMyEventsEventsMineGetResponseOwnerKindDefault = `producer`;
+
 export const ListMyEventsEventsMineGetResponseItem = /*#__PURE__*/ zod.object({
   "category": /*#__PURE__*/ zod.string(),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -2748,6 +2768,8 @@ export const ListMyEventsEventsMineGetResponseItem = /*#__PURE__*/ zod.object({
   "lng": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
   "location": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "max_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "owner_kind": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listMyEventsEventsMineGetResponseOwnerKindDefault),
+  "owner_slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price": /*#__PURE__*/ zod.int(),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "producer_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -2760,6 +2782,8 @@ export const ListMyEventsEventsMineGetResponse = /*#__PURE__*/ zod.array(ListMyE
 /**
  * @summary Upcoming Events
  */
+export const upcomingEventsEventsUpcomingGetResponseOwnerKindDefault = `producer`;
+
 export const UpcomingEventsEventsUpcomingGetResponseItem = /*#__PURE__*/ zod.object({
   "category": /*#__PURE__*/ zod.string(),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -2774,6 +2798,8 @@ export const UpcomingEventsEventsUpcomingGetResponseItem = /*#__PURE__*/ zod.obj
   "lng": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
   "location": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "max_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "owner_kind": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), upcomingEventsEventsUpcomingGetResponseOwnerKindDefault),
+  "owner_slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price": /*#__PURE__*/ zod.int(),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "producer_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -2792,6 +2818,8 @@ export const DeleteEventEventsEventIdDeleteResponse = /*#__PURE__*/ zod.unknown(
 /**
  * @summary Get Event
  */
+export const getEventEventsEventIdGetResponseOwnerKindDefault = `producer`;
+
 export const GetEventEventsEventIdGetResponse = /*#__PURE__*/ zod.object({
   "category": /*#__PURE__*/ zod.string(),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -2806,6 +2834,8 @@ export const GetEventEventsEventIdGetResponse = /*#__PURE__*/ zod.object({
   "lng": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
   "location": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "max_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "owner_kind": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getEventEventsEventIdGetResponseOwnerKindDefault),
+  "owner_slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price": /*#__PURE__*/ zod.int(),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "producer_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -2817,6 +2847,8 @@ export const GetEventEventsEventIdGetResponse = /*#__PURE__*/ zod.object({
 /**
  * @summary Update Event
  */
+export const updateEventEventsEventIdPutResponseOwnerKindDefault = `producer`;
+
 export const UpdateEventEventsEventIdPutResponse = /*#__PURE__*/ zod.object({
   "category": /*#__PURE__*/ zod.string(),
   "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -2831,6 +2863,8 @@ export const UpdateEventEventsEventIdPutResponse = /*#__PURE__*/ zod.object({
   "lng": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
   "location": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "max_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "owner_kind": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), updateEventEventsEventIdPutResponseOwnerKindDefault),
+  "owner_slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "price": /*#__PURE__*/ zod.int(),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "producer_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -3324,6 +3358,7 @@ export const listProducersProducersGetResponseIsAvailableTodayDefault = false;
 export const listProducersProducersGetResponseIsRecommendedDefault = false;
 export const listProducersProducersGetResponseKashrutBadgesDefault = [];
 export const listProducersProducersGetResponseKashrutCertsDefault = [];
+export const listProducersProducersGetResponseKindDefault = `producer`;
 export const listProducersProducersGetResponseLactoseFreeFacilityDefault = `unknown`;
 export const listProducersProducersGetResponseLocationsItemIsPrimaryDefault = false;
 export const listProducersProducersGetResponseLocationsItemPrecisionDefault = `exact`;
@@ -3405,6 +3440,7 @@ export const ListProducersProducersGetResponseItem = /*#__PURE__*/ zod.object({
 }).check(/*#__PURE__*/ zod.describe('MEH-1672: a badge whose approved certificate photo can be served.\n\nIntentionally ONE field. The certificate is fetched through\n`GET \/producers\/{producer_id}\/kashrut-cert\/{badge_code}`, which re-checks\napproval + expiry + producer status on every request. No URL crosses the\nwire, so revocation is immediate and the permanent Cloudinary address is\nnever published.'))), listProducersProducersGetResponseKashrutCertsDefault),
   "kashrut_expires_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "kashrut_verified_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "kind": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listProducersProducersGetResponseKindDefault),
   "lactose_free_facility": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listProducersProducersGetResponseLactoseFreeFacilityDefault),
   "lat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
   "lng": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
@@ -3497,6 +3533,7 @@ export const createProducerProducersPostResponseIsAvailableTodayDefault = false;
 export const createProducerProducersPostResponseIsRecommendedDefault = false;
 export const createProducerProducersPostResponseKashrutBadgesDefault = [];
 export const createProducerProducersPostResponseKashrutCertsDefault = [];
+export const createProducerProducersPostResponseKindDefault = `producer`;
 export const createProducerProducersPostResponseLactoseFreeFacilityDefault = `unknown`;
 export const createProducerProducersPostResponseLocationsItemIsPrimaryDefault = false;
 export const createProducerProducersPostResponseLocationsItemPrecisionDefault = `exact`;
@@ -3595,6 +3632,7 @@ export const CreateProducerProducersPostResponse = /*#__PURE__*/ zod.object({
 }).check(/*#__PURE__*/ zod.describe('MEH-1672: a badge whose approved certificate photo can be served.\n\nIntentionally ONE field. The certificate is fetched through\n`GET \/producers\/{producer_id}\/kashrut-cert\/{badge_code}`, which re-checks\napproval + expiry + producer status on every request. No URL crosses the\nwire, so revocation is immediate and the permanent Cloudinary address is\nnever published.'))), createProducerProducersPostResponseKashrutCertsDefault),
   "kashrut_expires_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "kashrut_verified_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "kind": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), createProducerProducersPostResponseKindDefault),
   "lactose_free_facility": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), createProducerProducersPostResponseLactoseFreeFacilityDefault),
   "lat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
   "lng": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
@@ -3694,6 +3732,7 @@ export const getProducerBySlugProducersBySlugSlugGetResponseIsAvailableTodayDefa
 export const getProducerBySlugProducersBySlugSlugGetResponseIsRecommendedDefault = false;
 export const getProducerBySlugProducersBySlugSlugGetResponseKashrutBadgesDefault = [];
 export const getProducerBySlugProducersBySlugSlugGetResponseKashrutCertsDefault = [];
+export const getProducerBySlugProducersBySlugSlugGetResponseKindDefault = `producer`;
 export const getProducerBySlugProducersBySlugSlugGetResponseLactoseFreeFacilityDefault = `unknown`;
 export const getProducerBySlugProducersBySlugSlugGetResponseLocationsItemIsPrimaryDefault = false;
 export const getProducerBySlugProducersBySlugSlugGetResponseLocationsItemPrecisionDefault = `exact`;
@@ -3792,6 +3831,7 @@ export const GetProducerBySlugProducersBySlugSlugGetResponse = /*#__PURE__*/ zod
 }).check(/*#__PURE__*/ zod.describe('MEH-1672: a badge whose approved certificate photo can be served.\n\nIntentionally ONE field. The certificate is fetched through\n`GET \/producers\/{producer_id}\/kashrut-cert\/{badge_code}`, which re-checks\napproval + expiry + producer status on every request. No URL crosses the\nwire, so revocation is immediate and the permanent Cloudinary address is\nnever published.'))), getProducerBySlugProducersBySlugSlugGetResponseKashrutCertsDefault),
   "kashrut_expires_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "kashrut_verified_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "kind": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getProducerBySlugProducersBySlugSlugGetResponseKindDefault),
   "lactose_free_facility": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getProducerBySlugProducersBySlugSlugGetResponseLactoseFreeFacilityDefault),
   "lat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
   "lng": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
@@ -3925,6 +3965,7 @@ export const getMyProducerProducersMeGetResponseIsAvailableTodayDefault = false;
 export const getMyProducerProducersMeGetResponseIsRecommendedDefault = false;
 export const getMyProducerProducersMeGetResponseKashrutBadgesDefault = [];
 export const getMyProducerProducersMeGetResponseKashrutCertsDefault = [];
+export const getMyProducerProducersMeGetResponseKindDefault = `producer`;
 export const getMyProducerProducersMeGetResponseLactoseFreeFacilityDefault = `unknown`;
 export const getMyProducerProducersMeGetResponseLocationsItemIsPrimaryDefault = false;
 export const getMyProducerProducersMeGetResponseLocationsItemPrecisionDefault = `exact`;
@@ -4026,6 +4067,7 @@ export const GetMyProducerProducersMeGetResponse = /*#__PURE__*/ zod.object({
 }).check(/*#__PURE__*/ zod.describe('MEH-1672: a badge whose approved certificate photo can be served.\n\nIntentionally ONE field. The certificate is fetched through\n`GET \/producers\/{producer_id}\/kashrut-cert\/{badge_code}`, which re-checks\napproval + expiry + producer status on every request. No URL crosses the\nwire, so revocation is immediate and the permanent Cloudinary address is\nnever published.'))), getMyProducerProducersMeGetResponseKashrutCertsDefault),
   "kashrut_expires_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "kashrut_verified_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "kind": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getMyProducerProducersMeGetResponseKindDefault),
   "kosher": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "lactose_free_facility": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getMyProducerProducersMeGetResponseLactoseFreeFacilityDefault),
   "lat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
@@ -4131,6 +4173,7 @@ export const updateMyProducerProducersMePutResponseIsAvailableTodayDefault = fal
 export const updateMyProducerProducersMePutResponseIsRecommendedDefault = false;
 export const updateMyProducerProducersMePutResponseKashrutBadgesDefault = [];
 export const updateMyProducerProducersMePutResponseKashrutCertsDefault = [];
+export const updateMyProducerProducersMePutResponseKindDefault = `producer`;
 export const updateMyProducerProducersMePutResponseLactoseFreeFacilityDefault = `unknown`;
 export const updateMyProducerProducersMePutResponseLocationsItemIsPrimaryDefault = false;
 export const updateMyProducerProducersMePutResponseLocationsItemPrecisionDefault = `exact`;
@@ -4232,6 +4275,7 @@ export const UpdateMyProducerProducersMePutResponse = /*#__PURE__*/ zod.object({
 }).check(/*#__PURE__*/ zod.describe('MEH-1672: a badge whose approved certificate photo can be served.\n\nIntentionally ONE field. The certificate is fetched through\n`GET \/producers\/{producer_id}\/kashrut-cert\/{badge_code}`, which re-checks\napproval + expiry + producer status on every request. No URL crosses the\nwire, so revocation is immediate and the permanent Cloudinary address is\nnever published.'))), updateMyProducerProducersMePutResponseKashrutCertsDefault),
   "kashrut_expires_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "kashrut_verified_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "kind": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), updateMyProducerProducersMePutResponseKindDefault),
   "kosher": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "lactose_free_facility": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), updateMyProducerProducersMePutResponseLactoseFreeFacilityDefault),
   "lat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
@@ -4886,6 +4930,7 @@ export const getProducerProducersProducerIdGetResponseIsAvailableTodayDefault = 
 export const getProducerProducersProducerIdGetResponseIsRecommendedDefault = false;
 export const getProducerProducersProducerIdGetResponseKashrutBadgesDefault = [];
 export const getProducerProducersProducerIdGetResponseKashrutCertsDefault = [];
+export const getProducerProducersProducerIdGetResponseKindDefault = `producer`;
 export const getProducerProducersProducerIdGetResponseLactoseFreeFacilityDefault = `unknown`;
 export const getProducerProducersProducerIdGetResponseLocationsItemIsPrimaryDefault = false;
 export const getProducerProducersProducerIdGetResponseLocationsItemPrecisionDefault = `exact`;
@@ -4984,6 +5029,7 @@ export const GetProducerProducersProducerIdGetResponse = /*#__PURE__*/ zod.objec
 }).check(/*#__PURE__*/ zod.describe('MEH-1672: a badge whose approved certificate photo can be served.\n\nIntentionally ONE field. The certificate is fetched through\n`GET \/producers\/{producer_id}\/kashrut-cert\/{badge_code}`, which re-checks\napproval + expiry + producer status on every request. No URL crosses the\nwire, so revocation is immediate and the permanent Cloudinary address is\nnever published.'))), getProducerProducersProducerIdGetResponseKashrutCertsDefault),
   "kashrut_expires_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "kashrut_verified_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "kind": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getProducerProducersProducerIdGetResponseKindDefault),
   "lactose_free_facility": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getProducerProducersProducerIdGetResponseLactoseFreeFacilityDefault),
   "lat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
   "lng": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
@@ -5481,6 +5527,7 @@ export const getFavoritesUsersMeFavoritesGetResponseProducerIsAvailableTodayDefa
 export const getFavoritesUsersMeFavoritesGetResponseProducerIsRecommendedDefault = false;
 export const getFavoritesUsersMeFavoritesGetResponseProducerKashrutBadgesDefault = [];
 export const getFavoritesUsersMeFavoritesGetResponseProducerKashrutCertsDefault = [];
+export const getFavoritesUsersMeFavoritesGetResponseProducerKindDefault = `producer`;
 export const getFavoritesUsersMeFavoritesGetResponseProducerLactoseFreeFacilityDefault = `unknown`;
 export const getFavoritesUsersMeFavoritesGetResponseProducerLocationsItemIsPrimaryDefault = false;
 export const getFavoritesUsersMeFavoritesGetResponseProducerLocationsItemPrecisionDefault = `exact`;
@@ -5564,6 +5611,7 @@ export const GetFavoritesUsersMeFavoritesGetResponseItem = /*#__PURE__*/ zod.obj
 }).check(/*#__PURE__*/ zod.describe('MEH-1672: a badge whose approved certificate photo can be served.\n\nIntentionally ONE field. The certificate is fetched through\n`GET \/producers\/{producer_id}\/kashrut-cert\/{badge_code}`, which re-checks\napproval + expiry + producer status on every request. No URL crosses the\nwire, so revocation is immediate and the permanent Cloudinary address is\nnever published.'))), getFavoritesUsersMeFavoritesGetResponseProducerKashrutCertsDefault),
   "kashrut_expires_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "kashrut_verified_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "kind": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getFavoritesUsersMeFavoritesGetResponseProducerKindDefault),
   "lactose_free_facility": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getFavoritesUsersMeFavoritesGetResponseProducerLactoseFreeFacilityDefault),
   "lat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
   "lng": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),

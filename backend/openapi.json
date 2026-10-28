@@ -1262,6 +1262,22 @@
             ],
             "title": "Max Participants"
           },
+          "owner_kind": {
+            "default": "producer",
+            "title": "Owner Kind",
+            "type": "string"
+          },
+          "owner_slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Slug"
+          },
           "price": {
             "title": "Price",
             "type": "integer"
@@ -4675,6 +4691,11 @@
             ],
             "title": "Kashrut Verified At"
           },
+          "kind": {
+            "default": "producer",
+            "title": "Kind",
+            "type": "string"
+          },
           "kosher": {
             "anyOf": [
               {
@@ -6546,6 +6567,11 @@
             ],
             "title": "Kashrut Verified At"
           },
+          "kind": {
+            "default": "producer",
+            "title": "Kind",
+            "type": "string"
+          },
           "lactose_free_facility": {
             "default": "unknown",
             "title": "Lactose Free Facility",
@@ -7269,6 +7295,11 @@
               }
             ],
             "title": "Kashrut Verified At"
+          },
+          "kind": {
+            "default": "producer",
+            "title": "Kind",
+            "type": "string"
           },
           "lactose_free_facility": {
             "default": "unknown",
@@ -8700,6 +8731,11 @@
               }
             ],
             "title": "Kashrut Verified At"
+          },
+          "kind": {
+            "default": "producer",
+            "title": "Kind",
+            "type": "string"
           },
           "kosher": {
             "anyOf": [

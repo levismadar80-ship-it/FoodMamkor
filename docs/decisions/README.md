@@ -54,6 +54,7 @@ Permanent architectural decisions recorded once, never re-litigated.
 | [033](./ADR-033-analytics-single-writer.md) | One choke point for every analytics write, enforced by an AST test | Accepted | 2026-08-23 | MEH-2160 |
 | [034](./ADR-034-data-gate-in-code.md) | A data gate lives in the code as a render threshold, not in Linear as a waiting card | Accepted | 2026-09-04 | MEH-2250 |
 | [035](./ADR-035-one-home-per-fact.md) | One home per fact — every other surface points, none keeps a copy; upkeep rules get a staleness guard | Accepted | 2026-10-26 | MEH-2344 |
+| [036](./ADR-036-organizer-kind.md) | An event organizer is a `Producer` row with `kind='organizer'`, hidden from every business surface by one shared predicate | Accepted | 2026-10-28 | MEH-2459 |
 
 ## Related
 - `docs/LOCKED_DECISIONS.md` — older free-form decisions; being migrated
