@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 // MEH-731: locale-stripping usePathname so isActive() matches the
 // non-prefixed NAV_HREFS ("/admin", …) under next-intl [locale] routing.
@@ -25,7 +25,7 @@ import {
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import EmptyState from "@/components/ui/EmptyState";
-import api from "@/lib/api";
+import { AdminDashboardProvider, useAdminDashboard } from "./dashboard-data";
 import { QUEUES, queueCount, visibleQueues } from "./queues";
 
 /**
@@ -84,21 +84,34 @@ const NAV_SECTIONS = [
 // no control off-screen, so the banner had become untrue — and it was the
 // first thing an admin saw above a queue she could not operate.
 
+// MEH-2399: the provider sits above the shell so the shell (badges) and the
+// page (home) both read its one fetch. It fetches only for an admin.
 export default function AdminLayout({ children }) {
+  const { user } = useAuth();
+  const pathname = usePathname();
+  return (
+    <AdminDashboardProvider enabled={user?.role === "admin"} refreshKey={pathname}>
+      <AdminShell>{children}</AdminShell>
+    </AdminDashboardProvider>
+  );
+}
+
+function AdminShell({ children }) {
   const t = useTranslations("admin");
   const tDenied = useTranslations("errors.access_denied.admin");
   const { user, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  // Per-queue counts for the sidebar badges + the queue filter, from
-  // /admin/dashboard (the home page calls it too; the endpoint is fast and
-  // the badge has to show on every /admin/* subpath). MEH-2359: the whole
-  // `stats` object is kept — one number per queue (admin/queues.js), not the
-  // old aggregate that summed six queues (incl. home_products, MEH-796) into
-  // a single badge that said nothing about WHERE to go.
-  const [stats, setStats] = useState(null);
+  // Per-queue counts for the sidebar badges + the queue filter. MEH-2359: the
+  // whole `stats` object is kept — one number per queue (admin/queues.js), not
+  // the old aggregate that summed six queues (incl. home_products, MEH-796)
+  // into a single badge that said nothing about WHERE to go. MEH-2399: read
+  // from the one shared /admin/dashboard fetch (admin/dashboard-data.js), which
+  // the home page reads too — one request per admin navigation, not two.
+  const { data: dashboard, loadError } = useAdminDashboard();
+  const stats = dashboard?.stats ?? null;
   // MEH-2096: whether the counts are unknown (fetch failed) rather than zero.
-  const [countsError, setCountsError] = useState(false);
+  const countsError = loadError;
 
   // MEH-1599: same 401/403 split as producer/dashboard/layout.js:53 — an
   // authenticated non-admin gets the in-app denied state below, NOT a bounce
@@ -114,25 +127,6 @@ export default function AdminLayout({ children }) {
     if (!isUnauthenticated) return;
     router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
   }, [isUnauthenticated, pathname, router]);
-
-  useEffect(() => {
-    if (!user || user.role !== "admin") return;
-    api
-      .get("/admin/dashboard")
-      .then((r) => {
-        setStats(r.data?.stats ?? null);
-        setCountsError(false);
-      })
-      .catch(() => {
-        // MEH-2096: nulling the counts hid the badge, which is the SAME render
-        // as a genuine zero — so a dead dashboard endpoint told the admin the
-        // approval queue was clear. The counts stay null (no fabricated number)
-        // and `countsError` carries the distinction to the badge instead; the
-        // queue filter shows EVERY queue while counts are unknown (queues.js).
-        setStats(null);
-        setCountsError(true);
-      });
-  }, [user, pathname]);
 
   // MEH-2426: the phone nav strip is ~1700px wide and always opened at its
   // start, so on a queue further along (חוויות, מתכונים) the highlighted tab

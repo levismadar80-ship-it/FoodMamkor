@@ -1,6 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
-import AdminHome from "@/app/[locale]/admin/page";
+import AdminHomePage from "@/app/[locale]/admin/page";
+import { AdminDashboardProvider } from "@/app/[locale]/admin/dashboard-data";
+
+// MEH-2399: the home reads the layout's shared /admin/dashboard fetch, so it
+// renders under the same provider the layout mounts.
+const AdminHome = () => (
+  <AdminDashboardProvider>
+    <AdminHomePage />
+  </AdminDashboardProvider>
+);
 
 // MEH-2359: /admin is «מה מחכה לטיפול» — pending businesses + the secondary
 // queues that have items. This file used to pin the group-buys stat card
