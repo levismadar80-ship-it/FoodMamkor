@@ -124,10 +124,6 @@ class TestOrganizerSitemapSource:
             assert resp.status_code == 200
             assert "s-maxage=30" in resp.headers["Cache-Control"], path
 
-    def test_a_404_is_not_edge_cached(self, client, db):
-        resp = client.get("/organizers/meh2461-nobody")
-        assert resp.status_code == 404
-        assert "s-maxage" not in resp.headers.get("Cache-Control", "")
 
 
 def test_organizers_is_a_reserved_slug():

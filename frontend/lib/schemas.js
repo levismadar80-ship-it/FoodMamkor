@@ -450,7 +450,7 @@ export const ProducersResponseSchema = z.array(ProducerSchema);
 // Read by app/[locale]/events/[id]/page.js generateMetadata (title,
 // description, image_url) + lib/seo.js buildEventJsonLd (:458-529 — id,
 // event_date, event_time, location, city, lat, lng, producer_name,
-// producer_id, price, registration_url).
+// producer_id, price, registration_url, owner_kind, owner_slug).
 export const EventMetadataSchema = z.object({
   id: z.union([z.string(), z.number()]),
   title: z.string(),
@@ -466,6 +466,9 @@ export const EventMetadataSchema = z.object({
   lng: z.number().nullable().optional(),
   producer_name: z.string().nullable().optional(),
   registration_url: z.string().nullable().optional(),
+  // MEH-2461: buildEventJsonLd picks the owner URL from these two.
+  owner_kind: z.string().optional(),
+  owner_slug: z.string().nullable().optional(),
 });
 
 // MEH-2461: read by app/[locale]/organizers/[slug]/page.js (render + metadata).
