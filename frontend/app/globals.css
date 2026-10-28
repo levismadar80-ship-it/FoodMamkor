@@ -425,6 +425,14 @@ body.sheet-open .cookie-banner {
     margin-bottom: max(calc(var(--map-sheet-h, 0vh) + 6px), 10px) !important;
     transition: margin-bottom var(--map-sheet-anim, 0ms) ease-out;
   }
+  /* MEH-2506: while the NearMePill shows its origin chip, the chip reaches
+     across the bottom of the map into this corner (it grows toward the
+     inline-start; the attribution sits bottom-right). Lift the attribution
+     clear of the pill — pill bottom sheet+12, 46px tall (44 + border) → top
+     sheet+58, +6 gap. Geometry, not z-index (rtl.md z-token ledger). */
+  [data-origin-chip] .leaflet-control-attribution {
+    margin-bottom: max(calc(var(--map-sheet-h, 0vh) + 64px), 10px) !important;
+  }
 }
 .leaflet-control-attribution a {
   color: inherit;

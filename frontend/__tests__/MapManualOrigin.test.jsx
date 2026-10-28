@@ -257,6 +257,9 @@ describe("MEH-2014 PR 2 — a picked city becomes the sort origin", () => {
     // filter bar above the map.
     expect(within(screen.getByTestId("map-near-me")).getByTestId("sort-origin-label")).toHaveTextContent("מרחק מ: חיפה");
     expect(within(screen.getByTestId("map-mobile-bar")).queryByTestId("sort-origin-label")).toBeNull();
+    // …and the shell flags it, so globals.css lifts the Leaflet attribution out
+    // of the chip's way (the chip grows into the attribution's corner).
+    expect(screen.getByTestId("map-mobile-shell")).toHaveAttribute("data-origin-chip");
   });
 
   it("still applies the city FILTER when the geocode fails", async () => {
@@ -362,6 +365,7 @@ describe("MEH-2014 PR 2 — the two origins are mutually exclusive", () => {
 
     expect(stored()).toBe(null);
     expect(originLabels()).toHaveLength(0);
+    expect(screen.getByTestId("map-mobile-shell")).not.toHaveAttribute("data-origin-chip");
   });
 });
 

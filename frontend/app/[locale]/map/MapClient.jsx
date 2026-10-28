@@ -555,7 +555,7 @@ export default function MapPage() {
       ? t("map.client.sort.origin_city", { city: userLoc.city })
       : t("map.client.sort.origin_gps")
     : null;
-  const showOrigin = cityOriginPending || (userLoc && !geoSortPending);
+  const showOrigin = Boolean(cityOriginPending || (userLoc && !geoSortPending));
   const clearLocationControl =
     showOrigin ? (
       <div
@@ -814,7 +814,10 @@ export default function MapPage() {
       </div>
 
       {/* =================== MOBILE (below lg) — full map + sheet =================== */}
-      <div ref={mobileShellRef} data-testid="map-mobile-shell" className="lg:hidden" style={{ height: `calc(100dvh - ${mobileTopOffset}px)`, position: "relative" }}>
+      {/* MEH-2506: data-origin-chip lifts the Leaflet attribution above the
+          NearMePill while its origin chip is open — the chip grows toward the
+          inline-start, into the attribution's corner (globals.css). */}
+      <div ref={mobileShellRef} data-testid="map-mobile-shell" data-origin-chip={showOrigin ? "" : undefined} className="lg:hidden" style={{ height: `calc(100dvh - ${mobileTopOffset}px)`, position: "relative" }}>
         {/* Sticky filter bar — MEH-933 R2: sits at top-0 of the mobile shell.
             The shell is in normal flow AFTER the sticky <Header> (layout.js:221),
             so it already begins below the header band — the bar needs NO header

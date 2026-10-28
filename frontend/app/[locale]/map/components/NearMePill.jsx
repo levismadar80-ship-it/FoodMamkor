@@ -72,7 +72,7 @@ export default function NearMePill({ onClick, originLabel = null, originPending 
       {hasChip && (
         <div data-testid="sort-origin" className="flex min-w-0 items-center ps-3 text-xs text-fg-muted">
           {originPending ? (
-            <span role="status" className="truncate pe-2">
+            <span role="status" className="min-w-0 truncate pe-2">
               {t("map.client.sort.locating_city")}
             </span>
           ) : (
