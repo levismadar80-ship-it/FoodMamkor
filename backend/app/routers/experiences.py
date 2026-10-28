@@ -152,8 +152,9 @@ def _publicly_visible_query(db: Session):
     2. **The host's business is approved.** LOCK (בעלי עסק מורשים בלבד):
        content reaches the public only from an approved business. Experiences
        were the only surface without this — events (``events.py:167``),
-       recipes (``producer_recipes.py:335-345``) and group buys
-       (``group_buys.py:252``) were already gated.
+       recipes (``producer_recipes.py:335-345``) were already gated; group
+       buys gained the same gate later (``group_buys._public_group_buys``,
+       MEH-2484 — before it, only creation required an approved business).
 
     The walk is two hops because an Experience is keyed on a **User**, not a
     Producer: ``Experience.host_user_id`` (``models.py:1051``) →
