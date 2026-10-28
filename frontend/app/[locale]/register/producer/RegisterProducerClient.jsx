@@ -2263,7 +2263,11 @@ function RegisterProducerPageBody() {
             </div>
             <h2 className="font-headline-lg text-3xl font-black text-text mb-2">{t("auth.register.producer.success.inbox_title")}</h2>
             <p className="text-fg-muted text-sm mb-3">{t("auth.register.producer.success.inbox_body")}</p>
-            <p className="text-fg-muted text-xs mb-6">{t("auth.register.producer.success.inbox_hint")}</p>
+            <p className="text-fg-muted text-xs mb-3">{t("auth.register.producer.success.inbox_hint")}</p>
+            {/* MEH-2492: say the next step up front — the link verifies, it does not log in. */}
+            <p className="text-text text-sm font-medium mb-6" data-testid="register-confirm-next-step">
+              {t("auth.register.producer.success.inbox_next")}
+            </p>
             <p className="text-xs text-fg-muted mb-6 text-center leading-relaxed">{t("auth.register.producer.success.tier_trust")}</p>
             <button
               onClick={() => router.push("/")}

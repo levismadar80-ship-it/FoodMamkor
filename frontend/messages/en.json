@@ -124,9 +124,11 @@
       "loading_title": "Verifying...",
       "loading_subtitle": "Please wait",
       "fallback_loading": "Loading...",
-      "success_title": "Email verified successfully!",
+      "success_title": "Email verified ✓",
       "success_subtitle": "Redirecting you to the site...",
       "success_cta": "Continue to the site",
+      "success_login_subtitle": "Now log in with your email and password and pick up where you left off.",
+      "success_login_cta": "Log in to continue",
       "error_title": "Verification failed",
       "error_cta": "Back to the site",
       "errors": {
@@ -398,6 +400,7 @@
           "inbox_title": "Check your inbox",
           "inbox_body": "If the email is available, a verification message has been sent. Please check your inbox.",
           "inbox_hint": "Didn't get it? Check spam or try again in a minute.",
+          "inbox_next": "After you click the link in the email, log in with your email and password and continue completing your page.",
           "back_home": "Back to home"
         }
       }
