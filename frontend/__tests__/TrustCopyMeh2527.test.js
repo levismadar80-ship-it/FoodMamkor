@@ -6,6 +6,8 @@
  * Sapir-approved (28/10); these assert the claims, not the prose.
  */
 import { describe, it, expect } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import he from "@/messages/he.json";
 import en from "@/messages/en.json";
 import { BADGE_CONFIG } from "@/lib/badges";
@@ -41,6 +43,17 @@ describe("MEH-2527 trust copy", () => {
   it("about explains the automatic «מובילת קהילה» badge in both locales", () => {
     expect(he.about.consumer.community_leader.heading).toBe(he.trust.tier_4.label);
     expect(he.about.consumer.community_leader.body).toContain("10 ביקורות");
+    expect(he.about.consumer.community_leader.body).toContain("4.5");
     expect(en.about.consumer.community_leader.body).toContain("10 reviews");
+  });
+
+  it("the stated 10 / 4.5 thresholds are the ones the backend computes", () => {
+    // If services/trust_tier.py moves either number, the About copy is stale.
+    const src = readFileSync(
+      resolve(__dirname, "../../backend/app/services/trust_tier.py"),
+      "utf8",
+    );
+    expect(src).toMatch(/reviews_count", 0\) or 0\) >= 10 and/);
+    expect(src).toMatch(/\) >= 4\.5:/);
   });
 });
