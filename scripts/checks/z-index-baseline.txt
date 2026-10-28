@@ -40,6 +40,7 @@ frontend/app/[locale]/map/components/MapPane.jsx:z-[1000]
 frontend/app/[locale]/map/components/MapPane.jsx:z-[800]
 frontend/app/[locale]/map/components/NearMePill.jsx:z-[1000]
 frontend/app/[locale]/producer/[id]/components/StickyContactBar.jsx:z-[598]
+frontend/app/[locale]/producer/dashboard/group-buys/page.js:z-[9000]
 frontend/app/[locale]/producer/dashboard/page.js:z-[9000]
 frontend/app/globals.css:z-index:1000
 frontend/app/globals.css:z-index:1000

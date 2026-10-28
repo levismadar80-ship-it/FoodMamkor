@@ -146,6 +146,7 @@ export default function ProducerSections({
   // ONCE, here, because the location section both gates on it and renders it,
   // and two call sites would be two chances to disagree.
   const storeHours = resolveStoreHours(producer);
+  const hasLocation = parseHasLocation(producer, primaryPin);
   const [showAllEvents, setShowAllEvents] = useState(false);
   // MEH-1460: "report wrong info" modal — moved from ContactCard so the
   // correction link lives in the page-end meta block, not the CTA card.
@@ -724,7 +725,7 @@ export default function ProducerSections({
           while rendering the resolved value would hide the whole section from a
           business whose hours live only on her primary location row, which is
           exactly the business this change is for. */}
-      {(parseHasLocation(producer, primaryPin) || storeHours) && (
+      {(hasLocation || storeHours) && (
         <section
           id="section-location"
           className="mt-8 border-t border-border pt-8 scroll-mt-[calc(var(--chrome-top,82px)_+_var(--section-nav-h,68px))] md:scroll-mt-24"
@@ -746,11 +747,19 @@ export default function ProducerSections({
               business-level column. One resolver so the gate above and this
               render can never disagree. */}
           <OpeningHours opening_hours={storeHours} />
+          {/* MEH-2438 follow-up: a place to visit with no hours would otherwise
+              show only the map and the Waze/Google buttons — an invitation to
+              turn up unannounced at a home producer. */}
+          {!storeHours && hasLocation && (
+            <p data-testid="location-no-hours" className="text-sm text-fg-muted mb-3">
+              {t("producer.detail.sections.location_no_hours")}
+            </p>
+          )}
           {/* MEH-1611 chunk 2: the map now shows every point this business has
               — its branch plus each pickup / market stand — not just the primary
               pin. Complements the textual pickup list DeliveryBlock renders
               (MEH-1512): same rows, one as a list, one on a map. */}
-          {parseHasLocation(producer, primaryPin) && (
+          {hasLocation && (
             <MiniMap
               lat={primaryPin.lat}
               lng={primaryPin.lng}

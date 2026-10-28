@@ -49,9 +49,9 @@ import en from "../../../messages/en.json";
  *           asserts nothing about the animation itself.
  * Does NOT: assert MT:MEH-841:3 (the HOME teaser «גלו את ההבדל» on `/`) or
  *           the `/en/` half of MT:MEH-841:4 — both live on the home surface,
- *           which is chunk 7's route (producer fixture, 184 items) and whose
- *           teaser (HomeStaticBlocks.jsx `HomeComparisonTeaser`) carries no
- *           testid yet; recorded as residuals, not silently dropped. Does NOT
+ *           which is chunk 7's route (producer fixture, 184 items). The home
+ *           teaser itself was removed in MEH-2441 (its absence is asserted in
+ *           home.spec.ts), so MT:MEH-841:3 no longer has a subject. Does NOT
  *           duplicate MT:MEH-534:10 / MT:MEH-1289:5's footer half (the footer
  *           nav hrefs) — COVERED at component level by
  *           frontend/__tests__/FooterNavGroups.test.jsx:61-62. Does NOT convert
@@ -396,8 +396,9 @@ test.describe("manual › /about/process (MEH-534)", () => {
     );
   });
 
-  // MT:MEH-534:4 — "What's checked": 3 cards (זהות · סיפור · שיחה) on the alt background, gold numerals 01–03.
-  test("what's checked: three cards from copy on the alt-tone band, accent numerals 01–03", async ({
+  // MT:MEH-534:4 — "What's checked": 3 cards (זהות · סיפור · שיחה) on the alt background.
+  //   MEH-2439 removed the decorative 01–03 card numerals (and the Marker's own).
+  test("what's checked: three cards from copy on the alt-tone band, no decorative numerals", async ({
     page,
   }) => {
     await gotoProcess(page);
@@ -406,17 +407,11 @@ test.describe("manual › /about/process (MEH-534)", () => {
     await expect(everyone.getByRole("heading", { level: 2 })).toHaveText(PROCESS_HE.everyone.h2);
     const cards = everyone.getByRole("heading", { level: 3 });
     await expect(cards).toHaveCount(EVERYONE_TITLES_HE.length);
-    // The band also carries the section Marker's own numeral ("02"); the CARD
-    // numerals are the ones that wrap the trailing "—" in a child span.
-    const numerals = everyone.locator("span[aria-hidden].numeric", { has: page.locator("span") });
-    await expect(numerals).toHaveCount(EVERYONE_TITLES_HE.length);
     for (let i = 0; i < EVERYONE_TITLES_HE.length; i += 1) {
       await expect(cards.nth(i)).toHaveText(EVERYONE_TITLES_HE[i]);
-      await expect(numerals.nth(i)).toContainText(`0${i + 1}`);
     }
-    // "gold": the numerals share the accent token with the hero's <em>.
-    const heroEm = scope(page).getByTestId("process-hero").locator("h1 em");
-    expect(await computed(numerals.first(), "color")).toBe(await computed(heroEm, "color"));
+    // MEH-2439: no "0N" ornament anywhere in the band (cards or Marker).
+    await expect(everyone.getByText(/^0\d/)).toHaveCount(0);
     // "background-alt": this band shares its fill with the matrix band and differs from the hero's.
     const bg = (el: Locator) => computed(el, "background-color");
     const [everyoneBg, matrixBg, heroBg] = await Promise.all([
@@ -526,15 +521,17 @@ test.describe("manual › /about/process (MEH-534)", () => {
     expect(declareLines).toBeGreaterThan(0);
   });
 
-  // MT:MEH-534:8 — closing: Sapir's quote in italic, eyebrow «מהמקור», credit «— ספיר».
-  test("closing: the founder quote as an italic blockquote, eyebrow + credit from copy", async ({ page }) => {
+  // MT:MEH-534:8 — closing: Sapir's quote, eyebrow «מהמקור», credit «— ספיר».
+  //   MEH-2439: upright, not italic — Frank Ruhl Libre has no italic face, so the
+  //   old `italic` was a browser-synthesised slant.
+  test("closing: the founder quote as an upright blockquote, eyebrow + credit from copy", async ({ page }) => {
     await gotoProcess(page);
     const closing = scope(page).getByTestId("process-closing");
     await closing.scrollIntoViewIfNeeded();
     const quote = closing.locator("blockquote");
     await expect(quote).toHaveCount(1);
     await expect(quote).toHaveText(PROCESS_HE.closing.quote);
-    expect(await computed(quote, "font-style")).toBe("italic");
+    expect(await computed(quote, "font-style")).toBe("normal");
     await expect(closing.getByText(PROCESS_HE.closing.em_mark, { exact: true })).toHaveCount(1);
     await expect(closing.getByText(PROCESS_HE.closing.attrib, { exact: true })).toHaveCount(1);
     expect(await precedes(closing.getByText(PROCESS_HE.closing.em_mark, { exact: true }), quote)).toBe(true);

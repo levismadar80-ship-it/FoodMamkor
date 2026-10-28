@@ -476,14 +476,8 @@
     },
     "featured": {
       "eyebrow": "Get to know",
-      "heading": "Behind the scenes",
       "cta_meet": "Meet {name}",
       "cta_write": "Message {name}"
-    },
-    "comparison_teaser": {
-      "eyebrow": "The difference",
-      "heading": "What changes along the way",
-      "cta": "See the difference"
     },
     "categories": {
       "eyebrow": "Categories",
@@ -529,16 +523,6 @@
     },
     "recent": {
       "heading": "Recently viewed"
-    },
-    "how_it_works": {
-      "eyebrow": "How it works",
-      "heading": "Three steps",
-      "step01_title": "Find",
-      "step01_text": "Discover businesses near you",
-      "step02_title": "Contact the business",
-      "step02_text": "Talk directly with the business",
-      "step03_title": "Buy",
-      "step03_text": "Straight from the source, however suits you"
     },
     "cta": {
       "heading": "Have a business? Join us",
@@ -768,6 +752,7 @@
       "sections": {
         "about": "About",
         "location": "Getting there",
+        "location_no_hours": "No fixed hours — arrange before you come",
         "similar": {
           "heading": "Similar businesses",
           "in_area": "{category} · in your area"
@@ -1160,11 +1145,29 @@
         "city_label": "City",
         "fulfillment_label": "When and how do buyers receive the products?",
         "fulfillment_placeholder": "e.g. Pickup from the farm on Friday after the group closes, or home delivery within 3 days",
+        "fulfillment_helper": "Participants see this before they join. Say where to pick up and which cities get delivery.",
+        "fulfillment_required": "Say when and how buyers receive the products",
         "submitting": "Creating...",
         "submit": "Create group buy",
         "toast_created": "Group buy created and open for joining"
       },
-      "status_deadline_passed": "Deadline passed"
+      "status_deadline_passed": "Deadline passed",
+      "actions": {
+        "cancel": "Cancel group",
+        "close": "Close group",
+        "deliver": "Mark delivered",
+        "back": "Back",
+        "cancel_title": "Cancel this group buy?",
+        "cancel_body": "The group will be removed from the site and cannot be reopened.",
+        "cancel_funded_note": "{count} participants have already joined and are waiting for delivery.",
+        "cancel_confirm": "Yes, cancel",
+        "close_title": "Close this group buy?",
+        "close_body": "The group did not reach the minimum by the deadline and will be recorded as cancelled.",
+        "deliver_title": "Mark this group as delivered?",
+        "deliver_body": "The group will be marked as completed.",
+        "toast_cancelled": "Group buy cancelled",
+        "toast_fulfilled": "Group buy marked as delivered"
+      }
     },
     "availability": {
       "status_label": {
@@ -1352,7 +1355,8 @@
         "pickup": "Self-pickup",
         "delivery_only": "Delivery",
         "pickup_only": "Self-pickup",
-        "arranged": "By arrangement"
+        "arranged": "By arrangement",
+        "on_site": "Buy on site"
       }
     },
     "mini": {
@@ -2555,7 +2559,14 @@
       "sold_out": "Sold out",
       "spots_count": "{spots} of {max}",
       "breadcrumb_home": "Home",
-      "breadcrumb_experiences": "Experiences"
+      "breadcrumb_experiences": "Experiences",
+      "duration_minutes": "{count} min",
+      "duration_hours": "{count, plural, one {# hour} other {# hours}}",
+      "duration_hours_half": "{count, plural, one {#.5 hours} other {#.5 hours}}",
+      "duration_mixed": "{hours} {minutes} min",
+      "recurring": "Recurring: {schedule}",
+      "recurring_bare": "Recurring",
+      "starts_from": "Starting {date}"
     },
     "new": {
       "crumb_current": "New experience",
@@ -4740,6 +4751,15 @@
         "hint": "Send it to every customer who bought — not only to the ones sure to praise you. That keeps reviews trustworthy.",
         "cta": "Copy link",
         "cta_copied": "Copied ✓"
+      },
+      "organizer_city": {
+        "heading": "Your city",
+        "label": "City",
+        "hint": "Shown on your organizer page under your name.",
+        "save": "Save",
+        "saving": "Saving...",
+        "saved": "City updated",
+        "error": "Couldn't save — try again"
       }
     }
   },
@@ -5411,7 +5431,13 @@
       "whatsapp": "WhatsApp",
       "instagram": "Instagram",
       "website": "Website",
-      "facebook": "Facebook"
+      "facebook": "Facebook",
+      "owner_heading": "Behind the events",
+      "since_prefix": "Active since",
+      "phone": "Call",
+      "email": "Email",
+      "whatsapp_group": "WhatsApp group",
+      "external_order": "Order form"
     }
   }
 }

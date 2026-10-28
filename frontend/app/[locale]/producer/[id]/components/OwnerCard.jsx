@@ -26,8 +26,10 @@ import { IMAGE_RATIOS } from "@/lib/cloudinary";
  *   no name / bio / photo → null (section hidden)
  *   MEH-2471: bio and/or photo without contact_name → card without the name
  *   line (photo alt falls back to the business name).
+ *   MEH-2475: `heading` overrides «מאחורי העסק» — the organizer page mounts
+ *   this card as «מאחורי האירועים» (an organizer is not a business).
  */
-export default function OwnerCard({ producer }) {
+export default function OwnerCard({ producer, heading }) {
   const t = useTranslations("producer.detail.owner_card");
 
   const name = producer.contact_name?.trim() || null;
@@ -44,7 +46,7 @@ export default function OwnerCard({ producer }) {
 
   return (
     <section className="mt-8 border-t border-border pt-8" data-testid="owner-card">
-      <h2 className="font-headline-md text-2xl font-bold text-text mb-4">{t("heading")}</h2>
+      <h2 className="font-headline-md text-2xl font-bold text-text mb-4">{heading || t("heading")}</h2>
       <div className="bg-white border border-border rounded-lg p-5 flex flex-col gap-3">
         {/* Avatar at the inline-start on ALL viewports (mockup lock). */}
         {/* MEH-2471: the avatar/name row only when it has something in it —

@@ -9,8 +9,6 @@ import FridayDeliveryStrip from "@/components/FridayDeliveryStrip";
 import BackToTop from "@/components/BackToTop";
 import { UpcomingEventsPreview } from "@/app/[locale]/home/UpcomingEventsPreview";
 import {
-  HomeHowItWorks,
-  HomeComparisonTeaser,
   HomeFeaturedProducer,
   HomeRecentlyViewed,
   HomeCTA,
@@ -78,7 +76,7 @@ export default function HomeClient({
     // consumer on this page. The handler itself is kept in use-home-page (see
     // the note beside its export there); only the prop pass-through went, the
     // same way MEH-1684 dropped `scrollToProducers` from this list.
-    handleWhatsAppClick, handleRemoveChip, handleToggleChip, handleClearChips,
+    handleRemoveChip, handleToggleChip, handleClearChips,
     filterSheetOpen, closeFilterSheet, toggleFilterSheet,
     handleClearCategory, handleLoadMore,
   } = useHomePage({ initialProducers, initialCategories });
@@ -258,8 +256,10 @@ export default function HomeClient({
           MEET A PRODUCER (P5 §10 · MEH-542) — fed by the first is_recommended
           ("מומלץ") producer that carries a usable short_description, mapped to
           the editorial shape in useHomePage. No recommended producer ⇒ null ⇒
-          the section self-hides (HomeStaticBlocks.jsx:199). No fictional
-          content ever ships.
+          the section self-hides (`if (!featured) return null`). No fictional
+          content ever ships. MEH-2441: a full-bleed green band, right after
+          the businesses grid (Sapir 27/10: under the businesses, not after
+          the map).
           ========================= */}
       <HomeFeaturedProducer featured={featuredProducer} />
 
@@ -269,13 +269,9 @@ export default function HomeClient({
           the browse path. Self-hides below 3 businesses (ADDENDUM-4). */}
       <HomeSeasonalNow producers={initialInSeason} />
 
-      {/* MEH-879/883: content-first IA — HowItWorks sits below the producer
-          content; the marquee + both founder quotes were removed (MEH-883). */}
-      <HomeHowItWorks />
-
-      {/* MEH-841 (supersedes MEH-525): the full comparison moved to /about;
-          a one-line teaser here links to it, keeping the home slot calm. */}
-      <HomeComparisonTeaser />
+      {/* MEH-2441 (Sapir 27/10): "איך זה עובד" and the comparison teaser left
+          home. /about carries the full comparison (MEH-841) and
+          /about/process the real four steps, so both lived twice. */}
 
       {/* =========================
           UPCOMING EVENTS PREVIEW (Task 6)
