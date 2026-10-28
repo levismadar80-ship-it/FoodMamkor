@@ -615,6 +615,17 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > owner dashboard's four site-wide `GET /group-buys?status=…` calls that were
 > filtered by `producer_id` in the browser. No schema change.
 >
+> **MEH-2484 — only an approved business's group buys are public.** `GET
+> /group-buys` (and through it the sitemap) lists a group buy only while its
+> business passes `producer_listing.is_business()` (approved, `kind='producer'`).
+> `GET /group-buys/{id}` answers a stranger the same `404 קבוצת הרכש לא נמצאה`
+> when it does not — the owner and admin still get `200` from the API (the
+> public page is server-rendered without auth, so it 404s for them as well).
+> `DELETE …/commit` (leaving) is deliberately not gated. `POST
+> /group-buys/{id}/commit` is `404` for a non-public group buy too, so a held
+> link cannot join it. One helper, `group_buys._public_group_buys`. The owner's
+> list above and the admin list are unchanged. No schema change.
+>
 > **MEH-1164 sub-chunk B — structured 403 detail.** The unverified-email 403
 > `detail` is now an **object** `{"code": "email_unverified", "message": "יש
 > לאמת את כתובת האימייל תחילה"}` (all four gated creates — the three above plus
