@@ -21,8 +21,9 @@ export const CODE_TO_KEY = {
 };
 
 function daysUntil(dateStr) {
-  if (!dateStr) return null;
-  const diff = parseNaiveUtc(dateStr) - new Date();
+  const date = dateStr ? parseNaiveUtc(dateStr) : null;
+  if (!date) return null;
+  const diff = date - new Date();
   return Math.ceil(diff / (1000 * 60 * 60 * 24));
 }
 
