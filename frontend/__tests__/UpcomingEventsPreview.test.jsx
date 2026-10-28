@@ -5,7 +5,8 @@ import { render, screen, waitFor } from "@testing-library/react";
 // then maps the result into cards. Mock next-intl (useTranslations + useLocale)
 // and @/lib/api per the AdminNullGuards.test.jsx precedent.
 vi.mock("next-intl", () => ({
-  useTranslations: () => (key) => {
+  useTranslations: () => (key, vars) => {
+    if (key === "events.list.organizer_line") return `מארגן: ${vars.name}`;
     const flat = {
       "home.events.heading": "אירועים קרובים",
       "home.events.all_events": "כל האירועים",
@@ -71,5 +72,17 @@ describe("UpcomingEventsPreview", () => {
     // imageless event (the imaged one shows a CSS-background div, no testid).
     expect(screen.getAllByTestId("event-image-missing")).toHaveLength(1);
     expect(screen.getByText(BRAND_NAME)).toBeInTheDocument();
+  });
+
+  it("MEH-2468: an organizer's event reads «מארגן: {name}»; a business keeps its bare name", async () => {
+    apiResponseRef.current = {
+      data: [
+        { ...IMAGED, producer_name: "שוק גלם", owner_kind: "organizer", owner_slug: "gelem" },
+        { ...IMAGELESS, owner_kind: "producer" },
+      ],
+    };
+    render(<UpcomingEventsPreview />);
+    await waitFor(() => expect(screen.getByText(/מארגן: שוק גלם/)).toBeInTheDocument());
+    expect(screen.getByText(/המאפייה של דנה/).textContent).not.toMatch(/מארגן/);
   });
 });

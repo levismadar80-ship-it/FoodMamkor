@@ -161,3 +161,48 @@ describe("MEH-2461 — organizer line on the events card", () => {
     expect(screen.queryByText(/organizer_line/)).not.toBeInTheDocument();
   });
 });
+
+/**
+ * MEH-2468 — the owner's cover image on the list row. Cells: with image /
+ * without image / many rows mixed. Without one the row keeps its two-column
+ * layout — no empty box.
+ */
+describe("MEH-2468 — event cover image on the /events row", () => {
+  it("row with image_url: one thumbnail carrying that image", async () => {
+    unfilteredRows = [row(1, { image_url: "https://res.cloudinary.com/x/image/upload/a.jpg" })];
+    await mount();
+    const thumbs = screen.getAllByTestId("event-row-image");
+    expect(thumbs).toHaveLength(1);
+    expect(thumbs[0].style.backgroundImage).toContain("a.jpg");
+  });
+
+  it("row without image_url: no thumbnail element at all", async () => {
+    unfilteredRows = [row(1, { image_url: null })];
+    await mount();
+    expect(screen.getByText("event 1")).toBeInTheDocument();
+    expect(screen.queryByTestId("event-row-image")).not.toBeInTheDocument();
+  });
+
+  it("the /experiences tab gets the same rule (experiences carry image_url too)", async () => {
+    unfilteredRows = [
+      row(1, { image_url: "https://res.cloudinary.com/x/image/upload/exp.jpg", host: { name: "מארחת" } }),
+      row(2, { image_url: null, host: { name: "מארחת" } }),
+    ];
+    render(<EventsClient initialTab="experiences" />);
+    await waitFor(() => expect(screen.queryByRole("status")).toBeNull());
+    const thumbs = screen.getAllByTestId("event-row-image");
+    expect(thumbs).toHaveLength(1);
+    expect(thumbs[0].style.backgroundImage).toContain("exp.jpg");
+  });
+
+  it("many rows, mixed: a thumbnail only on the rows that have an image", async () => {
+    unfilteredRows = [
+      row(1, { image_url: "https://res.cloudinary.com/x/image/upload/a.jpg" }),
+      row(2, { image_url: null }),
+      row(3, { image_url: "https://res.cloudinary.com/x/image/upload/c.jpg" }),
+    ];
+    await mount();
+    expect(screen.getAllByTestId("event-row-image")).toHaveLength(2);
+  });
+});
+

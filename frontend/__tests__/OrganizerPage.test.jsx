@@ -160,6 +160,21 @@ describe("MEH-2461 organizer page", () => {
     expect(captureMessage).not.toHaveBeenCalled();
   });
 
+  it("MEH-2468: an event row shows its cover image only when it has one", async () => {
+    respond(200, {
+      ...ORG,
+      upcoming_events: [
+        { ...ev("e1", "2026-11-01"), image_url: "https://res.cloudinary.com/x/image/upload/a.jpg" },
+        ev("e2", "2026-11-08"),
+      ],
+    });
+    await renderPage();
+    const thumbs = screen.getAllByTestId("organizer-event-image");
+    expect(thumbs).toHaveLength(1);
+    expect(thumbs[0].style.backgroundImage).toContain("a.jpg");
+    expect(screen.getAllByTestId("organizer-event")[1].querySelector('[data-testid="organizer-event-image"]')).toBeNull();
+  });
+
   it("a scanner-shaped slug never reaches the API", async () => {
     await expect(renderPage("wp-admin.php")).rejects.toThrow("NEXT_NOT_FOUND");
     expect(fetchMock).not.toHaveBeenCalled();
