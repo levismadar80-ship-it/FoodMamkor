@@ -105,6 +105,8 @@ export default function ExperienceDetailClient() {
       ? `/${hostBiz.producer_slug}`
       : `/producer/${hostBiz.producer_id}`
     : null;
+  // normalizePhone accepts Israeli MOBILE numbers only, so a landline (which
+  // WhatsApp cannot reach) falls back to the recipient-less link below.
   const hostPhone = normalizePhone(hostBiz?.producer_phone);
   const waText = t("whatsapp_message", { title: ex.title });
   const waHref = hostPhone
@@ -267,7 +269,7 @@ export default function ExperienceDetailClient() {
               <Link
                 href={hostHref}
                 data-testid="experience-host-link"
-                className="text-primary hover:underline"
+                className="inline-flex items-center min-h-[44px] text-primary hover:underline"
               >
                 {hostBiz.producer_name || ex.host.name}
               </Link>

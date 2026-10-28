@@ -2558,7 +2558,7 @@
       "breadcrumb_experiences": "חוויות",
       "duration_minutes": "{count} דקות",
       "duration_hours": "{count, plural, one {שעה} two {שעתיים} other {# שעות}}",
-      "duration_hours_half": "{count, plural, one {שעה וחצי} two {שעתיים וחצי} other {# וחצי שעות}}",
+      "duration_hours_half": "{count, plural, one {שעה וחצי} two {שעתיים וחצי} other {# שעות וחצי}}",
       "duration_mixed": "{hours} ו-{minutes} דקות",
       "recurring": "מתקיימת באופן קבוע: {schedule}",
       "recurring_bare": "מתקיימת באופן קבוע",

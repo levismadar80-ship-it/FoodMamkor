@@ -568,7 +568,9 @@ function EntryRow({ entry, freeLabel }) {
         <h3 className="font-headline-md text-lg md:text-2xl font-bold text-text leading-snug">
           {entry.title}
         </h3>
-        {meta && <p className="text-sm text-fg-muted mt-1">{meta}</p>}
+        {/* MEH-2476: line-clamp — a long recurring schedule must not stack
+            several lines into a 375px row. */}
+        {meta && <p className="text-sm text-fg-muted mt-1 line-clamp-2">{meta}</p>}
         {entry.description && (
           <p className="text-sm text-text/85 line-clamp-2 mt-2 leading-relaxed">{entry.description}</p>
         )}

@@ -64,6 +64,7 @@ describe("MEH-2476 — experience details", () => {
     [120, "שעתיים"],
     [150, "שעתיים וחצי"],
     [180, "3 שעות"],
+    [210, "3 שעות וחצי"],
     [80, "שעה ו-20 דקות"],
   ])("duration %i min reads «%s»", async (minutes, text) => {
     await renderWith({ duration_minutes: minutes });
