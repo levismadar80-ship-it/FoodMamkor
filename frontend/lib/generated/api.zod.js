@@ -1168,13 +1168,6 @@ export const AdminCreateProducerAdminProducersPostResponse = /*#__PURE__*/ zod.o
 
 
 /**
- * Upload Excel/CSV file and import producers. dry_run=true returns preview only.
- * @summary Import Producers Excel
- */
-export const ImportProducersExcelAdminProducersImportPostResponse = /*#__PURE__*/ zod.unknown()
-
-
-/**
  * @summary Pending Producers
  */
 export const pendingProducersAdminProducersPendingGetResponseAmbassadorDefault = false;

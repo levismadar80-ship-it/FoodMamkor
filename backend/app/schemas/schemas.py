@@ -1947,20 +1947,6 @@ class ProducerAdminCreate(BaseModel):
         return self
 
 
-class ProducerImportPreviewRow(BaseModel):
-    row_number: int
-    data: dict
-    errors: list[str] = []
-    warnings: list[str] = []
-
-
-class ProducerImportResult(BaseModel):
-    imported: int
-    skipped: int
-    errors: int
-    rows: list[ProducerImportPreviewRow]
-
-
 # MEH-291: 4-value enum that consolidates is_available_today + availability_status.
 # Tuple form is the runtime allowlist used by the field validator below and by
 # routers/producer_me.py for dual-write mirroring during the 7-day overlap.

@@ -430,11 +430,11 @@ def _seed_demo_producers(db):
         # row — measured 13 such rows on staging on 02/09, five of them these
         # fixtures, recreated after every `seed_demo_producers --reset` (that
         # script names all five in TEST_NAME_PATTERNS). Same helper the
-        # registration, admin and import paths use, so the row is a mirror of
+        # registration and admin paths use, so the row is a mirror of
         # the instance and cannot drift from it. Chunk 5 removes the
         # Producer.lat/lng fallbacks; a fixture without this row would then
         # vanish from the map and from "near me".
-        # REUSES: backend/app/services/producer_import.py:397
+        # REUSES: the same helper registration and admin.py use.
         create_primary_branch_location(db, producer)
 
         # MEH-2081: name → id, resolved above from the DB. Never a literal.

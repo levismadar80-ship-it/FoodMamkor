@@ -1,6 +1,5 @@
 "use client";
 
-import { useRef } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Star, Warning } from "@phosphor-icons/react";
@@ -89,19 +88,12 @@ function ReviewDueToggle({ active, onToggle }) {
   );
 }
 
-function ToolbarActions({ onExport, onTriggerImport, importing }) {
+function ToolbarActions({ onExport }) {
   const t = useTranslations("admin");
   return (
     <>
       <button onClick={onExport} className="bg-white border border-border px-4 py-2 rounded-[12px] text-sm">
         {t("producers.toolbar.export")}
-      </button>
-      <button
-        onClick={onTriggerImport}
-        disabled={importing}
-        className="bg-white border border-primary text-primary px-4 py-2 rounded-[12px] text-sm disabled:opacity-50"
-      >
-        {t("producers.toolbar.import_excel")}
       </button>
       <Link
         href="/admin/producers/new"
@@ -113,40 +105,18 @@ function ToolbarActions({ onExport, onTriggerImport, importing }) {
   );
 }
 
-function HiddenFileInput({ inputRef, onPickFile }) {
-  return (
-    <input
-      ref={inputRef}
-      type="file"
-      accept=".xlsx,.xls,.csv"
-      onChange={(e) => {
-        const file = e.target.files?.[0];
-        // Reset so the user can re-pick the same file (onChange would
-        // otherwise not fire for an unchanged value).
-        e.target.value = "";
-        if (file) onPickFile(file);
-      }}
-      className="hidden"
-    />
-  );
-}
-
 // Toolbar for the admin producers page.
-//
-// Owns the hidden file input + its ref locally — neither leaves this
-// file. Parent passes a single onImportFile(file: File) callback; the
-// toolbar's hidden <input>'s onChange grabs the File and forwards it,
-// then resets the input value so the user can re-pick the same file.
+// MEH-2516: the Excel/CSV import button is gone — import published rows
+// with no licence, photo or declaration; businesses arrive through the
+// owner-claim link (MEH-2321) instead.
 export default function AdminProducersToolbar({
   producerSearch, setProducerSearch,
   producerStatus, setProducerStatus,
   incompleteOnly, setIncompleteOnly, incompleteCount,
   reviewDueOnly, setReviewDueOnly,
-  importing, onSearch, onExport, onImportFile,
+  onSearch, onExport,
 }) {
   const t = useTranslations("admin");
-  const fileInputRef = useRef(null);
-  const triggerImport = () => fileInputRef.current?.click();
   return (
     <div className="flex flex-col md:flex-row gap-3">
       <SearchInput value={producerSearch} onChange={setProducerSearch} onSearch={onSearch} />
@@ -156,8 +126,7 @@ export default function AdminProducersToolbar({
       </button>
       <IncompleteToggle active={incompleteOnly} count={incompleteCount} onToggle={setIncompleteOnly} />
       <ReviewDueToggle active={reviewDueOnly} onToggle={setReviewDueOnly} />
-      <ToolbarActions onExport={onExport} onTriggerImport={triggerImport} importing={importing} />
-      <HiddenFileInput inputRef={fileInputRef} onPickFile={onImportFile} />
+      <ToolbarActions onExport={onExport} />
     </div>
   );
 }

@@ -10,11 +10,9 @@ from fastapi import (
     BackgroundTasks,
     Body,
     Depends,
-    File,
     HTTPException,
     Query,
     Request,
-    UploadFile,
 )
 from sqlalchemy import func, text
 from sqlalchemy.exc import IntegrityError
@@ -1035,42 +1033,6 @@ def admin_delete_producer(
     )
 
     return {"detail": "Producer deleted"}
-
-
-@router.post("/producers/import")
-async def import_producers_excel(
-    file: UploadFile = File(...),
-    dry_run: bool = Query(
-        True, description="Preview only — set false to actually save"
-    ),
-    user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
-):
-    """Upload Excel/CSV file and import producers. dry_run=true returns preview only."""
-    from io import BytesIO
-
-    try:
-        from openpyxl import load_workbook
-    except ImportError:
-        raise HTTPException(status_code=500, detail="openpyxl not installed")
-
-    contents = await file.read()
-    if len(contents) > 10_000_000:
-        raise HTTPException(status_code=413, detail="קובץ גדול מדי — מקסימום 10MB")
-    try:
-        wb = load_workbook(BytesIO(contents), data_only=True)
-    except Exception:
-        # MEH-2375: the parser's message stays in the log, never in the response.
-        logger.exception("producer import: workbook could not be parsed")
-        raise HTTPException(status_code=400, detail="לא ניתן לקרוא את הקובץ")
-
-    ws = wb.active
-    # Skip header row
-    rows = [list(r) for r in ws.iter_rows(min_row=2, values_only=True)]
-
-    from app.services.producer_import import import_rows
-
-    return import_rows(db, rows, dry_run=dry_run)
 
 
 @router.get("/producers/pending", response_model=list[ProducerAdminOut])
