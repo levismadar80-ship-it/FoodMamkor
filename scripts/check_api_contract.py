@@ -537,12 +537,29 @@ def run_probe(base_url: str, static_result):
 def run_cross_env(staging_url: str, prod_url: str, static_result):
     staging = run_probe(staging_url, static_result)
     prod = run_probe(prod_url, static_result)
-    s_idx = {(r[0], r[1]): r[2] for r in staging}
-    p_idx = {(r[0], r[1]): r[2] for r in prod}
+    # MEH-2411: rows carry each side's 404 detail too, so "served here,
+    # missing there" (handler 404 vs routing 404) counts as drift.
+    s_idx = {(r[0], r[1]): r for r in staging}
+    p_idx = {(r[0], r[1]): r for r in prod}
+    missing = (None, None, "MISSING", "", None)
     return [
-        (m, p, s_idx.get((m, p), "MISSING"), p_idx.get((m, p), "MISSING"))
+        (
+            m,
+            p,
+            s_idx.get((m, p), missing)[2],
+            p_idx.get((m, p), missing)[2],
+            _row_detail(s_idx.get((m, p), missing)),
+            _row_detail(p_idx.get((m, p), missing)),
+        )
         for (m, p) in sorted(set(s_idx) | set(p_idx))
     ]
+
+
+def _cross_env_answer(status: object, detail: object) -> str:
+    """What one side said, at the resolution drift is judged on (MEH-2411)."""
+    if status == 404:
+        return "404 served" if _is_handler_404(detail) else "404 missing"
+    return str(status)
 
 
 def _print_static(result, *, json_output: bool) -> int:
@@ -639,13 +656,16 @@ def _print_probe(rows) -> int:
 
 def _print_cross_env(rows) -> int:
     drift = 0
-    print(f"{'METHOD':<6} {'STAGING':<10} {'PROD':<10} PATH")
-    for method, path, s, p in rows:
+    print(f"{'METHOD':<6} {'STAGING':<12} {'PROD':<12} PATH")
+    for method, path, s, p, *details in rows:
+        s_detail, p_detail = (details + [None, None])[:2]
+        s_ans, p_ans = _cross_env_answer(s, s_detail), _cross_env_answer(p, p_detail)
         tag = ""
-        if str(s) != str(p):
+        if s_ans != p_ans:
             drift += 1
-            tag = "  ← DEPLOY DRIFT" if str(s) in ("200", "204") and str(p) == "404" else "  ← mismatch"
-        print(f"{method:<6} {str(s):<10} {str(p):<10} {path}{tag}")
+            served_here = str(s) in ("200", "204") or s_ans == "404 served"
+            tag = "  ← DEPLOY DRIFT" if served_here and p_ans == "404 missing" else "  ← mismatch"
+        print(f"{method:<6} {s_ans:<12} {p_ans:<12} {path}{tag}")
     print(f"\nRoutes compared: {len(rows)}")
     print(f"Drift count: {drift}")
 
@@ -655,7 +675,7 @@ def _print_cross_env(rows) -> int:
     # Each side is judged on its own before their difference means anything.
     alarms = []
     for label, idx in (("staging", 2), ("prod", 3)):
-        side = [(r[0], r[1], r[idx], "") for r in rows]
+        side = [(r[0], r[1], r[idx], "", r[idx + 2] if len(r) > 4 else None) for r in rows]
         alarms += [f"{label}: {a}" for a in _aggregate_alarms(side)]
     if alarms:
         print("\nAGGREGATE:")

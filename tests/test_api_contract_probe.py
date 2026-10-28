@@ -152,3 +152,28 @@ def test_self_test_passes(monkeypatch, capsys):
     monkeypatch.setattr(sys, "argv", ["check_api_contract.py", "--self-test"])
     assert cac.main() == 0
     assert "probe self-test OK" in capsys.readouterr().out
+
+
+def test_cross_env_counts_served_vs_missing_404_as_drift(monkeypatch, capsys):
+    # Same status on both sides, different meaning: staging's handler found no
+    # row (route served), prod's router found no route. That IS deploy drift.
+    def answer(_m, url):
+        if "/events/0" in url:
+            if url.startswith(STAGING):
+                return (404, {"detail": "Event not found"})
+            return ROUTING_404
+        return (200, [])
+
+    _fake_requests(monkeypatch, answer)
+    rows = cac.run_cross_env(STAGING, PRODUCTION, _calls(CONTROL, ("GET", "/events/{_}")))
+    assert cac._print_cross_env(rows) == 1
+    assert "DEPLOY DRIFT" in capsys.readouterr().out
+
+
+def test_app_routing_404_body_is_the_one_the_probe_keys_on(client):
+    # The probe treats any other 404 detail as "route served". If the app ever
+    # rewrites its routing 404 (a custom exception handler), every missing
+    # route would read as served — this pins the body the rule depends on.
+    r = client.get("/no-such-route-meh-2411")
+    assert r.status_code == 404
+    assert r.json() == {"detail": cac.ROUTING_404_DETAIL}
