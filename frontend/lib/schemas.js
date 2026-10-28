@@ -488,6 +488,15 @@ export const OrganizerPageSchema = z.object({
   instagram: z.string().nullable().optional(),
   website: z.string().nullable().optional(),
   facebook: z.string().nullable().optional(),
+  // MEH-2475: the dashboard's profile + contact fields.
+  owner_bio: z.string().nullable().optional(),
+  owner_photo_url: z.string().nullable().optional(),
+  contact_name: z.string().nullable().optional(),
+  established_year: z.number().int().nullable().optional(),
+  primary_contact_method: z.string().nullable().optional(),
+  contact_email: z.string().nullable().optional(),
+  whatsapp_group: z.string().nullable().optional(),
+  external_order_form: z.string().nullable().optional(),
   upcoming_events: z
     .array(
       z.object({

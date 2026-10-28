@@ -11,7 +11,8 @@
  * Related:  app/[locale]/[slug]/page.js (the business twin whose fetch / 404 /
  *           metadata contract this mirrors), backend/app/routers/organizers.py.
  * History:  MEH-2461 (creation; review #3712: Rule 19 probe, safe links,
- *           setRequestLocale).
+ *           setRequestLocale); MEH-2475 (owner story, preferred channel first,
+ *           email / WhatsApp group / order form, founding year).
  */
 import { notFound } from "next/navigation";
 import * as Sentry from "@sentry/nextjs";
@@ -26,6 +27,8 @@ import { formatTimeRange } from "@/lib/time-range";
 import { getWhatsAppHref, normalizePhone } from "@/lib/utils";
 import { instagramUrl } from "@/lib/social-links";
 import { OrganizerPageSchema } from "@/lib/schemas";
+import { getPrimaryMethod } from "@/lib/contact-method";
+import OwnerCard from "@/app/[locale]/producer/[id]/components/OwnerCard";
 
 const ROUTE = "/[locale]/organizers/[slug]";
 
@@ -105,26 +108,41 @@ function formatEventDate(isoDate, locale) {
   }).format(new Date(`${isoDate}T00:00:00Z`));
 }
 
+// MEH-2475: every channel the organizer can fill (dashboard «קשר» group), in
+// one list. Each builder returns null when its field is empty, so 0 / 1 / many
+// filled channels render 0 / 1 / many links with no placeholder.
+// REUSES: lib/contact-method.js getPrimaryContactHref — the same href per key,
+// so a channel links identically here and on a business page.
+const CHANNELS = [
+  { key: "whatsapp", href: (o) => (normalizePhone(o.phone) ? getWhatsAppHref(normalizePhone(o.phone)) : null) },
+  { key: "phone", href: (o) => (o.phone?.trim() ? `tel:${o.phone.trim()}` : null) },
+  { key: "email", href: (o) => (o.contact_email?.trim() ? `mailto:${o.contact_email.trim()}` : null) },
+  { key: "instagram", href: (o) => instagramUrl(o.instagram) },
+  { key: "website", href: (o) => httpUrl(o.website) },
+  { key: "facebook", href: (o) => httpUrl(o.facebook) },
+  { key: "whatsapp_group", href: (o) => httpUrl(o.whatsapp_group) },
+  { key: "external_order", href: (o) => httpUrl(o.external_order_form) },
+];
+
+/** The channels to show, preferred first. One number backs both WhatsApp and
+ *  a call: the call link appears only when phone is the preferred channel,
+ *  and then the WhatsApp link built from that number does not (MEH-2475 —
+ *  the page used to offer WhatsApp whatever the organizer chose). */
+function contactChannels(organizer) {
+  const primary = getPrimaryMethod(organizer);
+  const shown = CHANNELS.filter((c) =>
+    c.key === "phone" ? primary === "phone" : c.key === "whatsapp" ? primary !== "phone" : true,
+  )
+    .map((c) => ({ key: c.key, href: c.href(organizer), primary: c.key === primary }))
+    .filter((c) => c.href);
+  return [...shown.filter((c) => c.primary), ...shown.filter((c) => !c.primary)];
+}
+
+const LINK_BASE =
+  "inline-flex items-center min-h-[44px] px-4 rounded-full border text-sm transition focus-ring";
+
 function ContactLinks({ organizer, t }) {
-  const phone = normalizePhone(organizer.phone);
-  const links = [
-    phone && { key: "whatsapp", href: getWhatsAppHref(phone), label: t("whatsapp") },
-    instagramUrl(organizer.instagram) && {
-      key: "instagram",
-      href: instagramUrl(organizer.instagram),
-      label: t("instagram"),
-    },
-    httpUrl(organizer.website) && {
-      key: "website",
-      href: httpUrl(organizer.website),
-      label: t("website"),
-    },
-    httpUrl(organizer.facebook) && {
-      key: "facebook",
-      href: httpUrl(organizer.facebook),
-      label: t("facebook"),
-    },
-  ].filter(Boolean);
+  const links = contactChannels(organizer);
   if (links.length === 0) return null;
   return (
     <ul className="flex flex-wrap gap-2" data-testid="organizer-contact">
@@ -132,12 +150,18 @@ function ContactLinks({ organizer, t }) {
         <li key={l.key}>
           <a
             href={l.href}
-            target="_blank"
-            rel="noopener noreferrer"
+            {...(l.key === "phone" || l.key === "email"
+              ? {}
+              : { target: "_blank", rel: "noopener noreferrer" })}
             data-testid={`organizer-contact-${l.key}`}
-            className="inline-flex items-center min-h-[44px] px-4 rounded-full border border-border text-sm text-primary hover:bg-primary/5 transition focus-ring"
+            data-primary={l.primary ? "true" : undefined}
+            className={
+              l.primary
+                ? `${LINK_BASE} border-primary bg-primary text-white font-medium hover:bg-primary-dark`
+                : `${LINK_BASE} border-border text-primary hover:bg-primary/5`
+            }
           >
-            {l.label}
+            {t(l.key)}
           </a>
         </li>
       ))}
@@ -167,6 +191,14 @@ export default async function OrganizerPage(props) {
         )}
         <h1 className="font-headline-lg text-3xl font-bold text-text">{organizer.name}</h1>
         {organizer.city && <p className="text-sm text-fg-muted">{organizer.city}</p>}
+        {/* MEH-2475: the quiet «since» line, as on a business masthead
+            (ProducerHeader established-year). Absent when unset. */}
+        {organizer.established_year ? (
+          <p className="text-sm text-fg-muted" data-testid="organizer-since">
+            {t("since_prefix")}{" "}
+            <span dir="ltr" className="numeric">{organizer.established_year}</span>
+          </p>
+        ) : null}
         {organizer.description && (
           <p className="text-base leading-relaxed text-text whitespace-pre-line">
             {organizer.description}
@@ -174,6 +206,11 @@ export default async function OrganizerPage(props) {
         )}
         <ContactLinks organizer={organizer} t={t} />
       </header>
+
+      {/* MEH-2475: the person behind the events — the business page's
+          OwnerCard (data-gated: renders nothing without a name, bio or
+          photo), under the organizer's own heading. */}
+      <OwnerCard producer={organizer} heading={t("owner_heading")} />
 
       <section aria-labelledby="organizer-events-heading" className="space-y-3">
         <h2 id="organizer-events-heading" className="text-xl font-bold text-text">

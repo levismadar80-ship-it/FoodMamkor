@@ -549,6 +549,21 @@ def _resolve_top_product(db, producer, payload: dict) -> None:
     payload["top_product_name"] = product.name
 
 
+_ORGANIZER_CITY_MAX = 100
+
+
+def _apply_organizer_city(producer, raw) -> None:
+    """MEH-2475: write an organizer's display city (stripped, 1..100 chars).
+
+    A blank value is refused rather than stored: the page shows the city line
+    and registration requires one, so "no city" is not a state she can reach.
+    """
+    city = (raw or "").strip()
+    if not city or len(city) > _ORGANIZER_CITY_MAX:
+        raise HTTPException(status_code=422, detail="יש לבחור עיר")
+    producer.city = city
+
+
 @router.put("", response_model=ProducerOwnerOut)
 @limiter.limit("30/hour")
 def update_my_producer(
@@ -790,6 +805,15 @@ def update_my_producer(
     # before commit would orphan-leak in the opposite direction (assets
     # gone, DB still references them) if commit raises.
     old_images = list(producer.images or [])
+
+    # MEH-2475: an ORGANIZER's city. `city` stays out of the set above for a
+    # business (ruling A: its city follows the primary location row, and a PUT
+    # would be a second writer racing that sync). An organizer has no location
+    # rows at all (MEH-2460), so for her this PUT is the only writer, and its
+    # editor ships in the same PR (OrganizerCityCard.jsx) — the standing rule
+    # the blocks above state.
+    if producer.kind == "organizer" and "city" in payload:
+        _apply_organizer_city(producer, payload["city"])
 
     for field, value in payload.items():
         if field in _PRODUCER_WRITABLE_FIELDS:

@@ -79,6 +79,7 @@ import { detailToMessage } from "@/lib/errors";
 import ProductsSection from "@/components/ProductsSection";
 import LocationsEditor from "./LocationsEditor";
 import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, PricingCard, DeliveryCard, OffersCard, LicenseCard, KashrutCard, BusinessNameCard, ViewOnPageLink } from "./cards";
+import OrganizerCityCard from "./OrganizerCityCard";
 // MEH-1508 ch2 Phase B: owner-facing business-level dietary scope (own file —
 // cards.jsx is already >1600 lines).
 import DietaryScopeCard from "./DietaryScopeCard";
@@ -1177,6 +1178,24 @@ function EditPageInner() {
             onMethodChange={setLiveContactMethod}
           />
         </EditAccordionCard>
+
+        {/* MEH-2475: an organizer's city — shown on her public page, and she
+            has no locations editor (the location group is hidden for her). */}
+        {isOrganizer && (
+          <EditAccordionCard
+            anchorId="organizer-city"
+            title={t("organizer_city.heading")}
+            summary={profile.city || ""}
+            open={openKey === "organizerCity"}
+            onToggle={() => toggleKey("organizerCity")}
+          >
+            <OrganizerCityCard
+              profile={profile}
+              onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+              reportDirty={reportDirty}
+            />
+          </EditAccordionCard>
+        )}
 
         {/* ⑦ MEH-210 Phase 2 — custom WhatsApp question chips */}
         <EditAccordionCard

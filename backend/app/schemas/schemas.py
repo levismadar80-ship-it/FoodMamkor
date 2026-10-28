@@ -4400,6 +4400,17 @@ class OrganizerPublicOut(BaseModel):
     instagram: str | None = None
     website: str | None = None
     facebook: str | None = None
+    # MEH-2475: what the organizer fills in the dashboard's profile + contact
+    # groups. All already public on the business page (ProducerDetailOut);
+    # null when unfilled so the page renders nothing for them.
+    owner_bio: str | None = None
+    owner_photo_url: str | None = None
+    contact_name: str | None = None
+    established_year: int | None = None
+    primary_contact_method: str | None = None
+    contact_email: str | None = None
+    whatsapp_group: str | None = None
+    external_order_form: str | None = None
     upcoming_events: list[EventOut] = []
 
 

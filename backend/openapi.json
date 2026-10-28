@@ -3500,6 +3500,28 @@
             ],
             "title": "City"
           },
+          "contact_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact Email"
+          },
+          "contact_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact Name"
+          },
           "description": {
             "anyOf": [
               {
@@ -3510,6 +3532,28 @@
               }
             ],
             "title": "Description"
+          },
+          "established_year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Established Year"
+          },
+          "external_order_form": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Order Form"
           },
           "facebook": {
             "anyOf": [
@@ -3550,6 +3594,28 @@
             "title": "Name",
             "type": "string"
           },
+          "owner_bio": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Bio"
+          },
+          "owner_photo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Photo Url"
+          },
           "phone": {
             "anyOf": [
               {
@@ -3560,6 +3626,17 @@
               }
             ],
             "title": "Phone"
+          },
+          "primary_contact_method": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Primary Contact Method"
           },
           "short_description": {
             "anyOf": [
@@ -3594,6 +3671,17 @@
               }
             ],
             "title": "Website"
+          },
+          "whatsapp_group": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Whatsapp Group"
           }
         },
         "required": [
