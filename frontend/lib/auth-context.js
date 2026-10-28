@@ -70,9 +70,19 @@ export function AuthProvider({ children }) {
           seedCityFromProfile(res.data.city);
           ensureFavoritesLoaded();
         })
-        .catch(() => {
-          localStorage.removeItem("token");
-          localStorage.removeItem("user");
+        .catch((err) => {
+          // MEH-2467: drop the stored session only on a server verdict. A
+          // /auth/me that fails because the request never arrived (network,
+          // proxy 502/504, a Railway redeploy) is not "token invalid" — the
+          // old unconditional removal is how a logged-in admin found the
+          // login page with no 401 in any log. On a transient failure the
+          // token stays and `user` stays null; the next request's 401 →
+          // refresh path (lib/api.js) still lets the server decide.
+          const status = err?.response?.status;
+          if (status === 401 || status === 403) {
+            localStorage.removeItem("token");
+            localStorage.removeItem("user");
+          }
         })
         .finally(() => setLoading(false));
     } else {
