@@ -11,6 +11,7 @@ vi.mock("next-intl", () => ({
     const flat = {
       trigger: "שתפו",
       modal_title: "שתפו לינק לעסק",
+      modal_title_event: "שתפו את האירוע",
       copy_link: "שתפו לינק",
       wa_message_with_meta: "גיליתי את {title} במהמקור",
       wa_message_business_fallback: "בית עסק",
@@ -67,5 +68,20 @@ describe("ShareButton (MEH-1290)", () => {
     render(<ShareButton url="" title="חוות השקמה" />);
     fireEvent.click(screen.getByRole("button"));
     expect(openSpy).not.toHaveBeenCalled();
+  });
+
+  // MEH-2465 follow-up: an event page's share button is named for the event,
+  // not «לעסק». Default stays the business label for every existing caller.
+  it.each(["default", "quiet", "overlay"])(
+    "names the button for an event when subject=event (%s)",
+    (variant) => {
+      render(<ShareButton url="https://x/e/1" title="שוק שישי" subject="event" variant={variant} />);
+      expect(screen.getByRole("button", { name: "שתפו את האירוע" })).toBeInTheDocument();
+    },
+  );
+
+  it("keeps the business label when no subject is given", () => {
+    render(<ShareButton url="https://x/y" title="חוות השקמה" variant="quiet" />);
+    expect(screen.getByRole("button", { name: "שתפו לינק לעסק" })).toBeInTheDocument();
   });
 });

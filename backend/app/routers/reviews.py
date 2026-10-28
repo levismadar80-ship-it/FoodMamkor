@@ -240,9 +240,12 @@ def list_reviews_nested(
     base = (
         db.query(ProducerReview)
         .options(joinedload(ProducerReview.user))
+        # MEH-2465: an organizer has no public reviews (ADR-036).
+        .join(Producer, Producer.id == ProducerReview.producer_id)
         .filter(
             ProducerReview.producer_id == producer_id,
             ProducerReview.is_hidden.is_(False),
+            Producer.kind == "producer",
         )
     )
     total = base.count()
@@ -271,9 +274,12 @@ def list_reviews(
     reviews = (
         db.query(ProducerReview)
         .options(joinedload(ProducerReview.user))
+        # MEH-2465: an organizer has no public reviews (ADR-036).
+        .join(Producer, Producer.id == ProducerReview.producer_id)
         .filter(
             ProducerReview.producer_id == producer_id,
             ProducerReview.is_hidden.is_(False),
+            Producer.kind == "producer",
         )
         .order_by(ProducerReview.created_at.desc())
         .all()
@@ -364,6 +370,7 @@ def create_review_nested(
 
     Guards (checked in order):
       1. Producer must exist.
+      1b. Producer must be a business — an organizer gets 409 (MEH-2465).
       2. Producer owner cannot review their own business.
       2b. Producer owner cannot review a business sharing a category with
           hers (MEH-2076 — conflict of interest; cross-category stays open).
@@ -374,6 +381,9 @@ def create_review_nested(
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    # MEH-2465: a review is about a business; an organizer is not one (ADR-036).
+    if producer.kind != "producer":
+        raise HTTPException(status_code=409, detail="אי אפשר לכתוב ביקורת על מארגן")
 
     # Guard: owner cannot review themselves
     if user.producer_id is not None and str(user.producer_id) == str(producer_id):

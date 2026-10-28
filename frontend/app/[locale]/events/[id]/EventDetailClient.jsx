@@ -222,6 +222,7 @@ export default function EventDetailClient() {
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-4" data-testid="event-actions">
           <ShareButton
             variant="quiet"
+            subject="event"
             url={pageUrl}
             title={event.title}
             city={event.city}
