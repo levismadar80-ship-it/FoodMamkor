@@ -59,6 +59,19 @@ describe("ProducerForm — city is picked from the city list (MEH-2452)", () => 
     expect(api.post.mock.calls[0][1].city).toBe("זכרון יעקב");
   });
 
+  // Deliberate (see the comment at the field): a region the list does not
+  // carry is saved as typed, not rejected.
+  it("text that is not on the list is saved as typed", async () => {
+    api.post.mockResolvedValue({ data: { id: "new-2" } });
+    wrap(<ProducerForm />);
+    await screen.findByText(FORM.sections.basic);
+
+    fireEvent.change(cityField(), { target: { value: "עמק חפר" } });
+    submit(FORM.submit_create);
+    await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
+    expect(api.post.mock.calls[0][1].city).toBe("עמק חפר");
+  });
+
   it("editing a business shows the city already saved", async () => {
     wrap(<ProducerForm producerId="p-1" initial={{ name: "קיים", city: "חדרה" }} />);
     await screen.findByText(FORM.sections.basic);

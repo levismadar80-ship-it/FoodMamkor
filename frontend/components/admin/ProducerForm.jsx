@@ -636,12 +636,13 @@ export default function ProducerForm({ initial = null, producerId = null }) {
           {/* MEH-2452: the same city list as registration and the owner's
               locations editor (LocationsEditor.jsx), not free text — the city
               filter matches exactly, so an off-list spelling hid the business
-              under its own city. */}
+              under its own city. Off-list text is still accepted, on purpose
+              and like LocationsEditor: the label is «עיר / אזור», and an
+              admin sometimes enters a region the list does not carry. */}
           <CitySearch
             id="admin-producer-city"
             labelVisible
             label={t("producers.form.fields.city")}
-            placeholder=""
             value={form.city}
             onChange={(v) => update("city", v)}
           />
