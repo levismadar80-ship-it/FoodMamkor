@@ -7,6 +7,7 @@ from uuid import UUID
 import httpx
 from fastapi import (
     APIRouter,
+    BackgroundTasks,
     Body,
     Depends,
     File,
@@ -32,6 +33,7 @@ from app.services.delivery_validation import (
     ensure_nationwide_requires_delivery,
 )
 from app.services.email import send_email
+from app.services.group_buy_delist import cancel_live_group_buys  # MEH-2498
 from app.services.producer_listing import is_business  # MEH-2459
 
 # MEH-1242: SITE_DOMAIN is the single canonical domain constant. Import it —
@@ -820,12 +822,16 @@ def admin_update_producer(
     # keeps `in_season_until` off the owner's schema entirely rather than merely
     # filtered out of it.
     data: ProducerAdminUpdate,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    # MEH-2498: this PUT can write `status` too (ProducerUpdate.status), so it
+    # is the third way a business leaves 'approved' — read before the setattr.
+    was_approved = producer.status == "approved"
 
     payload = data.model_dump(exclude_unset=True)
     category_ids = payload.pop("category_ids", None)
@@ -884,6 +890,11 @@ def admin_update_producer(
     for field, value in payload.items():
         setattr(producer, field, value)
 
+    # MEH-2498: same rule as toggle-status and reject — off the site means the
+    # business's live group buys are cancelled in this commit.
+    if was_approved and producer.status != "approved":
+        cancel_live_group_buys(db, producer, background_tasks)
+
     if category_ids is not None:
         _apply_categories(db, producer, category_ids)
     if delivery_area_cities is not None:
@@ -937,6 +948,7 @@ _TOGGLEABLE_STATUSES = {"approved", "inactive"}
 @router.post("/producers/{producer_id}/toggle-status")
 def toggle_producer_status(
     producer_id: UUID,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
@@ -956,7 +968,12 @@ def toggle_producer_status(
             status_code=409,
             detail="לא ניתן לשנות סטטוס במצב הנוכחי — יש לאשר או לדחות את העסק דרך מסלול האישור.",
         )
-    producer.status = "inactive" if producer.status == "approved" else "approved"
+    was_approved = producer.status == "approved"
+    producer.status = "inactive" if was_approved else "approved"
+    # MEH-2498: suspending takes the business off the site, so its live group
+    # buys go with it — cancelled in the same commit, participants mailed.
+    if was_approved:
+        cancel_live_group_buys(db, producer, background_tasks)
     db.commit()
     return {"detail": "Status toggled", "status": producer.status}
 
@@ -1333,6 +1350,7 @@ def admin_get_producer(
 @router.post("/producers/{producer_id}/reject")
 def reject_producer(
     producer_id: UUID,
+    background_tasks: BackgroundTasks,
     body: ProducerRejectIn = Body(default_factory=ProducerRejectIn),
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
@@ -1362,6 +1380,10 @@ def reject_producer(
             detail="אי אפשר לדחות עסק שטרם נשלח לבדיקה",
         )
     composed_reason = _compose_rejection_reason(preset_key, reason)
+    # MEH-2498: rejecting a business that was live takes it off the site — its
+    # live group buys are cancelled in the same commit, participants mailed.
+    if producer.status == "approved":
+        cancel_live_group_buys(db, producer, background_tasks)
     producer.status = "rejected"
     # MEH-226: the reason is persisted in the SAME commit as the status flip —
     # before this it lived only in the email body, so a rejected owner saw

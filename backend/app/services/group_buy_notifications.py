@@ -178,20 +178,54 @@ def notify_participant_cancelled(
     _send_email(participant_email, subject, body)
 
 
+def notify_participant_cancelled_delisted(
+    participant_email: str, title: str, producer_name: str
+) -> None:
+    """MEH-2498: the group was cancelled because the SITE took the business off.
+
+    Not the business's own cancel, so the wording of notify_participant_cancelled
+    («בוטלה על ידי {name}. לשאלות צרו קשר עם {name}») would be false here. Same
+    subject and shape; no link (the group is off the site) and no contact
+    details (PRIVACY CONTRACT); the reason for the delisting is not given.
+    Decided under Sapir's delegation 28/10/2026.
+    """
+    subject = f'מהמקור — הקבוצה "{title}" בוטלה'
+    body = (
+        f"שלום,\n\n"
+        f'הקבוצה שהצטרפת אליה, "{title}", בוטלה כי בית העסק {producer_name} '
+        f"כבר לא מופיע במהמקור.\n"
+        f"אם סיכמתם משהו ישירות מול בית העסק, אפשר להמשיך מולו כרגיל.\n\n"
+        f"בברכה,\nצוות מהמקור"
+    )
+    _send_email(participant_email, subject, body)
+
+
 def send_cancelled_notifications(
-    participant_emails: list[str], title: str, producer_name: str, group_buy_id: str
+    participant_emails: list[str],
+    title: str,
+    producer_name: str,
+    group_buy_id: str,
+    *,
+    delisted: bool = False,
 ) -> None:
     """BackgroundTasks entry point for the cancel email — never raises.
 
     Same reasoning as send_funded_notifications: nothing captures an exception
     that escapes a background task, and one participant's failure must not cost
-    the rest their email. group_buy_id is for the log line only.
+    the rest their email. group_buy_id is for the log line only. ``delisted``
+    picks the MEH-2498 wording (the site took the business off) over the
+    business-cancelled one.
     """
+    notify = (
+        notify_participant_cancelled_delisted
+        if delisted
+        else notify_participant_cancelled
+    )
     for participant_email in participant_emails:
         if not participant_email:
             continue
         try:
-            notify_participant_cancelled(participant_email, title, producer_name)
+            notify(participant_email, title, producer_name)
         except Exception:  # noqa: BLE001 — one failure must not stop the rest
             logger.exception(
                 "[group-buy] cancel notification to a participant failed "
