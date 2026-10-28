@@ -151,6 +151,7 @@ export default function AboutProcessClient() {
               >
                 <span
                   aria-hidden
+                  dir="ltr"
                   className="numeric w-11 h-11 rounded-full border border-accent bg-background grid place-items-center font-english italic font-semibold text-[20px] text-accent"
                 >
                   {`0${i + 1}`}
@@ -382,7 +383,7 @@ export default function AboutProcessClient() {
 
       {/* ======== 07 — CTA → register ======== */}
       {/* MEH-2439: full brand green (was mint green-50), one column, cream button. */}
-      <section id="join" data-testid="process-cta" className="bg-primary text-background py-12 md:py-20 scroll-mt-24">
+      <section id="join" data-testid="process-cta" data-meets-footer className="bg-primary text-background py-12 md:py-20 scroll-mt-24">
         <div className="max-w-5xl mx-auto px-4 md:px-12">
           <div className="grid grid-cols-1 gap-8 items-start">
             <div>

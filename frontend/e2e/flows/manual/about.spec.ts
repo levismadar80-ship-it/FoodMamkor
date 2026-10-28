@@ -325,8 +325,10 @@ test.describe("manual › /about/process (MEH-534)", () => {
     );
   });
 
-  // MT:MEH-534:2 — hero H1 with the <em> phrase in gold italic; not clipped; RTL.
-  test("hero: h1 from copy with the <em> phrase italic in the accent colour, unclipped, RTL", async ({
+  // MT:MEH-534:2 — hero H1 with the <em> phrase in gold; not clipped; RTL.
+  //   MEH-2487: upright, not italic — no Hebrew face we ship has an italic, so
+  //   the old slant was browser-synthesised. Gold carries the emphasis.
+  test("hero: h1 from copy with the <em> phrase upright in the accent colour, unclipped, RTL", async ({
     page,
   }) => {
     const emText = richChunk(PROCESS_HE.hero.h1, "em");
@@ -338,7 +340,7 @@ test.describe("manual › /about/process (MEH-534)", () => {
     const em = h1.locator("em");
     await expect(em).toHaveCount(1);
     await expect(em).toHaveText(emText);
-    expect(await computed(em, "font-style")).toBe("italic");
+    expect(await computed(em, "font-style")).toBe("normal");
     // "gold": the em shares the accent token with the eyebrow and differs from the h1's own ink.
     const eyebrow = hero.getByText(PROCESS_HE.hero.eyebrow, { exact: true });
     await expect(eyebrow).toHaveCount(1);
@@ -720,4 +722,79 @@ test.describe("manual › /about/why-local (MEH-1289)", () => {
     await expect(cta).toHaveText(WHY_EN.cta);
     await expect(cta).toHaveAttribute("href", /^\/en\/producers(?:[/?#]|$)/);
   });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+test.describe("manual › design leftovers (MEH-2487)", () => {
+  /** Every element whose OWN text holds Hebrew and whose computed style is italic. */
+  async function slantedHebrew(page: Page): Promise<string[]> {
+    return page.evaluate(() => {
+      const out: string[] = [];
+      for (const el of document.querySelectorAll("main *")) {
+        const own = [...el.childNodes]
+          .filter((n) => n.nodeType === Node.TEXT_NODE)
+          .map((n) => n.textContent ?? "")
+          .join("")
+          .trim();
+        if (!/[\u0590-\u05FF]/.test(own)) continue;
+        if (getComputedStyle(el).fontStyle === "italic") out.push(`${el.tagName.toLowerCase()}: ${own.slice(0, 40)}`);
+      }
+      return out;
+    });
+  }
+
+  for (const path of ["/about", "/about/process"]) {
+    test(`${path}: no Hebrew text renders in a browser-faked italic`, async ({ page }) => {
+      await page.goto(path);
+      await expect(page.locator("main h1")).toHaveCount(1, FIRST_PAINT);
+      // Control: the probe sees Hebrew text at all (a dead probe would also return []).
+      const hebrewCount = await page.evaluate(
+        () => [...document.querySelectorAll("main *")].filter((el) => /[\u0590-\u05FF]/.test(el.textContent ?? "")).length,
+      );
+      expect(hebrewCount, "control: the page renders Hebrew text").toBeGreaterThan(10);
+      expect(await slantedHebrew(page)).toEqual([]);
+    });
+  }
+
+  // Control: the upright rule is for Hebrew only. The step numerals 01–04 are
+  // Cormorant digits with a real italic face, so they are a dir="ltr" island and
+  // stay italic — without `dir="ltr"` the rtl rule straightened them too.
+  test("/about/process: the step numerals keep their real Cormorant italic", async ({ page }) => {
+    await gotoProcess(page);
+    const numeral = page.locator('[data-testid="process-steps"] span.numeric').first();
+    await expect(numeral).toHaveText(/^\d+$/);
+    expect(await numeral.evaluate((el) => getComputedStyle(el).fontStyle)).toBe("italic");
+  });
+
+  // /about/process ends on its green CTA band. (/about does NOT: its contact
+  // form follows the green close, so it keeps the footer margin — control below.)
+  test("/about/process: the green close runs straight into the footer — no cream strip", async ({ page }) => {
+    await gotoProcess(page);
+    const footer = page.locator("footer[data-site-footer]");
+    await expect(footer).toHaveCount(1, FIRST_PAINT);
+    const band = page.locator("[data-meets-footer]");
+    await expect(band).toHaveCount(1);
+    await footer.scrollIntoViewIfNeeded();
+    const gap = await page.evaluate(() => {
+      const b = document.querySelector("[data-meets-footer]")!.getBoundingClientRect();
+      const f = document.querySelector("footer[data-site-footer]")!.getBoundingClientRect();
+      return Math.round(f.top - b.bottom);
+    });
+    expect(gap).toBe(0);
+  });
+
+  // Control for the rule above: pages that do NOT end on a coloured band keep
+  // the footer's own top margin (64px was the strip measured on /about/process).
+  for (const [path, go] of [
+    ["/about", gotoAbout],
+    ["/about/why-local", gotoWhyLocal],
+  ] as const) {
+    test(`${path} keeps the footer's top margin`, async ({ page }) => {
+      await go(page);
+      const footer = page.locator("footer[data-site-footer]");
+      await expect(footer).toHaveCount(1);
+      await expect(page.locator("[data-meets-footer]")).toHaveCount(0);
+      expect(await computed(footer, "margin-top")).toBe("64px");
+    });
+  }
 });

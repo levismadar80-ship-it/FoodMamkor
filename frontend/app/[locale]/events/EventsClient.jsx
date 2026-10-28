@@ -493,7 +493,7 @@ export default function EventsPage({ initialTab = "events" }) {
                   <h2 className="font-headline-md text-2xl font-bold text-text leading-none">
                     {group.monthLabel}
                   </h2>
-                  <span className="font-english italic text-base font-medium text-accent numeric">
+                  <span dir="ltr" className="font-english italic text-base font-medium text-accent numeric">
                     {group.yearLabel}
                   </span>
                   <span className="flex-1 h-px bg-border" />

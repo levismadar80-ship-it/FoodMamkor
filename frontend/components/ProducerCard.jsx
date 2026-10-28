@@ -620,10 +620,12 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
         )}
 
         {descriptionText && (
-          // MEH-1028 (CARD-27): one-line description hidden on mobile (<640px),
-          // visible sm: up — part of the mobile density variant.
+          // MEH-1028 (CARD-27): description hidden on mobile (<640px), visible
+          // sm: up — part of the mobile density variant. MEH-2487: at most two
+          // lines. The sm: display must be -webkit-box, never `block`: line-clamp
+          // only works on -webkit-box, and `sm:block` silently switched it off.
           <p
-            className="hidden sm:block text-sm text-text/85 line-clamp-1"
+            className="hidden sm:[display:-webkit-box] text-sm text-text/85 line-clamp-2"
             data-testid="card-description"
           >
             {descriptionText}
