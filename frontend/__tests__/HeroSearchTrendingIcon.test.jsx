@@ -54,6 +54,8 @@ describe("hero search trending rows (MEH-2508)", () => {
       const svg = row.querySelector("svg");
       expect(svg.innerHTML).toBe(trend);
       expect(svg.getAttribute("class")).toContain("text-fg-muted");
+      // The old flame was green; muted means the primary tint is gone too.
+      expect(svg.getAttribute("class")).not.toContain("text-primary");
     }
   });
 });
