@@ -111,10 +111,15 @@ function formatEventDate(isoDate, locale) {
 // MEH-2475: every channel the organizer can fill (dashboard «קשר» group), in
 // one list. Each builder returns null when its field is empty, so 0 / 1 / many
 // filled channels render 0 / 1 / many links with no placeholder.
-// REUSES: lib/contact-method.js getPrimaryContactHref — the same href per key,
-// so a channel links identically here and on a business page.
+// The WhatsApp prefill is the business page's (lib/contact-method.js
+// getPrimaryContactHref, MEH-1559) so the organizer sees where a message came
+// from; the other hrefs follow the same per-channel rules.
+const waPrefill = (o) => `היי! הגעתי דרך מהמקור — ${o.name || ""}`;
 const CHANNELS = [
-  { key: "whatsapp", href: (o) => (normalizePhone(o.phone) ? getWhatsAppHref(normalizePhone(o.phone)) : null) },
+  {
+    key: "whatsapp",
+    href: (o) => (normalizePhone(o.phone) ? getWhatsAppHref(normalizePhone(o.phone), waPrefill(o)) : null),
+  },
   { key: "phone", href: (o) => (o.phone?.trim() ? `tel:${o.phone.trim()}` : null) },
   { key: "email", href: (o) => (o.contact_email?.trim() ? `mailto:${o.contact_email.trim()}` : null) },
   { key: "instagram", href: (o) => instagramUrl(o.instagram) },

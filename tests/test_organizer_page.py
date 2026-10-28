@@ -196,6 +196,40 @@ class TestOrganizerCityIsEditable:
         db.refresh(org)
         assert org.city == "חיפה"
 
+    def test_organizer_city_is_sanitized_like_registration(self, client, db):
+        """Review #3728: the same bleach + ≥1-letter rule as ProducerRegister.city."""
+        org = _organizer(db)
+        owner = _owner_of(db, org, "meh2475-clean@example.com")
+        ok = client.put(
+            "/producers/me", json={"city": "<b>עכו</b>"}, headers=auth_header(owner)
+        )
+        assert ok.status_code == 200
+        db.refresh(org)
+        assert org.city == "עכו"
+        for bad in ("123", "---"):
+            resp = client.put(
+                "/producers/me", json={"city": bad}, headers=auth_header(owner)
+            )
+            assert resp.status_code == 422, bad
+        db.refresh(org)
+        assert org.city == "עכו"
+
+    def test_approved_organizer_city_change_pings_admin(self, client, db, monkeypatch):
+        """Review #3728: same admin signal a business gets for a city move."""
+        import app.routers.producer_me as pm
+
+        calls = []
+        monkeypatch.setattr(
+            pm, "_sensitive_edit_task", lambda name, changed: calls.append(changed)
+        )
+        org = _organizer(db)
+        owner = _owner_of(db, org, "meh2475-ping@example.com")
+        client.put("/producers/me", json={"city": "עכו"}, headers=auth_header(owner))
+        assert ["city"] in calls
+        calls.clear()
+        client.put("/producers/me", json={"city": "עכו"}, headers=auth_header(owner))
+        assert calls == []  # unchanged value → no ping
+
     def test_business_city_still_ignored(self, client, db):
         business = make_producer(db, name="חוות הבקרה", status="approved")
         before = business.city

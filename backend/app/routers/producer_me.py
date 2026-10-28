@@ -43,6 +43,7 @@ import string
 from app.models.models import PhoneOtpToken, KashrutBadgeRequest
 from app.schemas.schemas import (
     AVAILABILITY_STATES,
+    clean_display_city,
     AvailabilityStateUpdate,
     AvailabilityStatusUpdate,
     BioGenerateIn,
@@ -549,19 +550,19 @@ def _resolve_top_product(db, producer, payload: dict) -> None:
     payload["top_product_name"] = product.name
 
 
-_ORGANIZER_CITY_MAX = 100
-
-
-def _apply_organizer_city(producer, raw) -> None:
-    """MEH-2475: write an organizer's display city (stripped, 1..100 chars).
-
-    A blank value is refused rather than stored: the page shows the city line
-    and registration requires one, so "no city" is not a state she can reach.
-    """
-    city = (raw or "").strip()
-    if not city or len(city) > _ORGANIZER_CITY_MAX:
-        raise HTTPException(status_code=422, detail="יש לבחור עיר")
+def _apply_organizer_city(producer, raw) -> bool:
+    """MEH-2475: write an organizer's display city under the registration rule
+    (`clean_display_city`: bleach, 100 chars, ≥1 letter). A blank or
+    letterless value is refused rather than stored — the page shows the city
+    line and registration requires one. Returns whether the city changed, so
+    the caller can ping the admin for an approved organizer (review #3728)."""
+    try:
+        city = clean_display_city(raw)
+    except ValueError:
+        raise HTTPException(status_code=422, detail="יש לבחור עיר") from None
+    changed = city != (producer.city or "")
     producer.city = city
+    return changed
 
 
 @router.put("", response_model=ProducerOwnerOut)
@@ -812,8 +813,11 @@ def update_my_producer(
     # rows at all (MEH-2460), so for her this PUT is the only writer, and its
     # editor ships in the same PR (OrganizerCityCard.jsx) — the standing rule
     # the blocks above state.
-    if producer.kind == "organizer" and "city" in payload:
-        _apply_organizer_city(producer, payload["city"])
+    organizer_city_changed = (
+        producer.kind == "organizer"
+        and "city" in payload
+        and _apply_organizer_city(producer, payload["city"])
+    )
 
     for field, value in payload.items():
         if field in _PRODUCER_WRITABLE_FIELDS:
@@ -881,6 +885,11 @@ def update_my_producer(
     # MEH-2073: notification only — runs after the commit above, adds a
     # BackgroundTask, and touches neither the response nor any column.
     _maybe_fire_sensitive_edit(background_tasks, producer, sensitive_before)
+    # MEH-2475 (review #3728): an approved organizer moving her city is the same
+    # admin-visible event as a business moving its primary location (the
+    # locations CRUD pings "city" through the same gate).
+    if organizer_city_changed:
+        _fire_sensitive_edit(background_tasks, producer, ["city"])
 
     attach_upcoming_events_count(producer)  # MEH-2460
     return producer
