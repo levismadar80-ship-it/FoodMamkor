@@ -20,10 +20,26 @@ vi.mock("@/lib/places", () => ({
   newSessionToken: vi.fn(() => "sess-test"),
 }));
 
+// MEH-2481: the component reports a provider rejection to Sentry. Mocked so
+// the assertion is on the call, not on a network.
+const captureMessage = vi.fn();
+vi.mock("@sentry/nextjs", () => ({ captureMessage: (...a) => captureMessage(...a) }));
+
 // MEH-1766: the hint's own copy, read from he.json so a copy edit can't quietly
 // desync the assertion from what renders.
 const HINT = he.search.address_search.no_results_hint;
 const HINT_TESTID = "address-search-no-results-hint";
+// MEH-2481: a rejection renders its OWN copy under its own testid.
+const DOWN_HINT = he.search.address_search.provider_down_hint;
+const DOWN_TESTID = "address-search-provider-down-hint";
+
+const rejection403 = () =>
+  Object.assign(new Error("google address lookup rejected (HTTP 403)"), {
+    name: "ProviderError",
+    provider: "google",
+    status: 403,
+    detail: "PERMISSION_DENIED",
+  });
 
 const PLACE = {
   street: "שרה",
@@ -112,29 +128,62 @@ describe("AddressSearch — empty/error hint (MEH-1766)", () => {
     expect(hint).toHaveTextContent(HINT);
   });
 
-  it("shows the hint when the provider REJECTS the lookup", async () => {
-    const rejection = Object.assign(new Error("google address lookup rejected (HTTP 403)"), {
-      name: "ProviderError",
-      provider: "google",
-      status: 403,
-      detail: "PERMISSION_DENIED",
-    });
-    autocompleteAddresses.mockRejectedValue(rejection);
+  it("shows the provider-down hint (not the no-match one) when the provider REJECTS the lookup", async () => {
+    autocompleteAddresses.mockRejectedValue(rejection403());
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
 
     render(<Harness onSelect={vi.fn()} />);
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "דרך שרה" } });
 
-    const hint = await screen.findByTestId(HINT_TESTID, {}, { timeout: 2000 });
-    expect(hint).toHaveTextContent(HINT);
+    // MEH-2481: the seller is told the provider is down and that the town
+    // alone will do — a different sentence from "nothing matched". Before
+    // this change both situations rendered HINT under HINT_TESTID; this
+    // assertion went red against that code.
+    const hint = await screen.findByTestId(DOWN_TESTID, {}, { timeout: 2000 });
+    expect(hint).toHaveTextContent(DOWN_HINT);
+    expect(screen.queryByTestId(HINT_TESTID)).toBeNull();
 
     // The console must distinguish rejection from no-match — that distinction is
-    // the whole point of the ticket, so assert the diagnostic, not just the hint.
+    // the whole point of MEH-1766, so assert the diagnostic, not just the hint.
     expect(warn).toHaveBeenCalledWith(
       expect.stringContaining("REJECTED"),
       expect.objectContaining({ provider: "google", status: 403 }),
     );
     warn.mockRestore();
+  });
+
+  it("reports a rejection to Sentry once per (provider, status), not per keystroke (MEH-2481)", async () => {
+    autocompleteAddresses.mockRejectedValue(rejection403());
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    render(<Harness onSelect={vi.fn()} />);
+    const box = screen.getByRole("combobox");
+    fireEvent.change(box, { target: { value: "דרך שרה" } });
+    await screen.findByTestId(DOWN_TESTID, {}, { timeout: 2000 });
+    fireEvent.change(box, { target: { value: "דרך שרה 5" } });
+    await screen.findByTestId(DOWN_TESTID, {}, { timeout: 2000 });
+    // The second lookup also rejected (two warnings) …
+    expect(warn.mock.calls.filter(([m]) => String(m).includes("REJECTED")).length).toBe(2);
+    // … but Sentry heard about it exactly once, with a grouping fingerprint.
+    expect(captureMessage).toHaveBeenCalledTimes(1);
+    expect(captureMessage).toHaveBeenCalledWith(
+      expect.stringContaining("provider rejected"),
+      expect.objectContaining({
+        level: "warning",
+        tags: { provider: "google", status: "403" },
+        fingerprint: ["address-search-provider", "google", "403"],
+      }),
+    );
+    warn.mockRestore();
+  });
+
+  it("does NOT report a genuine no-match to Sentry", async () => {
+    autocompleteAddresses.mockResolvedValue([]);
+    vi.spyOn(console, "info").mockImplementation(() => {});
+    render(<Harness onSelect={vi.fn()} />);
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "דרך שרה" } });
+    await screen.findByTestId(HINT_TESTID, {}, { timeout: 2000 });
+    expect(captureMessage).not.toHaveBeenCalled();
   });
 
   it("logs a no-match distinctly from a rejection", async () => {

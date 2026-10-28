@@ -93,10 +93,49 @@ beforeEach(() => {
   apiMock.post.mockResolvedValue({ data: {} });
   toastMock.success.mockClear();
   toastMock.error.mockClear();
+  // MEH-2481: the card remembers a sent code in sessionStorage; every spec
+  // starts with a clean tab.
+  window.sessionStorage.clear();
 });
 
 afterEach(() => {
   vi.useRealTimers();
+});
+
+const SENT_AT_KEY = "mehamakor.otp_sent_at";
+
+describe("PhoneVerifyCard — a sent code survives a reload (MEH-2481)", () => {
+  it("a successful send records the moment in sessionStorage", async () => {
+    await sendOk();
+    const ts = Number(window.sessionStorage.getItem(SENT_AT_KEY));
+    expect(Number.isFinite(ts) && ts > 0).toBe(true);
+  });
+
+  it("a fresh mount within 10 min opens on the code box with the remaining cooldown", () => {
+    // Sent 45 s ago → 15 s of the 60 s cooldown are left; no new send happens.
+    window.sessionStorage.setItem(SENT_AT_KEY, String(Date.now() - 45_000));
+    render(<PhoneVerifyCard />);
+    expect(codeInput()).toBeInTheDocument();
+    expect(apiMock.post).not.toHaveBeenCalled();
+    const btn = sendBtnAny();
+    expect(btn).toBeDisabled();
+    expect(btn).toHaveTextContent(`${T("resend_in")}|seconds=15`);
+  });
+
+  it("a fresh mount after 10 min ignores the stale record (the server code is dead too)", () => {
+    window.sessionStorage.setItem(SENT_AT_KEY, String(Date.now() - 11 * 60_000));
+    render(<PhoneVerifyCard />);
+    expect(screen.queryByLabelText(T("code_label"))).toBeNull();
+    expect(sendBtn()).not.toBeDisabled();
+  });
+
+  it("a successful confirm forgets the record", async () => {
+    await sendOk();
+    fireEvent.change(codeInput(), { target: { value: "123456" } });
+    await click(confirmBtn());
+    expect(apiMock.post).toHaveBeenLastCalledWith(CONFIRM_URL, { code: "123456" });
+    expect(window.sessionStorage.getItem(SENT_AT_KEY)).toBeNull();
+  });
 });
 
 describe("PhoneVerifyCard — initial state (code row hidden)", () => {
