@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslations, useFormatter } from "next-intl";
 import { StarOfDavid, X } from "@phosphor-icons/react";
+import { parseNaiveUtc } from "@/lib/dates";
 
 // Display-only metadata = none. Labels + tooltips resolve via
 // t(`kashrut.badges.${key}.label`/`tooltip`). The `code` axis is the
@@ -20,8 +21,9 @@ export const CODE_TO_KEY = {
 };
 
 function daysUntil(dateStr) {
-  if (!dateStr) return null;
-  const diff = new Date(dateStr) - new Date();
+  const date = dateStr ? parseNaiveUtc(dateStr) : null;
+  if (!date) return null;
+  const diff = date - new Date();
   return Math.ceil(diff / (1000 * 60 * 60 * 24));
 }
 
@@ -178,14 +180,15 @@ export default function KashrutBadgeStrip({
   // MEH-1260: expired certificate → hide the whole strip, not just flip the
   // near-expiry chip (expiry was previously display-only). Legacy NULL
   // expires_at stays visible — pre-expiry-era rows are still valid.
-  if (expires_at && new Date(expires_at) <= new Date()) return null;
+  // MEH-2518: naive-UTC wire format — parse as UTC, not local time.
+  if (expires_at && parseNaiveUtc(expires_at) <= new Date()) return null;
 
   const expiresInDays = daysUntil(expires_at);
   const nearExpiry = expiresInDays !== null && expiresInDays <= 30;
 
   const expiryText = expires_at
     ? t("expiry.valid_until", {
-        date: format.dateTime(new Date(expires_at), { dateStyle: "short" }),
+        date: format.dateTime(parseNaiveUtc(expires_at), { dateStyle: "short" }),
       })
     : null;
 

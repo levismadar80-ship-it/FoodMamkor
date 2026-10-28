@@ -1982,7 +1982,8 @@
       "status": {
         "pending": "Pending",
         "approved": "Approved",
-        "rejected": "Rejected"
+        "rejected": "Rejected",
+        "revoked": "Revoked"
       },
       "load_error": "Error loading requests",
       "no_requests": "No requests",
@@ -2001,7 +2002,8 @@
       "no_cert": "Not uploaded",
       "actions": {
         "approve": "Approve",
-        "reject": "Reject"
+        "reject": "Reject",
+        "revoke": "Revoke badge"
       },
       "reject_modal": {
         "title": "Reject request",
@@ -2021,6 +2023,21 @@
         "row_sent": "Sent",
         "row_failed": "Failed",
         "sent_toast": "Sent {count} reminders"
+      },
+      "revoked_toast": "Badge revoked",
+      "approve_modal": {
+        "title": "Approve kashrut badge",
+        "date_label": "Certificate expiry (as printed on it)",
+        "hint": "After this date the badge leaves the site on its own.",
+        "submit": "Approve",
+        "submitting": "Approving..."
+      },
+      "revoke_modal": {
+        "title": "Revoke kashrut badge",
+        "body": "The badge leaves the business page right away, and the owner sees the reason on her dashboard.",
+        "placeholder": "Reason (e.g. the certificate was withdrawn)",
+        "submit": "Revoke badge",
+        "submitting": "Revoking..."
       }
     },
     "reports": {
@@ -4612,6 +4629,7 @@
         "error_submit": "Failed to send request — please try again.",
         "status_pending": "Pending approval",
         "status_rejected": "Rejected",
+        "status_revoked": "Badge removed",
         "empty": "No kosher badge yet. You can request one here.",
         "filter_hint": "To appear in the \"Kosher\" filter, upload a kashrut certificate for verification.",
         "missing_cert": "The \"{badge}\" badge shows on your business page without a certificate. Upload a photo of it below so customers can tap the badge and see it."
