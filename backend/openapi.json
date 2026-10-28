@@ -1044,6 +1044,18 @@
             ],
             "title": "Description"
           },
+          "end_time": {
+            "anyOf": [
+              {
+                "format": "time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Time"
+          },
           "event_date": {
             "format": "date",
             "title": "Event Date",
@@ -1180,6 +1192,18 @@
               }
             ],
             "title": "Description"
+          },
+          "end_time": {
+            "anyOf": [
+              {
+                "format": "time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Time"
           },
           "event_date": {
             "format": "date",
@@ -1361,6 +1385,18 @@
               }
             ],
             "title": "Description"
+          },
+          "end_time": {
+            "anyOf": [
+              {
+                "format": "time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Time"
           },
           "event_date": {
             "anyOf": [

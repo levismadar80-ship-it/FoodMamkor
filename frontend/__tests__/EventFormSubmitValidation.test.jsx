@@ -180,4 +180,57 @@ describe("EventForm — submit validation (MEH-1809)", () => {
       expect.objectContaining({ title: "יום פתוח", event_date: "2026-09-01" }),
     );
   });
+
+  // MEH-2469 — optional end time («09:30–15:00»). Same rule as the server.
+  function fillValid() {
+    fireEvent.change(document.getElementById("title"), { target: { value: "שוק גלם" } });
+    fireEvent.change(document.getElementById("event_date"), { target: { value: "2026-11-07" } });
+    fireEvent.change(document.getElementById("category"), { target: { value: "שוק" } });
+    fireEvent.change(document.getElementById("city"), { target: { value: "חיפה" } });
+  }
+
+  it("MEH-2469: end after start posts both times", () => {
+    renderForm();
+    api.post.mockResolvedValue({ data: { id: 3 } });
+    fillValid();
+    fireEvent.change(document.getElementById("event_time"), { target: { value: "09:30" } });
+    fireEvent.change(document.getElementById("end_time"), { target: { value: "15:00" } });
+    fireEvent.click(screen.getByText(T.submit));
+    expect(api.post).toHaveBeenCalledWith(
+      "/events",
+      expect.objectContaining({ event_time: "09:30", end_time: "15:00" }),
+    );
+  });
+
+  it("MEH-2469: end before start shows the approved error on the end field and blocks", () => {
+    renderForm();
+    fillValid();
+    fireEvent.change(document.getElementById("event_time"), { target: { value: "15:00" } });
+    fireEvent.change(document.getElementById("end_time"), { target: { value: "09:30" } });
+    fireEvent.click(screen.getByText(T.submit));
+    expect(T.error_end_time_after_start).toBe("שעת הסיום צריכה להיות אחרי שעת ההתחלה");
+    const end = document.getElementById("end_time");
+    expect(end).toHaveAttribute("aria-invalid", "true");
+    expect(document.getElementById(end.getAttribute("aria-describedby"))).toHaveTextContent(
+      T.error_end_time_after_start,
+    );
+    expect(api.post).not.toHaveBeenCalled();
+  });
+
+  it("MEH-2469: an end time without a start time is blocked", () => {
+    renderForm();
+    fillValid();
+    fireEvent.change(document.getElementById("end_time"), { target: { value: "15:00" } });
+    fireEvent.click(screen.getByText(T.submit));
+    expect(screen.getByText(T.error_end_time_after_start)).toBeInTheDocument();
+    expect(api.post).not.toHaveBeenCalled();
+  });
+
+  it("MEH-2469: no end time → end_time null in the payload (unchanged behaviour)", () => {
+    renderForm();
+    api.post.mockResolvedValue({ data: { id: 3 } });
+    fillValid();
+    fireEvent.click(screen.getByText(T.submit));
+    expect(api.post.mock.calls[0][1].end_time).toBeNull();
+  });
 });
