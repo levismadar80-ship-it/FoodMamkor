@@ -4,6 +4,19 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-10-28 17:30 — סקירת הפרויקט: פיצ'רי הפניות ומעקב נמחקו עד הסוף, «בתיאום אישי» תוקן
+
+**‏שורה אחת:** כל ממצאי הסקירה שאושרו מוזגו: #3687, #3689, #3690, #3691, #3692, #3698, #3734, #3735. ‏MEH-2392, ‏MEH-2393, ‏MEH-2438 ב-Done.
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏`users.referral_code`, ‏`producer_followers` ו-`referral_clicks` כבר לא קיימים (revisions `e5b2d8f4a913`, `1cd44149cc20`). אין להחזיר אותם.
+- ‏מחיקת עמודה בבטחה = deploy אחד עם `__mapper_args__ = {"exclude_properties": [...]}`, ורק ב-deploy הבא ה-drop. `deferred()` לא מספיק — ה-INSERT של ה-ORM עדיין מונה כל עמודה ממופה.
+- ‏קנייה/איסוף בכרטיס המפה: «קנייה במקום» רק כש-`has_physical_location === true` ויש שעות (`resolveStoreHours`). אחרת «בתיאום מראש».
+- ‏commit שכרום עושה בלי שורת `Builder-Model:` נכשל ב-Repo guards. כרום כותב שורה אמיתית משלו, או `guard-ok: edited by Claude in Chrome at Sapir's request; it cannot attest its model id`. אסור לכתוב שאדם ערך.
+
+**‏פתוח:**
+- ‏**E2E של PR-ים מתבטל** מאז 28/10 17:09 (שעון ישראל) — באג של #3687: קבוצת concurrency ברמת ה-job מחזיקה ממתין אחד בלבד. אדום ב-E2E gate על PR כרגע הוא לא של ה-PR, ול-E2E אין הצבעה. התיקון `queue: max` ב-`.github/workflows/e2e.yml` מחכה לספיר: `sapir-tasks/chrome-prompt-e2e-queue-2026-10-28.md` (ענף `feature/meh-2398-e2e-queue`).
+
 ## 2026-10-28 17:00 — סבב «תחליט ותבדוק»: כל מה שחיכה לספיר הוכרע ומוזג (#3723–#3726, #3728, #3731)
 
 **‏שורה אחת:** ‏ספיר האצילה («כל מה שנשאר עליי — תחליט ותבדוק») ← כל ההחלטות הפתוחות מהסעיף של 15:00 נסגרו לפי מה שאתרים גדולים עושים, ושישה PR-ים מוזגו אחרי adversarial ו-CI ירוק. ‏MEH-2458, ‏2465, ‏2475, ‏2476, ‏2477, ‏2478, ‏2483 ב-Done. נשאר פתוח: MEH-2484.
