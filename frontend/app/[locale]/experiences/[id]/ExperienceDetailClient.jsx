@@ -4,11 +4,12 @@ import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { Leaf, MapPin, Calendar, CurrencyCircleDollar, Users } from "@phosphor-icons/react";
+import { Leaf, MapPin, Calendar, CurrencyCircleDollar, Users, Clock, ArrowsClockwise } from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
-import { formatPrice } from "@/lib/utils";
+import { formatPrice, getWhatsAppHref, normalizePhone } from "@/lib/utils";
+import { formatDuration } from "@/lib/experience-format";
 import api from "@/lib/api";
 import Breadcrumb from "@/components/Breadcrumb";
 
@@ -28,6 +29,8 @@ function formatTime(t) {
 
 export default function ExperienceDetailClient() {
   const t = useTranslations("experiences.detail");
+  // MEH-2476: the place-type labels are the form's own («בבית פרטי» / «מקום ציבורי»).
+  const tForm = useTranslations("experiences.new");
   const locale = useLocale();
   const { id } = useParams();
   const search = useSearchParams();
@@ -91,6 +94,22 @@ export default function ExperienceDetailClient() {
 
   const banner = STATUS_BANNER[ex.status];
   const isApproved = ex.status === "approved";
+  const duration = formatDuration(ex.duration_minutes, t);
+  const PLACE_KEY = { home: "location_home", public: "location_public" };
+  const placeLabel = PLACE_KEY[ex.location_type] ? tForm(PLACE_KEY[ex.location_type]) : null;
+  // MEH-2476: the host's approved business (null otherwise). The WhatsApp CTA
+  // used to open wa.me with no recipient — it reached nobody.
+  const hostBiz = ex.host?.producer_id ? ex.host : null;
+  const hostHref = hostBiz
+    ? hostBiz.producer_slug
+      ? `/${hostBiz.producer_slug}`
+      : `/producer/${hostBiz.producer_id}`
+    : null;
+  const hostPhone = normalizePhone(hostBiz?.producer_phone);
+  const waText = t("whatsapp_message", { title: ex.title });
+  const waHref = hostPhone
+    ? getWhatsAppHref(hostPhone, waText)
+    : `https://wa.me/?text=${encodeURIComponent(waText)}`;
 
   return (
     <div>
@@ -147,16 +166,33 @@ export default function ExperienceDetailClient() {
         </h1>
 
         <div className="flex flex-wrap gap-4 text-text/85 mb-6">
-          <p className="flex items-center gap-2">
+          {/* MEH-2476: a recurring experience leads with its schedule, so the
+              date below reads as a start, not as the only occasion. */}
+          {ex.is_recurring && (
+            <p className="flex items-center gap-2" data-testid="experience-recurring">
+              <ArrowsClockwise size={16} className="text-primary" aria-hidden="true" />
+              {ex.recurring_schedule?.trim()
+                ? t("recurring", { schedule: ex.recurring_schedule.trim() })
+                : t("recurring_bare")}
+            </p>
+          )}
+          <p className="flex items-center gap-2" data-testid="experience-date">
             <Calendar size={16} className="text-primary" aria-hidden="true" />
-            {formatDate(ex.event_date, locale)}
+            {ex.is_recurring
+              ? t("starts_from", { date: formatDate(ex.event_date, locale) })
+              : formatDate(ex.event_date, locale)}
             {ex.event_time && ` · ${formatTime(ex.event_time)}`}
           </p>
-          {ex.city && (
+          {duration && (
             <p className="flex items-center gap-2">
+              <Clock size={16} className="text-primary" aria-hidden="true" />
+              <span data-testid="experience-duration">{duration}</span>
+            </p>
+          )}
+          {(ex.city || placeLabel) && (
+            <p className="flex items-center gap-2" data-testid="experience-place">
               <MapPin size={16} className="text-primary inline align-[-3px]" aria-hidden="true" />
-              {ex.city}
-              {ex.address && ` · ${ex.address}`}
+              {[ex.city, ex.address, placeLabel].filter(Boolean).join(" · ")}
             </p>
           )}
           <p className="flex items-center gap-2 text-accent font-semibold">
@@ -208,9 +244,7 @@ export default function ExperienceDetailClient() {
         {isApproved && ex.spots_left !== 0 && (
           <div className="flex flex-wrap gap-3 mt-6">
             <a
-              href={`https://wa.me/?text=${encodeURIComponent(
-                t("whatsapp_message", { title: ex.title })
-              )}`}
+              href={waHref}
               target="_blank"
               rel="noopener noreferrer"
               className="bg-primary text-white px-6 py-3 rounded-[8px] font-medium hover:bg-primary-dark transition"
@@ -228,7 +262,18 @@ export default function ExperienceDetailClient() {
 
         {ex.host?.name && (
           <p className="text-sm text-fg-muted mt-8">
-            {t("host_label")} <span className="text-primary">{ex.host.name}</span>
+            {t("host_label")}{" "}
+            {hostHref ? (
+              <Link
+                href={hostHref}
+                data-testid="experience-host-link"
+                className="text-primary hover:underline"
+              >
+                {hostBiz.producer_name || ex.host.name}
+              </Link>
+            ) : (
+              <span className="text-primary">{ex.host.name}</span>
+            )}
           </p>
         )}
       </div>
