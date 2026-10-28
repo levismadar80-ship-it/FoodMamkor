@@ -97,7 +97,10 @@ def _report_places_error(body: dict) -> None:
     event per `_REPORT_WINDOW_SECONDS` per process. Never raises."""
     global _last_places_report_at  # noqa: PLW0603 — a process-local throttle, nothing else
     now = time.monotonic()
-    if _last_places_report_at is not None and now - _last_places_report_at < _REPORT_WINDOW_SECONDS:
+    if (
+        _last_places_report_at is not None
+        and now - _last_places_report_at < _REPORT_WINDOW_SECONDS
+    ):
         return
     _last_places_report_at = now
     try:

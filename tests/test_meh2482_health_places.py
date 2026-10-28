@@ -38,7 +38,9 @@ def test_disabled_when_no_server_key(client: TestClient, monkeypatch):
 
 def test_ok_when_google_answers_2xx(client: TestClient, monkeypatch):
     monkeypatch.setattr(HEALTH.settings, "google_places_api_key", "test-key-not-real")
-    with patch.object(HEALTH.httpx, "post", return_value=_resp(200, {"suggestions": []})) as post:
+    with patch.object(
+        HEALTH.httpx, "post", return_value=_resp(200, {"suggestions": []})
+    ) as post:
         r = client.get(URL)
     assert r.status_code == 200
     assert r.json() == {"status": "ok"}
@@ -53,26 +55,38 @@ def test_ok_when_google_answers_2xx(client: TestClient, monkeypatch):
     assert kwargs["timeout"] == HEALTH._PLACES_PROBE_TIMEOUT_SECONDS
 
 
-def test_503_with_google_status_word_on_permission_denied(client: TestClient, monkeypatch):
+def test_503_with_google_status_word_on_permission_denied(
+    client: TestClient, monkeypatch
+):
     monkeypatch.setattr(HEALTH.settings, "google_places_api_key", "test-key-not-real")
     google_body = {
-        "error": {"code": 403, "message": "The caller does not have permission", "status": "PERMISSION_DENIED"}
+        "error": {
+            "code": 403,
+            "message": "The caller does not have permission",
+            "status": "PERMISSION_DENIED",
+        }
     }
-    with patch.object(HEALTH.httpx, "post", return_value=_resp(403, google_body)), patch.object(
-        HEALTH, "_report_places_error"
-    ) as report:
+    with (
+        patch.object(HEALTH.httpx, "post", return_value=_resp(403, google_body)),
+        patch.object(HEALTH, "_report_places_error") as report,
+    ):
         r = client.get(URL)
     assert r.status_code == 503
     assert r.json() == {"status": "error", "http": 403, "code": "PERMISSION_DENIED"}
     # The key never leaves the server, in any field.
     assert "test-key-not-real" not in r.text
-    report.assert_called_once_with({"status": "error", "http": 403, "code": "PERMISSION_DENIED"})
+    report.assert_called_once_with(
+        {"status": "error", "http": 403, "code": "PERMISSION_DENIED"}
+    )
 
 
 def test_503_unknown_code_on_non_json_error_body(client: TestClient, monkeypatch):
     monkeypatch.setattr(HEALTH.settings, "google_places_api_key", "test-key-not-real")
-    with patch.object(HEALTH.httpx, "post", return_value=_resp(502, "<html>bad gateway</html>")), patch.object(
-        HEALTH, "_report_places_error"
+    with (
+        patch.object(
+            HEALTH.httpx, "post", return_value=_resp(502, "<html>bad gateway</html>")
+        ),
+        patch.object(HEALTH, "_report_places_error"),
     ):
         r = client.get(URL)
     assert r.status_code == 503
@@ -81,9 +95,12 @@ def test_503_unknown_code_on_non_json_error_body(client: TestClient, monkeypatch
 
 def test_503_when_google_does_not_answer(client: TestClient, monkeypatch):
     monkeypatch.setattr(HEALTH.settings, "google_places_api_key", "test-key-not-real")
-    with patch.object(
-        HEALTH.httpx, "post", side_effect=httpx.ConnectTimeout("timed out")
-    ), patch.object(HEALTH, "_report_places_error"):
+    with (
+        patch.object(
+            HEALTH.httpx, "post", side_effect=httpx.ConnectTimeout("timed out")
+        ),
+        patch.object(HEALTH, "_report_places_error"),
+    ):
         r = client.get(URL)
     assert r.status_code == 503
     assert r.json() == {"status": "error", "http": None, "code": "ConnectTimeout"}
@@ -108,7 +125,9 @@ def test_sentry_report_is_throttled_to_one_per_window(monkeypatch):
     import sentry_sdk
 
     monkeypatch.setattr(sentry_sdk, "new_scope", lambda: _Scope(), raising=False)
-    monkeypatch.setattr(sentry_sdk, "capture_message", lambda *a, **k: captured.append(a), raising=False)
+    monkeypatch.setattr(
+        sentry_sdk, "capture_message", lambda *a, **k: captured.append(a), raising=False
+    )
     monkeypatch.setattr(HEALTH, "_last_places_report_at", None)
     body = {"status": "error", "http": 403, "code": "PERMISSION_DENIED"}
     for _ in range(3):
