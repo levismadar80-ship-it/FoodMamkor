@@ -55,6 +55,20 @@ def test_ok_when_google_answers_2xx(client: TestClient, monkeypatch):
     assert kwargs["timeout"] == HEALTH._PLACES_PROBE_TIMEOUT_SECONDS
 
 
+def test_probe_sends_the_site_origin_as_referer(client: TestClient, monkeypatch):
+    # The project's key is HTTP-referrer restricted. The probe must present the
+    # origin the browser presents, or it 403s on every run (never ok) and stays
+    # blind to the 28/10 gap (mehamakor.co.il missing from the allow-list).
+    # Discriminates: with the header removed, kwargs["headers"] has no Referer.
+    monkeypatch.setattr(HEALTH.settings, "google_places_api_key", "test-key-not-real")
+    monkeypatch.setattr(HEALTH.settings, "frontend_url", "https://mehamakor.co.il")
+    with patch.object(
+        HEALTH.httpx, "post", return_value=_resp(200, {"suggestions": []})
+    ) as post:
+        client.get(URL)
+    assert post.call_args.kwargs["headers"]["Referer"] == "https://mehamakor.co.il/"
+
+
 def test_503_with_google_status_word_on_permission_denied(
     client: TestClient, monkeypatch
 ):

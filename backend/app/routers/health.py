@@ -62,7 +62,17 @@ def _places_probe() -> tuple[int, dict]:
     try:
         resp = httpx.post(
             _PLACES_AUTOCOMPLETE_URL,
-            headers={"Content-Type": "application/json", "X-Goog-Api-Key": api_key},
+            headers={
+                "Content-Type": "application/json",
+                "X-Goog-Api-Key": api_key,
+                # MEH-2482: the project's one key is restricted by HTTP referrer.
+                # Sending the site's own origin makes the probe pass the gate the
+                # browser passes — and fail it when that origin is missing from
+                # the allow-list (28/10: mehamakor.co.il was absent, only
+                # *.mehamakor.online was listed). Without it, a referrer-locked
+                # key answers 403 here on every run and the alert means nothing.
+                "Referer": settings.frontend_url.rstrip("/") + "/",
+            },
             json={
                 "input": _PLACES_PROBE_INPUT,
                 "includedRegionCodes": ["il"],
