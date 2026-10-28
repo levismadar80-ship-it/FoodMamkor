@@ -33,7 +33,7 @@ graph LR
     App --> Admin[admin.router<br/>/admin/producers/*]
     App --> AdminExtra[admin_extra.router<br/>/admin/users, /analytics, /dashboard, etc.]
     App --> AdminExperiences[admin_experiences.router<br/>/admin/experiences/*]
-    App --> Health[health.router<br/>/health, /health/liveness, /health/readiness]
+    App --> Health[health.router<br/>/health, /health/liveness, /health/readiness, /health/places]
 ```
 
 <!-- MEH-587: recipes.router removed (chunk 0/4) ahead of producer-recipes feature. -->

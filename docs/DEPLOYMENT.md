@@ -524,6 +524,41 @@ seeded, `GET /cities` falls back to the ~100-entry static list
 on a seeded env. Local dev: same script against the local DB.
 
 
+### D-quater. Google Cloud billing behind the Places keys (MEH-2482) — recurring
+
+Both Places keys — the browser's `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` (address
+autocomplete in registration and the dashboard) and the server's
+`GOOGLE_PLACES_API_KEY` (the Google-rating line, MEH-1490) — live in ONE Google
+Cloud project, **«My First Project»**, on one billing account. When that
+account stops (trial ended, card declined, budget cap), **every** lookup answers
+`403 PERMISSION_DENIED` and nothing in the UI says why.
+
+**What breaks, measured 28/10/2026:** address search returns no suggestions;
+a business that gave only a town used to get no coordinates at all, so
+«שליחה לבדיקה» stayed locked for every new registration. MEH-2480 made the
+town's seeded centre an acceptable approximate point, so registration survives
+a Google outage — but address search itself is still Google's.
+
+**Where to look, in order:**
+
+1. `curl -s https://mehamakor.co.il/api/health/places` — `{"status":"ok"}` or
+   `{"status":"error","http":403,"code":"PERMISSION_DENIED"}`. This is the one
+   call that uses the real key against the real endpoint. The uptime workflow
+   probes it hourly once `docs/ci/places-health-probe.patch.md` is applied.
+2. [Billing overview](https://console.cloud.google.com/billing) — is the
+   account active, and is the project linked to it?
+3. [Places API (New)](https://console.cloud.google.com/apis/library/places-backend.googleapis.com)
+   — «API enabled».
+4. [Credentials](https://console.cloud.google.com/apis/credentials) → the key →
+   *API restrictions* must list Places API (New); *Website restrictions* on the
+   browser key must cover `mehamakor.co.il/*` and `staging.mehamakor.online/*`.
+
+**Cost control that is in place:** the key is API-restricted to Places API (New)
+only; a ₪30/month budget with alerts at 50/90/100/150% (alerts only — Google's
+hard Spend Caps were still in preview when last checked). Re-check both when
+anything here changes. Card: MEH-1495.
+
+
 ### E. Verify deploys actually ran (MEH-260)
 
 Merging to `staging` or `main` does not guarantee the runtime changed.
