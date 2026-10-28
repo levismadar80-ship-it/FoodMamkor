@@ -14,15 +14,110 @@ Three surfaces, single owner (workflow.md "two parallel mechanisms" rule):
   post-merge.
 """
 
+import logging
 import os
 
+import httpx
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
+from app.config import settings
 from app.database import engine
+from app.rate_limit import limiter
 
 router = APIRouter()
+log = logging.getLogger(__name__)
+
+# MEH-2482 — the same Places API (New) endpoint the browser's AddressSearch
+# calls (frontend/lib/places.js). The probe must make the call the product
+# makes, with the key the product has, or a green here says nothing.
+_PLACES_AUTOCOMPLETE_URL = "https://places.googleapis.com/v1/places:autocomplete"
+_PLACES_PROBE_INPUT = "תל אביב"
+_PLACES_PROBE_TIMEOUT_SECONDS = 5.0
+
+
+def _places_probe() -> tuple[int, dict]:
+    """(http status to return, body) for GET /health/places.
+
+    Three outcomes, never an exception:
+      disabled — no server key configured; the feature is dormant and that is
+                 not a failure (200).
+      ok       — Google answered 2xx (200).
+      error    — Google answered non-2xx, or did not answer (503). The body
+                 carries Google's status word (PERMISSION_DENIED,
+                 RESOURCE_EXHAUSTED, …) so the alert names the cause, and
+                 nothing else: never the key, never the raw body.
+
+    Why a server-side key probe for a browser-side feature: the browser key
+    and the server key live in the same Google Cloud project, and the failure
+    that took AddressSearch down on 28/10/2026 (trial ended → billing off)
+    is project-wide. A probe on either key catches it. The server key is the
+    one a cron can exercise without a browser.
+    """
+    api_key = settings.google_places_api_key
+    if not api_key:
+        return 200, {"status": "disabled"}
+    try:
+        resp = httpx.post(
+            _PLACES_AUTOCOMPLETE_URL,
+            headers={"Content-Type": "application/json", "X-Goog-Api-Key": api_key},
+            json={
+                "input": _PLACES_PROBE_INPUT,
+                "includedRegionCodes": ["il"],
+                "languageCode": "he",
+            },
+            timeout=_PLACES_PROBE_TIMEOUT_SECONDS,
+        )
+    except Exception as exc:  # noqa: BLE001 — a health probe reports, never raises
+        return 503, {"status": "error", "http": None, "code": type(exc).__name__}
+    if 200 <= resp.status_code < 300:
+        return 200, {"status": "ok"}
+    code = "unknown"
+    try:
+        code = str(resp.json().get("error", {}).get("status") or "unknown")
+    except Exception:  # noqa: BLE001 — a non-JSON error body is still an error
+        pass
+    return 503, {"status": "error", "http": resp.status_code, "code": code}
+
+
+def _report_places_error(body: dict) -> None:
+    """One Sentry issue per Google status word, so the alert rule fires on the
+    first failure and the next occurrences group under it. Never raises."""
+    try:
+        import sentry_sdk  # noqa: PLC0415 — optional at import time, like moderation_fail_open
+
+        scope_factory = getattr(sentry_sdk, "new_scope", None) or getattr(
+            sentry_sdk, "push_scope", None
+        )
+        if scope_factory is None:  # pragma: no cover
+            return
+        with scope_factory() as scope:
+            scope.set_tag("places_probe_code", str(body.get("code")))
+            scope.set_tag("places_probe_http", str(body.get("http")))
+            scope.fingerprint = ["places-health", str(body.get("code"))]
+            sentry_sdk.capture_message(
+                f"Google Places key is not answering: {body.get('code')}",
+                level="error",
+            )
+    except Exception:  # pragma: no cover — reporting must never raise
+        log.debug("[health/places] report to Sentry failed")
+
+
+@router.get("/health/places")
+@limiter.limit("10/minute")
+def places_health(request: Request):
+    """MEH-2482 — is the Google Places key answering right now?
+
+    Unauthenticated so a cron (docs/ci/places-health-probe.patch.md) or an
+    uptime monitor can hit it; rate-limited so it cannot be used to spend the
+    key's quota. 503 is the alerting signal.
+    """
+    status, body = _places_probe()
+    if status != 200:
+        log.warning("[health/places] %s", body)
+        _report_places_error(body)
+    return JSONResponse(status_code=status, content=body)
 
 
 def _read_alembic_head() -> str | None:
