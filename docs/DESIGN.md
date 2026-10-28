@@ -325,6 +325,13 @@ front matter for the normative token bindings.
     `after:bg-accent` underline is a **nav-only** active indicator, deliberately
     not on the card (Sapir, v4). The v4 mock showed it on name-hover; it was
     intentionally not shipped. A future re-port must not reintroduce it.
+  - **Place first (MEH-2440, Sapir 27/10/2026):** the line above the name is the
+    **city** (`accent` gold, 12px semibold) with the distance beside it; the
+    category sits in the muted line under the name. No city → no place line.
+  - **No photo (MEH-2440):** a typographic name plate — the business name in
+    Frank Ruhl 900 (22px / 30px sm+), `background-alt` fill, bottom-aligned
+    above the badge row. Replaces the MEH-643 leaf glyph + wordmark on
+    `green-50`, which read as a template when most cards had no photo.
 - **Inputs:** white `surface`, `text` foreground, `border` hairline, 8px
   radius. Dividers use the `border` token.
 - **Price tags / premium accents:** `accent` gold, used sparingly with
