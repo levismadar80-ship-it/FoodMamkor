@@ -21,7 +21,16 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from app.models.models import Category, Producer, ProducerCategory, Product, User
+from app.models.models import (
+    Category,
+    Event,
+    Producer,
+    ProducerCategory,
+    ProducerLocation,
+    Product,
+    User,
+)
+from app.utils.clock import israel_today
 from app.services import pending_nudge
 
 
@@ -75,6 +84,8 @@ def _make_producer_user(
     phone_verified: bool = False,
     with_product: bool = False,
     with_category: bool = False,
+    with_location: bool = True,
+    kind: str = "producer",
 ) -> tuple[Producer, User]:
     """Create a Producer + linked User pair, backdated `hours_old` hours.
     `images=None` means the no-photo state (the MEH-799 default).
@@ -86,6 +97,13 @@ def _make_producer_user(
     `phone_verified` column directly, so a fixture that means "her number is
     verified" now has to say so. Same for products and categories, which the
     old rule never looked at.
+
+    MEH-2465 follow-up (location copy): `with_location` defaults to True — the
+    primary map pin every registration that picks an address writes. Before
+    the location line had copy, its absence was invisible to every test here;
+    now a fixture without a pin really is missing something, so the cases
+    that mean "complete" keep meaning it and the missing-location case states
+    `with_location=False`.
 
     Defaults stay at the empty/unverified end so the no-photo cases below are
     unchanged and every "complete" case has to state its completeness
@@ -102,9 +120,23 @@ def _make_producer_user(
         images=images if images is not None else [],
         created_at=backdated,
         phone_verified=phone_verified,
+        kind=kind,
     )
     db.add(producer)
     db.flush()
+
+    if with_location and kind == "producer":
+        db.add(
+            ProducerLocation(
+                producer_id=producer.id,
+                kind="branch",
+                is_primary=True,
+                city=producer.city,
+                lat=producer.lat,
+                lng=producer.lng,
+                location_precision="exact",
+            )
+        )
 
     if with_category:
         category = Category(name=f"קטגוריה {uuid.uuid4().hex[:6]}", emoji="🥬")
@@ -794,3 +826,81 @@ def test_self_registered_draft_still_counts_from_creation(db, sent_log):
 
     assert pending_nudge.send_pending_nudges(db)["sent"] == 1
     assert sent_log[0][1] == _SUBJECT_DAY_1
+
+
+# --- MEH-2465 follow-up: the three gate codes that had no email line ----------
+#
+# Before this, `location` (business) and `description` / `upcoming_event`
+# (organizer) were dropped from the body for want of copy — and when one of
+# them was the ONLY thing missing, the owner was stamped and mailed nothing
+# while her submission kept 422-ing.
+
+
+def test_business_missing_only_location_is_emailed_the_location_line(db, sent_log):
+    producer, _user = _make_producer_user(
+        db,
+        status="pending",
+        images=["https://res.cloudinary.com/demo/image/upload/x.jpg"],
+        phone_verified=True,
+        with_product=True,
+        with_category=True,
+        with_location=False,
+    )
+
+    counts = pending_nudge.send_pending_nudges(db)
+
+    assert counts == {"sent": 1, "stamped_nothing_missing": 0}
+    body = sent_log[0][2]
+    assert pending_nudge._MISSING_ITEM_LOCATION in body
+    assert pending_nudge._MISSING_ITEM_PHOTO not in body
+    db.refresh(producer)
+    assert producer.email_pending_nudge_sent_at is not None
+
+
+def test_organizer_without_description_or_event_is_emailed_both_lines(db, sent_log):
+    producer, _user = _make_producer_user(
+        db,
+        status="pending",
+        images=["https://res.cloudinary.com/demo/image/upload/x.jpg"],
+        phone_verified=True,
+        kind="organizer",
+    )
+    producer.description = ""
+    db.commit()
+
+    counts = pending_nudge.send_pending_nudges(db)
+
+    assert counts == {"sent": 1, "stamped_nothing_missing": 0}
+    body = sent_log[0][2]
+    assert pending_nudge._MISSING_ITEM_DESCRIPTION in body
+    assert pending_nudge._MISSING_ITEM_UPCOMING_EVENT in body
+    # an organizer is never asked for business-only items
+    assert pending_nudge._MISSING_ITEM_PRODUCT not in body
+    assert pending_nudge._MISSING_ITEM_LOCATION not in body
+
+
+def test_complete_organizer_is_stamped_without_email(db, sent_log):
+    producer, _user = _make_producer_user(
+        db,
+        status="pending",
+        images=["https://res.cloudinary.com/demo/image/upload/x.jpg"],
+        phone_verified=True,
+        kind="organizer",
+    )
+    producer.description = "שוק איכרים שבועי בכיכר העיר"
+    db.add(
+        Event(
+            producer_id=producer.id,
+            title="שוק שישי",
+            event_date=israel_today() + timedelta(days=3),
+            category="שוק",
+            city="תל אביב",
+            is_active=True,
+        )
+    )
+    db.commit()
+
+    counts = pending_nudge.send_pending_nudges(db)
+
+    assert counts == {"sent": 0, "stamped_nothing_missing": 1}
+    assert sent_log == []
