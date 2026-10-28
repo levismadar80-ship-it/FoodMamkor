@@ -176,7 +176,10 @@ describe("bottom clearance on routes without a pill (MEH-2490)", () => {
     "%s publishes the safe area + gutter, not the pill fallback",
     (path) => {
       pathnameRef.current = path;
-      render(<BottomNav />);
+      const { container } = render(<BottomNav />);
+      // The render gate and the publish share one predicate: no pill AND the
+      // no-pill clearance, on the same path, so the two cannot drift apart.
+      expect(container).toBeEmptyDOMElement();
       expect(clearance()).toBe("calc(env(safe-area-inset-bottom, 0px) + 12px)");
     },
   );
