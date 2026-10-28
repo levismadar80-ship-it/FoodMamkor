@@ -617,6 +617,13 @@ test.describe("/admin/users — the role kebab", () => {
     const btn = kebab(row);
     await btn.scrollIntoViewIfNeeded();
     await btn.focus();
+    // MEH-2323 (:611 flake): AdminRowMenu closes on ANY scroll (capture). The
+    // other tests open through `openKebab`, which lets the scroll settle for
+    // two frames first; this one skipped it, so a scroll event still in flight
+    // from scrollIntoView/focus on a slow mobile runner could close the menu
+    // right after aria-expanded flipped — CI saw expanded=true, then 0 items
+    // for 20 s. Same settle, then the keyboard open.
+    await page.evaluate(() => new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r()))));
     await page.keyboard.press("Enter");
     await expect(btn).toHaveAttribute("aria-expanded", "true");
     const m = menu(page);
