@@ -77,7 +77,8 @@ vi.mock("@/components/LocationModal", () => ({
 vi.mock("@/components/CitySearch", () => ({ default: () => null }));
 vi.mock("@/components/MapBottomSheet", () => ({ default: () => null }));
 vi.mock("@/app/[locale]/map/components/CityPickerModal", () => ({ default: () => null }));
-vi.mock("@/app/[locale]/map/components/FilterChipsBar", () => ({ default: () => null }));
+// MEH-2506: a marker, so the mobile origin tag's place relative to the chips is checkable.
+vi.mock("@/app/[locale]/map/components/FilterChipsBar", () => ({ default: () => <div data-testid="filter-chips-bar" /> }));
 vi.mock("@/app/[locale]/map/components/MapCardList", () => ({ default: () => null }));
 // MapPane owns the GPS crosshair. Stubbed to a button firing its real
 // onGpsClick prop, because that — not the sort select — is the path by which a
@@ -91,8 +92,7 @@ vi.mock("@/app/[locale]/map/components/MapPane", () => ({
   ),
 }));
 vi.mock("@/app/[locale]/map/components/MobileSheetSelectedCard", () => ({ default: () => null }));
-// MEH-2506: NearMePill is NOT mocked — it is the mobile shell's origin
-// control now (label + ✕), so "one per shell" counts the real pill.
+vi.mock("@/app/[locale]/map/components/NearMePill", () => ({ default: () => null }));
 
 vi.mock("@/app/[locale]/map/state/useFirstVisitHints", () => ({
   useFirstVisitHints: () => ({
@@ -253,13 +253,17 @@ describe("MEH-2014 PR 2 — a picked city becomes the sort origin", () => {
     // One per shell — desktop + mobile are both mounted, CSS hides one.
     expect(labels).toHaveLength(2);
     expect(labels[0]).toHaveTextContent("מרחק מ: חיפה");
-    // MEH-2506: the mobile one lives in the NearMePill, not as a row in the
-    // filter bar above the map.
-    expect(within(screen.getByTestId("map-near-me")).getByTestId("sort-origin-label")).toHaveTextContent("מרחק מ: חיפה");
-    expect(within(screen.getByTestId("map-mobile-bar")).queryByTestId("sort-origin-label")).toBeNull();
-    // …and the shell flags it, so globals.css lifts the Leaflet attribution out
-    // of the chip's way (the chip grows into the attribution's corner).
-    expect(screen.getByTestId("map-mobile-shell")).toHaveAttribute("data-origin-chip");
+    // MEH-2506: on mobile it is a compact tag UNDER the filter chips (it was a
+    // full 44px bordered row above them), in the active-filter tag colours.
+    const bar = screen.getByTestId("map-mobile-bar");
+    const chips = within(bar).getByTestId("filter-chips-bar");
+    const origin = within(bar).getByTestId("sort-origin");
+    expect(chips.compareDocumentPosition(origin) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const tag = within(origin).getByTestId("sort-origin-label").parentElement;
+    expect(tag.className).toContain("bg-green-50");
+    expect(tag.className).not.toContain("min-h-[44px]");
+    // The ✕ keeps its 44px hit area.
+    expect(within(origin).getByTestId("clear-user-location").className).toContain("w-11 h-11");
   });
 
   it("still applies the city FILTER when the geocode fails", async () => {
@@ -365,7 +369,6 @@ describe("MEH-2014 PR 2 — the two origins are mutually exclusive", () => {
 
     expect(stored()).toBe(null);
     expect(originLabels()).toHaveLength(0);
-    expect(screen.getByTestId("map-mobile-shell")).not.toHaveAttribute("data-origin-chip");
   });
 });
 

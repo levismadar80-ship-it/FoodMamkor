@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { CaretDown, MapPinLine, Rows, X } from "@phosphor-icons/react";
+import { CaretDown, MapPin, MapPinLine, Rows, X } from "@phosphor-icons/react";
 
 import CitySearch from "@/components/CitySearch";
 import LocationModal from "@/components/LocationModal";
@@ -548,16 +548,15 @@ export default function MapPage() {
   // card labels change meaning silently (MEH-1307 dropped the "ממך" suffix, so
   // a label is a bare magnitude). Naming the active origin is what keeps the
   // numbers readable; the clear button is unchanged beneath it.
-  // MEH-2506: the origin label is shared by the desktop control below and the
-  // mobile NearMePill, which now carries the origin itself (one control).
-  const originLabel = userLoc
-    ? userLoc.source === SOURCE_CITY
-      ? t("map.client.sort.origin_city", { city: userLoc.city })
-      : t("map.client.sort.origin_gps")
-    : null;
-  const showOrigin = Boolean(cityOriginPending || (userLoc && !geoSortPending));
-  const clearLocationControl =
-    showOrigin ? (
+  // MEH-2506: one origin chip, two sizes. Desktop keeps the 44px bordered chip
+  // beside the sort select. On mobile it is a compact tag BELOW the filter chips
+  // (Sapir 28/10: the full-height row above them read as one more filter, and
+  // a chip grown out of the near-me button looked wrong) — the same green tag
+  // language as the active-filter strip, with the ✕ keeping a 44px hit area
+  // through negative margin (the MEH-825 tag pattern), so the bar grows by ~24px
+  // instead of 52.
+  const originChip = (compact) =>
+    cityOriginPending || (userLoc && !geoSortPending) ? (
       <div
         className="flex flex-wrap items-center gap-x-2 gap-y-1"
         data-testid="sort-origin"
@@ -573,10 +572,22 @@ export default function MapPage() {
           // The chip is the Google Maps / Airbnb active-location pattern. The
           // ✕'s accessible name is the existing clear_location string — no new
           // copy — and the chip row keeps the 44px tap height.
-          <span className="inline-flex items-center gap-1.5 min-h-[44px] max-w-full rounded-full border border-border bg-surface-card ps-3 text-xs text-fg-muted">
-            <MapPinLine size={14} weight="bold" aria-hidden="true" className="shrink-0 text-primary" />
+          <span
+            className={
+              compact
+                ? "inline-flex items-center gap-1 max-w-full rounded-full bg-green-50 text-primary ps-2.5 text-xs"
+                : "inline-flex items-center gap-1.5 min-h-[44px] max-w-full rounded-full border border-border bg-surface-card ps-3 text-xs text-fg-muted"
+            }
+          >
+            {compact ? (
+              <MapPin size={14} weight="fill" aria-hidden="true" className="shrink-0" />
+            ) : (
+              <MapPinLine size={14} weight="bold" aria-hidden="true" className="shrink-0 text-primary" />
+            )}
             <span className="min-w-0 truncate" data-testid="sort-origin-label">
-              {originLabel}
+              {userLoc.source === SOURCE_CITY
+                ? t("map.client.sort.origin_city", { city: userLoc.city })
+                : t("map.client.sort.origin_gps")}
             </span>
             <button
               type="button"
@@ -584,14 +595,20 @@ export default function MapPage() {
               data-testid="clear-user-location"
               aria-label={t("map.client.sort.clear_location")}
               title={t("map.client.sort.clear_location")}
-              className="inline-flex shrink-0 items-center justify-center w-11 h-11 rounded-full text-fg-muted hover:text-primary focus-ring"
+              className={
+                compact
+                  ? "inline-flex shrink-0 items-center justify-center w-11 h-11 -my-3 rounded-full hover:opacity-80 focus-ring"
+                  : "inline-flex shrink-0 items-center justify-center w-11 h-11 rounded-full text-fg-muted hover:text-primary focus-ring"
+              }
             >
-              <X size={14} weight="bold" aria-hidden="true" />
+              <X size={compact ? 12 : 14} weight="bold" aria-hidden="true" />
             </button>
           </span>
         )}
       </div>
     ) : null;
+  const clearLocationControl = originChip(false);
+  const mobileOriginTag = originChip(true);
 
   // The empty state's "נקו את הסינון" — a wider reset than
   // filters.resetAllFilters: it also drops the city refinement and the legend's
@@ -813,10 +830,7 @@ export default function MapPage() {
       </div>
 
       {/* =================== MOBILE (below lg) — full map + sheet =================== */}
-      {/* MEH-2506: data-origin-chip lifts the Leaflet attribution above the
-          NearMePill while its origin chip is open — the chip grows toward the
-          inline-start, into the attribution's corner (globals.css). */}
-      <div ref={mobileShellRef} data-testid="map-mobile-shell" data-origin-chip={showOrigin ? "" : undefined} className="lg:hidden" style={{ height: `calc(100dvh - ${mobileTopOffset}px)`, position: "relative" }}>
+      <div ref={mobileShellRef} data-testid="map-mobile-shell" className="lg:hidden" style={{ height: `calc(100dvh - ${mobileTopOffset}px)`, position: "relative" }}>
         {/* Sticky filter bar — MEH-933 R2: sits at top-0 of the mobile shell.
             The shell is in normal flow AFTER the sticky <Header> (layout.js:221),
             so it already begins below the header band — the bar needs NO header
@@ -878,11 +892,15 @@ export default function MapPage() {
           <div className="mb-2">
             <CitySearch id="map-city-search-mobile" label={t("map.client.city_search.label")} value={filters.cityFilter} onChange={filters.setCityFilter} onSubmit={filters.handleCityFilter} placeholder={t("map.client.city_search.placeholder")} />
           </div>
-          {/* MEH-2014: the mobile half of the clear affordance used to sit here
-              as its own row. MEH-2506 moved it into the NearMePill (Sapir 28/10):
-              the pill is what SETS the origin, so it is where the origin is named
-              and cleared — and the bar loses a full row above the map. */}
           {filterChipsBar}
+          {/* MEH-2014: the mobile half of the clear affordance. There is no sort
+              <select> on this shell, but the NearMePill writes a location here,
+              and a persisted fix with no way out is the failure this ticket's
+              "explicit clear" requirement exists to prevent. MEH-2506: a compact
+              tag under the filter chips, not a full row above them. mt-3, not
+              mt-2: the ✕'s 44px hit area reaches 12px above the tag and must
+              clear the filter buttons (measured: 4px overlap at mt-2). */}
+          {mobileOriginTag && <div className="mt-3">{mobileOriginTag}</div>}
         </div>
 
         {/* Map fills the rest — MEH-933 R2: pt = the bar's live MEASURED height
@@ -920,12 +938,7 @@ export default function MapPage() {
         {/* MEH-970 chunk 2-lite: quiet persistent "קרוב אליי" pill — floats
             above the PEEK bottom sheet, routes to the shared handleGoToMyLocation
             (same goToMyLocation path as the filter-bar crosshair). */}
-        <NearMePill
-          onClick={handleGoToMyLocation}
-          originLabel={showOrigin && !cityOriginPending ? originLabel : null}
-          originPending={cityOriginPending}
-          onClearOrigin={handleClearLocation}
-        />
+        <NearMePill onClick={handleGoToMyLocation} />
 
         {/* Bottom sheet. MEH-1054 (MAP-16): loading rides the feed's initial
             fetch so the sheet shows a list skeleton instead of flashing an

@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { Crosshair, X } from "@phosphor-icons/react";
+import { Crosshair } from "@phosphor-icons/react";
 
 /**
  * NearMePill — MEH-970 chunk 2-lite.
@@ -33,83 +33,36 @@ import { Crosshair, X } from "@phosphor-icons/react";
  * gated the chat FAB off this route, so the prior MEH-1135 START-corner
  * placement (chosen only to avoid the FAB) is no longer needed. RTL: `end-4`
  * logical prop only — mirrors correctly in /en.
- *
- * MEH-2506: the pill also NAMES the active distance origin. It used to be a
- * separate full-width row in the mobile filter bar («מרחק מהמיקום שלכם ✕»),
- * which cost the map 54px and read as one more filter (Sapir 28/10). The pill
- * is what sets the origin, so it is where the origin is shown and cleared —
- * Google Maps' "your location" chip. With no origin it is the bare 44px circle,
- * unchanged. With one, a chip grows from the circle toward the inline-start:
- * label (same `sort-origin-label` testid) + ✕ (`clear-user-location`, the
- * existing clear_location name). While a city is being located the chip shows
- * the locating_city status instead, with no ✕. No new copy.
  */
-export default function NearMePill({ onClick, originLabel = null, originPending = false, onClearOrigin }) {
+export default function NearMePill({ onClick }) {
   const t = useTranslations();
-  const hasChip = originPending || !!originLabel;
   return (
-    <div
+    <button
+      type="button"
+      onClick={onClick}
+      data-testid="map-near-me-pill"
+      aria-label={t("map.near_me_pill.aria")}
       // MEH-970 R2: `bottom` rides the sheet edge (--map-sheet-h) and animates in
       // lockstep with the sheet via --map-sheet-anim (0ms drag / 300ms snap,
-      // published by MapBottomSheet); fallbacks make it inert (0ms) before the
-      // sheet mounts and publishes the vars. MEH-2506 moved the positioning from
-      // the button onto this wrapper so the origin chip rides with it.
-      // globals.css `[data-origin-chip] .leaflet-control-attribution` lifts the
-      // map credit by this +12px plus the pill's 46px height — change one, change both.
+      // published by MapBottomSheet). The explicit transition-property list keeps
+      // the hover background fade (replaces the Tailwind `transition` utility,
+      // which did not cover `bottom`); fallbacks make it inert (0ms) before the
+      // sheet mounts and publishes the vars.
       style={{
         bottom: "calc(var(--map-sheet-h, 14vh) + 12px)",
-        transitionProperty: "bottom",
-        transitionDuration: "var(--map-sheet-anim, 0ms)",
-        transitionTimingFunction: "cubic-bezier(0.32,0.72,0,1)",
+        transitionProperty: "bottom, background-color",
+        transitionDuration: "var(--map-sheet-anim, 0ms), 150ms",
+        transitionTimingFunction: "cubic-bezier(0.32,0.72,0,1), ease",
       }}
-      data-testid="map-near-me"
-      // With no origin the wrapper is bare and the button keeps its own border
-      // + background, so the default circle renders exactly as before (44px).
-      // With an origin the wrapper carries them and the button goes borderless,
-      // so chip + circle read as one pill.
-      className={`lg:hidden absolute end-4 z-[1000] flex items-center max-w-[calc(100vw-2rem)] rounded-full ${
-        hasChip ? "bg-background border border-border shadow-sm" : ""
-      }`}
+      // MEH-1194: circular icon button in the map's bottom-END corner — same
+      // token set as the desktop GPS circle (MapPane.jsx: w-11 h-11 rounded-full
+      // bg-background border, hover, focus ring), Crosshair glyph, no text label.
+      // transition-colors is intentionally omitted: the inline style block above
+      // already animates background-color (alongside `bottom`), so the Tailwind
+      // utility would be overridden anyway.
+      className="lg:hidden absolute end-4 z-[1000] w-11 h-11 rounded-full bg-background border border-border flex items-center justify-center text-primary hover:bg-green-50 focus-visible:ring-2 focus-visible:ring-primary/40"
     >
-      {hasChip && (
-        <div data-testid="sort-origin" className="flex min-w-0 items-center ps-3 text-xs text-fg-muted">
-          {originPending ? (
-            <span role="status" className="min-w-0 truncate pe-2">
-              {t("map.client.sort.locating_city")}
-            </span>
-          ) : (
-            <>
-              <span className="min-w-0 truncate" data-testid="sort-origin-label">
-                {originLabel}
-              </span>
-              <button
-                type="button"
-                onClick={onClearOrigin}
-                data-testid="clear-user-location"
-                aria-label={t("map.client.sort.clear_location")}
-                title={t("map.client.sort.clear_location")}
-                className="inline-flex shrink-0 items-center justify-center w-11 h-11 rounded-full text-fg-muted hover:text-primary focus-ring"
-              >
-                <X size={14} weight="bold" aria-hidden="true" />
-              </button>
-            </>
-          )}
-        </div>
-      )}
-      <button
-        type="button"
-        onClick={onClick}
-        data-testid="map-near-me-pill"
-        aria-label={t("map.near_me_pill.aria")}
-        // MEH-1194: circular icon button in the map's bottom-END corner — same
-        // token set as the desktop GPS circle (MapPane.jsx: w-11 h-11 rounded-full,
-        // hover, focus ring), Crosshair glyph, no text label.
-        className={`shrink-0 w-11 h-11 rounded-full flex items-center justify-center text-primary hover:bg-green-50 transition-colors focus-visible:ring-2 focus-visible:ring-primary/40 ${
-          hasChip ? "" : "bg-background border border-border"
-        }`}
-      >
-        <Crosshair size={20} weight="bold" aria-hidden="true" />
-      </button>
-    </div>
+      <Crosshair size={20} weight="bold" aria-hidden="true" />
+    </button>
   );
 }

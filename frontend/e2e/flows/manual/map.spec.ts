@@ -886,20 +886,22 @@ test.describe("manual › near-me pill + empty-near-me guard, mobile (MEH-970)",
     await expect(cards(shell)).toHaveCount(PRODUCERS.length);
   });
 
-  // MEH-2506 — the mobile origin lives in the near-me pill: after a fix the pill
-  //   names it with a ✕, and the filter bar above the map carries no origin row.
-  test("mobile: after near me the pill names the origin and clears it; the bar has no origin row", async ({ page, context }, info) => {
-    mobileOnly(info, "the pill is mounted inside the mobile shell only");
+  // MEH-2506 — the mobile origin is a compact tag UNDER the filter chips (it was
+  //   a full row above them): named after near me, cleared by its ✕.
+  test("mobile: after near me the origin tag sits under the filter chips and clears", async ({ page, context }, info) => {
+    mobileOnly(info, "the origin tag is the mobile bar's; desktop keeps it by the sort select");
     await grantGps(context, GPS_NEAR);
     const { shell } = await gotoWithCatalog(page, info);
-    const nearMe = shell.getByTestId("map-near-me");
-    await expect(nearMe.getByTestId("sort-origin-label")).toHaveCount(0);
+    const bar = shell.getByTestId("map-mobile-bar");
+    await expect(bar.getByTestId("sort-origin-label")).toHaveCount(0);
     await shell.getByTestId("map-near-me-pill").click();
-    await expect(nearMe.getByTestId("sort-origin-label")).toHaveText(MC.sort.origin_gps);
-    await expect(shell.getByTestId("map-mobile-bar").getByTestId("sort-origin-label")).toHaveCount(0);
-    await nearMe.getByTestId("clear-user-location").click();
-    await expect(nearMe.getByTestId("sort-origin-label")).toHaveCount(0);
-    await expect(shell.getByTestId("map-near-me-pill")).toBeVisible();
+    const label = bar.getByTestId("sort-origin-label");
+    await expect(label).toHaveText(MC.sort.origin_gps);
+    const filters = await bar.getByTestId("map-filters-button").boundingBox();
+    const tag = await label.boundingBox();
+    expect(tag!.y).toBeGreaterThan(filters!.y + filters!.height);
+    await bar.getByTestId("clear-user-location").click();
+    await expect(bar.getByTestId("sort-origin-label")).toHaveCount(0);
   });
 
   // MT:MEH-970:3 — nothing within 25 km: the toast, the camera back on the

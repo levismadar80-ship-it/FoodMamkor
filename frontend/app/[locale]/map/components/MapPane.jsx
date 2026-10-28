@@ -17,7 +17,7 @@ import { CATEGORY_LEGEND } from "@/lib/category-registry";
 import MapKey from "./MapKey";
 
 // MEH-2046: the token set every circular /map control already shares — the
-// desktop GPS circle below and NearMePill.jsx:70 both carry it. Extracted to a
+// desktop GPS circle below and NearMePill.jsx:62 both carry it. Extracted to a
 // constant here because the layer toggle now makes three, and three copies of a
 // class string is how they drift apart.
 const MAP_CONTROL_CLASS =
@@ -160,7 +160,7 @@ export default function MapPane({
         aria-pressed={showSecondaryLayer}
         aria-label={t("map.pane.pickup_layer.aria")}
         data-testid="pickup-layer-toggle-mobile"
-        // REUSES: NearMePill.jsx:60 — the same `--map-sheet-h` ride, one row up,
+        // REUSES: NearMePill.jsx:51 — the same `--map-sheet-h` ride, one row up,
         // so the two move together instead of one crossing the other on a drag.
         // A plain `bottom-4` was tried and is WRONG: once Leaflet mounts, the
         // pane's box reaches down into the cookie-banner band (measured: the
