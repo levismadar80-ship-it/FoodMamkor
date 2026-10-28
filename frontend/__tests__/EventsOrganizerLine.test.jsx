@@ -1,0 +1,175 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
+import EventsClient from "@/app/[locale]/events/EventsClient";
+
+// MEH-1865 — /events renders TWO different zeros and used to render one surface
+// for both:
+//   • empty dataset      — nothing exists for this tab. Zero filter controls,
+//                          the editorial empty state, a link to /producers.
+//   • filtered to zero    — rows exist, the filters matched none. The filter
+//                          controls STAY (hiding them traps the reader with no
+//                          way back but editing the URL) + "clear filters".
+//
+// The matrix below is (0 rows / 1 row / many rows) × (filters off / filters on)
+// per tab — cells, not two lists (CLAUDE.md § conditional-UI states). The
+// absence assertions are the load-bearing half: each state must NOT render the
+// other state's affordance, which is exactly what the pre-MEH-1865 component
+// got wrong.
+//
+// Harness mirrors __tests__/EventsUrlSync.test.jsx (jsdom + a full component
+// render) — only the api mock differs, because emptiness is the subject here.
+
+let params = {}; // drives useSearchParams().get(key)
+
+// The api mock models the two axes independently: what the endpoint returns
+// with NO filter (the dataset) vs what it returns WITH one. Keeping them apart
+// is what lets a test say "rows exist AND the filter matched none" — the state
+// a single fixture list cannot express.
+let unfilteredRows = [];
+let filteredRows = [];
+
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => ({ get: (k) => (k in params ? params[k] : null) }),
+}));
+// MEH-2245: switching tab is a route change through next-intl's router;
+// stub it (HANDOFF lesson: next-intl navigation under vitest needs the
+// 5-line @/i18n/navigation stub, same as the Register suites).
+const pushMock = vi.fn();
+vi.mock("@/i18n/navigation", () => ({
+  useRouter: () => ({ push: pushMock, replace: vi.fn(), prefetch: vi.fn() }),
+  usePathname: () => "/",
+  Link: ({ children, href, ...props }) => (
+    <a href={typeof href === "string" ? href : "#"} {...props}>
+      {children}
+    </a>
+  ),
+}));
+vi.mock("next-intl", () => ({
+  // MEH-2461: values are appended so the «מארגן: {name}» interpolation is
+  // observable (the name must reach the line, not just the key).
+  useTranslations: (ns) => (k, v) =>
+    `${ns ? `${ns}.${k}` : k}${v ? ` ${Object.values(v).join(" ")}` : ""}`,
+  useLocale: () => "he",
+}));
+vi.mock("next/link", () => ({
+  default: ({ children, href, ...rest }) => (
+    <a href={href} {...rest}>
+      {children}
+    </a>
+  ),
+}));
+vi.mock("@phosphor-icons/react", () => {
+  const Stub = () => null;
+  return Object.fromEntries(
+    [
+      "ArrowCounterClockwise", "ArrowRight", "Basket", "CalendarBlank",
+      "CalendarX", "CookingPot", "Drop", "MapTrifold", "Path", "Plant",
+      "Plus", "Rows", "Storefront",
+    ].map((name) => [name, Stub]),
+  );
+});
+vi.mock("@/lib/api", () => ({
+  default: {
+    get: vi.fn((_endpoint, config = {}) => {
+      const p = config.params || {};
+      const filtered = Boolean(p.city || p.category);
+      return Promise.resolve({ data: filtered ? filteredRows : unfilteredRows });
+    }),
+  },
+}));
+vi.mock("@/lib/cloudinary", () => ({ optimizeCloudinary: (u) => u }));
+vi.mock("@/lib/format-date", () => ({ formatEventDate: () => "" }));
+vi.mock("@/components/Breadcrumb", () => ({ default: () => null }));
+vi.mock("@/components/CalendarView", () => ({ default: () => null }));
+vi.mock("@/components/CitySearch", () => ({
+  default: ({ value, onChange, label, id }) => (
+    <input
+      data-testid="city-input"
+      data-filter-control="city"
+      aria-label={label}
+      id={id}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  ),
+}));
+vi.mock("@/components/ChipScrollRow", () => ({
+  default: ({ chips, activeKey, onChipClick }) => (
+    <div data-testid="chip-row" data-filter-control="category">
+      {chips.map((c) => (
+        <button
+          key={c.key}
+          data-key={c.key}
+          data-active={String(c.key === activeKey)}
+          onClick={() => onChipClick(c.key)}
+        >
+          {c.label}
+        </button>
+      ))}
+    </div>
+  ),
+}));
+
+
+/**
+ * MEH-2461 — the «מארגן: {name}» line on the /events list card.
+ * Harness above is EventsEmptyStates.test.jsx's, copied (same mocks, same
+ * full-component render); only the translation mock appends values.
+ * Cells: owner organizer vs business; organizer row without a name.
+ */
+const row = (id, extra = {}) => ({
+  id,
+  title: `event ${id}`,
+  event_date: "2026-11-0" + id,
+  event_time: "10:00",
+  city: "חיפה",
+  category: "שוק",
+  price: 0,
+  description: "",
+  ...extra,
+});
+
+const mount = async () => {
+  render(<EventsClient initialTab="events" />);
+  await waitFor(() => expect(screen.queryByRole("status")).toBeNull());
+};
+
+beforeEach(() => {
+  params = {};
+  unfilteredRows = [];
+  filteredRows = [];
+  window.history.replaceState(null, "", "/events");
+});
+afterEach(cleanup);
+
+describe("MEH-2461 — organizer line on the events card", () => {
+  it("organizer-owned event: «מארגן: {name}» with the organizer's name", async () => {
+    unfilteredRows = [row(1, { producer_name: "שוק גלם", owner_kind: "organizer", owner_slug: "gelem" })];
+    await mount();
+    expect(screen.getByText(/events\.list\.organizer_line שוק גלם/)).toBeInTheDocument();
+  });
+
+  it("business-owned event: the bare business name, no organizer line", async () => {
+    unfilteredRows = [row(1, { producer_name: "חוות הניסוי", owner_kind: "producer", owner_slug: "farm" })];
+    await mount();
+    expect(screen.getByText(/חוות הניסוי/)).toBeInTheDocument();
+    expect(screen.queryByText(/organizer_line/)).not.toBeInTheDocument();
+  });
+
+  it("many rows, mixed owners: each row labelled by its own owner", async () => {
+    unfilteredRows = [
+      row(1, { producer_name: "שוק גלם", owner_kind: "organizer", owner_slug: "gelem" }),
+      row(2, { producer_name: "חוות הניסוי", owner_kind: "producer", owner_slug: "farm" }),
+      row(3, { producer_name: "שוק הנמל", owner_kind: "organizer", owner_slug: "port" }),
+    ];
+    await mount();
+    expect(screen.getAllByText(/events\.list\.organizer_line/)).toHaveLength(2);
+    expect(screen.getByText(/חוות הניסוי/).textContent).not.toMatch(/organizer_line/);
+  });
+
+  it("a payload without owner_kind (pre-MEH-2459 API) reads as a business", async () => {
+    unfilteredRows = [row(1, { producer_name: "חוות הניסוי" })];
+    await mount();
+    expect(screen.queryByText(/organizer_line/)).not.toBeInTheDocument();
+  });
+});

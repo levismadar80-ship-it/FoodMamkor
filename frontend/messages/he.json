@@ -2470,7 +2470,8 @@
       "empty_browse_producers": "בינתיים, גלו את בתי העסק",
       "no_results_title": "לא נמצאו תוצאות",
       "no_results_cta": "נקו סינון",
-      "free": "חינם"
+      "free": "חינם",
+      "organizer_line": "מארגן: {name}"
     },
     "categories": {
       "all": "הכל",
@@ -2500,7 +2501,8 @@
       "participants_limit": "עד {n} משתתפים",
       "free": "חינם",
       "breadcrumb_home": "בית",
-      "breadcrumb_events": "אירועים"
+      "breadcrumb_events": "אירועים",
+      "organizer_line": "מארגן: {name}"
     },
     "calendar": {
       "previous_month": "חודש קודם",
@@ -5385,5 +5387,15 @@
       "switch_account": "החלפת חשבון"
     },
     "submit_error": "לא הצלחנו לשייך את העמוד. נסו שוב בעוד רגע."
+  },
+  "organizers": {
+    "page": {
+      "events_heading": "אירועים קרובים",
+      "empty": "אין אירועים קרובים כרגע",
+      "whatsapp": "וואטסאפ",
+      "instagram": "אינסטגרם",
+      "website": "אתר",
+      "facebook": "פייסבוק"
+    }
   }
 }
