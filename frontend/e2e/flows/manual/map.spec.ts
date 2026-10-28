@@ -104,9 +104,8 @@ import { ISRAEL_CITIES } from "../../../data/cities.js";
  *           flyTo 13 — MapComponent.jsx).
  * Does NOT: convert MEH-1388 rows 1-4 (COVERED by 24-producer-locations
  *           .spec.ts:264/:159/:319/:344), PR3 row 2 (mobile FAB absence is
- *           entailed by MEH-1410's desktop-only gate — ChatWidgetDesktopOnly
- *           .test.jsx:61 — so a /map assertion there would be green for two
- *           reasons), MEH-1230 row 2 (focus-ring clipping is a paint property
+ *           entailed by MEH-1410's desktop-only gate — since MEH-2499 the FAB
+ *           is on mobile again, so this row is convertible now; not done here), MEH-1230 row 2 (focus-ring clipping is a paint property
  *           a bounding box cannot see), PR1 rows 2-6 (2/6 STALE — price and
  *           the delivery strip were removed, MapProducerCard.test.jsx:312/:212;
  *           3-5 COVERED there), MEH-1075 rows 2/3/6/7/10 (COVERED,
@@ -616,7 +615,7 @@ test.describe("manual › chat FAB hidden on /map (map-quality PR 3)", () => {
   //   that makes the absence above evidence). The producer-page half is chunk 8;
   //   the dashboard subtree is ChatWidgetLazy.test.jsx:46/:52.
   test("desktop: no chat launcher on /map while the legend toggle works — and the launcher IS on the home page", async ({ page }, info) => {
-    desktopOnly(info, "the FAB is desktop-only by MEH-1410 — on mobile its absence has two causes");
+    desktopOnly(info, "desktop row only (MT:PR3:1) — the mobile row is not converted here");
     await stubExternal(page);
     await gotoMap(page);
     const shell = shellOf(page, info);
@@ -632,7 +631,7 @@ test.describe("manual › chat FAB hidden on /map (map-quality PR 3)", () => {
 
   // MT:PR3:3 — `/en/map`: no launcher in English either.
   test("desktop: no chat launcher on /en/map", async ({ page }, info) => {
-    desktopOnly(info, "the FAB is desktop-only by MEH-1410");
+    desktopOnly(info, "desktop row only (MT:PR3:3)");
     await stubExternal(page);
     await gotoMap(page, "/en/map");
     await expect(page.getByRole("button", { name: CHAT_OPEN_EN })).toHaveCount(0);

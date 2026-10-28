@@ -1,13 +1,12 @@
-import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, cleanup, fireEvent } from "@testing-library/react";
+import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
+import { render, screen, cleanup, fireEvent, act } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import he from "../messages/he.json";
 import en from "../messages/en.json";
 
-// MEH-1410 — ChatWidget is desktop-only (>= 768px). It gates its entire
-// render on the `isDesktop` matchMedia state and returns null on mobile.
-//  A) mobile (matchMedia "(min-width: 768px)" → false): renders nothing
-//  B) desktop (matchMedia → true): renders the launcher FAB
+// ChatWidget renders on every viewport (MEH-2499; it was desktop-only under
+// MEH-1410, 21/07–28/10). The mobile block below pins the launcher and its
+// hide-on-scroll-down behavior; desktop pins the pill/aria states.
 // The widget imports `@/lib/api`; stub it so these render-only tests stay
 // offline and deterministic.
 //
@@ -64,20 +63,70 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-describe("ChatWidget desktop-only (MEH-1410)", () => {
-  it("renders nothing on mobile (< 768px)", () => {
+// MEH-2499 — reverses MEH-1410: the launcher is back on mobile (< 768px) as an
+// icon-only circle above the BottomNav pill, and it steps aside while the
+// reader scrolls DOWN (Material: a FAB stacked over bottom navigation hides on
+// scroll) and returns on scroll UP. Desktop is unchanged.
+// DISCRIMINATION: on the MEH-1410 code the first case reds (empty DOM), and
+// the scroll cases red because there is no launcher to query at all.
+function setScrollY(y) {
+  Object.defineProperty(window, "scrollY", { value: y, configurable: true, writable: true });
+  window.dispatchEvent(new Event("scroll"));
+}
+
+describe("ChatWidget on mobile (MEH-2499, was desktop-only MEH-1410)", () => {
+  // rAF runs synchronously so each scroll event settles before the assertion.
+  const realRaf = window.requestAnimationFrame;
+  beforeEach(() => {
+    window.requestAnimationFrame = (cb) => { cb(0); return 0; };
+    Object.defineProperty(window, "scrollY", { value: 0, configurable: true, writable: true });
+    localStorage.setItem("chatWasOpened", "true");
+  });
+  afterEach(() => {
+    window.requestAnimationFrame = realRaf;
+    localStorage.removeItem("chatWasOpened");
+  });
+
+  it("renders the icon-only launcher on mobile (< 768px)", () => {
     mockMatchMedia(false);
-    const { container } = renderWidget();
-    expect(container).toBeEmptyDOMElement();
-    // The launcher aria-label must not exist anywhere on mobile.
-    expect(screen.queryByRole("button", { name: launcherName(he) })).not.toBeInTheDocument();
+    renderWidget();
+    const btn = screen.getByRole("button", { name: he.chat.launcher_open_label });
+    expect(btn).toBeInTheDocument();
+    // Mobile is always icon-only — no pill text.
+    expect(screen.queryByText(he.chat.launcher_pill)).not.toBeInTheDocument();
+  });
+
+  it("hides on scroll down and comes back on scroll up", () => {
+    mockMatchMedia(false);
+    renderWidget();
+    const btn = () => screen.getByTestId("chat-launcher");
+    expect(btn()).toHaveAttribute("data-hidden", "false");
+    act(() => setScrollY(400));
+    expect(btn()).toHaveAttribute("data-hidden", "true");
+    expect(btn()).toHaveAttribute("tabindex", "-1");
+    act(() => setScrollY(250));
+    expect(btn()).toHaveAttribute("data-hidden", "false");
+    expect(btn()).not.toHaveAttribute("tabindex");
+  });
+
+  it("never hides on desktop, whatever the scroll direction", () => {
+    mockMatchMedia(true);
+    renderWidget();
+    act(() => setScrollY(400));
+    expect(screen.getByTestId("chat-launcher")).toHaveAttribute("data-hidden", "false");
+  });
+
+  it("stays visible while the panel is open", () => {
+    mockMatchMedia(false);
+    renderWidget();
+    fireEvent.click(screen.getByRole("button", { name: he.chat.launcher_open_label }));
+    act(() => setScrollY(400));
+    expect(screen.getByTestId("chat-launcher")).toHaveAttribute("data-hidden", "false");
   });
 
   it("renders the launcher FAB on desktop (>= 768px)", () => {
     mockMatchMedia(true);
     renderWidget();
-    // The effect flips isDesktop → true (flushed inside render's act()), so the
-    // closed-state launcher button is present.
     expect(screen.getByRole("button", { name: launcherName(he) })).toBeInTheDocument();
   });
 });

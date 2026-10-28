@@ -984,8 +984,9 @@ test.describe("manual › floating back-to-top (MEH-1309)", () => {
     expect(b.x + b.width / 2, "the button sits in the inline-END half of an RTL page").toBeLessThan(vw / 2);
     expect(b.y + b.height / 2, "…and in the bottom half").toBeGreaterThan(vh / 2);
     if (isDesktop(info)) {
-      // The chat FAB is desktop-only (MEH-1410, ChatWidgetDesktopOnly.test.jsx:61),
-      // so on mobile its absence has two causes and proves nothing.
+      // Desktop only: on mobile the chat FAB steps aside on scroll-down
+      // (MEH-2499, ChatWidgetMobile.test.jsx), so at this scroll depth it is
+      // hidden and there is nothing to overlap.
       const fab = page.getByRole("button", { name: CHAT_LAUNCHER_NAME });
       await expect(fab).toHaveCount(1);
       const f = await box(fab);
