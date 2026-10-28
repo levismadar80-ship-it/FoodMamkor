@@ -108,8 +108,8 @@ for (const [tag, width, height] of [["375", 375, 812], ["1440", 1440, 900]]) {
   // ---- the business line ---------------------------------------------------
   const biz = page.getByTestId("about-biz-strip");
   check(`${tag}/business link present`, (await biz.count()) === 1);
-  check(`${tag}/business link text === "כך זה עובד אצלנו"`,
-    (await biz.innerText()).trim().startsWith("כך זה עובד אצלנו"));
+  check(`${tag}/business link text === "שאלות נפוצות על הצטרפות"`,
+    (await biz.innerText()).trim().startsWith("שאלות נפוצות על הצטרפות"));
   check(`${tag}/business lead "בעלת עסק?" present`,
     (await page.getByText("בעלת עסק?", { exact: true }).count()) === 1);
   check(`${tag}/business href unchanged`,
@@ -132,14 +132,14 @@ for (const [tag, width, height] of [["375", 375, 812], ["1440", 1440, 900]]) {
 
   // ---- the business link's ACCESSIBLE NAME, not just its visible text -------
   // Splitting the copy into a sibling <p> for the visual design cut the link's
-  // accessible name down to «כך זה עובד אצלנו» alone, which says nothing about
+  // accessible name down to «שאלות נפוצות על הצטרפות» alone, which says nothing about
   // who the link is for. aria-labelledby rebuilds the pre-split name. Asserted
   // by role+name because that IS the computed accessible name — a textContent
   // assertion passes on the broken markup and so proves nothing.
   check(`${tag}/business link accessible name is the FULL string`,
-    (await page.getByRole("link", { name: "בעלת עסק? כך זה עובד אצלנו", exact: true }).count()) === 1);
+    (await page.getByRole("link", { name: "בעלת עסק? שאלות נפוצות על הצטרפות", exact: true }).count()) === 1);
   check(`${tag}/business link is NOT named by the bare CTA alone`,
-    (await page.getByRole("link", { name: "כך זה עובד אצלנו", exact: true }).count()) === 0);
+    (await page.getByRole("link", { name: "שאלות נפוצות על הצטרפות", exact: true }).count()) === 0);
 
   // ---- exactly 2 links between the signature and the chapter-02 heading -----
   const linkCount = await page.evaluate((quote) => {
