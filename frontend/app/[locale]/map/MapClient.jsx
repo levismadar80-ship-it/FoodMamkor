@@ -60,6 +60,13 @@ const MOBILE_HEADER_OFFSET_PX = 64;
 // first paint never under-reserves and briefly overlaps the map.
 const MOBILE_BAR_FALLBACK_PX = 174;
 
+// MEH-945 / MEH-2148: the strip the mobile map wrapper reserves at its bottom
+// while the cookie banner shows: the nav clearance, CookieBanner's 8px gap,
+// 16px of air, and the banner's live height. Named because two properties
+// carry it (paddingBottom and --map-pane-reserve, MEH-2517).
+const MOBILE_BANNER_RESERVE =
+  "calc(var(--bottom-nav-clearance, calc(4.5rem + env(safe-area-inset-bottom, 0px))) + 8px + 16px + var(--cookie-banner-h, 0px))";
+
 /**
  * /map page shell. Compose-only after MEH-407 PR3 — composes 4 hooks
  * + 6 components + a small set of cross-hook handlers/effects that
@@ -931,7 +938,12 @@ export default function MapPage() {
               // already includes the inset, so keeping it outside would
               // double-count it on notched phones. Fallback total is byte-identical
               // to the old value: 72 + 8 + 16 = 96.
-              ? { paddingBottom: "calc(var(--bottom-nav-clearance, calc(4.5rem + env(safe-area-inset-bottom, 0px))) + 8px + 16px + var(--cookie-banner-h, 0px))" }
+              //
+              // MEH-2517: the same length is published as --map-pane-reserve.
+              // MapPane's sheet-edge controls measure from the pane's bottom,
+              // which this padding lifts off the viewport's; they subtract it
+              // so the strip is not counted twice (MapPane.jsx sheetRide).
+              ? { paddingBottom: MOBILE_BANNER_RESERVE, "--map-pane-reserve": MOBILE_BANNER_RESERVE }
               : {}),
           }}
         >
