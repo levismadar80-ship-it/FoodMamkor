@@ -114,6 +114,7 @@ function toEntry(row, tab, t) {
     title: row.title,
     date: row.event_date,
     time: row.event_time,
+    endTime: row.end_time ?? null, // MEH-2469
     who: isExp
       ? row.host?.name
       : isOrganizerEvent
@@ -525,7 +526,8 @@ function EntryRow({ entry, freeLabel }) {
   const day = formatEventDate(entry.date, locale, { day: "2-digit" });
   const weekday = formatEventDate(entry.date, locale, { weekday: "long" });
   const month = formatEventDate(entry.date, locale, { month: "long" });
-  const time = formatTime(entry.time);
+  // MEH-2469: «09:30–15:00» when the event has an end time.
+  const time = [formatTime(entry.time), formatTime(entry.endTime)].filter(Boolean).join("–");
   const meta = [entry.who, entry.city].filter(Boolean).join(" · ");
   const isFree = !(entry.price > 0);
 

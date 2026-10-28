@@ -4801,6 +4801,8 @@
       "field_category_label": "Category",
       "field_date_label": "Date",
       "field_time_label": "Time",
+      "field_end_time_label": "End time (optional)",
+      "error_end_time_after_start": "The end time must be after the start time",
       "field_time_hint": "Optional — if blank, only the date is shown",
       "field_location_label": "Specific location",
       "field_location_placeholder": "Exact address or directions",

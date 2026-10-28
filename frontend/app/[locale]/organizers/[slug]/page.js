@@ -193,6 +193,10 @@ export default async function OrganizerPage(props) {
                 >
                   <span className="block text-sm text-fg-muted">
                     {formatEventDate(ev.event_date, locale)}
+                    {/* MEH-2469: start, or «09:30–15:00» with an end time. */}
+                    {ev.event_time
+                      ? ` · ${String(ev.event_time).slice(0, 5)}${ev.end_time ? `–${String(ev.end_time).slice(0, 5)}` : ""}`
+                      : ""}
                     {ev.city ? ` · ${ev.city}` : ""}
                   </span>
                   <span className="block font-medium text-text mt-1">{ev.title}</span>

@@ -71,7 +71,7 @@ export function UpcomingEventsPreview() {
             )}
             <div className="p-4">
               <p className="text-primary text-sm font-semibold mb-1">
-                {formatEventDate(ev.event_date, locale, { day: "numeric", month: "long" })} {ev.event_time && `· ${ev.event_time.slice(0, 5)}`}
+                {formatEventDate(ev.event_date, locale, { day: "numeric", month: "long" })} {ev.event_time && `· ${ev.event_time.slice(0, 5)}${ev.end_time ? `–${ev.end_time.slice(0, 5)}` : ""}`}
               </p>
               <h3 className="font-headline-md text-xl font-bold text-text mb-1">{ev.title}</h3>
               <p className="text-sm text-fg-muted mb-2">

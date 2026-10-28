@@ -117,7 +117,14 @@ export default function EventDetailClient() {
             {/* MEH-857: emoji to Phosphor, mirrors MapPin markup at :96 */}
             <Calendar size={16} className="text-primary inline align-[-3px]" aria-hidden="true" />
             {formatEventDate(event.event_date, locale, DETAIL_DATE_OPTIONS)}
-            {event.event_time && ` · ${event.event_time.slice(0, 5)}`}
+            {event.event_time && (
+              // MEH-2469: «09:30–15:00» when there is an end time.
+              <span dir="ltr">
+                {" · "}
+                {event.event_time.slice(0, 5)}
+                {event.end_time ? `–${event.end_time.slice(0, 5)}` : ""}
+              </span>
+            )}
           </p>
           {event.location && (
             <p className="flex items-center gap-2">

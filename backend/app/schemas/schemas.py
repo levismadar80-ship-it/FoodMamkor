@@ -4192,6 +4192,24 @@ class ProducerNameChangeRequestUpdate(BaseModel):
 # --- Event ---
 # MEH-458: relocated from routers/events.py per ADR-006 R1.
 # Pure relocation — fields, validators, model_config preserved verbatim.
+# MEH-2469: the one rule for an event's end time, shared by EventCreate and
+# the update route (which must check against the persisted start). The detail
+# is the copy Sapir approved 28.10.
+EVENT_END_TIME_ERROR = "שעת הסיום צריכה להיות אחרי שעת ההתחלה"
+
+
+def event_end_time_problem(
+    event_time: time | None, end_time: time | None
+) -> str | None:
+    """None when the pair is valid. An end time needs a start time and must be
+    strictly after it (same-day events only; no overnight ranges)."""
+    if end_time is None:
+        return None
+    if event_time is None or end_time <= event_time:
+        return EVENT_END_TIME_ERROR
+    return None
+
+
 class EventCreate(BaseModel):
     # MEH-1626 chunk 1: the exact asymmetry the audit flagged — `description`
     # below was bleached, `title` (the more visible field) was not.
@@ -4199,6 +4217,7 @@ class EventCreate(BaseModel):
     description: str | None = None
     event_date: date
     event_time: time | None = None
+    end_time: time | None = None  # MEH-2469
     location: str | None = None
     # MEH-2013: "עיר *" is labelled required on the event form too and was
     # enforced in neither layer — the same class as ExperienceCreate.city
@@ -4253,6 +4272,14 @@ class EventCreate(BaseModel):
     def _validate_registration_url(cls, v):
         return _url_scheme_validator(v)
 
+    # MEH-2469: end after start, both on the same day.
+    @model_validator(mode="after")
+    def _check_end_time(self):
+        problem = event_end_time_problem(self.event_time, self.end_time)
+        if problem:
+            raise ValueError(problem)
+        return self
+
 
 class EventUpdate(BaseModel):
     # MEH-1626 chunk 1: parity with the Create twin. Optional, so an omitted
@@ -4262,6 +4289,8 @@ class EventUpdate(BaseModel):
     description: str | None = None
     event_date: date | None = None
     event_time: time | None = None
+    # MEH-2469 — checked against the stored start in the route.
+    end_time: time | None = None
     location: str | None = None
     city: str | None = None
     lat: float | None = None
@@ -4312,6 +4341,7 @@ class EventOut(BaseModel):
     description: str | None = None
     event_date: date
     event_time: time | None = None
+    end_time: time | None = None  # MEH-2469
     location: str | None = None
     city: str | None = None
     lat: float | None = None
