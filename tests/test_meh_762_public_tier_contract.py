@@ -47,6 +47,10 @@ def test_verified_tier_when_verified_at_set(client, db):
 def test_declared_tier_when_all_categories_exempt(client, db):
     cat = make_category(db, name="ירקות")  # not in LICENSE_REQUIRED_CATEGORIES
     producer = make_producer(db, name="חוות מוצהרת", category=cat)
+    # MEH-2520: "declared" also needs a signed declaration — the unsigned
+    # case is covered in test_meh2517_verification_honesty.py.
+    producer.declared_at = datetime.now(timezone.utc)
+    db.commit()
     body = client.get(f"/producers/{producer.id}").json()
     assert body["verification_tier"] == "declared"
     assert body["verified_at"] is None
