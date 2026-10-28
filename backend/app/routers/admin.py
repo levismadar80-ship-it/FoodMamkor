@@ -795,12 +795,16 @@ def admin_update_producer(
     # keeps `in_season_until` off the owner's schema entirely rather than merely
     # filtered out of it.
     data: ProducerAdminUpdate,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    # MEH-2498: this PUT can write `status` too (ProducerUpdate.status), so it
+    # is the third way a business leaves 'approved' — read before the setattr.
+    was_approved = producer.status == "approved"
 
     payload = data.model_dump(exclude_unset=True)
     category_ids = payload.pop("category_ids", None)
@@ -858,6 +862,11 @@ def admin_update_producer(
 
     for field, value in payload.items():
         setattr(producer, field, value)
+
+    # MEH-2498: same rule as toggle-status and reject — off the site means the
+    # business's live group buys are cancelled in this commit.
+    if was_approved and producer.status != "approved":
+        cancel_live_group_buys(db, producer, background_tasks)
 
     if category_ids is not None:
         _apply_categories(db, producer, category_ids)

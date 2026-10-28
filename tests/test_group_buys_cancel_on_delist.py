@@ -188,18 +188,74 @@ class TestRejectCancelsLiveGroupBuys:
 
         assert _reject(client, admin, producer).status_code == 200
         assert _statuses(db, gb) == ["cancelled"]
-        assert "buyer-rej@example.com" in [to for to, _, _ in sent]
+        # Exact list: the delisted-cancel email reaches the participant only.
+        # (The owner's rejection email goes through admin.send_email, not here.)
+        assert [to for to, _, _ in sent] == ["buyer-rej@example.com"]
 
     def test_rejecting_a_pending_business_does_not_touch_group_buys(
         self, client, db, monkeypatch
     ):
-        _capture(monkeypatch)
+        sent = _capture(monkeypatch)
         producer, _ = _business(db, status="pending")
         gb = _group(db, producer)  # direct insert; the rule keys on the transition
         admin = make_user(db, role="admin", email="admin7@example.com")
 
         assert _reject(client, admin, producer).status_code == 200
         assert _statuses(db, gb) == ["open"]
+        assert sent == []
+
+
+class TestAdminEditCancelsLiveGroupBuys:
+    """The admin PUT accepts `status` (ProducerUpdate.status) — the third way a
+    business leaves 'approved'. Found in the adversarial review of #3750."""
+
+    def test_put_status_inactive_cancels_and_mails(self, client, db, monkeypatch):
+        sent = _capture(monkeypatch)
+        producer, _ = _business(db)
+        gb = _group(db, producer)
+        _join(db, gb, "buyer-put@example.com")
+        admin = make_user(db, role="admin", email="admin8@example.com")
+
+        resp = client.put(
+            f"/admin/producers/{producer.id}",
+            json={"status": "inactive"},
+            headers=auth_header(admin),
+        )
+        assert resp.status_code == 200
+        assert _statuses(db, gb) == ["cancelled"]
+        assert [to for to, _, _ in sent] == ["buyer-put@example.com"]
+
+    def test_put_without_status_change_touches_nothing(self, client, db, monkeypatch):
+        sent = _capture(monkeypatch)
+        producer, _ = _business(db)
+        gb = _group(db, producer)
+        admin = make_user(db, role="admin", email="admin9@example.com")
+
+        resp = client.put(
+            f"/admin/producers/{producer.id}",
+            json={"name": "מאפיית הגליל החדשה"},
+            headers=auth_header(admin),
+        )
+        assert resp.status_code == 200
+        assert _statuses(db, gb) == ["open"]
+        assert sent == []
+
+
+class TestRecipients:
+    def test_a_buyer_who_owns_a_different_business_is_still_mailed(
+        self, client, db, monkeypatch
+    ):
+        # Guards the filter against shrinking to "users with no business".
+        sent = _capture(monkeypatch)
+        producer, _ = _business(db)
+        gb = _group(db, producer)
+        _, other_owner = _business(db, email="buyer-is-a-business@example.com")
+        db.add(GroupBuyCommit(group_buy_id=gb.id, user_id=other_owner.id, quantity=1))
+        db.commit()
+        admin = make_user(db, role="admin", email="admin10@example.com")
+
+        assert _suspend(client, admin, producer).status_code == 200
+        assert [to for to, _, _ in sent] == ["buyer-is-a-business@example.com"]
 
 
 class TestDelistedEmailCopy:

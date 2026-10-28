@@ -628,8 +628,10 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 >
 > **MEH-2498 — taking a business off the site cancels its live group buys.**
 > When an admin moves a business out of `approved` — `POST
-> /admin/producers/{id}/toggle-status` (approved→inactive) or `POST
-> /admin/producers/{id}/reject` (approved→rejected) — every group buy of it in
+> /admin/producers/{id}/toggle-status` (approved→inactive), `POST
+> /admin/producers/{id}/reject` (approved→rejected), or `PUT
+> /admin/producers/{id}` with a `status` other than `approved` (the admin
+> schema accepts it) — every group buy of it in
 > `open` / `funded` becomes `cancelled` in the same commit
 > (`services/group_buy_delist.cancel_live_group_buys`), and each participant
 > except the business's own users gets the **delisted-cancel email**
