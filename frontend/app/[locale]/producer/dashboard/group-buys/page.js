@@ -480,8 +480,13 @@ export default function ProducerGroupBuysPage() {
     setActing(true);
     setActionError("");
     try {
+      // MEH-2489: send the status this card showed. If the group moved on
+      // meanwhile (a last participant joined: open → funded), the server
+      // answers 409 rather than cancel a funded group whose double confirm she
+      // never saw; the 409 branch below reloads and shows the real state.
       const res = await api.patch(`/group-buys/${gb.id}/status`, {
         status: ACTION_TARGET[action],
+        expected_status: gb.status,
       });
       const parsed = GroupBuyStatusResultSchema.safeParse(res.data);
       if (parsed.success) {

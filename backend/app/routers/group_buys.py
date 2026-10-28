@@ -419,6 +419,16 @@ def update_group_buy_status(  # noqa: PLR0913 — all 6 args are FastAPI-injecte
     # A producer user with no business owns nothing.
     if current_user.producer_id is None or gb.producer_id != current_user.producer_id:
         raise HTTPException(status_code=403, detail="אין הרשאה לשנות קבוצת רכש זו")
+    # MEH-2489: checked under the row lock, after the ownership check (a
+    # stranger learns nothing about the row's state). Same 409 and wording as
+    # a refused transition: either way the dashboard reloads and shows the
+    # state the server holds. The concrete case: she opened «ביטול» on an open
+    # group, a last participant joined meanwhile, and without this the cancel
+    # went through on a funded group whose double confirm she never saw.
+    if data.expected_status is not None and gb.status != data.expected_status:
+        raise HTTPException(
+            status_code=409, detail="אי אפשר לשנות את קבוצת הרכש למצב הזה"
+        )
     if (gb.status, data.status) not in OWNER_TRANSITIONS:
         raise HTTPException(
             status_code=409, detail="אי אפשר לשנות את קבוצת הרכש למצב הזה"

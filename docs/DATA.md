@@ -585,6 +585,14 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > checked path per caller, not two to the same state. The check and the write run under a row lock
 > (`with_for_update`, like `/commit`). 30/minute. No schema change.
 >
+> **MEH-2489 — `expected_status` (optional).** Same body plus
+> `"expected_status": "open"|"funded"|"cancelled"|"fulfilled"`: the status the
+> dashboard showed. Checked under the row lock, after the IDOR check; a mismatch
+> → 409 with the same detail as a refused transition, nothing written, no email.
+> Omitted → the behaviour above, unchanged. The owner dashboard always sends it,
+> so a cancel opened on an open group that funded meanwhile is refused instead
+> of landing on a funded group whose double confirm she never saw.
+>
 > **MEH-2435 chunk 4 — cancel email.** When that owner route writes
 > `cancelled` (cancel before the deadline, close after it, or cancel a funded
 > group), every participant gets «מהמקור — הקבוצה "{title}" בוטלה», naming the
