@@ -12,6 +12,7 @@ import { styleForProducer } from "@/lib/category-registry";
 import { useUserLocation } from "@/lib/user-location";
 import { haversineKm, formatDistance } from "@/lib/distance";
 import { producerPoints } from "@/lib/producerPoints";
+import { resolveStoreHours } from "@/lib/hours";
 
 // MEH-1133: aspect at/above which a thumbnail source is treated as "logo-like"
 // (wide banner/logo) and letterboxed (object-contain) instead of cropped
@@ -55,8 +56,12 @@ const FULFILLMENT_ICON_PX = 13;
  * literal rather than a promise in prose — the whole producer is not in scope
  * here, so a future fallback to a legacy operand cannot be added without
  * widening the signature first.
+ *
+ * MEH-2438 follow-up widened it once, deliberately: `storeWithHours` splits the
+ * "neither" cell only (a shop with fixed hours reads «קנייה במקום» instead of
+ * the arranged tag). It never decides whether delivery or pickup is shown.
  */
-function fulfillmentTags({ delivers, offersPickup }, t) {
+function fulfillmentTags({ delivers, offersPickup, storeWithHours }, t) {
   if (delivers && offersPickup) {
     return [
       { key: "delivery", label: t("fulfillment.delivery"), Icon: Truck },
@@ -69,9 +74,13 @@ function fulfillmentTags({ delivers, offersPickup }, t) {
   if (offersPickup) {
     return [{ key: "pickup_only", label: t("fulfillment.pickup_only"), Icon: Package }];
   }
-  // No declared service axis — the business is reachable, just not through a
-  // standing arrangement. This is also exactly the set the /map service filter
-  // excludes (MEH-2046 PR-2's explanation line says so out loud).
+  // MEH-2438 follow-up: no declared service axis. A shop with fixed hours is
+  // not "by arrangement" — you walk in — so it gets its own neutral tag. Both
+  // tags sit in the set the /map service filter excludes, so the tag and the
+  // filter still cannot disagree; `storeWithHours` only splits that cell.
+  if (storeWithHours) {
+    return [{ key: "on_site", label: t("fulfillment.on_site"), Icon: null, neutral: true }];
+  }
   return [{ key: "arranged", label: t("fulfillment.arranged"), Icon: null, neutral: true }];
 }
 
@@ -261,7 +270,14 @@ export default function MapProducerCard({ producer, active, onClick }) {
             beside the 88px thumb and the 44px chevron, and a wrap is honest
             where an ellipsis would hide which service a business offers. */}
         <div className="flex flex-wrap items-center gap-1" data-testid="map-fulfillment">
-          {fulfillmentTags({ delivers: !!p.delivers, offersPickup: !!p.offers_pickup }, t).map((tag) => (
+          {fulfillmentTags(
+            {
+              delivers: !!p.delivers,
+              offersPickup: !!p.offers_pickup,
+              storeWithHours: p.has_physical_location === true && !!resolveStoreHours(p),
+            },
+            t,
+          ).map((tag) => (
             <span
               key={tag.key}
               data-testid={`map-fulfillment-${tag.key}`}

@@ -768,6 +768,7 @@
       "sections": {
         "about": "אודות",
         "location": "הגעה ומיקום",
+        "location_no_hours": "אין שעות קבועות — כדאי לתאם לפני שמגיעים",
         "similar": {
           "heading": "בתי עסק דומים",
           "in_area": "{category} · באזור שלך"
@@ -1352,7 +1353,8 @@
         "pickup": "איסוף עצמי",
         "delivery_only": "משלוח",
         "pickup_only": "איסוף עצמי",
-        "arranged": "בתיאום אישי"
+        "arranged": "בתיאום מראש",
+        "on_site": "קנייה במקום"
       }
     },
     "mini": {
