@@ -973,6 +973,9 @@ test.describe("manual › chat launcher on mobile (MEH-2499)", () => {
     await expect(launcher).toHaveAttribute("data-hidden", "false");
     await page.evaluate(() => window.scrollTo(0, 900));
     await expect(launcher).toHaveAttribute("data-hidden", "true");
+    // The attribute alone could flip with no visual change — pin the effect.
+    await expect(launcher).toHaveCSS("pointer-events", "none");
+    await expect(launcher).toHaveCSS("opacity", "0");
     await page.evaluate(() => window.scrollTo(0, 600));
     await expect(launcher).toHaveAttribute("data-hidden", "false");
   });

@@ -120,10 +120,15 @@ export default function ChatWidget() {
 
   // ── Responsive: desktop vs mobile ──
   const [isDesktop, setIsDesktop] = useState(false);
+  // MEH-2499: false until the matchMedia read below has run. Without it a
+  // desktop load painted one frame of the MOBILE launcher (isDesktop starts
+  // false) before jumping to the desktop pill.
+  const [viewportKnown, setViewportKnown] = useState(false);
   useEffect(() => {
     if (typeof window === "undefined") return;
     const mq = window.matchMedia("(min-width: 768px)");
     setIsDesktop(mq.matches);
+    setViewportKnown(true);
     const h = (e) => setIsDesktop(e.matches);
     mq.addEventListener("change", h);
     return () => mq.removeEventListener("change", h);
@@ -267,7 +272,9 @@ export default function ChatWidget() {
   // 9997. At 9999 it painted over the open filter sheet's end corner. The
   // panel keeps 9999 (it is the sheet here).
   if (!isDesktop) Object.assign(launcherStyle, { zIndex: 1050 });
-  // MEH-2499: never hidden while the panel is open (it is the close control).
+  // MEH-2499: never hidden while the panel is open. (On mobile the open sheet
+  // covers the launcher, so the sheet's own X is the close control there; on
+  // desktop the launcher doubles as one.)
   const launcherHidden = scrollHidden && !open;
   if (launcherHidden) {
     Object.assign(launcherStyle, { opacity: 0, transform: "translateY(16px)", pointerEvents: "none" });
@@ -285,6 +292,8 @@ export default function ChatWidget() {
     borderRadius: isDesktop ? 16 : "16px 16px 0 0",
   };
 
+  if (!viewportKnown) return null;
+
   // Desktop pill with text on first visit, icon-only after; mobile always icon-only.
   const showPillText = isDesktop && !wasOpened;
 
@@ -294,6 +303,8 @@ export default function ChatWidget() {
       <button
         type="button"
         onClick={open ? () => setOpen(false) : handleOpen}
+        // A hidden launcher reached by a screen-reader cursor comes back.
+        onFocus={() => setScrollHidden(false)}
         ref={launcherRef}
         style={launcherStyle}
         data-testid="chat-launcher"

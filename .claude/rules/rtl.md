@@ -140,7 +140,7 @@ over a CTA), which is why the gate sits in front of it.
 | token | n | representative owner | what it is |
 |---|---|---|---|
 | `z-[10000]` | 1 | `app/[locale]/layout.js:232` | skip-to-content link, on focus only |
-| `z-[9999]` | 3 | `components/ui/Tooltip.jsx:148` · `InfoTooltip.jsx:101` | tooltips. ChatWidget's FAB and open panel share the value via inline `zIndex: 9999` (`ChatWidget.jsx:222,230`) — not a Tailwind token, so a grep for `z-[9999]` misses it |
+| `z-[9999]` | 3 | `components/ui/Tooltip.jsx:148` · `InfoTooltip.jsx:101` | tooltips. ChatWidget's open panel and its DESKTOP launcher use inline `zIndex: 9999` — not a Tailwind token, so a grep for `z-[9999]` misses it. Since MEH-2499 the MOBILE launcher is inline `zIndex: 1050` (above BottomNav/BackToTop, below cookie banner / filter sheet / toasts / install prompt) |
 | `z-[9997]` | 1 | `components/InstallPrompt.jsx:97` | PWA install prompt |
 | `z-[9500]` | 6 | `components/LoginPromptModal.jsx:85` | **interrupt modals** — must sit above an ordinary modal |
 | `z-[9000]` | 21 | `components/LocationModal.jsx:156` | **ordinary modals.** MEH-2093 chunk B moved 14 dialogs here from `z-50`; 20 → 21 in MEH-2137 chunk 3, which replaced a native `window.confirm` on the duplicate-product-name path with a real dialog beside `ProductsSection`'s existing delete-confirm; back to 20 in MEH-2209, which merged the admin producer reject + request-changes modals into one `ProducerDecisionModal`; 20 → 21 in MEH-2435, the owner's cancel / close / delivered confirm on the group-buys dashboard |
