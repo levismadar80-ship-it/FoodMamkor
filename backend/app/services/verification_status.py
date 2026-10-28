@@ -18,7 +18,7 @@ Both readers — the public schema tier and the `?verified` listing filter — g
 through this module, so they cannot disagree about the same business.
 """
 
-from datetime import date
+from datetime import date, datetime
 
 from sqlalchemy import or_
 
@@ -33,7 +33,9 @@ def licence_lapsed(license_expires_at: date | None, today: date | None = None) -
 
 
 def verification_is_current(
-    verified_at, license_expires_at: date | None, today: date | None = None
+    verified_at: datetime | None,
+    license_expires_at: date | None,
+    today: date | None = None,
 ) -> bool:
     """«מאומת» holds: a document was checked and its captured licence has not lapsed."""
     return verified_at is not None and not licence_lapsed(license_expires_at, today)

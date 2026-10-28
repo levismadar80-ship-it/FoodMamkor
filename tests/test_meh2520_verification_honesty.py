@@ -155,3 +155,20 @@ def test_expiry_boundary_with_the_clock_frozen_at_the_utc_edge(client, db, monke
     verified = _listed_names(client, verified="true")
     assert "תוקף עד היום הקפוא" in verified
     assert "פג אתמול הקפוא" not in verified
+
+
+def test_a_dict_input_keeps_the_tier_it_carries(client, db):
+    # Pins the wrap validator's non-ORM branch. A dict (FastAPI re-validating
+    # a returned model, a cache) never carries declared_at/license_expires_at,
+    # so the validator must keep the tier it was given, not recompute it.
+    from app.schemas.schemas import ProducerListOut
+
+    cat = make_category(db, name="בשר")
+    producer = make_producer(db, name="מאומת לדיקט", category=cat)
+    _verify(db, producer, expires=israel_today() + timedelta(days=30))
+    payload = client.get(f"/producers/{producer.id}").json()
+    assert payload["verification_tier"] == "verified"
+
+    assert ProducerListOut.model_validate(payload).verification_tier == "verified"
+    payload["verification_tier"] = None
+    assert ProducerListOut.model_validate(payload).verification_tier is None
