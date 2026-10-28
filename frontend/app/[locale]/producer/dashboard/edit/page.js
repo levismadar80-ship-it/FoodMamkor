@@ -453,7 +453,17 @@ function EditPageInner() {
   // hidden even when reached by ?group= directly.
   const isOrganizer = profile.kind === "organizer";
   const visibleGroupKeys = isOrganizer ? ORGANIZER_GROUP_KEYS : GROUP_KEYS;
-  const groupHidden = (key) => group !== key || !visibleGroupKeys.includes(key);
+  // Review #3711 F2: a group outside the visible set resolves to the HUB, not
+  // to "every group hidden" — `?group=products` or an `#products` deep link
+  // (holiday hint, reason links) must never leave an organizer on a blank page.
+  const effectiveGroup = group && visibleGroupKeys.includes(group) ? group : null;
+  const groupHidden = (key) => effectiveGroup !== key;
+  // Review #3711 F3: an organizer's profile tile has no categories card, so it
+  // must not count one — a member with no card makes a group incompletable.
+  const membersOf = (g) =>
+    isOrganizer && g === "profile"
+      ? GROUP_MEMBERS.profile.filter((k) => k !== "categories")
+      : GROUP_MEMBERS[g];
 
   // MEH-1132: next-step gold marker. The FIRST card in the new funnel order
   // whose summary signal reads empty gets a single 8px accent dot — so the
@@ -464,11 +474,11 @@ function EditPageInner() {
   const nextStepKey =
     (profile.images?.length ?? 0) === 0
       ? "images"
-      : (profile.categories?.length ?? 0) === 0
+      : !isOrganizer && (profile.categories?.length ?? 0) === 0
         ? "categories"
         : !(profile.description || "").trim() || isDefaultDescription(profile.description)
           ? "bio"
-          : productsForMarker < 3
+          : !isOrganizer && productsForMarker < 3
             ? "products"
             : !(profile.phone || "").trim()
               ? "contact"
@@ -623,7 +633,7 @@ function EditPageInner() {
   // next-step dot when the next step lands in this group, and up to two of the
   // group's existing filled previews (MEH-1158 peek).
   const groupTile = (g) => {
-    const members = GROUP_MEMBERS[g];
+    const members = membersOf(g);
     const done = members.filter((k) => cardFilled[k]).length;
     const withPreview = members.filter((k) => cardFilled[k] && previews[k]);
     // MEH-1920: hub tiles take only fixed-shape previews (see HUB_PREVIEW_KEYS).
@@ -730,7 +740,7 @@ function EditPageInner() {
           carry over; only their grouping + render order moved. */}
 
       {/* ===== HUB (default — no ?group) ===== */}
-      <div hidden={group !== null} className="space-y-6" data-testid="edit-hub">
+      <div hidden={effectiveGroup !== null} className="space-y-6" data-testid="edit-hub">
         <h1 className="font-headline-lg text-xl font-bold text-text">
           {tAcc("hub_title")}
         </h1>

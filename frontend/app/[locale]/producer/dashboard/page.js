@@ -445,7 +445,9 @@ export default function ProducerDashboardPage() {
   // order stands — availability first, the daily action of a live business.
   const completenessFirst = !isApproved || !isComplete;
   // MEH-2460: organizer (ADR-036) — no availability, no business checklist.
-  const isOrganizer = profile?.kind === "organizer";
+  // Review #3711 F9: fall back to /auth/me while /producers/me is loading (or
+  // failed), so business-only cards never flash for an organizer.
+  const isOrganizer = (profile?.kind ?? user?.producer_kind) === "organizer";
 
   return (
     <div
@@ -476,7 +478,9 @@ export default function ProducerDashboardPage() {
           page without losing the dashboard. */}
       {producer.slug && (
         <LocaleLink
-          href={`/${producer.slug}`}
+          // MEH-2460: an organizer's public page is /organizers/{slug}
+          // (MEH-2461); /{slug} is the business route and 404s it.
+          href={isOrganizer ? `/organizers/${producer.slug}` : `/${producer.slug}`}
           target="_blank"
           rel="noopener noreferrer"
           data-testid="view-public-link"
@@ -606,8 +610,9 @@ export default function ProducerDashboardPage() {
         />
       )}
 
-      {/* MEH-55: holiday hint — shown 14 days before and during a holiday */}
-      {(() => {
+      {/* MEH-55: holiday hint — shown 14 days before and during a holiday.
+          MEH-2460: its CTA is the catalog — not for an organizer. */}
+      {!isOrganizer && (() => {
         const h = getUpcomingHoliday();
         if (!h) return null;
         return (
@@ -637,7 +642,9 @@ export default function ProducerDashboardPage() {
           surfaces ONLY when the profile is complete AND approved — sharing an
           unpublished/incomplete page sends visitors to a dead listing. When
           locked, a warm why-locked hint takes its place (not silent hiding). */}
-      {producer.slug && isComplete && isApproved ? (
+      {/* MEH-2460: the vanity link is the business route /{slug} — not for an
+          organizer (its public link above points to /organizers/{slug}). */}
+      {isOrganizer ? null : producer.slug && isComplete && isApproved ? (
         <VanityLinkCard slug={producer.slug} />
       ) : producer.slug ? (
         <div

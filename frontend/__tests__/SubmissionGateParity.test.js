@@ -74,7 +74,7 @@ describe("MEH-2100 submit-gate parity — client codes match the server", () => 
     // stopped matching" failure. Same class as the self-test above: a probe
     // that silently stops seeing its subject must say so.
     // (adversarial review, MEH-2100/#2987.)
-    const [, afterMarker] = source.split(/SUBMISSION_REQUIREMENTS[^=]*=\s*\(/);
+    const [, afterMarker] = source.split(/^SUBMISSION_REQUIREMENTS[^=]*=\s*\(/m);
     expect(
       afterMarker,
       "could not locate SUBMISSION_REQUIREMENTS in the backend module — the " +

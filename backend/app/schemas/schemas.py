@@ -1083,7 +1083,7 @@ class ProducerRegister(BaseModel):
     @model_validator(mode="after")
     def _validate_location_mode(self):
         # MEH-2460: an organizer has no fixed address and delivers nothing, so
-        # the form does not ask. The DB CHECK producer_location_mode
+        # the form does not ask (address / map / delivery are hidden for it). The DB CHECK producer_location_mode
         # (has_physical_location OR offers_delivery) still applies to the row,
         # so the server writes the one shape that satisfies it and claims no
         # delivery: physical=True, delivery off. The row is never shown as a
@@ -1097,6 +1097,12 @@ class ProducerRegister(BaseModel):
             self.delivery_areas = []
             self.producer_license_number = None
             self.license_pending = False
+            # Review #3711 F5: no street address and no map point — the form
+            # does not ask, and coordinates would mint a producer_locations
+            # row (create_primary_branch_location skips when lat/lng is None).
+            self.address = None
+            self.lat = None
+            self.lng = None
             return self
         if not self.has_physical_location and not self.offers_delivery:
             raise ValueError("חייב לפחות אחד: חנות פיזית או משלוחים")

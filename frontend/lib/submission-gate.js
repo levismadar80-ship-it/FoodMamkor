@@ -29,6 +29,7 @@
  */
 
 import { producerPoints } from "./producerPoints.js";
+import { isDefaultDescription } from "./producer-completeness.js";
 
 // The machine-readable codes. These MUST match
 // backend/app/services/submission_gate.py — they cross the API boundary in
@@ -72,7 +73,12 @@ export function isOrganizer(producer) {
 function organizerMissingItems(producer) {
   const missing = [];
   if ((producer.images || []).length === 0) missing.push(MISSING_IMAGE);
-  if (!(producer.description || "").trim()) missing.push(ORGANIZER_MISSING_DESCRIPTION);
+  // Review #3711 F4: the STORY step's «אכתוב אחר כך» writes a placeholder
+  // description — it is not a description, and it calls her «בית עסק».
+  const description = (producer.description || "").trim();
+  if (!description || isDefaultDescription(description)) {
+    missing.push(ORGANIZER_MISSING_DESCRIPTION);
+  }
   // GET /producers/me fills upcoming_events_count for organizers only
   // (submission_gate.attach_upcoming_events_count). Absent → 0 → missing:
   // fail-closed, same as every check here.

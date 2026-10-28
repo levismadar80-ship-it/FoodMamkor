@@ -122,12 +122,23 @@ describe("organizer gate — client", () => {
   });
 
   it("zero upcoming events → the event item (count absent reads as 0, fail-closed)", () => {
+    // eslint-disable-next-line no-unused-vars
     const { upcoming_events_count, ...noCount } = ORG_COMPLETE;
     expect(submissionMissingItems({ ...ORG_COMPLETE, upcoming_events_count: 0 })).toEqual([
       ORGANIZER_MISSING_EVENT,
     ]);
     expect(submissionMissingItems(noCount)).toEqual([ORGANIZER_MISSING_EVENT]);
-    expect(upcoming_events_count).toBe(1);
+  });
+
+  it("the «אכתוב אחר כך» placeholder description counts as missing (review #3711 F4)", () => {
+    for (const placeholder of [
+      he.auth.register.producer.default_description,
+      en.auth.register.producer.default_description,
+    ]) {
+      expect(submissionMissingItems({ ...ORG_COMPLETE, description: placeholder })).toEqual([
+        ORGANIZER_MISSING_DESCRIPTION,
+      ]);
+    }
   });
 
   it("a business row is unchanged: still asked for product / category / location", () => {

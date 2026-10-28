@@ -216,8 +216,8 @@ export default function ProducerDashboardLayout({ children }) {
               once again what decides. Do not "fix" this href — the edge was the
               bug, not the URL. */}
           {/* MEH-2460: hidden for an organizer — /producer/{id} is a business
-              page, and an organizer's public page is /organizers/{slug}
-              (MEH-2461 chunk 3), which re-points this link. */}
+              page. Its public page is /organizers/{slug} (MEH-2461), reached
+              from the overview's view-public link once a slug exists. */}
           {user.producer_id && !isOrganizer && (
             <Link
               href={`/producer/${user.producer_id}`}

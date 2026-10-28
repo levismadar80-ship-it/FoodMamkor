@@ -529,7 +529,13 @@ function RegisterProducerPageBody() {
           let hasToken = false;
           try { hasToken = Boolean(localStorage.getItem("token")); } catch {}
           const resumeAt = safeResumeStep(draft.step, hasToken);
-          if (resumeAt) setStep(resumeAt);
+          // MEH-2460 (review #3711): an organizer never stands on CATEGORY —
+          // neither as a resume target nor as the frame she was on when she
+          // pressed «continue».
+          const organizerDraft = draft.form?.kind === "organizer";
+          const skipCategory = (s) => (organizerDraft && s === STEP.CATEGORY ? STEP.STORY : s);
+          if (resumeAt) setStep(skipCategory(resumeAt));
+          else if (organizerDraft) setStep(skipCategory);
         } else {
           localStorage.removeItem(DRAFT_KEY);
         }
@@ -1222,6 +1228,11 @@ function RegisterProducerPageBody() {
                 business registering here landed with lat/lng NULL and never
                 appeared on the map, whether or not the seller picked from the
                 list. */}
+            {/* MEH-2460 (review #3711 F5): an organizer has no fixed address,
+                and this block's map copy («במפה מופיעה נקודה») contradicts the
+                approved organizer hint. Hidden with the multi-location intake. */}
+            {!isOrganizer && (
+            <>
             <div>
               <label
                 htmlFor="producer-address"
@@ -1430,6 +1441,8 @@ function RegisterProducerPageBody() {
                 {t("auth.register.producer.fields.multi_location_hint")}
               </p>
             </div>
+            </>
+            )}
 
             {/* MEH-1838 chunk B: the delivery axis, on DETAILS because it is a
                 location question and sits with city/address above. Idiom mirrors

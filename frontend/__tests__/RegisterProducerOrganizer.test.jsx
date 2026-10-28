@@ -332,6 +332,34 @@ describe("MEH-2460 — register as a markets / events organizer", () => {
     expect(body.category_ids).toEqual([]);
   });
 
+  it("on: the address field and the map copy are hidden (review #3711 F5)", async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    expect(ph("address")).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("register-organizer-toggle"));
+    expect(screen.queryByPlaceholderText(`${K}.fields.address`)).not.toBeInTheDocument();
+    expect(screen.queryByTestId("register-multi-location-toggle")).not.toBeInTheDocument();
+  });
+
+  it("a category picked before switching to organizer is not sent (review #3711 F7)", async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    fillDetailsFields();
+    fireEvent.click(nextBtn());
+    fireEvent.click(await screen.findByTestId("pick-category"));
+    fireEvent.click(screen.getByTestId("register-category-back"));
+    await screen.findByText(`${K}.steps.business.title`);
+    fireEvent.click(screen.getByTestId("register-organizer-toggle"));
+    fireEvent.click(nextBtn());
+    await screen.findByPlaceholderText(STORY_MARKER);
+    screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
+    fireEvent.click(screen.getByText(`${K}.actions.submit`));
+    await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
+    const [, body] = api.post.mock.calls[0];
+    expect(body.kind).toBe("organizer");
+    expect(body.category_ids).toEqual([]);
+  });
+
   it("a business submit still carries kind='producer'", async () => {
     await renderWizard();
     await fillAccountToDetails();

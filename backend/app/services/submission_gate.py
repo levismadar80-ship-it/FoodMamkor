@@ -74,6 +74,17 @@ SUBMISSION_REQUIREMENTS: tuple[str, ...] = (
 ORGANIZER_MISSING_DESCRIPTION = "description"
 ORGANIZER_MISSING_EVENT = "upcoming_event"
 
+# Review #3711 F4: the registration STORY step's «אכתוב אחר כך» writes this
+# placeholder (he.json / en.json auth.register.producer.default_description);
+# it is not a description. Mirrors DEFAULT_PRODUCER_DESCRIPTIONS in
+# frontend/lib/producer-completeness.js — the parity test reads both.
+DEFAULT_PRODUCER_DESCRIPTIONS: frozenset[str] = frozenset(
+    {
+        "בית עסק מקומי. עוד פרטים בקרוב.",
+        "Local business. More details coming soon.",
+    }
+)
+
 ORGANIZER_SUBMISSION_REQUIREMENTS: tuple[str, ...] = (
     MISSING_IMAGE,
     ORGANIZER_MISSING_DESCRIPTION,
@@ -230,7 +241,8 @@ def _organizer_missing_items(producer: Producer) -> list[str]:
     missing: list[str] = []
     if not (producer.images or []):
         missing.append(MISSING_IMAGE)
-    if not (producer.description or "").strip():
+    description = (producer.description or "").strip()
+    if not description or description in DEFAULT_PRODUCER_DESCRIPTIONS:
         missing.append(ORGANIZER_MISSING_DESCRIPTION)
     if upcoming_events_count(producer) < 1:
         missing.append(ORGANIZER_MISSING_EVENT)
