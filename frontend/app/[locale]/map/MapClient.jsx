@@ -924,11 +924,16 @@ export default function MapPage() {
             plus its live --cookie-banner-h, plus a 16px clearance — so the banner
             no longer overlays the canvas. The map's own `min-h-[500px]`
             (MapComponent.jsx) would otherwise spill back under the banner on short
-            phones, so relax it to 0 ONLY while we're reserving — the shell always
-            has a definite height + invalidateSize, so the MEH-30 0px guard isn't
-            needed here. Full height restored on dismiss. */}
+            phones, so it is relaxed to 0 — the shell always has a definite
+            height + invalidateSize, so the MEH-30 0px guard isn't needed here.
+            MEH-2524: relaxed always, not only while reserving. Restoring
+            500px on dismiss spilled the canvas past the viewport on any phone
+            shorter than ~750px (82px at 375x667, 22px at 393x727). Everything
+            measured from the canvas bottom then sat that far too low: the
+            OSM attribution (globals.css, rides the sheet edge) ended under the
+            sheet and the nav pill. */}
         <div
-          className={`w-full h-full ${cookieBannerVisible ? "[&_.leaflet-container]:!min-h-0" : ""}`}
+          className="w-full h-full [&_.leaflet-container]:!min-h-0"
           style={{
             paddingTop: `${mobileBarHeight}px`,
             ...(cookieBannerVisible

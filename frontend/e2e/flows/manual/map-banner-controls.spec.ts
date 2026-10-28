@@ -122,3 +122,31 @@ test.describe("manual › /map control column with the cookie banner up (MEH-251
     });
   }
 });
+
+// MEH-2524: the canvas's own `min-h-[500px]` used to come back once the banner
+// was dismissed, so on a phone shorter than ~750px the canvas ran past the
+// viewport (82px at 375x667). The OSM attribution rides the sheet edge measured
+// from the canvas bottom, so it ended up under the sheet and the nav pill. It is
+// an ODbL licence requirement, not decoration.
+test.describe("manual › /map canvas fits the viewport and the OSM attribution shows (MEH-2524)", () => {
+  test.beforeEach(({}, info) => {
+    test.skip(info.project.name === "desktop", "the sheet and the 500px floor are the mobile shell's");
+  });
+
+  for (const vp of VIEWPORTS) {
+    for (const consented of [true, false]) {
+      test(`${vp.width}x${vp.height} banner ${consented ? "gone" : "up"}: canvas inside the viewport, attribution above the sheet`, async ({ page }) => {
+        await page.setViewportSize(vp);
+        const { canvas } = await openMap(page, consented);
+        const attribution = page.getByTestId("map-mobile-shell").locator(".leaflet-control-attribution");
+        await expect(attribution).toBeVisible();
+        const c = await box(canvas);
+        expect(c.y + c.height, "the map canvas runs past the bottom of the viewport").toBeLessThanOrEqual(vp.height + 0.5);
+        const sheet = await box(page.getByTestId("map-bottom-sheet"));
+        const a = await box(attribution);
+        expect(a.y + a.height, "the attribution sits under the sheet's top edge").toBeLessThanOrEqual(sheet.y);
+        expect(await hitTestable(attribution), "the attribution is covered").toBe(true);
+      });
+    }
+  }
+});
