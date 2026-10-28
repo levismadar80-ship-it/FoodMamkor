@@ -334,12 +334,18 @@ class TestOrganizerRefusedByExistenceOnlyGates:
         business = _business(db)
         user = make_user(db, email="meh2465-fav@example.com")
         assert (
-            client.post(f"/users/me/favorites/{business.id}", headers=auth_header(user)).status_code
+            client.post(
+                f"/users/me/favorites/{business.id}", headers=auth_header(user)
+            ).status_code
             == 201
         )
-        resp = client.post(f"/users/me/favorites/{organizer.id}", headers=auth_header(user))
+        resp = client.post(
+            f"/users/me/favorites/{organizer.id}", headers=auth_header(user)
+        )
         assert resp.status_code == 404
-        assert db.query(Favorite).filter(Favorite.producer_id == organizer.id).count() == 0
+        assert (
+            db.query(Favorite).filter(Favorite.producer_id == organizer.id).count() == 0
+        )
 
     def test_favorites_list_never_serializes_organizer(self, client, db):
         organizer = _organizer(db)
@@ -387,10 +393,16 @@ class TestOrganizerRefusedByExistenceOnlyGates:
         db.commit()
         # control: the business's review is served on both routes
         assert client.get(f"/producers/{business.id}/reviews").json()["total"] == 1
-        assert len(client.get("/reviews", params={"producer_id": str(business.id)}).json()) == 1
+        assert (
+            len(client.get("/reviews", params={"producer_id": str(business.id)}).json())
+            == 1
+        )
         nested = client.get(f"/producers/{organizer.id}/reviews").json()
         assert nested["total"] == 0 and nested["reviews"] == []
-        assert client.get("/reviews", params={"producer_id": str(organizer.id)}).json() == []
+        assert (
+            client.get("/reviews", params={"producer_id": str(organizer.id)}).json()
+            == []
+        )
 
     def test_google_rating_404_for_organizer(self, client, db, monkeypatch):
         organizer = _organizer(db)
@@ -443,7 +455,9 @@ class TestOrganizerRefusedByExistenceOnlyGates:
 
         def fake_stream(method, url, **kwargs):
             calls.append(url)
-            raise AssertionError("the organizer's cert must be refused before any fetch")
+            raise AssertionError(
+                "the organizer's cert must be refused before any fetch"
+            )
 
         monkeypatch.setattr(producers_module.httpx, "stream", fake_stream)
         resp = client.get(f"/producers/{organizer.id}/kashrut-cert/badatz")

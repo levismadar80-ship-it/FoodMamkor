@@ -112,7 +112,12 @@ def get_google_rating(
     profile has < MIN_REVIEWS reviews, no server key, or any Google API error.
     404 only when the producer id itself does not exist.
     """
-    row = db.query(Producer.google_place_id).filter(Producer.id == producer_id).first()
+    # MEH-2465: an organizer is not a business — no Google trust line (ADR-036).
+    row = (
+        db.query(Producer.google_place_id)
+        .filter(Producer.id == producer_id, Producer.kind == "producer")
+        .first()
+    )
     if row is None:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
 
