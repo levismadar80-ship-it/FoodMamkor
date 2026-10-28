@@ -571,7 +571,9 @@ export default function MapPage() {
           // label + underlined "clear" line read as stray text (Sapir 27/10).
           // The chip is the Google Maps / Airbnb active-location pattern. The
           // ✕'s accessible name is the existing clear_location string — no new
-          // copy — and the chip row keeps the 44px tap height.
+          // copy. Desktop: the chip row keeps the 44px tap height. Compact
+          // (MEH-2506): the ✕ alone keeps 44px via -my-3, and FilterChipsBar's
+          // origin row (mt-3 mb-1) is what keeps that hit area clear.
           <span
             className={
               compact
