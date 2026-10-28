@@ -8,7 +8,7 @@
  */
 import { useState } from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import he from "../messages/he.json";
 import AddressSearch from "@/components/AddressSearch";
@@ -161,9 +161,11 @@ describe("AddressSearch — empty/error hint (MEH-1766)", () => {
     fireEvent.change(box, { target: { value: "דרך שרה" } });
     await screen.findByTestId(DOWN_TESTID, {}, { timeout: 2000 });
     fireEvent.change(box, { target: { value: "דרך שרה 5" } });
-    await screen.findByTestId(DOWN_TESTID, {}, { timeout: 2000 });
-    // The second lookup also rejected (two warnings) …
-    expect(warn.mock.calls.filter(([m]) => String(m).includes("REJECTED")).length).toBe(2);
+    // The hint is already up from the first rejection, so findByTestId would
+    // resolve before the second (debounced) lookup completes — wait for the
+    // second warning instead, which is the proof the second lookup rejected.
+    const rejected = () => warn.mock.calls.filter(([m]) => String(m).includes("REJECTED")).length;
+    await waitFor(() => expect(rejected()).toBe(2), { timeout: 2000 });
     // … but Sentry heard about it exactly once, with a grouping fingerprint.
     expect(captureMessage).toHaveBeenCalledTimes(1);
     expect(captureMessage).toHaveBeenCalledWith(
