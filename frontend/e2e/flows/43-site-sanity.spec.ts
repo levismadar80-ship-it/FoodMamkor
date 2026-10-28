@@ -38,7 +38,7 @@ import { test, expect, type Page } from "./_cloudinary-stub";
  * Control:  each route must render > 10 Hebrew-bearing elements in <main>, so a
  *           page that failed to render cannot pass every check by being empty;
  *           checks 6–7 must have measured > 3 controls, for the same reason.
- *           The five checks are soft, so one failing route reports all of them.
+ *           Every check is soft, so one failing route reports all of them.
  * Browser:  Chromium only — the face probe is CDP, which WebKit does not expose.
  * Routes:   static editorial and auth pages only — no API data, so the gate is
  *           deterministic. Both projects (375 mobile, 1440 desktop) run it.
@@ -166,6 +166,12 @@ async function layout(page: Page, withCovered: boolean): Promise<Layout> {
         if (r.top < 0 || r.bottom > window.innerHeight) continue; // taller than the viewport
         const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
         if (!hit || el.contains(hit)) continue;
+        // Fixed/sticky chrome is out of scope (header above): a control near a
+        // page edge cannot be centred and may legitimately sit under the nav
+        // pill. Skip a hit inside fixed chrome the control is not part of.
+        let chrome: Element | null = hit;
+        while (chrome && !["fixed", "sticky"].includes(getComputedStyle(chrome).position)) chrome = chrome.parentElement;
+        if (chrome && !chrome.contains(el)) continue;
         const labels = (el as HTMLInputElement).labels;
         if (labels && [...labels].some((l) => l.contains(hit))) continue;
         out.covered.push(`${label(el)} under ${label(hit)}`);
@@ -214,6 +220,7 @@ test.describe("site sanity — Hebrew typesetting and layout on every static pag
       off.textContent = "planted-offscreen";
       // fixed: hanging off the left edge without widening the page, so the
       // rest of the layout (and every other control's position) is untouched.
+      // rtl-ok: a physical left is the point — off the viewport's left edge.
       off.style.cssText = "position:fixed;top:200px;left:-60px;width:80px;height:30px";
       const wrap = document.createElement("div");
       wrap.style.cssText = "position:relative;margin:24px 0";
@@ -250,7 +257,9 @@ test.describe("site sanity — Hebrew typesetting and layout on every static pag
       expect.soft(l.covered, "control covered at its centre").toEqual([]);
 
       // MEH-2515: 320 is where the 28/10 sweep found the off-screen class.
-      if (info.project.name === "mobile") {
+      // Gated on the device, not the project's name, so a rename cannot
+      // silently skip the pass (CI review, #3764).
+      if (info.project.use.isMobile) {
         await page.setViewportSize({ width: 320, height: 568 });
         await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
         const n = await layout(page, false);
