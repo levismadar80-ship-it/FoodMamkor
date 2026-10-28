@@ -871,9 +871,12 @@ def test_organizer_without_description_or_event_is_emailed_both_lines(db, sent_l
     counts = pending_nudge.send_pending_nudges(db)
 
     assert counts == {"sent": 1, "stamped_nothing_missing": 0}
-    body = sent_log[0][2]
+    _to, subject, body = sent_log[0]
     assert pending_nudge._MISSING_ITEM_DESCRIPTION in body
     assert pending_nudge._MISSING_ITEM_UPCOMING_EVENT in body
+    # review #3724: an organizer is not told about «העסק»
+    assert subject == pending_nudge._SUBJECT_ORGANIZER
+    assert "לאשר את העמוד" in body and "לאשר את העסק" not in body
     # an organizer is never asked for business-only items
     assert pending_nudge._MISSING_ITEM_PRODUCT not in body
     assert pending_nudge._MISSING_ITEM_LOCATION not in body
@@ -904,3 +907,27 @@ def test_complete_organizer_is_stamped_without_email(db, sent_log):
 
     assert counts == {"sent": 0, "stamped_nothing_missing": 1}
     assert sent_log == []
+
+
+def test_organizer_missing_photo_gets_the_organizer_photo_line(db, sent_log):
+    producer, _user = _make_producer_user(
+        db, status="pending", images=None, phone_verified=True, kind="organizer"
+    )
+    producer.description = "שוק איכרים שבועי בכיכר העיר"
+    db.add(
+        Event(
+            producer_id=producer.id,
+            title="שוק שישי",
+            event_date=israel_today() + timedelta(days=3),
+            category="שוק",
+            city="תל אביב",
+            is_active=True,
+        )
+    )
+    db.commit()
+
+    pending_nudge.send_pending_nudges(db)
+
+    body = sent_log[0][2]
+    assert pending_nudge._MISSING_ITEM_PHOTO_ORGANIZER in body
+    assert pending_nudge._MISSING_ITEM_PHOTO not in body

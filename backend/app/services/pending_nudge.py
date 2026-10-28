@@ -172,10 +172,10 @@ _MISSING_ITEM_PRODUCT = (
 # gate; the COPY lives here, because copy is Sapir's (rule 22) and the gate is
 # not a copy module.
 #
-# Only three of the gate's five codes have approved copy. Inventing Hebrew for
-# the other two would be exactly the unapproved-copy move rule 22 forbids, so
-# they are dropped from the body; the 422 still returns all five for the
-# dashboard checklist to highlight.
+# Until MEH-2483 only three of the gate's codes had copy, and the rest were
+# dropped from the body (the 422 still returned all of them for the dashboard
+# checklist). MEH-2483 added the missing three — see below; `category` alone
+# stays copy-less, because registration requires it.
 #
 # ⚠️ MEH-2111 CORRECTION. This comment used to justify the gap by asserting
 # that MISSING_CATEGORY and MISSING_LOCATION "are REQUIRED WIZARD FIELDS at
@@ -197,11 +197,12 @@ _MISSING_ITEM_PRODUCT = (
 # `location`, and this module silently drops the only line that would tell her.
 # If `location` is the ONLY thing missing she is stamped and mailed NOTHING,
 # while her submission keeps 422-ing. Naming that item needs a Hebrew line from
-# Sapir (rule 22), so it is reported rather than invented here.
+# Sapir (rule 22), so it was reported rather than invented here — and closed
+# by MEH-2483 below.
 #
 # The count in the day-3/day-7 subject is therefore taken from THIS list, not
 # from the gate's — see `_build_email`.
-# MEH-2465 follow-up (28/10): the three lines that closed the hole above.
+# MEH-2483 (28/10): the three lines that closed the hole above.
 # Decided by CC under Sapir's delegation («תחליט בעצמך», 28/10 15:14). Each
 # opens with the dashboard checklist's own label for the same code
 # (he.json dashboard.producer.draft.missing.*), so the email and the checklist
@@ -218,6 +219,27 @@ _MISSING_ITEM_UPCOMING_EVENT = (
     "📅 אירוע קרוב אחד לפחות — העמוד שלכם מציג את האירועים הקרובים, "
     "ובלי אירוע אין למבקרים לאן להגיע."
 )
+
+# MEH-2483 (review #3724): an ORGANIZER (kind='organizer', ADR-036) is not a
+# business and sells nothing, so the business-worded photo line, the day-1/3
+# subjects and the body's «לאשר את העסק» get organizer twins. Same shape and
+# voice as the locked originals, with «העמוד» / «השוק או האירועים» for
+# «העסק» / «העסק או המוצרים». The day-7 subject is already neutral.
+_MISSING_ITEM_PHOTO_ORGANIZER = (
+    "📷 תמונה אחת של השוק או האירועים — זה הדבר הראשון שמבקרים רואים, "
+    "ובלעדיה לא נוכל לאשר."
+)
+_SUBJECT_ORGANIZER = "עוד צעד קטן — והעמוד שלכם עובר לבדיקה"
+_SUBJECT_DAY_3_ORGANIZER = "נשארו [מספר] צעדים — והעמוד שלכם עולה לאתר"
+_SUBJECT_BY_MARK_ORGANIZER: dict[int, str] = {
+    1: _SUBJECT_ORGANIZER,
+    3: _SUBJECT_DAY_3_ORGANIZER,
+    7: _SUBJECT_DAY_7,
+}
+_BODY_ORGANIZER = _BODY.replace(
+    "כדי שנוכל לבדוק ולאשר את העסק", "כדי שנוכל לבדוק ולאשר את העמוד"
+)
+assert _BODY_ORGANIZER != _BODY, "the organizer body twin must differ"
 
 _ITEM_COPY: dict[str, str] = {
     MISSING_IMAGE: _MISSING_ITEM_PHOTO,
@@ -265,8 +287,11 @@ def _missing_items(producer: Producer) -> list[str]:
     that most needs it. (That status was `pending_whatsapp`, removed entirely
     in MEH-2124; the column has been the signal since MEH-2111 either way.)
     """
+    organizer = getattr(producer, "kind", "producer") == "organizer"
     return [
-        _ITEM_COPY[code]
+        _MISSING_ITEM_PHOTO_ORGANIZER
+        if organizer and code == MISSING_IMAGE
+        else _ITEM_COPY[code]
         for code in submission_missing_items(producer)
         if code in _ITEM_COPY
     ]
@@ -355,7 +380,9 @@ def _due_mark(producer: Producer, now: datetime) -> int | None:
     return None
 
 
-def _build_email(first_name: str, items: list[str], mark: int) -> tuple[str, str]:
+def _build_email(
+    first_name: str, items: list[str], mark: int, *, organizer: bool = False
+) -> tuple[str, str]:
     """Render (subject, body) for one producer's nudge at a given day-mark.
 
     Takes no Producer, unlike onboarding_followup._build_email — that one
@@ -378,7 +405,9 @@ def _build_email(first_name: str, items: list[str], mark: int) -> tuple[str, str
     already the pre-existing behaviour of the body. Both numbers derive from the
     helper; this one is the helper's output after the copy filter.
     """
-    return _SUBJECT_BY_MARK[mark].replace(_COUNT_TOKEN, str(len(items))), _BODY.format(
+    subjects = _SUBJECT_BY_MARK_ORGANIZER if organizer else _SUBJECT_BY_MARK
+    body = _BODY_ORGANIZER if organizer else _BODY
+    return subjects[mark].replace(_COUNT_TOKEN, str(len(items))), body.format(
         greeting=_greeting(first_name),
         missing_items="\n".join(items),
         frontend_url=settings.frontend_url,
@@ -489,7 +518,9 @@ def send_pending_nudges(db: Session) -> dict[str, int]:
 
             parts = (user.name or "").strip().split()
             first_name = parts[0] if parts else ""
-            subject, body = _build_email(first_name, items, mark)
+            subject, body = _build_email(
+                first_name, items, mark, organizer=p.kind == "organizer"
+            )
             send_email(user.email, subject, body)
             p.email_pending_nudge_sent_at = datetime.now(timezone.utc)
             db.commit()
