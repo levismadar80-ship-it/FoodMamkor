@@ -548,7 +548,7 @@ it fails. Four of its cases are lifted from the real document.
 | 1798 | Dietary checkboxes per product (MEH-293 PR #2) | Admin form — אין יותר checkboxes — איך לבדוק: `/admin/producers/new` או edit; **תוצאה מצופה:** הסטריפ של הצ'קב… |
 | 1872 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | ProducerCard: tier 3 producer shows "✅ עסק מאומת" green pill — סמני `is_verified=true` בDB לעסק → ProducerCard… |
 | 1873 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | ProducerCard: tier 1/2 producer shows no badge — עסק עם phone_verified=false, is_verified=false → אין badge |
-| 1874 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | ProducerCard: tier 5 (ambassador=true) shows "🏅 שגרירת מהמקור" dark pill |
+| 1874 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | ProducerCard: ambassador=true לא מציג שום תג ולא משנה trust_tier (MEH-2509) |
 | 1875 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | ProducerDetail: TrustBadge shows next to name in header badge row |
 | 1876 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | ProducerDetail: KashrutBadgeStrip shows below highlights strip when kashrut_badges non-empty — הוסיפי `kashrut… |
 | 1877 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | KashrutBadgeStrip: expiry warning pill shows when kashrut_expires_at within 30 days — שיני expires_at ל-7 ימים… |
@@ -562,7 +562,7 @@ it fails. Four of its cases are lifted from the real document.
 | 1885 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | /admin/kashrut: אשרי button → badge added to producer.kashrut_badges in DB + kashrut_verified_at set |
 | 1886 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | /admin/kashrut: דחי button → opens modal with notes input → reject saves notes to DB |
 | 1887 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | /admin/kashrut: filter by status (pending/approved/rejected) |
-| 1888 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | POST /admin/producers/{id}/set-ambassador → ambassador=true → trust_tier=5 in GET /producers response |
+| 1888 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | POST /admin/producers/{id}/set-ambassador → ambassador=true → trust_tier נשאר כמו קודם (MEH-2509) |
 | 1889 | MEH-51 — Trust Ladder + Kashrut Badges (PR #183) | Rate limiting: 3 OTP sends per 10 min per producer, 3 confirms per minute (MEH-1176 F5: doc said 5 confirms; c… |
 | 1984 | דף הבית — filters מעל גריד היצרנים | פתחי דף הבית — שורת תכונות אחת (כשר · אורגני · משלוח · מאומת בלבד) עם edge-fade בצד שמאל |
 | 2395 | Regression checks | "מאומת" / "פרמיום" / "זמין היום" badges still visible on the image |
@@ -958,9 +958,9 @@ Listed by line so the acceptance is auditable — not silently blank.
 | 1607 | MEH-1027 Chunk B — dialog מודאלי למחיקת בית עסק ב-/admin/pro… | נייד (iOS Safari + Chrome) — הדיאלוג ממורכז, כפתורים נגישים בטאץ'. |
 | 1610 | MEH-1027 Chunk A — תפריט פעולות (overflow menu) ב-/admin/pro… | Kebab במקום inline — `/admin/producers` — איך לבדוק: בעמודת "פעולות" יש ⋮ בכל שורה; **תוצאה מצופה:** "השהה/הפע… |
 | 1611 | MEH-1027 Chunk A — תפריט פעולות (overflow menu) ב-/admin/pro… | שורה ממתינה (pending) — סנני `pending`; **תוצאה מצופה:** "✓ אשר" + "בקשת השלמה" + "עריכה" inline ליד ⋮; בתפריט… |
-| 1612 | MEH-1027 Chunk A — תפריט פעולות (overflow menu) ב-/admin/pro… | שורה מאושרת — **תוצאה מצופה:** בתפריט: השהה · שגריר (☆/⭐) · 📸 סטורי · מחקו (אדום, danger). |
+| 1612 | MEH-1027 Chunk A — תפריט פעולות (overflow menu) ב-/admin/pro… | שורה מאושרת — **תוצאה מצופה:** בתפריט: השהה · 📸 סטורי · מחקו (אדום, danger). אין «שגריר» (MEH-2509). |
 | 1613 | MEH-1027 Chunk A — תפריט פעולות (overflow menu) ב-/admin/pro… | סטורי מהתפריט — ⋮ → "📸 סטורי"; **תוצאה מצופה:** ה-StoryCardCanvas נפתח מתחת לשורה בדיוק כמו קודם (התנהגות ללא … |
-| 1614 | MEH-1027 Chunk A — תפריט פעולות (overflow menu) ב-/admin/pro… | שגריר מהתפריט — ⋮ → "☆ שגריר" על עסק מאושר; **תוצאה מצופה:** trust tier מתעדכן כמו קודם (toggle זהה, רק מהתפרי… |
+| 1614 | MEH-1027 Chunk A — תפריט פעולות (overflow menu) ב-/admin/pro… | ~~שגריר מהתפריט~~ — הוסר ב-MEH-2509 (כפילות של «בחירת העורכת»). |
 | 1615 | MEH-1027 Chunk A — תפריט פעולות (overflow menu) ב-/admin/pro… | מחיקה מהתפריט — ⋮ → "מחקו"; **תוצאה מצופה:** נפתח dialog מודאלי עם שם בית העסק (Chunk B, MEH-1027) — לא חלון c… |
 | 1616 | MEH-1027 Chunk A — תפריט פעולות (overflow menu) ב-/admin/pro… | פתיחה/סגירה — לחיצה שנייה על ⋮ / לחיצה בחוץ / Escape סוגרים (Escape מחזיר פוקוס ל-⋮); בשולי הטבלה התפריט עשוי … |
 | 1617 | MEH-1027 Chunk A — תפריט פעולות (overflow menu) ב-/admin/pro… | נייד (iOS Safari + Chrome) — ⋮ נפתח ונסגר בטאץ'; הפעולות עובדות מהתפריט. |
@@ -1317,7 +1317,7 @@ Listed by line so the acceptance is auditable — not silently blank.
 | 3075 | UIS Pattern A (MEH-228) — admin double-submit protection | `/admin/reports` — לחיצה כפולה מהירה על "השעה"/"אשר"/"הסר"/"שחזר" — תוצאה: הפעולה רצה פעם אחת, הכפתור מושבת בז… |
 | 3076 | UIS Pattern A (MEH-228) — admin double-submit protection | `/admin/users` — לחיצה כפולה על "חסום/בטל חסימה" — תוצאה: בקשה אחת, כפתור מושבת בזמן הריצה |
 | 3077 | UIS Pattern A (MEH-228) — admin double-submit protection | `/admin/content` (מוצרי בית מוסתרים) — לחיצה כפולה על "שחזר"/"מחק" — תוצאה: בקשה אחת |
-| 3078 | UIS Pattern A (MEH-228) — admin double-submit protection | `/admin/producers` — לחיצה כפולה על "אשר"/"השעה"/"שגרירה"/"מחק" — תוצאה: בקשה אחת, הכפתור מושבת |
+| 3078 | UIS Pattern A (MEH-228) — admin double-submit protection | `/admin/producers` — לחיצה כפולה על "אשר"/"השעה"/"מחק" — תוצאה: בקשה אחת, הכפתור מושבת |
 | 3079 | UIS Pattern A (MEH-228) — admin double-submit protection | כשל רשת על כל פעולת אדמין מהנ"ל — תוצאה: toast שגיאה בעברית (לא כשל שקט) |
 | 3094 | MEH-848 — error toasts collapsed to error.generic (i18n refa… | **מועדף בכרטיס (ProducerCard)** — לחיצה על לב כשמנותקים/כשל רשת → טוסט "משהו השתבש, נסו שוב" |
 | 3095 | MEH-848 — error toasts collapsed to error.generic (i18n refa… | **שליחת ביקורת נכשלת** (`ReviewsSection`) + **קבוצת רכש** (`GroupBuyDetailClient`) → אותה הודעה כללית |

@@ -154,7 +154,6 @@ Not bugs — unfinished features — but worth knowing before adding auth/securi
 | `PUT /admin/producers/{id}` | `admin.py` | ✅ |
 | `POST /admin/producers/{id}/toggle-status` | `admin.py` | ✅ |
 | `DELETE /admin/producers/{id}` | `admin.py` | ✅ |
-| `POST /admin/producers/import` | `admin.py` | ✅ |
 | `POST /admin/producers/{id}/approve` | `admin.py` | ✅ |
 | `GET /admin/reports` | `reports.py` | ✅ |
 | `GET /admin/home-products/flagged` | `admin.py` | ✅ |
