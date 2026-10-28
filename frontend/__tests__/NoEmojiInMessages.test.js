@@ -58,7 +58,7 @@ const EXEMPT_KEYS = {
   "story.canvas.caption_prefix":
     "Instagram story caption copied to clipboard (StoryCardCanvas.jsx), social payload not UI.",
   "admin.producers.table.draft_claim.message":
-    "MEH-2495 claim-link WhatsApp message copied to clipboard (AdminDraftClaimActions.jsx), pasted to the owner — never rendered as UI.",
+    "MEH-2495 claim-link WhatsApp message copied to clipboard (AdminDraftClaimActions.jsx) and pasted to the owner; shown on screen only as the payload itself, in the read-only manual-copy box when the clipboard refuses — never as UI chrome.",
 };
 const EXPECTED_EMOJI_KEYS = Object.keys(EXEMPT_KEYS).length; // 6
 

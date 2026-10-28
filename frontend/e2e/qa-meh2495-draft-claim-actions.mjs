@@ -116,11 +116,36 @@ async function run(browser, width, height, tag) {
   await empty.ctx.close();
 }
 
+// FINDER #13 (adversarial round 1): the manual-copy box must not push the
+// actions column off-screen at 375 (the producers table keeps its columns —
+// MEH-2070). The clipboard is made to refuse, so the box opens.
+async function manualBox(browser, width, height, tag) {
+  const { ctx, page } = await newCtx(browser, width, height, MANY);
+  await page.addInitScript(() => {
+    navigator.clipboard.write = () => Promise.reject(new DOMException("refused", "NotAllowedError"));
+  });
+  await page.goto(`${BASE}/he/admin/producers?status=draft`, { waitUntil: "load" });
+  await page.getByText("הגבינות של מיכל").first().waitFor({ timeout: 15000 });
+  await page.locator('[data-testid="draft-copy-claim-message"]').first().click();
+  const box = page.locator('[data-testid="draft-claim-message-manual"]');
+  await box.waitFor({ timeout: 5000 });
+  const b = await box.boundingBox();
+  check(!!b && b.x >= 0 && b.x + b.width <= width, `[${tag}] manual box on-screen`, JSON.stringify(b));
+  const scrollW = await page.evaluate(() => document.documentElement.scrollWidth);
+  check(scrollW <= width, `[${tag}] no page-level sideways scroll with the box open`, `scrollWidth=${scrollW}`);
+  check(await box.evaluate((el) => el === document.activeElement), `[${tag}] box focused`);
+  check((await page.locator('[data-testid="draft-claim-copy-failed"]').count()) === 1, `[${tag}] alert line shown`);
+  await page.screenshot({ path: `${OUT}/${tag}-manual-box.png`, fullPage: true });
+  await ctx.close();
+}
+
 async function main() {
   mkdirSync(OUT, { recursive: true });
   const browser = await chromium.launch({ executablePath: CHROME });
   await run(browser, 375, 812, "375");
   await run(browser, 1440, 900, "1440");
+  await manualBox(browser, 375, 812, "375");
+  await manualBox(browser, 1440, 900, "1440");
   await browser.close();
   console.log(failures ? `\n${failures} FAILED` : "\nall PASS");
   process.exit(failures ? 1 : 0);

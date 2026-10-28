@@ -289,7 +289,7 @@ function ReferralSource({ producer }) {
   );
 }
 
-export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onApproveWithoutLicense, onRequestChanges, onReject, onToggleStatus, onToggleAmbassador, onDeleteProducer, onToggleStoryCard, isBusy }) {
+export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onApproveWithoutLicense, onRequestChanges, onReject, onToggleStatus, onToggleAmbassador, onDeleteProducer, onToggleStoryCard, onReload, isBusy }) {
   const t = useTranslations("admin");
   const p = producer;
   // UIS Pattern A (MEH-228): disable the in-flight action's button. `isBusy`
@@ -400,7 +400,7 @@ export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onAppro
       {/* MEH-2495: ownerless drafts only — mint a claim link and copy the
           ready message in one click. Last, on its own line (basis-full), so
           the manual-copy box it may open sits under the row's actions. */}
-      <CopyClaimMessageButton producer={p} />
+      <CopyClaimMessageButton producer={p} onStale={onReload} />
     </div>
   );
 }
@@ -637,6 +637,8 @@ export default function AdminProducersTable({
   const handlers = {
     onQuickApprove, onApproveWithoutLicense, onRequestChanges, onReject, onToggleStatus, onToggleAmbassador, onDeleteProducer,
     onUploadStoryCard, onToggleStoryCard, isBusy,
+    // MEH-2495: a claim-link 409 means the row is stale — reload the list.
+    onReload: onRetryLoad,
   };
   return (
     <div className="bg-white border border-border rounded-[12px] overflow-hidden">

@@ -4886,9 +4886,15 @@
             "type": "boolean"
           },
           "has_owner": {
-            "default": false,
-            "title": "Has Owner",
-            "type": "boolean"
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Has Owner"
           },
           "has_physical_location": {
             "default": true,

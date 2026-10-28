@@ -401,9 +401,10 @@ def _attach_has_owner(db: Session, producers) -> None:
     `users.producer_id` has no unique index (producer_claim.py residual risks),
     so this asks "is there at least one" with DISTINCT rather than joining —
     a join would duplicate rows. Called by every route that returns
-    `ProducerAdminOut`: the field defaults to False, and a route that skipped
-    this would report a claimed draft as ownerless, offering a claim link the
-    server then 409s.
+    `ProducerAdminOut`; the field defaults to None, so a route that skipped
+    this fails closed (no chip, no action) rather than lying, and
+    tests/test_meh2495_admin_draft_owner.py lists those routes so a new one
+    has to be added there — and hydrated — on purpose.
     """
     ids = [p.id for p in producers]
     owned = (

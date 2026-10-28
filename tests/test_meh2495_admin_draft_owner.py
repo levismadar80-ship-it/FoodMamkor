@@ -195,3 +195,76 @@ class TestAdminOnly:
         consumer = make_user(db)
         r = client.get(LIST, params={"status": "draft"}, headers=auth_header(consumer))
         assert r.status_code == 403
+
+
+class TestFailsClosed:
+    # Every route whose response is ProducerAdminOut (or a list of it). Each
+    # one calls _attach_has_owner; TestEveryAdminOutRouteHydratesIt covers
+    # them. A new route must be added here on purpose — and hydrated — or
+    # this inventory goes red.
+    EXPECTED = {
+        ("GET", "/admin/producers"),
+        ("POST", "/admin/producers"),
+        ("PUT", "/admin/producers/{producer_id}"),
+        ("GET", "/admin/producers/pending"),
+        ("GET", "/admin/producers/{producer_id}"),
+    }
+
+    def test_default_is_none_so_an_unhydrated_route_fails_closed(self):
+        assert ProducerAdminOut.model_fields["has_owner"].default is None
+
+    @staticmethod
+    def _operations_returning(schema_name):
+        """(METHOD, path) of every operation whose success response is
+        `schema_name` or an array of it, read from the app's own OpenAPI
+        document — the routers are mounted as included routers, so
+        `app.routes` does not list their APIRoutes directly."""
+        from app.main import app
+
+        ref = f"#/components/schemas/{schema_name}"
+        found = set()
+        for path, ops in app.openapi()["paths"].items():
+            for method, op in ops.items():
+                for code, resp in op.get("responses", {}).items():
+                    if not code.startswith("2"):
+                        continue
+                    schema = (
+                        resp.get("content", {})
+                        .get("application/json", {})
+                        .get("schema", {})
+                    )
+                    if (
+                        schema.get("$ref") == ref
+                        or schema.get("items", {}).get("$ref") == ref
+                    ):
+                        found.add((method.upper(), path))
+        return found
+
+    def test_control_the_reader_finds_a_known_shape(self):
+        # Control FIRST: an empty inventory would also "match" a broken
+        # reader. ProducerClaimLinkOut is returned by exactly the mint route.
+        assert self._operations_returning("ProducerClaimLinkOut") == {
+            ("POST", "/admin/producers/{producer_id}/claim-link")
+        }
+
+    def test_inventory_of_routes_returning_the_admin_shape(self):
+        assert self._operations_returning("ProducerAdminOut") == self.EXPECTED
+
+
+class TestMessageMatchesTheTokenLifetime:
+    # The approved message says «הקישור בתוקף 14 יום». The token lifetime is
+    # auth.PRODUCER_CLAIM_TTL_DAYS. Two owners for one fact: if the TTL
+    # changes, this goes red until the copy is re-approved to match.
+    def test_he_and_en_state_the_real_ttl(self):
+        import json
+        from pathlib import Path
+
+        from app.auth import PRODUCER_CLAIM_TTL_DAYS
+
+        root = Path(__file__).resolve().parents[1] / "frontend" / "messages"
+        he = json.loads((root / "he.json").read_text(encoding="utf-8"))
+        en = json.loads((root / "en.json").read_text(encoding="utf-8"))
+        msg_he = he["admin"]["producers"]["table"]["draft_claim"]["message"]
+        msg_en = en["admin"]["producers"]["table"]["draft_claim"]["message"]
+        assert f"בתוקף {PRODUCER_CLAIM_TTL_DAYS} יום" in msg_he
+        assert f"valid for {PRODUCER_CLAIM_TTL_DAYS} days" in msg_en

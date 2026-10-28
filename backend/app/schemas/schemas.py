@@ -2916,7 +2916,10 @@ class ProducerAdminOut(ProducerDetailOut):
     # list: «מחכה לבעלים» vs «נקלט, בהשלמה», and whether the row offers the
     # claim-link copy. Admin-only: which pages have an account behind them is
     # nobody's business but the admin's — not on ProducerDetailOut/ListOut.
-    has_owner: bool = False
+    # None, not False, by default: a route that forgot to hydrate must fail
+    # CLOSED — the UI renders neither chip nor action for a non-boolean —
+    # instead of reporting a claimed draft as ownerless.
+    has_owner: bool | None = None
     # MEH-986 ch3b: free-text kosher re-declared here — it was removed from the
     # public ProducerListOut but stays admin-internal (the admin table + form).
     kosher: str | None = None

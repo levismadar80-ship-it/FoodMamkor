@@ -743,7 +743,6 @@ export const listProducersAdminProducersGetResponseHasGlutenFreeProductsDefault 
 export const listProducersAdminProducersGetResponseHasLactoseFreeProductsDefault = false;
 export const listProducersAdminProducersGetResponseHasLowCarbProductsDefault = false;
 export const listProducersAdminProducersGetResponseHasNoAddedSugarProductsDefault = false;
-export const listProducersAdminProducersGetResponseHasOwnerDefault = false;
 export const listProducersAdminProducersGetResponseHasPhysicalLocationDefault = true;
 export const listProducersAdminProducersGetResponseHasProducerLicenseDefault = false;
 export const listProducersAdminProducersGetResponseHasVeganProductsDefault = false;
@@ -844,7 +843,7 @@ export const ListProducersAdminProducersGetResponseItem = /*#__PURE__*/ zod.obje
   "has_lactose_free_products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseHasLactoseFreeProductsDefault),
   "has_low_carb_products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseHasLowCarbProductsDefault),
   "has_no_added_sugar_products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseHasNoAddedSugarProductsDefault),
-  "has_owner": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseHasOwnerDefault),
+  "has_owner": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.boolean(),/*#__PURE__*/ zod.null()])),
   "has_physical_location": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseHasPhysicalLocationDefault),
   "has_producer_license": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseHasProducerLicenseDefault),
   "has_vegan_products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseHasVeganProductsDefault),
@@ -971,7 +970,6 @@ export const adminCreateProducerAdminProducersPostResponseHasGlutenFreeProductsD
 export const adminCreateProducerAdminProducersPostResponseHasLactoseFreeProductsDefault = false;
 export const adminCreateProducerAdminProducersPostResponseHasLowCarbProductsDefault = false;
 export const adminCreateProducerAdminProducersPostResponseHasNoAddedSugarProductsDefault = false;
-export const adminCreateProducerAdminProducersPostResponseHasOwnerDefault = false;
 export const adminCreateProducerAdminProducersPostResponseHasPhysicalLocationDefault = true;
 export const adminCreateProducerAdminProducersPostResponseHasProducerLicenseDefault = false;
 export const adminCreateProducerAdminProducersPostResponseHasVeganProductsDefault = false;
@@ -1072,7 +1070,7 @@ export const AdminCreateProducerAdminProducersPostResponse = /*#__PURE__*/ zod.o
   "has_lactose_free_products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseHasLactoseFreeProductsDefault),
   "has_low_carb_products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseHasLowCarbProductsDefault),
   "has_no_added_sugar_products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseHasNoAddedSugarProductsDefault),
-  "has_owner": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseHasOwnerDefault),
+  "has_owner": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.boolean(),/*#__PURE__*/ zod.null()])),
   "has_physical_location": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseHasPhysicalLocationDefault),
   "has_producer_license": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseHasProducerLicenseDefault),
   "has_vegan_products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseHasVeganProductsDefault),
@@ -1203,7 +1201,6 @@ export const pendingProducersAdminProducersPendingGetResponseHasGlutenFreeProduc
 export const pendingProducersAdminProducersPendingGetResponseHasLactoseFreeProductsDefault = false;
 export const pendingProducersAdminProducersPendingGetResponseHasLowCarbProductsDefault = false;
 export const pendingProducersAdminProducersPendingGetResponseHasNoAddedSugarProductsDefault = false;
-export const pendingProducersAdminProducersPendingGetResponseHasOwnerDefault = false;
 export const pendingProducersAdminProducersPendingGetResponseHasPhysicalLocationDefault = true;
 export const pendingProducersAdminProducersPendingGetResponseHasProducerLicenseDefault = false;
 export const pendingProducersAdminProducersPendingGetResponseHasVeganProductsDefault = false;
@@ -1304,7 +1301,7 @@ export const PendingProducersAdminProducersPendingGetResponseItem = /*#__PURE__*
   "has_lactose_free_products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseHasLactoseFreeProductsDefault),
   "has_low_carb_products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseHasLowCarbProductsDefault),
   "has_no_added_sugar_products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseHasNoAddedSugarProductsDefault),
-  "has_owner": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseHasOwnerDefault),
+  "has_owner": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.boolean(),/*#__PURE__*/ zod.null()])),
   "has_physical_location": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseHasPhysicalLocationDefault),
   "has_producer_license": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseHasProducerLicenseDefault),
   "has_vegan_products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseHasVeganProductsDefault),
@@ -1491,7 +1488,6 @@ export const adminGetProducerAdminProducersProducerIdGetResponseHasGlutenFreePro
 export const adminGetProducerAdminProducersProducerIdGetResponseHasLactoseFreeProductsDefault = false;
 export const adminGetProducerAdminProducersProducerIdGetResponseHasLowCarbProductsDefault = false;
 export const adminGetProducerAdminProducersProducerIdGetResponseHasNoAddedSugarProductsDefault = false;
-export const adminGetProducerAdminProducersProducerIdGetResponseHasOwnerDefault = false;
 export const adminGetProducerAdminProducersProducerIdGetResponseHasPhysicalLocationDefault = true;
 export const adminGetProducerAdminProducersProducerIdGetResponseHasProducerLicenseDefault = false;
 export const adminGetProducerAdminProducersProducerIdGetResponseHasVeganProductsDefault = false;
@@ -1592,7 +1588,7 @@ export const AdminGetProducerAdminProducersProducerIdGetResponse = /*#__PURE__*/
   "has_lactose_free_products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseHasLactoseFreeProductsDefault),
   "has_low_carb_products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseHasLowCarbProductsDefault),
   "has_no_added_sugar_products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseHasNoAddedSugarProductsDefault),
-  "has_owner": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseHasOwnerDefault),
+  "has_owner": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.boolean(),/*#__PURE__*/ zod.null()])),
   "has_physical_location": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseHasPhysicalLocationDefault),
   "has_producer_license": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseHasProducerLicenseDefault),
   "has_vegan_products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseHasVeganProductsDefault),
@@ -1716,7 +1712,6 @@ export const adminUpdateProducerAdminProducersProducerIdPutResponseHasGlutenFree
 export const adminUpdateProducerAdminProducersProducerIdPutResponseHasLactoseFreeProductsDefault = false;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseHasLowCarbProductsDefault = false;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseHasNoAddedSugarProductsDefault = false;
-export const adminUpdateProducerAdminProducersProducerIdPutResponseHasOwnerDefault = false;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseHasPhysicalLocationDefault = true;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseHasProducerLicenseDefault = false;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseHasVeganProductsDefault = false;
@@ -1817,7 +1812,7 @@ export const AdminUpdateProducerAdminProducersProducerIdPutResponse = /*#__PURE_
   "has_lactose_free_products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseHasLactoseFreeProductsDefault),
   "has_low_carb_products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseHasLowCarbProductsDefault),
   "has_no_added_sugar_products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseHasNoAddedSugarProductsDefault),
-  "has_owner": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseHasOwnerDefault),
+  "has_owner": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.boolean(),/*#__PURE__*/ zod.null()])),
   "has_physical_location": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseHasPhysicalLocationDefault),
   "has_producer_license": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseHasProducerLicenseDefault),
   "has_vegan_products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseHasVeganProductsDefault),

@@ -40,7 +40,7 @@ function row(status, has_owner) {
   return r;
 }
 
-function renderTable(rows) {
+function renderTable(rows, { onRetryLoad } = {}) {
   const noop = vi.fn();
   return render(
     <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
@@ -50,7 +50,7 @@ function renderTable(rows) {
         storyCardOpenId={null}
         onSetStoryCardOpenId={noop}
         loadError={false}
-        onRetryLoad={noop}
+        onRetryLoad={onRetryLoad || noop}
         onQuickApprove={noop}
         onRequestChanges={noop}
         onReject={noop}
@@ -167,7 +167,8 @@ describe("«העתקת הודעה עם קישור»", () => {
     let resolvePost;
     api.post.mockReturnValue(new Promise((r) => (resolvePost = r)));
     const write = vi.fn().mockResolvedValue(undefined);
-    setClipboard({ write, writeText: vi.fn() });
+    const writeText = vi.fn();
+    setClipboard({ write, writeText });
     globalThis.ClipboardItem = FakeClipboardItem;
 
     renderTable([row("draft", false)]);
@@ -182,6 +183,7 @@ describe("«העתקת הודעה עם קישור»", () => {
     await waitFor(() => expect(showToast.success).toHaveBeenCalledWith(D.copied));
     expect(showToast.error).not.toHaveBeenCalled();
     expect(screen.queryByTestId("draft-claim-message-manual")).not.toBeInTheDocument();
+    expect(writeText).not.toHaveBeenCalled();
   });
 
   it("the composed message is the card's copy verbatim (both lines, 14 days)", () => {
@@ -215,6 +217,13 @@ describe("«העתקת הודעה עם קישור»", () => {
     const box = await screen.findByTestId("draft-claim-message-manual");
     expect(box).toHaveValue(MESSAGE);
     expect(box).toHaveAttribute("readonly");
+    // Announced, labelled by that announcement, and focused + selected.
+    const note = screen.getByTestId("draft-claim-copy-failed");
+    expect(note).toHaveAttribute("role", "alert");
+    expect(note).toHaveTextContent(he.admin.producers.claim.copy_failed);
+    expect(box).toHaveAttribute("aria-labelledby", note.id);
+    expect(box).toHaveFocus();
+    expect([box.selectionStart, box.selectionEnd]).toEqual([0, MESSAGE.length]);
     expect(showToast.success).not.toHaveBeenCalled();
     expect(showToast.error).not.toHaveBeenCalled();
   });
@@ -236,10 +245,13 @@ describe("«העתקת הודעה עם קישור»", () => {
     setClipboard({ write: vi.fn((items) => items[0].items["text/plain"]) });
     globalThis.ClipboardItem = FakeClipboardItem;
 
-    renderTable([row("draft", false)]);
+    const onRetryLoad = vi.fn();
+    renderTable([row("draft", false)], { onRetryLoad });
     fireEvent.click(copyButtons()[0]);
 
     await waitFor(() => expect(showToast.error).toHaveBeenCalledWith(detail));
+    // The row is stale (claimed or submitted since the list loaded): reload.
+    expect(onRetryLoad).toHaveBeenCalledTimes(1);
     expect(showToast.success).not.toHaveBeenCalled();
     expect(screen.queryByTestId("draft-claim-message-manual")).not.toBeInTheDocument();
   });
@@ -258,7 +270,7 @@ describe("«העתקת הודעה עם קישור»", () => {
     expect(showToast.success).not.toHaveBeenCalled();
   });
 
-  it("is disabled while the mint is in flight, so a double click mints once", async () => {
+  it("disables its own button while the mint is in flight", async () => {
     let resolvePost;
     api.post.mockReturnValue(new Promise((r) => (resolvePost = r)));
     setClipboard({ writeText: vi.fn().mockResolvedValue(undefined) });
@@ -275,8 +287,8 @@ describe("«העתקת הודעה עם קישור»", () => {
     await waitFor(() => expect(btn).not.toBeDisabled());
   });
 
-  it("each waiting row mints for its own id", () => {
-    api.post.mockReturnValue(new Promise(() => {}));
+  it("each waiting row mints for its own id", async () => {
+    api.post.mockResolvedValue({ data: LINK });
     setClipboard({ writeText: vi.fn() });
     globalThis.ClipboardItem = undefined;
 
@@ -284,5 +296,132 @@ describe("«העתקת הודעה עם קישור»", () => {
     const rows = screen.getAllByRole("row").slice(1);
     fireEvent.click(within(rows[2]).getByTestId("draft-copy-claim-message"));
     expect(api.post).toHaveBeenCalledWith("/admin/producers/p-3/claim-link");
+    await waitFor(() => expect(showToast.success).toHaveBeenCalled());
   });
+
+  it("clipboard refuses before reading the item, then the mint 409s: no unhandled rejection", async () => {
+    const unhandled = [];
+    const onUnhandled = (reason) => unhandled.push(reason);
+    process.on("unhandledRejection", onUnhandled);
+    try {
+      let rejectPost;
+      api.post.mockReturnValue(new Promise((_, rej) => (rejectPost = rej)));
+      // A browser that refuses up front (focus / permission) never touches
+      // the item's promise.
+      setClipboard({ write: vi.fn().mockRejectedValue(new Error("NotAllowedError")) });
+      globalThis.ClipboardItem = FakeClipboardItem;
+
+      renderTable([row("draft", false)]);
+      fireEvent.click(copyButtons()[0]);
+      rejectPost({ response: { status: 409, data: { detail: "העמוד הזה כבר שויך לחשבון." } } });
+
+      await waitFor(() => expect(showToast.error).toHaveBeenCalled());
+      // Let the microtask queue drain so Node can report anything unhandled.
+      await new Promise((r) => setTimeout(r, 20));
+      expect(unhandled).toEqual([]);
+    } finally {
+      process.off("unhandledRejection", onUnhandled);
+    }
+  });
+
+  it("a non-409 failure toasts but does not reload", async () => {
+    api.post.mockRejectedValue({ response: { status: 500, data: {} } });
+    setClipboard({ writeText: vi.fn() });
+    globalThis.ClipboardItem = undefined;
+    const onRetryLoad = vi.fn();
+
+    renderTable([row("draft", false)], { onRetryLoad });
+    fireEvent.click(copyButtons()[0]);
+
+    await waitFor(() => expect(showToast.error).toHaveBeenCalledWith(he.admin.producers.claim.error));
+    expect(onRetryLoad).not.toHaveBeenCalled();
+  });
+
+  it("one mint at a time across rows: row B's click is ignored while row A's is in flight", async () => {
+    let resolveA;
+    api.post.mockReturnValueOnce(new Promise((r) => (resolveA = r)));
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    setClipboard({ writeText });
+    globalThis.ClipboardItem = undefined;
+
+    renderTable([row("draft", false), row("draft", false)]);
+    const [a, b] = copyButtons();
+    fireEvent.click(a);
+    fireEvent.click(b);
+    expect(api.post).toHaveBeenCalledTimes(1);
+    expect(api.post).toHaveBeenCalledWith("/admin/producers/p-1/claim-link");
+
+    resolveA({ data: LINK });
+    await waitFor(() => expect(showToast.success).toHaveBeenCalledTimes(1));
+    expect(writeText).toHaveBeenCalledTimes(1);
+
+    // Once A has settled, B works.
+    api.post.mockResolvedValueOnce({ data: { ...LINK, url: `${URL_}-b` } });
+    fireEvent.click(b);
+    expect(api.post).toHaveBeenLastCalledWith("/admin/producers/p-2/claim-link");
+    await waitFor(() => expect(showToast.success).toHaveBeenCalledTimes(2));
+  });
+});
+
+describe("manual-copy box — rows × open / closed", () => {
+  beforeEach(() => {
+    setClipboard({ write: vi.fn().mockRejectedValue(new Error("NotAllowedError")) });
+    globalThis.ClipboardItem = FakeClipboardItem;
+  });
+
+  it("1 row, closed: no box before any click", () => {
+    renderTable([row("draft", false)]);
+    expect(screen.queryByTestId("draft-claim-message-manual")).not.toBeInTheDocument();
+  });
+
+  it("many rows, one open: only the clicked row shows a box, with its own link", async () => {
+    api.post.mockResolvedValue({ data: LINK });
+    renderTable([row("draft", false), row("draft", true), row("draft", false)]);
+    const rows = screen.getAllByRole("row").slice(1);
+    fireEvent.click(within(rows[2]).getByTestId("draft-copy-claim-message"));
+    await within(rows[2]).findByTestId("draft-claim-message-manual");
+    expect(screen.getAllByTestId("draft-claim-message-manual")).toHaveLength(1);
+    expect(within(rows[0]).queryByTestId("draft-claim-message-manual")).not.toBeInTheDocument();
+  });
+
+  it("many rows, two open: each box holds its own row's link", async () => {
+    api.post
+      .mockResolvedValueOnce({ data: { ...LINK, url: `${URL_}-a` } })
+      .mockResolvedValueOnce({ data: { ...LINK, url: `${URL_}-b` } });
+    renderTable([row("draft", false), row("draft", false)]);
+    const [a, b] = copyButtons();
+    fireEvent.click(a);
+    await waitFor(() => expect(screen.getAllByTestId("draft-claim-message-manual")).toHaveLength(1));
+    fireEvent.click(b);
+    await waitFor(() => expect(screen.getAllByTestId("draft-claim-message-manual")).toHaveLength(2));
+    const values = screen.getAllByTestId("draft-claim-message-manual").map((x) => x.value);
+    expect(values).toEqual([MESSAGE.replace(URL_, `${URL_}-a`), MESSAGE.replace(URL_, `${URL_}-b`)]);
+  });
+
+  it("open → clicked again and the copy now succeeds → the box closes", async () => {
+    api.post.mockResolvedValue({ data: LINK });
+    const write = vi.fn().mockRejectedValueOnce(new Error("NotAllowedError")).mockResolvedValue(undefined);
+    setClipboard({ write });
+    renderTable([row("draft", false)]);
+    fireEvent.click(copyButtons()[0]);
+    await screen.findByTestId("draft-claim-message-manual");
+    fireEvent.click(copyButtons()[0]);
+    await waitFor(() => expect(showToast.success).toHaveBeenCalledWith(D.copied));
+    expect(screen.queryByTestId("draft-claim-message-manual")).not.toBeInTheDocument();
+  });
+});
+
+describe("copy keys", () => {
+  // onError is silenced in renderTable, so a dropped key would render its
+  // path and the assertions would compare against `undefined`. Pin the keys.
+  it.each(["owner_waiting", "owner_claimed", "copy_message", "message", "copied"])(
+    "draft_claim.%s is a non-empty string in he and en",
+    async (key) => {
+      const en = (await import("../messages/en.json")).default;
+      for (const m of [he, en]) {
+        expect(typeof m.admin.producers.table.draft_claim[key]).toBe("string");
+        expect(m.admin.producers.table.draft_claim[key].length).toBeGreaterThan(0);
+      }
+    },
+  );
 });
