@@ -533,7 +533,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
             names the place first. The category moved to the line under the
             name. MEH-1073 T10 / MEH-867: no uppercase, no letter-spacing. */}
         {producer.city && (
-          <p className="text-[12px] font-semibold text-accent flex items-center gap-1.5 min-w-0" data-testid="card-place">
+          <p className="text-[12px] font-semibold text-accent truncate flex items-center gap-1.5 min-w-0" data-testid="card-place">
             {/* The location line below is skipped when it would hold no text;
                 the availability dot then rides here, so it is never lost and
                 never sits alone as an orphan circle (MEH-1551). */}
