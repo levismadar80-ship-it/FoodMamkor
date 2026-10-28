@@ -51,7 +51,7 @@ async function lastLine(page: Page, selector: string): Promise<{ lines: number; 
 test.describe("manual › Hebrew typography (MEH-2488)", () => {
   test("/about/process: Hebrew inside .font-english renders in Frank Ruhl Libre, never a system serif", async ({ page }) => {
     await page.goto("/about/process");
-    for (const selector of ['[data-testid="process-hero"] em', "p.font-english"]) {
+    for (const selector of ['[data-testid="process-hero"] em', '[data-testid="process-steps-lead"]']) {
       const text = (await page.locator(selector).first().textContent()) ?? "";
       expect(text, `${selector} carries Hebrew — else this check is vacuous`).toMatch(/[֐-׿]/);
       const fonts = await renderedFonts(page, selector);
@@ -73,6 +73,20 @@ test.describe("manual › Hebrew typography (MEH-2488)", () => {
     const fonts = await renderedFonts(page, selector);
     const cormorant = fonts.find((f) => /Cormorant/i.test(f.familyName));
     const total = fonts.reduce((a, f) => a + f.glyphCount, 0);
+    expect(cormorant?.glyphCount ?? 0, JSON.stringify(fonts)).toBe(total);
+  });
+
+  // Control on the Hebrew page itself: digits in .font-english (the step
+  // numerals 01–04) must stay 100% Cormorant — Frank Ruhl's half leads the
+  // stack only because its unicode-range is Hebrew-only and excludes digits.
+  test("/about/process: digits inside .font-english still render in Cormorant", async ({ page }) => {
+    await page.goto("/about/process");
+    const selector = '[data-testid="process-steps"] span.numeric';
+    expect((await page.locator(selector).first().textContent()) ?? "").toMatch(/^\d+$/);
+    const fonts = await renderedFonts(page, selector);
+    const cormorant = fonts.find((f) => /Cormorant/i.test(f.familyName));
+    const total = fonts.reduce((a, f) => a + f.glyphCount, 0);
+    expect(total).toBeGreaterThan(0);
     expect(cormorant?.glyphCount ?? 0, JSON.stringify(fonts)).toBe(total);
   });
 
