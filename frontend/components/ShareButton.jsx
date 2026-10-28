@@ -11,8 +11,22 @@ import { BRAND_NAME } from "@/lib/constants";
  *   - "overlay" — mobile hero overlay: white circle, icon-only (the share
  *                 affordance's single mobile home; heart moved to actions row)
  */
-export default function ShareButton({ url, title, description, city, category, variant = "default" }) {
+// MEH-2465 follow-up: what is being shared names the button for a screen
+// reader. The page decides; "business" stays the default so every existing
+// call site keeps «שתפו לינק לעסק».
+const ARIA_LABEL_KEY = { business: "modal_title", event: "modal_title_event" };
+
+export default function ShareButton({
+  url,
+  title,
+  description,
+  city,
+  category,
+  variant = "default",
+  subject = "business",
+}) {
   const t = useTranslations("share");
+  const ariaLabel = t(ARIA_LABEL_KEY[subject] ?? ARIA_LABEL_KEY.business);
   const resolvedTitle = title || t("wa_message_business_fallback");
   const metaSep = t("wa_meta_separator");
   const shareText = [
@@ -60,7 +74,7 @@ export default function ShareButton({ url, title, description, city, category, v
         // swap (heart → share, MEH-1334 decision 6) is visually seamless.
         className="bg-white/95 hover:bg-white rounded-full w-11 h-11 flex items-center justify-center shadow-md hover:scale-105 transition focus-visible:ring-2 focus-visible:ring-primary/40"
         title={t("copy_link")}
-        aria-label={t("modal_title")}
+        aria-label={ariaLabel}
       >
         <ShareNetwork size={20} className="text-text" aria-hidden="true" />
       </button>
@@ -75,7 +89,7 @@ export default function ShareButton({ url, title, description, city, category, v
         onClick={handleShare}
         className="inline-flex items-center gap-1.5 min-h-[44px] py-2 text-[13px] font-medium text-text hover:text-primary rounded transition focus-visible:ring-2 focus-visible:ring-primary/40"
         title={t("copy_link")}
-        aria-label={t("modal_title")}
+        aria-label={ariaLabel}
       >
         <ShareNetwork size={17} className="text-primary-dark" aria-hidden="true" />
         {t("quiet_label")}
@@ -88,7 +102,7 @@ export default function ShareButton({ url, title, description, city, category, v
       onClick={handleShare}
       className="inline-flex items-center justify-center gap-2 bg-white border border-border px-3 py-2 min-h-[44px] min-w-[44px] rounded-[8px] hover:bg-green-50 transition text-sm focus-visible:ring-2 focus-visible:ring-primary/40"
       title={t("copy_link")}
-      aria-label={t("modal_title")}
+      aria-label={ariaLabel}
     >
       <ShareNetwork size={16} aria-hidden="true" />
       <span className="hidden sm:inline">{t("trigger")}</span>
