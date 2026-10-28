@@ -266,7 +266,7 @@ export const ProducerListSchema = z.object({
   // one strict declaration drops a whole business from the feed. Deliberately
   // `z.string()` and not `z.enum()` on the two availability fields — a new
   // backend state value must cost a dot, never a producer.
-  trust_tier: z.number().nullable().optional(),              // → TrustBadge ("מובילת קהילה"/"שגרירת מהמקור"), ProducerCard.jsx:353-354 gate `>= 4`
+  trust_tier: z.number().nullable().optional(),              // → TrustBadge ("מובילת קהילה"; tier 5 retired MEH-2509), ProducerCard.jsx:353-354 gate `>= 4`
   favorites_count: z.number().nullable().optional(),         // → heart counter seed, ProducerCard.jsx:161/:166
   short_description: z.string().nullable().optional(),       // → card description line, ProducerCard.jsx:202
   // MEH-2137: the featured-product vote by IDENTITY. Declared even though no

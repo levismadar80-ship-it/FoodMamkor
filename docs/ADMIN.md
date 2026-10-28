@@ -7,7 +7,7 @@ sidebar קבוע ב: `frontend/app/[locale]/admin/layout.js`. **MEH-2359 (26/10)
 | דף | URL | תוכן |
 |----|-----|-------|
 | מה מחכה לטיפול | /admin | **MEH-2359:** רק מה שדורש החלטה — בתי עסק ממתינים (תצוגה מקדימה + «בדוק» + «צפה בכל») ושורה לכל תור אחר שיש בו פריטים. הסטטיסטיקה, הגרפים, DAU, ערים ובריאות השרת שהיו כאן ירדו; גרף הגידול, ערים ומפה נמצאים ב-/admin/analytics. ה-endpoint `GET /admin/dashboard` לא השתנה, רק קיבל חמישה מונים: `pending_category_requests`, `pending_name_change_requests`, `undelivered_whatsapp_7d`, `experiences_awaiting_review`, `recipes_awaiting_review` (השניים האחרונים = `status == "pending"` בלבד, תור האדמין) |
-| בתי עסק | /admin/producers | טבלה + חיפוש + ייבוא/ייצוא Excel + אישור מהיר inline; השהה/שגריר/סטורי/מחיקה בתפריט ⋮ פר-שורה (MEH-1027) + **דחייה** (MEH-226, ⋮ tone danger, שורות pending בלבד — MEH-2124 הסיר את הסטטוס השני) → מודל 5 סיבות + פירוט → שלב אישור → מייל לבעלת העסק; שורות pending נושאות תת-שורה **«רשימת בדיקה לפני אישור»** + **«תיק בדיקה»** (MEH-1399) |
+| בתי עסק | /admin/producers | טבלה + חיפוש + ייצוא Excel (הייבוא הוסר, MEH-2516) + אישור מהיר inline; השהה/סטורי/מחיקה בתפריט ⋮ פר-שורה (MEH-1027) + **דחייה** (MEH-226, ⋮ tone danger, שורות pending בלבד — MEH-2124 הסיר את הסטטוס השני) → מודל 5 סיבות + פירוט → שלב אישור → מייל לבעלת העסק; שורות pending נושאות תת-שורה **«רשימת בדיקה לפני אישור»** + **«תיק בדיקה»** (MEH-1399) |
 | משתמשים | /admin/users | חיפוש + שינוי role + חסימה |
 | תוכן | /admin/content | קטגוריות CRUD + עורך about/terms. **18 קטגוריות הזרע נעולות** (MEH-1456 chunk 2b) — ראו למטה |
 | דיווחים | /admin/reports | ממוין לפי דחיפות + פתור/השהה/התעלם |
@@ -261,7 +261,7 @@ npx playwright test             # E2E
 
 ## Trust Ladder — MEH-51 (April 2026)
 
-5 רמות אמון מחושבות real-time ב-`compute_trust_tier()` (לא מאוחסן ב-DB).
+4 רמות אמון מחושבות real-time ב-`compute_trust_tier()` (לא מאוחסן ב-DB).
 
 | Tier | תנאי | תגית UI |
 |------|-------|---------|
@@ -269,13 +269,11 @@ npx playwright test             # E2E
 | 2 | phone_verified = true | אפור |
 | 3 | is_verified = true (admin manual) | ירוק ראשי |
 | 4 | reviews_count ≥ 10 AND avg_rating ≥ 4.5 | ענבר |
-| 5 | ambassador = true (admin manual) | ירוק כהה |
 
 **Kashrut badges** — 8 קודים תקפים: `rabanut, badatz, chalak, mehadrin, organic-kosher, shmitta, kilayim, artisan-dairy`.
 בקשה מבית עסק → `POST /producers/me/kashrut-request`. אדמין מאשרת/דוחה ב-`/admin/kashrut`.
 
-**Ambassador toggle** — זמין ב-`/admin/producers` (פריט "☆ שגריר" בתפריט ⋮ של השורה — MEH-1027; לפני כן כפתור inline) לבתי עסק עם `status = approved` בלבד.
-`POST /admin/producers/{id}/set-ambassador` מחזיר 400 אם `status != approved`.
+**Ambassador (Tier 5) — הוסר מהממשק ב-MEH-2509.** כפילות של «בחירת העורכת» (`is_recommended`), שהיא התג העריכתי היחיד שאודות מתאר. העמודה `producers.ambassador` וה-endpoint `POST /admin/producers/{id}/set-ambassador` עדיין קיימים, אבל אין להם כפתור והם לא משפיעים על `trust_tier`. מחיקת העמודה — אחרי ההשקה (Expand-Contract).
 
 **POST /producers/{id}/whatsapp-click** — anonymous, rate-limited 10/min per IP.
 הקליינט (`WhatsAppButton.jsx` + inline `<a>` ב-`ProducerDetail.jsx`) יורה

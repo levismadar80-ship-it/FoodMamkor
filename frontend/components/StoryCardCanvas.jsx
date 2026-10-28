@@ -301,11 +301,17 @@ export default function StoryCardCanvas({ producer, onUploaded, onClose }) {
         <p className="text-sm font-semibold text-text inline-flex items-center gap-1"><Camera size={16} className="text-current" />{t("title")}</p>
       </div>
 
-      {/* Canvas preview — scaled to fit */}
+      {/* Canvas preview — scaled to fit.
+          MEH-2511: the canvas carries its own 9:16 ratio with `height: auto`.
+          It used to be `height: 100%` of an aspect-ratio box, and inside the
+          admin row's <td> WebKit could not resolve that percentage — the
+          canvas fell back to its intrinsic 1920px and showed stretched ×4 and
+          clipped on iPhone. The wrapper keeps the ratio too, so the
+          «מייצר...» overlay has a frame before the first draw. */}
       <div className="relative bg-[#2E4A2E] rounded-[12px] overflow-hidden" style={{ aspectRatio: "9/16", maxWidth: 270 }}>
         <canvas
           ref={canvasRef}
-          style={{ width: "100%", height: "100%", display: "block" }}
+          style={{ width: "100%", height: "auto", aspectRatio: "9/16", display: "block" }}
         />
         {!rendered && (
           <div className="absolute inset-0 flex items-center justify-center text-white text-xs opacity-60">

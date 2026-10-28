@@ -1472,32 +1472,9 @@
         "show_all": "הצג הכל",
         "incomplete_label": "פרטים חסרים",
         "export": "ייצוא",
-        "import_excel": "ייבא מ-Excel",
         "new_producer": "+ בית עסק חדש",
         "review_due_label": "מומלצות לביקורת",
         "review_due_title": "בתי עסק שמסומנים «מומלץ» ולא נבדקו מחדש מעל 12 חודשים, או שנבחרו לפני שהיה תאריך"
-      },
-      "import": {
-        "errors_loading": "שגיאה בקריאת הקובץ",
-        "errors_importing": "שגיאה בייבוא"
-      },
-      "preview": {
-        "title": "תצוגה מקדימה של הייבוא",
-        "importing": "בייבוא...",
-        "confirm": "אשר ייבוא ({count})",
-        "stats": {
-          "to_import": "לייבוא",
-          "skipped": "דולגו",
-          "errors": "שגיאות"
-        },
-        "table": {
-          "row": "שורה",
-          "name": "שם",
-          "city": "עיר",
-          "category": "קטגוריה",
-          "slug": "slug",
-          "status": "סטטוס"
-        }
       },
       "table": {
         "status_tooltip_draft": "draft = טיוטה שטרם נשלחה לבדיקה",
@@ -1539,9 +1516,6 @@
           "view": "צפה",
           "suspend": "השהה",
           "activate": "הפעל",
-          "remove_ambassador_title": "הסרת תפקיד שגרירה",
-          "set_ambassador_title": "הגדרה כשגרירה",
-          "ambassador_tooltip": "סימון ידני לבית עסק מוביל — מקפיץ ל-Trust Tier 5 עם badge ציבורי",
           "story_card_title": "צור כרטיס אינסטגרם",
           "story_card": "סטורי",
           "delete": "מחקי",
@@ -2976,10 +2950,6 @@
     "tier_4": {
       "label": "מובילת קהילה",
       "tooltip": "10+ ביקורות עם דירוג ממוצע 4.5 ומעלה"
-    },
-    "tier_5": {
-      "label": "שגרירת מהמקור",
-      "tooltip": "בעלת העסק המובילה באזור — נבחרה ידנית על ידי מהמקור"
     }
   },
   "forms": {
