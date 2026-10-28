@@ -42,8 +42,6 @@ vi.mock("@/app/[locale]/home/UpcomingEventsPreview", () => ({
   UpcomingEventsPreview: () => null,
 }));
 vi.mock("@/app/[locale]/home/HomeStaticBlocks", () => ({
-  HomeHowItWorks: () => null,
-  HomeComparisonTeaser: () => null,
   HomeFeaturedProducer: () => null,
   HomeRecentlyViewed: () => null,
   HomeCTA: () => null,

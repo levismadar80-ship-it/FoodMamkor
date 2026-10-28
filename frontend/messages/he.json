@@ -476,14 +476,8 @@
     },
     "featured": {
       "eyebrow": "היכרות",
-      "heading": "מאחורי הקלעים",
       "cta_meet": "להכיר את {name}",
       "cta_write": "לכתוב ל{name}"
-    },
-    "comparison_teaser": {
-      "eyebrow": "ההבדל",
-      "heading": "מה שמשתנה בדרך",
-      "cta": "גלו את ההבדל"
     },
     "categories": {
       "eyebrow": "קטגוריות",
@@ -529,16 +523,6 @@
     },
     "recent": {
       "heading": "צפית לאחרונה"
-    },
-    "how_it_works": {
-      "eyebrow": "איך זה עובד",
-      "heading": "שלושה צעדים",
-      "step01_title": "מצאו",
-      "step01_text": "גלו בתי עסק קרובים אליכם",
-      "step02_title": "צרו קשר עם העסק",
-      "step02_text": "דברו ישירות עם בית העסק",
-      "step03_title": "קנייה",
-      "step03_text": "ישר מהמקור, איך שמתאים לך"
     },
     "cta": {
       "heading": "יש לך עסק? בואו אלינו",
