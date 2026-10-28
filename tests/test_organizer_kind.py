@@ -304,6 +304,8 @@ class TestOrganizerNeverVerified:
                 "min_participants": 3,
                 "deadline": (utc_now() + timedelta(days=10)).isoformat(),
                 "city": "תל אביב",
+                # MEH-2453: required — without it the 422 would mask the gate.
+                "fulfillment_note": "איסוף מתל אביב",
             },
             headers=auth_header(owner),
         )
