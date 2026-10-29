@@ -9,6 +9,14 @@ import { render, screen, waitFor } from "@testing-library/react";
 import api from "@/lib/api";
 import EventDetailClient from "@/app/[locale]/events/[id]/EventDetailClient";
 
+// MEH-2559: the heart needs AuthProvider; its behaviour is SaveButton.test.jsx's.
+// A stub that names its props, so where and for what it renders is checkable.
+vi.mock("@/components/SaveButton", () => ({
+  default: ({ itemType, itemId, variant }) => (
+    <button type="button" data-testid={`save-${itemType}`} data-id={String(itemId)} data-variant={variant} />
+  ),
+}));
+
 vi.mock("next/navigation", () => ({ useParams: () => ({ id: "ev-1" }) }));
 vi.mock("next/dynamic", () => ({ default: () => () => <div data-testid="minimap" /> }));
 vi.mock("@/i18n/navigation", () => ({
@@ -177,5 +185,23 @@ describe("MEH-2548 — byline under the title", () => {
   it("a business's event: links to the business page", async () => {
     await renderEvent({ owner_kind: "producer", producer_name: "חוות הניסוי" });
     expect(screen.getByTestId("event-byline").getAttribute("href")).toBe("/producer/p-1");
+  });
+});
+
+// MEH-2559: the heart sits beside share + calendar, and stays on a past event
+// (the saved list keeps past events, labelled «עברו»).
+describe("MEH-2559 — save heart", () => {
+  it("an upcoming event: a heart for this event in the action row", async () => {
+    await renderEvent();
+    const hearts = [...screen.getByTestId("event-actions").querySelectorAll('[data-testid="save-event"]')];
+    expect(hearts).toHaveLength(1);
+    expect(hearts[0].getAttribute("data-id")).toBe("ev-1");
+    expect(hearts[0].getAttribute("data-variant")).toBe("outline");
+  });
+
+  it("a past event keeps its heart though the calendar button goes", async () => {
+    await renderEvent({ event_date: "2026-10-20" });
+    expect(screen.queryByTestId("event-add-to-calendar")).toBeNull();
+    expect(screen.getByTestId("event-actions").querySelector('[data-testid="save-event"]')).toBeTruthy();
   });
 });

@@ -26,6 +26,7 @@ import api from "@/lib/api";
 import Breadcrumb from "@/components/Breadcrumb";
 import OwnerRow from "@/components/OwnerRow";
 import ShareButton from "@/components/ShareButton";
+import SaveButton from "@/components/SaveButton";
 import { CATEGORY_ICON } from "@/components/EventEntryRow";
 import { cssUrl } from "@/lib/css-url";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
@@ -391,6 +392,8 @@ export default function ExperienceDetailClient() {
                       {tEv("add_to_calendar")}
                     </button>
                   )}
+                  {/* MEH-2559: save beside share, as on the recipe and business pages. */}
+                  <SaveButton itemType="experience" itemId={ex.id} variant="outline" />
                 </div>
               </div>
             )}

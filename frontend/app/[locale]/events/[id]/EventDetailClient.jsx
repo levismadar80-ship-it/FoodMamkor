@@ -26,6 +26,7 @@ import { cssUrl } from "@/lib/css-url";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import Breadcrumb from "@/components/Breadcrumb";
 import ShareButton from "@/components/ShareButton";
+import SaveButton from "@/components/SaveButton";
 import OwnerRow from "@/components/OwnerRow";
 import EventEntryRow, { CATEGORY_ICON } from "@/components/EventEntryRow";
 import { toEventEntry } from "@/lib/event-entry";
@@ -351,6 +352,8 @@ export default function EventDetailClient() {
                     {t("add_to_calendar")}
                   </button>
                 )}
+                {/* MEH-2559: save beside share, as on the recipe and business pages. */}
+                <SaveButton itemType="event" itemId={event.id} variant="outline" />
               </div>
             </div>
           </div>

@@ -38,6 +38,9 @@ vi.mock("@/lib/api", () => ({
 import { UpcomingEventsPreview } from "@/app/[locale]/home/UpcomingEventsPreview";
 import { BRAND_NAME } from "@/lib/constants";
 
+// MEH-2559: the heart needs AuthProvider; its behaviour is SaveButton.test.jsx's.
+vi.mock("@/components/SaveButton", () => ({ default: () => null }));
+
 const IMAGED = {
   id: 1,
   title: "ארוחת שף בגינה",

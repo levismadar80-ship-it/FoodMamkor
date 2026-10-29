@@ -3,6 +3,9 @@ import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/re
 import EventsClient from "@/app/[locale]/events/EventsClient";
 import { EVENT_CATEGORIES } from "@/lib/event-categories";
 
+// MEH-2559: the heart needs AuthProvider; its behaviour is SaveButton.test.jsx's.
+vi.mock("@/components/SaveButton", () => ({ default: () => null }));
+
 // MEH-1865 — /events renders TWO different zeros and used to render one surface
 // for both:
 //   • empty dataset      — nothing exists for this tab. Zero filter controls,
