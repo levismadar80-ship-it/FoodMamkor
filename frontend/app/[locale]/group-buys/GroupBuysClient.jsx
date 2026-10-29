@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ShoppingCart } from "@phosphor-icons/react";
+import { ShoppingCart, Clock, MapPin } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
-import { optimizeCloudinary } from "@/lib/cloudinary";
+import Image from "next/image";
+import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
 import { formatPrice } from "@/lib/utils";
-import { groupBuyProgressPct } from "@/lib/group-buy-progress"; // MEH-2540
+import { groupBuyProgressPct, groupBuyDiscountPct } from "@/lib/group-buy-progress"; // MEH-2540, MEH-2544
 import CitySearch from "@/components/CitySearch";
 
 // MEH-797: Sapir-mapped Cloudinary asset (staging/pick-pexels-35113948, 3732×4089)
@@ -20,50 +21,79 @@ const HERO_BG = optimizeCloudinary(
   { width: 1600 }
 );
 
+// MEH-2544: image-led card (Groupon), the discount as a badge, progress
+// framed as how many more are needed (Pinduoduo / Kickstarter), the deadline
+// and the pickup line as trust cues. The whole card is the link. The photo is
+// the business's first image (producer_image_url) — a group buy has none of
+// its own; none, or one that fails to load → the cart on green-50.
 function GroupBuyCard({ gb }) {
   const t = useTranslations("group_buys.card");
+  const td = useTranslations("group_buys.detail");
   const funded = gb.status === "funded";
   const pct = groupBuyProgressPct(gb.commits_count, gb.min_participants);
   const deadline = new Date(gb.deadline);
   const daysLeft = Math.max(0, Math.ceil((deadline - Date.now()) / 86400000));
+  const discount = groupBuyDiscountPct(gb.price_per_unit_regular, gb.price_per_unit_group);
+  const remaining = Math.max(0, gb.min_participants - gb.commits_count);
+  const imgSrc = gb.producer_image_url
+    ? optimizeCloudinary(gb.producer_image_url, { aspectRatio: IMAGE_RATIOS.banner, width: 750 })
+    : null;
+  const [failedSrc, setFailedSrc] = useState(null);
+  const showImg = imgSrc && failedSrc !== imgSrc;
 
   return (
-    <div className="bg-white rounded-[16px] border border-border transition overflow-hidden flex flex-col">
-      {/* Status banner */}
-      {funded && (
-        <div className="bg-primary text-white text-xs font-medium text-center py-1">
-          {t("funded_banner")}
-        </div>
-      )}
+    <Link
+      href={`/group-buys/${gb.id}`}
+      data-testid="group-buy-card"
+      className="group bg-white rounded-[16px] border border-border overflow-hidden flex flex-col hover:border-primary transition focus-ring"
+    >
+      <div className="relative aspect-[16/9] bg-green-50 overflow-hidden">
+        {showImg ? (
+          <Image
+            src={imgSrc}
+            alt=""
+            fill
+            sizes="(max-width: 639px) calc(100vw - 32px), (max-width: 1023px) calc(50vw - 28px), 320px"
+            className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+            onError={() => setFailedSrc(imgSrc)}
+          />
+        ) : (
+          <div className="absolute inset-0 grid place-items-center" data-testid="group-buy-image-missing">
+            <ShoppingCart size={44} weight="light" className="text-primary/70" aria-hidden="true" />
+          </div>
+        )}
+        {discount > 0 && (
+          <span
+            dir="ltr"
+            data-testid="group-buy-discount"
+            className="absolute top-3 start-3 bg-primary text-white text-sm font-bold px-2.5 py-1 rounded-full"
+          >
+            -{discount}%
+          </span>
+        )}
+        {funded && (
+          <span className="absolute top-3 end-3 bg-white text-primary text-xs font-bold px-2.5 py-1 rounded-full">
+            {t("funded_banner")}
+          </span>
+        )}
+      </div>
 
-      <div className="p-5 flex flex-col gap-3 flex-1">
-        <div className="flex items-start justify-between gap-2">
-          <h2 className="font-headline-md text-lg font-bold text-text leading-tight">
-            {gb.title}
-          </h2>
-          {gb.city && (
-            <span className="text-xs bg-green-50 text-primary px-2 py-0.5 rounded-full whitespace-nowrap">
-              {gb.city}
-            </span>
-          )}
-        </div>
-
-        {/* MEH-2472: what is being bought — required on create, and until
-            now shown only in the owner's own list. */}
+      <div className="p-4 flex flex-col gap-2 flex-1">
+        <p className="text-[13px] text-fg-muted">
+          {[gb.producer_name, gb.city].filter(Boolean).join(" · ")}
+        </p>
+        <h2 className="font-headline-md text-lg font-bold text-text leading-snug line-clamp-2">
+          {gb.title}
+        </h2>
+        {/* MEH-2472: what is being bought. */}
         {gb.product_name && (
-          <p className="text-sm font-medium text-text" data-testid="group-buy-product-name">
+          <p className="text-sm text-text" data-testid="group-buy-product-name">
             {gb.product_name}
           </p>
         )}
-        {gb.producer_name && (
-          <p className="text-sm text-fg-muted">{t("by_producer", { name: gb.producer_name })}</p>
-        )}
 
-        {/* Price display */}
-        {/* MEH-863 F11: dir="ltr" on currency+number so ₪ + digits render
-            correctly in the RTL context — the same treatment the deleted
-            experience card used for its price span (MEH-2248). */}
-        <div className="flex items-baseline gap-2">
+        {/* MEH-863 F11: dir="ltr" keeps ₪ + digits in order inside RTL. */}
+        <div className="flex items-baseline gap-2 mt-1">
           <span dir="ltr" className="text-2xl font-bold text-primary">
             {formatPrice(Number(gb.price_per_unit_group).toFixed(0))}
           </span>
@@ -72,38 +102,32 @@ function GroupBuyCard({ gb }) {
           </span>
           {gb.unit && <span className="text-xs text-fg-muted">{t("unit_prefix", { unit: gb.unit })}</span>}
         </div>
-        <p className="text-xs text-fg-muted">
-          {t("min_hint", { min: gb.min_participants })}
-        </p>
 
-        {/* Progress bar */}
-        <div>
-          <div className="flex justify-between text-xs text-fg-muted mb-1">
-            <span>{t("progress_label", { commits: gb.commits_count, min: gb.min_participants })}</span>
-            <span>{pct}%</span>
+        <div className="mt-1">
+          <div className="w-full bg-border rounded-full h-2.5 overflow-hidden">
+            <div className="h-2.5 rounded-full bg-primary" style={{ width: `${pct}%` }} />
           </div>
-          <div className="w-full bg-border rounded-full h-2 overflow-hidden">
-            <div
-              className={`h-2 rounded-full transition-all ${funded ? "bg-primary" : "bg-primary/40"}`}
-              style={{ width: `${pct}%` }}
-            />
-          </div>
+          <p className="mt-1.5 text-[13px] font-medium text-text" data-testid="group-buy-progress-line">
+            {funded || remaining === 0
+              ? t("progress_label", { commits: gb.commits_count, min: gb.min_participants })
+              : td("remaining_to_open", { n: remaining })}
+          </p>
         </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-between mt-auto pt-2">
-          <span className="text-xs text-fg-muted">
+        <div className="mt-auto pt-2 flex flex-col gap-1 text-[13px] text-fg-muted">
+          <span className="inline-flex items-center gap-1.5">
+            <Clock size={16} aria-hidden="true" className="shrink-0" />
             {daysLeft > 0 ? t("days_left", { days: daysLeft }) : t("expired")}
           </span>
-          <Link
-            href={`/group-buys/${gb.id}`}
-            className="min-h-[44px] inline-flex items-center justify-center bg-primary text-white text-sm px-4 py-1.5 rounded-[8px] hover:bg-primary-dark transition font-medium"
-          >
-            {funded ? t("cta_funded_details") : t("cta_join")}
-          </Link>
+          {gb.fulfillment_note && (
+            <span className="inline-flex items-center gap-1.5 min-w-0">
+              <MapPin size={16} aria-hidden="true" className="shrink-0" />
+              <span className="truncate">{gb.fulfillment_note}</span>
+            </span>
+          )}
         </div>
       </div>
-    </div>
+    </Link>
   );
 }
 
@@ -142,7 +166,7 @@ export default function GroupBuysClient() {
   return (
     <div>
       {/* Hero */}
-      <section className="relative text-white py-16 overflow-hidden">
+      <section className="relative text-white py-8 md:py-10 overflow-hidden">
         <div
           className="kenburns-right absolute"
           style={{
@@ -155,18 +179,18 @@ export default function GroupBuysClient() {
         {/* MEH-863 F-scrim: gradient via the primary-dark token (was raw rgba). */}
         <div className="absolute inset-0 bg-gradient-to-b from-primary-dark/[0.82] to-primary-dark/[0.92]" />
         <div className="relative max-w-5xl mx-auto px-4 text-center">
-          <h1 className="font-headline-display text-4xl md:text-5xl font-bold mb-3">
+          <h1 className="font-headline-display text-3xl md:text-4xl font-bold mb-2">
             {t("hero_title")}
           </h1>
-          <p className="text-green-50 text-lg">
+          <p className="text-green-50 text-base md:text-lg">
             {t("hero_subtitle")}
           </p>
         </div>
       </section>
 
-      <div className="max-w-5xl mx-auto px-4 py-10">
+      <div className="max-w-5xl mx-auto px-4 py-6 md:py-10">
         {/* Filters */}
-        <div className="flex flex-wrap gap-3 mb-8 items-end">
+        <div className="flex flex-wrap gap-3 mb-6 items-end">
           <div className="w-56 max-w-full">
             <CitySearch
               id="group-buys-city"
