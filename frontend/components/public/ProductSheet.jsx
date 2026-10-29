@@ -188,6 +188,42 @@ export default function ProductSheet({
   // says so, rather than teleporting to the last one.
   const canPrev = canPage && index > 0;
   const canNext = canPage && index < total - 1;
+  // MEH-2562: a chevron with nowhere to go is not rendered (it used to stay,
+  // dimmed, and on product 1 of N it looked tappable — the hand went to it and
+  // nothing happened). When the reader pages onto an end with the keyboard,
+  // the chevron that had focus is the one that disappears, so focus moves to
+  // its surviving twin instead of falling to <body> (outside the Tab trap).
+  const prevRef = useRef(null);
+  const nextRef = useRef(null);
+  const pageFocus = useRef(null); // which chevron last held focus
+  const touchRef = useRef(null);
+  useEffect(() => {
+    const active = document.activeElement;
+    if (active && active !== document.body && dialogRef.current?.contains(active)) return;
+    if (!canPage) return;
+    if (!canNext && pageFocus.current === "next") prevRef.current?.focus();
+    if (!canPrev && pageFocus.current === "prev") nextRef.current?.focus();
+  }, [canPage, canPrev, canNext]);
+
+  // MEH-2562: swipe pages too, mapped like the chevrons — in RTL "next" sits on
+  // the visual left, so a finger moving right pulls it in; LTR mirrors. Only a
+  // mostly-horizontal move of 50px+ counts, so scrolling the sheet never pages.
+  const onTouchStart = (e) => {
+    const p = e.touches[0];
+    touchRef.current = { x: p.clientX, y: p.clientY };
+  };
+  const onTouchEnd = (e) => {
+    const start = touchRef.current;
+    touchRef.current = null;
+    if (!start || !canPage) return;
+    const p = e.changedTouches[0];
+    const dx = p.clientX - start.x;
+    const dy = p.clientY - start.y;
+    if (Math.abs(dx) < 50 || Math.abs(dx) <= Math.abs(dy)) return;
+    const forward = isRtl ? dx > 0 : dx < 0;
+    if (forward && canNext) onNext();
+    else if (!forward && canPrev) onPrev();
+  };
 
   useEffect(() => {
     // Focus moves to the close button on open and RETURNS to whatever opened
@@ -403,6 +439,9 @@ export default function ProductSheet({
             className={`relative w-full overflow-hidden rounded-t-2xl bg-background ${
               hasPhoto ? "aspect-square" : "h-28"
             }`}
+            onTouchStart={canPage ? onTouchStart : undefined}
+            onTouchEnd={canPage ? onTouchEnd : undefined}
+            data-testid="product-sheet-media"
           >
             {hasPhoto ? (
               <Image
@@ -447,40 +486,37 @@ export default function ProductSheet({
                 (layout.js:201). Only the glyphs are chosen per direction. */}
             {canPage && (
               <>
-                <button
-                  type="button"
-                  // aria-disabled, not `disabled`: a disabled button leaves the
-                  // tab order, so the Tab trap's first/last pair would change
-                  // shape as the reader pages. This keeps the control
-                  // focusable and announced-as-unavailable, and the guard here
-                  // is what makes the end of the list a dead end.
-                  aria-disabled={!canPrev}
-                  onClick={() => {
-                    if (canPrev) onPrev();
-                  }}
-                  aria-label={t("producer.detail.sections.products.sheet_prev_aria")}
-                  data-testid="product-sheet-prev"
-                  className={`absolute z-10 start-2 ${chevronY} ${OVERLAY_CONTROL_CLS} ${
-                    canPrev ? "" : "opacity-40"
-                  }`}
-                >
-                  <PrevIcon size={20} weight="bold" aria-hidden="true" />
-                </button>
+                {canPrev && (
+                  <button
+                    ref={prevRef}
+                    type="button"
+                    onClick={onPrev}
+                    onFocus={() => {
+                      pageFocus.current = "prev";
+                    }}
+                    aria-label={t("producer.detail.sections.products.sheet_prev_aria")}
+                    data-testid="product-sheet-prev"
+                    className={`absolute z-10 start-2 ${chevronY} ${OVERLAY_CONTROL_CLS}`}
+                  >
+                    <PrevIcon size={20} weight="bold" aria-hidden="true" />
+                  </button>
+                )}
 
-                <button
-                  type="button"
-                  aria-disabled={!canNext}
-                  onClick={() => {
-                    if (canNext) onNext();
-                  }}
-                  aria-label={t("producer.detail.sections.products.sheet_next_aria")}
-                  data-testid="product-sheet-next"
-                  className={`absolute z-10 end-2 ${chevronY} ${OVERLAY_CONTROL_CLS} ${
-                    canNext ? "" : "opacity-40"
-                  }`}
-                >
-                  <NextIcon size={20} weight="bold" aria-hidden="true" />
-                </button>
+                {canNext && (
+                  <button
+                    ref={nextRef}
+                    type="button"
+                    onClick={onNext}
+                    onFocus={() => {
+                      pageFocus.current = "next";
+                    }}
+                    aria-label={t("producer.detail.sections.products.sheet_next_aria")}
+                    data-testid="product-sheet-next"
+                    className={`absolute z-10 end-2 ${chevronY} ${OVERLAY_CONTROL_CLS}`}
+                  >
+                    <NextIcon size={20} weight="bold" aria-hidden="true" />
+                  </button>
+                )}
 
                 {/* Centred with inset-x-0 + mx-auto + w-fit rather than the
                     left-1/2/-translate-x-1/2 idiom: same result, no physical
