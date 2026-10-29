@@ -155,4 +155,11 @@ describe("ProducerHeader status tag (MEH-2596)", () => {
     expect(tag.className).toMatch(/\btext-fg-muted\b/);
     expect(tag.className).not.toMatch(/(^|\s)text-muted(\s|$)/);
   });
+
+  it("vacation: the tag keeps gold-deep (4.90:1 on its tint)", () => {
+    render(<ProducerHeader producer={baseProducer} isVacation primaryCategory={category} hasImages />);
+    const tag = screen.getByTestId("status-vacation");
+    expect(tag.className).toContain("bg-[color-mix(in_srgb,currentColor_10%,transparent)]");
+    expect(tag.className).toMatch(/\btext-gold-deep\b/);
+  });
 });
