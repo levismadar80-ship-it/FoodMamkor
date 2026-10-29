@@ -2982,6 +2982,12 @@ class ProducerAdminOut(ProducerDetailOut):
     rejection_reason_code: str | None = None
     resubmission_count: int = 0
     resubmitted_at: datetime | None = None
+    # MEH-2496: when the latest owner-claim link was minted (producer_claim.py
+    # stamps it). Admin-only — when an admin chased an owner is internal
+    # operations data, MEH-530 precedent; never on the public or owner shapes.
+    # NULL = none minted since the column existed; the drafts list renders
+    # nothing for it rather than an empty date.
+    claim_link_sent_at: datetime | None = None
     # MEH-1287 chunk B — the editorial seasonal mark, admin-only and READ-BACK
     # (ADR-006 R2: `ProducerAdminUpdate` writes it, so something has to return
     # it, or the admin form reopens empty and the next save silently clears a

@@ -14,13 +14,15 @@ import { showToast } from "@/lib/toast";
  *           not — one click that mints a fresh claim link and copies a ready
  *           WhatsApp message carrying it.
  * Touches:  POST /admin/producers/{id}/claim-link (producer_claim.py) — the
- *           same stateless 14-day mint as ClaimLinkPanel; no DB write.
+ *           same 14-day mint as ClaimLinkPanel; since MEH-2496 it stamps
+ *           producers.claim_link_sent_at, so a successful mint reloads the
+ *           list to show the new «קישור נשלח ב-…» (AdminDraftLinkAge.jsx).
  * Does NOT: send anything (the admin pastes the message herself), keep any
- *           link history (MEH-2496), or decide who may claim — the server
- *           does, and its 409 detail is shown verbatim.
+ *           link history (only the latest stamp exists), or decide who may
+ *           claim — the server does, and its 409 detail is shown verbatim.
  * Related:  components/admin/ClaimLinkPanel.jsx (the edit-page panel, same
  *           endpoint + schema) · routers/admin.py `_attach_has_owner`.
- * History:  MEH-2495.
+ * History:  MEH-2495. MEH-2496: reload after a successful mint.
  *
  * `has_owner` is read strictly (=== true / === false): a row from a backend
  * that does not send the field renders neither the chip nor the action,
@@ -159,7 +161,7 @@ function ManualCopyBox({ text, tClaim }) {
   );
 }
 
-export function CopyClaimMessageButton({ producer, onStale }) {
+export function CopyClaimMessageButton({ producer, onStale, onMinted }) {
   const t = useTranslations("admin.producers.table.draft_claim");
   const tClaim = useTranslations("admin.producers.claim");
   const [busy, setBusy] = useState(false);
@@ -202,10 +204,13 @@ export function CopyClaimMessageButton({ producer, onStale }) {
         showToast.error(reason instanceof MintError ? reason.message : fallback);
         // The row is out of date: reload, so it stops offering the action.
         if (reason instanceof MintError && reason.stale) onStale?.();
-      } else if (wr.status === "fulfilled") {
-        showToast.success(t("copied"));
       } else {
-        setManualText(txt.value);
+        if (wr.status === "fulfilled") showToast.success(t("copied"));
+        else setManualText(txt.value);
+        // MEH-2496: the mint stamped claim_link_sent_at — reload so the row
+        // shows the new date. Whether or not the clipboard took it, the link
+        // exists. Rows are keyed by id, so an open manual box survives it.
+        onMinted?.();
       }
     });
   };

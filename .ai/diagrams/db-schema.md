@@ -87,6 +87,7 @@ erDiagram
         string rejection_reason_code "nullable — MEH-2210, VARCHAR(40); the admin preset_key (PRODUCER_REJECTION_PRESETS) beside the composed rejection_reason; cleared on approve"
         int resubmission_count "NOT NULL DEFAULT 0 — MEH-2210, rejected→pending resubmissions used; history, never reset; cap constants.MAX_PRODUCER_RESUBMISSIONS=3"
         timestamp resubmitted_at "nullable — MEH-2210, tz-aware; latest resubmission"
+        timestamp claim_link_sent_at "nullable — MEH-2496, tz-aware; latest owner-claim link minted (no backfill)"
         timestamp created_at
         timestamp updated_at "nullable — MEH-1291, tz-aware; onupdate=func.now() stamp, no backfill; public freshness signal (ProducerDetailOut)"
         text owner_bio "nullable — MEH-1335, app-capped 300; public OwnerCard story (NULL = compact variant)"

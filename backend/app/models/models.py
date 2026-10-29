@@ -522,6 +522,11 @@ class Producer(Base):
     rejection_reason_code = Column(String(40), nullable=True)
     resubmission_count = Column(Integer, nullable=False, default=0, server_default="0")
     resubmitted_at = Column(DateTime(timezone=True), nullable=True)
+    # MEH-2496: tz-aware stamp of the latest owner-claim link an admin minted
+    # for this draft (producer_claim.create_claim_link, same transaction, on
+    # success only). NULL = none minted since the column existed (revision
+    # 8600916f1942, no backfill). Admin-only via ProducerAdminOut.
+    claim_link_sent_at = Column(DateTime(timezone=True), nullable=True)
     # MEH-1011: producer "request-changes" trail — the non-terminal twin of
     # rejection_reason. When the admin sends a completion request (missing
     # photo / license), status STAYS "pending"; `requested_changes` holds the
