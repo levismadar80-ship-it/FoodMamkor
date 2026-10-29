@@ -29,25 +29,7 @@ import OwnerRow from "@/components/OwnerRow";
 import EventEntryRow, { CATEGORY_ICON } from "@/components/EventEntryRow";
 import { toEventEntry } from "@/lib/event-entry";
 import { eventWhen, addressNavLinks } from "@/lib/event-when";
-import { buildEventIcs } from "@/lib/event-ics";
-
-// MEH-2468: «הוספה ליומן» — the .ics is built in the browser from the event
-// already on the page (no endpoint) and downloaded through a Blob URL. What a
-// phone does with a text/calendar download (open the calendar app, or save it
-// to Files) varies by browser — NOT verified on devices from the CC sandbox.
-function downloadIcs(event, url) {
-  const blob = new Blob([buildEventIcs(event, { url })], { type: "text/calendar;charset=utf-8" });
-  const href = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = href;
-  a.download = `event-${event.id}.ics`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  // Revoking synchronously can abort the download in WebKit (review #3716 F7;
-  // FileSaver.js delays it for the same reason).
-  setTimeout(() => URL.revokeObjectURL(href), 30_000);
-}
+import { downloadIcs } from "@/lib/event-ics";
 
 // MEH-1404: reuse the producer-detail static map + Waze/Gmaps block on events
 // that carry coords. ssr:false — leaflet touches window at module eval.
@@ -357,7 +339,7 @@ export default function EventDetailClient() {
                 {!isPast && (
                   <button
                     type="button"
-                    onClick={() => downloadIcs(event, pageUrl)}
+                    onClick={() => downloadIcs(event, { url: pageUrl })}
                     data-testid="event-add-to-calendar"
                     className="flex-1 inline-flex items-center justify-center gap-2 min-h-[46px] px-3 rounded-[10px] border border-primary text-primary text-sm font-semibold hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40"
                   >

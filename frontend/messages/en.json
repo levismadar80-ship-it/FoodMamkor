@@ -3252,6 +3252,7 @@
     "trigger": "Share",
     "modal_title": "Share a link to the business",
     "modal_title_event": "Share this event",
+    "modal_title_experience": "Share this experience",
     "copy_link": "Copy link",
     "wa_message_with_meta": "I found {title} on Mehamakor 🌿",
     "wa_message_business_fallback": "a business",
