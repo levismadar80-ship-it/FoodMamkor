@@ -263,8 +263,8 @@ function RegisterPageBody() {
       {/* Form pane — START (right) on desktop */}
       <div data-testid="register-form-pane" className="lg:order-1 flex items-center justify-center px-4 py-12 md:py-16">
       {/* MEH-839: de-boxed to match /login (LoginClient.jsx:157) — open form on
-          cream, no floating white card. Children order UNCHANGED: form-first,
-          OAuth below (MEH-132 #3 auth-order freeze respected). */}
+          cream, no floating white card. MEH-2577: OAuth now comes BEFORE the
+          form, as on /login. */}
       <div className="w-full max-w-[416px] mx-auto">
         {/* Brand mark + heading */}
         {/* MEH-909: decorative Leaf badge removed for register↔login parity (MEH-839). */}
@@ -290,6 +290,60 @@ function RegisterPageBody() {
             platform promise no business opted into (MEH-1050 ruling).
             MEH-2374 then removed the referral claim itself (no screen ever
             showed a user her link, and the claim 401'd since MEH-328). */}
+
+        {/* MEH-2577: Google/Apple FIRST, as on /login (Sapir, 29/10: "להעביר,
+            עם שורת ההסכמה") — one tap instead of four fields, and the two
+            account pages now open the same way. This lifts the MEH-132 #3
+            form-first order on purpose. The buttons can no longer read the
+            terms checkbox (it sits below them), so they carry the consent the
+            line under them states — the sign-in wrap /login has used since
+            MEH-2080, same locked string (auth.login.oauth_terms, single
+            owner). The checkbox still gates the email form. */}
+        {oauthAvailable && (
+          <>
+            <div className="grid gap-2.5">
+              {googleConfigured && (
+                <GoogleAuthButton
+                  termsAccepted
+                  onSuccess={() => router.push(redirectTo)}
+                  onError={(msg) => setError(msg)}
+                />
+              )}
+              {appleConfigured && (
+                <AppleAuthButton
+                  termsAccepted
+                  onSuccess={() => router.push(redirectTo)}
+                  onError={(msg) => setError(msg)}
+                />
+              )}
+              <p
+                data-testid="register-oauth-terms"
+                className="text-[13px] leading-relaxed text-fg-muted text-start"
+              >
+                {t.rich("auth.login.oauth_terms", {
+                  tos: (chunks) => (
+                    <Link href="/terms" target="_blank" className="text-primary underline">
+                      {chunks}
+                    </Link>
+                  ),
+                  privacy: (chunks) => (
+                    <Link href="/privacy" target="_blank" className="text-primary underline">
+                      {chunks}
+                    </Link>
+                  ),
+                })}
+              </p>
+            </div>
+            <div className="relative my-5">
+              <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                <div className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center text-xs">
+                <span className="px-3 bg-background text-fg-muted">{t("auth.register.consumer.oauth_divider")}</span>
+              </div>
+            </div>
+          </>
+        )}
 
         <form onSubmit={handleSubmit} data-testid="register-form" className="space-y-4">
           {/* MEH-1128 D2: name + email adopt ui/Input. text-end on the ltr email
@@ -395,36 +449,6 @@ function RegisterPageBody() {
             {t("auth.register.consumer.email_hint")}
           </p>
         </form>
-
-        {oauthAvailable && (
-          <>
-            <div className="relative my-5">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center text-xs">
-                {/* MEH-839: cream notch to match the de-boxed surface (was bg-white; mirrors LoginClient.jsx:193). */}
-                <span className="px-3 bg-background text-fg-muted">{t("auth.register.consumer.oauth_divider")}</span>
-              </div>
-            </div>
-            <div className="space-y-2.5">
-              {googleConfigured && (
-                <GoogleAuthButton
-                  termsAccepted={agreedToTerms}
-                  onSuccess={() => router.push(redirectTo)}
-                  onError={(msg) => setError(msg)}
-                />
-              )}
-              {appleConfigured && (
-                <AppleAuthButton
-                  termsAccepted={agreedToTerms}
-                  onSuccess={() => router.push(redirectTo)}
-                  onError={(msg) => setError(msg)}
-                />
-              )}
-            </div>
-          </>
-        )}
 
         <p className="text-center text-sm text-fg-muted mt-6">
           {t("auth.register.consumer.have_account")}{" "}
