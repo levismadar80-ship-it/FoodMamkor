@@ -29,7 +29,12 @@ export default function AdminHelpPage() {
   // and when the hash changes while the page is open.
   useEffect(() => {
     const fromHash = () => {
-      const id = decodeURIComponent(window.location.hash.slice(1));
+      let id;
+      try {
+        id = decodeURIComponent(window.location.hash.slice(1));
+      } catch {
+        return; // malformed hash (e.g. #%E0%A4%A) — ignore, never crash
+      }
       if (!HELP_TOPICS.some((topic) => topic.id === id)) return;
       setQuery("");
       setOpenId(id);
@@ -134,8 +139,10 @@ function Topic({ topic, open, onToggle, openScreenLabel }) {
       {open && (
         <div id={panelId} className="px-4 pb-4 text-sm leading-relaxed">
           <List className={`${List === "ol" ? "list-decimal" : "list-disc"} ps-5 space-y-1.5`}>
-            {topic.steps.map((step) => (
-              <li key={step}>{step}</li>
+            {topic.steps.map((step, i) => (
+              // Static copy list: the index is a stable key, and two identical
+              // steps in one topic would collide on the text.
+              <li key={i}>{step}</li>
             ))}
           </List>
           <Link

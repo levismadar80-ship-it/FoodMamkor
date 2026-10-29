@@ -149,6 +149,23 @@ describe("AdminHelp — page", () => {
     expect(only[0]).toHaveAttribute("aria-expanded", "false");
   });
 
+  it("search: an open topic stays open when the search widens to many matches", () => {
+    render(<AdminHelpPage />);
+    const box = screen.getByRole("searchbox");
+    fireEvent.change(box, { target: { value: "השם המבוקש" } });
+    fireEvent.change(box, { target: { value: "" } });
+    const buttons = screen.getAllByRole("button");
+    expect(buttons).toHaveLength(HELP_TOPICS.length);
+    expect(buttons.filter((b) => b.getAttribute("aria-expanded") === "true")).toHaveLength(1);
+    expect(screen.getByRole("button", { name: question("name_change_requests") })).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("a malformed #hash is ignored, not thrown", () => {
+    window.location.hash = "#%E0%A4%A";
+    render(<AdminHelpPage />);
+    for (const btn of screen.getAllByRole("button")) expect(btn).toHaveAttribute("aria-expanded", "false");
+  });
+
   it("search: zero matches says so", () => {
     render(<AdminHelpPage />);
     fireEvent.change(screen.getByRole("searchbox"), { target: { value: "zzzz-nothing" } });
