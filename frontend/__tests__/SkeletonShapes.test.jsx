@@ -44,6 +44,21 @@ describe("shape skeletons", () => {
     expect(noVisibleText(screen.getByRole("status"))).toBe("");
   });
 
+  it("SkeletonTable with rows=2 draws 2 wide rows and 2 phone cards — the cap only clips above 4", () => {
+    const { container } = render(<SkeletonTable rows={2} cols={3} label={LABEL} />);
+    expect(container.querySelector(".hidden.md\\:block").children).toHaveLength(3); // header + 2
+    expect(container.querySelector(".md\\:hidden").children).toHaveLength(2);
+  });
+
+  it("count=0 / fields=0 render the status wrapper with the label and no boxes (0-state)", () => {
+    const { container, unmount } = render(<SkeletonList count={0} label={LABEL} />);
+    expect(screen.getByRole("status").querySelector(".sr-only")).toHaveTextContent(LABEL);
+    expect(container.querySelectorAll(".skeleton-box")).toHaveLength(0);
+    unmount();
+    render(<SkeletonForm fields={0} label={LABEL} />);
+    expect(screen.getByRole("status").querySelectorAll(".skeleton-box")).toHaveLength(0);
+  });
+
   it("SkeletonForm draws `fields` label+field pairs", () => {
     render(<SkeletonForm fields={3} label={LABEL} />);
     expect(screen.getByRole("status").querySelectorAll('[aria-hidden="true"]')).toHaveLength(3);
