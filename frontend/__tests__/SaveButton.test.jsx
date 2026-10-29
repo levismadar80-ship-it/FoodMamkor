@@ -138,3 +138,30 @@ describe("SaveButton — signed in", () => {
     expect(sessionStorage.getItem("pending_action")).toBeNull();
   });
 });
+
+// MEH-2559 review (F7): the "row" look is a 32px face inside a 44px target,
+// and an unknown variant falls back to the hero circle, never to no styling.
+describe("SaveButton — variants", () => {
+  it('"row": a 44px tap target holding a 32px white face', () => {
+    render(<SaveButton itemType="event" itemId={RID} variant="row" />);
+    const btn = screen.getByTestId("save-event");
+    expect(btn.className).toContain("w-11 h-11");
+    const face = btn.querySelector(".w-8");
+    expect(face).toBeTruthy();
+    expect(face.className).toContain("w-8 h-8");
+    expect(face.className).toContain("bg-white/95");
+  });
+
+  it('"overlay" (default): the 44px white circle itself, no inner face', () => {
+    render(<SaveButton itemType="recipe" itemId={RID} />);
+    const btn = screen.getByTestId("save-recipe");
+    expect(btn.className).toContain("w-11 h-11");
+    expect(btn.className).toContain("bg-white/95");
+    expect(btn.querySelector(".w-8")).toBeNull();
+  });
+
+  it("an unknown variant falls back to the overlay look", () => {
+    render(<SaveButton itemType="recipe" itemId={RID} variant="nope" />);
+    expect(screen.getByTestId("save-recipe").className).toContain("bg-white/95");
+  });
+});

@@ -15,6 +15,14 @@ vi.mock("@/i18n/navigation", () => ({
 
 import EventEntryRow, { toEventEntry } from "@/components/EventEntryRow";
 
+// MEH-2559: the heart needs AuthProvider; its behaviour is SaveButton.test.jsx's.
+// A stub that names its props, so where and for what it renders is checkable.
+vi.mock("@/components/SaveButton", () => ({
+  default: ({ itemType, itemId, variant }) => (
+    <button type="button" data-testid={`save-${itemType}`} data-id={String(itemId)} data-variant={variant} />
+  ),
+}));
+
 const t = (k, vars) => (k === "organizer_line" ? `מארגן: ${vars.name}` : k);
 const EVENT = {
   id: 7,
@@ -124,5 +132,22 @@ describe("EventEntryRow", () => {
     const band = screen.getByTestId("event-row-band");
     expect(band.style.backgroundImage).toBe("");
     expect(band.querySelector("svg")).toBeTruthy();
+  });
+
+  // MEH-2559: the heart rides every row, typed by the row's species, and sits
+  // OUTSIDE the row link — a button inside an <a> would follow the link.
+  it("an event row carries an event heart beside the link, not inside it", () => {
+    const { container } = render(<EventEntryRow entry={toEventEntry(EVENT, "events", t)} freeLabel="חינם" />);
+    const heart = screen.getByTestId("save-event");
+    expect(heart.getAttribute("data-id")).toBe("7");
+    expect(heart.getAttribute("data-variant")).toBe("row");
+    expect(container.querySelector("a").contains(heart)).toBe(false);
+    expect(screen.queryByTestId("save-experience")).toBeNull();
+  });
+
+  it("an experience row carries an experience heart", () => {
+    render(<EventEntryRow entry={toEventEntry(EXPERIENCE, "experiences", t)} freeLabel="חינם" />);
+    expect(screen.getByTestId("save-experience").getAttribute("data-id")).toBe("9");
+    expect(screen.queryByTestId("save-event")).toBeNull();
   });
 });

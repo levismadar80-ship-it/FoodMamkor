@@ -2,6 +2,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor, cleanup } from "@testing-library/react";
 import EventsClient from "@/app/[locale]/events/EventsClient";
 
+// MEH-2559: the heart needs AuthProvider; its behaviour is SaveButton.test.jsx's.
+vi.mock("@/components/SaveButton", () => ({ default: () => null }));
+
 // MEH-2461 — the «מארגן: {name}» line on the /events list card. The harness
 // below (params / api mock / row factory) is copied from the MEH-1865 empty-
 // states suite so the cases render the real EventsClient; the matrix this file

@@ -44,6 +44,9 @@ vi.mock("@/i18n/navigation", () => ({
 
 import OrganizerPage from "@/app/[locale]/organizers/[slug]/page";
 
+// MEH-2559: the heart needs AuthProvider; its behaviour is SaveButton.test.jsx's.
+vi.mock("@/components/SaveButton", () => ({ default: () => null }));
+
 const ORG = {
   id: "o-1",
   name: "שוק גלם",

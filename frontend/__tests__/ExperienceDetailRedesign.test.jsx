@@ -11,6 +11,14 @@ import he from "../messages/he.json";
 import api from "@/lib/api";
 import ExperienceDetailClient from "@/app/[locale]/experiences/[id]/ExperienceDetailClient";
 
+// MEH-2559: the heart needs AuthProvider; its behaviour is SaveButton.test.jsx's.
+// A stub that names its props, so where and for what it renders is checkable.
+vi.mock("@/components/SaveButton", () => ({
+  default: ({ itemType, itemId, variant }) => (
+    <button type="button" data-testid={`save-${itemType}`} data-id={String(itemId)} data-variant={variant} />
+  ),
+}));
+
 vi.mock("@/lib/api", () => ({ default: { get: vi.fn() } }));
 vi.mock("next/navigation", () => ({
   useParams: () => ({ id: "x-1" }),
@@ -97,6 +105,13 @@ describe("MEH-2549 — share + calendar", () => {
   it("share carries the experience's own label", async () => {
     await renderWith();
     expect(screen.getByRole("button", { name: he.share.modal_title_experience })).toBeTruthy();
+  });
+
+  it("MEH-2559: a save heart for this experience sits on the cover's corner", async () => {
+    await renderWith();
+    const heart = screen.getByTestId("save-experience");
+    expect(screen.getByTestId("experience-cover-actions").contains(heart)).toBe(true);
+    expect(heart.getAttribute("data-id")).toBe("x-1");
   });
 
   it("a one-off approved experience: «הוספה ליומן» downloads a .ics with start and end", async () => {

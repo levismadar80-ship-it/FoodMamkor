@@ -33,7 +33,22 @@ import LoginPromptModal from "./LoginPromptModal";
  * Variants:
  *   - "overlay" — white 44px circle on a hero image, next to ShareButton's
  *                 "overlay" (same look as FavoriteButton "gallery").
+ *   - "row"     — 32px white circle on a list row's thumbnail corner, inside
+ *                 a 44px tap target (MEH-2559, EventEntryRow).
  */
+const VARIANT = {
+  overlay: {
+    button:
+      "bg-white/95 hover:bg-white rounded-full w-11 h-11 flex items-center justify-center shadow-md hover:scale-105",
+    size: 22,
+  },
+  row: {
+    button: "w-11 h-11 grid place-items-center rounded-full",
+    face: "w-8 h-8 grid place-items-center rounded-full bg-white/95 shadow-sm",
+    size: 18,
+  },
+};
+
 export default function SaveButton({ itemType, itemId, variant = "overlay" }) {
   const t = useTranslations("favorites.button");
   const tError = useTranslations("error");
@@ -117,6 +132,15 @@ export default function SaveButton({ itemType, itemId, variant = "overlay" }) {
   toggleRef.current = toggle;
 
   const label = saved ? t("remove_aria") : t("add_aria");
+  const look = VARIANT[variant] ?? VARIANT.overlay;
+  const heart = (
+    <HeartStraight
+      size={look.size}
+      weight={saved ? "fill" : "regular"}
+      className={saved ? "text-primary" : "text-text"}
+      aria-hidden="true"
+    />
+  );
   const nextPath =
     typeof window !== "undefined"
       ? window.location.pathname + window.location.search
@@ -133,14 +157,9 @@ export default function SaveButton({ itemType, itemId, variant = "overlay" }) {
         aria-pressed={saved}
         data-testid={`save-${itemType}`}
         data-variant={variant}
-        className="bg-white/95 hover:bg-white rounded-full w-11 h-11 flex items-center justify-center shadow-md hover:scale-105 transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40"
+        className={`${look.button} transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40`}
       >
-        <HeartStraight
-          size={22}
-          weight={saved ? "fill" : "regular"}
-          className={saved ? "text-primary" : "text-text"}
-          aria-hidden="true"
-        />
+        {look.face ? <span className={look.face}>{heart}</span> : heart}
       </button>
       <LoginPromptModal
         open={showLoginModal}

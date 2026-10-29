@@ -26,6 +26,7 @@ import { cssUrl } from "@/lib/css-url";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import Breadcrumb from "@/components/Breadcrumb";
 import ShareButton from "@/components/ShareButton";
+import SaveButton from "@/components/SaveButton";
 import OwnerRow from "@/components/OwnerRow";
 import EventEntryRow, { CATEGORY_ICON } from "@/components/EventEntryRow";
 import { toEventEntry } from "@/lib/event-entry";
@@ -177,6 +178,12 @@ export default function EventDetailClient() {
           edge on mobile (Luma's calendar-page tile); on desktop it heads the
           side card instead. */}
       <div className="relative max-w-[1100px] mx-auto lg:px-4 lg:pt-6">
+        {/* MEH-2559: the save heart on the cover's corner — the corner the recipe
+            and business pages use. Not in the share/calendar row: a third
+            button there wraps «הוספה ליומן» onto two lines below 375px. */}
+        <div className="absolute top-3 start-3 lg:top-9 lg:start-7 z-10" data-testid="event-cover-actions">
+          <SaveButton itemType="event" itemId={event.id} />
+        </div>
         {event.image_url ? (
           <div
             data-testid="event-cover"

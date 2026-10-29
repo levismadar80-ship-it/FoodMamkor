@@ -7,6 +7,9 @@ import { render, screen } from "@testing-library/react";
 import api from "@/lib/api";
 import EventDetailClient from "@/app/[locale]/events/[id]/EventDetailClient";
 
+// MEH-2559: the heart needs AuthProvider; its behaviour is SaveButton.test.jsx's.
+vi.mock("@/components/SaveButton", () => ({ default: () => null }));
+
 vi.mock("next/navigation", () => ({ useParams: () => ({ id: "ev-1" }) }));
 vi.mock("next/dynamic", () => ({ default: () => () => null }));
 vi.mock("@/i18n/navigation", () => ({

@@ -25,6 +25,7 @@ import {
   Storefront,
 } from "@phosphor-icons/react";
 import { Link } from "@/i18n/navigation";
+import SaveButton from "./SaveButton";
 import { cssUrl } from "@/lib/css-url";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { formatEventDate } from "@/lib/format-date";
@@ -99,80 +100,87 @@ export default function EventEntryRow({ entry, freeLabel, compact = false }) {
     <Icon size={26} weight="duotone" />
   );
 
+  // MEH-2559: the heart sits on the picture's corner as a SIBLING of the row
+  // link — a button inside an <a> is invalid and would follow the link.
   return (
-    <Link
-      href={entry.href}
-      className={`relative grid ${cols} border-b border-border transition hover:bg-surface-card`}
-    >
-      {/* species tick — start edge, full height */}
-      <span aria-hidden="true" className={`absolute start-0 inset-y-0 w-[3px] ${tickBg}`} />
-      {/* date rail */}
-      <div className="py-4 md:py-5 grid justify-items-center content-start gap-0.5">
-        <span className="font-headline-display font-black text-3xl md:text-5xl leading-none text-text numeric">
-          {day}
-        </span>
-        <span className="text-xs font-semibold text-fg-muted mt-1">{weekday}</span>
-        <span className="text-[10px] text-fg-muted">{month}</span>
-        {time && (
-          <span dir="ltr" className={`font-english italic text-sm mt-1 numeric ${accentText}`}>
-            {time}
+    <div className="relative">
+      <Link
+        href={entry.href}
+        className={`relative grid ${cols} border-b border-border transition hover:bg-surface-card`}
+      >
+        {/* species tick — start edge, full height */}
+        <span aria-hidden="true" className={`absolute start-0 inset-y-0 w-[3px] ${tickBg}`} />
+        {/* date rail */}
+        <div className="py-4 md:py-5 grid justify-items-center content-start gap-0.5">
+          <span className="font-headline-display font-black text-3xl md:text-5xl leading-none text-text numeric">
+            {day}
           </span>
-        )}
-      </div>
-      {/* body */}
-      <div className="py-4 md:py-5 ps-3 pe-4 min-w-0">
-        {/* MEH-858 F5: category eyebrow removed — it duplicated the pill chip
-            below (and uppercase tracking was a no-op on Hebrew). The glyph now
-            leads the chip, so the category shows once, still with its icon. */}
-        <h3 className="font-headline-md text-lg md:text-2xl font-bold text-text leading-snug">
-          {entry.title}
-        </h3>
-        {/* MEH-2476: line-clamp — a long recurring schedule must not stack
-            several lines into a 375px row. */}
-        {meta && <p className="text-sm text-fg-muted mt-1 line-clamp-2">{meta}</p>}
-        {entry.description && (
-          <p className="text-sm text-text/85 line-clamp-2 mt-2 leading-relaxed">{entry.description}</p>
-        )}
-        <div className="flex items-center gap-2 mt-3 flex-wrap">
-          {entry.category && (
-            <span className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full ${catChip}`}>
-              <Icon size={12} weight="bold" aria-hidden="true" />
-              {entry.category}
-            </span>
-          )}
-          {isFree ? (
-            <span className={`ms-auto text-sm font-semibold ${accentText}`}>{freeLabel}</span>
-          ) : (
-            <span dir="ltr" className={`ms-auto font-english italic font-semibold numeric ${accentText}`}>
-              {formatPrice(entry.price)}
+          <span className="text-xs font-semibold text-fg-muted mt-1">{weekday}</span>
+          <span className="text-[10px] text-fg-muted">{month}</span>
+          {time && (
+            <span dir="ltr" className={`font-english italic text-sm mt-1 numeric ${accentText}`}>
+              {time}
             </span>
           )}
         </div>
-      </div>
-      {/* Decorative: the row is a link already named by its title. */}
-      <div
-        aria-hidden="true"
-        data-testid="event-row-image"
-        data-kind={entry.image ? "event" : entry.ownerImage ? "owner" : "category"}
-        className={`relative overflow-hidden my-4 md:my-5 me-4 w-20 h-20 md:w-28 md:h-28 rounded-[10px] bg-cover bg-center grid place-items-center ${picture ? "bg-border" : tileTone}${compact ? " lg:hidden" : ""}`}
-        style={thumbBg}
-      >
-        {pictureFace}
-      </div>
-      {compact && (
+        {/* body */}
+        <div className="py-4 md:py-5 ps-3 pe-4 min-w-0">
+          {/* MEH-858 F5: category eyebrow removed — it duplicated the pill chip
+              below (and uppercase tracking was a no-op on Hebrew). The glyph now
+              leads the chip, so the category shows once, still with its icon. */}
+          <h3 className="font-headline-md text-lg md:text-2xl font-bold text-text leading-snug">
+            {entry.title}
+          </h3>
+          {/* MEH-2476: line-clamp — a long recurring schedule must not stack
+              several lines into a 375px row. */}
+          {meta && <p className="text-sm text-fg-muted mt-1 line-clamp-2">{meta}</p>}
+          {entry.description && (
+            <p className="text-sm text-text/85 line-clamp-2 mt-2 leading-relaxed">{entry.description}</p>
+          )}
+          <div className="flex items-center gap-2 mt-3 flex-wrap">
+            {entry.category && (
+              <span className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full ${catChip}`}>
+                <Icon size={12} weight="bold" aria-hidden="true" />
+                {entry.category}
+              </span>
+            )}
+            {isFree ? (
+              <span className={`ms-auto text-sm font-semibold ${accentText}`}>{freeLabel}</span>
+            ) : (
+              <span dir="ltr" className={`ms-auto font-english italic font-semibold numeric ${accentText}`}>
+                {formatPrice(entry.price)}
+              </span>
+            )}
+          </div>
+        </div>
+        {/* Decorative: the row is a link already named by its title. */}
         <div
           aria-hidden="true"
-          data-testid="event-row-band"
-          className={`hidden lg:grid order-first col-span-full h-28 bg-cover bg-center place-items-center relative ${picture ? "bg-border" : tileTone}`}
-          style={
-            picture
-              ? { backgroundImage: cssUrl(optimizeCloudinary(picture, { aspectRatio: "16:9", width: 640 })) }
-              : undefined
-          }
+          data-testid="event-row-image"
+          data-kind={entry.image ? "event" : entry.ownerImage ? "owner" : "category"}
+          className={`relative overflow-hidden my-4 md:my-5 me-4 w-20 h-20 md:w-28 md:h-28 rounded-[10px] bg-cover bg-center grid place-items-center ${picture ? "bg-border" : tileTone}${compact ? " lg:hidden" : ""}`}
+          style={thumbBg}
         >
           {pictureFace}
         </div>
-      )}
-    </Link>
+        {compact && (
+          <div
+            aria-hidden="true"
+            data-testid="event-row-band"
+            className={`hidden lg:grid order-first col-span-full h-28 bg-cover bg-center place-items-center relative ${picture ? "bg-border" : tileTone}`}
+            style={
+              picture
+                ? { backgroundImage: cssUrl(optimizeCloudinary(picture, { aspectRatio: "16:9", width: 640 })) }
+                : undefined
+            }
+          >
+            {pictureFace}
+          </div>
+        )}
+      </Link>
+      <div className="absolute top-2 end-2 z-10">
+        <SaveButton itemType={isExp ? "experience" : "event"} itemId={entry.id} variant="row" />
+      </div>
+    </div>
   );
 }
