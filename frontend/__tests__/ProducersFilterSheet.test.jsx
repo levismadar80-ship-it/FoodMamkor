@@ -325,5 +325,8 @@ describe("MEH-2569 — one filter row on /producers", () => {
     const lead = screen.getByTestId("producers-filter-row").firstElementChild;
     expect(lead.contains(TRIGGER())).toBe(true);
     expect(lead.className.split(/\s+/)).toContain("sticky");
+    // The city chip's ChipScrollRow root is `relative`; without a z-index the
+    // later positioned sibling paints over the sticky trigger as it scrolls.
+    expect(lead.className.split(/\s+/)).toContain("z-10");
   });
 });

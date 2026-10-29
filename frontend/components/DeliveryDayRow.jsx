@@ -130,13 +130,14 @@ const sortByWeek = (days) =>
  * one piece of state, and that state is presentational: whether the panel is
  * open.
  *
- * MEH-2537: `inRow` says the chip sits inside a filter row (home) — it sizes
+ * MEH-2537: `inRow` says the chip sits inside a filter row (home, and
+ * /producers since MEH-2569) — it sizes
  * the chip to its neighbours and drops the block margin. It is a static flag so
  * the server HTML already has the in-row shape (no shift on hydration).
  * `panelHost` is the element under that row the panel is portalled into, since
  * on a phone the row is a sideways rail that would clip it. It is null until
- * the host mounts, which is before any tap can open the panel. Neither prop on
- * /producers → nothing changes there.
+ * the host mounts, which is before any tap can open the panel. Both surfaces
+ * pass both props.
  */
 export function DeliveryDayRow({ cityActive, daysActive, onSelectDay, onClearDays, inRow = false, panelHost = null }) {
   const t = useTranslations();

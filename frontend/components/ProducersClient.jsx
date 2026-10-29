@@ -857,8 +857,12 @@ export default function ProducersClient({
       >
         {/* Anchor wrapper — the sheet's lg+ panel positions off it (sticky is
             positioned, so it anchors like `relative`); -start-4/-ms-4/ps-4
-            paint the gutter beside it so chips pass under it, as on home. */}
-        <div className="sticky -start-4 -ms-4 ps-4 shrink-0 bg-background lg:relative lg:start-auto lg:ms-0 lg:ps-0">
+            paint the gutter beside it so chips pass under it, as on home.
+            z-10 because, unlike home's chips, ChipScrollRow's root is
+            `relative`: a later positioned sibling would paint OVER the sticky
+            trigger while the rail scrolls. lg:z-auto keeps the lg+ anchored sheet
+            panel out of a z-10 stacking context, as it was before. */}
+        <div className="sticky z-10 -start-4 -ms-4 ps-4 shrink-0 bg-background lg:relative lg:z-auto lg:start-auto lg:ms-0 lg:ps-0">
           <button
             type="button"
             onClick={() => setSheetOpen((v) => !v)}
