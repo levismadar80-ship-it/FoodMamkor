@@ -1,4 +1,3 @@
-import { Info, Package, Truck, ChatCircleText, MapPin } from "@phosphor-icons/react";
 import { resolveStoreHours } from "@/lib/hours";
 import { primaryPoint } from "@/lib/producerPoints";
 import { parseHasLocation } from "../components/ProducerSections";
@@ -24,13 +23,11 @@ export function getSectionNavItems(producer, t) {
     {
       id: "section-bio",
       label: t("producer.detail.tabs.about"),
-      Icon: Info,
       show: !!producer.description,
     },
     {
       id: "section-products",
       label: t("producer.detail.tabs.products"),
-      Icon: Package,
       // ProducerSections: `producer.products?.length > 0 || hasSignature`
       // (hasSignature = top_product_name || price_range).
       show: !!(
@@ -42,7 +39,6 @@ export function getSectionNavItems(producer, t) {
     {
       id: "section-delivery",
       label: t("producer.detail.tabs.delivery"),
-      Icon: Truck,
       show: !!(
         producer.offers_delivery ||
         producer.delivery_areas?.length > 0 ||
@@ -54,13 +50,11 @@ export function getSectionNavItems(producer, t) {
       // this pill is unconditional — the row is never empty.
       id: "reviews",
       label: t("producer.detail.tabs.reviews_label"),
-      Icon: ChatCircleText,
       show: true,
     },
     {
       id: "section-location",
       label: t("producer.detail.sections.location"),
-      Icon: MapPin,
       show: !!(parseHasLocation(producer, primaryPoint(producer)) || resolveStoreHours(producer)),
     },
   ];
