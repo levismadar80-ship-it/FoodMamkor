@@ -233,15 +233,17 @@ function RegisterPageBody() {
   return (
     <div className="min-h-[calc(100vh-200px)] flex flex-col bg-background lg:grid lg:grid-cols-2">
 
-      {/* Image pane — END (left) on desktop, top band on mobile.
-          REUSES: app/[locale]/login/LoginClient.jsx:129 (split pane + scrim + overlay) */}
-      <div data-testid="register-hero-pane" className="relative order-1 lg:order-2 h-[30vh] min-h-[220px] lg:h-auto overflow-hidden">
+      {/* Image pane — END (left) on desktop only. MEH-2568: the 30vh top band
+          on phones is gone, as on /login since MEH-2397 — it pushed the first
+          field below the fold, and the two pages looked like two sites.
+          REUSES: app/[locale]/login/LoginClient.jsx (split pane + scrim + overlay) */}
+      <div data-testid="register-hero-pane" className="relative hidden lg:block lg:order-2 overflow-hidden">
         <Image
           src={heroSrc}
           alt=""
           fill
           priority
-          sizes="(min-width: 1024px) 50vw, 100vw"
+          sizes="(min-width: 1024px) 50vw"
           className="object-cover"
         />
         {/* scrim — keeps the overlay AA-readable over any part of the photo */}
@@ -259,7 +261,7 @@ function RegisterPageBody() {
       </div>
 
       {/* Form pane — START (right) on desktop */}
-      <div data-testid="register-form-pane" className="order-2 lg:order-1 flex items-center justify-center px-4 py-12 md:py-16">
+      <div data-testid="register-form-pane" className="lg:order-1 flex items-center justify-center px-4 py-12 md:py-16">
       {/* MEH-839: de-boxed to match /login (LoginClient.jsx:157) — open form on
           cream, no floating white card. Children order UNCHANGED: form-first,
           OAuth below (MEH-132 #3 auth-order freeze respected). */}
