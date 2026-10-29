@@ -174,5 +174,12 @@ describe("MEH-2577 — /register opens with Google/Apple, under a consent line",
     expect(err.textContent).toBe("google-failed");
     expect(screen.getByTestId("register-form").contains(err)).toBe(false);
     expect(screen.queryByTestId("register-error")).toBeNull();
+    // …and it clears when the reader moves on to the email form.
+    fireEvent.change(screen.getByTestId("register-name"), { target: { value: "דנה" } });
+    fireEvent.change(screen.getByTestId("register-email"), { target: { value: "dana@example.org" } });
+    fireEvent.change(screen.getByTestId("pw"), { target: { value: "a-long-enough-pw" } });
+    fireEvent.click(screen.getByTestId("register-terms"));
+    fireEvent.submit(screen.getByTestId("register-form"));
+    expect(screen.queryByTestId("register-oauth-error")).toBeNull();
   });
 });

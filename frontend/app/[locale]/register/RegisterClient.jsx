@@ -105,6 +105,7 @@ function RegisterPageBody() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setOauthError(""); // a stale Google/Apple failure must not sit over a new attempt
 
     // Client-side validation. The inline onBlur rules below already
     // disable the submit button when any field fails, so this is a
