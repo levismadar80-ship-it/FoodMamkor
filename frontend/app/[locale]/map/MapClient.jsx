@@ -562,6 +562,12 @@ export default function MapPage() {
   // language as the active-filter strip, with the ✕ keeping a 44px hit area
   // through negative margin (the MEH-825 tag pattern), so the bar grows by
   // mt-3 + the 20px tag + mb-1 instead of a 44px row (map.spec pins the ✕ box).
+  // One label for the chip and the MEH-2525 live region, so they cannot drift.
+  const originLabel = userLoc
+    ? userLoc.source === SOURCE_CITY
+      ? t("map.client.sort.origin_city", { city: userLoc.city })
+      : t("map.client.sort.origin_gps")
+    : "";
   const originChip = (compact) =>
     cityOriginPending || (userLoc && !geoSortPending) ? (
       <div
@@ -582,6 +588,7 @@ export default function MapPage() {
           // (MEH-2506): the ✕ alone keeps 44px via -my-3, and FilterChipsBar's
           // origin row (mt-3 mb-1) is what keeps that hit area clear.
           <span
+            data-testid="sort-origin-chip"
             className={
               compact
                 ? "inline-flex items-center gap-1 max-w-full rounded-md bg-green-50 text-primary ps-2 text-[11px]"
@@ -594,9 +601,7 @@ export default function MapPage() {
               <MapPinLine size={14} weight="bold" aria-hidden="true" className="shrink-0 text-primary" />
             )}
             <span className="min-w-0 truncate" data-testid="sort-origin-label">
-              {userLoc.source === SOURCE_CITY
-                ? t("map.client.sort.origin_city", { city: userLoc.city })
-                : t("map.client.sort.origin_gps")}
+              {originLabel}
             </span>
             <button
               type="button"
@@ -924,11 +929,16 @@ export default function MapPage() {
             plus its live --cookie-banner-h, plus a 16px clearance — so the banner
             no longer overlays the canvas. The map's own `min-h-[500px]`
             (MapComponent.jsx) would otherwise spill back under the banner on short
-            phones, so relax it to 0 ONLY while we're reserving — the shell always
-            has a definite height + invalidateSize, so the MEH-30 0px guard isn't
-            needed here. Full height restored on dismiss. */}
+            phones, so it is relaxed to 0 — the shell always has a definite
+            height + invalidateSize, so the MEH-30 0px guard isn't needed here.
+            MEH-2524: relaxed always, not only while reserving. Restoring
+            500px on dismiss spilled the canvas past the viewport on any phone
+            shorter than ~750px (82px at 375x667, 22px at 393x727). Everything
+            measured from the canvas bottom then sat that far too low: the
+            OSM attribution (globals.css, rides the sheet edge) ended under the
+            sheet and the nav pill. */}
         <div
-          className={`w-full h-full ${cookieBannerVisible ? "[&_.leaflet-container]:!min-h-0" : ""}`}
+          className="w-full h-full [&_.leaflet-container]:!min-h-0"
           style={{
             paddingTop: `${mobileBarHeight}px`,
             ...(cookieBannerVisible
@@ -967,6 +977,17 @@ export default function MapPage() {
           {cardList}
         </MapBottomSheet>
       </div>
+
+      {/* MEH-2525: the origin chip mounts only once an origin exists, so a
+          live region inside it would not exist when its text changes, and
+          setting the origin was silent to screen readers. This region is
+          always mounted, once for both shells (one per shell would announce
+          twice), and repeats the chip's own label: no new copy. Clearing
+          empties it, which assistive tech does not announce. The ✕ keeps its
+          own name, so the clear action itself is still labelled. */}
+      <p className="sr-only" aria-live="polite" data-testid="sort-origin-live">
+        {!geoSortPending && !cityOriginPending ? originLabel : ""}
+      </p>
 
       {/* MEH-58 Phase 3: city picker overlay for "משלוח אליי" chip when no city saved */}
       <CityPickerModal
