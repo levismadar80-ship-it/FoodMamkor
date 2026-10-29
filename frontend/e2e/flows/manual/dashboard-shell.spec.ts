@@ -164,9 +164,7 @@ const NO_ACTIVITY = {
   contact_clicks: { total: 0, last_7d: 0 },
   average_rating: null,
   total_reviews: 0,
-  rank_in_city: null,
   conversion_rate: "0%",
-  profile_strength: 10,
 };
 
 const WITH_ACTIVITY = {
@@ -177,7 +175,6 @@ const WITH_ACTIVITY = {
   average_rating: 4.5,
   total_reviews: 8,
   conversion_rate: "9%",
-  profile_strength: 90,
 };
 
 type SessionOpts = {
