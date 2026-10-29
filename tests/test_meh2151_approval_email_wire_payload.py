@@ -77,7 +77,7 @@ def wire(monkeypatch):
 
 def _send_approval(slug="teva-pure"):
     admin_module._send_notification_email(
-        "owner@example.com",
+        "owner@sample.co.il",
         "ברוכים הבאים",
         admin_module._producer_approved_body("טעם הבית", slug),
         html=admin_module._producer_approved_html("טעם הבית", slug),
@@ -179,7 +179,7 @@ def test_a_text_only_send_carries_no_html_and_no_cte_header(wire):
     claim about the payload, so it is checked against the payload.
     """
     admin_module._send_notification_email(
-        "owner@example.com", "נושא", "גוף"
+        "owner@sample.co.il", "נושא", "גוף"
     )
     assert len(wire) == 1
     assert "html" not in wire[0]
