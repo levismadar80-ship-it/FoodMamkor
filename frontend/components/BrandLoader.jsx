@@ -16,7 +16,8 @@
  *     or a table gets a Skeleton (components/Skeleton.jsx), never this.
  *   - `prefers-reduced-motion`: the globals.css kill-switch collapses every
  *     animation to ~0 ms, so the mark lands on its resting state (all seeds
- *     lit, no rotation). No separate rule needed here.
+ *     lit); globals.css also pins the wrapper visible there, so the mark can
+ *     never be stuck at opacity 0 when animations are off.
  *
  * No visible copy: the only text is sr-only. Callers pass the already-localised
  * label (`a11y.loading` on the server, whatever key the screen already used on
@@ -36,7 +37,7 @@ const SEEDS = [
 const SEED_PATH =
   "M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z";
 
-export function BrandMark({ size = 56, className = "" }) {
+function BrandMark({ size = 56, className = "" }) {
   return (
     <svg
       className={`brand-loader-mark ${className}`}

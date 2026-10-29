@@ -784,24 +784,34 @@ body.sheet-open .cookie-banner {
 /* ── MEH-2599 — BrandLoader: the logo mark as the whole-page wait indicator ──
    The mark stands still; its five seeds light up in sequence (a 1.6 s round,
    one seed every 0.16 s — the Google-dots rhythm, in the brand's own colours).
-   No rotation: the big sites animate colour, not the logo itself, and a
-   spinning logo reads as 2005. The wrapper fades in after 400 ms so a fast load shows nothing at all.
-   Reduced motion needs no rule here: the MEH-788 kill-switch above collapses
-   both animations to their end state (fully lit, unrotated). */
-.brand-loader {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 40vh;
-  opacity: 0;
-  animation: brand-loader-reveal 0.3s ease-out 0.4s forwards;
-}
-.brand-loader-mark {
-  display: block;
-}
-.brand-loader-seed {
-  opacity: 0.94;
-  animation: brand-loader-seed 1.6s ease-in-out infinite;
+   The big sites animate colour, not the logo itself, so the mark never
+   spins. The wrapper fades in after 400 ms so a fast load shows nothing at
+   all. Inside @layer components so a caller's utility (`min-h-0`, `py-8`)
+   wins. Reduced motion: the MEH-788 kill-switch collapses the seed
+   animation to its lit end state; the wrapper is pinned visible explicitly
+   so the mark can never sit at opacity 0 when animations are off. */
+@layer components {
+  .brand-loader {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40vh;
+    opacity: 0;
+    animation: brand-loader-reveal 0.3s ease-out 0.4s forwards;
+  }
+  .brand-loader-mark {
+    display: block;
+  }
+  .brand-loader-seed {
+    opacity: 0.94;
+    animation: brand-loader-seed 1.6s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .brand-loader {
+      opacity: 1;
+      animation: none;
+    }
+  }
 }
 @keyframes brand-loader-reveal {
   to {

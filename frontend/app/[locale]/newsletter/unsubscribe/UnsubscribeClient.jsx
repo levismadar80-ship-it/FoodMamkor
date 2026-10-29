@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { EnvelopeSimple, LinkBreak, Leaf } from "@phosphor-icons/react";
+import { LinkBreak, Leaf } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import StatusPage from "@/components/StatusPage";
 import api from "@/lib/api";
