@@ -15,6 +15,8 @@ import { render, screen, waitFor } from "@testing-library/react";
 
 const get = vi.fn();
 
+// MEH-2554: Footer reads the signed-in user (the guest-only login link).
+vi.mock("@/lib/auth-context", () => ({ useAuth: () => ({ user: null }) }));
 vi.mock("@/lib/api", () => ({ default: { get: (...a) => get(...a), post: vi.fn() } }));
 
 vi.mock("next-intl", () => ({ useTranslations: () => (key) => key }));
