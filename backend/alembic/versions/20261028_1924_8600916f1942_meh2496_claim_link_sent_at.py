@@ -33,9 +33,9 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "8600916f1942"
-# MEH-2496: chains onto the single head 1cd44149cc20 (MEH-2393 drop
-# referral_code, 28/10). Verified with `alembic heads` before writing.
-down_revision: Union[str, None] = "1cd44149cc20"
+# MEH-2496: chains onto the single head c3d8e2f1a9b4 (MEH-2528 retired_slugs,
+# merged 29/10 while this PR was open; it was 1cd44149cc20 before).
+down_revision: Union[str, None] = "c3d8e2f1a9b4"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

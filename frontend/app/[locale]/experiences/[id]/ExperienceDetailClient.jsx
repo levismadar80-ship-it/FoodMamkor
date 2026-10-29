@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
-import Link from "next/link";
+// next-intl's Link keeps the /en prefix (next/link drops it).
+import { Link } from "@/i18n/navigation";
 import { Leaf, MapPin, Calendar, CurrencyCircleDollar, Users, Clock, ArrowsClockwise } from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
@@ -12,6 +13,7 @@ import { formatPrice, getWhatsAppHref, normalizePhone } from "@/lib/utils";
 import { formatDuration } from "@/lib/experience-format";
 import api from "@/lib/api";
 import Breadcrumb from "@/components/Breadcrumb";
+import OwnerRow from "@/components/OwnerRow";
 
 // MEH-1404: reuse the producer-detail static map + Waze/Gmaps block on
 // experiences with coords. ssr:false — leaflet touches window at module eval.
@@ -105,6 +107,7 @@ export default function ExperienceDetailClient() {
       ? `/${hostBiz.producer_slug}`
       : `/producer/${hostBiz.producer_id}`
     : null;
+  const hostName = hostBiz?.producer_name || ex.host?.name;
   // normalizePhone accepts Israeli MOBILE numbers only, so a landline (which
   // WhatsApp cannot reach) falls back to the recipient-less link below.
   const hostPhone = normalizePhone(hostBiz?.producer_phone);
@@ -262,21 +265,16 @@ export default function ExperienceDetailClient() {
           </div>
         )}
 
+        {/* MEH-2539: the host as a tappable card (OwnerRow), same as the
+            event page's organizer row (MEH-2538). Without a business the
+            row renders with no link and no chevron — the name used to stay
+            link-green there, though it went nowhere. */}
         {ex.host?.name && (
-          <p className="text-sm text-fg-muted mt-8">
-            {t("host_label")}{" "}
-            {hostHref ? (
-              <Link
-                href={hostHref}
-                data-testid="experience-host-link"
-                className="inline-flex items-center min-h-[44px] text-primary hover:underline"
-              >
-                {hostBiz.producer_name || ex.host.name}
-              </Link>
-            ) : (
-              <span className="text-primary">{ex.host.name}</span>
-            )}
-          </p>
+          <div className="mt-8" data-testid="experience-host">
+            <OwnerRow href={hostHref} name={hostName} testId="experience-host-link">
+              {t("host_label")} <span className="font-semibold">{hostName}</span>
+            </OwnerRow>
+          </div>
         )}
       </div>
     </div>

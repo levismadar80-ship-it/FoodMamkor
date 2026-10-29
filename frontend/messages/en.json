@@ -158,7 +158,8 @@
       "or": "or",
       "no_account": "Don't have an account?",
       "register_cta": "Join →",
-      "email_placeholder": "name@example.com"
+      "email_placeholder": "name@example.com",
+      "oauth_terms": "By continuing with Google or Apple, you confirm you are over 18 and agree to the <tos>Terms of Use</tos> and the <privacy>Privacy Policy</privacy>."
     },
     "oauth": {
       "google_error": "Google sign-in failed",
@@ -970,6 +971,8 @@
     "detail": {
       "breadcrumb_aria": "Breadcrumb navigation",
       "breadcrumb_recipes": "Recipes",
+      "eyebrow": "Recipe",
+      "by_label": "By",
       "prep_time_label": "Prep time:",
       "cook_time_label": "Cook time:",
       "servings_label": "Servings:",
@@ -1082,6 +1085,10 @@
       "remaining_to_open": "{n} more participants to unlock the price",
       "deadline_prefix": "Deadline: {date}",
       "fulfillment_prefix": "Pickup & delivery: ",
+      "how_title": "How it works",
+      "how_join": "Join now. You pay nothing through the site",
+      "how_unlock": "Once {min} people join, the group price unlocks and the business gets in touch",
+      "how_no_commit": "Didn't reach the goal by the deadline? Nobody is committed",
       "quantity_label": "Quantity",
       "submitting": "Joining...",
       "submit_join": "I want to join!",
@@ -2635,6 +2642,10 @@
       "message": "The link may be old, or the business is no longer active. Find other businesses near you.",
       "discover": "Find businesses on the map",
       "home": "Back to home"
+    },
+    "producer_gone": {
+      "heading": "This business is no longer on Mehamakor",
+      "message": "Its page was removed from the site. Other local businesses are waiting for you on the map."
     },
     "access_denied": {
       "producer": {

@@ -59,6 +59,8 @@
 >
 > **MEH-2080 (age self-declaration, 2026-09-06) — the field is no longer optional.** `terms_accepted: bool` is **required and must be `True`** on `UserRegister` and `ProducerRegister` (a `field_validator` refuses `False` and an omitted key alike with a Hebrew 422 — «יש לאשר את תנאי השימוש ולהצהיר על גיל 18 ומעלה»), because the single checkbox now carries two claims: acceptance of the terms **and** the 18+ self-declaration («אני מעל גיל 18 ומסכימה ל…»). `TERMS_VERSION` moved to `2026-09-v2` so a v1 stamp is distinguishable from one that includes the age claim. No date of birth is collected (ADDENDUM-9 ruling: self-declaration only). The additive-NULL semantics above still hold for rows stamped before this change and for the three OAuth paths, which remain ungated — chunk 2 of MEH-2080.
 
+> **MEH-2080 chunk 2 (2026-10-29) — OAuth signup from /register records the consent.** `GoogleAuthRequest` / `AppleAuthRequest` gained an **optional** `terms_accepted: bool = False`. `/register` forwards its checkbox to both buttons (read when the provider answers, not at mount); `/auth/google` and `/auth/apple` stamp `terms_accepted_at` + `TERMS_VERSION` only when it is `True` — new or existing user, same as `register_producer`. An absent/`False` flag writes nothing and erases nothing, so `/login` (no checkbox) is unchanged and its new accounts stay NULL (the honest state; a sign-in-time consent banner would need new copy). Owners are covered elsewhere: Step 2 of `/register/producer` and `/producer-claim` both stamp it, so `/auth/register/producer/oauth` step-0 is deliberately left alone.
+
 > **MEH-762 (ADR-022 public tier contract, 2026-06-06):** `producers.verified_at` (TIMESTAMP WITH TIME ZONE, nullable, migration `f1c7b9a3e264`, Chunk 1) + `producers.verification_doc_type` (VARCHAR(20), nullable; `license`\|`exemption`\|`cosmetics`) record the tier-1 "מאומת" document review. **Chunk 2:** admin stamping via `POST /admin/producers/{id}/grant-verified` (`{doc_type}`) + `/revoke-verified`; the legacy `is_verified` column was fully retired and DROPPED in MEH-766 (writers ch3 #1420, contract ch5 #1578, column ch6 revision `d4e7a92c81b5`). **Chunk 3 public exposure:** `ProducerListOut`/`ProducerDetailOut` now carry `verification_tier` (`"verified"`\|`"declared"`\|`null` — **computed** in `_compute_verification_tier`, never stored), `verified_at` (**date granularity only** — the TIMESTAMPTZ is truncated so no time leaks), and `verification_doc_type`. Resolver (D2/D3): `verified_at` set → `"verified"`; else if no category is in `LICENSE_REQUIRED_CATEGORIES` → `"declared"`; else `null` (no badge, no negative label). Mirrors the MEH-530 name-membership predicate (`license_validation.categories_require_license`) against the loaded categories. Privacy: `verified_at`(date)/`doc_type`/`tier` are public; `declared_at`/`declaration_version`/`producer_license_number` stay admin-only (`ProducerAdminOut`, which also inherits the three public fields at date granularity).
 
 > **MEH-2520 (2026-10-28) — the tier says only what is still true.** The resolver above is narrowed, not replaced; predicate in `app/services/verification_status.py`, shared by the schema tier and the `?verified` filter. `"verified"` additionally requires that the admin-captured `license_expires_at` (MEH-2072) is not before `israel_today()` — NULL = not captured, never expired; the business stays listed, only the badge drops, and a lapsed row counts under `?verified=false`. `"declared"` additionally requires `declared_at IS NOT NULL` — an admin-created, unclaimed business signed nothing, so it gets `null` and the «חתם על הצהרה מחייבת» line is not shown. No backfill (ADR-007): a retroactive `declared_at` would assert a signature nobody gave. Production impact, as last recorded 26/10 (not re-measured here — CC cannot query prod): 1 business, status draft, so no approved row loses a tier.
@@ -551,7 +553,11 @@ newsletter_subscribers (id, email unique, created_at)
 contact_messages       (id, name, email, message text, created_at)
 admin_settings         (key text PK, value text)
 static_pages           (slug text PK, title, body, updated_at)
+retired_slugs          (slug varchar(100) PK, producer_id uuid FK→producers SET NULL nullable,
+                        reason 'deleted'|'renamed', retired_at)  -- MEH-2528
 ```
+
+> **MEH-2528 — `retired_slugs` (28/10/2026):** tombstones for public business URLs. A business delete is a hard delete, so its UNIQUE `producers.slug` used to be free at once and the next business with the same name inherited every `/p/<slug>` link. Now admin delete, owner account delete and an admin slug change/clear write a row (`services/retired_slugs.py`, the only writer), and `_ensure_unique_slug` (`routers/admin.py`) treats a retired slug as taken (`-2`…). A business may take back a slug it retired itself (the row is then removed). Drafts are not retired — never public. `producer_id` = owner of a renamed slug (for a future redirect), NULL for a deleted business. Migration `c3d8e2f1a9b4`; **`EXPECTED_TABLES` 41 → 42**. A deleted business's URL answers **410** and renders the «בית העסק הזה כבר לא במהמקור» page (MEH-2534). Not yet: a 301 from a renamed slug.
 
 ---
 
@@ -673,6 +679,11 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > scan in `tests/test_meh2503_delete_with_group_buys.py` guards the class. No
 > schema change.
 >
+> **MEH-2544 — a group buy carries its business's first photo.** `GroupBuyOut`
+> gains read-only `producer_image_url` (`producers.images[0]`, or `null`). The
+> public list card, the group page hero and its og:image use it; a group buy
+> has no photo of its own. No schema change.
+>
 > **MEH-1164 sub-chunk B — structured 403 detail.** The unverified-email 403
 > `detail` is now an **object** `{"code": "email_unverified", "message": "יש
 > לאמת את כתובת האימייל תחילה"}` (all four gated creates — the three above plus
@@ -763,6 +774,10 @@ GET    /producers/{producer_id}/google-rating     public — MEH-1490: live Goog
                                                204 (fail-quiet) on no place_id / count<20 / API error / no
                                                GOOGLE_PLACES_API_KEY; 404 only for an unknown producer. 60/min.
 GET    /producers/by-slug/{slug}                  public
+                                               MEH-2534: miss on a slug whose business was DELETED (ownerless
+                                               retired_slugs row) → 410 «בית העסק כבר לא במהמקור»; never-existed
+                                               or renamed-away slug → 404. Middleware rewrites the page to a real HTTP 410;
+                                               the page renders ProducerGone (noindex).
 GET    /producers/cities                          public — MEH-970: per-city APPROVED-producer counts for /map.
                                                GROUP BY city over approved producers; NULL/blank city omitted;
                                                ordered count desc, then city. Counts live from DB (MEH-519 over-claim guard).

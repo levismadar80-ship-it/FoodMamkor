@@ -33,6 +33,7 @@ from app.services.delivery_validation import (
 from app.services.email import send_email
 from app.services.group_buy_delist import cancel_live_group_buys  # MEH-2498
 from app.services.producer_listing import is_business  # MEH-2459
+from app.services import retired_slugs  # MEH-2528
 
 # MEH-1242: SITE_DOMAIN is the single canonical domain constant. Import it —
 # never re-declare the literal.
@@ -124,13 +125,21 @@ def _yes_no(value) -> bool:
 def _ensure_unique_slug(
     db: Session, base_slug: str, exclude_id: UUID | None = None
 ) -> str:
-    """Append -2, -3, ... until slug is unique and not reserved."""
+    """Append -2, -3, ... until slug is unique, not reserved and not retired.
+
+    MEH-2528: a retired slug (the URL of a deleted or renamed business, see
+    services/retired_slugs.py) counts as taken, so an old link never resolves
+    to a different business. `exclude_id` is also the owner the retired check
+    exempts: a business may go back to a slug it retired itself.
+    """
     if not base_slug:
         return base_slug
     candidate = base_slug
     counter = 2
     while True:
-        if not is_reserved(candidate):
+        if not is_reserved(candidate) and not retired_slugs.is_retired(
+            db, candidate, owner_id=exclude_id
+        ):
             q = db.query(Producer).filter(Producer.slug == candidate)
             if exclude_id:
                 q = q.filter(Producer.id != exclude_id)
@@ -488,6 +497,9 @@ def list_producers(
         # derivation below. selectinload (not joinedload) — a 4th collection
         # joinedload here would widen the existing 3-way cartesian.
         selectinload(Producer.locations),
+        # MEH-2541: ProducerListOut.active_offer reads this collection; without
+        # it every row paid one producer_offers SELECT (Sentry N+1).
+        selectinload(Producer.offers),
     )
     # MEH-2100: three-way, and the DEFAULT (no `status` param) is the one that
     # changed. The admin toolbar sends no param for its "כל הסטטוסים" option
@@ -813,6 +825,20 @@ def _apply_recommended_pick(producer: Producer, payload: dict) -> None:
         producer.recommended_at = None
 
 
+def _retire_replaced_slug(db: Session, producer: Producer, payload: dict) -> None:
+    """MEH-2528 — an admin edit that changes or clears the slug retires the old
+    one, so the next business with that name cannot inherit its links; a slug
+    this business retired earlier and now takes back is released again.
+
+    Must run before the payload is applied: it reads the OLD `producer.slug`.
+    """
+    if "slug" not in payload or (payload["slug"] or None) == producer.slug:
+        return
+    retired_slugs.retire_slug(db, producer, "renamed")
+    if payload["slug"]:
+        retired_slugs.reclaim(db, payload["slug"], producer.id)
+
+
 @router.put("/producers/{producer_id}", response_model=ProducerAdminOut)
 def admin_update_producer(
     producer_id: UUID,
@@ -879,6 +905,9 @@ def admin_update_producer(
         _guard_supplied_slug(payload["slug"])
         candidate = _slugify(payload["slug"])
         payload["slug"] = _ensure_unique_slug(db, candidate, exclude_id=producer.id)
+
+    # MEH-2528: read before the setattr loop below overwrites `producer.slug`.
+    _retire_replaced_slug(db, producer, payload)
 
     # MEH-375: snapshot gallery BEFORE bulk setattr so we can diff and
     # destroy URLs the admin dropped AFTER db.commit succeeds. Order
@@ -1034,6 +1063,11 @@ def admin_delete_producer(
         synchronize_session=False,
     )
     db.flush()
+
+    # MEH-2528: the deleted business's URL stays reserved — hard delete frees
+    # the UNIQUE slot, and without the tombstone the next business with this
+    # name would inherit every link to this one.
+    retired_slugs.retire_slug(db, producer, "deleted")
 
     # MEH-816: phone_otp_tokens cascade via the DB FK (ondelete=CASCADE) plus
     # passive_deletes=True on the Producer.otp_tokens backref (MEH-773 Chunk B),

@@ -16,7 +16,7 @@
  * - **Role gating is not re-tested here.** `flows/25-role-reachability.spec.ts`
  *   owns admin-vs-owner-vs-consumer-vs-guest. One concern per spec.
  * - The card says "6 tabs". The panel now renders considerably more than that
- *   across 5 sections (`admin/layout.js:57-104`); the card was written 22/04.
+ *   across 5 sections (`admin/AdminLayoutClient.jsx:57-104`); the card was written 22/04.
  *   The six below are the ones it names, all still live routes. No count is
  *   quoted: this comment said "18 items", the real figure was 17
  *   (`grep -c 'href: "/admin'`), and a hand-counted number in a comment is the
@@ -125,7 +125,7 @@ test.describe("MEH-217 — admin panel tabs", () => {
       // Scoped to the admin layout's own <main>, NOT a bare `main`. Every
       // /admin/* page has TWO main elements: the root landmark
       // (`[locale]/layout.js:308`, `<main id="main-content">`) and the admin
-      // layout's content region nested inside it (`admin/layout.js:260`). A
+      // layout's content region nested inside it (`admin/AdminLayoutClient.jsx:260`). A
       // bare `page.locator("main")` therefore matches 2, and Playwright's
       // strict mode throws before any visibility check runs — which is how
       // this assertion failed all six tabs on both projects while the other

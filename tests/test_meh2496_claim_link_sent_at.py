@@ -212,7 +212,7 @@ class TestRevisionShape:
 
     def test_chains_onto_an_existing_revision(self):
         down = _module_str(_revision_file(REVISION), "down_revision")
-        assert down == "1cd44149cc20"
+        assert down == "c3d8e2f1a9b4"  # MEH-2528 retired_slugs, the head when this merged
         _revision_file(down)  # exists exactly once
 
     def test_upgrade_adds_exactly_the_one_nullable_tz_column(self):

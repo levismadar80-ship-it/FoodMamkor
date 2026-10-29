@@ -44,6 +44,12 @@ def _enrich(gb: GroupBuy, current_user: User | None = None) -> dict:
         "id": gb.id,
         "producer_id": gb.producer_id,
         "producer_name": gb.producer.name if gb.producer else None,
+        # MEH-2544: the card / page photo — the business's first image, the
+        # same pick as ProducerCard (images[0]). Read-only; a group buy has
+        # no image of its own.
+        "producer_image_url": (gb.producer.images or [None])[0]
+        if gb.producer
+        else None,
         "title": gb.title,
         "description": gb.description,
         "product_name": gb.product_name,
@@ -106,6 +112,12 @@ def list_group_buys(
     db: Session = Depends(get_db),
 ):
     q = _public_group_buys(db).filter(GroupBuy.status == status)  # MEH-2484
+    if status == "open":
+        # MEH-2540: nothing closes an open group buy past its deadline (see
+        # OWNER_TRANSITIONS), so the «פתוחות» tab listed it next to a join
+        # button the commit route then refuses. The list only — its page still
+        # resolves for a shared link and says the deadline passed.
+        q = q.filter(GroupBuy.deadline >= utc_now())
     if city:
         q = q.filter(GroupBuy.city == city)
     items = q.order_by(GroupBuy.deadline.asc()).all()

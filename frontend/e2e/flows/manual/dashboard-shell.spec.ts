@@ -21,7 +21,7 @@ import { test, expect, type Page } from "../_cloudinary-stub";
  *           would be a write against staging — which Sapir's 13/07 ruling
  *           forbids. Read-only rendering is the whole scope here; the edit
  *           tab's writes are chunk 11b/11c and stay reported, not converted.
- * Related:  app/[locale]/producer/dashboard/layout.js · page.js ·
+ * Related:  app/[locale]/producer/dashboard/DashboardLayoutClient.jsx · page.js ·
  *           insights/page.js · tools/page.js · flows/34 (the stub pattern) ·
  *           flows/25-role-reachability (the storageState counterpart).
  * History:  MEH-1249 chunk 11a.
@@ -164,9 +164,7 @@ const NO_ACTIVITY = {
   contact_clicks: { total: 0, last_7d: 0 },
   average_rating: null,
   total_reviews: 0,
-  rank_in_city: null,
   conversion_rate: "0%",
-  profile_strength: 10,
 };
 
 const WITH_ACTIVITY = {
@@ -177,7 +175,6 @@ const WITH_ACTIVITY = {
   average_rating: 4.5,
   total_reviews: 8,
   conversion_rate: "9%",
-  profile_strength: 90,
 };
 
 type SessionOpts = {

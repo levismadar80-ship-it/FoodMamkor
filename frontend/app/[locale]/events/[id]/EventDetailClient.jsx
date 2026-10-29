@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
-import Link from "next/link";
+// next-intl's Link keeps the /en prefix (next/link drops it under
+// localePrefix: as-needed — MEH-2403 review).
+import { Link } from "@/i18n/navigation";
 import { Calendar, CalendarPlus, Coins, Leaf, MapPin, UsersThree } from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
 import api from "@/lib/api";
@@ -14,6 +16,7 @@ import { formatPrice } from "@/lib/utils";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import Breadcrumb from "@/components/Breadcrumb";
 import ShareButton from "@/components/ShareButton";
+import OwnerRow from "@/components/OwnerRow";
 import { buildEventIcs } from "@/lib/event-ics";
 
 // MEH-2468: «הוספה ליומן» — the .ics is built in the browser from the event
@@ -240,28 +243,29 @@ export default function EventDetailClient() {
         </div>
 
         {/* MEH-2461: an organizer's event links to /organizers/{slug} (its
-            business page 404s since MEH-2459) with the approved line. */}
+            business page 404s since MEH-2459) with the approved line.
+            Organizer-link affordance: the owner line is a full-width card with
+            an initial avatar and a forward chevron (the Eventbrite / Meetup
+            organizer row) — as bare green text nothing said it was tappable. */}
         {event.producer_name && isOrganizerEvent && (
-          <p className="text-sm text-fg-muted mt-8" data-testid="event-organizer-line">
+          <div className="mt-8" data-testid="event-organizer-line">
             {event.owner_slug ? (
-              <Link
-                href={`/organizers/${event.owner_slug}`}
-                className="text-primary hover:underline"
-              >
+              <OwnerRow href={`/organizers/${event.owner_slug}`} name={event.producer_name}>
                 {t("organizer_line", { name: event.producer_name })}
-              </Link>
+              </OwnerRow>
             ) : (
-              t("organizer_line", { name: event.producer_name })
+              <OwnerRow name={event.producer_name}>
+                {t("organizer_line", { name: event.producer_name })}
+              </OwnerRow>
             )}
-          </p>
+          </div>
         )}
         {event.producer_name && !isOrganizerEvent && (
-          <p className="text-sm text-fg-muted mt-8">
-            {t("organized_by")}{" "}
-            <Link href={`/producer/${event.producer_id}`} className="text-primary hover:underline">
-              {event.producer_name}
-            </Link>
-          </p>
+          <div className="mt-8" data-testid="event-business-line">
+            <OwnerRow href={`/producer/${event.producer_id}`} name={event.producer_name}>
+              {t("organized_by")} <span className="font-semibold">{event.producer_name}</span>
+            </OwnerRow>
+          </div>
         )}
       </div>
     </div>

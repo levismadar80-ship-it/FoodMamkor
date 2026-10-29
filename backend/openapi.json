@@ -332,6 +332,11 @@
               }
             ],
             "title": "Name"
+          },
+          "terms_accepted": {
+            "default": false,
+            "title": "Terms Accepted",
+            "type": "boolean"
           }
         },
         "required": [
@@ -2600,6 +2605,11 @@
           "id_token": {
             "title": "Id Token",
             "type": "string"
+          },
+          "terms_accepted": {
+            "default": false,
+            "title": "Terms Accepted",
+            "type": "boolean"
           }
         },
         "required": [
@@ -2919,6 +2929,17 @@
             "title": "Producer Id",
             "type": "string"
           },
+          "producer_image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Producer Image Url"
+          },
           "producer_name": {
             "anyOf": [
               {
@@ -3066,6 +3087,17 @@
             "format": "uuid",
             "title": "Producer Id",
             "type": "string"
+          },
+          "producer_image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Producer Image Url"
           },
           "producer_name": {
             "anyOf": [

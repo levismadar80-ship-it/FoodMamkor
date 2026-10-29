@@ -151,15 +151,25 @@ export function AuthProvider({ children }) {
     return res.data;
   };
 
-  const loginWithGoogle = async (idToken) => {
-    const res = await api.post("/auth/google", { id_token: idToken });
+  // MEH-2080 chunk 2: termsAccepted is the /register checkbox, forwarded so a
+  // Google/Apple signup records the same consent as the email path. /login
+  // passes nothing; the server only ever writes a true value.
+  const loginWithGoogle = async (idToken, { termsAccepted = false } = {}) => {
+    const res = await api.post("/auth/google", {
+      id_token: idToken,
+      terms_accepted: termsAccepted,
+    });
     localStorage.setItem("token", res.data.access_token);
     const me = await api.get("/auth/me");
     return afterLogin(me.data);
   };
 
-  const loginWithApple = async (idToken, name) => {
-    const res = await api.post("/auth/apple", { id_token: idToken, name });
+  const loginWithApple = async (idToken, name, { termsAccepted = false } = {}) => {
+    const res = await api.post("/auth/apple", {
+      id_token: idToken,
+      name,
+      terms_accepted: termsAccepted,
+    });
     localStorage.setItem("token", res.data.access_token);
     const me = await api.get("/auth/me");
     return afterLogin(me.data);

@@ -4,6 +4,37 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-10-29 13:20 — דף «בית העסק הזה כבר לא במהמקור» לכתובת של עסק שנמחק (#3797)
+
+**‏שורה אחת:** ‏כתובת של עסק שנמחק עונה 410 ומציגה דף משלה; כתובות בעברית, שהחזירו 404 גם לעסק חי, תוקנו.
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏Next מעביר את `[slug]` ואת ה-pathname ב-middleware **מקודדים** (`%D7…`). כל קריאה לפרמטר slug עוברת דרך `decodeSlugParam` (`lib/slug.js`) לפני `isSlugShaped` / fetch.
+- ‏ה-410 האמיתי נקבע ב-middleware (rewrite לעמוד עצמו עם `status: 410`, ומעביר את כותרות next-intl בלי `x-middleware-next`) — העמוד עצמו משודר ב-200.
+
+**‏לא עכשיו:** הפניית 301 אחרי שינוי שם; עסק לא מאושר שנמחק גם מקבל 410 (אין בטבלה סטטוס).
+
+## 2026-10-29 09:20 — שמונה שיפורים בלי ספיר (#3793–#3800)
+
+**‏שורה אחת:** Sentry בדפדפן עובד, הסכמה לתנאים נרשמת בהרשמת OAuth, וה-HTML של כל דף קל ב-~98KB.
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏namespace חדש של next-intl שקומפוננטת client קוראת מחוץ ל-`/admin`, `/producer/dashboard`: אל תוסיפי אותו ל-`ROUTE_SCOPED_NAMESPACES`/`SERVER_ONLY_NAMESPACES` (`lib/client-messages.js`). `ClientMessagesScope.test.jsx` נכשל אם כן.
+- ‏ה-shell של האדמין ושל לוח הבקרה נמצאים ב-`AdminLayoutClient.jsx` / `DashboardLayoutClient.jsx`; ה-`layout.js` הוא עטיפת שרת דקה.
+- ‏ה-init של Sentry בדפדפן: `frontend/instrumentation-client.js` (לא `sentry.client.config.js`).
+
+**‏לא עכשיו / מחכה לספיר:** מפתח PostHog ב-Vercel; נוסח הסכמה ל-`/login` עם Google/Apple; LCP (MEH-2233) — החשוד הבא הוא JS; `NoEmojiInComponents.test.js` אדום ב-staging (★ ב-`admin/reviews/page.jsx:232`).
+
+## 2026-10-29 07:55 — כתובת של בית עסק שנמחק לא עוברת לעסק אחר (#3781)
+
+**‏שורה אחת:** ‏slug של עסק שהיה ציבורי ונמחק או ששינה כתובת נשמר ב-`retired_slugs` ולא מוקצה שוב.
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏כל כתיבה של `producers.slug` חייבת לקבל את הערך מ-`_ensure_unique_slug` (`routers/admin.py`) — רק שם ה-tombstone נבדק. כתיבת tombstone רק דרך `services/retired_slugs.py`.
+- ‏טבלה חדשה מזיזה את `EXPECTED_TABLES` ב-`pr-checks.yml` — עריכה של ספיר (פרומפט Chrome), ואחריה קומיט אמיתי עם `Builder-Model:` כדי ש-builder-model-guard יעבור.
+
+**‏לא עכשיו:** ~~עמוד 410~~ (נעשה ב-#3797); הפניית 301 אחרי שינוי שם (`producer_id` כבר נשמר).
+
 ## 2026-10-29 01:00 — לוח הבקרה של בעלת העסק: השאריות נסגרו (#3780, #3783, #3785, #3786)
 
 **‏שורה אחת:** חלונות האישור בלוח נגישים במקלדת, אין פס ריק בתחתית בנייד ויש התנתקות, ביטול לא עובר על קבוצה שהתמלאה באותו רגע, ושני שדות מתים הוסרו מה-API.
