@@ -60,11 +60,6 @@ export function isReserved(name) {
 }
 
 /**
- * True when `slug` could be a real producer slug (cheap shape check only).
- * @param {string} slug
- * @returns {boolean}
- */
-/**
  * MEH-2534: the route param / pathname segment as the business's real slug.
  *
  * Next hands a non-ASCII dynamic segment over still percent-encoded — measured
@@ -86,6 +81,11 @@ export function decodeSlugParam(raw) {
   }
 }
 
+/**
+ * True when `slug` could be a real producer slug (cheap shape check only).
+ * @param {string} slug
+ * @returns {boolean}
+ */
 export function isSlugShaped(slug) {
   if (!slug) return false;
   const s = slug.toLowerCase();

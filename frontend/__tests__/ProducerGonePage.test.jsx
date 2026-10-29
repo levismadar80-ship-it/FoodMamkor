@@ -36,7 +36,12 @@ vi.mock("@/app/[locale]/producer/[id]/ProducerDetail", () => ({
 vi.mock("next-intl/middleware", () => ({
   default: () => () => ({ headers: new Map(), __intl: true }),
 }));
-const rewrite = vi.fn((url, init) => ({ __rewrite: true, url, status: init?.status }));
+const rewrite = vi.fn((url, init) => ({
+  __rewrite: true,
+  url,
+  status: init?.status,
+  headers: new Map(),
+}));
 vi.mock("next/server", () => ({
   NextResponse: {
     rewrite: (url, init) => rewrite(url, init),
@@ -102,11 +107,21 @@ describe("MEH-2534 — middleware", () => {
     global.fetch = vi.fn(async () => ({ ok: status >= 200 && status < 300, status }));
   };
 
-  it("410 -> lets the page render it, without a 404 rewrite or a fault log", async () => {
+  it("410 -> rewrites to the page itself with a real 410, without a fault log", async () => {
+    // The page streams (200 by the time it renders), so the status has to be
+    // set here or a crawler never sees the backend's 410.
     backendReturns(410);
     const res = await middleware(requestFor(`/he/${SLUG}`));
-    expect(res?.__rewrite).toBeFalsy();
+    expect(res.__rewrite && res.status).toBe(410);
+    expect(res.url.pathname).toBe(`/he/${SLUG}`);
     expect(console.error).not.toHaveBeenCalled();
+  });
+
+  it("410 on a prefix-less URL -> rewrites to the default locale", async () => {
+    backendReturns(410);
+    const res = await middleware(requestFor(`/${SLUG}`));
+    expect(res.status).toBe(410);
+    expect(res.url.pathname).toBe(`/he/${SLUG}`);
   });
 
   it("404 control -> still the hard 404 rewrite", async () => {
@@ -131,5 +146,40 @@ describe("MEH-2534 — ProducerGone copy", () => {
     ).toBeTruthy();
     expect(screen.getByRole("link", { name: /גלו עסקים במפה/ }).getAttribute("href")).toBe("/map");
     expect(screen.getByRole("link", { name: /חזרה לדף הבית/ }).getAttribute("href")).toBe("/");
+  });
+});
+
+describe("MEH-2534 — Hebrew slugs arrive percent-encoded", () => {
+  // Next hands the [slug] param and the middleware pathname over encoded.
+  // DISCRIMINATION: the pre-change page failed SLUG_SHAPE on the `%` and
+  // called notFound() without fetching; the pre-change middleware did the
+  // same before its backend check. Both cases below fail on that code.
+  const HE = "חוות-הגליל";
+  const ENC = encodeURIComponent(HE);
+
+  it("page fetches the decoded slug once-encoded, and renders the business", async () => {
+    serverFetch.mockResolvedValue({ ...response(200), json: async () => ({ id: 1, name: "חווה" }) });
+    await ProducerSlugPage({ params: Promise.resolve({ slug: ENC, locale: "he" }) });
+    expect(notFound).not.toHaveBeenCalled();
+    expect(serverFetch.mock.calls[0][0]).toContain(`/producers/by-slug/${ENC}`);
+    expect(serverFetch.mock.calls[0][0]).not.toContain("%25");
+  });
+
+  it("middleware checks the backend for an encoded Hebrew slug instead of hard-404ing", async () => {
+    global.fetch = vi.fn(async () => ({ ok: true, status: 200 }));
+    const nextUrl = { pathname: `/he/${ENC}`, clone() { return { ...nextUrl }; } };
+    const res = await middleware({ nextUrl, url: `https://x${nextUrl.pathname}`, headers: new Map() });
+    expect(res?.__rewrite).toBeFalsy();
+    expect(global.fetch).toHaveBeenCalled();
+  });
+
+  it("a malformed escape is left as is and still 404s without a backend call", async () => {
+    const { decodeSlugParam } = await import("@/lib/slug");
+    expect(decodeSlugParam("%E0%A4%A")).toBe("%E0%A4%A");
+    expect(decodeSlugParam(HE)).toBe(HE);
+    await expect(
+      ProducerSlugPage({ params: Promise.resolve({ slug: "%E0%A4%A", locale: "he" }) })
+    ).rejects.toThrow("NEXT_NOT_FOUND");
+    expect(serverFetch).not.toHaveBeenCalled();
   });
 });

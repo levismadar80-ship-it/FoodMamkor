@@ -767,7 +767,8 @@ GET    /producers/{producer_id}/google-rating     public — MEH-1490: live Goog
 GET    /producers/by-slug/{slug}                  public
                                                MEH-2534: miss on a slug whose business was DELETED (ownerless
                                                retired_slugs row) → 410 «בית העסק כבר לא במהמקור»; never-existed
-                                               or renamed-away slug → 404. Frontend renders ProducerGone (noindex).
+                                               or renamed-away slug → 404. Middleware rewrites the page to a real HTTP 410;
+                                               the page renders ProducerGone (noindex).
 GET    /producers/cities                          public — MEH-970: per-city APPROVED-producer counts for /map.
                                                GROUP BY city over approved producers; NULL/blank city omitted;
                                                ordered count desc, then city. Counts live from DB (MEH-519 over-claim guard).
