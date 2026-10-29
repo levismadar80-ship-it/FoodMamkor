@@ -1,331 +1,151 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import {
-  Gauge,
-  Storefront,
-  Users,
-  Star,
-  Warning,
-  Sparkle,
-  Lifebuoy,
-  LinkSimple,
-  ArrowUpRight,
-  Megaphone,
-  Package,
-  Bread,
-  Seal,
-  Tag,
-  ChatCircleSlash,
-  ChartLineUp,
-} from "@phosphor-icons/react";
+import { CaretDown, Lifebuoy, MagnifyingGlass } from "@phosphor-icons/react";
+import { HELP_GROUPS, HELP_TOPICS, topicMatches } from "./topics";
 
 /**
- * /admin/help — internal admin handbook (MEH-21, i18n MEH-475 PR-B).
+ * /admin/help — «איך עושים…» (MEH-2591; replaces the MEH-21 handbook).
  *
- * Static admin guide rendered inside the /admin layout. A sticky
- * table-of-contents links to in-page anchors; each section is a
- * self-contained block that admins can skim without scrolling the
- * whole document.
- *
- * Credentials, project IDs, and personal contacts are intentionally
- * left as `<להזין>` placeholders — they belong in the team's password
- * manager, not in git. The handover checklist in docs/ADMIN.md has
- * the same redaction pattern.
+ * Purpose:  Answer one admin task at a time: a searchable list of questions,
+ *           grouped like the sidebar, each opening into a few short steps and
+ *           a link to the screen where the task is done. Pattern: task-based,
+ *           searchable, concise help (NN/g heuristic 10; Shopify / Stripe
+ *           in-admin help), not a per-screen manual.
+ * States:   search → 0 matches (no-results line) / 1 (that topic opens) /
+ *           many; each topic closed / open, one open at a time. `#<topic id>`
+ *           in the URL opens that topic, so other screens can deep-link here.
+ * Does NOT: hold infrastructure runbooks or credentials — those live in
+ *           docs/ACCESS.md + docs/DEPLOYMENT.md (ADR-035, one home per fact).
  */
 export default function AdminHelpPage() {
-  const t = useTranslations("admin.help");
+  const t = useTranslations("admin");
+  const [query, setQuery] = useState("");
+  const [openId, setOpenId] = useState(null);
 
-  const richComponents = {
-    strong: (chunks) => <strong>{chunks}</strong>,
-    code: (chunks) => (
-      <code className="bg-green-50 px-1.5 py-0.5 rounded-lg text-xs">{chunks}</code>
-    ),
-    em: (chunks) => <em>{chunks}</em>,
-    placeholder: (chunks) => <>&lt;{chunks}&gt;</>,
+  // Deep link: /admin/help#kashrut opens and scrolls to that topic, on load
+  // and when the hash changes while the page is open.
+  useEffect(() => {
+    const fromHash = () => {
+      const id = decodeURIComponent(window.location.hash.slice(1));
+      if (!HELP_TOPICS.some((topic) => topic.id === id)) return;
+      setQuery("");
+      setOpenId(id);
+      requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ block: "start" }));
+    };
+    fromHash();
+    window.addEventListener("hashchange", fromHash);
+    return () => window.removeEventListener("hashchange", fromHash);
+  }, []);
+
+  const topics = HELP_TOPICS.map((topic) => ({
+    ...topic,
+    question: t(`help.topics.${topic.id}.q`),
+    steps: t.raw(`help.topics.${topic.id}.steps`),
+  }));
+  const matches = topics.filter((topic) => topicMatches(topic.question, topic.steps, query));
+
+  // A search that narrows to one topic has answered the question — open it.
+  // Done on input rather than derived, so the admin can still close it.
+  const onSearch = (value) => {
+    setQuery(value);
+    const found = topics.filter((topic) => topicMatches(topic.question, topic.steps, value));
+    if (value.trim() && found.length === 1) setOpenId(found[0].id);
   };
 
   return (
-    <div className="max-w-5xl mx-auto">
-      <div className="flex items-center gap-3 mb-4">
-        <Lifebuoy size={28} weight="fill" className="text-primary" aria-hidden="true" />
-        <h1 className="text-2xl font-bold">{t("title")}</h1>
+    <div className="max-w-3xl mx-auto">
+      <div className="flex items-center gap-3 mb-2">
+        <Lifebuoy size={28} weight="fill" className="text-primary shrink-0" aria-hidden="true" />
+        <h1 className="text-2xl font-bold">{t("layout.nav.help")}</h1>
       </div>
-      <p className="text-sm text-muted mb-6 leading-relaxed">
-        {t("intro")}
-      </p>
+      <p className="text-sm text-muted mb-4">{t("help.intro")}</p>
 
-      <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-6">
-        {/* Sticky TOC */}
-        <aside className="md:sticky md:top-24 self-start bg-white border border-border rounded-[12px] p-4 text-sm">
-          <p className="text-xs text-muted mb-2">{t("toc_label")}</p>
-          <nav className="flex flex-col gap-1.5">
-            <a href="#dashboard" className="hover:text-primary transition">{t("toc.dashboard")}</a>
-            <a href="#producers" className="hover:text-primary transition">{t("toc.producers")}</a>
-            <a href="#users" className="hover:text-primary transition">{t("toc.users")}</a>
-            <a href="#reviews" className="hover:text-primary transition">{t("toc.reviews")}</a>
-            <a href="#reports" className="hover:text-primary transition">{t("toc.reports")}</a>
-            <a href="#experiences" className="hover:text-primary transition">{t("toc.experiences")}</a>
-            <a href="#outreach" className="hover:text-primary transition">{t("toc.outreach")}</a>
-            <a href="#group_buys" className="hover:text-primary transition">{t("toc.group_buys")}</a>
-            <a href="#recipes" className="hover:text-primary transition">{t("toc.recipes")}</a>
-            <a href="#kashrut" className="hover:text-primary transition">{t("toc.kashrut")}</a>
-            <a href="#category_requests" className="hover:text-primary transition">{t("toc.category_requests")}</a>
-            <a href="#whatsapp_failures" className="hover:text-primary transition">{t("toc.whatsapp_failures")}</a>
-            <a href="#analytics" className="hover:text-primary transition">{t("toc.analytics")}</a>
-            <a href="#emergency" className="hover:text-primary transition">{t("toc.emergency")}</a>
-            <a href="#urls" className="hover:text-primary transition">{t("toc.urls")}</a>
-          </nav>
-        </aside>
+      <label className="relative block mb-6">
+        <span className="sr-only">{t("help.search_label")}</span>
+        <MagnifyingGlass
+          size={18}
+          className="absolute top-1/2 -translate-y-1/2 start-3 text-muted pointer-events-none"
+          aria-hidden="true"
+        />
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => onSearch(e.target.value)}
+          placeholder={t("help.search_placeholder")}
+          className="w-full bg-white border border-border rounded-[12px] ps-10 pe-3 py-2.5 text-base"
+        />
+      </label>
 
-        {/* Content */}
-        <div className="space-y-10">
-          {/* ===== Dashboard ===== */}
-          <Section id="dashboard" icon={Gauge} title={t("sections.dashboard.title")}>
-            <p>{t.rich("sections.dashboard.p1", richComponents)}</p>
-            <ul className="list-disc ps-5 space-y-1.5 mt-2">
-              <li>{t.rich("sections.dashboard.li1", richComponents)}</li>
-              <li>{t.rich("sections.dashboard.li2", richComponents)}</li>
-              <li>{t.rich("sections.dashboard.li3", richComponents)}</li>
-              <li>{t.rich("sections.dashboard.li4", richComponents)}</li>
-            </ul>
-          </Section>
-
-          {/* ===== Producers ===== */}
-          <Section id="producers" icon={Storefront} title={t("sections.producers.title")}>
-            <p>{t.rich("sections.producers.p1", richComponents)}</p>
-            <ol className="list-decimal ps-5 space-y-2 mt-3">
-              <li>{t.rich("sections.producers.li1", richComponents)}</li>
-              <li>{t.rich("sections.producers.li2", richComponents)}</li>
-              <li>{t.rich("sections.producers.li3", richComponents)}</li>
-              <li>{t.rich("sections.producers.li4", richComponents)}</li>
-              <li>{t.rich("sections.producers.li5", richComponents)}</li>
-            </ol>
-            <p className="mt-3 text-xs text-muted">
-              {t.rich("sections.producers.footnote", richComponents)}
-            </p>
-          </Section>
-
-          {/* ===== Users ===== */}
-          <Section id="users" icon={Users} title={t("sections.users.title")}>
-            <p>{t.rich("sections.users.p1", richComponents)}</p>
-            <ul className="list-disc ps-5 space-y-1.5 mt-2">
-              <li>{t.rich("sections.users.li1", richComponents)}</li>
-              <li>{t.rich("sections.users.li2", richComponents)}</li>
-              <li>{t.rich("sections.users.li3", richComponents)}</li>
-            </ul>
-            <p className="mt-3 text-xs text-muted">
-              {t.rich("sections.users.footnote", richComponents)}
-            </p>
-          </Section>
-
-          {/* ===== Reviews ===== */}
-          <Section id="reviews" icon={Star} title={t("sections.reviews.title")}>
-            <p>{t.rich("sections.reviews.p1", richComponents)}</p>
-            <ul className="list-disc ps-5 space-y-1.5 mt-2">
-              <li>{t.rich("sections.reviews.li1", richComponents)}</li>
-              <li>{t.rich("sections.reviews.li2", richComponents)}</li>
-              <li>{t.rich("sections.reviews.li3", richComponents)}</li>
-            </ul>
-          </Section>
-
-          {/* ===== Reports ===== */}
-          <Section id="reports" icon={Warning} title={t("sections.reports.title")}>
-            <p>{t.rich("sections.reports.p1", richComponents)}</p>
-            <ul className="list-disc ps-5 space-y-1.5 mt-2">
-              <li>{t.rich("sections.reports.li1", richComponents)}</li>
-              <li>{t.rich("sections.reports.li2", richComponents)}</li>
-              <li>{t.rich("sections.reports.li3", richComponents)}</li>
-            </ul>
-            <p className="mt-3 text-xs text-muted">
-              {t.rich("sections.reports.footnote", richComponents)}
-            </p>
-          </Section>
-
-          {/* ===== Experiences ===== */}
-          <Section id="experiences" icon={Sparkle} title={t("sections.experiences.title")}>
-            <p>{t.rich("sections.experiences.p1", richComponents)}</p>
-            <ul className="list-disc ps-5 space-y-1.5 mt-2">
-              <li>{t.rich("sections.experiences.li1", richComponents)}</li>
-              <li>{t.rich("sections.experiences.li2", richComponents)}</li>
-            </ul>
-          </Section>
-
-          {/* ===== Outreach ===== */}
-          <Section id="outreach" icon={Megaphone} title={t("sections.outreach.title")}>
-            <p>{t.rich("sections.outreach.p1", richComponents)}</p>
-            <ul className="list-disc ps-5 space-y-1.5 mt-2">
-              <li>{t.rich("sections.outreach.li1", richComponents)}</li>
-              <li>{t.rich("sections.outreach.li2", richComponents)}</li>
-            </ul>
-          </Section>
-
-          {/* ===== Group buys ===== */}
-          <Section id="group_buys" icon={Package} title={t("sections.group_buys.title")}>
-            <p>{t.rich("sections.group_buys.p1", richComponents)}</p>
-            <ul className="list-disc ps-5 space-y-1.5 mt-2">
-              <li>{t.rich("sections.group_buys.li1", richComponents)}</li>
-              <li>{t.rich("sections.group_buys.li2", richComponents)}</li>
-            </ul>
-          </Section>
-
-          {/* ===== Recipes ===== */}
-          <Section id="recipes" icon={Bread} title={t("sections.recipes.title")}>
-            <p>{t.rich("sections.recipes.p1", richComponents)}</p>
-            <ul className="list-disc ps-5 space-y-1.5 mt-2">
-              <li>{t.rich("sections.recipes.li1", richComponents)}</li>
-              <li>{t.rich("sections.recipes.li2", richComponents)}</li>
-            </ul>
-          </Section>
-
-          {/* ===== Kashrut ===== */}
-          <Section id="kashrut" icon={Seal} title={t("sections.kashrut.title")}>
-            <p>{t.rich("sections.kashrut.p1", richComponents)}</p>
-            <ul className="list-disc ps-5 space-y-1.5 mt-2">
-              <li>{t.rich("sections.kashrut.li1", richComponents)}</li>
-              <li>{t.rich("sections.kashrut.li2", richComponents)}</li>
-            </ul>
-          </Section>
-
-          {/* ===== Category requests ===== */}
-          <Section id="category_requests" icon={Tag} title={t("sections.category_requests.title")}>
-            <p>{t.rich("sections.category_requests.p1", richComponents)}</p>
-            <ul className="list-disc ps-5 space-y-1.5 mt-2">
-              <li>{t.rich("sections.category_requests.li1", richComponents)}</li>
-              <li>{t.rich("sections.category_requests.li2", richComponents)}</li>
-            </ul>
-          </Section>
-
-          {/* ===== WhatsApp failures ===== */}
-          <Section id="whatsapp_failures" icon={ChatCircleSlash} title={t("sections.whatsapp_failures.title")}>
-            <p>{t.rich("sections.whatsapp_failures.p1", richComponents)}</p>
-            <ul className="list-disc ps-5 space-y-1.5 mt-2">
-              <li>{t.rich("sections.whatsapp_failures.li1", richComponents)}</li>
-              <li>{t.rich("sections.whatsapp_failures.li2", richComponents)}</li>
-            </ul>
-          </Section>
-
-          {/* ===== Analytics ===== */}
-          <Section id="analytics" icon={ChartLineUp} title={t("sections.analytics.title")}>
-            <p>{t.rich("sections.analytics.p1", richComponents)}</p>
-            <ul className="list-disc ps-5 space-y-1.5 mt-2">
-              <li>{t.rich("sections.analytics.li1", richComponents)}</li>
-              <li>{t.rich("sections.analytics.li2", richComponents)}</li>
-            </ul>
-          </Section>
-
-          {/* ===== Emergency ===== */}
-          <Section id="emergency" icon={Warning} title={t("sections.emergency.title")} danger>
-            <ul className="space-y-3">
-              <li>
-                <strong>{t("sections.emergency.site_down_title")}</strong>
-                <p className="text-sm text-muted mt-1">
-                  {t.rich("sections.emergency.site_down_body", richComponents)}
-                </p>
-              </li>
-              <li>
-                <strong>{t("sections.emergency.migration_title")}</strong>
-                <p className="text-sm text-muted mt-1">
-                  {t.rich("sections.emergency.migration_body", richComponents)}
-                </p>
-              </li>
-              <li>
-                <strong>{t("sections.emergency.login_broken_title")}</strong>
-                <p className="text-sm text-muted mt-1">
-                  {t.rich("sections.emergency.login_broken_body", richComponents)}
-                </p>
-              </li>
-              <li>
-                <strong>{t("sections.emergency.spam_title")}</strong>
-                <p className="text-sm text-muted mt-1">
-                  {t.rich("sections.emergency.spam_body", richComponents)}
-                </p>
-              </li>
-              <li>
-                <strong>{t("sections.emergency.ai_silent_title")}</strong>
-                <p className="text-sm text-muted mt-1">
-                  {t.rich("sections.emergency.ai_silent_body", richComponents)}
-                </p>
-              </li>
-            </ul>
-          </Section>
-
-          {/* ===== URLs ===== */}
-          <Section id="urls" icon={LinkSimple} title={t("sections.urls.title")}>
-            <p className="text-sm text-muted mb-3">
-              {t("sections.urls.intro")}
-            </p>
-            <ul className="space-y-2">
-              <ExternalRow label={t("sections.urls.prod_label")} href="https://mehamakor.co.il">mehamakor.co.il</ExternalRow>
-              <ExternalRow label={t("sections.urls.staging_label")} href="https://staging.mehamakor.online">staging.mehamakor.online</ExternalRow>
-              <li className="flex items-start gap-3 text-sm">
-                <span className="text-muted min-w-[140px]">{t("sections.urls.railway_label")}</span>
-                <span className="text-fg-muted">{t.rich("sections.urls.railway_text", richComponents)}</span>
-              </li>
-              <li className="flex items-start gap-3 text-sm">
-                <span className="text-muted min-w-[140px]">{t("sections.urls.vercel_label")}</span>
-                <span className="text-fg-muted">{t.rich("sections.urls.vercel_text", richComponents)}</span>
-              </li>
-              <li className="flex items-start gap-3 text-sm">
-                <span className="text-muted min-w-[140px]">{t("sections.urls.cloudinary_label")}</span>
-                <span className="text-fg-muted">{t.rich("sections.urls.cloudinary_text", richComponents)}</span>
-              </li>
-              <li className="flex items-start gap-3 text-sm">
-                <span className="text-muted min-w-[140px]">{t("sections.urls.anthropic_label")}</span>
-                <span className="text-fg-muted">{t.rich("sections.urls.anthropic_text", richComponents)}</span>
-              </li>
-            </ul>
-          </Section>
-
-          {/* Footer link back to the docs */}
-          <div className="pt-6 border-t border-border">
-            <p className="text-xs text-muted">
-              {t.rich("footer", richComponents)}
-              <Link href="/admin" className="ms-3 text-primary hover:underline">
-                {t("footer_back")}
-              </Link>
-            </p>
-          </div>
+      {matches.length === 0 ? (
+        <p className="text-sm text-muted" role="status">{t("help.no_results")}</p>
+      ) : (
+        <div className="space-y-6">
+          {HELP_GROUPS.map((group) => {
+            const inGroup = matches.filter((topic) => topic.group === group);
+            if (inGroup.length === 0) return null;
+            return (
+              <section key={group} aria-labelledby={`help-group-${group}`}>
+                <h2 id={`help-group-${group}`} className="text-xs font-semibold text-muted mb-2">
+                  {t(`layout.nav_sections.${group}`)}
+                </h2>
+                <ul className="bg-white border border-border rounded-[12px] divide-y divide-border">
+                  {inGroup.map((topic) => (
+                    <Topic
+                      key={topic.id}
+                      topic={topic}
+                      open={openId === topic.id}
+                      onToggle={() => setOpenId(openId === topic.id ? null : topic.id)}
+                      openScreenLabel={t("help.open_screen")}
+                    />
+                  ))}
+                </ul>
+              </section>
+            );
+          })}
         </div>
-      </div>
+      )}
     </div>
   );
 }
 
-function Section({ id, icon: Icon, title, children, danger = false }) {
+function Topic({ topic, open, onToggle, openScreenLabel }) {
+  const panelId = `${topic.id}-panel`;
+  const List = topic.list === "ol" ? "ol" : "ul";
   return (
-    <section id={id} className="scroll-mt-24">
-      <div className="flex items-center gap-3 mb-3">
-        <Icon
-          size={22}
-          className={danger ? "text-red-600" : "text-primary"}
+    <li id={topic.id} className="scroll-mt-36">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        aria-controls={panelId}
+        className="w-full flex items-center justify-between gap-3 text-start px-4 py-3 min-h-[48px] font-medium"
+      >
+        <span>{topic.question}</span>
+        <CaretDown
+          size={16}
+          weight="bold"
+          className={`shrink-0 text-muted transition-transform ${open ? "rotate-180" : ""}`}
           aria-hidden="true"
         />
-        <h2 className={`text-xl font-bold ${danger ? "text-red-700" : "text-text"}`}>
-          {title}
-        </h2>
-      </div>
-      <div className="text-sm text-text leading-relaxed space-y-2 bg-white border border-border rounded-[12px] p-5">
-        {children}
-      </div>
-    </section>
-  );
-}
-
-function ExternalRow({ label, href, children }) {
-  return (
-    <li className="flex items-start gap-3 text-sm">
-      <span className="text-muted min-w-[140px]">{label}</span>
-      <a
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-primary hover:underline inline-flex items-center gap-1"
-      >
-        {children}
-        <ArrowUpRight size={14} weight="bold" aria-hidden="true" />
-      </a>
+      </button>
+      {open && (
+        <div id={panelId} className="px-4 pb-4 text-sm leading-relaxed">
+          <List className={`${List === "ol" ? "list-decimal" : "list-disc"} ps-5 space-y-1.5`}>
+            {topic.steps.map((step) => (
+              <li key={step}>{step}</li>
+            ))}
+          </List>
+          <Link
+            href={topic.href}
+            className="inline-flex items-center mt-3 min-h-[44px] text-primary font-medium hover:underline"
+          >
+            {openScreenLabel}
+          </Link>
+        </div>
+      )}
     </li>
   );
 }

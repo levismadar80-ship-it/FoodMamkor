@@ -1,8 +1,13 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent, within } from "@testing-library/react";
+import fs from "node:fs";
+import path from "node:path";
+import he from "../messages/he.json";
+import en from "../messages/en.json";
 import AdminHelpPage from "@/app/[locale]/admin/help/page";
+import { HELP_GROUPS, HELP_TOPICS } from "@/app/[locale]/admin/help/topics";
+import { QUEUES } from "@/app/[locale]/admin/queues";
 
-// Mock next/link
 vi.mock("next/link", () => ({
   default: ({ children, href, ...props }) => (
     <a href={href} {...props}>
@@ -11,212 +16,159 @@ vi.mock("next/link", () => ({
   ),
 }));
 
-// Mock Phosphor icons used by the page. Inline JSX inside factory
-// because vi.mock is hoisted above any const declarations.
-vi.mock("@phosphor-icons/react", () => {
+vi.mock("@phosphor-icons/react", async (importOriginal) => {
   const Stub = (props) => <span data-testid="icon" {...props} />;
-  return {
-    Gauge: Stub,
-    Storefront: Stub,
-    Users: Stub,
-    Star: Stub,
-    Warning: Stub,
-    Sparkle: Stub,
-    Lifebuoy: Stub,
-    LinkSimple: Stub,
-    ArrowUpRight: Stub,
-    // MEH-1022: icons for the 7 admin surfaces added to the help page.
-    Megaphone: Stub,
-    Package: Stub,
-    Bread: Stub,
-    Seal: Stub,
-    Tag: Stub,
-    ChatCircleSlash: Stub,
-    ChartLineUp: Stub,
-  };
+  return { ...(await importOriginal()), CaretDown: Stub, Lifebuoy: Stub, MagnifyingGlass: Stub };
 });
 
-// MEH-475 PR-B: help/page.jsx reads useTranslations("admin.help") and uses
-// t.rich() for paragraphs with embedded <strong>/<code>/<em>/<placeholder>
-// markup. Map only the keys this test asserts on; everything else falls
-// through to the key path. Plain string lookups cover section titles + the
-// page heading; t.rich is supported by tag-stripping the same string so
-// .textContent substring assertions still match the Hebrew copy.
-vi.mock("next-intl", () => {
-  const flat = {
-    "admin.help.title": "עזרה לאדמין",
-    "admin.help.toc.dashboard": "סקירת לוח המחוונים",
-    "admin.help.toc.producers": "אישור ודחיית בתי עסק",
-    "admin.help.toc.users": "ניהול משתמשים",
-    "admin.help.toc.reviews": "ביקורות",
-    "admin.help.toc.reports": "דיווחים",
-    "admin.help.toc.experiences": "חוויות",
-    "admin.help.toc.outreach": "גיוס בתי עסק",
-    "admin.help.toc.group_buys": "קבוצות רכש",
-    "admin.help.toc.recipes": "מתכונים",
-    "admin.help.toc.kashrut": "בקשות כשרות",
-    "admin.help.toc.category_requests": "בקשות קטגוריה",
-    "admin.help.toc.whatsapp_failures": "הודעות שלא נמסרו",
-    "admin.help.toc.analytics": "אנליטיקס",
-    "admin.help.toc.emergency": "תקלות חירום",
-    "admin.help.toc.urls": "כתובות חשובות",
-    "admin.help.sections.dashboard.title": "סקירת לוח המחוונים",
-    "admin.help.sections.producers.title": "אישור ודחיית בתי עסק",
-    "admin.help.sections.users.title": "ניהול משתמשים",
-    "admin.help.sections.reviews.title": "ביקורות",
-    "admin.help.sections.reports.title": "דיווחים",
-    "admin.help.sections.experiences.title": "חוויות",
-    "admin.help.sections.outreach.title": "גיוס בתי עסק",
-    "admin.help.sections.group_buys.title": "קבוצות רכש",
-    "admin.help.sections.recipes.title": "מתכונים",
-    "admin.help.sections.kashrut.title": "בקשות כשרות",
-    "admin.help.sections.category_requests.title": "בקשות קטגוריה",
-    "admin.help.sections.whatsapp_failures.title": "הודעות שלא נמסרו",
-    "admin.help.sections.analytics.title": "אנליטיקס",
-    "admin.help.sections.emergency.title": "תקלות חירום",
-    "admin.help.sections.urls.title": "כתובות חשובות",
-    "admin.help.sections.emergency.site_down_title": "האתר לא עולה",
-    "admin.help.sections.emergency.migration_title": "Migration נכשלה אחרי deploy",
-    "admin.help.sections.emergency.login_broken_title": "Login שבור לכולם",
-    "admin.help.sections.emergency.spam_title": "סופת ספאם / רישומים מזויפים",
-    "admin.help.sections.emergency.ai_silent_title": "AI features מחזירים שגיאות silent",
-  };
+// Resolve against the REAL he.json, so the test reads the shipped copy and a
+// topic id without copy fails here instead of rendering its key path.
+vi.mock("next-intl", async () => {
+  const messages = (await import("../messages/he.json")).default;
+  const lookup = (key) => key.split(".").reduce((o, k) => (o == null ? o : o[k]), messages);
   return {
     useTranslations: (scope) => {
+      const full = (key) => (scope ? `${scope}.${key}` : key);
       const t = (key) => {
-        const fullKey = scope ? `${scope}.${key}` : key;
-        return flat[fullKey] ?? fullKey;
+        const v = lookup(full(key));
+        if (typeof v !== "string") throw new Error(`missing string ${full(key)}`);
+        return v;
       };
-      // t.rich(key, components) — for our test purposes, return the raw
-      // string verbatim so .textContent substring assertions still match.
-      // Real next-intl renders a React node; here we return a plain string
-      // (which React renders as text, tags included). Test assertions on
-      // emergency content use textContent.contains() which still matches.
-      t.rich = (key) => {
-        const fullKey = scope ? `${scope}.${key}` : key;
-        return flat[fullKey] ?? fullKey;
+      t.raw = (key) => {
+        const v = lookup(full(key));
+        if (v === undefined) throw new Error(`missing raw ${full(key)}`);
+        return v;
       };
       return t;
     },
   };
 });
 
-describe("AdminHelp page", () => {
-  it("renders the header + all 15 sections (heading + TOC link for each)", () => {
+const ADMIN_DIR = path.resolve(__dirname, "../app/[locale]/admin");
+const pathOf = (href) => href.split("?")[0];
+
+// Every admin screen in the sidebar, read from the layout source (its
+// NAV_SECTIONS is not exported) plus the shared queue list.
+function sidebarHrefs() {
+  const src = fs.readFileSync(path.join(ADMIN_DIR, "AdminLayoutClient.jsx"), "utf8");
+  const fromLayout = [...src.matchAll(/href:\s*"(\/admin[^"]*)"/g)].map((m) => m[1]);
+  return [...new Set([...fromLayout, ...QUEUES.map((q) => q.href)])];
+}
+
+const question = (id) => he.admin.help.topics[id].q;
+
+describe("AdminHelp — topic registry", () => {
+  it("every sidebar screen has a help topic (except help itself)", () => {
+    const hrefs = sidebarHrefs();
+    // Control: the extraction must see the layout's items, or every check
+    // below is vacuous.
+    expect(hrefs).toContain("/admin/producers");
+    expect(hrefs).toContain("/admin/settings");
+    const covered = new Set(HELP_TOPICS.map((t) => pathOf(t.href)));
+    const missing = hrefs.filter((h) => h !== "/admin/help" && !covered.has(h));
+    expect(missing).toEqual([]);
+  });
+
+  it("every topic links to a route that exists", () => {
+    const missing = HELP_TOPICS.map((t) => pathOf(t.href)).filter((href) => {
+      const dir = path.join(ADMIN_DIR, href.replace(/^\/admin\/?/, ""));
+      return !["page.js", "page.jsx"].some((f) => fs.existsSync(path.join(dir, f)));
+    });
+    expect(missing).toEqual([]);
+  });
+
+  it("ids are unique, groups are known, and he + en both carry copy for each", () => {
+    const ids = HELP_TOPICS.map((t) => t.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const topic of HELP_TOPICS) {
+      expect(HELP_GROUPS).toContain(topic.group);
+      for (const messages of [he, en]) {
+        const copy = messages.admin.help.topics[topic.id];
+        expect(typeof copy?.q).toBe("string");
+        expect(Array.isArray(copy?.steps) && copy.steps.length > 0).toBe(true);
+      }
+    }
+    // No orphan copy: a topic removed from the registry takes its strings.
+    expect(Object.keys(he.admin.help.topics).sort()).toEqual([...ids].sort());
+  });
+});
+
+describe("AdminHelp — page", () => {
+  beforeEach(() => {
+    window.location.hash = "";
+  });
+
+  it("renders every topic question, grouped, all closed", () => {
     render(<AdminHelpPage />);
-    expect(screen.getByText("עזרה לאדמין")).toBeInTheDocument();
-    // Each section heading is repeated as the TOC link text — assert
-    // length 2 (one in TOC, one as section <h2>).
-    for (const title of [
-      "סקירת לוח המחוונים",
-      "אישור ודחיית בתי עסק",
-      "ניהול משתמשים",
-      "ביקורות",
-      "דיווחים",
-      "חוויות",
-      // MEH-1022: the 7 admin surfaces added to the help page.
-      "גיוס בתי עסק",
-      "קבוצות רכש",
-      "מתכונים",
-      "בקשות כשרות",
-      "בקשות קטגוריה",
-      "הודעות שלא נמסרו",
-      "אנליטיקס",
-      "תקלות חירום",
-      "כתובות חשובות",
-    ]) {
-      expect(screen.getAllByText(title)).toHaveLength(2);
+    for (const topic of HELP_TOPICS) {
+      const btn = screen.getByRole("button", { name: question(topic.id) });
+      expect(btn).toHaveAttribute("aria-expanded", "false");
+    }
+    expect(screen.queryAllByRole("link")).toHaveLength(0);
+    for (const group of HELP_GROUPS) {
+      expect(screen.getByRole("heading", { name: he.admin.layout.nav_sections[group] })).toBeInTheDocument();
     }
   });
 
-  it("TOC links point to the section anchors", () => {
+  it("opening a topic shows its steps and a link to its screen; one open at a time", () => {
     render(<AdminHelpPage />);
-    const tocExpected = [
-      "#dashboard",
-      "#producers",
-      "#users",
-      "#reviews",
-      "#reports",
-      "#experiences",
-      "#outreach",
-      "#group_buys",
-      "#recipes",
-      "#kashrut",
-      "#category_requests",
-      "#whatsapp_failures",
-      "#analytics",
-      "#emergency",
-      "#urls",
-    ];
-    const anchors = screen
-      .getAllByRole("link")
-      .map((a) => a.getAttribute("href"))
-      .filter((h) => h && h.startsWith("#"));
-    for (const expected of tocExpected) {
-      expect(anchors).toContain(expected);
+    fireEvent.click(screen.getByRole("button", { name: question("kashrut") }));
+    const kashrut = document.getElementById("kashrut");
+    for (const step of he.admin.help.topics.kashrut.steps) {
+      expect(kashrut.textContent).toContain(step);
     }
+    expect(within(kashrut).getByRole("link")).toHaveAttribute("href", "/admin/kashrut");
+
+    fireEvent.click(screen.getByRole("button", { name: question("reports") }));
+    expect(screen.getByRole("button", { name: question("kashrut") })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getAllByRole("link")).toHaveLength(1);
+
+    // And closes again.
+    fireEvent.click(screen.getByRole("button", { name: question("reports") }));
+    expect(screen.queryAllByRole("link")).toHaveLength(0);
   });
 
-  it("section ids match the TOC anchors", () => {
+  it("search: many matches stay closed and hide non-matching groups", () => {
     render(<AdminHelpPage />);
-    const ids = [
-      "dashboard",
-      "producers",
-      "users",
-      "reviews",
-      "reports",
-      "experiences",
-      "outreach",
-      "group_buys",
-      "recipes",
-      "kashrut",
-      "category_requests",
-      "whatsapp_failures",
-      "analytics",
-      "emergency",
-      "urls",
-    ];
-    for (const id of ids) {
-      expect(document.getElementById(id)).toBeInTheDocument();
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "מאשרים" } });
+    const shown = screen.getAllByRole("button");
+    expect(shown.length).toBeGreaterThan(1);
+    expect(shown.length).toBeLessThan(HELP_TOPICS.length);
+    for (const btn of shown) expect(btn).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("heading", { name: he.admin.layout.nav_sections.more })).toBeNull();
+  });
+
+  it("search: exactly one match opens it, and it can still be closed", () => {
+    render(<AdminHelpPage />);
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "השם המבוקש" } });
+    const only = screen.getAllByRole("button");
+    expect(only).toHaveLength(1);
+    expect(only[0]).toHaveAccessibleName(question("name_change_requests"));
+    expect(only[0]).toHaveAttribute("aria-expanded", "true");
+    fireEvent.click(only[0]);
+    expect(only[0]).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("search: zero matches says so", () => {
+    render(<AdminHelpPage />);
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "zzzz-nothing" } });
+    expect(screen.queryAllByRole("button")).toHaveLength(0);
+    expect(screen.getByRole("status")).toHaveTextContent(he.admin.help.no_results);
+  });
+
+  it("#topic in the URL opens that topic", () => {
+    window.location.hash = "#approve";
+    render(<AdminHelpPage />);
+    expect(screen.getByRole("button", { name: question("approve") })).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("button", { name: question("reject") })).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("ships no infrastructure or repo links (MEH-2379)", () => {
+    render(<AdminHelpPage />);
+    for (const topic of HELP_TOPICS) {
+      fireEvent.click(screen.getByRole("button", { name: question(topic.id) }));
+      const href = within(document.getElementById(topic.id)).getByRole("link").getAttribute("href");
+      expect(href.startsWith("/admin")).toBe(true);
     }
-  });
-
-  it("emergency section mentions key triage paths", () => {
-    render(<AdminHelpPage />);
-    const emergency = document.getElementById("emergency");
-    expect(emergency).toBeInTheDocument();
-    // Hit-test a few specific emergency bullet titles rather than the
-    // full paragraphs — less brittle if copy is tweaked.
-    expect(emergency.textContent).toContain("האתר לא עולה");
-    expect(emergency.textContent).toContain("Migration נכשלה");
-    expect(emergency.textContent).toContain("Login שבור");
-    expect(emergency.textContent).toContain("ספאם");
-  });
-
-  it("URLs section points to the canonical site and never to the repo (MEH-2379)", () => {
-    render(<AdminHelpPage />);
-    const hrefs = screen
-      .getAllByRole("link")
-      .map((a) => a.getAttribute("href"));
-    // MEH-453: accept either canonical (.online today, .co.il post-Phase 2).
-    expect(
-      hrefs.some((h) => h && /^https:\/\/mehamakor\.(online|co\.il)$/.test(h)),
-    ).toBe(true);
-    // MEH-2379: the repo is public; a hard-coded repo URL ships in a public JS
-    // chunk and ties the repo to the live site. The page must not link to it.
-    expect(hrefs.some((h) => h?.includes("github.com"))).toBe(false);
-  });
-
-  it("does NOT leak placeholder values as real URLs", () => {
-    render(<AdminHelpPage />);
-    // Credentials-heavy rows are intentionally text placeholders,
-    // not real anchors. Make sure we don't accidentally ship a
-    // real Railway / Vercel / Anthropic URL here.
-    const hrefs = screen
-      .getAllByRole("link")
-      .map((a) => a.getAttribute("href") || "");
-    expect(hrefs.some((h) => h.includes("railway.app"))).toBe(false);
-    expect(hrefs.some((h) => h.includes("vercel.com"))).toBe(false);
-    expect(hrefs.some((h) => h.includes("anthropic.com"))).toBe(false);
   });
 });
