@@ -1126,11 +1126,16 @@ class ProducerRegister(BaseModel):
 
 class GoogleAuthRequest(BaseModel):
     id_token: str
+    # MEH-2080 chunk 2: the /register checkbox, forwarded when the consumer
+    # signs up with Google. Optional — /login sends nothing — and only a True
+    # value is ever written (NULL stays the honest state).
+    terms_accepted: bool = False
 
 
 class AppleAuthRequest(BaseModel):
     id_token: str
     name: SanitizedPersonNameField | None = None  # Apple sends it once
+    terms_accepted: bool = False  # MEH-2080 chunk 2, as GoogleAuthRequest
 
 
 # MEH-170 — Step-0 OAuth on producer signup. Same shape as Google/Apple
