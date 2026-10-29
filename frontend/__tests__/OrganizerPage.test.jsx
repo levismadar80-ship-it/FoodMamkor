@@ -215,6 +215,12 @@ describe("MEH-2461 organizer page", () => {
     expect(screen.getByTestId("organizer-avatar").textContent).toBe("ש");
   });
 
+  it("MEH-2547: a blank name → no empty avatar circle", async () => {
+    respond(200, { ...ORG, name: "  " });
+    await renderPage();
+    expect(screen.queryByTestId("organizer-avatar")).toBeNull();
+  });
+
   it("a scanner-shaped slug never reaches the API", async () => {
     await expect(renderPage("wp-admin.php")).rejects.toThrow("NEXT_NOT_FOUND");
     expect(fetchMock).not.toHaveBeenCalled();
