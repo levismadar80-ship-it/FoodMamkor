@@ -13,8 +13,9 @@ Expand-only per ADR-007: a new, empty table that no existing read path
 touches — the previous container keeps serving unchanged while this runs. No
 backfill: nothing could be saved before this revision.
 
-Columns: `id` UUID PK; `user_id` FK → users.id ON DELETE CASCADE, indexed
-(the list query is always per user); `item_type` String(20) with a DB CHECK
+Columns: `id` UUID PK; `user_id` FK → users.id ON DELETE CASCADE (no
+separate index: the UNIQUE below leads with user_id and serves every per-user
+query); `item_type` String(20) with a DB CHECK
 ('recipe' | 'event' | 'experience' — mirrored by SAVED_ITEM_TYPES in
 models.py); `item_id` UUID with NO foreign key (it points at a different
 table per type — the API serves only items that still exist and are public);
@@ -64,9 +65,7 @@ def upgrade() -> None:
             name="saved_items_item_type_check",
         ),
     )
-    op.create_index("ix_saved_items_user_id", "saved_items", ["user_id"])
 
 
 def downgrade() -> None:
-    op.drop_index("ix_saved_items_user_id", table_name="saved_items")
     op.drop_table("saved_items")

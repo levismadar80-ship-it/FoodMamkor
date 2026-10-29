@@ -404,7 +404,7 @@ erDiagram
 
     saved_items {
         uuid id PK "MEH-2556"
-        uuid user_id FK "CASCADE, indexed"
+        uuid user_id FK "CASCADE (UNIQUE leads with it)"
         string item_type "recipe|event|experience (CHECK)"
         uuid item_id "no FK — per-type table"
         timestamp created_at

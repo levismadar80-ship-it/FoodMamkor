@@ -553,7 +553,7 @@ admin_settings         (key text PK, value text)
 static_pages           (slug text PK, title, body, updated_at)
 retired_slugs          (slug varchar(100) PK, producer_id uuid FK→producers SET NULL nullable,
                         reason 'deleted'|'renamed', retired_at)  -- MEH-2528
-saved_items            (id uuid PK, user_id uuid FK→users CASCADE indexed,
+saved_items            (id uuid PK, user_id uuid FK→users CASCADE,
                         item_type 'recipe'|'event'|'experience' (CHECK), item_id uuid (no FK),
                         created_at, UNIQUE(user_id,item_type,item_id))  -- MEH-2556
 ```

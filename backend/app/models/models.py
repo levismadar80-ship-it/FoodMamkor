@@ -1369,7 +1369,9 @@ class SavedItem(Base):
     drops out of the list instead of 500'ing — the same contract
     `GET /users/me/favorites` keeps for businesses (MEH-248, MEH-2513).
 
-    `user_id` cascades: deleting an account deletes its saves.
+    `user_id` cascades: deleting an account deletes its saves. No separate
+    index on it: the UNIQUE (user_id, item_type, item_id) btree leads with
+    user_id and already serves every per-user query.
     """
 
     __tablename__ = "saved_items"
@@ -1388,7 +1390,6 @@ class SavedItem(Base):
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
-        index=True,
     )
     item_type = Column(String(20), nullable=False)
     item_id = Column(UUID(as_uuid=True), nullable=False)
