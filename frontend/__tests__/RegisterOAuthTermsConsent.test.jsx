@@ -146,6 +146,18 @@ describe("MEH-2577 — /register opens with Google/Apple, under a consent line",
     }
   });
 
+  it("Apple only → the line names Apple alone", () => {
+    const google = mockEnv.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    delete mockEnv.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    try {
+      render(<RegisterClient />);
+      const line = screen.getByTestId("register-oauth-terms");
+      expect(line.textContent).toContain("auth.login.oauth_terms_apple");
+    } finally {
+      mockEnv.NEXT_PUBLIC_GOOGLE_CLIENT_ID = google;
+    }
+  });
+
   it("the consent line comes BEFORE the email form", () => {
     render(<RegisterClient />);
     const line = screen.getByTestId("register-oauth-terms");

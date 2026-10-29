@@ -4,7 +4,8 @@
  * and a line saying «Google או Apple» over a lone Google button promised a
  * button that is not there.
  *
- * Returns a key under auth.login.
+ * Returns a key under auth.login. Callers render the line only when at least
+ * one provider is configured; with neither, it returns the Google key.
  */
 export function oauthTermsKey(googleConfigured, appleConfigured) {
   if (googleConfigured && appleConfigured) return "oauth_terms";
