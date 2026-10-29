@@ -1915,7 +1915,6 @@
       },
       "filters": {
         "city_placeholder": "Filter by city...",
-        "all_statuses": "All statuses",
         "new_lead": "+ New lead"
       },
       "columns": {
