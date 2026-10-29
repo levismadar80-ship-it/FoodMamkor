@@ -113,24 +113,27 @@ describe("MEH-2534 — middleware", () => {
     global.fetch = vi.fn(async () => ({ ok: status >= 200 && status < 300, status }));
   };
 
-  it("410 -> rewrites to the page itself with a real 410, without a fault log", async () => {
-    // The page streams (200 by the time it renders), so the status has to be
-    // set here or a crawler never sees the backend's 410.
+  it("410 -> rewrites to the business-gone page, with NO status, without a fault log", async () => {
+    // MEH-2576, both halves measured on staging 29/10:
+    //  - a rewrite carrying status 410 is served by Vercel as its own
+    //    "410: GONE — deployment removed" page, so no status may be set;
+    //  - passing through to the [slug] page serves the business's cached 200
+    //    (Next's Data Cache keeps it; the revalidating 410 is not stored).
     backendReturns(410);
     const res = await middleware(requestFor(`/he/${SLUG}`));
-    expect(res.__rewrite && res.status).toBe(410);
-    expect(res.url.pathname).toBe(`/he/${SLUG}`);
+    expect(res.__rewrite).toBe(true);
+    expect(res.status).toBeUndefined();
+    expect(res.url.pathname).toBe("/he/business-gone");
     expect(console.error).not.toHaveBeenCalled();
     // next-intl's locale override rides along; its routing verdict does not.
     expect(res.headers.get("x-middleware-request-x-next-intl-locale")).toBe("en");
     expect(res.headers.has("x-middleware-next")).toBe(false);
   });
 
-  it("410 on a prefix-less URL -> rewrites to the default locale", async () => {
+  it("410 on a prefix-less URL -> the default locale's business-gone page", async () => {
     backendReturns(410);
     const res = await middleware(requestFor(`/${SLUG}`));
-    expect(res.status).toBe(410);
-    expect(res.url.pathname).toBe(`/he/${SLUG}`);
+    expect(res.url.pathname).toBe("/he/business-gone");
   });
 
   it("404 control -> still the hard 404 rewrite", async () => {
@@ -191,5 +194,19 @@ describe("MEH-2534 — Hebrew slugs arrive percent-encoded", () => {
       ProducerSlugPage({ params: Promise.resolve({ slug: "%E0%A4%A", locale: "he" }) })
     ).rejects.toThrow("NEXT_NOT_FOUND");
     expect(serverFetch).not.toHaveBeenCalled();
+  });
+});
+
+describe("MEH-2576 — the business-gone route", () => {
+  it("renders ProducerGone with noindex metadata", async () => {
+    const mod = await import("@/app/[locale]/business-gone/page");
+    expect(mod.default().type).toBe(ProducerGone);
+    const meta = await mod.generateMetadata({ params: Promise.resolve({ locale: "he" }) });
+    expect(meta.robots).toEqual({ index: false, follow: false });
+  });
+
+  it("is reserved, so no business can be given its slug", async () => {
+    const { isReserved } = await import("@/lib/slug");
+    expect(isReserved("business-gone")).toBe(true);
   });
 });

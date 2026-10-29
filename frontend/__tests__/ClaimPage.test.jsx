@@ -112,6 +112,8 @@ describe("states from the preview", () => {
     api.post.mockRejectedValue(httpError(404, "x"));
     wrap(<ClaimClient />);
     expect(await screen.findByTestId("claim-invalid")).toHaveTextContent(C.invalid.body);
+    // MEH-2567: the shared status layout, not the old white card.
+    expect(screen.getByTestId("claim-invalid").querySelector('[data-testid="status-page"]')).not.toBeNull();
     expect(window.sessionStorage.getItem("mehamakor.claimToken")).toBeNull();
   });
 

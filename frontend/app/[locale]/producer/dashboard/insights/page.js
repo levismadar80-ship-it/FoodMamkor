@@ -29,9 +29,6 @@ import { useTranslations, useLocale } from "next-intl";
 import { Eye, MagnifyingGlass, ChatCircle, Phone, Leaf, Star } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
-// MEH-1520: formatCompact moved to lib/ — App Router forbids non-reserved
-// exports from page.js ("formatCompact is not a valid Page export field").
-import { formatCompact } from "@/lib/format";
 import InfoTooltip from "@/components/InfoTooltip";
 
 export default function ProducerDashboardInsightsPage() {
@@ -151,8 +148,17 @@ export default function ProducerDashboardInsightsPage() {
 // the Overview; the top-line KPI strip stays on the Overview (MEH-964 1B).
 // ============================================================
 
+// MEH-2570: one period for every card, chosen once above them — the
+// Google Business Profile / Etsy / Shopify pattern. Before, each card carried
+// three numbers («7 ימים / ב-30 הימים האחרונים / סה״כ») in compact notation
+// (1.8K), which the owner had to decode card by card. 30 days is the default:
+// it is the window the views chart and the Overview's conversion/rank use.
+const PERIODS = ["last_7d", "last_30d", "total"];
+
 function DeepAnalyticsSection({ analytics, profile }) {
   const t = useTranslations("dashboard.producer.analytics");
+  const tp = useTranslations("dashboard.producer.insights_period");
+  const [period, setPeriod] = useState("last_30d");
   const {
     profile_views,
     search_appearances,
@@ -168,18 +174,42 @@ function DeepAnalyticsSection({ analytics, profile }) {
 
   return (
     <div className="space-y-8 mb-10">
-      {/* Row 1: windowed metric cards (profile / search / whatsapp / contact) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Row 1: the period switcher, then one number per windowed card. */}
+      <div className="space-y-4">
+      <div
+        role="group"
+        aria-label={tp("label")}
+        data-testid="insights-period"
+        className="inline-flex gap-1 rounded-full bg-background-alt p-1"
+      >
+        {PERIODS.map((p) => (
+          <button
+            key={p}
+            type="button"
+            aria-pressed={period === p}
+            data-testid={`insights-period-${p}`}
+            onClick={() => setPeriod(p)}
+            className={`min-h-[44px] px-4 rounded-full text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+              period === p ? "bg-primary text-white" : "text-text hover:bg-green-50"
+            }`}
+          >
+            {tp(p)}
+          </button>
+        ))}
+      </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         <WindowedMetricCard
           label={t("windowed.profile_views")}
           icon={Eye}
           windows={profile_views}
+          period={period}
           tooltip={t("windowed.profile_views_tooltip")}
         />
         <WindowedMetricCard
           label={t("windowed.search_appearances")}
           icon={MagnifyingGlass}
           windows={search_appearances}
+          period={period}
           tooltip={t("windowed.search_appearances_tooltip")}
         />
         {/* MEH-1557: the two click tiles carry the scope risk — contact_clicks
@@ -190,14 +220,17 @@ function DeepAnalyticsSection({ analytics, profile }) {
           label={t("windowed.whatsapp_clicks")}
           icon={ChatCircle}
           windows={whatsapp_clicks}
+          period={period}
           tooltip={t("windowed.whatsapp_clicks_tooltip")}
         />
         <WindowedMetricCard
           label={t("windowed.contact_clicks")}
           icon={Phone}
           windows={contact_clicks}
+          period={period}
           tooltip={t("windowed.contact_clicks_tooltip")}
         />
+      </div>
       </div>
 
       {/* Row 2: static cards (followers, reviews) */}
@@ -254,38 +287,24 @@ function DeepAnalyticsSection({ analytics, profile }) {
   );
 }
 
-function WindowedMetricCard({ label, icon: Icon, windows, tooltip }) {
-  const t = useTranslations("dashboard.producer.analytics");
+function WindowedMetricCard({ label, icon: Icon, windows, tooltip, period }) {
   const locale = useLocale();
   return (
-    <div className="bg-white border border-border rounded-[16px] p-5">
+    <div className="bg-white border border-border rounded-[16px] p-5" data-testid="windowed-card">
       <div className="flex items-center justify-between mb-3">
         <Icon size={24} className="text-primary" aria-hidden="true" />
-        <span className="text-xs text-fg-muted">{t("stats_window_label")}</span>
       </div>
       <p className="text-sm text-fg-muted mb-2">
         {label}
         {tooltip && <InfoTooltip content={tooltip} />}
       </p>
-      {/* MEH-1433: at lg the row is a 4-up grid inside max-w-5xl (~194px inner
-          per card) — three values at 4xl/2xl/xl + gap-3 need ~235px and clip
-          even for the reported 2540→"2.5K". Below lg (1-/2-col, wider cards)
-          the spec's 4xl/2xl/xl fit and are kept verbatim; only the lg tier
-          steps down one notch (hierarchy preserved) + gap tightens, so any
-          magnitude fits the narrowest card. */}
-      <div className="flex items-baseline gap-3 lg:gap-2 min-w-0">
-        <span className="font-headline-lg text-4xl lg:text-2xl font-bold text-primary tabular-nums">
-          {formatCompact(windows?.last_7d, locale)}
-        </span>
-        <span className="text-lg lg:text-sm text-text/60">/</span>
-        <span className="font-headline-md text-2xl lg:text-xl font-semibold text-text tabular-nums">
-          {formatCompact(windows?.last_30d, locale)}
-        </span>
-        <span className="text-lg lg:text-sm text-text/60">/</span>
-        <span className="font-headline-md text-xl lg:text-base text-fg-muted tabular-nums">
-          {formatCompact(windows?.total, locale)}
-        </span>
-      </div>
+      {/* MEH-2570: one full number for the chosen period. Full, not compact
+          (1,834, not 1.8K): with one value per card there is room at every
+          breakpoint, which is what MEH-1433's compact notation was working
+          around when three values shared the row. */}
+      <p className="font-headline-lg text-4xl font-bold text-primary tabular-nums" data-testid="windowed-value">
+        {new Intl.NumberFormat(locale).format(windows?.[period] ?? 0)}
+      </p>
     </div>
   );
 }

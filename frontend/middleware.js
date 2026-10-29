@@ -129,8 +129,12 @@ async function producerExists(url) {
     if (res.status === 404) return false;
 
     // MEH-2534: 410 = a business that was deleted. Not a backend fault, and
-    // not a plain miss: the caller serves the page's own "no longer listed"
-    // screen with a real 410.
+    // not a plain miss: the caller rewrites to the business-gone page.
+    //
+    // MEH-2576: never as `rewrite(..., { status: 410 })` — on Vercel a 410
+    // from middleware is served as the platform's own `x-vercel-error: GONE`
+    // "deployment removed" page (measured on staging 29/10; `next dev` does
+    // not reproduce it).
     if (res.status === 410) return GONE;
 
     // 5xx · 429 · anything else → fail OPEN, same decision as "unreachable".
@@ -239,16 +243,16 @@ export default async function middleware(request) {
     return NextResponse.rewrite(nf, { status: 404 });
   }
   if (exists === GONE) {
-    // MEH-2534: the [slug] page renders ProducerGone for it; the rewrite only
-    // carries the status. The page streams, so without this a crawler would
-    // read 200 (+ noindex) where the backend said 410.
+    // MEH-2576: not the [slug] page — its Data Cache keeps serving the
+    // business's last 200 after the delete (only 200s are cached, so the
+    // revalidating 410 is dropped). This lookup is uncached; trust it.
     const gone = request.nextUrl.clone();
-    gone.pathname = `/${locale ?? routing.defaultLocale}/${segs[0]}`;
-    const res = NextResponse.rewrite(gone, { status: 410 });
+    gone.pathname = `/${locale ?? routing.defaultLocale}/business-gone`;
+    const res = NextResponse.rewrite(gone);
     // Carry next-intl's request-header overrides (the resolved locale) and
-    // cookies, or /en/<slug> would render in the default locale.
+    // cookies, or /en/<slug> would render in the default locale. Its own
+    // routing verdict (rewrite / next) would contradict ours.
     intlResponse.headers.forEach((value, key) => {
-      // Its own routing verdict (rewrite / next) would contradict ours.
       if (key !== "x-middleware-rewrite" && key !== "x-middleware-next") {
         res.headers.set(key, value);
       }

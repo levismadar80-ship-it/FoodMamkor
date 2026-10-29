@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
 // MEH-731: locale-stripping usePathname (returns "/" on /he and /en) so the
 // home-tab match fires on the localized homepage. next/navigation's is
 // locale-prefixed (/he) and left the home tab permanently unhighlighted.
-import { usePathname } from "@/i18n/navigation";
+// MEH-2578: Link from here too — next/link dropped the /en prefix.
+import { Link, usePathname } from "@/i18n/navigation";
 // MEH-1202: gate BottomNav OFF the producer detail page (shared route helper).
 import { isProducerDetail } from "@/lib/producer-route";
 import { useCallback, useEffect, useRef, useState } from "react";
