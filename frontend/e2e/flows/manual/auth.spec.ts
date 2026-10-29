@@ -440,23 +440,24 @@ test.describe("manual › /register split-editorial layout (MEH-788)", () => {
     ).toBe(true);
   });
 
-  // MT:MEH-788:4 — mobile stacks image over form, and the page must not scroll
-  // sideways.
-  test("mobile: the image band sits above the form, and nothing scrolls sideways", async ({ page }, info) => {
-    test.skip(info.project.name !== "mobile", "the stacked band is the <1024px layout");
+  // MT:MEH-788:4, amended by MEH-2568 — below lg there is no image band (as on
+  // /login since MEH-2397): the form is the first thing on the page, and the
+  // page must not scroll sideways.
+  test("mobile: no image band above the form, and nothing scrolls sideways", async ({ page }, info) => {
+    test.skip(info.project.name !== "mobile", "the band was the <1024px layout");
     await page.goto(REGISTER);
 
-    const formBox = (await page.getByTestId("register-form-pane").boundingBox())!;
-    const heroBox = (await page.getByTestId("register-hero-pane").boundingBox())!;
-    expect(heroBox.y + heroBox.height, "the image band ends above where the form begins").toBeLessThanOrEqual(
-      formBox.y + 1,
-    );
+    await expect(page.getByTestId("register-hero-pane")).toBeHidden();
+    await expect(page.getByTestId("register-form")).toBeVisible();
+    // 260px ≈ header (~90px) + section padding; the old 30vh band alone put
+    // the heading past 300px on a 844px-tall phone.
+    const headingBox = (await page.getByTestId("register-heading").boundingBox())!;
+    expect(headingBox.y, "the heading starts in the first screen, not under a 30vh band").toBeLessThan(260);
 
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
     );
     expect(overflow, "horizontal overflow in CSS pixels").toBeLessThanOrEqual(0);
-    await expect(page.getByTestId("register-form")).toBeVisible();
   });
 
   // MT:MEH-788:1 — the headline scale matches /login's, and the three-feature
