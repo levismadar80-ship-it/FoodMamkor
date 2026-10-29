@@ -15,7 +15,7 @@ from datetime import date, time, timedelta
 from decimal import Decimal
 from uuid import uuid4
 
-from app.models import Event, Experience, ProducerRecipe, SavedItem
+from app.models import Event, Experience, Producer, ProducerRecipe, SavedItem
 from app.utils.clock import israel_today
 from tests.conftest import auth_header, make_producer, make_user
 
@@ -279,3 +279,69 @@ def test_api_type_list_matches_the_model_list():
     from app.schemas.schemas import SavedItemType
 
     assert get_args(SavedItemType) == SAVED_ITEM_TYPES
+
+
+# ---------- each type's own "public" rule, pinned (adversarial review) ----------
+
+
+def test_organizer_event_saves_but_organizer_recipe_and_experience_do_not(client, db):
+    """Events are the one surface an organizer (kind="organizer", ADR-036)
+    publishes on, so an approved organizer's event is public and saveable.
+    Recipes and experiences go through is_business() and refuse it. Pins the
+    reuse: _visible_events gaining is_business(), or _visible_recipes losing
+    it, turns this red."""
+    user = make_user(db, email="org-2557@example.com")
+    organizer = make_producer(db, status="approved")
+    organizer.kind = "organizer"
+    db.commit()
+    event = _event(db, organizer)
+    recipe = _recipe(db, organizer)
+    ex = _experience(db)
+    host_business = db.get(Producer, ex.host.producer_id)
+    host_business.kind = "organizer"
+    db.commit()
+
+    assert (
+        client.post(f"{BASE}/event/{event.id}", headers=auth_header(user)).status_code
+        == 201
+    )
+    assert (
+        client.post(f"{BASE}/recipe/{recipe.id}", headers=auth_header(user)).status_code
+        == 404
+    )
+    assert (
+        client.post(f"{BASE}/experience/{ex.id}", headers=auth_header(user)).status_code
+        == 404
+    )
+    events = client.get(BASE, headers=auth_header(user)).json()["events"]
+    assert [(e["id"], e["owner_kind"]) for e in events] == [
+        (str(event.id), "organizer")
+    ]
+
+
+def test_experience_cancelled_stays_with_its_flag_rejected_drops_out(client, db):
+    user = make_user(db, email="exp-2557@example.com")
+    cancelled = _experience(db)
+    rejected = _experience(db)
+    for ex in (cancelled, rejected):
+        assert (
+            client.post(
+                f"{BASE}/experience/{ex.id}", headers=auth_header(user)
+            ).status_code
+            == 201
+        )
+    cancelled.is_active = False
+    rejected.status = "rejected"
+    db.commit()
+    rows = client.get(BASE, headers=auth_header(user)).json()["experiences"]
+    assert [(x["id"], x["is_active"]) for x in rows] == [(str(cancelled.id), False)]
+    assert "address" not in rows[0]
+
+
+def test_router_covers_every_saved_type():
+    """A type added to SAVED_ITEM_TYPES must get a visibility rule here, or
+    GET would KeyError into a 500."""
+    from app.models import SAVED_ITEM_TYPES
+    from app.routers.saved_items import _VISIBLE
+
+    assert set(_VISIBLE) == set(SAVED_ITEM_TYPES)

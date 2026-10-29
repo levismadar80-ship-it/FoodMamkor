@@ -30,7 +30,15 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.auth import get_current_user
 from app.database import get_db
-from app.models import Event, Experience, Producer, ProducerRecipe, SavedItem, User
+from app.models import (
+    SAVED_ITEM_TYPES,
+    Event,
+    Experience,
+    Producer,
+    ProducerRecipe,
+    SavedItem,
+    User,
+)
 from app.routers.events import _serialize as serialize_event
 from app.routers.experiences import _publicly_visible_query, _serialize_list
 from app.schemas.schemas import SavedItemRefOut, SavedItemsOut, SavedItemType
@@ -100,7 +108,7 @@ def get_saved(user: User = Depends(get_current_user), db: Session = Depends(get_
         .order_by(SavedItem.created_at.desc())
         .all()
     )
-    by_type: dict[str, list[SavedItem]] = {"recipe": [], "event": [], "experience": []}
+    by_type: dict[str, list[SavedItem]] = {t: [] for t in SAVED_ITEM_TYPES}
     for row in rows:
         by_type[row.item_type].append(row)
 
@@ -142,7 +150,14 @@ def get_saved(user: User = Depends(get_current_user), db: Session = Depends(get_
         experience = experiences.get(row.item_id)
         if experience:
             out["experiences"].append(
-                {**_serialize_list(experience), "saved_at": row.created_at}
+                {
+                    **_serialize_list(experience),
+                    # The public list shape omits is_active (it only lists
+                    # active ones); the saved list keeps a cancelled one, so
+                    # the page needs it to label it.
+                    "is_active": bool(experience.is_active),
+                    "saved_at": row.created_at,
+                }
             )
     return out
 
@@ -200,7 +215,7 @@ def unsave_item(
         .first()
     )
     if not row:
-        raise HTTPException(status_code=404, detail="Not saved")
+        raise HTTPException(status_code=404, detail="הפריט לא שמור")
     db.delete(row)
     db.commit()
     return {"detail": "Removed"}

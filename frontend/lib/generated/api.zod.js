@@ -5881,6 +5881,7 @@ export const ChangePasswordUsersMePasswordPatchResponse = /*#__PURE__*/ zod.void
  * @summary Get Saved
  */
 export const getSavedUsersMeSavedGetResponseEventsItemOwnerKindDefault = `producer`;
+export const getSavedUsersMeSavedGetResponseExperiencesItemIsActiveDefault = true;
 export const getSavedUsersMeSavedGetResponseExperiencesItemIsRecurringDefault = false;
 export const getSavedUsersMeSavedGetResponseExperiencesItemParticipantsCountDefault = 0;
 
@@ -5928,6 +5929,7 @@ export const GetSavedUsersMeSavedGetResponse = /*#__PURE__*/ zod.object({
 }),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),
   "image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "is_active": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getSavedUsersMeSavedGetResponseExperiencesItemIsActiveDefault),
   "is_recurring": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getSavedUsersMeSavedGetResponseExperiencesItemIsRecurringDefault),
   "location_type": /*#__PURE__*/ zod.string(),
   "max_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),

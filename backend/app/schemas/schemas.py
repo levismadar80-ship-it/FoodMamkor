@@ -5070,6 +5070,9 @@ class SavedEventOut(EventOut):
 
 
 class SavedExperienceOut(ExperienceListOut):
+    # Not on ExperienceListOut: the public feed lists active ones only. A saved
+    # one may since have been cancelled by its host — the page labels it.
+    is_active: bool = True
     saved_at: datetime
 
 

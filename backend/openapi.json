@@ -12081,6 +12081,11 @@
             ],
             "title": "Image Url"
           },
+          "is_active": {
+            "default": true,
+            "title": "Is Active",
+            "type": "boolean"
+          },
           "is_recurring": {
             "default": false,
             "title": "Is Recurring",
