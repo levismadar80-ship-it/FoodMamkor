@@ -10,6 +10,7 @@ This version:
   4. Tells Cloudinary resource_type="image" which adds a server-side check
 """
 
+import asyncio  # MEH-2551: Cloudinary's SDK is sync — every upload runs in to_thread
 import logging
 import uuid
 
@@ -126,7 +127,8 @@ async def upload_image(
         # SECURITY FIX #6: use a UUID public_id (not file.filename), and
         # resource_type="image" which makes Cloudinary reject non-images
         # server-side as a second layer of defense.
-        result = cloudinary.uploader.upload(
+        result = await asyncio.to_thread(
+            cloudinary.uploader.upload,
             contents,
             folder="mehamakor",
             public_id=uuid.uuid4().hex,
@@ -193,7 +195,8 @@ async def upload_avatar(
         # new asset and orphaning the previous one. PATCH /users/me still
         # needs an explicit destroy hook (chunk F) for the case where the
         # user swaps avatar_url without going through this endpoint.
-        result = cloudinary.uploader.upload(
+        result = await asyncio.to_thread(
+            cloudinary.uploader.upload,
             contents,
             folder="mehamakor/avatars",
             public_id=f"user_{user.id}",
@@ -275,7 +278,8 @@ async def upload_owner_photo(
             api_key=settings.cloudinary_api_key,
             api_secret=settings.cloudinary_api_secret,
         )
-        result = cloudinary.uploader.upload(
+        result = await asyncio.to_thread(
+            cloudinary.uploader.upload,
             contents,
             folder="mehamakor/owner",
             public_id=f"owner_{producer.id}",
@@ -350,7 +354,8 @@ async def upload_kashrut_cert(
             api_key=settings.cloudinary_api_key,
             api_secret=settings.cloudinary_api_secret,
         )
-        result = cloudinary.uploader.upload(
+        result = await asyncio.to_thread(
+            cloudinary.uploader.upload,
             contents,
             folder="mehamakor/kashrut",
             public_id=uuid.uuid4().hex,

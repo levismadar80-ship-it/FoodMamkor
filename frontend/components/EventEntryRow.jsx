@@ -51,7 +51,6 @@ export const CATEGORY_ICON = {
 // existing client callers.
 export { toEventEntry } from "@/lib/event-entry";
 
-
 // The date-rail row — the page's signature gesture. Date leads (Frank
 // Ruhl day numeral on a colored tick down the start edge); Latin
 // numerals (time, price) are Cormorant italic, Hebrew stays upright.
