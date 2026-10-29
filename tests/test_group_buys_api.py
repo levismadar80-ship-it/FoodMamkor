@@ -132,7 +132,9 @@ class TestListAndGet:
         still opens (its page already says the deadline passed)."""
         producer, _ = _producer_user(db)
         gb = _make_group_buy(db, producer, deadline=utc_now() - timedelta(hours=1))
-        assert client.get(f"/group-buys/{gb.id}").status_code == 200
+        resp = client.get(f"/group-buys/{gb.id}")
+        assert resp.status_code == 200
+        assert resp.json()["id"] == str(gb.id)
 
     def test_get_detail_happy(self, client, db):
         producer, _ = _producer_user(db)
