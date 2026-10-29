@@ -241,3 +241,26 @@ class TestRevisionShape:
             c.func.attr for f in ("upgrade", "downgrade") for c in _op_calls(path, f)
         }
         assert names == {"add_column", "drop_column"}
+
+
+class TestFrontendTtlMatchesTheToken:
+    # AdminDraftLinkAge.jsx derives «בתוקף עד» / «הקישור פג» from its own
+    # CLAIM_LINK_TTL_DAYS. The token lifetime is auth.PRODUCER_CLAIM_TTL_DAYS.
+    # Two owners for one fact — this is the guard that keeps them one.
+    def test_admin_link_age_constant_equals_the_token_ttl(self):
+        import re
+
+        from app.auth import PRODUCER_CLAIM_TTL_DAYS
+
+        src = (
+            Path(__file__).resolve().parents[1]
+            / "frontend"
+            / "app"
+            / "[locale]"
+            / "admin"
+            / "producers"
+            / "AdminDraftLinkAge.jsx"
+        ).read_text(encoding="utf-8")
+        hits = re.findall(r"^const CLAIM_LINK_TTL_DAYS = (\d+);$", src, flags=re.M)
+        assert len(hits) == 1, hits  # exactly one definition, found
+        assert int(hits[0]) == PRODUCER_CLAIM_TTL_DAYS
