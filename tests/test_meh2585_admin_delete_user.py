@@ -126,3 +126,50 @@ def test_unknown_user_404(client, db):
     )
 
     assert r.status_code == 404
+
+
+def test_both_doors_destroy_every_owned_image(client, db, monkeypatch):
+    """The URL capture was rewritten while moving to services/user_deletion.py.
+
+    Pin all five surfaces (avatar, business images, product images, home
+    product photo + images) plus the story card, on both doors.
+    """
+    from decimal import Decimal
+
+    from app import cloudinary_utils
+    from app.models.models import HomeProduct, Product
+
+    def seed(tag):
+        producer = make_producer(db, name=f"Img Farm {tag}", status="approved")
+        producer.images = [f"https://img/{tag}/biz1.jpg", None, f"https://img/{tag}/biz2.jpg"]
+        producer.story_card_url = f"https://img/{tag}/story.png"
+        owner = make_user(db, role="producer")
+        owner.producer_id = producer.id
+        owner.avatar_url = f"https://img/{tag}/avatar.jpg"
+        db.add(Product(producer_id=producer.id, name="p", price_min=Decimal("20"),
+                       image_url=f"https://img/{tag}/prod.jpg"))
+        db.add(Product(producer_id=producer.id, name="p2", price_min=Decimal("20")))
+        db.add(HomeProduct(user_id=owner.id, title="hp", description="x",
+                           phone="0500000000", city="TLV", price=30,
+                           photo=f"https://img/{tag}/hp.jpg",
+                           images=[f"https://img/{tag}/hp2.jpg"]))
+        db.commit()
+        return owner
+
+    expected = {"avatar.jpg", "biz1.jpg", "biz2.jpg", "prod.jpg", "hp.jpg", "hp2.jpg"}
+    for tag, call in (
+        ("self", lambda u: client.delete("/auth/me", headers=auth_header(u))),
+        ("admin", lambda u: client.delete(f"/admin/users/{u.id}", headers=auth_header(_admin(db)))),
+    ):
+        calls = []
+        monkeypatch.setattr(
+            cloudinary_utils,
+            "destroy_image",
+            lambda url, bypass_reserved=False, context="": calls.append((url, bypass_reserved)) or True,
+        )
+        owner = seed(tag)
+        r = call(owner)
+        assert r.status_code == 200, (tag, r.text)
+        plain = {u.rsplit("/", 1)[-1] for u, bypass in calls if not bypass and u}
+        assert plain == expected, (tag, calls)
+        assert (f"https://img/{tag}/story.png", True) in calls, (tag, calls)

@@ -3,8 +3,11 @@
 One implementation for both doors (MEH-2585): the self-service
 ``DELETE /auth/me`` (auth.delete_account) and the admin action
 ``DELETE /admin/users/{id}`` (admin_extra.admin_delete_user). Before this
-module the logic lived inline in auth.delete_account; it moved here verbatim so
-the admin path cannot drift from the GDPR path (Smell #1: one mechanism).
+module the logic lived inline in auth.delete_account. It moved here with the same
+steps in the same order (two helpers split out to satisfy ruff's complexity
+limits; the URL capture loops became comprehensions), so the admin path cannot
+drift from the GDPR path (Smell #1: one mechanism). Covered by
+tests/test_account_deletion_cascade.py and tests/test_cloudinary_cleanup.py.
 
 The caller owns everything around the deletion: auth checks, rate limits and
 whether a confirmation email is sent. This function commits.
