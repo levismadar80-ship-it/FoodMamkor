@@ -5,7 +5,8 @@
  *
  * Full public recipe view rendered on /[slug]/recipes/[recipe_id].
  * Sections (top → bottom):
- *   1. Hero image — edge to edge on a phone, framed on desktop
+ *   1. Hero image — edge to edge on a phone, framed on desktop; share +
+ *      save circles in its corner, as on the business page (MEH-2558)
  *   2. Breadcrumb (בית עסק > מתכונים)
  *   3. Eyebrow + title + description, then the business as an OwnerRow
  *   4. Prep / cook / servings as icon tiles
@@ -22,7 +23,8 @@
  * History: MEH-591 (creation); MEH-1149 (contact CTA — closes the
  * conversion dead-end found in audit MEH-1144 G7); MEH-2543 (NYT Cooking /
  * BBC Good Food layout — byline up top, fact tiles, ingredients beside steps,
- * cross-off ingredients; approved 29/10, proposal QjE2yYUSvDwK7BtYToEvM6).
+ * cross-off ingredients; approved 29/10, proposal QjE2yYUSvDwK7BtYToEvM6);
+ * MEH-2558 (share + save on the hero).
  */
 
 import { useState } from "react";
@@ -34,6 +36,8 @@ import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import ImageWithFallback from "@/components/ImageWithFallback";
 import OwnerRow from "@/components/OwnerRow";
 import PrimaryContactButton from "@/components/PrimaryContactButton";
+import SaveButton from "@/components/SaveButton"; // MEH-2558
+import ShareButton from "@/components/ShareButton";
 import { splitRecipeLines } from "@/lib/recipe-lines"; // MEH-2540
 
 const LINK_FOCUS =
@@ -67,6 +71,13 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
   const [failedSrc, setFailedSrc] = useState(null);
   const showPhoto = heroSrc && failedSrc !== heroSrc;
 
+  // Empty on the server. ShareButton only reads it inside its click handler
+  // and never renders it, so the two values cannot cause a hydration mismatch.
+  const pageUrl =
+    typeof window === "undefined"
+      ? ""
+      : `${window.location.origin}${window.location.pathname}`;
+
   const [checked, setChecked] = useState(() => new Set());
   const toggleIngredient = (i) =>
     setChecked((prev) => {
@@ -98,7 +109,23 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
     <article className="max-w-6xl mx-auto pb-10">
       {/* Hero. No photo → a low green strip with the Leaf, never a tall
           empty box. */}
-      <div className="md:px-4 md:pt-6">
+      <div className="relative md:px-4 md:pt-6">
+        {/* MEH-2558: share + save, the business page's hero pair
+            (ImageGallery) — same corner, same circles. Sits on the no-photo
+            strip too, so the actions never depend on the photo. */}
+        <div
+          className="absolute top-3 start-3 md:top-9 md:start-7 z-10 flex items-center gap-2"
+          data-testid="recipe-hero-actions"
+        >
+          <ShareButton
+            variant="overlay"
+            subject="recipe"
+            url={pageUrl}
+            title={recipe.title}
+            description={recipe.description}
+          />
+          <SaveButton itemType="recipe" itemId={recipe.id} />
+        </div>
         {showPhoto ? (
           <div className="relative aspect-[4/3] md:aspect-[21/9] bg-green-50 md:rounded-[16px] overflow-hidden">
             <Image
