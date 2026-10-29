@@ -2,6 +2,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import Link from "next/link";
 import { ArrowLeft, ChatCircleDots, ListChecks, Quotes } from "@phosphor-icons/react/ssr";
 import BusinessCtaLink from "@/components/BusinessCtaLink";
+import EditorialPhoto from "@/components/EditorialPhoto";
 import { BRAND_NAME } from "@/lib/constants";
 import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
 
@@ -93,6 +94,14 @@ export default async function JoinPage({ params }) {
           </BusinessCtaLink>
           <p className="text-sm text-fg-muted mt-3">{t("trust_hint")}</p>
         </header>
+
+        {/* MEH-2597: a person at work, under the CTA so the CTA stays in the
+            first screen at 375. Swap for a Wave 1 business photo when one lands. */}
+        <EditorialPhoto
+          src="https://res.cloudinary.com/dfzpscjks/image/upload/login/hero-produce-crate.jpg"
+          testId="join-photo"
+          className="-mt-6 mb-14 sm:-mt-10 sm:mb-20"
+        />
 
         {/* ── How it works — 4 numbered spreads ── */}
         <section className="mb-14 sm:mb-20" data-testid="join-how">
