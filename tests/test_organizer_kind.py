@@ -262,13 +262,35 @@ class TestOrganizerPresentThroughEvents:
         when the owner has photos, null (never an error) when it has none."""
         organizer = _organizer(db)
         business = _business(db)
-        organizer.images = ["https://res.cloudinary.com/x/o1.jpg", "https://res.cloudinary.com/x/o2.jpg"]
+        organizer.images = [
+            "https://res.cloudinary.com/x/o1.jpg",
+            "https://res.cloudinary.com/x/o2.jpg",
+        ]
         business.images = []
         db.commit()
         _event(db, organizer)
         _event(db, business)
         by_owner = {ev["producer_id"]: ev for ev in client.get("/events").json()}
-        assert by_owner[str(organizer.id)]["owner_image_url"] == "https://res.cloudinary.com/x/o1.jpg"
+        assert (
+            by_owner[str(organizer.id)]["owner_image_url"]
+            == "https://res.cloudinary.com/x/o1.jpg"
+        )
+        assert by_owner[str(business.id)]["owner_image_url"] is None
+
+    def test_owner_image_skips_blank_entries(self, client, db):
+        """A blank or whitespace first entry never becomes a broken url()."""
+        organizer = _organizer(db)
+        business = _business(db)
+        organizer.images = ["", "  ", "https://res.cloudinary.com/x/o2.jpg"]
+        business.images = ["", " "]
+        db.commit()
+        _event(db, organizer)
+        _event(db, business)
+        by_owner = {ev["producer_id"]: ev for ev in client.get("/events").json()}
+        assert (
+            by_owner[str(organizer.id)]["owner_image_url"]
+            == "https://res.cloudinary.com/x/o2.jpg"
+        )
         assert by_owner[str(business.id)]["owner_image_url"] is None
 
     def test_upcoming_includes_organizer_event(self, client, db):

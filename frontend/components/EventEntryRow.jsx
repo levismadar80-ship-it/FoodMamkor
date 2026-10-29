@@ -87,7 +87,7 @@ export default function EventEntryRow({ entry, freeLabel, compact = false }) {
     : undefined;
   const tileTone = isExp ? "bg-surface-card text-accent" : "bg-green-50 text-primary";
   const pictureFace = picture ? (
-    entry.image ? null : (
+    entry.image || !entry.ownerInitial ? null : (
       <span
         data-testid="event-row-owner-initial"
         className="absolute bottom-1 end-1 w-5 h-5 rounded-full bg-white text-primary text-[10px] font-bold grid place-items-center shadow-sm"
