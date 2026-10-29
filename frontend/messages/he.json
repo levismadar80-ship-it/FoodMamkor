@@ -3223,6 +3223,17 @@
     "empty_subtitle": "לחצו על הלב בכרטיסיית עסק כדי לשמור אותו כאן לגישה מהירה.",
     "empty_cta": "גלו עסקים",
     "list_alerts_hint": "לחצו על <icon></icon> בכל כרטיס כדי לקבל התראות על אירועים ומוצרים חדשים",
+    "filter_all": "הכל",
+    "filter_businesses": "בתי עסק",
+    "filter_recipes": "מתכונים",
+    "filter_events": "אירועים",
+    "filter_experiences": "חוויות",
+    "past_heading": "עברו",
+    "empty_all_title": "עדיין לא שמרת כלום",
+    "empty_all_subtitle": "לחצו על הלב בבית עסק, מתכון או אירוע כדי לשמור אותו כאן.",
+    "empty_recipes": "עדיין לא שמרת מתכונים",
+    "empty_events": "עדיין לא שמרת אירועים",
+    "empty_experiences": "עדיין לא שמרת חוויות",
     "updates_button": {
       "label": "קבלת עדכונים"
     },

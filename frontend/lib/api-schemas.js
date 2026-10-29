@@ -63,6 +63,48 @@ const SavedItemRefSchema = z.object({
 });
 export const SavedIdsResponseSchema = z.array(SavedItemRefSchema);
 
+// MEH-2560: GET /users/me/saved (SavedItemsOut, backend/app/routers/
+// saved_items.py) — the /favorites page's recipes / events / experiences.
+// Rows are parsed one by one on the page (MEH-1713: one bad row costs one
+// card). `.loose()` on events and experiences: they reuse the public row
+// shapes (EventOut / ExperienceListOut) and EventEntryRow reads more of them
+// than this guard names.
+export const SavedRecipeSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  description: z.string().nullable().optional(),
+  image_url: z.string().nullable().optional(),
+  prep_time_min: z.number().nullable().optional(),
+  cook_time_min: z.number().nullable().optional(),
+  producer_name: z.string(),
+  producer_slug: z.string().nullable().optional(),
+  saved_at: z.string().nullable().optional(),
+});
+export const SavedEventSchema = z
+  .object({
+    id: z.string(),
+    title: z.string(),
+    event_date: z.string(),
+    is_active: z.boolean().optional(),
+    saved_at: z.string().nullable().optional(),
+  })
+  .loose();
+export const SavedExperienceSchema = z
+  .object({
+    id: z.string(),
+    title: z.string(),
+    event_date: z.string(),
+    is_recurring: z.boolean().nullable().optional(),
+    is_active: z.boolean().optional(),
+    saved_at: z.string().nullable().optional(),
+  })
+  .loose();
+export const SavedItemsResponseSchema = z.object({
+  recipes: z.array(z.unknown()),
+  events: z.array(z.unknown()),
+  experiences: z.array(z.unknown()),
+});
+
 // MEH-1713: the /favorites PAGE row — distinct from FavoriteSchema above,
 // which is heart-state for lib/favorites-cache.js (producer_id only, no
 // nested producer). Backend contract: FavoriteOut
