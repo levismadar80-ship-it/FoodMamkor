@@ -22,16 +22,18 @@ const NEXT_ROUTER = /import\s*\{[^}]*\buseRouter\b[^}]*\}\s*from\s+["']next\/nav
 
 describe("MEH-2578 chrome links keep the /en prefix", () => {
   for (const rel of CHROME) {
-    const src = readFileSync(join(__dirname, "..", rel), "utf8");
+    // Read inside each case: a renamed file fails its own cases instead of
+    // throwing at collection time with nothing reported.
+    const src = () => readFileSync(join(__dirname, "..", rel), "utf8");
     it(`${rel} does not import next/link`, () => {
-      expect(src).not.toMatch(NEXT_LINK);
+      expect(src()).not.toMatch(NEXT_LINK);
     });
     it(`${rel} imports Link from @/i18n/navigation`, () => {
-      expect(src).toMatch(INTL_LINK);
+      expect(src()).toMatch(INTL_LINK);
     });
     // A router.push("/x") from next/navigation drops /en the same way.
     it(`${rel} does not take useRouter from next/navigation`, () => {
-      expect(src).not.toMatch(NEXT_ROUTER);
+      expect(src()).not.toMatch(NEXT_ROUTER);
     });
   }
 });
