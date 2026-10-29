@@ -1092,13 +1092,18 @@ test.describe("manual › filter chips + FilterSheet (MEH-1418 · task 12)", () 
   //   stale in docs/qa/conversion-progress.md. What survives from MEH-1418
   //   unchanged is the claim under test here: each toggle carries a leading
   //   aria-hidden glyph and the taxonomy's own label.
-  test("the home filter row is exactly the two promoted chips plus the sheet trigger, each with an aria-hidden glyph", async ({ page }) => {
+  test("the home filter row is exactly the two promoted chips plus the sheet trigger and the day chip, each promoted chip with an aria-hidden glyph", async ({ page }) => {
     await consent(page);
     await stubTiles(page);
     await mockApi(page);
     await gotoHome(page);
     const row = scope(page).getByTestId("home-filter-row");
-    await expect(row.getByRole("button")).toHaveCount(PROMOTED.length + 1); // + the sheet trigger
+    // Counted by testid, not by role: MEH-2537 moved the delivery-day chip into
+    // this row, and its ✕ appears whenever days are set, so a role count would
+    // depend on fixture state rather than on what this test is about.
+    await expect(row.locator('[data-testid^="home-promoted-chip-"]')).toHaveCount(PROMOTED.length);
+    await expect(row.getByTestId("home-filters-button")).toHaveCount(1);
+    await expect(row.getByTestId("delivery-day-chip")).toHaveCount(1);
     for (const key of PROMOTED) {
       const chip = promotedChip(page, key);
       await expect(chip).toBeVisible();
