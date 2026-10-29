@@ -121,11 +121,12 @@ describe("MEH-2537 — one row", () => {
 
   it("server HTML already has the in-row chip shape (no shift when the host mounts)", () => {
     const html = renderToString(<HomeProducersGrid {...props()} />);
-    const root = html.match(/<div class="([^"]*)" data-testid="delivery-day-row"/);
-    expect(root?.[1]).toContain("shrink-0");
-    expect(root?.[1]).not.toContain("mb-6");
-    const chipTag = html.match(/<button[^>]*data-testid="delivery-day-chip"[^>]*>/)?.[0] ?? "";
-    expect(chipTag).toMatch(/class="[^"]*py-2\.5/);
+    // parsed, so the check is about classes, not attribute order
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    const root = doc.querySelector('[data-testid="delivery-day-row"]');
+    expect(root.classList.contains("shrink-0")).toBe(true);
+    expect(root.classList.contains("mb-6")).toBe(false);
+    expect(doc.querySelector('[data-testid="delivery-day-chip"]').classList.contains("py-2.5")).toBe(true);
   });
 
   it("many days: the value chip and its ✕ stay in the row; the panel still opens below it", () => {
@@ -197,11 +198,13 @@ describe("MEH-2537 — a focused chip is not left under the sticky «סינון�
   const rects = new Map();
   let gcs;
   beforeEach(() => {
-    gcs = vi.spyOn(window, "getComputedStyle").mockImplementation(() => ({ position: "sticky" }));
+    gcs = vi.spyOn(window, "getComputedStyle").mockImplementation(() => ({ position: "sticky", direction: "rtl" }));
     vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function () {
       return rects.get(this) ?? { left: 0, right: 0, top: 0, bottom: 0, width: 0, height: 0 };
     });
-    Element.prototype.scrollBy = vi.fn();
+    // spyOn (not assignment) so restoreAllMocks puts jsdom's member back.
+    if (!Element.prototype.scrollBy) Element.prototype.scrollBy = () => {};
+    vi.spyOn(Element.prototype, "scrollBy").mockImplementation(() => {});
   });
   afterEach(() => {
     vi.restoreAllMocks();
@@ -216,6 +219,20 @@ describe("MEH-2537 — a focused chip is not left under the sticky «סינון�
     rects.set(chip, { left: 200, right: 290 }); // 14px under the lead
     fireEvent.focus(chip);
     expect(row().scrollBy).toHaveBeenCalledWith({ left: 22 });
+  });
+
+  it("/en is LTR: the lead is on the LEFT and the scroll goes the other way", () => {
+    gcs.mockImplementation(() => ({ position: "sticky", direction: "ltr" }));
+    render(<HomeProducersGrid {...props()} />);
+    const lead = row().firstElementChild;
+    const chip = screen.getByTestId("home-promoted-chip-verified");
+    rects.set(lead, { left: 0, right: 99 });
+    rects.set(chip, { left: 120, right: 210 }); // clear of the lead
+    fireEvent.focus(chip);
+    expect(row().scrollBy).not.toHaveBeenCalled();
+    rects.set(chip, { left: 85, right: 175 }); // 14px under it
+    fireEvent.focus(chip);
+    expect(row().scrollBy).toHaveBeenCalledWith({ left: -22 });
   });
 
   it("leaves a chip that is already clear alone", () => {
@@ -240,7 +257,7 @@ describe("MEH-2537 — a focused chip is not left under the sticky «סינון�
   });
 
   it("does nothing when the lead is not sticky (lg+)", () => {
-    gcs.mockImplementation(() => ({ position: "relative" }));
+    gcs.mockImplementation(() => ({ position: "relative", direction: "rtl" }));
     render(<HomeProducersGrid {...props()} />);
     const lead = row().firstElementChild;
     const chip = screen.getByTestId("home-promoted-chip-verified");

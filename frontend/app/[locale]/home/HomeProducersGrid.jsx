@@ -250,8 +250,9 @@ export function HomeProducersGrid({
   // ref, so the chip re-renders with the node once it exists.
   const [dayPanelHost, setDayPanelHost] = useState(null);
   // MEH-2537: a chip that takes focus while under the sticky «סינון» is
-  // scrolled out from under it. Positive scrollBy moves the rail's content
-  // toward the inline-end in RTL, which is the direction that uncovers it.
+  // scrolled out from under it. The lead sits at the inline-start edge: the
+  // RIGHT in he (overlap = chip.right − lead.left, scroll +x) and the LEFT in
+  // /en, which is dir=ltr (overlap = lead.right − chip.left, scroll −x).
   // Skipped at lg+, where the trigger is not sticky and nothing overlaps.
   // React focus events bubble through portals, so the day panel and the
   // FilterSheet (both React children of this row, DOM-outside it) land here
@@ -260,8 +261,11 @@ export function HomeProducersGrid({
     if (!e.currentTarget.contains(e.target)) return;
     const lead = e.currentTarget.firstElementChild;
     if (!lead || lead.contains(e.target) || getComputedStyle(lead).position !== "sticky") return;
-    const overlap = e.target.getBoundingClientRect().right - lead.getBoundingClientRect().left;
-    if (overlap > 0) e.currentTarget.scrollBy({ left: overlap + 8 });
+    const chip = e.target.getBoundingClientRect();
+    const l = lead.getBoundingClientRect();
+    const rtl = getComputedStyle(e.currentTarget).direction === "rtl";
+    const overlap = rtl ? chip.right - l.left : l.right - chip.left;
+    if (overlap > 0) e.currentTarget.scrollBy({ left: rtl ? overlap + 8 : -(overlap + 8) });
   };
   return (
     <section id="producers-grid" className="max-w-7xl mx-auto px-4 pb-20">
@@ -315,7 +319,8 @@ export function HomeProducersGrid({
           onFocus nudges a focused chip out from under the sticky «סינון»
           (WCAG 2.4.11). Measured in Chromium: neither scroll-padding on the
           rail (it shifted the RESTING position, «מאומת» under «סינון») nor
-          scroll-margin on the chips (focus scrolling ignored it) did this. lg+ fits on one line, so overflow is
+          scroll-margin on the chips (focus scrolling ignored it) did this.
+          lg+ fits on one line, so overflow is
           visible there and the sheet's anchored panel is not clipped. */}
       <div
         className="-mx-4 -mt-1 mb-3 flex items-center gap-2 min-w-0 overflow-x-auto px-4 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:-mx-1 lg:px-1 lg:overflow-visible "
@@ -331,7 +336,8 @@ export function HomeProducersGrid({
             it a stacking context, which is harmless here: below lg the sheet
             portals to <body> (FilterSheet.jsx), and at lg+ the wrapper is
             plain `relative` again. It paints over the static chips by being
-            positioned; keep the chips unpositioned or give this a z-index. -ms-4/ps-4 paint the
+            positioned; keep the chips unpositioned or give this a z-index.
+            -ms-4/ps-4 paint the
             gutter strip beside it, so chips pass under it there too, and
             -start-4 (not start-0) because a sticky box is held inside the
             rail's PADDING edge: start-0 pinned it 16px in, over «מאומת». */}
