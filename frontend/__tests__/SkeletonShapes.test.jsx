@@ -35,19 +35,19 @@ describe("shape skeletons", () => {
 
   it("SkeletonTable: wide rows carry `cols` cells and the phone stack is capped at 4 cards", () => {
     const { container } = render(<SkeletonTable rows={6} cols={5} label={LABEL} />);
-    const wide = container.querySelector(".hidden.md\\:block");
+    const wide = container.querySelector('[data-testid="skeleton-table-wide"]');
     // header + 6 rows, each a grid of 5 cells
     expect(wide.children).toHaveLength(7);
     expect(wide.children[1].children).toHaveLength(5);
-    const narrow = container.querySelector(".md\\:hidden");
+    const narrow = container.querySelector('[data-testid="skeleton-table-stack"]');
     expect(narrow.children).toHaveLength(4);
     expect(noVisibleText(screen.getByRole("status"))).toBe("");
   });
 
   it("SkeletonTable with rows=2 draws 2 wide rows and 2 phone cards — the cap only clips above 4", () => {
     const { container } = render(<SkeletonTable rows={2} cols={3} label={LABEL} />);
-    expect(container.querySelector(".hidden.md\\:block").children).toHaveLength(3); // header + 2
-    expect(container.querySelector(".md\\:hidden").children).toHaveLength(2);
+    expect(container.querySelector('[data-testid="skeleton-table-wide"]').children).toHaveLength(3); // header + 2
+    expect(container.querySelector('[data-testid="skeleton-table-stack"]').children).toHaveLength(2);
   });
 
   it("count=0 / fields=0 render the status wrapper with the label and no boxes (0-state)", () => {

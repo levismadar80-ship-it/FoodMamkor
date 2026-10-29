@@ -164,6 +164,7 @@ export function SkeletonTable({ rows = 5, cols = 4, label, className = "", testI
       <div
         className="hidden md:block rounded-[12px] border border-border overflow-hidden bg-surface-card"
         aria-hidden="true"
+        data-testid="skeleton-table-wide"
       >
         <div
           className="grid gap-4 px-4 py-3 bg-background-alt/60"
@@ -189,7 +190,7 @@ export function SkeletonTable({ rows = 5, cols = 4, label, className = "", testI
           </div>
         ))}
       </div>
-      <div className="md:hidden space-y-3" aria-hidden="true">
+      <div className="md:hidden space-y-3" aria-hidden="true" data-testid="skeleton-table-stack">
         {Array.from({ length: Math.min(rows, 4) }).map((_, r) => (
           <div key={r} className="bg-surface-card border border-border rounded-[12px] px-4 py-3 space-y-2">
             {[0, 1, 2].map((l) => (
