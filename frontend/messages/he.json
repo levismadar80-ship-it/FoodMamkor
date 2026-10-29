@@ -2499,7 +2499,13 @@
       "breadcrumb_home": "בית",
       "breadcrumb_events": "אירועים",
       "organizer_line": "מארגן: {name}",
-      "add_to_calendar": "הוספה ליומן"
+      "add_to_calendar": "הוספה ליומן",
+      "more_from": "עוד אירועים של {name}",
+      "when_today": "היום",
+      "when_tomorrow": "מחר",
+      "when_this_week": "השבוע",
+      "past_notice": "האירוע הזה כבר התקיים.",
+      "past_next": "האירוע הבא של {name}:"
     },
     "calendar": {
       "previous_month": "חודש קודם",

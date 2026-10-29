@@ -33,7 +33,7 @@ import { formatPrice } from "@/lib/utils";
 
 // Category glyph per wire value (Phosphor only — ADR-013). Falls back to
 // CalendarBlank for any unmapped/free-text category.
-const CATEGORY_ICON = {
+export const CATEGORY_ICON = {
   "סדנה": CookingPot,
   "סיור": Path,
   "שוק": Storefront,
