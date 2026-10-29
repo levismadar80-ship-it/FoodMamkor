@@ -58,6 +58,12 @@ vi.mock("@phosphor-icons/react", () => ({
 }));
 
 vi.mock("@/i18n/navigation", () => ({
+  // MEH-2578: the chrome now takes Link from here, not next/link.
+  Link: ({ children, href, ...props }) => (
+    <a href={typeof href === "string" ? href : "#"} {...props}>
+      {children}
+    </a>
+  ),
   useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
   usePathname: () => pathnameRef.current,
 }));
