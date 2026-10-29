@@ -46,14 +46,14 @@ export async function generateMetadata({ params }) {
   };
 }
 
-// MEH-995: Cormorant numerals — dir="ltr" isolates the Latin glyphs inside RTL
-// flow; leading-none per the FINAL's no-bleed note (verified at 320px).
+// MEH-995 drew these as 5xl gold Cormorant "01–04", louder than the step
+// titles. MEH-2564 keeps the numbers (this IS an ordered process) but as a
+// small green timeline badge in the body font, below the title in weight.
 function StepNumeral({ children }) {
   return (
     <div
-      dir="ltr"
       data-testid="join-step-numeral"
-      className="font-english text-5xl text-accent leading-none mb-3"
+      className="numeric inline-flex items-center justify-center w-9 h-9 rounded-full bg-primary/10 text-primary font-bold text-base leading-none mb-3"
     >
       {children}
     </div>
@@ -66,7 +66,7 @@ export default async function JoinPage({ params }) {
   const t = await getTranslations({ locale, namespace: "join" });
 
   const steps = ["1", "2", "3", "4"].map((n) => ({
-    numeral: `0${n}`,
+    numeral: n,
     title: t(`how.step${n}_title`),
     text: t(`how.step${n}_text`),
   }));
