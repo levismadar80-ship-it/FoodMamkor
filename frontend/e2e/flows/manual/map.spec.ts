@@ -366,6 +366,20 @@ async function gotoMap(page: Page, path = "/map"): Promise<void> {
 }
 
 /**
+ * MEH-2524: the fixture spans Kiryat Shmona to Beer Sheva, about 220 km. At the
+ * default zoom 8 that needs a canvas of about 490px for every pin to be inside
+ * Leaflet's bounds and rendered. The Pixel 5 canvas used to be 500px only
+ * because `min-h-[500px]` ran it 22px past the viewport, under the sheet and the
+ * nav pill. Now the canvas ends at the viewport, so it is 478px and one pin
+ * falls outside. Tests that count every pin give the phone room for the spread.
+ * They are about the layer toggle and the near-me fallback, not about the
+ * canvas height.
+ */
+async function fitFixtureSpread(page: Page, info: TestInfo): Promise<void> {
+  if (!isDesktop(info)) await page.setViewportSize({ width: 393, height: 820 });
+}
+
+/**
  * Mock, navigate, and wait for the fixture list to land in the VISIBLE shell.
  *
  * CONTRACT for the function form of `list`: it must return the INITIAL-load
@@ -595,6 +609,7 @@ test.describe("manual › /map multi-location epic (MEH-1388)", () => {
   //   unique-business cluster badge, :319 nearest location, :344 delivery-only
   //   + pickup visible) and are not repeated here.
   test("the layer toggle hides only the secondary pins, and shows them again", async ({ page }, info) => {
+    await fitFixtureSpread(page, info);
     const { shell } = await gotoWithCatalog(page, info);
     await expect(primaryMarkers(shell)).toHaveCount(PRODUCERS.length, FIRST_PAINT);
     await expect(secondaryMarkers(shell)).toHaveCount(1);
@@ -929,6 +944,7 @@ test.describe("manual › near-me pill + empty-near-me guard, mobile (MEH-970)",
   test("mobile: near me with nothing within 25 km toasts, returns to the default view and keeps every business", async ({ page, context }, info) => {
     mobileOnly(info, "the pill is mounted inside the mobile shell only");
     await grantGps(context, GPS_FAR);
+    await fitFixtureSpread(page, info);
     const { shell, tiles } = await gotoWithCatalog(page, info);
     // CONTROL FIRST (testing.md — "Run the control first. If the probe cannot
     // see the thing it is aimed at, nothing it reports afterwards is worth

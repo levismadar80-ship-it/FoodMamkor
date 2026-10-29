@@ -422,7 +422,10 @@ body.sheet-open .cookie-banner {
 }
 @media (max-width: 1023.98px) {
   .leaflet-control-attribution {
-    margin-bottom: max(calc(var(--map-sheet-h, 0vh) + 6px), 10px) !important;
+    /* MEH-2524: minus --map-pane-reserve, the strip MapClient pads under the
+       canvas while the cookie banner shows (same double count as MapPane's
+       sheetRide, MEH-2517). 0 when no banner, so the ride is unchanged. */
+    margin-bottom: max(calc(var(--map-sheet-h, 0vh) + 6px - var(--map-pane-reserve, 0px)), 10px) !important;
     transition: margin-bottom var(--map-sheet-anim, 0ms) ease-out;
   }
 }
