@@ -248,7 +248,10 @@ export default async function middleware(request) {
     // Carry next-intl's request-header overrides (the resolved locale) and
     // cookies, or /en/<slug> would render in the default locale.
     intlResponse.headers.forEach((value, key) => {
-      if (key !== "x-middleware-rewrite") res.headers.set(key, value);
+      // Its own routing verdict (rewrite / next) would contradict ours.
+      if (key !== "x-middleware-rewrite" && key !== "x-middleware-next") {
+        res.headers.set(key, value);
+      }
     });
     return res;
   }

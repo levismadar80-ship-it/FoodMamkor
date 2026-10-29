@@ -34,7 +34,13 @@ vi.mock("@/app/[locale]/producer/[id]/ProducerDetail", () => ({
   default: () => null,
 }));
 vi.mock("next-intl/middleware", () => ({
-  default: () => () => ({ headers: new Map(), __intl: true }),
+  default: () => () => ({
+    headers: new Map([
+      ["x-middleware-next", "1"],
+      ["x-middleware-request-x-next-intl-locale", "en"],
+    ]),
+    __intl: true,
+  }),
 }));
 const rewrite = vi.fn((url, init) => ({
   __rewrite: true,
@@ -115,6 +121,9 @@ describe("MEH-2534 — middleware", () => {
     expect(res.__rewrite && res.status).toBe(410);
     expect(res.url.pathname).toBe(`/he/${SLUG}`);
     expect(console.error).not.toHaveBeenCalled();
+    // next-intl's locale override rides along; its routing verdict does not.
+    expect(res.headers.get("x-middleware-request-x-next-intl-locale")).toBe("en");
+    expect(res.headers.has("x-middleware-next")).toBe(false);
   });
 
   it("410 on a prefix-less URL -> rewrites to the default locale", async () => {
@@ -177,6 +186,7 @@ describe("MEH-2534 — Hebrew slugs arrive percent-encoded", () => {
     const { decodeSlugParam } = await import("@/lib/slug");
     expect(decodeSlugParam("%E0%A4%A")).toBe("%E0%A4%A");
     expect(decodeSlugParam(HE)).toBe(HE);
+    expect(decodeSlugParam("%2525")).toBe("%25"); // decoded once, then fails the shape check
     await expect(
       ProducerSlugPage({ params: Promise.resolve({ slug: "%E0%A4%A", locale: "he" }) })
     ).rejects.toThrow("NEXT_NOT_FOUND");
