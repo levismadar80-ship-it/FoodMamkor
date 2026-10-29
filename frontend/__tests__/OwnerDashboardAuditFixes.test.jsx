@@ -60,7 +60,6 @@ const analytics = {
   views_by_day: [],
   top_cities: [],
   conversion_rate: 0,
-  profile_strength: 0,
 };
 
 function renderIntl(ui) {
