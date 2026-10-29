@@ -321,7 +321,10 @@ function ExternalRow({ label, href, children }) {
         href={href}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-primary hover:underline inline-flex items-center gap-1"
+        // MEH-2587: `min-w-0 break-all` — at 375 the staging hostname did not
+        // fit beside the 140px label and pushed the page 3px wider than the
+        // screen (sideways scroll on the whole help page).
+        className="text-primary hover:underline inline-flex items-center gap-1 min-w-0 break-all"
       >
         {children}
         <ArrowUpRight size={14} weight="bold" aria-hidden="true" />
