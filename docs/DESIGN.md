@@ -381,8 +381,9 @@ front matter for the normative token bindings.
   **two lines since MEH-2403 (27/10/2026):** line 1 muted "category · city",
   the primary category a `<Link>` to `/producers?category=<id>` (the Google
   Maps / Yelp pattern; absent when there is neither); line 2 the **status**
-  alone, in its own colour — one fact per line — + one quiet kosher line]. The
-  page's ONLY order status is colored text on that status line — open=`primary`,
+  alone, in its own colour — one fact per line; since MEH-2596 (29/10/2026) a
+  small tag: dot + 10% tint of the status colour — + one quiet kosher line]. The
+  page's ONLY order status is that coloured tag on the status line — open=`primary`,
   "לא מקבל הזמנות כרגע"=`muted`, "בחופשה · חוזרים ב־{תאריך}"=**`gold-deep`
   #7a5a10** (5.61:1 on cream, AA; the vacation banner was removed — the status
   owns the return date, "one home per fact"). Dropped from the header: premium

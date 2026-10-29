@@ -184,7 +184,8 @@ export default function ProducerHeader({
           must clear the absolutely-pinned desktop actions row itself —
           adversarial-review fix (imageless-desktop overlap). */}
       {producer.short_description && (
-        <p className={`text-[15px] leading-relaxed text-text mt-2${hasImages ? "" : " lg:pe-72"}`}>
+        // MEH-2596: a muted 17px deck under the name, not body text.
+        <p className={`text-[17px] leading-relaxed text-fg-muted mt-2.5${hasImages ? "" : " lg:pe-72"}`}>
           {producer.short_description}
         </p>
       )}
@@ -239,7 +240,7 @@ export default function ProducerHeader({
           "category · city", the primary category a locale-aware link to its
           /producers?category=<id> listing (same target as the home category
           cards, MEH-1080); absent when there is neither. Line 2: the status
-          alone, coloured text, no dot, no chip. Rationale: docs/DESIGN.md
+          alone, a small tinted tag with a dot (MEH-2596). Rationale: docs/DESIGN.md
           § Quiet Direction v3. */}
       <div className="flex flex-col gap-1 mt-2 mb-1">
         {(producer.city || primaryCategory) && (
@@ -264,8 +265,16 @@ export default function ProducerHeader({
             resolveHeaderStatus). order_window feeds this line instead of
             adding a second one — two order-status assertions on one page
             would contradict each other. */}
+        {/* MEH-2596: the status reads as a small tag — a dot and a 10% tint
+            of its own colour (color-mix on currentColor, so one rule serves
+            open / closed / vacation), like «פתוח עכשיו» on Google and Wolt.
+            Still alone on its line and still the page's one status. */}
         <p className="text-sm" data-testid="producer-header-status-line">
-          <span className={`font-semibold ${status.tone}`} data-testid={status.testid}>
+          <span
+            className={`inline-flex items-start gap-1.5 rounded-xl px-2.5 py-0.5 font-semibold bg-[color-mix(in_srgb,currentColor_10%,transparent)] ${status.tone}`}
+            data-testid={status.testid}
+          >
+            <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-current" aria-hidden="true" />
             {statusLabel}
           </span>
         </p>
