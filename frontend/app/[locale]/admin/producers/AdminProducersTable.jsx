@@ -308,7 +308,10 @@ export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onAppro
   const busy = isBusy || (() => false);
   const isPending = p.status === "pending";
   return (
-    <div className="flex gap-3 flex-wrap">
+    // MEH-2587: below md the actions are plain 16px-tall text links in a narrow
+    // column — hard to hit with a thumb. Give each a 40px-tall row there (same
+    // target height `.table-stack` gives the other admin tables' actions).
+    <div className="flex gap-3 flex-wrap max-md:gap-y-0 max-md:*:min-h-10 max-md:*:inline-flex max-md:*:items-center">
       {/* MEH-745 surfaced approve for two waiting states, `pending` and
           `pending_whatsapp`; the second was removed in MEH-2124, leaving one.
           MEH-1011 Chunk 2: pass the full producer so the approve-422 handler
