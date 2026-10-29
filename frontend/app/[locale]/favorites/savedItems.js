@@ -51,15 +51,15 @@ export async function loadSavedItems() {
 }
 
 /**
- * «עברו» holds an event whose date passed (Israel calendar), and an
- * experience that is over — a one-off whose date passed, or one its host
- * cancelled. A recurring experience is never past: its date is the first
+ * «עברו» holds an event whose date passed (Israel calendar) or that its
+ * host cancelled, and an experience that is over — a one-off whose date
+ * passed, or one its host cancelled. A recurring experience is never past: its date is the first
  * occasion, not the only one (MEH-2476).
  *
  * Upcoming: soonest first. Past: most recent first.
  */
 export function splitByTime(events, experiences, today = israelToday()) {
-  const isPastEvent = (ev) => eventWhen(ev.event_date, today) === "past";
+  const isPastEvent = (ev) => ev.is_active === false || eventWhen(ev.event_date, today) === "past";
   const isPastExperience = (ex) =>
     ex.is_active === false || (!ex.is_recurring && eventWhen(ex.event_date, today) === "past");
   const byDate = (a, b) => String(a.event_date).localeCompare(String(b.event_date));

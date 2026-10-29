@@ -12,7 +12,7 @@ import {
   isFavorited,
   subscribeFavorites,
 } from "@/lib/favorites-cache";
-import { ensureSavedLoaded, isSaved, subscribeSaved } from "@/lib/saved-cache";
+import { isSaved, setSavedLocal, subscribeSaved } from "@/lib/saved-cache";
 import ProducerCard from "@/components/ProducerCard";
 import AlertPrefsPanel from "@/components/AlertPrefsPanel";
 import Breadcrumb from "@/components/Breadcrumb";
@@ -224,6 +224,13 @@ export default function FavoritesClient() {
     if (!user) return;
     loadSavedItems()
       .then((parsed) => {
+        // Every row on this page IS saved — the server just said so. Seed the
+        // shared cache with it, so each heart here reads "saved" and a tap
+        // unsaves, even when /saved/ids failed or predates a save made in
+        // another tab.
+        parsed.recipes.forEach((r) => setSavedLocal("recipe", r.id, true));
+        parsed.events.forEach((e) => setSavedLocal("event", e.id, true));
+        parsed.experiences.forEach((x) => setSavedLocal("experience", x.id, true));
         setSaved(parsed);
         setSavedError(false);
       })
@@ -282,15 +289,11 @@ export default function FavoritesClient() {
   // MEH-2560: the same contract for saved items, through saved-cache — a heart
   // tapped here hides its row at once and brings it back if the call fails.
   const [savedTick, setSavedTick] = useState(0);
-  const [savedKnownKeys, setSavedKnownKeys] = useState(null);
   useEffect(() => {
     if (!user) return undefined;
     let alive = true;
     const unsub = subscribeSaved(() => {
       if (alive) setSavedTick((n) => n + 1);
-    });
-    ensureSavedLoaded().then((keys) => {
-      if (alive) setSavedKnownKeys(new Set(keys));
     });
     return () => {
       alive = false;
@@ -299,8 +302,7 @@ export default function FavoritesClient() {
   }, [user]);
 
   const visibleSaved = useMemo(() => {
-    const keep = (type) => (row) =>
-      !savedKnownKeys?.has(`${type}:${row.id}`) || isSaved(type, row.id);
+    const keep = (type) => (row) => isSaved(type, row.id);
     return {
       recipes: saved.recipes.filter(keep("recipe")),
       events: saved.events.filter(keep("event")),
@@ -308,7 +310,7 @@ export default function FavoritesClient() {
     };
     // savedTick: isSaved reads module state (see cacheTick above).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [saved, savedKnownKeys, savedTick]);
+  }, [saved, savedTick]);
 
   const { upcomingEvents, upcomingExperiences, past } = useMemo(
     () => splitByTime(visibleSaved.events, visibleSaved.experiences),
@@ -521,9 +523,13 @@ export default function FavoritesClient() {
               label: (
                 <>
                   {t(`filter_${key}`)}
-                  <span className="numeric text-xs opacity-70" data-testid={`favorites-count-${key}`}>
-                    {counts[key]}
-                  </span>
+                  {/* A count the saved half could not load would read as a false
+                      «0» — hide it until a retry succeeds. */}
+                  {(key === "businesses" || !savedError) && (
+                    <span className="numeric text-xs opacity-70" data-testid={`favorites-count-${key}`}>
+                      {counts[key]}
+                    </span>
+                  )}
                 </>
               ),
             }))}

@@ -85,6 +85,7 @@ export const SavedEventSchema = z
     id: z.string(),
     title: z.string(),
     event_date: z.string(),
+    is_active: z.boolean().optional(),
     saved_at: z.string().nullable().optional(),
   })
   .loose();

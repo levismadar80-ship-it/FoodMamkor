@@ -25,10 +25,11 @@ vi.mock("@/lib/favorites-cache", () => ({
 }));
 // The saved-cache is driven by the test: `savedKeys` is what the server knew
 // at load; `unsaved` is what a heart on this page has since removed.
-const cache = { savedKeys: new Set(), unsaved: new Set(), listeners: new Set() };
+const cache = { savedKeys: new Set(), unsaved: new Set(), listeners: new Set(), seeded: [] };
 vi.mock("@/lib/saved-cache", () => ({
   ensureSavedLoaded: () => Promise.resolve(cache.savedKeys),
   isSaved: (type, id) => !cache.unsaved.has(`${type}:${id}`),
+  setSavedLocal: (type, id, value) => cache.seeded.push(`${type}:${id}:${value}`),
   subscribeSaved: (l) => {
     cache.listeners.add(l);
     return () => cache.listeners.delete(l);
@@ -105,6 +106,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   cache.unsaved = new Set();
   cache.listeners = new Set();
+  cache.seeded = [];
 });
 
 describe("savedItems — parse", () => {
@@ -148,6 +150,12 @@ describe("savedItems — «עברו»", () => {
     expect(past.map((p) => p.row.title).sort()).toEqual(["חוויה 1", "חוויה 2"]);
   });
 
+  it("a cancelled event is past even when its date is ahead", () => {
+    const { upcomingEvents, past } = splitByTime([{ ...event(1, 5), is_active: false }, event(2, 5)], [], today);
+    expect(upcomingEvents.map((e) => e.title)).toEqual(["אירוע 2"]);
+    expect(past.map((p) => p.row.title)).toEqual(["אירוע 1"]);
+  });
+
   it("upcoming soonest first; past most recent first", () => {
     const { upcomingEvents, past } = splitByTime(
       [event(1, 9), event(2, 1), event(3, -10), event(4, -2)],
@@ -181,6 +189,15 @@ describe("/favorites — one saved item (1)", () => {
     const card = screen.getByTestId("saved-recipe");
     const heart = within(card).getByTestId("save-recipe");
     expect(card.querySelector("a").contains(heart)).toBe(false);
+  });
+
+  it("seeds the shared cache with every row, so a heart here always unsaves", async () => {
+    serve({ recipes: [recipe(1)], events: [event(1, 3)], experiences: [experience(1, 3)] });
+    await renderPage();
+    await screen.findByText("מתכון 1");
+    expect(cache.seeded.sort()).toEqual(
+      [`recipe:${uid(101)}:true`, `event:${uid(201)}:true`, `experience:${uid(301)}:true`].sort(),
+    );
   });
 
   it("one recipe, «בתי עסק» chip: the businesses empty state as before", async () => {
@@ -263,8 +280,13 @@ describe("/favorites — the saved half fails", () => {
     await screen.findByText("עסק 1");
     expect(screen.getByTestId("favorites-saved-error")).toBeTruthy();
     expect(screen.queryByText(F.empty_all_title)).toBeNull();
+    // No false «0» on chips the failed half owns; businesses keep theirs.
+    expect(screen.queryByTestId("favorites-count-recipes")).toBeNull();
+    expect(screen.queryByTestId("favorites-count-all")).toBeNull();
+    expect(screen.getByTestId("favorites-count-businesses").textContent).toBe("1");
     fireEvent.click(screen.getByTestId("favorites-saved-retry"));
     expect(await screen.findByText("מתכון 1")).toBeTruthy();
     expect(screen.queryByTestId("favorites-saved-error")).toBeNull();
+    expect(screen.getByTestId("favorites-count-recipes").textContent).toBe("1");
   });
 });
