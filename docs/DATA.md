@@ -913,7 +913,7 @@ POST   /home-products/rate/{token}        public — submit rating
 ### Events (producer farm events — `app/routers/events.py`)
 
 ```
-GET    /events                    public — filter: city, category, from_date, to_date; approved producers only (MEH-1161; owner sees own via ?producer_id=, admin sees all); organizer-owned events included; EventOut.owner_kind + owner_slug (MEH-2459)
+GET    /events                    public — filter: city, category, from_date, to_date; approved producers only (MEH-1161; owner sees own via ?producer_id=, admin sees all); organizer-owned events included; EventOut.owner_kind + owner_slug (MEH-2459) + owner_image_url = owner's first photo or null, the list-row fallback (MEH-2546)
 GET    /events/upcoming            public — limit=N next events; approved producers only (MEH-1161)
 GET    /events/mine                producer — owner's own events, ALL states incl. inactive (MEH-1405; dashboard manage list). Declared before /events/{id} so "mine" isn't a UUID path.
 GET    /events/{event_id}          public — pending producer's event → 404 for strangers (MEH-1161; owner/admin bypass)
