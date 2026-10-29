@@ -105,9 +105,6 @@ function reportFiveHundredToSentry(url, status) {
 // can absorb.
 const EXISTENCE_CHECK_TIMEOUT_MS = 3000;
 
-// producerExists() result for a deleted business (truthy: it is not a 404).
-const GONE = "gone";
-
 async function producerExists(url) {
   try {
     // NOTE: the `next.revalidate` hint below is honored by Next's Data Cache
@@ -129,9 +126,15 @@ async function producerExists(url) {
     if (res.status === 404) return false;
 
     // MEH-2534: 410 = a business that was deleted. Not a backend fault, and
-    // not a plain miss: the caller serves the page's own "no longer listed"
-    // screen with a real 410.
-    if (res.status === 410) return GONE;
+    // not a plain miss: let the request through and the [slug] page renders
+    // its own "no longer listed" screen (noindex).
+    //
+    // MEH-2576: do NOT turn this into `NextResponse.rewrite(..., { status:
+    // 410 })`. On Vercel a 410 from middleware is read as the platform's own
+    // `x-vercel-error: GONE`, and Vercel serves its "deployment removed" page
+    // instead of ours — measured on staging 29/10. `next dev` does not
+    // reproduce it, so only a deployed check can catch a regression here.
+    if (res.status === 410) return true;
 
     // 5xx · 429 · anything else → fail OPEN, same decision as "unreachable".
     // `return res.ok` used to collapse these onto the 404 branch, so a backend
@@ -231,29 +234,11 @@ export default async function middleware(request) {
   // above is untouched, so the canonical, indexable, crawler-facing shape
   // keeps its real 404 and MEH-1398's SEO guarantee holds where it matters.
 
-  const exists = existsUrl ? await producerExists(existsUrl) : true;
-  if (!exists) {
+  if (existsUrl && !(await producerExists(existsUrl))) {
     // Rewrite to a guaranteed-unmatched path → globalNotFound renders a real 404.
     const nf = request.nextUrl.clone();
     nf.pathname = "/__mm_not_found__";
     return NextResponse.rewrite(nf, { status: 404 });
-  }
-  if (exists === GONE) {
-    // MEH-2534: the [slug] page renders ProducerGone for it; the rewrite only
-    // carries the status. The page streams, so without this a crawler would
-    // read 200 (+ noindex) where the backend said 410.
-    const gone = request.nextUrl.clone();
-    gone.pathname = `/${locale ?? routing.defaultLocale}/${segs[0]}`;
-    const res = NextResponse.rewrite(gone, { status: 410 });
-    // Carry next-intl's request-header overrides (the resolved locale) and
-    // cookies, or /en/<slug> would render in the default locale.
-    intlResponse.headers.forEach((value, key) => {
-      // Its own routing verdict (rewrite / next) would contradict ours.
-      if (key !== "x-middleware-rewrite" && key !== "x-middleware-next") {
-        res.headers.set(key, value);
-      }
-    });
-    return res;
   }
 
   return intlResponse;
