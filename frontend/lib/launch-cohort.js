@@ -11,7 +11,7 @@
  *           route/schema change. The server-side UserOut.launch_cohort path
  *           from the MEH-434 plan is DEFERRED (see docs/LAUNCH_OBSERVABILITY.md).
  * Related:  frontend/lib/auth-context.js (calls useLaunchCohortTag),
- *           frontend/sentry.client.config.js (Replay init).
+ *           frontend/instrumentation-client.js (Replay init).
  * History:  MEH-434 (creation — client-side tag slice).
  */
 import { useEffect } from "react";
