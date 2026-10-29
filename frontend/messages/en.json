@@ -1535,6 +1535,13 @@
         "all_complete": "All businesses are complete",
         "empty": "No businesses to display",
         "awaiting_completion": "Awaiting completion",
+        "draft_claim": {
+          "owner_waiting": "Waiting for the owner",
+          "owner_claimed": "Claimed, being completed",
+          "copy_message": "Copy message with link",
+          "message": "I prepared your page 🙂 Here is the link: {url}\nSign in with Google (fastest) or with email, review and confirm, and the page goes live after a short check. The link is valid for 14 days.",
+          "copied": "Message copied"
+        },
         "photo_preview": {
           "label": "Photos",
           "thumb_alt": "Photo {index} of {name}",
