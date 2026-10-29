@@ -24,7 +24,7 @@ import { categoryListingHref, getVacationReturnDate } from "../lib/producer-form
 // lib/order-status.js for the precedence and the contradiction it avoids.
 // (Copy itself lives in messages/{he,en}.json; comments stay English per
 // docs/CLAUDE-REVIEW.md rule 5.)
-import { israelDayKey, israelTime, resolveHeaderStatus } from "../lib/order-status";
+import { israelDayKey, israelTime, resolveHeaderStatus, statusTagTone } from "../lib/order-status";
 import { humanTime } from "@/lib/time-format";
 import { isFullThisWeek } from "@/lib/availability";
 
@@ -271,7 +271,7 @@ export default function ProducerHeader({
             Still alone on its line and still the page's one status. */}
         <p className="text-sm" data-testid="producer-header-status-line">
           <span
-            className={`inline-flex items-start gap-1.5 rounded-xl px-2.5 py-0.5 font-semibold bg-[color-mix(in_srgb,currentColor_10%,transparent)] ${status.tone}`}
+            className={`inline-flex items-start gap-1.5 rounded-xl px-2.5 py-0.5 font-semibold bg-[color-mix(in_srgb,currentColor_10%,transparent)] ${statusTagTone(status.tone)}`}
             data-testid={status.testid}
           >
             <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-current" aria-hidden="true" />
