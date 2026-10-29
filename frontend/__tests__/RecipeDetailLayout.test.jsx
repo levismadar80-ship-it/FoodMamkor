@@ -1,6 +1,6 @@
 /**
  * MEH-2543 — recipe page layout (NYT Cooking / BBC Good Food shape).
- * Cells: photo / no photo / photo that fails to load · facts 0 / 1 / 3 ·
+ * Cells: photo / no photo / photo that fails to load · facts 0 / 1 / 2 / 3 ·
  * ingredients 0 / many (cross-off toggles) · the business row links home.
  */
 import { describe, it, expect, vi } from "vitest";
@@ -58,6 +58,13 @@ describe("RecipeDetail hero", () => {
   });
 });
 
+describe("RecipeDetail eyebrow", () => {
+  it("reads the eyebrow from the locale, so /en is not Hebrew", () => {
+    renderRecipe();
+    expect(screen.getByText("recipes.detail.eyebrow")).toBeTruthy();
+  });
+});
+
 describe("RecipeDetail facts", () => {
   it("renders no tile row when nothing is set", () => {
     renderRecipe();
@@ -68,6 +75,12 @@ describe("RecipeDetail facts", () => {
     const row = screen.getByTestId("recipe-facts");
     expect(row.children).toHaveLength(1);
     expect(row.className).toContain("grid-cols-1");
+  });
+  it("renders two tiles in two columns", () => {
+    renderRecipe({ prep_time_min: 10, servings: 6 });
+    const row = screen.getByTestId("recipe-facts");
+    expect(row.children).toHaveLength(2);
+    expect(row.className).toContain("grid-cols-2");
   });
   it("renders three tiles in three columns", () => {
     renderRecipe({ prep_time_min: 10, cook_time_min: 5, servings: 6 });

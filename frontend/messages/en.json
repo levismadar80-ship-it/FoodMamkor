@@ -970,6 +970,7 @@
     "detail": {
       "breadcrumb_aria": "Breadcrumb navigation",
       "breadcrumb_recipes": "Recipes",
+      "eyebrow": "Recipe",
       "prep_time_label": "Prep time:",
       "cook_time_label": "Cook time:",
       "servings_label": "Servings:",

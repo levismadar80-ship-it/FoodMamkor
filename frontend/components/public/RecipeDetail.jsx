@@ -135,8 +135,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
         </nav>
 
         <header className="max-w-3xl">
-          {/* Same eyebrow as RecipeCard (hardcoded there per MEH-911). */}
-          <p className="mt-4 text-[13px] font-medium text-accent">מתכון</p>
+          <p className="mt-4 text-[13px] font-medium text-accent">{t("eyebrow")}</p>
           <h1 className="font-headline-lg text-3xl md:text-[44px] md:leading-tight font-black text-text mt-1">
             {recipe.title}
           </h1>
