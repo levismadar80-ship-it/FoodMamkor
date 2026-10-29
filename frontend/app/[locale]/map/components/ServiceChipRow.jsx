@@ -55,7 +55,7 @@ export default function ServiceChipRow({ chipState, onToggleChip, children }) {
   return (
     // MEH-2514: below 375px the row tightens (gap-1.5, chips px-3) so the
     // three buttons fit a 320 phone; 375 and up are unchanged.
-    <div dir="rtl" className="mt-2 flex items-center gap-2 max-[374px]:gap-1.5 min-w-0">
+    <div dir="rtl" data-testid="map-service-row" className="mt-2 flex items-center gap-2 max-[374px]:gap-1.5 min-w-0">
       {chips.map((chip) => {
         const active = !!chipState[chip.key];
         return (

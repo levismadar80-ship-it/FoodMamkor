@@ -116,6 +116,8 @@ export default function MapBottomSheet({ snap, onSnapChange, children, count, lo
   // is `transient ?? snap`, so this updates on every drag frame AND every snap —
   // the pill tracks the edge continuously through both. Published as the same
   // `sheetHeight()` string the sheet's own `height` uses (MEH-2510 floor).
+  // The value is an opaque CSS length — `max(<n>vh, calc(...))` — never a number:
+  // consumers must only drop it into calc()/max(), never parse it (MEH-2532).
   //
   // `--map-sheet-anim` publishes the sheet's OWN transition mode (this same
   // `transient != null ? "none" : 0.3s` split the sheet uses on its height, line
