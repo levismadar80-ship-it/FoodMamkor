@@ -154,10 +154,19 @@ export default function FilterChipsBar({
             aria-controls="filter-sheet-panel"
             // REUSES: frontend/components/ChipScrollRow.jsx:118-122 — chip
             // visuals, inactive variant (the button itself is not a filter).
-            className="inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 rounded-md text-sm font-medium border transition bg-white text-text border-border hover:border-primary hover:text-primary"
+            // MEH-2514: `max-[374px]:px-3` + the sr-only word below — at 320 the
+            // row's three buttons are 320px wide in a 296px row and this one
+            // sat 12px off the left edge (ServiceChipRow.jsx has the rest).
+            // `max-[359px]:min-h-[42px]`: with the word hidden and no count the
+            // button holds only the 16px glyph and shrank to 38px beside 42px
+            // chips (py-2.5 + the 20px text line + border) — measured.
+            className="inline-flex items-center gap-1.5 whitespace-nowrap px-4 max-[374px]:px-3 max-[359px]:min-h-[42px] py-2.5 rounded-md text-sm font-medium border transition bg-white text-text border-border hover:border-primary hover:text-primary"
           >
             <Faders size={16} aria-hidden="true" />
-            {t("filters.button")}
+            {/* MEH-2514: under 360px the word is for screen readers only — the
+                Faders glyph + the count carry it visually, and the button's
+                accessible name stays «סינון» at every width. */}
+            <span className="max-[359px]:sr-only">{t("filters.button")}</span>
             {/* MEH-1368: inline "· N" count, replacing the old corner badge.
                 MEH-2500: N counts only what is NOT already on the bar — the
                 sheet-only toggles, i.e. exactly the tag strip below. With both
@@ -165,7 +174,10 @@ export default function FilterChipsBar({
                 two hidden filters (Sapir 28/10). `.numeric` = tabular/LTR digit
                 in the RTL button, matching the corner badge's prior treatment. */}
             {activeFilterTags.length > 0 && (
-              <span className="numeric">{` · ${activeFilterTags.length}`}</span>
+              <span className="numeric">
+                <span className="max-[359px]:sr-only">{" · "}</span>
+                {activeFilterTags.length}
+              </span>
             )}
           </button>
           <FilterSheet
