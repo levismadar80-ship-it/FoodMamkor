@@ -394,6 +394,13 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
 
         <div>
           <label className="block text-sm font-medium text-text mb-1">{t("image_label")}</label>
+          {/* MEH-2546: why upload — rows show the event photo first, and only
+              fall back to the owner's photo or a category tile without one. */}
+          {!form.image_url && (
+            <p className="text-xs text-fg-muted mb-2" data-testid="event-image-why">
+              {t("image_why")}
+            </p>
+          )}
           {form.image_url ? (
             <div className="flex items-center gap-3">
               {/* raw img: upload preview. `form.image_url` is whatever POST /upload returned —

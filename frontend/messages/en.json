@@ -4835,6 +4835,7 @@
       "field_max_participants_label": "Max participants",
       "field_max_participants_hint": "Blank = no limit",
       "image_label": "Event image",
+      "image_why": "Events with a photo stand out in lists and on the home page",
       "image_upload_hint": "Drag here or click to upload · JPG / PNG / WebP",
       "image_uploading": "Uploading image…",
       "image_remove": "Remove image",

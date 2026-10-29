@@ -41,6 +41,9 @@ export default function AdminAnalyticsPage() {
 
   // Bar chart for top categories
   const cats = data.by_category || [];
+  // MEH-2554: a ranking of zeros is not a ranking — it read as ten businesses
+  // "tied at 0". Rows with no favorites drop out; all-zero → the empty state.
+  const topFavorited = (data.top_producers || []).filter((p) => p.favorites > 0);
   const maxCat = Math.max(1, ...cats.map((c) => c.count));
 
   return (
@@ -56,11 +59,14 @@ export default function AdminAnalyticsPage() {
           <h2 className="font-semibold mb-3">{t("analytics.monthly_growth")}</h2>
           <div className="flex gap-4 text-xs mb-2">
             <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-primary"></span>{t("analytics.legend_producers")}</span>
-            <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-primary"></span>{t("analytics.legend_users")}</span>
+            <span className="flex items-center gap-1"><span className="inline-block w-3 border-t-2 border-dashed border-accent"></span>{t("analytics.legend_users")}</span>
           </div>
           <svg viewBox={`0 0 ${W} ${H + 20}`} className="w-full">
             <path d={path("producers")} fill="none" stroke="#2e6853" strokeWidth="2" />
-            <path d={path("users")} fill="none" stroke="#2e6853" strokeWidth="2" />
+            {/* MEH-2554: both series were #2e6853 — the legend promised two lines the
+                eye could not tell apart. Users = accent + dashed, so the split
+                does not rest on colour alone (WCAG 1.4.1). */}
+            <path d={path("users")} fill="none" stroke="#896714" strokeWidth="2" strokeDasharray="5 4" />
             {months.map((m, i) => {
               const x = pad + i * stepX;
               return (
@@ -85,7 +91,7 @@ export default function AdminAnalyticsPage() {
                     <span>{c.name}</span>
                     <span className="text-muted">{c.count}</span>
                   </div>
-                  <div className="bg-accent rounded-full h-2">
+                  <div className="bg-border rounded-full h-2">
                     <div
                       className="bg-primary rounded-full h-2 transition-all"
                       style={{ width: `${(c.count / maxCat) * 100}%` }}
@@ -117,11 +123,11 @@ export default function AdminAnalyticsPage() {
         {/* Top producers */}
         <div className="bg-white border border-border rounded-[12px] p-5">
           <h2 className="font-semibold mb-3">{t("analytics.top_producers_favorites")}</h2>
-          {(data.top_producers || []).length === 0 ? (
+          {topFavorited.length === 0 ? (
             <p className="text-sm text-muted">{t("analytics.no_data_display")}</p>
           ) : (
             <ul className="space-y-1.5 text-sm">
-              {(data.top_producers || []).map((p) => (
+              {topFavorited.map((p) => (
                 <li key={p.id} className="flex justify-between border-b border-border pb-1.5">
                   <span>{p.name}</span>
                   <span className="text-muted inline-flex items-center gap-1">
