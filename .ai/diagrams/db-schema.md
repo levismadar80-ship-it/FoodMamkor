@@ -15,6 +15,7 @@
 ```mermaid
 erDiagram
     users ||--o{ favorites : "saves"
+    users ||--o{ saved_items : "saves (MEH-2556)"
     users ||--o| producers : "owns (1:1 via users.producer_id)"
     producers ||--o{ producer_categories : "tagged_with"
     producers ||--o{ products : "sells"
@@ -400,6 +401,14 @@ erDiagram
         uuid producer_id FK "SET NULL — owner of a renamed slug"
         string reason "deleted|renamed"
         timestamp retired_at
+    }
+
+    saved_items {
+        uuid id PK "MEH-2556"
+        uuid user_id FK "CASCADE (UNIQUE leads with it)"
+        string item_type "recipe|event|experience (CHECK)"
+        uuid item_id "no FK — per-type table"
+        timestamp created_at
     }
 
     inbound_messages {

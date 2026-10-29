@@ -1354,6 +1354,55 @@ class Favorite(Base):
     producer = relationship("Producer", back_populates="favorited_by")
 
 
+# MEH-2556: the content types a user can save next to a business. One list,
+# mirrored by the DB CHECK in Alembic revision 9c534d477f2b — a new type means
+# a new revision AND an entry here, never one without the other.
+SAVED_ITEM_TYPES = ("recipe", "event", "experience")
+
+
+class SavedItem(Base):
+    """MEH-2556 — a recipe, event or experience a user saved to «המועדפים שלי».
+
+    Businesses keep their own `favorites` table: `FavoriteAlert` (the
+    «קבלת עדכונים» preferences) hangs off a saved business, and nothing hangs
+    off a saved recipe or event. Two tables, two jobs — this one is not a
+    second owner of business favorites (MEH-271 smell #1).
+
+    `item_id` has no foreign key on purpose: it points at a different table per
+    `item_type`. The read path (MEH-2557) joins each type against its own table
+    and serves only rows that are still public, so a deleted or hidden item
+    drops out of the list instead of 500'ing — the same contract
+    `GET /users/me/favorites` keeps for businesses (MEH-248, MEH-2513).
+
+    `user_id` cascades: deleting an account deletes its saves. No separate
+    index on it: the UNIQUE (user_id, item_type, item_id) btree leads with
+    user_id and already serves every per-user query.
+    """
+
+    __tablename__ = "saved_items"
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id", "item_type", "item_id", name="uq_saved_items_user_item"
+        ),
+        # Built from SAVED_ITEM_TYPES so the model holds one copy of the list,
+        # not two; the revision's literal CHECK is pinned by a test.
+        CheckConstraint(
+            "item_type IN ({})".format(", ".join(f"'{t}'" for t in SAVED_ITEM_TYPES)),
+            name="saved_items_item_type_check",
+        ),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    item_type = Column(String(20), nullable=False)
+    item_id = Column(UUID(as_uuid=True), nullable=False)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
+
+
 class FavoriteAlert(Base):
     """MEH-54: per-producer alert preferences for favorited producers.
 

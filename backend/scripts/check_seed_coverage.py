@@ -276,6 +276,7 @@ EXEMPT_TABLES = {
     "phone_otp_tokens": "short-lived auth tokens (MEH-51)",
     "static_pages": "CMS content, seeded separately when it exists",
     "retired_slugs": "MEH-2528 tombstones — written only when a public business is deleted or renamed; the demo seed deletes nothing",
+    "saved_items": "MEH-2556 a user's saved recipes/events/experiences — runtime user action, like favorites clicks",
     # `cities` is EMPTY after a full local seed — measured, not assumed. It is
     # owned by backend/scripts/seed_cities.py, not by seed_data.py, so it is
     # exempt HERE rather than covered. MEH-1349 was exactly this table being

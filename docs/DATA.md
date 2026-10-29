@@ -555,9 +555,14 @@ admin_settings         (key text PK, value text)
 static_pages           (slug text PK, title, body, updated_at)
 retired_slugs          (slug varchar(100) PK, producer_id uuid FK→producers SET NULL nullable,
                         reason 'deleted'|'renamed', retired_at)  -- MEH-2528
+saved_items            (id uuid PK, user_id uuid FK→users CASCADE,
+                        item_type 'recipe'|'event'|'experience' (CHECK), item_id uuid (no FK),
+                        created_at, UNIQUE(user_id,item_type,item_id))  -- MEH-2556
 ```
 
 > **MEH-2528 — `retired_slugs` (28/10/2026):** tombstones for public business URLs. A business delete is a hard delete, so its UNIQUE `producers.slug` used to be free at once and the next business with the same name inherited every `/p/<slug>` link. Now admin delete, owner account delete and an admin slug change/clear write a row (`services/retired_slugs.py`, the only writer), and `_ensure_unique_slug` (`routers/admin.py`) treats a retired slug as taken (`-2`…). A business may take back a slug it retired itself (the row is then removed). Drafts are not retired — never public. `producer_id` = owner of a renamed slug (for a future redirect), NULL for a deleted business. Migration `c3d8e2f1a9b4`; **`EXPECTED_TABLES` 41 → 42**. A deleted business's URL answers **410** and renders the «בית העסק הזה כבר לא במהמקור» page (MEH-2534). Not yet: a 301 from a renamed slug.
+
+> **MEH-2556 — `saved_items` (29/10/2026):** the recipes, events and experiences a user saved to «המועדפים שלי» (parent MEH-2555). Businesses keep `favorites` (FavoriteAlert hangs off it). `item_id` has no FK — it points at a different table per `item_type`; the read path serves only items that still exist and are public, so a deleted/hidden item drops out on its own. One save per item (UNIQUE), three types only (DB CHECK, mirrored by `SAVED_ITEM_TYPES` in models.py — `tests/test_meh2556_saved_items_table.py` fails if the two disagree), account delete cascades. Migration `9c534d477f2b`; **`EXPECTED_TABLES` 42 → 43**. API = MEH-2557.
 
 ---
 
