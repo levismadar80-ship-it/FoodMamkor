@@ -52,7 +52,7 @@ const DETAIL_DATE_OPTIONS = {
 // BackLink does). Without an href it renders the same row with no chevron, so
 // a missing slug is never a dead link.
 function OwnerRow({ href, name, children }) {
-  const initial = (name || "").trim().charAt(0);
+  const initial = Array.from((name || "").trim())[0] ?? "";
   const body = (
     <>
       <span
