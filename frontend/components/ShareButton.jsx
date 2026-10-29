@@ -97,6 +97,24 @@ export default function ShareButton({
     );
   }
 
+  if (variant === "outline") {
+    // MEH-2548: one of a pair of equal buttons beside «הוספה ליומן» on the
+    // event / experience page (Luma, Eventbrite). Same label as "quiet".
+    return (
+      <button
+        type="button"
+        onClick={handleShare}
+        data-testid="share-outline"
+        className="flex-1 inline-flex items-center justify-center gap-2 min-h-[46px] px-3 rounded-[10px] border border-primary text-primary text-sm font-semibold hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40"
+        title={t("copy_link")}
+        aria-label={ariaLabel}
+      >
+        <ShareNetwork size={18} aria-hidden="true" />
+        {t("quiet_label")}
+      </button>
+    );
+  }
+
   return (
     <button
       onClick={handleShare}

@@ -2510,7 +2510,13 @@
       "breadcrumb_home": "Home",
       "breadcrumb_events": "Events",
       "organizer_line": "Organizer: {name}",
-      "add_to_calendar": "Add to calendar"
+      "add_to_calendar": "Add to calendar",
+      "more_from": "More events from {name}",
+      "when_today": "Today",
+      "when_tomorrow": "Tomorrow",
+      "when_this_week": "This week",
+      "past_notice": "This event has already taken place.",
+      "past_next": "{name}'s next event:"
     },
     "calendar": {
       "previous_month": "Previous month",

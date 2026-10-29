@@ -25,6 +25,7 @@ import {
   Storefront,
 } from "@phosphor-icons/react";
 import { Link } from "@/i18n/navigation";
+import { cssUrl } from "@/lib/css-url";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { formatEventDate } from "@/lib/format-date";
 import { formatTimeRange } from "@/lib/time-range";
@@ -33,7 +34,7 @@ import { formatPrice } from "@/lib/utils";
 
 // Category glyph per wire value (Phosphor only — ADR-013). Falls back to
 // CalendarBlank for any unmapped/free-text category.
-const CATEGORY_ICON = {
+export const CATEGORY_ICON = {
   "סדנה": CookingPot,
   "סיור": Path,
   "שוק": Storefront,
@@ -49,10 +50,6 @@ const CATEGORY_ICON = {
 // server-rendered organizer page can build rows too; re-exported for the
 // existing client callers.
 export { toEventEntry } from "@/lib/event-entry";
-
-// A quoted, escaped CSS url() — the picture can be an owner-supplied URL, and
-// a `)`, quote or space in it must not end the declaration (review #3811).
-const cssUrl = (src) => `url(${JSON.stringify(String(src))})`;
 
 // The date-rail row — the page's signature gesture. Date leads (Frank
 // Ruhl day numeral on a colored tick down the start edge); Latin

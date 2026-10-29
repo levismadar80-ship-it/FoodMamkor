@@ -203,6 +203,8 @@ describe("MEH-2461 organizer page", () => {
     respond(200, { ...ORG, images: ["https://res.cloudinary.com/x/image/upload/org.jpg"] });
     await renderPage();
     expect(screen.getByTestId("organizer-cover").getAttribute("src")).toContain("org.jpg");
+    // Decorative next to the h1 — a repeated name would be read twice.
+    expect(screen.getByTestId("organizer-cover").getAttribute("alt")).toBe("");
     expect(screen.queryByTestId("organizer-cover-band")).toBeNull();
     expect(screen.getByTestId("organizer-avatar").textContent).toBe("ש");
   });
