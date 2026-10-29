@@ -55,8 +55,13 @@ export default function EditHubCard({
         )}
         {previews.length > 0 && (
           <span className="flex items-center gap-2 mt-2 overflow-hidden">
+            {/* MEH-2605: the FIRST preview keeps its width and the rest give
+                way. With every slot min-w-0 the thumbnail row (fixed-size items)
+                shrank below its content and its "+N" chip painted over the
+                category chips beside it at 375px. The later slots clip, so a
+                long chip truncates to "…" instead of being covered. */}
             {previews.map((node, i) => (
-              <span key={i} className="min-w-0">
+              <span key={i} className={i === 0 ? "shrink-0" : "min-w-0 overflow-hidden"}>
                 {node}
               </span>
             ))}
