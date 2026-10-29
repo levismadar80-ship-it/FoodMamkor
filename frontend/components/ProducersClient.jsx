@@ -13,6 +13,7 @@ import LocationModal from "@/components/LocationModal";
 // MEH-1825: day axis on the canonical listing surface — same component home
 // mounts, and the same whitelist the backend validates delivery_day against.
 import { DeliveryDayRow } from "@/components/DeliveryDayRow";
+import { keepFocusedChipClear } from "@/lib/keepFocusedChipClear";
 import { DELIVERY_DAYS } from "@/lib/delivery-days";
 import BackToTop from "@/components/BackToTop";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
@@ -183,6 +184,9 @@ export default function ProducersClient({
   const [baseItems, setBaseItems] = useState(initialItems);
   const [loading, setLoading] = useState(false);
   const [locationModalOpen, setLocationModalOpen] = useState(false);
+  // MEH-2569: the day panel portals here, under the one filter row — a state
+  // ref, so the chip re-renders with the node once it exists (as on home).
+  const [dayPanelHost, setDayPanelHost] = useState(null);
   // MEH-1862: the attribute sheet's open state. Per-instance, like /map's.
   const [sheetOpen, setSheetOpen] = useState(false);
   // Stable identity on purpose (PR #1565 review, carried over from /map): an
@@ -836,17 +840,25 @@ export default function ProducersClient({
 
           The MEH-1186 micro-label is retired here: it read "סינון" above the
           row, and the button it now sits beside says "סינון" too. */}
-      <div className="mb-3 flex items-center gap-2 min-w-0">
-        <ChipScrollRow
-          variant="toggle"
-          chips={cityRowChips}
-          activeKeys={activeKeys}
-          onChipClick={handleChipClick}
-          className="flex-1"
-        />
-        {/* Anchor wrapper — the sheet's lg+ panel positions off this `relative`
-            parent, exactly as on /map. */}
-        <div className="relative shrink-0">
+      {/* MEH-2569: ONE row, home's (HomeProducersGrid.jsx, MEH-2537) — «סינון»
+          leads (inline-start, sticky below lg), then the city chip, then the
+          day chip that used to sit alone on the row below (MEH-1825/MEH-2186:
+          with no city a tap opens the LocationModal, with a city it opens the
+          day panel, portalled into the host under the row; `onClearDays` is
+          its ✕ and leaves the city standing). Same rail geometry as home: a
+          sideways scroller bled to the glass below lg (-mx-4/px-4 against the
+          page's px-4), py-1/-mt-1 keep focus rings inside the scrollport,
+          overscroll-x-none so iOS does not rubber-band the rail (MEH-2574),
+          visible overflow at lg+ so the sheet's anchored panel is not clipped. */}
+      <div
+        className="-mx-4 -mt-1 mb-3 flex items-center gap-2 min-w-0 overflow-x-auto overscroll-x-none px-4 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:-mx-1 lg:px-1 lg:overflow-visible"
+        data-testid="producers-filter-row"
+        onFocus={keepFocusedChipClear}
+      >
+        {/* Anchor wrapper — the sheet's lg+ panel positions off it (sticky is
+            positioned, so it anchors like `relative`); -start-4/-ms-4/ps-4
+            paint the gutter beside it so chips pass under it, as on home. */}
+        <div className="sticky -start-4 -ms-4 ps-4 shrink-0 bg-background lg:relative lg:start-auto lg:ms-0 lg:ps-0">
           <button
             type="button"
             onClick={() => setSheetOpen((v) => !v)}
@@ -871,21 +883,31 @@ export default function ProducersClient({
             onToggleChip={toggleChip}
             resultCount={displayItems.length}
             onClearAll={clearAttributeChips}
+            align="start"
           />
         </div>
+        {/* The city chip keeps ChipScrollRow (roving tab stop, toolbar
+            semantics, toggle visuals); one chip never overflows its own
+            scroller, so the rail is what scrolls. -mb-1 cancels that
+            scroller's pb-1, which would otherwise centre the chip 2px above
+            its neighbours. */}
+        <ChipScrollRow
+          variant="toggle"
+          chips={cityRowChips}
+          activeKeys={activeKeys}
+          onChipClick={handleChipClick}
+          className="shrink-0 -mb-1"
+        />
+        <DeliveryDayRow
+          cityActive={cityFilter}
+          daysActive={dayFilters}
+          onSelectDay={handleDaySelected}
+          onClearDays={handleClearDays}
+          inRow
+          panelHost={dayPanelHost}
+        />
       </div>
-
-      {/* MEH-1825: day refinement on the canonical listing surface. Same
-          component home mounts. MEH-2186: it is ONE dropdown chip now — with
-          no city a tap opens the LocationModal below, with a city it opens an
-          inline day panel; `onClearDays` is the chip's ✕ and drops the day set
-          without disturbing the city. */}
-      <DeliveryDayRow
-        cityActive={cityFilter}
-        daysActive={dayFilters}
-        onSelectDay={handleDaySelected}
-        onClearDays={handleClearDays}
-      />
+      <div ref={setDayPanelHost} className="mb-3 empty:hidden" data-testid="producers-day-panel-host" />
 
       {/* Results counter + active filters — MEH-1186: one control line.
           The removable chips (toggle ×, search ×) and

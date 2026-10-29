@@ -295,3 +295,35 @@ describe("MEH-1862 — the /map surface is not disturbed", () => {
     ]);
   });
 });
+
+// MEH-2569: «סינון», the city chip and the day chip were three controls on
+// two rows; they are one row now, as on home (MEH-2537). Order is the
+// contract: the trigger leads (inline-start), then city, then day.
+describe("MEH-2569 — one filter row on /producers", () => {
+  it("puts the trigger, the city chip and the day chip in ONE row, trigger first", () => {
+    render(<ProducersClient {...props(items(3))} />);
+    const row = screen.getByTestId("producers-filter-row");
+    const trigger = TRIGGER();
+    const city = screen.getByTestId("row-chip-city");
+    const day = screen.getByTestId("delivery-day-chip");
+    for (const el of [trigger, city, day]) expect(row.contains(el)).toBe(true);
+    const follows = (a, b) =>
+      !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(follows(trigger, city)).toBe(true);
+    expect(follows(city, day)).toBe(true);
+  });
+
+  it("the row is a sideways rail that does not rubber-band (MEH-2574)", () => {
+    render(<ProducersClient {...props(items(3))} />);
+    const cls = screen.getByTestId("producers-filter-row").className.split(/\s+/);
+    expect(cls).toContain("overflow-x-auto");
+    expect(cls).toContain("overscroll-x-none");
+  });
+
+  it("the trigger's wrapper is sticky below lg, so it stays put while the rail scrolls", () => {
+    render(<ProducersClient {...props(items(3))} />);
+    const lead = screen.getByTestId("producers-filter-row").firstElementChild;
+    expect(lead.contains(TRIGGER())).toBe(true);
+    expect(lead.className.split(/\s+/)).toContain("sticky");
+  });
+});
