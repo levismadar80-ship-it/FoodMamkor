@@ -6,6 +6,8 @@ category without a licence number — exactly who sits in the approval queue —
 got 422 «מספר רישיון יצרן חובה לקטגוריה זו» for a PUT carrying only
 google_place_id, so it could never be mapped. These tests pin the new route.
 """
+import uuid
+
 from app.models import Category
 
 from conftest import auth_header, make_category, make_producer, make_user
@@ -99,8 +101,19 @@ def test_non_admin_is_refused(client, db):
     assert producer.google_place_id is None
 
 
-def test_unknown_or_organizer_is_404(client, db):
+def test_organizer_is_404(client, db):
     producer = make_producer(db, status="pending")
     producer.kind = "organizer"
     db.commit()
     assert _put(client, db, producer).status_code == 404
+    db.refresh(producer)
+    assert producer.google_place_id is None
+
+
+def test_unknown_id_is_404(client, db):
+    resp = client.put(
+        f"/admin/producers/{uuid.uuid4()}/google-place-id",
+        json={"google_place_id": PLACE_ID},
+        headers=auth_header(make_user(db, role="admin")),
+    )
+    assert resp.status_code == 404, resp.text
