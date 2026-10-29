@@ -5,9 +5,9 @@ Purpose:  Owner-claim link — an admin prepares a DRAFT business with no owner,
           account and her own declaration. Nobody at Mehamakor creates or
           transmits a password.
 Touches:  producers (declared_at, declaration_version — read status, locked
-          FOR UPDATE on claim; claim_link_sent_at — stamped FOR UPDATE on mint), users (producer_id, role, is_producer,
-          terms_accepted_at, terms_version — the claimant's row locked FOR
-          UPDATE first). Background: WhatsApp welcome to the business phone,
+          FOR UPDATE on claim; claim_link_sent_at — stamped, FOR UPDATE, on
+          mint), users (producer_id, role, is_producer, terms_accepted_at,
+          terms_version — the claimant's row locked FOR UPDATE first). Background: WhatsApp welcome to the business phone,
           producer welcome email, risk score. products (admin create / delete
           on an ownerless draft only) and the deleted product's Cloudinary
           image.
@@ -117,10 +117,7 @@ def create_claim_link(
     # and our commit. Only this one row is locked — no lock-order cycle with
     # the claim, which takes the users row first and then this one.
     producer = (
-        db.query(Producer)
-        .filter(Producer.id == producer_id)
-        .with_for_update()
-        .first()
+        db.query(Producer).filter(Producer.id == producer_id).with_for_update().first()
     )
     if not producer:
         raise HTTPException(status_code=404, detail="בית העסק לא נמצא")
@@ -137,12 +134,15 @@ def create_claim_link(
     # records the LATEST link only — an earlier link stays valid until its own
     # expiry (links are not revoked), and the latest is always the
     # last-expiring one, so «בתוקף עד» derived from it is the true horizon.
+    # Read before the commit: it expires every instance in the session (the
+    # admin `user` included), and an attribute read after it re-SELECTs.
+    admin_id = str(user.id)
     producer.claim_link_sent_at = datetime.now(timezone.utc)
     db.commit()
     logger.info(
         "producer_claim.link_created",
-        producer_id=str(producer.id),
-        admin_id=str(user.id),
+        producer_id=str(producer_id),
+        admin_id=admin_id,
         expires_at=expires_at.isoformat(),
     )
     return ProducerClaimLinkOut(
