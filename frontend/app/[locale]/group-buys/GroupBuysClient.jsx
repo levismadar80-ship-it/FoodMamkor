@@ -171,7 +171,7 @@ export default function GroupBuysClient() {
       <div className="max-w-5xl mx-auto px-4 py-10">
         {/* Filters */}
         <div className="flex flex-wrap gap-3 mb-8 items-end">
-          <div className="w-56">
+          <div className="w-56 max-w-full">
             <CitySearch
               id="group-buys-city"
               label={t("filter_city_label")}
@@ -180,7 +180,7 @@ export default function GroupBuysClient() {
               placeholder={t("filter_city_placeholder")}
             />
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {[
               { key: "open", label: t("status_open") },
               { key: "funded", label: t("status_funded") },

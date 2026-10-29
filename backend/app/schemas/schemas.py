@@ -2921,6 +2921,16 @@ class ProducerAdminOut(ProducerDetailOut):
     # so the badge and the queue ordering can never disagree about age.
     # Israeli work week Sun–Thu, no holiday calendar (MEH-2110 scope).
     business_days_waiting: int = 0
+    # MEH-2495: does an account own this row (EXISTS users.producer_id = id)?
+    # Derived, never stored — hydrated per response by routers/admin.py
+    # `_attach_has_owner` in ONE batched query (no N+1). It drives the drafts
+    # list: «מחכה לבעלים» vs «נקלט, בהשלמה», and whether the row offers the
+    # claim-link copy. Admin-only: which pages have an account behind them is
+    # nobody's business but the admin's — not on ProducerDetailOut/ListOut.
+    # None, not False, by default: a route that forgot to hydrate must fail
+    # CLOSED — the UI renders neither chip nor action for a non-boolean —
+    # instead of reporting a claimed draft as ownerless.
+    has_owner: bool | None = None
     # MEH-986 ch3b: free-text kosher re-declared here — it was removed from the
     # public ProducerListOut but stays admin-internal (the admin table + form).
     kosher: str | None = None
@@ -4155,6 +4165,12 @@ class GroupBuyCommitRequest(BaseModel):
 # GroupBuy.status; which of them a caller may move to is decided in the router.
 class GroupBuyStatusUpdate(BaseModel):
     status: Literal["open", "funded", "cancelled", "fulfilled"]
+    # MEH-2489: the status the dashboard showed when the owner pressed the
+    # button. Optional, so a caller that omits it behaves exactly as before;
+    # when sent and the row has moved on (a last participant joined, open →
+    # funded), the router refuses with 409 instead of acting on a state she
+    # never saw.
+    expected_status: Literal["open", "funded", "cancelled", "fulfilled"] | None = None
 
 
 class GroupBuyStatusOut(BaseModel):

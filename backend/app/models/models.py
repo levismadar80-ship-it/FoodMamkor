@@ -1831,7 +1831,8 @@ class ProducerPageView(Base):
     The row is the source of truth for:
       - Producer dashboard: profile_views (7d / 30d / total), views_by_day
         (30-day chart), top_cities aggregation, search_appearances (rows
-        with referrer='search'), rank_in_city, weekly_trend.
+        with referrer='search'), weekly_trend (rank_in_city too, until MEH-2529
+        removed it).
       - Admin dashboard: top cities across all producers.
 
     MEH-160: EVERY one of those readers counts through

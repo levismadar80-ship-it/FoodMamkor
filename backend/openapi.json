@@ -3143,6 +3143,23 @@
       },
       "GroupBuyStatusUpdate": {
         "properties": {
+          "expected_status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "open",
+                  "funded",
+                  "cancelled",
+                  "fulfilled"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Status"
+          },
           "status": {
             "enum": [
               "open",
@@ -4903,6 +4920,17 @@
             "default": false,
             "title": "Has No Added Sugar Products",
             "type": "boolean"
+          },
+          "has_owner": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Has Owner"
           },
           "has_physical_location": {
             "default": true,

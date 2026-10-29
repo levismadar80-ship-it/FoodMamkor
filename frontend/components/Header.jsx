@@ -362,7 +362,14 @@ export default function Header() {
             // dropdown, which render inside this <nav> subtree) after the
             // <header>/shell shield set pointer-events-none. Everything
             // interactive in the header lives inside this <nav>.
-            "pointer-events-auto w-full justify-between md:w-auto md:justify-normal max-w-[92vw] flex items-center rounded-full border",
+            // MEH-2522: `md:flex-wrap` + row gap. At the default text size the
+            // row fits and nothing wraps. With the reader's text at 150% on a
+            // 768px tablet (200% at 1024) the action cluster no longer fits
+            // in 92vw, and without wrap «הרשמה» was pushed off-screen. It now
+            // drops to a second line inside the pill. md+ only: below md the
+            // pill holds just the logo and the search circle, which shrink to
+            // fit, and wrapping there split them onto two lines at 200%.
+            "pointer-events-auto w-full justify-between md:w-auto md:justify-normal max-w-[92vw] flex md:flex-wrap md:gap-y-1 items-center rounded-full border",
             // MEH-732 guardrail: animate background + shadow (+ the ink/border
             // cross-fade for AA legibility over the hero) — NOT padding (no
             // layout reflow on scroll) and never backdrop-filter.

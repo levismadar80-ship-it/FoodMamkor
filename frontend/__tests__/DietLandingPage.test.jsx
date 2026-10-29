@@ -682,11 +682,22 @@ describe("MEH-1935 copy contract", () => {
     );
   });
 
-  it("keeps the MEH-1935 §hebrew_copy no-added-sugar intro verbatim", async () => {
+  it("keeps the no-added-sugar intro verbatim (MEH-1935, health claim cut in MEH-2527)", async () => {
     const he = (await import("@/messages/he.json")).default;
     expect(he.diet_pages.pages.no_added_sugar.intro).toBe(
-      "מתוקים בלי סוכר לבן, לחמים על מחמצת בלי המתקה, וממרחים שהפרי עושה בהם את העבודה. כל בית עסק כאן סימן לפחות מוצר אחד בקטלוג כ«ללא סוכר מוסף» — מתאים גם למי שבונה תפריט דל פחמימות או קטוגני, וגם למי שפשוט רוצה פחות סוכר בבית.",
+      "מתוקים בלי סוכר לבן, לחמים על מחמצת בלי המתקה, וממרחים שהפרי עושה בהם את העבודה. כל בית עסק כאן סימן לפחות מוצר אחד בקטלוג כ״ללא סוכר מוסף״, בשביל מי שפשוט רוצה פחות סוכר בבית.",
     );
+  });
+
+  it("no diet intro makes the low-carb / keto claim (MEH-2527)", async () => {
+    // The tags dropped the health claim; the no-added-sugar intro kept
+    // «מתאים … לתפריט דל פחמימות או קטוגני» above a list of sourdough breads.
+    const he = (await import("@/messages/he.json")).default;
+    for (const entry of DIET_PAGES) {
+      const intro = he.diet_pages.pages[entry.attribute].intro;
+      expect(KETO_WORD.test(intro), `${entry.slug} intro`).toBe(false);
+      expect(intro.includes("דל פחמימות"), `${entry.slug} intro low-carb`).toBe(false);
+    }
   });
 
   it("has a config entry for every copy block and vice versa", () => {
