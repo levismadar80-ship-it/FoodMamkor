@@ -1,7 +1,7 @@
 """meh2496_claim_link_sent_at
 
 Revision ID: 8600916f1942
-Revises: 1cd44149cc20
+Revises: c3d8e2f1a9b4
 Create Date: 2026-10-28 19:24:00.000000+00:00
 
 MEH-2496 (MEH-2494 sub-card B) — when did an admin last mint an owner-claim
