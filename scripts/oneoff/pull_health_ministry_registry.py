@@ -160,9 +160,20 @@ FIELD_CANDIDATES: dict[str, list[str]] = {
         # and medical-equipment importer. Filtering on `accountType` drops all
         # of them and nothing else — 75 rows becomes 69.
         # The free-text field is the better human DESCRIPTION and the worse
-        # FILTER INPUT, so it stays a candidate but not the first one.
+        # FILTER INPUT — so it is NOT a candidate here at all. It used to be
+        # the fallback (PR #3834 had it first), and the CI reviewer caught why
+        # that is unsafe even behind `accountType`: a stem meeting prose drops
+        # producers whose description merely MENTIONS storage. Measured on the
+        # 29/10 rows — **49 rows** are producers by `accountType` whose free
+        # text matches a stem, e.g. a bakery reading
+        # `ייצור מוצרי מאפה קפואים~אחסנת מזון בטמפטורה מבוקרת`, and a CO2 plant
+        # reading `יצור, אחסון והפצה של גז Co2`. Removing it means filter B can
+        # only ever read a closed vocabulary. If `accountType` is missing from
+        # a future schema, `category` resolves to None, filter B is SKIPPED
+        # with a printed warning, and every geo row is kept — which is the
+        # direction this script is documented to fail in (see LIMITS:
+        # exclusion fails toward extra rows you can see and trim).
         "accountType",
-        "ProductActivityFoodType",
         "קטגוריה",
         "סוג רישיון",
         "סוג_רישיון",
@@ -493,6 +504,17 @@ def self_test() -> int:
     # onto one field fail here instead of silently duplicating a column.
     check("cols/live-activity", live["activity"] == "ProductActivityFoodType")
     check("cols/live-category-activity-distinct", live["category"] != live["activity"])
+    # MEH-2135 (CI reviewer on PR #3840): filter B must never stem-match prose.
+    # With `accountType` gone from the schema, `category` must come back None —
+    # NOT fall through to the free-text field — so filter B skips and keeps
+    # every geo row. 49 rows in the 29/10 dataset are producers whose activity
+    # text matches a stem, and this is what stops them being dropped.
+    no_acct = resolve_columns(["title", "city", "Addr", "ProductActivityFoodType"])
+    check("cols/no-accounttype-category-is-none", no_acct["category"] is None)
+    check(
+        "cols/no-accounttype-activity-still-resolves",
+        no_acct["activity"] == "ProductActivityFoodType",
+    )
     check("cols/live-valid", live["license_valid_until"] == "expire_date")
     check("geo/live-maayan-zvi", in_wave1("מעין צבי"))
     check("geo/live-gan-hashomron", in_wave1("גן השומרון"))
