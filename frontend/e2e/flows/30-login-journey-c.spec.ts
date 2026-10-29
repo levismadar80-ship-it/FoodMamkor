@@ -228,6 +228,13 @@ async function stubSuccessfulLogin(page: Page) {
   await page.route("**/api/users/me/favorites", (route) =>
     route.fulfill({ status: 200, contentType: "application/json", body: "[]" }),
   );
+  // MEH-2600: same trap, second call. Since MEH-2559 the home page's event
+  // rows carry a save heart, which loads GET /users/me/saved/ids
+  // (lib/saved-cache.js) once signed in — 401 → refresh 401 → token wiped, so
+  // the reopened tab in C2 again found `token: null` (red 1 of 3 on staging).
+  await page.route("**/api/users/me/saved/ids", (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: "[]" }),
+  );
   await page.route("**/api/auth/login", (route) =>
     route.fulfill({
       status: 200,
