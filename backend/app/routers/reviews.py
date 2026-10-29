@@ -343,9 +343,19 @@ def _apply_review_edit(
     that window must be the is_hidden this compares against. Compared before
     the assignment; an unchanged re-save does not stamp.
     """
-    # The refresh discards unflushed changes on `review`: nothing may be
-    # assigned to it before this line.
-    db.refresh(review, with_for_update=True)
+    # The re-read discards unflushed changes on `review`: nothing may be
+    # assigned to it before this line. MEH-2409: a query, not db.refresh — an
+    # admin may delete the row inside the same window, and refresh raises
+    # InvalidRequestError (500) on a vanished row where this returns None.
+    locked = (
+        db.query(ProducerReview)
+        .filter(ProducerReview.id == review.id)
+        .populate_existing()
+        .with_for_update()
+        .first()
+    )
+    if locked is None:
+        raise HTTPException(status_code=404, detail="ביקורת לא נמצאה")
     if review.is_hidden and (review.body != data.body or review.stars != data.stars):
         review.edited_after_hidden_at = utc_now()
     review.stars = data.stars
