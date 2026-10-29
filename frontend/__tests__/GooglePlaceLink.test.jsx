@@ -95,7 +95,7 @@ describe("GooglePlaceLink (MEH-2582)", () => {
     fireEvent.click(screen.getByRole("button", { name: "חפשי בגוגל" }));
     fireEvent.click(await screen.findByText("מאפיית הכפר"));
     expect(await screen.findByText("שומרת…")).toBeInTheDocument();
-    expect(api.put).toHaveBeenCalledWith("/admin/producers/p1", { google_place_id: "ChIJ_a" });
+    expect(api.put).toHaveBeenCalledWith("/admin/producers/p1/google-place-id", { google_place_id: "ChIJ_a" });
     resolvePut({ data: {} });
     expect(await screen.findByText("מקושר ✓")).toBeInTheDocument();
     expect(screen.queryByRole("listitem")).toBeNull();

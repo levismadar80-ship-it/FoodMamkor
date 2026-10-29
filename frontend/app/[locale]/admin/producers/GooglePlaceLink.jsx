@@ -10,8 +10,10 @@
  *
  * Same search as ProducerForm (MEH-1506): GET
  * /admin/producers/{id}/google-place-candidates, up to 3 candidates, the admin
- * PICKS one — no auto-select. Here the pick saves at once with a partial PUT
- * carrying only google_place_id (the admin PUT is exclude_unset). "Linked"
+ * PICKS one — no auto-select. Here the pick saves at once through the one-field
+ * PUT /admin/producers/{id}/google-place-id — not the full admin PUT, whose
+ * licence gate refuses any edit of a pending business that has no licence
+ * number yet (exactly who is in this queue). "Linked"
  * follows the PUT's success, never the click; `onLinked` then updates the
  * table row so a collapse + reopen stays "linked". Only the place_id is stored; the
  * review count is display-only (Google ToS, see routers/google_rating.py).
@@ -57,7 +59,7 @@ export default function GooglePlaceLink({ producerId, placeId, onLinked }) {
     setSaving(true);
     setSaveError(false);
     try {
-      await api.put(`/admin/producers/${producerId}`, { google_place_id: id });
+      await api.put(`/admin/producers/${producerId}/google-place-id`, { google_place_id: id });
       setLinkedId(id);
       onLinked?.(id);
       setReplacing(false);

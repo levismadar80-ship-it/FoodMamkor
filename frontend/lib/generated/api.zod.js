@@ -1950,6 +1950,20 @@ export const GetGooglePlaceCandidatesAdminProducersProducerIdGooglePlaceCandidat
 
 
 /**
+ * Admin-only: set (or clear, with null/blank) one producer's place_id.
+ *
+ * Writes ONLY producers.google_place_id — the one Google datum the ToS lets us
+ * store. 403 for non-admins (require_admin), 404 for an unknown id or an
+ * organizer (no Google line for organizers, MEH-2465), 422 for a value that
+ * is not a bare place_id (normalize_google_place_id).
+ * @summary Put Google Place Id
+ */
+export const PutGooglePlaceIdAdminProducersProducerIdGooglePlaceIdPutResponse = /*#__PURE__*/ zod.object({
+  "google_place_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+})
+
+
+/**
  * Stamp the tier-1 verification result after the admin checks the
  * qualifying document (license / exemption / cosmetics — VERIFICATION.md
  * §2). Re-grant overwrites verified_at + verification_doc_type (the legit

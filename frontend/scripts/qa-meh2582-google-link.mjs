@@ -51,9 +51,9 @@ async function newPage(browser, width, height) {
   await page.route("**/api/**", (route) => {
     const p = new URL(route.request().url()).pathname.replace(/^\/api/, "");
     const m = route.request().method();
-    if (m === "PUT" && p === `/admin/producers/${PRODUCER.id}`) {
+    if (m === "PUT" && p === `/admin/producers/${PRODUCER.id}/google-place-id`) {
       puts.push(JSON.parse(route.request().postData() || "{}"));
-      return json(route, { ...PRODUCER, google_place_id: "ChIJ_a" });
+      return json(route, { google_place_id: "ChIJ_a" });
     }
     if (p === "/auth/me") return json(route, { id: "admin-1", email: "a@b.co", role: "admin", name: "מנהלת" });
     if (p === "/admin/producers") return json(route, [PRODUCER]);
