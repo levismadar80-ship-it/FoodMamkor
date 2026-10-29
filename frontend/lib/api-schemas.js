@@ -53,6 +53,16 @@ export const FavoriteSchema = z.object({
 });
 export const FavoritesResponseSchema = z.array(FavoriteSchema);
 
+// MEH-2558: GET /users/me/saved/ids → list[SavedItemRefOut] = { item_type,
+// item_id } — the hearts' cache for saved recipes / events / experiences
+// (lib/saved-cache.js). item_type is the backend's closed Literal; an unknown
+// value fails the parse and the cache falls back to empty.
+const SavedItemRefSchema = z.object({
+  item_type: z.enum(["recipe", "event", "experience"]),
+  item_id: z.string(),
+});
+export const SavedIdsResponseSchema = z.array(SavedItemRefSchema);
+
 // MEH-1713: the /favorites PAGE row — distinct from FavoriteSchema above,
 // which is heart-state for lib/favorites-cache.js (producer_id only, no
 // nested producer). Backend contract: FavoriteOut

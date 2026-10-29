@@ -3236,7 +3236,8 @@
       "remove_aria": "Remove from favorites",
       "inline_label": "Save",
       "quiet_label": "Save",
-      "login_prompt_message": "To save businesses you love — sign in"
+      "login_prompt_message": "To save businesses you love — sign in",
+      "login_prompt_message_saved_item": "To save to your favorites — sign in"
     }
   },
   "report": {
@@ -3255,6 +3256,7 @@
     "modal_title": "Share a link to the business",
     "modal_title_event": "Share this event",
     "modal_title_experience": "Share this experience",
+    "modal_title_recipe": "Share this recipe",
     "copy_link": "Copy link",
     "wa_message_with_meta": "I found {title} on Mehamakor 🌿",
     "wa_message_business_fallback": "a business",

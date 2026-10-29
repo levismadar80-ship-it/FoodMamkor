@@ -14,6 +14,7 @@ import {
   resetFavoritesCache,
   setFavoritedLocal,
 } from "./favorites-cache";
+import { resetSavedCache } from "./saved-cache"; // MEH-2558
 import { useLaunchCohortTag } from "./launch-cohort";
 import {
   USER_CITY_CHANGED_EVENT,
@@ -95,6 +96,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const handle = () => {
       resetFavoritesCache();
+      resetSavedCache();
       setUser(null);
       const redirect = encodeURIComponent(window.location.pathname);
       showToast.info(t("sessionExpired"), {
@@ -180,6 +182,7 @@ export function AuthProvider({ children }) {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     resetFavoritesCache();
+    resetSavedCache();
     setUser(null);
     api.post("/auth/logout").catch(() => {});
   };
@@ -188,6 +191,7 @@ export function AuthProvider({ children }) {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     resetFavoritesCache();
+    resetSavedCache();
     setUser(null);
     api.post("/auth/logout").catch(() => {});
   };
