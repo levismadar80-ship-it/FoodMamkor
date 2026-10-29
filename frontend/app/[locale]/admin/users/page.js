@@ -28,7 +28,7 @@ export default function AdminUsersPage() {
   const [role, setRole] = useState("all");
   const [expanded, setExpanded] = useState(null);
   const [favorites, setFavorites] = useState({});
-  const [confirm, setConfirm] = useState(null); // { userId, userName, action: "promote"|"demote" }
+  const [confirm, setConfirm] = useState(null); // { userId, userName, userEmail?, action: "promote"|"demote"|"delete" }
   // MEH-1046: client-side pagination — slice the already-fetched array. The
   // search/role filters are SERVER-side (load() query params), so `users` is
   // already the filtered result set. Page resets on filter change only, not
@@ -44,7 +44,7 @@ export default function AdminUsersPage() {
   useEffect(() => {
     if (!confirm) return undefined;
     const onKey = (e) => {
-      if (e.key === "Escape" && !isBusy(`role:${confirm.userId}`)) setConfirm(null);
+      if (e.key === "Escape" && !isBusy(confirmKey(confirm))) setConfirm(null);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -79,6 +79,16 @@ export default function AdminUsersPage() {
       setConfirm(null);
     });
 
+  // MEH-2585: hard delete (DELETE /admin/users/{id}). The backend refuses
+  // admins and the super-admin; the menu hides the item for them too. Errors
+  // use the central toast so the backend's Hebrew reason is shown.
+  const deleteUser = (id) =>
+    run(`delete:${id}`, async () => {
+      await api.delete(`/admin/users/${id}`);
+      load();
+      setConfirm(null);
+    });
+
   const toggleBlock = (id) =>
     run(`block:${id}`, async () => {
       await api.post(`/admin/users/${id}/block`);
@@ -98,6 +108,8 @@ export default function AdminUsersPage() {
   };
 
   const isSuperAdmin = (u) => u.email === SUPER_ADMIN_EMAIL;
+  // One in-flight key per dialog action: role changes and deletes lock separately.
+  const confirmKey = (c) => `${c.action === "delete" ? "delete" : "role"}:${c.userId}`;
   const isMe = (u) => me && u.id === me.id;
 
   // MEH-1046: search submit (Enter / button) resets to page 1.
@@ -265,6 +277,15 @@ export default function AdminUsersPage() {
                                   onSelect: () => setConfirm({ userId: u.id, userName: u.name, action: "demote" }),
                                 }]
                               : []),
+                            ...(u.role !== "admin" && !isSuperAdmin(u) && !isMe(u)
+                              ? [{
+                                  key: "delete",
+                                  label: t("users.actions.delete"),
+                                  tone: "danger",
+                                  onSelect: () =>
+                                    setConfirm({ userId: u.id, userName: u.name, userEmail: u.email, action: "delete" }),
+                                }]
+                              : []),
                           ]}
                         />
                       </div>
@@ -352,15 +373,19 @@ export default function AdminUsersPage() {
             className="bg-white rounded-[16px] shadow-xl p-6 max-w-sm w-full mx-4 text-start space-y-4"
           >
             <p id="role-confirm-title" className="font-medium text-base">
-              {confirm.action === "promote"
-                ? t("users.confirm.promote", { name: confirm.userName })
-                : t("users.confirm.demote", { name: confirm.userName })}
+              {confirm.action === "delete"
+                ? t("users.confirm.delete", { name: confirm.userName, email: confirm.userEmail })
+                : confirm.action === "promote"
+                  ? t("users.confirm.promote", { name: confirm.userName })
+                  : t("users.confirm.demote", { name: confirm.userName })}
             </p>
             <div className="flex gap-3 justify-start">
               <button
-                disabled={isBusy(`role:${confirm.userId}`)}
+                disabled={isBusy(confirmKey(confirm))}
                 onClick={() =>
-                  applyRole(confirm.userId, confirm.action === "promote" ? "admin" : "consumer")
+                  confirm.action === "delete"
+                    ? deleteUser(confirm.userId)
+                    : applyRole(confirm.userId, confirm.action === "promote" ? "admin" : "consumer")
                 }
                 className={`px-4 py-2 rounded-[10px] text-sm font-medium text-white transition ${
                   confirm.action === "promote"
@@ -368,7 +393,11 @@ export default function AdminUsersPage() {
                     : "bg-red-600 hover:bg-red-700"
                 } disabled:opacity-50`}
               >
-                {isBusy(`role:${confirm.userId}`) ? t("users.confirm.submitting") : t("users.confirm.confirm")}
+                {isBusy(confirmKey(confirm))
+                  ? t("users.confirm.submitting")
+                  : confirm.action === "delete"
+                    ? t("users.actions.delete")
+                    : t("users.confirm.confirm")}
               </button>
               {/* Deliberately NOT guarded by isBusy: an explicit cancel stays
                   available while the PUT is open. The guard belongs on the
