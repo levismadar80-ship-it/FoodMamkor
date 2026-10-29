@@ -233,7 +233,7 @@ async function stubRejectedOwner(page: Page, reason: string, code: string): Prom
   await page.route("**/auth/me", (r) => json(r, { id: 42, email: "owner@example.com", name: "שקד", role: "producer", producer_id: 7, producer_rejection_reason: reason, producer_rejection_reason_code: code, producer_resubmission_count: 0 }));
   await page.route("**/users/me/favorites", (r) => json(r, []));
   await page.route("**/producers/me/dashboard", (r) => json(r, { producer: { id: 7, name: "מאפיית שקד", slug: null, status: "rejected", availability_state: "accepting_orders", vacation_until: null }, stats: {} }));
-  await page.route("**/producers/me/analytics**", (r) => json(r, { profile_views: { total: 0, last_7d: 0 }, whatsapp_clicks: { total: 0, last_7d: 0 }, contact_clicks: { total: 0, last_7d: 0 }, average_rating: null, total_reviews: 0, rank_in_city: null, conversion_rate: "0%", profile_strength: 10, top_cities: [], follower_count: 0, new_followers_this_week: 0 }));
+  await page.route("**/producers/me/analytics**", (r) => json(r, { profile_views: { total: 0, last_7d: 0 }, whatsapp_clicks: { total: 0, last_7d: 0 }, contact_clicks: { total: 0, last_7d: 0 }, average_rating: null, total_reviews: 0, conversion_rate: "0%", top_cities: [], follower_count: 0, new_followers_this_week: 0 }));
   await page.route("**/producers/me", (r) => json(r, profile));
 }
 
