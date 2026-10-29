@@ -27,7 +27,7 @@ vi.mock("@/components/ImageWithFallback", () => ({ default: () => null }));
 // MEH-2558: the hero actions have their own tests (SaveButton.test.jsx,
 // ShareButton.test.jsx); here they only need to render as markers.
 vi.mock("@/components/SaveButton", () => ({
-  default: ({ itemType, itemId }) => <button data-testid={`save-${itemType}-${itemId}`} />,
+  default: ({ itemType, itemId }) => <button data-testid={`save-${itemType}`} data-id={itemId} />,
 }));
 vi.mock("@/components/ShareButton", () => ({
   default: ({ subject }) => <button data-testid={`share-${subject}`} />,
@@ -71,12 +71,12 @@ describe("RecipeDetail hero actions (MEH-2558)", () => {
     renderRecipe({ image_url: "https://res.cloudinary.com/x.jpg" });
     const actions = screen.getByTestId("recipe-hero-actions");
     expect(actions.querySelector('[data-testid="share-recipe"]')).toBeTruthy();
-    expect(actions.querySelector('[data-testid="save-recipe-r1"]')).toBeTruthy();
+    expect(actions.querySelector('[data-testid="save-recipe"][data-id="r1"]')).toBeTruthy();
   });
   it("keeps them on the no-photo strip", () => {
     renderRecipe();
     expect(screen.getByTestId("recipe-hero-missing")).toBeTruthy();
-    expect(screen.getByTestId("save-recipe-r1")).toBeTruthy();
+    expect(screen.getByTestId("save-recipe").getAttribute("data-id")).toBe("r1");
     expect(screen.getByTestId("share-recipe")).toBeTruthy();
   });
 });
