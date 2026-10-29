@@ -36,9 +36,13 @@ vi.mock("@/lib/auth-context", () => ({
 }));
 
 // OAuth must render → a Google client id has to be present.
-vi.mock("@/lib/env", () => ({
-  env: { NEXT_PUBLIC_GOOGLE_CLIENT_ID: "test-google", NEXT_PUBLIC_APPLE_CLIENT_ID: "test-apple" },
+// Mutable so one case can switch both providers off (RegisterClient reads env
+// at render).
+const mockEnv = vi.hoisted(() => ({
+  NEXT_PUBLIC_GOOGLE_CLIENT_ID: "test-google",
+  NEXT_PUBLIC_APPLE_CLIENT_ID: "test-apple",
 }));
+vi.mock("@/lib/env", () => ({ env: mockEnv }));
 
 vi.mock("next/image", () => ({ default: () => null }));
 // MEH-1285: RegisterClient now uses Link from @/i18n/navigation (locale-aware);
@@ -146,6 +150,21 @@ describe("MEH-2577 — /register opens with Google/Apple, under a consent line",
     expect(submit.disabled).toBe(true); // everything valid but the box
     fireEvent.click(screen.getByTestId("register-terms"));
     expect(submit.disabled).toBe(false);
+  });
+
+  it("no provider configured: no buttons, no consent line, no divider — the form alone", () => {
+    const saved = { ...mockEnv };
+    mockEnv.NEXT_PUBLIC_GOOGLE_CLIENT_ID = "";
+    mockEnv.NEXT_PUBLIC_APPLE_CLIENT_ID = "";
+    try {
+      render(<RegisterClient />);
+      expect(screen.queryByTestId("register-oauth-terms")).toBeNull();
+      expect(screen.queryByText("auth.register.consumer.oauth_divider")).toBeNull();
+      expect(seen.google).toBeUndefined();
+      expect(screen.getByTestId("register-form")).toBeTruthy();
+    } finally {
+      Object.assign(mockEnv, saved);
+    }
   });
 
   it("a Google failure shows under the consent line, not inside the email form", () => {
