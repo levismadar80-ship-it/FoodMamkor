@@ -67,9 +67,12 @@ export default function EventDetailClient() {
 
   const ownerId = event?.producer_id;
   useEffect(() => {
+    // A new owner (client-side navigation) never shows the previous owner's list.
+    setMoreEvents([]);
     if (!ownerId) return;
     let live = true;
     api
+      // Upcoming only, date-ascending (list_events) — so others[0] is the next one.
       .get("/events", { params: { producer_id: ownerId } })
       .then((r) => live && setMoreEvents(Array.isArray(r.data) ? r.data : []))
       .catch(() => live && setMoreEvents([]));
