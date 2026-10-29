@@ -780,3 +780,35 @@ body.sheet-open .cookie-banner {
     justify-content: center;
   }
 }
+
+/* ── MEH-2599 — BrandLoader: the logo mark as the whole-page wait indicator ──
+   The mark stands still; its five seeds light up in sequence (a 1.6 s round,
+   one seed every 0.16 s — the Google-dots rhythm, in the brand's own colours).
+   No rotation: the big sites animate colour, not the logo itself, and a
+   spinning logo reads as 2005. The wrapper fades in after 400 ms so a fast load shows nothing at all.
+   Reduced motion needs no rule here: the MEH-788 kill-switch above collapses
+   both animations to their end state (fully lit, unrotated). */
+.brand-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40vh;
+  opacity: 0;
+  animation: brand-loader-reveal 0.3s ease-out 0.4s forwards;
+}
+.brand-loader-mark {
+  display: block;
+}
+.brand-loader-seed {
+  opacity: 0.94;
+  animation: brand-loader-seed 1.6s ease-in-out infinite;
+}
+@keyframes brand-loader-reveal {
+  to {
+    opacity: 1;
+  }
+}
+@keyframes brand-loader-seed {
+  0%, 100% { opacity: 0.22; }
+  35%, 65% { opacity: 0.94; }
+}

@@ -5,6 +5,7 @@ import { EnvelopeSimple, LinkBreak, Leaf } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import StatusPage from "@/components/StatusPage";
 import api from "@/lib/api";
+import BrandLoader from "@/components/BrandLoader";
 
 /**
  * MEH-1330: one-click newsletter unsubscribe landing.
@@ -34,7 +35,8 @@ export default function UnsubscribeClient({ token }) {
 
   // MEH-2567: shared StatusPage layout; copy unchanged.
   if (status === "loading") {
-    return <StatusPage icon={EnvelopeSimple} body={t("loading")} bodyRole="status" />;
+    // MEH-2599: brand mark while the token is checked; the StatusPage frame returns with the verdict.
+    return <BrandLoader label={t("loading")} className="px-4 py-12" />;
   }
   const ok = status === "success";
   return (

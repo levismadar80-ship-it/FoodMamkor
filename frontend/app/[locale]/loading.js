@@ -1,30 +1,18 @@
 import { getTranslations } from "next-intl/server";
+import BrandLoader from "@/components/BrandLoader";
 
+// The ONE route-level loading boundary of the site. It streams the shell on
+// every navigation that lacks a nearer loading.js — a producer page, a recipe,
+// an event, /about, /login — so it cannot know the shape of what is coming.
+// MEH-2599 replaced the 8-card producer grid it used to draw (which flashed
+// business cards on the way to a recipe) with the brand mark, revealed only
+// after 400 ms. Lists that DO know their shape keep their own Skeleton.
+//
+// Keep this file where it is: app/[locale]/[slug]/recipes/[recipe_id]/page.jsx
+// and the MEH-1045 notFound() path rely on this boundary flushing the shell
+// before a throw (HTTP status stays 200 — measured there, do not restate).
 export default async function Loading() {
-  // MEH-876: announce the loading state to assistive tech (the skeleton is
-  // otherwise silent decorative markup).
+  // MEH-876: announce the loading state to assistive tech.
   const t = await getTranslations("a11y");
-  return (
-    <div
-      className="max-w-7xl mx-auto px-4 py-8"
-      role="status"
-      aria-busy="true"
-    >
-      <span className="sr-only">{t("loading")}</span>
-      <div className="h-8 w-48 bg-border rounded-[12px] animate-pulse mb-8" />
-      {[0, 1].map((row) => (
-        <div key={row} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-          {[0, 1, 2, 3].map((col) => (
-            <div key={col} className="rounded-[12px] overflow-hidden bg-white">
-              <div className="h-[200px] bg-border animate-pulse" />
-              <div className="p-4 space-y-2">
-                <div className="h-4 bg-border rounded-lg animate-pulse w-3/4" />
-                <div className="h-3 bg-border rounded-lg animate-pulse w-1/2" />
-              </div>
-            </div>
-          ))}
-        </div>
-      ))}
-    </div>
-  );
+  return <BrandLoader label={t("loading")} className="max-w-7xl mx-auto px-4 py-8" />;
 }
