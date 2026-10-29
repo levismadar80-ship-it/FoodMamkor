@@ -549,7 +549,11 @@ newsletter_subscribers (id, email unique, created_at)
 contact_messages       (id, name, email, message text, created_at)
 admin_settings         (key text PK, value text)
 static_pages           (slug text PK, title, body, updated_at)
+retired_slugs          (slug varchar(100) PK, producer_id uuid FK→producers SET NULL nullable,
+                        reason 'deleted'|'renamed', retired_at)  -- MEH-2528
 ```
+
+> **MEH-2528 — `retired_slugs` (28/10/2026):** tombstones for public business URLs. A business delete is a hard delete, so its UNIQUE `producers.slug` used to be free at once and the next business with the same name inherited every `/p/<slug>` link. Now admin delete, owner account delete and an admin slug change/clear write a row (`services/retired_slugs.py`, the only writer), and `_ensure_unique_slug` (`routers/admin.py`) treats a retired slug as taken (`-2`…). A business may take back a slug it retired itself (the row is then removed). Drafts are not retired — never public. `producer_id` = owner of a renamed slug (for a future redirect), NULL for a deleted business. Migration `c3d8e2f1a9b4`; **`EXPECTED_TABLES` 41 → 42**. Not yet: a "business no longer listed" page for a retired URL (needs copy) and a 301 from a renamed slug.
 
 ---
 

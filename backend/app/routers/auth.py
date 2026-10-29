@@ -43,6 +43,7 @@ from app.services.group_buy_delist import (  # MEH-2503
     cancel_live_group_buys,
     withdraw_user_commits,
 )
+from app.services import retired_slugs  # MEH-2528
 from app.services.producer_risk import score_producer
 from app.services.oauth_verifiers import (
     # Aliases preserve the legacy underscore-prefixed module attribute
@@ -1624,6 +1625,9 @@ def delete_account(
             # participants told, as on a suspension (MEH-2498) — before the
             # unlink, since the helper skips users linked to this producer.
             cancel_live_group_buys(db, producer, background_tasks)
+            # MEH-2528: her business's URL stays reserved after she leaves, so
+            # the next business with that name cannot inherit her links.
+            retired_slugs.retire_slug(db, producer, "deleted")
         user.producer_id = None
         db.flush()
         if producer is not None:

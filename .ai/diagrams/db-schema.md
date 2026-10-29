@@ -394,6 +394,13 @@ erDiagram
         timestamp updated_at
     }
 
+    retired_slugs {
+        string slug PK "MEH-2528 tombstone"
+        uuid producer_id FK "SET NULL — owner of a renamed slug"
+        string reason "deleted|renamed"
+        timestamp retired_at
+    }
+
     inbound_messages {
         uuid id PK
         string from_phone "indexed (MEH-509 PR2b)"
