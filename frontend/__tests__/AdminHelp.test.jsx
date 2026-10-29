@@ -160,6 +160,18 @@ describe("AdminHelp — page", () => {
     expect(screen.getByRole("button", { name: question("name_change_requests") })).toHaveAttribute("aria-expanded", "true");
   });
 
+  it("a hash change during a search clears it and scrolls to the topic", async () => {
+    const scrolled = [];
+    Element.prototype.scrollIntoView = function () { scrolled.push(this.id); };
+    render(<AdminHelpPage />);
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "השם המבוקש" } });
+    window.location.hash = "#kashrut";
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
+    expect(await screen.findByRole("button", { name: question("kashrut") })).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("searchbox")).toHaveValue("");
+    expect(scrolled).toContain("kashrut");
+  });
+
   it("a malformed #hash is ignored, not thrown", () => {
     window.location.hash = "#%E0%A4%A";
     render(<AdminHelpPage />);

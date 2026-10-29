@@ -15,7 +15,8 @@ import { HELP_GROUPS, HELP_TOPICS, topicMatches } from "./topics";
  *           searchable, concise help (NN/g heuristic 10; Shopify / Stripe
  *           in-admin help), not a per-screen manual.
  * States:   search → 0 matches (no-results line) / 1 (that topic opens) /
- *           many; each topic closed / open, one open at a time. `#<topic id>`
+ *           many; each topic closed / open, one open at a time. A topic a
+ *           search opened stays open when the search is cleared (tested). `#<topic id>`
  *           in the URL opens that topic, so other screens can deep-link here.
  * Does NOT: hold infrastructure runbooks or credentials — those live in
  *           docs/ACCESS.md + docs/DEPLOYMENT.md (ADR-035, one home per fact).
@@ -24,6 +25,7 @@ export default function AdminHelpPage() {
   const t = useTranslations("admin");
   const [query, setQuery] = useState("");
   const [openId, setOpenId] = useState(null);
+  const [scrollTarget, setScrollTarget] = useState(null);
 
   // Deep link: /admin/help#kashrut opens and scrolls to that topic, on load
   // and when the hash changes while the page is open.
@@ -38,12 +40,18 @@ export default function AdminHelpPage() {
       if (!HELP_TOPICS.some((topic) => topic.id === id)) return;
       setQuery("");
       setOpenId(id);
-      requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ block: "start" }));
+      setScrollTarget({ id }); // a new object each time, so the same hash re-scrolls
     };
     fromHash();
     window.addEventListener("hashchange", fromHash);
     return () => window.removeEventListener("hashchange", fromHash);
   }, []);
+
+  // Scroll after the render that cleared the search, so the target <li> is in
+  // the DOM even when the hash changed while a search was hiding it.
+  useEffect(() => {
+    if (scrollTarget) document.getElementById(scrollTarget.id)?.scrollIntoView({ block: "start" });
+  }, [scrollTarget]);
 
   const topics = HELP_TOPICS.map((topic) => ({
     ...topic,
