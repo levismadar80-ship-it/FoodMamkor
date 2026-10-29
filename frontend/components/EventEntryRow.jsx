@@ -46,12 +46,13 @@ const CATEGORY_ICON = {
 };
 
 
-// Normalize an event OR experience row into one shape the rail renderer
-// understands. Field names diverge between the two APIs; the accent
-// ("green" event / "gold" experience) drives the species styling.
 // A quoted, escaped CSS url() — the picture can be an owner-supplied URL, and
 // a `)`, quote or space in it must not end the declaration (review #3811).
 const cssUrl = (src) => `url(${JSON.stringify(String(src))})`;
+
+// Normalize an event OR experience row into one shape the rail renderer
+// understands. Field names diverge between the two APIs; the accent
+// ("green" event / "gold" experience) drives the species styling.
 
 export function toEventEntry(row, tab, t) {
   const isExp = tab === "experiences";
