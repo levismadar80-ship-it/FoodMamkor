@@ -32,6 +32,7 @@ import { cssUrl } from "@/lib/css-url";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import { downloadIcs } from "@/lib/event-ics";
 import { eventWhen, addressNavLinks } from "@/lib/event-when";
+import { AddressNavLinks } from "@/components/NavAppGlyphs";
 
 // MEH-1404: reuse the producer-detail static map + Waze/Gmaps block on
 // experiences with coords. ssr:false — leaflet touches window at module eval.
@@ -62,10 +63,8 @@ export default function ExperienceDetailClient() {
   const t = useTranslations("experiences.detail");
   // MEH-2476: the place-type labels are the form's own («בבית פרטי» / «מקום ציבורי»).
   const tForm = useTranslations("experiences.new");
-  // MEH-2549: the event page's shared strings (time chip, calendar) and the
-  // map block's Waze / Google labels.
+  // MEH-2549: the event page's shared strings (time chip, calendar).
   const tEv = useTranslations("events.detail");
-  const tMap = useTranslations("map.mini");
   const locale = useLocale();
   const { id } = useParams();
   const search = useSearchParams();
@@ -334,18 +333,7 @@ export default function ExperienceDetailClient() {
                     {[ex.city, ex.address, placeLabel].filter(Boolean).join(" · ")}
                   </p>
                 </div>
-                {nav && (
-                  <div className="flex gap-2 px-4 pb-3" data-testid="experience-nav-links">
-                    <a href={nav.waze} target="_blank" rel="noopener noreferrer" aria-label={tMap("open_in_waze_aria")}
-                      className="flex-1 inline-flex items-center justify-center min-h-[44px] rounded-[10px] border border-border text-sm font-medium text-primary hover:bg-green-50 transition focus-ring">
-                      {tMap("open_in_waze")}
-                    </a>
-                    <a href={nav.google} target="_blank" rel="noopener noreferrer" aria-label={tMap("open_in_google_aria")}
-                      className="flex-1 inline-flex items-center justify-center min-h-[44px] rounded-[10px] border border-border text-sm font-medium text-primary hover:bg-green-50 transition focus-ring">
-                      {tMap("open_in_google")}
-                    </a>
-                  </div>
-                )}
+                {nav && <AddressNavLinks links={nav} testId="experience-nav-links" />}
               </div>
             )}
             <div className={`${infoRow} border-t border-border`}>

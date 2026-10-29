@@ -126,7 +126,9 @@ export async function generateMetadata(props) {
       // producer-page precedent (lib/seo.js buildProducerMetadata).
       url: alternates.canonical,
       siteName: BRAND_NAME,
-      images: recipe.image_url ? [recipe.image_url] : undefined,
+      // MEH-2590: site image when the recipe has none — an omitted key is not
+      // inherited from the layout, so the share preview had no image.
+      images: recipe.image_url ? [recipe.image_url] : ["/og-image.png"],
       type: "article",
       locale: OG_LOCALE[locale],
     },
@@ -136,7 +138,7 @@ export async function generateMetadata(props) {
       card: "summary_large_image",
       title: `${recipe.title} | ${producer.name}`,
       description: truncate(recipe.description, 160),
-      images: recipe.image_url ? [recipe.image_url] : undefined,
+      images: recipe.image_url ? [recipe.image_url] : ["/og-image.png"],
     },
     alternates,
   };

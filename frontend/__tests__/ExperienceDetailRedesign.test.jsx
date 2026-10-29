@@ -159,6 +159,14 @@ describe("MEH-2549 — navigation and the time chip", () => {
     expect(links[0].getAttribute("href")).toContain(encodeURIComponent("רחוב הנמל 5, חיפה"));
   });
 
+  it("MEH-2588: address links show the Waze and Google marks", async () => {
+    await renderWith();
+    const [waze, google] = screen.getByTestId("experience-nav-links").querySelectorAll("a");
+    expect(waze.querySelector("svg")).toBeTruthy();
+    expect(google.querySelector("svg clipPath")).toBeTruthy();
+    expect(google.hasAttribute("aria-label")).toBe(false);
+  });
+
   it("a home experience never gets address links", async () => {
     await renderWith({ location_type: "home" });
     expect(screen.queryByTestId("experience-nav-links")).toBeNull();

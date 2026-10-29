@@ -467,10 +467,16 @@ describe("buildProducerMetadata", () => {
     expect(meta.openGraph.images[0].height).toBe(630);
   });
 
-  // HOT-017 (MEH-782): omit, never emit an empty array (MEH-741 precedent).
-  it("omits openGraph.images when producer has no images", () => {
+  // MEH-2590: falls back to the branded site image. HOT-017 (MEH-782) omitted
+  // the key expecting the layout's og:image to be inherited — it is not: a
+  // page-level `openGraph` replaces the layout's whole object, so 17 imageless
+  // business pages on staging shared with no image at all (measured 29/10).
+  it("falls back to the site og-image when producer has no images", () => {
     const meta = buildProducerMetadata({ ...fullProducer, images: [] });
-    expect(meta.openGraph.images).toBeUndefined();
+    expect(meta.openGraph.images).toEqual([
+      { url: "/og-image.png", width: 1200, height: 630 },
+    ]);
+    expect(meta.twitter.images).toEqual(["/og-image.png"]);
   });
 });
 
