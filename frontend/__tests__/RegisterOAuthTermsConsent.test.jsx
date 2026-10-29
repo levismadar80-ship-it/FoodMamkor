@@ -6,14 +6,9 @@ import RegisterClient from "@/app/[locale]/register/RegisterClient";
  * MEH-2080 chunk 2 — /register forwards its terms checkbox to Google/Apple.
  * (Mock scaffold copied from RegisterOAuthRedirect.test.jsx, MEH-844.)
  *
- * OAuth success on /register must honor a post-signup ?redirect=, clamped to
- * an internal path via safeInternalRedirect (open-redirect guard). This drives
- * the REAL safeInternalRedirect (not mocked) through the component's OAuth
- * onSuccess handler and asserts router.push lands on the clamped target.
- *
- * Mocks only — no production change. The OAuth widget is a vendor primitive
- * (GoogleAuthButton) already isolated behind an onSuccess prop, so the mock
- * fires that prop to mimic a successful sign-in.
+ * Both OAuth buttons are mocked to record the termsAccepted prop they were
+ * last rendered with; the test ticks the page's terms checkbox and asserts
+ * that both buttons receive it.
  */
 
 const mockPush = vi.fn();
@@ -57,9 +52,6 @@ vi.mock("@/lib/validators", () => ({
     typeof value === "string" && value.includes("@") && value.includes("."),
   PASSWORD_MIN_LENGTH: 12,
 }));
-
-// NOTE: @/lib/safe-redirect is intentionally NOT mocked — the clamp is the
-// unit under test.
 
 // Both OAuth buttons record the termsAccepted prop they were last rendered with.
 const seen = { google: undefined, apple: undefined };

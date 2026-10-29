@@ -12,12 +12,14 @@ export default function GoogleAuthButton({ onSuccess, onError, termsAccepted = f
   const { loginWithGoogle } = useAuth();
   const buttonRef = useRef(null);
   const clientId = env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+  // MEH-2080: read at callback time through a ref, so a box ticked after the
+  // button rendered still counts without relying on the hook's closure.
+  const termsRef = useRef(termsAccepted);
+  termsRef.current = termsAccepted;
 
   const handleCredentialResponse = async (response) => {
     try {
-      // MEH-2080: read at callback time (useGoogleSignIn keeps the latest
-      // closure), so a box ticked after the button rendered still counts.
-      await loginWithGoogle(response.credential, { termsAccepted });
+      await loginWithGoogle(response.credential, { termsAccepted: termsRef.current });
       onSuccess?.();
     } catch (err) {
       onError?.(detailToMessage(err.response?.data?.detail) || t("google_error"));

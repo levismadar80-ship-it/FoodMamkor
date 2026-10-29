@@ -74,3 +74,20 @@ def test_login_without_the_flag_never_erases_an_existing_consent(client, db, oau
     user = _user(db)
     assert user.terms_accepted_at == stamped
     assert user.terms_version == "2026-01-v1"
+
+
+def test_existing_user_ticking_the_box_again_gets_the_current_version(client, db, oauth_ok):
+    # Same rule as register_producer: a fresh tick re-stamps, so an older
+    # version is replaced by the one the user just agreed to.
+    existing = make_user(db, email=EMAIL)
+    existing.google_id = "g-sub-1"
+    existing.terms_version = "2026-01-v1"
+    stamped = datetime(2026, 1, 5, tzinfo=timezone.utc)
+    existing.terms_accepted_at = stamped
+    db.commit()
+
+    r = client.post("/auth/google", json={"id_token": "x", "terms_accepted": True})
+    assert r.status_code == 200, r.text
+    user = _user(db)
+    assert user.terms_version == TERMS_VERSION
+    assert user.terms_accepted_at != stamped
