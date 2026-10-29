@@ -4440,6 +4440,8 @@ class EventOut(BaseModel):
     # mints one.
     owner_kind: str = "producer"
     owner_slug: str | None = None
+    # MEH-2546: the owner's first photo, the rows' fallback image.
+    owner_image_url: str | None = None
     title: str
     description: str | None = None
     event_date: date

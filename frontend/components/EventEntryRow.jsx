@@ -77,6 +77,10 @@ export function toEventEntry(row, tab, t) {
     // MEH-2468: the cover image the owner uploaded (EventForm, MEH-988) —
     // until now it showed only on the event page itself.
     image: row.image_url || null,
+    // MEH-2546: the owner's first photo — the row's fallback when the event
+    // has none (Meetup shows the group cover the same way). Events only.
+    ownerImage: isExp ? null : row.owner_image_url || null,
+    ownerInitial: isExp ? "" : Array.from((row.producer_name || "").trim())[0] ?? "",
   };
 }
 
@@ -102,16 +106,31 @@ export default function EventEntryRow({ entry, freeLabel, compact = false }) {
   const meta = [entry.who, entry.city, entry.schedule].filter(Boolean).join(" · ");
   const isFree = !(entry.price > 0);
 
-  // MEH-2468: a third column only when there is an image — a row without one
-  // keeps today's two-column layout (no empty placeholder box).
-  // `compact`: the home preview lays rows 3-up from lg, ~400px each — too
-  // narrow for date rail + body + thumbnail (title and organizer wrapped at
-  // 1440), so the thumbnail drops there and the row goes back to two columns.
-  const cols = !entry.image
-    ? "grid-cols-[64px_1fr] md:grid-cols-[104px_1fr]"
-    : compact
-      ? "grid-cols-[64px_1fr_auto] md:grid-cols-[104px_1fr_auto] lg:grid-cols-[104px_1fr]"
-      : "grid-cols-[64px_1fr_auto] md:grid-cols-[104px_1fr_auto]";
+  // MEH-2546: every row has a picture — the event photo, else the owner's
+  // photo (with the owner's initial on it, so it doesn't read as the event's
+  // own), else a category tile. Never an empty box, never a stock photo.
+  // `compact` (home preview, ~400px rows 3-up from lg): the picture moves to a
+  // band across the top of the row there instead of being dropped.
+  const picture = entry.image || entry.ownerImage;
+  const cols = compact
+    ? "grid-cols-[64px_1fr_auto] md:grid-cols-[104px_1fr_auto] lg:grid-cols-[104px_1fr]"
+    : "grid-cols-[64px_1fr_auto] md:grid-cols-[104px_1fr_auto]";
+  const thumbBg = picture
+    ? { backgroundImage: `url(${optimizeCloudinary(picture, { aspectRatio: "1:1", width: 224 })})` }
+    : undefined;
+  const tileTone = isExp ? "bg-surface-card text-accent" : "bg-green-50 text-primary";
+  const pictureFace = picture ? (
+    entry.image ? null : (
+      <span
+        data-testid="event-row-owner-initial"
+        className="absolute bottom-1 end-1 w-5 h-5 rounded-full bg-white text-primary text-[10px] font-bold grid place-items-center shadow-sm"
+      >
+        {entry.ownerInitial}
+      </span>
+    )
+  ) : (
+    <Icon size={26} weight="duotone" />
+  );
 
   return (
     <Link
@@ -163,14 +182,29 @@ export default function EventEntryRow({ entry, freeLabel, compact = false }) {
           )}
         </div>
       </div>
-      {entry.image && (
-        // Decorative: the row is a link already named by its title.
+      {/* Decorative: the row is a link already named by its title. */}
+      <div
+        aria-hidden="true"
+        data-testid="event-row-image"
+        data-kind={entry.image ? "event" : entry.ownerImage ? "owner" : "category"}
+        className={`relative overflow-hidden my-4 md:my-5 me-4 w-20 h-20 md:w-28 md:h-28 rounded-[10px] bg-cover bg-center grid place-items-center ${picture ? "bg-border" : tileTone}${compact ? " lg:hidden" : ""}`}
+        style={thumbBg}
+      >
+        {pictureFace}
+      </div>
+      {compact && (
         <div
           aria-hidden="true"
-          data-testid="event-row-image"
-          className={`my-4 md:my-5 me-4 w-20 h-20 md:w-28 md:h-28 rounded-[10px] bg-border bg-cover bg-center${compact ? " lg:hidden" : ""}`}
-          style={{ backgroundImage: `url(${optimizeCloudinary(entry.image, { aspectRatio: "1:1", width: 224 })})` }}
-        />
+          data-testid="event-row-band"
+          className={`hidden lg:grid order-first col-span-full h-28 bg-cover bg-center place-items-center relative ${picture ? "bg-border" : tileTone}`}
+          style={
+            picture
+              ? { backgroundImage: `url(${optimizeCloudinary(picture, { aspectRatio: "16:9", width: 640 })})` }
+              : undefined
+          }
+        >
+          {pictureFace}
+        </div>
       )}
     </Link>
   );

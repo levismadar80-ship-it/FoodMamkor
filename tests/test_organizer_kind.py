@@ -257,6 +257,20 @@ class TestOrganizerPresentThroughEvents:
         assert by_owner[str(business.id)]["owner_kind"] == "producer"
         assert by_owner[str(business.id)]["owner_slug"] == BUSINESS_SLUG
 
+    def test_events_carry_owner_first_image_or_null(self, client, db):
+        """MEH-2546: rows fall back to the owner's first photo — present
+        when the owner has photos, null (never an error) when it has none."""
+        organizer = _organizer(db)
+        business = _business(db)
+        organizer.images = ["https://res.cloudinary.com/x/o1.jpg", "https://res.cloudinary.com/x/o2.jpg"]
+        business.images = []
+        db.commit()
+        _event(db, organizer)
+        _event(db, business)
+        by_owner = {ev["producer_id"]: ev for ev in client.get("/events").json()}
+        assert by_owner[str(organizer.id)]["owner_image_url"] == "https://res.cloudinary.com/x/o1.jpg"
+        assert by_owner[str(business.id)]["owner_image_url"] is None
+
     def test_upcoming_includes_organizer_event(self, client, db):
         organizer = _organizer(db)
         _event(db, organizer)
