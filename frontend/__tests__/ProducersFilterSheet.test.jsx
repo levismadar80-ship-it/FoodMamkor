@@ -313,6 +313,12 @@ describe("MEH-2569 — one filter row on /producers", () => {
     expect(follows(city, day)).toBe(true);
   });
 
+  it("mounts the day-panel host OUTSIDE the rail, so the rail cannot clip the panel", () => {
+    render(<ProducersClient {...props(items(3))} />);
+    const host = screen.getByTestId("producers-day-panel-host");
+    expect(screen.getByTestId("producers-filter-row").contains(host)).toBe(false);
+  });
+
   it("the row is a sideways rail that does not rubber-band (MEH-2574)", () => {
     render(<ProducersClient {...props(items(3))} />);
     const cls = screen.getByTestId("producers-filter-row").className.split(/\s+/);
