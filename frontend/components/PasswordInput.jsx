@@ -155,13 +155,13 @@ export default function PasswordInput({
           required={required}
           autoComplete={autoComplete}
           dir="ltr"
-          className="w-full border border-border rounded-[12px] pr-11 pl-3 py-2 text-right outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition"
+          className="w-full min-h-[44px] border border-border rounded-[12px] pr-12 pl-3 py-2.5 text-right outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition" // rtl-ok: pr-12 reserves the dir="ltr" eye toggle (MEH-2554 — pr-11 let the 44px toggle sit on the text)
         />
         <button
           type="button"
           data-testid={testId ? `${testId}-toggle` : undefined}
           onClick={() => setShow((v) => !v)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted hover:text-text transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full p-3"
+          className="absolute right-0.5 top-1/2 -translate-y-1/2 text-fg-muted hover:text-text transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full p-3" // rtl-ok: eye toggle inside the dir="ltr" input
           aria-label={show ? tForm("toggle_hide") : tForm("toggle_show")}
           aria-pressed={show}
           tabIndex={0}
