@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Module:   producer/dashboard/layout
+ * Module:   producer/dashboard/DashboardLayoutClient
  * Purpose:  Shared shell for the producer dashboard hub (MEH-964 Phase 1).
  *           Hosts the ONE UX auth gate for the whole /producer/dashboard/*
  *           subtree + the persistent tab nav (Overview / Edit / Insights /

@@ -17,7 +17,7 @@
  * components/Header.jsx, or import DraftSubmitBanner from a public page, or
  * useTranslations("guides") anywhere — each turns this red.
  */
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { NextIntlClientProvider, useTimeZone, useTranslations } from "next-intl";
 import MergeMessagesProvider from "@/components/i18n/MergeMessagesProvider";
@@ -186,5 +186,26 @@ describe("root client messages (MEH-2233)", () => {
       .filter(([, arg]) => !/^["'][A-Za-z0-9_.]*["'],?$/.test(arg.trim()))
       .map(([f, arg]) => `${f}: ${arg}`);
     expect(dynamic).toEqual([]);
+  });
+
+  it("the merge provider keeps the parent's missing-key handling (onError, fallback)", () => {
+    const onError = vi.fn();
+    function Probe() {
+      return <p>{useTranslations()("nowhere.key")}</p>;
+    }
+    render(
+      <NextIntlClientProvider
+        locale="he"
+        messages={{}}
+        onError={onError}
+        getMessageFallback={({ key }) => `fallback:${key}`}
+      >
+        <MergeMessagesProvider messages={{ dashboard: {} }}>
+          <Probe />
+        </MergeMessagesProvider>
+      </NextIntlClientProvider>,
+    );
+    expect(screen.getByText("fallback:nowhere.key")).toBeTruthy();
+    expect(onError).toHaveBeenCalled();
   });
 });

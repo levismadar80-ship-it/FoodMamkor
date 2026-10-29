@@ -511,7 +511,7 @@ test.describe("manual › a guest sent to /login carries where they came from (M
     expect(url.pathname, "the guest is on the login page").toBe("/login");
     const back = url.searchParams.get("redirect");
     // Locale-STRIPPED, because the gate reads `pathname` from
-    // `@/i18n/navigation` (`producer/dashboard/layout.js:113-119` says so in
+    // `@/i18n/navigation` (`producer/dashboard/DashboardLayoutClient.jsx:113-119` says so in
     // as many words) and LoginClient re-adds the locale on the way back.
     expect(back, "…carrying the path they were trying to reach").toBe(
       "/producer/dashboard/experiences/new",

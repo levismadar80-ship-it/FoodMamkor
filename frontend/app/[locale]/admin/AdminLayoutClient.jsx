@@ -115,7 +115,7 @@ function AdminShell({ children }) {
   // MEH-2096: whether the counts are unknown (fetch failed) rather than zero.
   const countsError = loadError;
 
-  // MEH-1599: same 401/403 split as producer/dashboard/layout.js:53 — an
+  // MEH-1599: same 401/403 split as producer/dashboard/DashboardLayoutClient.jsx:53 — an
   // authenticated non-admin gets the in-app denied state below, NOT a bounce
   // through /login to "/" (LoginClient.jsx:89-91 replace()s an authenticated
   // visitor straight past the form). Only a genuinely unauthenticated visitor
@@ -331,7 +331,7 @@ function AdminShell({ children }) {
             is md+ only (Header.jsx UserMenu `hidden md:block`) and BottomNav,
             whose account sheet carries «התנתקות», is gated off this subtree
             (MEH-2359). Same key, icon and markup as the owner dashboard's
-            (MEH-2490, producer/dashboard/layout.js); no new copy. After
+            (MEH-2490, producer/dashboard/DashboardLayoutClient.jsx); no new copy. After
             logout the 401 branch above sends her to /login. */}
         <div className="md:hidden flex justify-center px-4 pt-6 pb-2">
           <button

@@ -4,7 +4,7 @@ import { QUEUES, queueCount, visibleQueues } from "@/app/[locale]/admin/queues";
 
 /**
  * MEH-2399 — the queue filter the admin sidebar + home share (admin/queues.js),
- * and the one-fetch contract between admin/layout.js and admin/page.js.
+ * and the one-fetch contract between admin/AdminLayoutClient.jsx and admin/page.js.
  *
  * Each `visibleQueues` case is named after the input it covers. A count of 0
  * is the only input that hides a queue; every "unknown" spelling (no stats,
