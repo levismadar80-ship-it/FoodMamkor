@@ -1439,6 +1439,54 @@ test.describe("manual › /map list heading + subhead (MEH-826 Gap 3)", () => {
   });
 });
 
+// MEH-2514 — the service row (משלוח · איסוף עצמי · סינון) is three shrink-0
+// buttons in one non-scrolling line. Measured on staging at 320: 320px of
+// buttons + gaps in a 296px row, «סינון» at x −12..71 (12px off-screen); with a
+// « · N» count it overflowed at 360 too. Every width × both count states.
+test.describe("manual › /map service row fits narrow phones (MEH-2514)", () => {
+  for (const width of [320, 340, 360]) {
+    for (const withCount of [false, true]) {
+      test(`${width}px${withCount ? " with «סינון · 2»" : ""}: all three buttons sit inside the row and the screen`, async ({ page }, info) => {
+        mobileOnly(info, "the service row's narrow-phone geometry");
+        await page.setViewportSize({ width, height: 700 });
+        const { shell } = await gotoWithCatalog(page, info);
+        if (withCount) {
+          await filtersButton(shell).click();
+          const panel = sheetPanel(page);
+          await panel.getByTestId("chip-vegan").click();
+          await panel.getByTestId("chip-gluten_free").click();
+          await panel.getByTestId("filter-sheet-apply-footer").getByRole("button", { name: icu(SHEET.apply, PRODUCERS.length) }).click();
+          await expect(sheetPanel(page)).toHaveCount(0);
+          await expect(filtersButton(shell)).toContainText("2");
+        }
+        // The word may be visually hidden under 360, never from AT — and the
+        // breakpoint itself is pinned: the geometry above would stay green if
+        // `max-[359px]` drifted to 360 or 400 (CI review, #3762).
+        await expect(filtersButton(shell)).toHaveAccessibleName(new RegExp(`^${FILTERS_BTN}`));
+        const wordWidth = (await box(filtersButton(shell).getByText(FILTERS_BTN, { exact: true }))).width;
+        if (width < 360) expect(wordWidth, `«${FILTERS_BTN}» is sr-only under 360`).toBeLessThanOrEqual(1);
+        else expect(wordWidth, `«${FILTERS_BTN}» shows its word at ${width}`).toBeGreaterThan(10);
+        const row = await box(filtersButton(shell).locator("xpath=ancestor::div[@dir='rtl'][1]"));
+        // Same height as the chips beside it — an icon-only button collapsed to
+        // 38px next to 42px chips before the min-h.
+        const chipH = (await box(serviceChip(shell, "has_delivery"))).height;
+        expect(Math.abs((await box(filtersButton(shell))).height - chipH), "«סינון» height vs the service chips").toBeLessThanOrEqual(0.5);
+        for (const btn of [serviceChip(shell, "has_delivery"), serviceChip(shell, "pickup_points"), filtersButton(shell)]) {
+          const b = await box(btn);
+          expect(b.x, `${await btn.textContent()} left edge ${b.x} vs row ${row.x}`).toBeGreaterThanOrEqual(Math.max(0, row.x) - 0.5);
+          expect(b.x + b.width, `${await btn.textContent()} right edge`).toBeLessThanOrEqual(Math.min(width, row.x + row.width) + 0.5);
+        }
+      });
+    }
+  }
+  test("375px: unchanged — «סינון» shows its word", async ({ page }, info) => {
+    mobileOnly(info, "the service row's phone geometry");
+    await page.setViewportSize({ width: 375, height: 700 });
+    const { shell } = await gotoWithCatalog(page, info);
+    await expect(filtersButton(shell).getByText(FILTERS_BTN, { exact: true })).toBeVisible();
+  });
+});
+
 // MEH-2510 — at PEEK the sheet shows one line, «N בתי עסק מקומיים באזור», and
 // on a short phone that line sat under the floating nav pill: PEEK was a flat
 // 14vh while the pill is a fixed-px band. Measured on staging before the fix:

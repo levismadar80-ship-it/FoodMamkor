@@ -53,7 +53,9 @@ export default function ServiceChipRow({ chipState, onToggleChip, children }) {
   );
 
   return (
-    <div dir="rtl" className="mt-2 flex items-center gap-2 min-w-0">
+    // MEH-2514: below 375px the row tightens (gap-1.5, chips px-3) so the
+    // three buttons fit a 320 phone; 375 and up are unchanged.
+    <div dir="rtl" className="mt-2 flex items-center gap-2 max-[374px]:gap-1.5 min-w-0">
       {chips.map((chip) => {
         const active = !!chipState[chip.key];
         return (
@@ -67,7 +69,7 @@ export default function ServiceChipRow({ chipState, onToggleChip, children }) {
             // the Direction A wash+ring (MEH-1181-A), matching a selected
             // category chip rather than the solid toggle fill, because these
             // two sit in their own row and read as a pair.
-            className={`inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 rounded-md text-sm font-medium border transition shrink-0 ${
+            className={`inline-flex items-center gap-1.5 whitespace-nowrap px-4 max-[374px]:px-3 py-2.5 rounded-md text-sm font-medium border transition shrink-0 ${
               active
                 ? "bg-green-50 text-primary border-primary ring-1 ring-primary"
                 : "bg-white text-text border-border hover:border-primary hover:text-primary"
