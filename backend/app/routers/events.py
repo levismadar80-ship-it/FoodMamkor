@@ -59,9 +59,9 @@ def _serialize(event: Event) -> EventOut:
         # MEH-2546: the owner's first photo — the list rows fall back to it
         # when the event has no image of its own (Meetup's group-cover rule).
         # Read-only, no schema change.
-        # A blank first entry counts as none.
+        # The first non-blank entry; blank / whitespace entries are skipped.
         owner_image_url=(
-            next(iter(event.producer.images or []), None) or None
+            next((u for u in (event.producer.images or []) if u and u.strip()), None)
             if event.producer
             else None
         ),

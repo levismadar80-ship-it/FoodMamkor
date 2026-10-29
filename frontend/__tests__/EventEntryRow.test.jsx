@@ -76,6 +76,17 @@ describe("EventEntryRow", () => {
     expect(screen.getByTestId("event-row-owner-initial").textContent).toBe("ש");
   });
 
+  it("an owner photo with no owner name shows the photo but no empty initial badge", () => {
+    const nameless = {
+      ...EVENT,
+      producer_name: "  ",
+      owner_image_url: "https://res.cloudinary.com/demo/image/upload/owner.jpg",
+    };
+    render(<EventEntryRow entry={toEventEntry(nameless, "events", t)} freeLabel="חינם" />);
+    expect(screen.getByTestId("event-row-image").getAttribute("data-kind")).toBe("owner");
+    expect(screen.queryByTestId("event-row-owner-initial")).toBeNull();
+  });
+
   it("the event's own photo wins over the owner's, with no initial badge", () => {
     const both = {
       ...EVENT,
