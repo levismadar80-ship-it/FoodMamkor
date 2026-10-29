@@ -9,7 +9,9 @@
  * timers, so it works inside a server component (`app/[locale]/loading.js`)
  * and inside client auth gates alike.
  *
- * Rules it encodes (research + mockups: https://claude.ai/artifact/29UwxHfHoPFRWR8zVSnXGg):
+ * Rules it encodes (MEH-2599 research: NN/g "Skeleton Screens 101" and
+ * "progress indicators" thresholds; big sites animate brand colour, not the
+ * logo itself, and show nothing for sub-second loads):
  *   - Reveal after 400 ms. A load that resolves sooner shows NOTHING — an
  *     indicator that flashes for a frame is worse than none (NN/g).
  *   - Use it only when the SHAPE of the coming page is unknown. A list, a grid

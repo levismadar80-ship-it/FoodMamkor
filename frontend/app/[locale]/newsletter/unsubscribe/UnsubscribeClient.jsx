@@ -35,8 +35,13 @@ export default function UnsubscribeClient({ token }) {
 
   // MEH-2567: shared StatusPage layout; copy unchanged.
   if (status === "loading") {
-    // MEH-2599: brand mark while the token is checked; the StatusPage frame returns with the verdict.
-    return <BrandLoader label={t("loading")} className="px-4 py-12" />;
+    // MEH-2599: brand mark while the token is checked, inside the same
+    // StatusPage frame the verdict renders in, so nothing shifts on resolve.
+    return (
+      <StatusPage>
+        <BrandLoader label={t("loading")} className="min-h-0" />
+      </StatusPage>
+    );
   }
   const ok = status === "success";
   return (

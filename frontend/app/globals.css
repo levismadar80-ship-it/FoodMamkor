@@ -787,9 +787,10 @@ body.sheet-open .cookie-banner {
    The big sites animate colour, not the logo itself, so the mark never
    spins. The wrapper fades in after 400 ms so a fast load shows nothing at
    all. Inside @layer components so a caller's utility (`min-h-0`, `py-8`)
-   wins. Reduced motion: the MEH-788 kill-switch collapses the seed
-   animation to its lit end state; the wrapper is pinned visible explicitly
-   so the mark can never sit at opacity 0 when animations are off. */
+   wins. Reduced motion: the MEH-788 kill-switch cuts the seed animation to
+   one ~0 ms run, after which the base `opacity: 0.94` rule applies (lit);
+   the wrapper is pinned visible explicitly so the mark can never sit at
+   opacity 0 when animations are off. */
 @layer components {
   .brand-loader {
     display: flex;
