@@ -16391,6 +16391,53 @@
         ]
       }
     },
+    "/admin/users/{user_id}": {
+      "delete": {
+        "description": "MEH-2585: hard-delete a user and her data — same cascade as the\nself-service DELETE /auth/me (services/user_deletion.py), minus the\nconfirmation email (an admin removal, often of a test account).\n\nAdmins are refused: demote first, so removing an admin is always two\ndeliberate steps and the protected super-admin can never be deleted.",
+        "operationId": "admin_delete_user_admin_users__user_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin Delete User",
+        "tags": [
+          "admin-extra"
+        ]
+      }
+    },
     "/admin/users/{user_id}/block": {
       "post": {
         "operationId": "block_user_admin_users__user_id__block_post",

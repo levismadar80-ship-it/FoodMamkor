@@ -2391,6 +2391,18 @@ export const ListUsersAdminUsersGetResponse = /*#__PURE__*/ zod.array(ListUsersA
 
 
 /**
+ * MEH-2585: hard-delete a user and her data — same cascade as the
+ * self-service DELETE /auth/me (services/user_deletion.py), minus the
+ * confirmation email (an admin removal, often of a test account).
+ *
+ * Admins are refused: demote first, so removing an admin is always two
+ * deliberate steps and the protected super-admin can never be deleted.
+ * @summary Admin Delete User
+ */
+export const AdminDeleteUserAdminUsersUserIdDeleteResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
  * @summary Block User
  */
 export const BlockUserAdminUsersUserIdBlockPostResponse = /*#__PURE__*/ zod.unknown()
