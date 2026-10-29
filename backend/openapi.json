@@ -332,6 +332,11 @@
               }
             ],
             "title": "Name"
+          },
+          "terms_accepted": {
+            "default": false,
+            "title": "Terms Accepted",
+            "type": "boolean"
           }
         },
         "required": [
@@ -466,20 +471,6 @@
           "sells"
         ],
         "title": "BioGenerateIn",
-        "type": "object"
-      },
-      "Body_import_producers_excel_admin_producers_import_post": {
-        "properties": {
-          "file": {
-            "contentMediaType": "application/octet-stream",
-            "title": "File",
-            "type": "string"
-          }
-        },
-        "required": [
-          "file"
-        ],
-        "title": "Body_import_producers_excel_admin_producers_import_post",
         "type": "object"
       },
       "Body_upload_avatar_upload_avatar_post": {
@@ -1285,6 +1276,17 @@
               }
             ],
             "title": "Max Participants"
+          },
+          "owner_image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Image Url"
           },
           "owner_kind": {
             "default": "producer",
@@ -2614,6 +2616,11 @@
           "id_token": {
             "title": "Id Token",
             "type": "string"
+          },
+          "terms_accepted": {
+            "default": false,
+            "title": "Terms Accepted",
+            "type": "boolean"
           }
         },
         "required": [
@@ -2643,6 +2650,40 @@
           "email_sent"
         ],
         "title": "GoogleAuthResponse",
+        "type": "object"
+      },
+      "GooglePlaceIdIn": {
+        "properties": {
+          "google_place_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Google Place Id"
+          }
+        },
+        "title": "GooglePlaceIdIn",
+        "type": "object"
+      },
+      "GooglePlaceIdOut": {
+        "properties": {
+          "google_place_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Google Place Id"
+          }
+        },
+        "title": "GooglePlaceIdOut",
         "type": "object"
       },
       "GoogleRatingOut": {
@@ -2933,6 +2974,17 @@
             "title": "Producer Id",
             "type": "string"
           },
+          "producer_image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Producer Image Url"
+          },
           "producer_name": {
             "anyOf": [
               {
@@ -3081,6 +3133,17 @@
             "title": "Producer Id",
             "type": "string"
           },
+          "producer_image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Producer Image Url"
+          },
           "producer_name": {
             "anyOf": [
               {
@@ -3157,6 +3220,23 @@
       },
       "GroupBuyStatusUpdate": {
         "properties": {
+          "expected_status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "open",
+                  "funded",
+                  "cancelled",
+                  "fulfilled"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Status"
+          },
           "status": {
             "enum": [
               "open",
@@ -3185,6 +3265,20 @@
           }
         },
         "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "KashrutApproveIn": {
+        "properties": {
+          "expires_on": {
+            "format": "date",
+            "title": "Expires On",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expires_on"
+        ],
+        "title": "KashrutApproveIn",
         "type": "object"
       },
       "KashrutCertRef": {
@@ -3300,6 +3394,7 @@
           "notes": {
             "anyOf": [
               {
+                "maxLength": 1000,
                 "type": "string"
               },
               {
@@ -3403,6 +3498,24 @@
           "created_at"
         ],
         "title": "KashrutRequestOut",
+        "type": "object"
+      },
+      "KashrutRevokeIn": {
+        "properties": {
+          "notes": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "title": "KashrutRevokeIn",
         "type": "object"
       },
       "LicenseExpiryReminderOut": {
@@ -4631,6 +4744,18 @@
             ],
             "title": "City"
           },
+          "claim_link_sent_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Claim Link Sent At"
+          },
           "contact_email": {
             "anyOf": [
               {
@@ -4884,6 +5009,17 @@
             "default": false,
             "title": "Has No Added Sugar Products",
             "type": "boolean"
+          },
+          "has_owner": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Has Owner"
           },
           "has_physical_location": {
             "default": true,
@@ -11684,6 +11820,535 @@
         "title": "RiskScoreResponse",
         "type": "object"
       },
+      "SavedEventOut": {
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "end_time": {
+            "anyOf": [
+              {
+                "format": "time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Time"
+          },
+          "event_date": {
+            "format": "date",
+            "title": "Event Date",
+            "type": "string"
+          },
+          "event_time": {
+            "anyOf": [
+              {
+                "format": "time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Time"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Url"
+          },
+          "is_active": {
+            "title": "Is Active",
+            "type": "boolean"
+          },
+          "lat": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lat"
+          },
+          "lng": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lng"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location"
+          },
+          "max_participants": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Participants"
+          },
+          "owner_image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Image Url"
+          },
+          "owner_kind": {
+            "default": "producer",
+            "title": "Owner Kind",
+            "type": "string"
+          },
+          "owner_slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Slug"
+          },
+          "price": {
+            "title": "Price",
+            "type": "integer"
+          },
+          "producer_id": {
+            "format": "uuid",
+            "title": "Producer Id",
+            "type": "string"
+          },
+          "producer_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Producer Name"
+          },
+          "registration_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Registration Url"
+          },
+          "saved_at": {
+            "format": "date-time",
+            "title": "Saved At",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "producer_id",
+          "title",
+          "event_date",
+          "category",
+          "price",
+          "is_active",
+          "created_at",
+          "saved_at"
+        ],
+        "title": "SavedEventOut",
+        "type": "object"
+      },
+      "SavedExperienceOut": {
+        "properties": {
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "duration_minutes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Minutes"
+          },
+          "event_date": {
+            "format": "date",
+            "title": "Event Date",
+            "type": "string"
+          },
+          "event_time": {
+            "anyOf": [
+              {
+                "format": "time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Time"
+          },
+          "host": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExperienceHostOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Url"
+          },
+          "is_active": {
+            "default": true,
+            "title": "Is Active",
+            "type": "boolean"
+          },
+          "is_recurring": {
+            "default": false,
+            "title": "Is Recurring",
+            "type": "boolean"
+          },
+          "location_type": {
+            "title": "Location Type",
+            "type": "string"
+          },
+          "max_participants": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Participants"
+          },
+          "participants_count": {
+            "default": 0,
+            "title": "Participants Count",
+            "type": "integer"
+          },
+          "price_per_person": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Per Person"
+          },
+          "recurring_schedule": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recurring Schedule"
+          },
+          "saved_at": {
+            "format": "date-time",
+            "title": "Saved At",
+            "type": "string"
+          },
+          "spots_left": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spots Left"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "description",
+          "event_date",
+          "location_type",
+          "status",
+          "created_at",
+          "saved_at"
+        ],
+        "title": "SavedExperienceOut",
+        "type": "object"
+      },
+      "SavedItemRefOut": {
+        "description": "One saved item, ids only — hydrates the hearts' cache in one call.",
+        "properties": {
+          "item_id": {
+            "format": "uuid",
+            "title": "Item Id",
+            "type": "string"
+          },
+          "item_type": {
+            "enum": [
+              "recipe",
+              "event",
+              "experience"
+            ],
+            "title": "Item Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "item_type",
+          "item_id"
+        ],
+        "title": "SavedItemRefOut",
+        "type": "object"
+      },
+      "SavedItemsOut": {
+        "description": "GET /users/me/saved — newest save first within each type. Only items\nthat are still public are listed; a deleted or hidden one drops out.",
+        "properties": {
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/SavedEventOut"
+            },
+            "title": "Events",
+            "type": "array"
+          },
+          "experiences": {
+            "items": {
+              "$ref": "#/components/schemas/SavedExperienceOut"
+            },
+            "title": "Experiences",
+            "type": "array"
+          },
+          "recipes": {
+            "items": {
+              "$ref": "#/components/schemas/SavedRecipeOut"
+            },
+            "title": "Recipes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "recipes",
+          "events",
+          "experiences"
+        ],
+        "title": "SavedItemsOut",
+        "type": "object"
+      },
+      "SavedRecipeOut": {
+        "description": "Card fields only. Deliberately NOT ProducerRecipeOut: that shape carries\nmoderation_notes, which is owner/admin context, not public.",
+        "properties": {
+          "cook_time_min": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cook Time Min"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Url"
+          },
+          "prep_time_min": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prep Time Min"
+          },
+          "producer_name": {
+            "title": "Producer Name",
+            "type": "string"
+          },
+          "producer_slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Producer Slug"
+          },
+          "saved_at": {
+            "format": "date-time",
+            "title": "Saved At",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "producer_name",
+          "saved_at"
+        ],
+        "title": "SavedRecipeOut",
+        "type": "object"
+      },
       "SearchOut": {
         "properties": {
           "categories": {
@@ -13102,6 +13767,16 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KashrutApproveIn"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {
@@ -13184,6 +13859,63 @@
           }
         ],
         "summary": "Reject Kashrut Request",
+        "tags": [
+          "admin-kashrut"
+        ]
+      }
+    },
+    "/admin/kashrut/{request_id}/revoke": {
+      "post": {
+        "description": "MEH-2518: take an approved kashrut badge down (e.g. the certificate was\nwithdrawn). Before this the only way was SQL. Revokes every approved\nrequest for that badge code on the business — a renewal leaves two — and\nwhen no badge is left clears the verified/expiry pair, so the «כשר» header\nline, the ?kosher filter and the certificate proxy all stop at once.",
+        "operationId": "revoke_kashrut_badge_admin_kashrut__request_id__revoke_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KashrutRevokeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Revoke Kashrut Badge",
         "tags": [
           "admin-kashrut"
         ]
@@ -13851,65 +14583,6 @@
         ]
       }
     },
-    "/admin/producers/import": {
-      "post": {
-        "description": "Upload Excel/CSV file and import producers. dry_run=true returns preview only.",
-        "operationId": "import_producers_excel_admin_producers_import_post",
-        "parameters": [
-          {
-            "description": "Preview only — set false to actually save",
-            "in": "query",
-            "name": "dry_run",
-            "required": false,
-            "schema": {
-              "default": true,
-              "description": "Preview only — set false to actually save",
-              "title": "Dry Run",
-              "type": "boolean"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_import_producers_excel_admin_producers_import_post"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "summary": "Import Producers Excel",
-        "tags": [
-          "admin"
-        ]
-      }
-    },
     "/admin/producers/pending": {
       "get": {
         "operationId": "pending_producers_admin_producers_pending_get",
@@ -14276,6 +14949,65 @@
           }
         ],
         "summary": "Get Google Place Candidates",
+        "tags": [
+          "google-rating"
+        ]
+      }
+    },
+    "/admin/producers/{producer_id}/google-place-id": {
+      "put": {
+        "description": "Admin-only: set (or clear, with null/blank) one producer's place_id.\n\nWrites ONLY producers.google_place_id — the one Google datum the ToS lets us\nstore. 403 for non-admins (require_admin), 404 for an unknown id or an\norganizer (no Google line for organizers, MEH-2465), 422 for a value that\nis not a bare place_id (normalize_google_place_id).",
+        "operationId": "put_google_place_id_admin_producers__producer_id__google_place_id_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GooglePlaceIdIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GooglePlaceIdOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Put Google Place Id",
         "tags": [
           "google-rating"
         ]
@@ -15747,6 +16479,53 @@
           }
         ],
         "summary": "List Users",
+        "tags": [
+          "admin-extra"
+        ]
+      }
+    },
+    "/admin/users/{user_id}": {
+      "delete": {
+        "description": "MEH-2585: hard-delete a user and her data — same cascade as the\nself-service DELETE /auth/me (services/user_deletion.py), minus the\nconfirmation email (an admin removal, often of a test account).\n\nAdmins are refused: demote first, so removing an admin is always two\ndeliberate steps and the protected super-admin can never be deleted.",
+        "operationId": "admin_delete_user_admin_users__user_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Admin Delete User",
         "tags": [
           "admin-extra"
         ]
@@ -20322,7 +21101,7 @@
         ]
       },
       "post": {
-        "description": "Submit or update a review.\n\nGuards (checked in order):\n  1. Producer must exist.\n  1b. Producer must be a business — an organizer gets 409 (MEH-2465).\n  2. Producer owner cannot review their own business.\n  2b. Producer owner cannot review a business sharing a category with\n      hers (MEH-2076 — conflict of interest; cross-category stays open).\n  3. First-time reviewers must have a click on ANY of this producer's\n     contact channels — a WhatsApp click OR a contact click (MEH-2204).\n  4. Body is moderated by Haiku (fail-open).",
+        "description": "Submit or update a review.\n\nGuards (checked in order):\n  1. Producer must exist and be live (status approved) — a suspended,\n     rejected, draft or pending one is a 404 like a missing one (MEH-2513).\n  1b. Producer must be a business — an organizer gets 409 (MEH-2465).\n  2. Producer owner cannot review their own business.\n  2b. Producer owner cannot review a business sharing a category with\n      hers (MEH-2076 — conflict of interest; cross-category stays open).\n  3. First-time reviewers must have a click on ANY of this producer's\n     contact channels — a WhatsApp click OR a contact click (MEH-2204).\n  4. Body is moderated by Haiku (fail-open).",
         "operationId": "create_review_nested_producers__producer_id__reviews_post",
         "parameters": [
           {
@@ -21432,6 +22211,181 @@
         "summary": "Change Password",
         "tags": [
           "users"
+        ]
+      }
+    },
+    "/users/me/saved": {
+      "get": {
+        "operationId": "get_saved_users_me_saved_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedItemsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Get Saved",
+        "tags": [
+          "saved"
+        ]
+      }
+    },
+    "/users/me/saved/ids": {
+      "get": {
+        "description": "Every saved (type, id) of the current user, for the hearts' cache.\n\nNot filtered by visibility: a heart only ever renders on a page the viewer\ncan already see, so an id of a hidden item here reveals nothing new and\nfiltering would cost three joins on every page load.",
+        "operationId": "get_saved_ids_users_me_saved_ids_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SavedItemRefOut"
+                  },
+                  "title": "Response Get Saved Ids Users Me Saved Ids Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Get Saved Ids",
+        "tags": [
+          "saved"
+        ]
+      }
+    },
+    "/users/me/saved/{item_type}/{item_id}": {
+      "delete": {
+        "operationId": "unsave_item_users_me_saved__item_type___item_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "item_type",
+            "required": true,
+            "schema": {
+              "enum": [
+                "recipe",
+                "event",
+                "experience"
+              ],
+              "title": "Item Type",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Item Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Unsave Item",
+        "tags": [
+          "saved"
+        ]
+      },
+      "post": {
+        "operationId": "save_item_users_me_saved__item_type___item_id__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "item_type",
+            "required": true,
+            "schema": {
+              "enum": [
+                "recipe",
+                "event",
+                "experience"
+              ],
+              "title": "Item Type",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Item Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Save Item",
+        "tags": [
+          "saved"
         ]
       }
     },

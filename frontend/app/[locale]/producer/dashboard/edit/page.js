@@ -13,7 +13,7 @@
  *           below are byte-identical to their prior definitions in
  *           producer/dashboard/page.js (relocate-don't-rewrite); only the
  *           host page wrapper + fetch are new.
- * Related:  app/[locale]/producer/dashboard/layout.js (tab nav + UX gate);
+ * Related:  app/[locale]/producer/dashboard/DashboardLayoutClient.jsx (tab nav + UX gate);
  *           app/[locale]/producer/dashboard/page.js (סקירה — prior home of
  *           these cards, MEH-56 / MEH-210 / MEH-296).
  * History:  MEH-964 (relocation, chunk 1A); edit-tab editor series —

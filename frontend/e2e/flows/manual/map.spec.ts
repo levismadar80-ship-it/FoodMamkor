@@ -103,10 +103,11 @@ import { ISRAEL_CITIES } from "../../../data/cities.js";
  *           hardcodes (MapClient.jsx NEAR_ME_DEFAULT_ZOOM = 8, goToMyLocation
  *           flyTo 13 — MapComponent.jsx).
  * Does NOT: convert MEH-1388 rows 1-4 (COVERED by 24-producer-locations
- *           .spec.ts:264/:159/:319/:344), PR3 row 2 (mobile FAB absence is
- *           entailed by MEH-1410's desktop-only gate — ChatWidgetDesktopOnly
- *           .test.jsx:61 — so a /map assertion there would be green for two
- *           reasons), MEH-1230 row 2 (focus-ring clipping is a paint property
+ *           .spec.ts:264/:159/:319/:344), PR3 row 2 (mobile FAB absence on
+ *           /map — the viewport gate that once made it vacuous is gone since
+ *           MEH-2499, so it is convertible; the /map route gate itself is
+ *           pinned by ChatWidgetLazy.test.jsx), MEH-1230 row 2 (focus-ring
+ *           clipping is a paint property
  *           a bounding box cannot see), PR1 rows 2-6 (2/6 STALE — price and
  *           the delivery strip were removed, MapProducerCard.test.jsx:312/:212;
  *           3-5 COVERED there), MEH-1075 rows 2/3/6/7/10 (COVERED,
@@ -365,6 +366,20 @@ async function gotoMap(page: Page, path = "/map"): Promise<void> {
 }
 
 /**
+ * MEH-2524: the fixture spans Kiryat Shmona to Beer Sheva, about 220 km. At the
+ * default zoom 8 that needs a canvas of about 490px for every pin to be inside
+ * Leaflet's bounds and rendered. The Pixel 5 canvas used to be 500px only
+ * because `min-h-[500px]` ran it 22px past the viewport, under the sheet and the
+ * nav pill. Now the canvas ends at the viewport, so it is 478px and one pin
+ * falls outside. Tests that count every pin give the phone room for the spread.
+ * They are about the layer toggle and the near-me fallback, not about the
+ * canvas height.
+ */
+async function fitFixtureSpread(page: Page, info: TestInfo): Promise<void> {
+  if (!isDesktop(info)) await page.setViewportSize({ width: 393, height: 820 });
+}
+
+/**
  * Mock, navigate, and wait for the fixture list to land in the VISIBLE shell.
  *
  * CONTRACT for the function form of `list`: it must return the INITIAL-load
@@ -507,6 +522,54 @@ async function sheetSettledAt(page: Page, shell: Locator, fraction: number): Pro
 }
 
 /**
+ * MEH-2532: PEEK's height as MapBottomSheet defines it, from inputs the sheet
+ * does not control: max(14vh, nav clearance + 3.5rem). The clearance is read
+ * from the live `--bottom-nav-clearance` the nav publishes. A sheet stuck
+ * anywhere else — 20vh, HALF, or a floor that lost its 3.5rem — misses by more
+ * than 1px. (`≤ 0.2vh` passed any of those under 20vh.)
+ * The formula is the MEH-2510 spec written out on purpose, an oracle
+ * independent of PEEK/PEEK_FLOOR in MapBottomSheet.jsx: if the sheet's
+ * constants change, this goes red and someone decides whether the spec moved.
+ * Only the nav clearance is read live.
+ */
+async function expectedPeekPx(page: Page): Promise<number> {
+  return page.evaluate(() => {
+    const probe = document.createElement("div");
+    probe.style.cssText =
+      "position:fixed;visibility:hidden;height:calc(var(--bottom-nav-clearance, calc(4.5rem + env(safe-area-inset-bottom, 0px))) + 3.5rem)";
+    document.body.appendChild(probe);
+    const floor = probe.getBoundingClientRect().height;
+    probe.remove();
+    return Math.max(0.14 * window.innerHeight, floor);
+  });
+}
+
+async function expectAtPeek(page: Page, shell: Locator): Promise<void> {
+  const expected = await expectedPeekPx(page);
+  const height = (await box(bottomSheet(shell))).height;
+  expect(Math.abs(height - expected), `the sheet must be at PEEK: ${height}px vs max(14vh, nav clearance + 3.5rem) = ${expected}px`).toBeLessThanOrEqual(1);
+}
+
+/**
+ * MEH-2532: a real touch drag over CDP — the qa-meh2046 precedent. The sheet
+ * binds touchstart/move/end only, and Playwright's touchscreen API exposes tap
+ * alone. Moves in steps so the MEH-2148 slop and arbitration run as on a phone.
+ */
+async function dragSheetUp(page: Page, from: { x: number; y: number }, distance: number): Promise<void> {
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: from.x, y: from.y }] });
+  for (let step = 1; step <= 10; step += 1) {
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: from.x, y: from.y - (distance * step) / 10 }] });
+    // One frame per move, as a finger delivers them. Back-to-back moves land
+    // before React re-binds touchend with the new transient height, so the
+    // lift would snap from a stale value — a harness artifact, not the sheet.
+    await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())));
+  }
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+  await cdp.detach();
+}
+
+/**
  * The sheet's height must STOP MOVING before the attribution is measured
  * against it, and that is the fix for a measured flake rather than a
  * precaution.
@@ -594,6 +657,7 @@ test.describe("manual › /map multi-location epic (MEH-1388)", () => {
   //   unique-business cluster badge, :319 nearest location, :344 delivery-only
   //   + pickup visible) and are not repeated here.
   test("the layer toggle hides only the secondary pins, and shows them again", async ({ page }, info) => {
+    await fitFixtureSpread(page, info);
     const { shell } = await gotoWithCatalog(page, info);
     await expect(primaryMarkers(shell)).toHaveCount(PRODUCERS.length, FIRST_PAINT);
     await expect(secondaryMarkers(shell)).toHaveCount(1);
@@ -616,7 +680,7 @@ test.describe("manual › chat FAB hidden on /map (map-quality PR 3)", () => {
   //   that makes the absence above evidence). The producer-page half is chunk 8;
   //   the dashboard subtree is ChatWidgetLazy.test.jsx:46/:52.
   test("desktop: no chat launcher on /map while the legend toggle works — and the launcher IS on the home page", async ({ page }, info) => {
-    desktopOnly(info, "the FAB is desktop-only by MEH-1410 — on mobile its absence has two causes");
+    desktopOnly(info, "desktop row only (MT:PR3:1) — the mobile row is not converted here");
     await stubExternal(page);
     await gotoMap(page);
     const shell = shellOf(page, info);
@@ -632,7 +696,7 @@ test.describe("manual › chat FAB hidden on /map (map-quality PR 3)", () => {
 
   // MT:PR3:3 — `/en/map`: no launcher in English either.
   test("desktop: no chat launcher on /en/map", async ({ page }, info) => {
-    desktopOnly(info, "the FAB is desktop-only by MEH-1410");
+    desktopOnly(info, "desktop row only (MT:PR3:3)");
     await stubExternal(page);
     await gotoMap(page, "/en/map");
     await expect(page.getByRole("button", { name: CHAT_OPEN_EN })).toHaveCount(0);
@@ -741,7 +805,7 @@ test.describe("manual › /map filter IA: chips + FilterSheet (MEH-1075 · two-r
   // MEH-2425: a lit service chip is NOT repeated as a "× איסוף עצמי" tag under
   //   it (Sapir 27/10 — the same filter in two places). The chip is its own
   //   off switch; «× נקו הכל» is covered with sheet-only filters in the next test.
-  test("category row + service row + «סינון» with no count; a service chip lights itself and makes no tag strip", async ({ page }, info) => {
+  test("category row + service row + «סינון» with no count; a service chip lights itself and adds no count or tag", async ({ page }, info) => {
     await stubExternal(page);
     await gotoMap(page);
     const shell = shellOf(page, info);
@@ -755,7 +819,9 @@ test.describe("manual › /map filter IA: chips + FilterSheet (MEH-1075 · two-r
     // delivery chip would open the CityPickerModal here (MEH-1075 row 8 below).
     await serviceChip(shell, "pickup_points").click();
     await expect(serviceChip(shell, "pickup_points")).toHaveAttribute("aria-pressed", "true");
-    await expect(filtersButton(shell)).toContainText("1");
+    // MEH-2500: a lit service chip is on the bar already, so «סינון» adds no
+    // count for it — «סינון · 1» read as a filter hidden in the sheet.
+    await expect(filtersButton(shell)).toHaveText(FILTERS_BTN);
     await expect(shell.getByTestId("map-active-filter-tags")).toHaveCount(0);
 
     await serviceChip(shell, "pickup_points").click();
@@ -884,11 +950,49 @@ test.describe("manual › near-me pill + empty-near-me guard, mobile (MEH-970)",
     await expect(cards(shell)).toHaveCount(PRODUCERS.length);
   });
 
+  // MEH-2506 — the mobile origin is a compact tag UNDER the filter chips (it was
+  //   a full row above them): named after near me, cleared by its ✕.
+  test("mobile: after near me the origin tag sits under the filter chips and clears", async ({ page, context }, info) => {
+    mobileOnly(info, "the origin tag is the mobile bar's; desktop keeps it by the sort select");
+    await grantGps(context, GPS_NEAR);
+    const { shell } = await gotoWithCatalog(page, info);
+    const bar = shell.getByTestId("map-mobile-bar");
+    await expect(bar.getByTestId("sort-origin-label")).toHaveCount(0);
+    await shell.getByTestId("map-near-me-pill").click();
+    const label = bar.getByTestId("sort-origin-label");
+    await expect(label).toHaveText(MC.sort.origin_gps);
+    const filters = await bar.getByTestId("map-filters-button").boundingBox();
+    const tag = await label.boundingBox();
+    expect(tag!.y).toBeGreaterThan(filters!.y + filters!.height);
+    // …and the ✕'s 44px hit area (negative margin) stays off the filter buttons.
+    const clearBox = await bar.getByTestId("clear-user-location").boundingBox();
+    expect(clearBox!.y, "the ✕ 44px hit area (-my-3) must start below «סינון» — the origin row's mt-3 keeps it clear").toBeGreaterThanOrEqual(filters!.y + filters!.height);
+    await bar.getByTestId("clear-user-location").click();
+    await expect(bar.getByTestId("sort-origin-label")).toHaveCount(0);
+  });
+
+  // MEH-2506 — an over-long origin label truncates inside the tag; the ✕ must
+  //   stay on screen (in the flex-wrap row it was pushed past the inline-end).
+  //   Real city names fit at 320 (measured: «מודיעין-מכבים-רעות» 136px), so the
+  //   label is the name ×3 (×2 still fits, 234px) — the guard is for the row.
+  test("mobile: at 320px an over-long origin label keeps its ✕ on screen", async ({ page }, info) => {
+    mobileOnly(info, "the origin tag is the mobile bar's");
+    await page.setViewportSize({ width: 320, height: 700 });
+    await seedStorage(page, "user_location", JSON.stringify({ lat: 31.9, lng: 35.0, source: "city", city: "מודיעין-מכבים-רעות ".repeat(3).trim() }));
+    const { shell } = await gotoWithCatalog(page, info);
+    const clear = shell.getByTestId("map-mobile-bar").getByTestId("clear-user-location");
+    await expect(clear).toBeVisible();
+    const box = (await clear.boundingBox())!;
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(320);
+  });
+
   // MT:MEH-970:3 — nothing within 25 km: the toast, the camera back on the
   //   default view (zoom 8), and ALL businesses still listed — never a blank map.
   test("mobile: near me with nothing within 25 km toasts, returns to the default view and keeps every business", async ({ page, context }, info) => {
     mobileOnly(info, "the pill is mounted inside the mobile shell only");
     await grantGps(context, GPS_FAR);
+    await fitFixtureSpread(page, info);
     const { shell, tiles } = await gotoWithCatalog(page, info);
     // CONTROL FIRST (testing.md — "Run the control first. If the probe cannot
     // see the thing it is aimed at, nothing it reports afterwards is worth
@@ -1262,7 +1366,13 @@ test.describe("manual › map z-index token system + UI bugfixes", () => {
     await expect(shell.getByTestId("map-legend-toggle")).toBeHidden();
     await expect(shell.getByTestId("map-legend-panel")).toHaveCount(0);
     await expect(attribution(shell)).toBeVisible();
-    await sheetSettledAt(page, shell, 0.14); // PEEK (MapBottomSheet.jsx)
+    // PEEK (MapBottomSheet.jsx). Not `sheetSettledAt(…, 0.14)` any more: since
+    // MEH-2510 PEEK is max(14vh, nav clearance + 3.5rem), which on this
+    // project's 393×727 viewport is the floor (~128px), not 14vh (~102px).
+    await settleSheet(shell);
+    // ≤ 20vh: the floor is 128px = 17.6vh here; 0.3 (the first version) only
+    // proved "not HALF" and would pass a sheet stuck at 25vh (CI review, MEH-2510).
+    await expectAtPeek(page, shell);
     // MT:z:a1 — rides the PEEK edge by the MEH-1365 rule (6px above the sheet
     // height, measured from the container's bottom) and clears the cards.
     // FINDING (04/09): on this project's 393×727 viewport the container's
@@ -1390,5 +1500,120 @@ test.describe("manual › /map list heading + subhead (MEH-826 Gap 3)", () => {
     await expect(shell.getByTestId("map-list-count")).toHaveText(icu(MC_EN.business_count, PRODUCERS.length));
     await expect(shell.getByTestId("map-list-subhead")).toHaveText("Haifa");
     await expect(shell.getByRole("heading", { level: 1 })).toHaveText(MC_EN.title);
+  });
+});
+
+// MEH-2514 — the service row (משלוח · איסוף עצמי · סינון) is three shrink-0
+// buttons in one non-scrolling line. Measured on staging at 320: 320px of
+// buttons + gaps in a 296px row, «סינון» at x −12..71 (12px off-screen); with a
+// « · N» count it overflowed at 360 too. Every width × both count states.
+test.describe("manual › /map service row fits narrow phones (MEH-2514)", () => {
+  for (const width of [320, 340, 360, 374]) {
+    for (const withCount of [false, true]) {
+      test(`${width}px${withCount ? " with «סינון · 2»" : ""}: all three buttons sit inside the row and the screen`, async ({ page }, info) => {
+        mobileOnly(info, "the service row's narrow-phone geometry");
+        await page.setViewportSize({ width, height: 700 });
+        const { shell } = await gotoWithCatalog(page, info);
+        if (withCount) {
+          await filtersButton(shell).click();
+          const panel = sheetPanel(page);
+          await panel.getByTestId("chip-vegan").click();
+          await panel.getByTestId("chip-gluten_free").click();
+          await panel.getByTestId("filter-sheet-apply-footer").getByRole("button", { name: icu(SHEET.apply, PRODUCERS.length) }).click();
+          await expect(sheetPanel(page)).toHaveCount(0);
+          await expect(filtersButton(shell)).toContainText("2");
+        }
+        // The word may be visually hidden under 360, never from AT — and the
+        // breakpoint itself is pinned: the geometry above would stay green if
+        // `max-[359px]` drifted to 360 or 400 (CI review, #3762).
+        await expect(filtersButton(shell)).toHaveAccessibleName(new RegExp(`^${FILTERS_BTN}`));
+        const wordWidth = (await box(filtersButton(shell).getByText(FILTERS_BTN, { exact: true }))).width;
+        if (width < 360) expect(wordWidth, `«${FILTERS_BTN}» is sr-only under 360`).toBeLessThanOrEqual(1);
+        else expect(wordWidth, `«${FILTERS_BTN}» shows its word at ${width}`).toBeGreaterThan(10);
+        const row = await box(shell.getByTestId("map-service-row"));
+        // Same height as the chips beside it — an icon-only button collapsed to
+        // 38px next to 42px chips before the min-h.
+        const chipH = (await box(serviceChip(shell, "has_delivery"))).height;
+        expect(Math.abs((await box(filtersButton(shell))).height - chipH), "«סינון» height vs the service chips").toBeLessThanOrEqual(0.5);
+        for (const btn of [serviceChip(shell, "has_delivery"), serviceChip(shell, "pickup_points"), filtersButton(shell)]) {
+          const b = await box(btn);
+          expect(b.x, `${await btn.textContent()} left edge ${b.x} vs row ${row.x}`).toBeGreaterThanOrEqual(Math.max(0, row.x) - 0.5);
+          expect(b.x + b.width, `${await btn.textContent()} right edge`).toBeLessThanOrEqual(Math.min(width, row.x + row.width) + 0.5);
+        }
+      });
+    }
+  }
+  // MEH-2532: the upper edge of `max-[374px]`. The geometry above stays green
+  // if the breakpoint drifts (375 has room for px-4), so the padding itself is
+  // pinned on both sides of it.
+  for (const [width, pad] of [[374, 12], [375, 16]] as const) {
+    test(`${width}px: the service chips and «סינון» use ${pad}px inline padding`, async ({ page }, info) => {
+      mobileOnly(info, "the service row's phone geometry");
+      await page.setViewportSize({ width, height: 700 });
+      const { shell } = await gotoWithCatalog(page, info);
+      for (const [name, btn] of [["has_delivery", serviceChip(shell, "has_delivery")], ["pickup_points", serviceChip(shell, "pickup_points")], ["filters", filtersButton(shell)]] as const) {
+        const padding = await btn.evaluate((el) => [getComputedStyle(el).paddingInlineStart, getComputedStyle(el).paddingInlineEnd]);
+        expect(padding, `${name} inline padding at ${width}px`).toEqual([`${pad}px`, `${pad}px`]);
+      }
+    });
+  }
+
+  test("375px: unchanged — «סינון» shows its word", async ({ page }, info) => {
+    mobileOnly(info, "the service row's phone geometry");
+    await page.setViewportSize({ width: 375, height: 700 });
+    const { shell } = await gotoWithCatalog(page, info);
+    await expect(filtersButton(shell).getByText(FILTERS_BTN, { exact: true })).toBeVisible();
+  });
+});
+
+// MEH-2510 — at PEEK the sheet shows one line, «N בתי עסק מקומיים באזור», and
+// on a short phone that line sat under the floating nav pill: PEEK was a flat
+// 14vh while the pill is a fixed-px band. Measured on staging before the fix:
+// count-row top 595.6 vs nav top 595 at 375×667 (all 20px hidden), 675.6 vs
+// 688 at 375×760 (8px hidden). The viewports are set explicitly because the
+// project's own 393×727 is neither of the two phones the card names.
+test.describe("manual › /map PEEK sheet count clears the nav pill on short phones (MEH-2510)", () => {
+  for (const vp of [
+    { width: 375, height: 667 },
+    { width: 375, height: 760 },
+    { width: 390, height: 844 },
+  ]) {
+    test(`${vp.width}×${vp.height}: the PEEK count row sits fully above the nav pill, with ≥4px air`, async ({ page }, info) => {
+      mobileOnly(info, "the bottom sheet and the nav pill are the mobile shell's");
+      await page.setViewportSize(vp);
+      const { shell } = await gotoWithCatalog(page, info);
+      await settleSheet(shell);
+      // At PEEK first, so a wrong snap fails with its own message — pinned to
+      // the computed floor, not a loose ≤ 20vh (MEH-2532).
+      await expectAtPeek(page, shell);
+      const count = shell.getByTestId("sheet-count");
+      await expect(count).toHaveText(icu(he.map.bottom_sheet.count, PRODUCERS.length));
+      const row = await box(count);
+      const nav = await box(page.getByTestId("bottom-nav"));
+      expect(row.y + row.height + 4, `count row bottom ${row.y + row.height} vs nav top ${nav.y}`).toBeLessThanOrEqual(nav.y);
+    });
+  }
+
+  // MEH-2532: the floor makes PEEK taller than 14vh, so the first ~5vh of an
+  // upward drag moves nothing (MapBottomSheet.jsx, accepted). Guard that a real
+  // drag still opens the sheet from a floored PEEK. It starts on the count row
+  // (claim 1, the sheet chrome): at 375×667 the list shows a 4px strip between
+  // that row and the nav pill, too thin to aim a finger at, so claim 2 (`snap ===
+  // PEEK`, a drag from the list) stays with its unit test in MapSheetGesture.
+  test("375×667: an upward drag from the count row at a floored PEEK opens the sheet to HALF", async ({ page, browserName }, info) => {
+    mobileOnly(info, "the bottom sheet's touch drag is the mobile shell's");
+    test.skip(browserName !== "chromium", "the drag is dispatched over CDP, which only Chromium speaks (webkit-iphone13 shadow)");
+    await page.setViewportSize({ width: 375, height: 667 });
+    const { shell } = await gotoWithCatalog(page, info);
+    await settleSheet(shell);
+    await expectAtPeek(page, shell);
+    const row = await box(shell.getByTestId("sheet-count"));
+    const at = { x: row.x + row.width / 2, y: row.y + row.height / 2 };
+    const onRow = await page.evaluate(({ x, y }) => Boolean(document.elementFromPoint(x, y)?.closest("[data-testid='sheet-count']")), at);
+    expect(onRow, `a finger at (${at.x}, ${at.y}) must land on the count row`).toBe(true);
+    // 200px ≈ 30vh: 14 + 30 = 44vh, nearer HALF (45) than PEEK, so the lift
+    // snaps open — unless the drag never reached the sheet.
+    await dragSheetUp(page, at, 200);
+    await sheetSettledAt(page, shell, 0.45);
   });
 });

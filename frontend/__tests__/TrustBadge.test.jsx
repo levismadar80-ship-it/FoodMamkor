@@ -3,16 +3,15 @@ import { render, screen } from "@testing-library/react";
 
 // TrustBadge resolves tier label/tooltip via trust.tier_<n>.{label,tooltip}.
 // MEH-1120 (MEH-1074 Task B): TrustBadge is now recognition-only — it renders
-// tiers 4 (community-leader) and 5 (ambassador) and nothing for the
-// verification tiers 2/3, which are owned by BadgeRow / verification_tier
-// (ADR-022).
+// tier 4 (community-leader) and nothing for the verification tiers 2/3,
+// which are owned by BadgeRow / verification_tier (ADR-022).
+// MEH-2509: tier 5 (ambassador) is retired — the backend no longer computes
+// it, and a stale 5 (or any unknown tier) renders nothing.
 vi.mock("next-intl", () => ({
   useTranslations: () => (key) => {
     const flat = {
       "tier_4.label": "מובילת קהילה",
       "tier_4.tooltip": "10+ ביקורות עם דירוג ממוצע 4.5 ומעלה",
-      "tier_5.label": "שגרירת מהמקור",
-      "tier_5.tooltip": "בעלת העסק המובילה באזור",
     };
     return flat[key] ?? key;
   },
@@ -37,22 +36,21 @@ describe("TrustBadge (MEH-1120 recognition-only)", () => {
   });
 
   it("wires the tooltip text into aria-label", () => {
-    render(<TrustBadge tier={5} />);
-    expect(screen.getByText("שגרירת מהמקור")).toHaveAttribute(
+    render(<TrustBadge tier={4} />);
+    expect(screen.getByText("מובילת קהילה")).toHaveAttribute(
       "aria-label",
-      "בעלת העסק המובילה באזור",
+      "10+ ביקורות עם דירוג ממוצע 4.5 ומעלה",
     );
   });
 
-  it("applies the tier-5 (ambassador) class set", () => {
-    render(<TrustBadge tier={5} />);
-    expect(screen.getByText("שגרירת מהמקור").className).toContain("bg-state-selected/10");
+  // MEH-2509: a stale tier 5 must not borrow the tier-4 «מובילת קהילה»
+  // badge — that label claims 10+ reviews the business may not have.
+  it("renders nothing for the retired ambassador tier 5 (MEH-2509)", () => {
+    expect(render(<TrustBadge tier={5} />).container.innerHTML).toBe("");
   });
 
-  it("falls back to tier-4 label + styling for an unknown tier ≥ 4", () => {
-    render(<TrustBadge tier={99} />);
-    // unknown tier resolves tierKey → 4 (label + class set both from tier 4)
-    expect(screen.getByText("מובילת קהילה").className).toContain("bg-amber-50");
+  it("renders nothing for an unknown tier above 4", () => {
+    expect(render(<TrustBadge tier={99} />).container.innerHTML).toBe("");
   });
 
   it("applies the compact size when compact", () => {

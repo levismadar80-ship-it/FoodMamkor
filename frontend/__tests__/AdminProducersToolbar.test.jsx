@@ -26,10 +26,8 @@ function renderToolbar(producerStatus = "all") {
       incompleteCount={0}
       reviewDueOnly={false}
       setReviewDueOnly={vi.fn()}
-      importing={false}
       onSearch={vi.fn()}
       onExport={vi.fn()}
-      onImportFile={vi.fn()}
     />
   );
   return { setProducerStatus };
@@ -58,5 +56,31 @@ describe("AdminProducersToolbar — status select (MEH-2466)", () => {
   it("«כל הסטטוסים» is still value=all (the hook drops it → working queue, no drafts)", () => {
     renderToolbar();
     expect(screen.getByRole("option", { name: "admin.producers.toolbar.all_statuses" })).toHaveValue("all");
+  });
+});
+
+// MEH-2516: the Excel/CSV import is removed — it published businesses with no
+// licence, photo or signed declaration.
+describe("AdminProducersToolbar — no import (MEH-2516)", () => {
+  it("renders no import button and no file input", () => {
+    const { container } = render(
+      <AdminProducersToolbar
+        producerSearch=""
+        setProducerSearch={vi.fn()}
+        producerStatus="all"
+        setProducerStatus={vi.fn()}
+        incompleteOnly={false}
+        setIncompleteOnly={vi.fn()}
+        incompleteCount={0}
+        reviewDueOnly={false}
+        setReviewDueOnly={vi.fn()}
+        onSearch={vi.fn()}
+        onExport={vi.fn()}
+      />
+    );
+    expect(screen.queryByText("admin.producers.toolbar.import_excel")).not.toBeInTheDocument();
+    expect(container.querySelector('input[type="file"]')).toBeNull();
+    // the neighbouring export button is still there — the toolbar rendered
+    expect(screen.getByText("admin.producers.toolbar.export")).toBeInTheDocument();
   });
 });

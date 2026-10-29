@@ -22,6 +22,7 @@
 import { CaretDown, CaretRight, ClipboardText } from "@phosphor-icons/react";
 import { ADMIN_REVIEW_CHECKLIST_TITLE } from "@/lib/admin-review-checklist";
 import ReviewEvidence from "./ReviewEvidence";
+import GooglePlaceLink from "./GooglePlaceLink";
 
 const CARET_SIZE = 16;
 const HEADER_ICON_SIZE = 18;
@@ -37,6 +38,7 @@ export default function AdminReviewChecklist({
   onReloadItems,
   saving,
   producer,
+  onGooglePlaceLinked,
 }) {
   const checked = checkedIds || EMPTY_SET;
   const list = items || [];
@@ -134,6 +136,17 @@ export default function AdminReviewChecklist({
                 );
               })}
             </ul>
+          )}
+
+          {/* MEH-2582: map the Google profile while reviewing — the public
+              Google-rating line needs a place_id, and the edit form alone
+              left every business unmapped. */}
+          {producer?.id && (
+            <GooglePlaceLink
+              producerId={producer.id}
+              placeId={producer.google_place_id}
+              onLinked={onGooglePlaceLinked}
+            />
           )}
 
           <ReviewEvidence producer={producer} />

@@ -10,6 +10,7 @@
 >   - 🔑 = any authenticated user (`get_current_user`)
 >   - 👤 = producer role (`require_producer`). Includes `GET /producers/me/group-buys` (MEH-2437: the business's own group buys, every status, newest first; no business linked → 403).
 >   - ✅👤 = verified producer (`require_verified_producer` — producer role + verified email; unverified → 403 `יש לאמת את כתובת האימייל תחילה`, MEH-1164 F5). Applies to the **create** endpoints `POST /events`, `POST /experiences` (MEH-2246), `POST /producers/me/recipes`, `POST /group-buys`. Also `PATCH /group-buys/{id}/status` (MEH-2436: owner of that business only; an admin uses `PATCH /admin/group-buys/{id}/status`).
+>   - 🌐 group buys (MEH-2484): `GET /group-buys`, `GET /group-buys/{id}` and `POST /group-buys/{id}/commit` serve only a group buy whose business passes `is_business()` (approved, `kind='producer'`); otherwise 404 `קבוצת הרכש לא נמצאה`. The API still answers the owner and admin `200`; the public page itself is server-rendered without auth, so it 404s for them too. Leaving (`DELETE …/commit`) is not gated.
 >   - 🛡️ = admin role (`require_admin`)
 
 ## 1. Registered routers at a glance
@@ -22,6 +23,7 @@ graph LR
     App --> ProducerClaim[producer_claim.router<br/>/admin/producers/:id/claim-link · /producer-claim/preview · /producer-claim<br/>MEH-2322 owner-claim link: 14-day HS256 scope=producer_claim, draft + ownerless only,<br/>claim stamps her declaration + terms, status stays draft]
     App --> NameRequests[producer_name_requests.router<br/>/producers/me/name-change-requests<br/>/admin/name-change-requests]
     App --> Favorites[favorites.router<br/>/users/me/favorites/*]
+    App --> Saved[saved_items.router<br/>/users/me/saved/* MEH-2557]
     App --> HomeProducts[home_products.router<br/>/home-products/*]
     App --> Events[events.router<br/>/events/*]
     App --> Experiences[experiences.router<br/>/experiences/*<br/>MEH-2476: host carries her public business]
@@ -54,7 +56,8 @@ graph TD
 
     ProducerClick[Click producer card] --> GProducer[GET /producers/{id}<br/>🌐 + ?from=search/map/home<br/>logs producer_page_views best-effort]
     GProducer --> GGoogleRating[GET /producers/{id}/google-rating<br/>🌐 MEH-1490 live Places proxy, 60/min<br/>204 fail-quiet; never persists rating ToS §3.2.3b<br/>404 for an organizer MEH-2465]
-    ProducerClick --> GSlug[GET /producers/by-slug/{slug}<br/>🌐 same but by slug]
+    GGoogleRating -.needs.-> PGooglePlaceId[PUT /admin/producers/{id}/google-place-id<br/>🔒 admin · MEH-2582 one-field write from the approval row<br/>skips licence/delivery gates on purpose, 30/min]
+    ProducerClick --> GSlug[GET /producers/by-slug/{slug}<br/>🌐 same but by slug<br/>410 if the business was deleted · MEH-2534]
     GProducer --> WhatsApp[POST /producers/{id}/whatsapp-click<br/>🌐 rate-limited 10/min<br/>logs producer_whatsapp_clicks<br/>MEH-1677: OPTIONAL body {city} — sent only by the coverage CTA;<br/>must stay optional, sendBeacon cannot set application/json]
 
     GProducer --> GReviews[GET /producers/{id}/reviews<br/>🌐 paginated]
@@ -70,17 +73,21 @@ graph TD
 graph TD
     SignUp[/register page] --> RegConsumer[POST /auth/register<br/>🌐 rate-limited 10/hour<br/>📧 per-email 5/15 min (MEH-624)<br/>MEH-328: returns RegisterAck no token]
     SignUp --> RegProducer[POST /auth/register/producer<br/>🌐 multi-step form<br/>🌐 rate-limited 3/hour<br/>📧 per-email 5/15 min (MEH-624)<br/>MEH-328: non-upgrade RegisterAck, upgrade Token<br/>creates Producer+User on new-email branch only]
-    SignUp --> OAuthG[POST /auth/google<br/>🌐 id_token]
-    SignUp --> OAuthA[POST /auth/apple<br/>🌐 identity_token<br/>App Store requirement]
+    SignUp --> OAuthG[POST /auth/google<br/>🌐 id_token + terms_accepted?]
+    SignUp --> OAuthA[POST /auth/apple<br/>🌐 identity_token + terms_accepted?<br/>App Store requirement]
 
     Login[/login page] --> LoginPost[POST /auth/login<br/>🌐 rate-limited 5/min]
 
     Account[/settings page] --> Me[GET /auth/me<br/>🔑 current user]
     Account --> Delete[DELETE /users/me<br/>🔑 cascade delete<br/>App Store requirement]
 
-    Favorites[/favorites page] --> ListFavs[GET /users/me/favorites<br/>🔑]
-    Favorites --> AddFav[POST /users/me/favorites/{id}<br/>🔑 404 for an organizer MEH-2465]
+    Favorites[/favorites page] --> ListFavs[GET /users/me/favorites<br/>🔑 skips not-live businesses MEH-2513]
+    Favorites --> AddFav[POST /users/me/favorites/{id}<br/>🔑 404 for an organizer MEH-2465<br/>or a not-live business MEH-2513]
     Favorites --> DelFav[DELETE /users/me/favorites/{id}<br/>🔑]
+    Favorites --> ListSaved[GET /users/me/saved<br/>🔑 recipes/events/experiences, public only MEH-2557]
+    Favorites --> SavedIds[GET /users/me/saved/ids<br/>🔑 hearts cache]
+    Favorites --> AddSaved[POST /users/me/saved/{type}/{id}<br/>🔑 404 unless public]
+    Favorites --> DelSaved[DELETE /users/me/saved/{type}/{id}<br/>🔑 own rows only]
 ```
 
 ## 4. Producer self-management (role=producer)
@@ -105,7 +112,7 @@ graph TD
     NeighborList --> HPRate[POST /home-products/rate/{token}<br/>🌐 token-based single-use]
 
     Events[/events + /experiences] --> EventCreate[POST /events<br/>✅👤 verified producer — MEH-1164 F5;<br/>MEH-1161: pending producer's events stay hidden]
-    Events --> EventReads[GET /events + /upcoming + /id<br/>🌐 approved producers only — MEH-1161:<br/>pending filtered from lists, detail 404,<br/>owner/admin bypass;<br/>MEH-2459: organizer-owned events included,<br/>EventOut.owner_kind + owner_slug]
+    Events --> EventReads[GET /events + /upcoming + /id<br/>🌐 approved producers only — MEH-1161:<br/>pending filtered from lists, detail 404,<br/>owner/admin bypass;<br/>MEH-2459: organizer-owned events included,<br/>EventOut.owner_kind + owner_slug;<br/>MEH-2546: + owner_image_url]
     Events --> OrganizerPage[GET /organizers/{slug} + GET /organizers<br/>🌐 MEH-2461: approved organizers only,<br/>upcoming events; sitemap source<br/>MEH-2475: + owner story, contact channels]
     Events --> EventMine[GET /events/mine<br/>👤 producer — own events, all states<br/>incl. inactive — MEH-1405 manage list]
     Events --> ExpCreate[POST /experiences<br/>✅👤 verified producer — MEH-2246: same gate as<br/>POST /events, since MEH-1749 hides a<br/>non-business experience from every read path;<br/>then Claude Haiku pre-check + admin approval queue]
@@ -120,12 +127,12 @@ graph TD
 
     Producers[/admin/producers page] --> AdminPList[GET /admin/producers/pending<br/>🛡️]
     Producers --> Approve[POST /admin/producers/{id}/approve<br/>🛡️]
-    Producers --> Reject[POST /admin/producers/{id}/reject<br/>🛡️ MEH-226 preset_key + reason, persists rejection_reason with the status flip, 400 before mutating, email post-commit;<br/>MEH-2210 also persists rejection_reason_code = preset_key]
+    Producers --> Reject[POST /admin/producers/{id}/reject<br/>🛡️ MEH-226 preset_key + reason, persists rejection_reason with the status flip, 400 before mutating, email post-commit;<br/>MEH-2210 also persists rejection_reason_code = preset_key;<br/>MEH-2498 from approved: the business's open/funded group buys → cancelled, participants get the delisted-cancel email]
     Producers --> RejectPresets[GET /admin/producers/rejection-presets<br/>🛡️ MEH-226 the 5 canonical reasons — backend owns the labels]
     Producers --> ProdChanges[POST /admin/producers/{id}/request-changes<br/>🛡️ MEH-1011 feedback required, pending-only 409, email + WA, non-terminal]
-    Producers --> Toggle[POST /admin/producers/{id}/toggle-status<br/>🛡️]
-    Producers --> Import[POST /admin/producers/import<br/>🛡️ Excel dry-run + commit]
-    Producers --> ClaimLink[POST /admin/producers/{id}/claim-link<br/>🛡️ MEH-2322 signed owner-claim URL for an ownerless draft, 14 days, 409 if owned / not draft]
+    Producers --> Toggle[POST /admin/producers/{id}/toggle-status<br/>🛡️ MEH-2498 approved→inactive also cancels the business's open/funded group buys + delisted-cancel email]
+    Producers --> ClaimLink[POST /admin/producers/{id}/claim-link<br/>🛡️ MEH-2322 signed owner-claim URL for an ownerless draft, 14 days, 409 if owned / not draft;<br/>MEH-2495 also minted from the drafts-list row «העתקת הודעה עם קישור»;<br/>MEH-2496 locks the draft FOR UPDATE and stamps producers.claim_link_sent_at on success only]
+    Producers --> AdminPListAll[GET /admin/producers<br/>🛡️ ProducerAdminOut rows; MEH-2495 has_owner derived per row in ONE batched query]
     Producers --> DraftProducts[POST /admin/producers/{id}/products · DELETE …/products/{product_id}<br/>🛡️ MEH-2326 catalogue of an ownerless draft only, 409 once claimed / not draft]
     Producers --> AdminEdit[PATCH /admin/producers/{id}<br/>🛡️ any field]
     Producers --> GrantVerified[POST /admin/producers/{id}/grant-verified<br/>🛡️ MEH-762 stamp verified_at + doc_type;<br/>MEH-2459: 409 for kind=organizer]
@@ -138,6 +145,7 @@ graph TD
     Users[/admin/users page] --> AdminUsers[GET /admin/users<br/>🛡️ search + role filter]
     Users --> Role[PUT /admin/users/{id}/role<br/>🛡️]
     Users --> Block[POST /admin/users/{id}/block<br/>🛡️]
+    Users --> DelUser[DELETE /admin/users/{id}<br/>🛡️ not admins, MEH-2585]
 
     Content[/admin/content page] --> AdminCats[GET/POST/PUT/DELETE /admin/categories<br/>🛡️ CRUD]
     Content --> AdminPages[GET/PUT /admin/pages/{slug}<br/>🛡️ about/terms editor]

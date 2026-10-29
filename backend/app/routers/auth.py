@@ -39,6 +39,7 @@ from app.services.auth_emails import (
 from app.services.auth_notifications import (
     notify_producer_registered,
 )
+from app.services.user_deletion import delete_user_and_data  # MEH-2585
 from app.services.producer_risk import score_producer
 from app.services.oauth_verifiers import (
     # Aliases preserve the legacy underscore-prefixed module attribute
@@ -57,15 +58,7 @@ from app.services.producer_queries import (
 )
 from app.services.password_policy import validate_password
 from app.database import get_db
-from app.models import Category, Producer, ProducerCategory, Product, User
-from app.models.models import (
-    Favorite,
-    HomeProduct,
-    HomeProductRating,
-    HomeProductWhatsAppClick,
-    ProducerReview,
-    Report,
-)
+from app.models import Category, Producer, ProducerCategory, User
 from app.rate_limit import email_from_body, limiter
 from app.schemas.schemas import (
     AppleAuthRequest,
@@ -986,6 +979,8 @@ def google_auth(
             db.refresh(user)
             is_new = True
 
+    _record_oauth_terms(db, user, data.terms_accepted)
+
     # MEH-138 + MEH-375: backfill avatar_url for existing users that
     # don't have one yet — and only those. is_new path already set
     # avatar_url above; skip to avoid a second upload (which would
@@ -1010,6 +1005,20 @@ def google_auth(
         ),
         email_sent=email_expected,
     )
+
+
+def _record_oauth_terms(db: Session, user: User, accepted: bool) -> None:
+    """MEH-2080 chunk 2: stamp the terms consent a consumer gave on /register
+    before choosing Google or Apple — the same columns the email path writes
+    (MEH-1995). Guarded on the flag and never nulled: /login sends no flag, and
+    an absent/False one must leave an earlier consent intact. A True flag
+    overwrites, as register_producer does, so terms_version names the wording
+    most recently agreed to."""
+    if not accepted:
+        return
+    user.terms_accepted_at = datetime.now(timezone.utc)
+    user.terms_version = TERMS_VERSION
+    db.commit()
 
 
 @router.post(
@@ -1336,6 +1345,8 @@ def apple_auth(
             db.refresh(user)
             is_new = True
 
+    _record_oauth_terms(db, user, data.terms_accepted)
+
     if is_new:
         background_tasks.add_task(
             _send_welcome_email, user.email, user.name, "consumer"
@@ -1504,6 +1515,7 @@ def resend_verify(
 @limiter.limit("3/hour")
 def delete_account(
     request: Request,
+    background_tasks: BackgroundTasks,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -1530,131 +1542,7 @@ def delete_account(
     """
     user_email = user.email
     user_name = user.name
-    producer_id = user.producer_id
-
-    # MEH-1150: capture the OTHER businesses this user has reviewed BEFORE the
-    # cascade runs. ProducerReview.user_id is ondelete=CASCADE (models.py), so
-    # `db.delete(user)` below silently removes the user's reviews of third-party
-    # businesses — but producers.avg_rating / reviews_count are denormalized and
-    # maintained ONLY in reviews.py (_recompute_producer_rating), so without a
-    # refresh those businesses would keep an inflated rating that counts reviews
-    # no longer in the DB. We collect the set now and recompute each AFTER the
-    # deletion commits (below). The user's OWN producer is excluded: it is
-    # hard-deleted in step 2, so recomputing it is pointless and it no longer
-    # exists. Empty set (user wrote no reviews) → no extra work.
-    reviewed_producer_ids = {
-        pid
-        for (pid,) in db.query(ProducerReview.producer_id)
-        .filter(ProducerReview.user_id == user.id)
-        .distinct()
-        .all()
-        if pid != producer_id
-    }
-
-    # MEH-375: capture every Cloudinary URL owned by this user BEFORE
-    # any db.delete, since the cascade detaches relationships and the
-    # URLs become unreachable post-commit. 5 surfaces:
-    #   A) user.avatar_url
-    #   B) producer.images           (if user.producer_id)
-    #   C) every Product.image_url   (for that producer)
-    #   D) every HomeProduct.photo   (user-owned, not producer-owned)
-    #   E) every HomeProduct.images  (same rows as D)
-    # producer.story_card_url IS captured separately (MEH-513) and destroyed
-    # post-commit with bypass_reserved=True — required because
-    # mehamakor/producers/* is in RESERVED_PUBLIC_ID_PREFIXES and a plain
-    # destroy_image call would be silently rejected by the cleanup guard.
-    # The sibling fix on the admin path is admin_delete_producer (MEH-510).
-    # Destroy runs AFTER the final db.commit so a constraint failure
-    # leaves DB and Cloudinary in sync.
-    captured_urls: list[str] = []
-    old_story_card_url: str | None = None
-    if user.avatar_url:
-        captured_urls.append(user.avatar_url)
-    if producer_id is not None:
-        producer_for_capture = (
-            db.query(Producer).filter(Producer.id == producer_id).first()
-        )
-        if producer_for_capture is not None:
-            old_story_card_url = producer_for_capture.story_card_url
-            for url in producer_for_capture.images or []:
-                if url:
-                    captured_urls.append(url)
-            for prod in (
-                db.query(Product)
-                .filter(Product.producer_id == producer_for_capture.id)
-                .all()
-            ):
-                if prod.image_url:
-                    captured_urls.append(prod.image_url)
-    for hp in db.query(HomeProduct).filter(HomeProduct.user_id == user.id).all():
-        if hp.photo:
-            captured_urls.append(hp.photo)
-        for url in hp.images or []:
-            if url:
-                captured_urls.append(url)
-
-    # 1. Clean up user-linked (not producer-linked) rows that don't cascade
-    #    from the user delete. HomeProduct.user_id is CASCADE, but we keep
-    #    the explicit deletes for defense-in-depth against pre-cascade data.
-    db.query(HomeProductRating).filter(HomeProductRating.user_id == user.id).delete()
-    db.query(HomeProductWhatsAppClick).filter(
-        HomeProductWhatsAppClick.user_id == user.id
-    ).delete()
-    db.query(HomeProduct).filter(HomeProduct.user_id == user.id).delete()
-    db.query(Favorite).filter(Favorite.user_id == user.id).delete()
-    db.query(Report).filter(Report.reporter_id == user.id).delete()
-
-    # 2. If this user owns a Producer, remove the FK reference from the user
-    #    row first (User.producer_id has no ondelete, so deleting the
-    #    producer while the user still points at it would violate the
-    #    constraint), then delete the producer — children cascade.
-    if producer_id is not None:
-        user.producer_id = None
-        db.flush()
-        producer = db.query(Producer).filter(Producer.id == producer_id).first()
-        if producer is not None:
-            # MEH-816: phone_otp_tokens cascade via the DB FK (ondelete=CASCADE)
-            # plus passive_deletes=True on the Producer.otp_tokens backref
-            # (MEH-773 Chunk B), so no explicit pre-delete is needed. DO NOT
-            # re-add one — passive_deletes already pre-empts the NotNullViolation
-            # the old MEH-755 bulk-delete guarded.
-            db.delete(producer)
-
-    # 3. Finally, delete the user itself.
-    db.delete(user)
-    db.commit()
-
-    # MEH-1150: the user's reviews of third-party businesses are now gone
-    # (cascade committed above). Refresh the cached rating aggregate on each
-    # of those businesses so avg_rating / reviews_count no longer count the
-    # deleted reviews. Synchronous — the per-user review count is small
-    # (over-engineering guard: no background job). `_recompute_producer_rating`
-    # commits internally. Local import avoids the auth<->reviews import cycle
-    # (reviews.py imports app.auth).
-    if reviewed_producer_ids:
-        from app.routers.reviews import _recompute_producer_rating
-
-        for reviewed_pid in reviewed_producer_ids:
-            _recompute_producer_rating(reviewed_pid, db)
-
-    # MEH-375: post-commit Cloudinary cleanup. fail-open per
-    # destroy_image contract — failures log via app.upload, the cleanup
-    # script catches misses on its next run, and the DB cascade is
-    # never rolled back on a Cloudinary outage. Duplicate URLs across
-    # surfaces (rare, e.g. avatar reused as producer image) are
-    # idempotent — Cloudinary returns "not found" on the second call.
-    from app.cloudinary_utils import destroy_image
-
-    for url in captured_urls:
-        destroy_image(url, context="auth.delete_account")
-    # MEH-513: story_card needs bypass_reserved=True — the producer is gone,
-    # the slot is now an orphan (the cleanup script reject list is for live
-    # story-cards; this is explicitly not one).
-    destroy_image(
-        old_story_card_url,
-        bypass_reserved=True,
-        context="auth.delete_account story_card",
-    )
+    delete_user_and_data(db, user, background_tasks, context="auth.delete_account")
 
     # Send confirmation email
     _send_deletion_email(user_email, user_name)

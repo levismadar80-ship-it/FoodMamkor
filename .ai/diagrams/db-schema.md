@@ -15,6 +15,7 @@
 ```mermaid
 erDiagram
     users ||--o{ favorites : "saves"
+    users ||--o{ saved_items : "saves (MEH-2556)"
     users ||--o| producers : "owns (1:1 via users.producer_id)"
     producers ||--o{ producer_categories : "tagged_with"
     producers ||--o{ products : "sells"
@@ -87,6 +88,7 @@ erDiagram
         string rejection_reason_code "nullable — MEH-2210, VARCHAR(40); the admin preset_key (PRODUCER_REJECTION_PRESETS) beside the composed rejection_reason; cleared on approve"
         int resubmission_count "NOT NULL DEFAULT 0 — MEH-2210, rejected→pending resubmissions used; history, never reset; cap constants.MAX_PRODUCER_RESUBMISSIONS=3"
         timestamp resubmitted_at "nullable — MEH-2210, tz-aware; latest resubmission"
+        timestamp claim_link_sent_at "nullable — MEH-2496, tz-aware; latest owner-claim link minted (no backfill)"
         timestamp created_at
         timestamp updated_at "nullable — MEH-1291, tz-aware; onupdate=func.now() stamp, no backfill; public freshness signal (ProducerDetailOut)"
         text owner_bio "nullable — MEH-1335, app-capped 300; public OwnerCard story (NULL = compact variant)"
@@ -392,6 +394,21 @@ erDiagram
         string title
         text body
         timestamp updated_at
+    }
+
+    retired_slugs {
+        string slug PK "MEH-2528 tombstone"
+        uuid producer_id FK "SET NULL — owner of a renamed slug"
+        string reason "deleted|renamed"
+        timestamp retired_at
+    }
+
+    saved_items {
+        uuid id PK "MEH-2556"
+        uuid user_id FK "CASCADE (UNIQUE leads with it)"
+        string item_type "recipe|event|experience (CHECK)"
+        uuid item_id "no FK — per-type table"
+        timestamp created_at
     }
 
     inbound_messages {

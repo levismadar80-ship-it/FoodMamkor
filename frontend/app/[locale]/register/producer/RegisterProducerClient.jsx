@@ -874,10 +874,12 @@ function RegisterProducerPageBody() {
   // clicked. showAccountLine: upgrade users (and token-holders whose step
   // already initialized past ACCOUNT) never see the account-creation frame,
   // so the checklist must not promise it.
+  // MEH-2565: below md the form sits on the page, not in a white card — the
+  // card's padding plus the inner boxes cost ~60px of a 375px screen.
   if (showPreflight) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-12">
-        <div className="bg-white rounded-md p-8">
+        <div className="md:bg-white md:rounded-md md:p-8">
           <h1 data-testid="register-hero-heading" className="font-headline-lg text-3xl font-black text-text mb-2 text-center">{t("auth.register.producer.heading")}</h1>
           <p className="text-fg-muted text-center mb-4">{t("auth.register.producer.subtitle")}</p>
           <RegisterPreflight
@@ -891,7 +893,7 @@ function RegisterProducerPageBody() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-12">
-      <div className="bg-white rounded-md p-8">
+      <div className="md:bg-white md:rounded-md md:p-8">
         {/* MEH-960: hero pitch is wizard chrome — hide on CONFIRM so it doesn't
             double up with the success-screen heading. Mirrors the
             step < STEP.CONFIRM guard on the banners + stepper. */}

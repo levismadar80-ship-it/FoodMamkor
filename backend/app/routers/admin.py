@@ -7,13 +7,12 @@ from uuid import UUID
 import httpx
 from fastapi import (
     APIRouter,
+    BackgroundTasks,
     Body,
     Depends,
-    File,
     HTTPException,
     Query,
     Request,
-    UploadFile,
 )
 from sqlalchemy import func, text
 from sqlalchemy.exc import IntegrityError
@@ -32,7 +31,9 @@ from app.services.delivery_validation import (
     ensure_nationwide_requires_delivery,
 )
 from app.services.email import send_email
+from app.services.group_buy_delist import cancel_live_group_buys  # MEH-2498
 from app.services.producer_listing import is_business  # MEH-2459
+from app.services import retired_slugs  # MEH-2528
 
 # MEH-1242: SITE_DOMAIN is the single canonical domain constant. Import it —
 # never re-declare the literal.
@@ -124,13 +125,21 @@ def _yes_no(value) -> bool:
 def _ensure_unique_slug(
     db: Session, base_slug: str, exclude_id: UUID | None = None
 ) -> str:
-    """Append -2, -3, ... until slug is unique and not reserved."""
+    """Append -2, -3, ... until slug is unique, not reserved and not retired.
+
+    MEH-2528: a retired slug (the URL of a deleted or renamed business, see
+    services/retired_slugs.py) counts as taken, so an old link never resolves
+    to a different business. `exclude_id` is also the owner the retired check
+    exempts: a business may go back to a slug it retired itself.
+    """
     if not base_slug:
         return base_slug
     candidate = base_slug
     counter = 2
     while True:
-        if not is_reserved(candidate):
+        if not is_reserved(candidate) and not retired_slugs.is_retired(
+            db, candidate, owner_id=exclude_id
+        ):
             q = db.query(Producer).filter(Producer.slug == candidate)
             if exclude_id:
                 q = q.filter(Producer.id != exclude_id)
@@ -393,6 +402,32 @@ def _apply_delivery_cities(db: Session, producer: Producer, cities: list[str]):
         db.add(DeliveryArea(producer_id=producer.id, city=city))
 
 
+def _attach_has_owner(db: Session, producers) -> None:
+    """MEH-2495 — hydrate `has_owner` for every row in ONE query.
+
+    `users.producer_id` has no unique index (producer_claim.py residual risks),
+    so this asks "is there at least one" with DISTINCT rather than joining —
+    a join would duplicate rows. Called by every route that returns
+    `ProducerAdminOut`; the field defaults to None, so a route that skipped
+    this fails closed (no chip, no action) rather than lying, and
+    tests/test_meh2495_admin_draft_owner.py lists those routes so a new one
+    has to be added there — and hydrated — on purpose.
+    """
+    ids = [p.id for p in producers]
+    owned = (
+        {
+            pid
+            for (pid,) in db.query(User.producer_id)
+            .filter(User.producer_id.in_(ids))
+            .distinct()
+        }
+        if ids
+        else set()
+    )
+    for p in producers:
+        p.has_owner = p.id in owned
+
+
 def _attach_aging(producer) -> None:
     """MEH-2110 — hydrate `business_days_waiting` for an admin list row.
 
@@ -462,6 +497,9 @@ def list_producers(
         # derivation below. selectinload (not joinedload) — a 4th collection
         # joinedload here would widen the existing 3-way cartesian.
         selectinload(Producer.locations),
+        # MEH-2541: ProducerListOut.active_offer reads this collection; without
+        # it every row paid one producer_offers SELECT (Sentry N+1).
+        selectinload(Producer.offers),
     )
     # MEH-2100: three-way, and the DEFAULT (no `status` param) is the one that
     # changed. The admin toolbar sends no param for its "כל הסטטוסים" option
@@ -528,6 +566,7 @@ def list_producers(
     for p in results:
         attach_badge_fields(p)
         _attach_aging(p)
+    _attach_has_owner(db, results)
     return results
 
 
@@ -646,6 +685,7 @@ def admin_create_producer(
     db.commit()
     db.refresh(producer)
     attach_badge_fields(producer)
+    _attach_has_owner(db, [producer])
     return producer
 
 
@@ -785,6 +825,20 @@ def _apply_recommended_pick(producer: Producer, payload: dict) -> None:
         producer.recommended_at = None
 
 
+def _retire_replaced_slug(db: Session, producer: Producer, payload: dict) -> None:
+    """MEH-2528 — an admin edit that changes or clears the slug retires the old
+    one, so the next business with that name cannot inherit its links; a slug
+    this business retired earlier and now takes back is released again.
+
+    Must run before the payload is applied: it reads the OLD `producer.slug`.
+    """
+    if "slug" not in payload or (payload["slug"] or None) == producer.slug:
+        return
+    retired_slugs.retire_slug(db, producer, "renamed")
+    if payload["slug"]:
+        retired_slugs.reclaim(db, payload["slug"], producer.id)
+
+
 @router.put("/producers/{producer_id}", response_model=ProducerAdminOut)
 def admin_update_producer(
     producer_id: UUID,
@@ -801,6 +855,15 @@ def admin_update_producer(
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
 
     payload = data.model_dump(exclude_unset=True)
+    # MEH-2502: status moves only through approve / reject / toggle-status —
+    # the routes that carry the approval gate, the MEH-509 hooks and the
+    # MEH-2498 group-buy cancel. ProducerAdminUpdate inherits `status` from the
+    # owner's ProducerUpdate, so it is refused here, loudly, before any write.
+    if "status" in payload:
+        raise HTTPException(
+            status_code=422,
+            detail="לא ניתן לשנות סטטוס בעריכה — יש להשתמש באישור, בדחייה או בהשעיה.",
+        )
     category_ids = payload.pop("category_ids", None)
     delivery_area_cities = payload.pop("delivery_area_cities", None)
     # MEH-903 A: stop writing the legacy delivery_cities column — delivery_areas
@@ -842,6 +905,9 @@ def admin_update_producer(
         _guard_supplied_slug(payload["slug"])
         candidate = _slugify(payload["slug"])
         payload["slug"] = _ensure_unique_slug(db, candidate, exclude_id=producer.id)
+
+    # MEH-2528: read before the setattr loop below overwrites `producer.slug`.
+    _retire_replaced_slug(db, producer, payload)
 
     # MEH-375: snapshot gallery BEFORE bulk setattr so we can diff and
     # destroy URLs the admin dropped AFTER db.commit succeeds. Order
@@ -893,6 +959,7 @@ def admin_update_producer(
         )
 
     attach_badge_fields(producer)
+    _attach_has_owner(db, [producer])
     return producer
 
 
@@ -909,6 +976,7 @@ _TOGGLEABLE_STATUSES = {"approved", "inactive"}
 @router.post("/producers/{producer_id}/toggle-status")
 def toggle_producer_status(
     producer_id: UUID,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
@@ -928,7 +996,12 @@ def toggle_producer_status(
             status_code=409,
             detail="לא ניתן לשנות סטטוס במצב הנוכחי — יש לאשר או לדחות את העסק דרך מסלול האישור.",
         )
-    producer.status = "inactive" if producer.status == "approved" else "approved"
+    was_approved = producer.status == "approved"
+    producer.status = "inactive" if was_approved else "approved"
+    # MEH-2498: suspending takes the business off the site, so its live group
+    # buys go with it — cancelled in the same commit, participants mailed.
+    if was_approved:
+        cancel_live_group_buys(db, producer, background_tasks)
     db.commit()
     return {"detail": "Status toggled", "status": producer.status}
 
@@ -936,6 +1009,7 @@ def toggle_producer_status(
 @router.delete("/producers/{producer_id}")
 def admin_delete_producer(
     producer_id: UUID,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
@@ -965,6 +1039,11 @@ def admin_delete_producer(
     # overwrite=True on upload prevents duplicates, not delete-orphans.
     old_owner_photo_url = producer.owner_photo_url
 
+    # MEH-2503: a live group buy's participants are told before the cascade
+    # removes it — same delisted email as a suspension (MEH-2498). Runs before
+    # the unlink below: it reads User.producer_id to skip the owner herself.
+    cancel_live_group_buys(db, producer, background_tasks)
+
     # MEH-747: unlink any user pointing at this producer BEFORE db.delete.
     # User.producer_id has no ondelete (models.py), so deleting the producer
     # while a self-registered owner still references it violates
@@ -984,6 +1063,11 @@ def admin_delete_producer(
         synchronize_session=False,
     )
     db.flush()
+
+    # MEH-2528: the deleted business's URL stays reserved — hard delete frees
+    # the UNIQUE slot, and without the tombstone the next business with this
+    # name would inherit every link to this one.
+    retired_slugs.retire_slug(db, producer, "deleted")
 
     # MEH-816: phone_otp_tokens cascade via the DB FK (ondelete=CASCADE) plus
     # passive_deletes=True on the Producer.otp_tokens backref (MEH-773 Chunk B),
@@ -1014,42 +1098,6 @@ def admin_delete_producer(
     return {"detail": "Producer deleted"}
 
 
-@router.post("/producers/import")
-async def import_producers_excel(
-    file: UploadFile = File(...),
-    dry_run: bool = Query(
-        True, description="Preview only — set false to actually save"
-    ),
-    user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
-):
-    """Upload Excel/CSV file and import producers. dry_run=true returns preview only."""
-    from io import BytesIO
-
-    try:
-        from openpyxl import load_workbook
-    except ImportError:
-        raise HTTPException(status_code=500, detail="openpyxl not installed")
-
-    contents = await file.read()
-    if len(contents) > 10_000_000:
-        raise HTTPException(status_code=413, detail="קובץ גדול מדי — מקסימום 10MB")
-    try:
-        wb = load_workbook(BytesIO(contents), data_only=True)
-    except Exception:
-        # MEH-2375: the parser's message stays in the log, never in the response.
-        logger.exception("producer import: workbook could not be parsed")
-        raise HTTPException(status_code=400, detail="לא ניתן לקרוא את הקובץ")
-
-    ws = wb.active
-    # Skip header row
-    rows = [list(r) for r in ws.iter_rows(min_row=2, values_only=True)]
-
-    from app.services.producer_import import import_rows
-
-    return import_rows(db, rows, dry_run=dry_run)
-
-
 @router.get("/producers/pending", response_model=list[ProducerAdminOut])
 def pending_producers(
     user: User = Depends(require_admin), db: Session = Depends(get_db)
@@ -1075,6 +1123,7 @@ def pending_producers(
     for p in results:
         attach_badge_fields(p)
         _attach_aging(p)
+    _attach_has_owner(db, results)
     return results
 
 
@@ -1297,12 +1346,14 @@ def admin_get_producer(
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
     attach_badge_fields(producer)
     _attach_aging(producer)
+    _attach_has_owner(db, [producer])
     return producer
 
 
 @router.post("/producers/{producer_id}/reject")
 def reject_producer(
     producer_id: UUID,
+    background_tasks: BackgroundTasks,
     body: ProducerRejectIn = Body(default_factory=ProducerRejectIn),
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
@@ -1332,6 +1383,10 @@ def reject_producer(
             detail="אי אפשר לדחות עסק שטרם נשלח לבדיקה",
         )
     composed_reason = _compose_rejection_reason(preset_key, reason)
+    # MEH-2498: rejecting a business that was live takes it off the site — its
+    # live group buys are cancelled in the same commit, participants mailed.
+    if producer.status == "approved":
+        cancel_live_group_buys(db, producer, background_tasks)
     producer.status = "rejected"
     # MEH-226: the reason is persisted in the SAME commit as the status flip —
     # before this it lived only in the email body, so a rejected owner saw

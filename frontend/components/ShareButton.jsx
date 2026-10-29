@@ -14,7 +14,12 @@ import { BRAND_NAME } from "@/lib/constants";
 // MEH-2465 follow-up: what is being shared names the button for a screen
 // reader. The page decides; "business" stays the default so every existing
 // call site keeps «שתפו לינק לעסק».
-const ARIA_LABEL_KEY = { business: "modal_title", event: "modal_title_event" };
+const ARIA_LABEL_KEY = {
+  business: "modal_title",
+  event: "modal_title_event",
+  experience: "modal_title_experience", // MEH-2549
+  recipe: "modal_title_recipe", // MEH-2558
+};
 
 export default function ShareButton({
   url,
@@ -92,6 +97,24 @@ export default function ShareButton({
         aria-label={ariaLabel}
       >
         <ShareNetwork size={17} className="text-primary-dark" aria-hidden="true" />
+        {t("quiet_label")}
+      </button>
+    );
+  }
+
+  if (variant === "outline") {
+    // MEH-2548: one of a pair of equal buttons beside «הוספה ליומן» on the
+    // event / experience page (Luma, Eventbrite). Same label as "quiet".
+    return (
+      <button
+        type="button"
+        onClick={handleShare}
+        data-testid="share-outline"
+        className="flex-1 inline-flex items-center justify-center gap-2 min-h-[46px] px-3 rounded-[10px] border border-primary text-primary text-sm font-semibold hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40"
+        title={t("copy_link")}
+        aria-label={ariaLabel}
+      >
+        <ShareNetwork size={18} aria-hidden="true" />
         {t("quiet_label")}
       </button>
     );

@@ -85,9 +85,9 @@ def test_send_sets_an_explicit_reply_to(monkeypatch):
         lambda to, subject, body, **kw: captured.update(to=to, **kw),
     )
     send_submission_confirmation(
-        "owner@example.com", "מאפיית שקד", datetime.now(timezone.utc)
+        "owner@sample.co.il", "מאפיית שקד", datetime.now(timezone.utc)
     )
-    assert captured["to"] == "owner@example.com"
+    assert captured["to"] == "owner@sample.co.il"
     assert captured.get("reply_to") == SUPPORT_REPLY_TO
     assert "noreply" not in captured.get("reply_to", "")
 
@@ -132,7 +132,7 @@ def test_reply_to_is_omitted_when_unset_so_existing_senders_are_unchanged(monkey
 
     from app.services.email import send_email
 
-    send_email("someone@example.com", "נושא", "גוף")
+    send_email("someone@sample.co.il", "נושא", "גוף")
     assert "reply_to" not in sent, sent
 
 
@@ -151,7 +151,7 @@ def test_reply_to_reaches_the_transport_when_set(monkeypatch):
 
     from app.services.email import send_email
 
-    send_email("someone@example.com", "נושא", "גוף", reply_to=SUPPORT_REPLY_TO)
+    send_email("someone@sample.co.il", "נושא", "גוף", reply_to=SUPPORT_REPLY_TO)
     assert sent.get("reply_to") == SUPPORT_REPLY_TO
 
 
@@ -173,7 +173,7 @@ def test_a_raising_transport_does_not_escape(monkeypatch):
     monkeypatch.setitem(__import__("sys").modules, "resend", fake_resend)
 
     send_submission_confirmation(
-        "owner@example.com", "מאפיית שקד", datetime.now(timezone.utc)
+        "owner@sample.co.il", "מאפיית שקד", datetime.now(timezone.utc)
     )  # must not raise
 
 

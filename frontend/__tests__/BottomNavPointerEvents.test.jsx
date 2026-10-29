@@ -16,6 +16,12 @@ vi.mock("@/lib/auth-context", () => ({
 }));
 
 vi.mock("@/i18n/navigation", () => ({
+  // MEH-2578: the chrome now takes Link from here, not next/link.
+  Link: ({ children, href, ...props }) => (
+    <a href={typeof href === "string" ? href : "#"} {...props}>
+      {children}
+    </a>
+  ),
   usePathname: () => "/about",
 }));
 

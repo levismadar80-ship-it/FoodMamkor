@@ -2,7 +2,11 @@
 
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { computeMenuTop, MENU_GAP_PX } from "@/lib/panel-position";
+import {
+  computeMenuInlineEnd,
+  computeMenuTop,
+  MENU_GAP_PX,
+} from "@/lib/panel-position";
 import { DotsThreeVertical } from "@phosphor-icons/react";
 
 /**
@@ -32,7 +36,9 @@ import { DotsThreeVertical } from "@phosphor-icons/react";
  *           close-on-scroll/resize — fixes overflow clipping on lower rows);
  *           MEH-2230 (viewport fit via lib/panel-position.js);
  *           MEH-2267 (APG keyboard: focus the first item on open, Arrow
- *           navigation with wrap, Tab closes and returns focus to the trigger)
+ *           navigation with wrap, Tab closes and returns focus to the trigger);
+ *           MEH-2587 (inline-axis viewport fit — the panel ran off the right
+ *           edge of a phone in the stacked-card layout)
  */
 
 /**
@@ -66,7 +72,11 @@ function measureCoords(triggerEl) {
     // layout effect below, which is the only point the panel's height is known
     // (it is not rendered yet here). MEH-2230.
     top: rect.bottom + MENU_GAP_PX,
-    insetInlineEnd: rtl ? rect.left : window.innerWidth - rect.right,
+    // clientWidth, not innerWidth: innerWidth includes a vertical scrollbar,
+    // and `fixed` offsets are measured from the layout viewport without it.
+    insetInlineEnd: rtl
+      ? rect.left
+      : document.documentElement.clientWidth - rect.right,
     triggerTop: rect.top,
     triggerBottom: rect.bottom,
   };
@@ -173,16 +183,25 @@ export default function AdminRowMenu({ items = [], ariaLabel }) {
   // it. Runs before paint, so the corrected position is the first one shown.
   useIsomorphicLayoutEffect(() => {
     if (!open || !coords || !menuRef.current) return;
-    const height = menuRef.current.getBoundingClientRect().height;
+    const { height, width } = menuRef.current.getBoundingClientRect();
     if (!height) return;
     const next = computeMenuTop(
       { top: coords.triggerTop, bottom: coords.triggerBottom },
       height,
       window.innerHeight,
     );
+    // MEH-2587 — same fix on the inline axis: keep the whole panel on screen.
+    const nextEnd = computeMenuInlineEnd(
+      coords.insetInlineEnd,
+      width,
+      document.documentElement.clientWidth,
+    );
     // Guard the loop: only write when the position actually moves.
-    if (Math.abs(next - coords.top) > 0.5) {
-      setCoords((c) => (c ? { ...c, top: next } : c));
+    if (
+      Math.abs(next - coords.top) > 0.5 ||
+      Math.abs(nextEnd - coords.insetInlineEnd) > 0.5
+    ) {
+      setCoords((c) => (c ? { ...c, top: next, insetInlineEnd: nextEnd } : c));
     }
   }, [open, coords]);
 
@@ -292,7 +311,9 @@ export default function AdminRowMenu({ items = [], ariaLabel }) {
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}
         onClick={handleToggle}
-        className="inline-flex items-center justify-center rounded-lg p-1 text-muted hover:bg-gray-100 hover:text-text transition"
+        // MEH-2587: 40x40 below md — the bare 26px kebab was the smallest
+        // target in the phone card; desktop table density is unchanged.
+        className="inline-flex items-center justify-center rounded-lg p-1 max-md:min-h-10 max-md:min-w-10 text-muted hover:bg-gray-100 hover:text-text transition"
       >
         <DotsThreeVertical size={18} weight="bold" aria-hidden="true" />
       </button>

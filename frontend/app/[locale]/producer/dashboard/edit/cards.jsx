@@ -37,6 +37,13 @@ import {
   hasLicenseFormatWarning,
 } from "@/lib/license-required-categories";
 import EditAccordionCard from "@/components/EditAccordionCard";
+import {
+  fulfillmentTags,
+  FULFILLMENT_WASH_GREEN,
+  FULFILLMENT_WASH_NEUTRAL,
+  FULFILLMENT_ICON_PX,
+} from "@/lib/fulfillmentTags";
+import { resolveStoreHours } from "@/lib/hours";
 // MEH-1539 T3: the owner categories card reuses the REGISTER picker (per-category
 // descriptions MEH-1354, popular-6 + search, ≤3 cap MEH-1297, primary-first)
 // instead of its own flat checkbox grid. Same selection contract (category_ids).
@@ -1359,8 +1366,19 @@ export function KashrutCard({ profile, reportDirty = () => {} }) {
   };
 
   const approvedBadges = profile?.kashrut_badges || [];
+  // MEH-2518: a revoked badge stays in the list with its reason, like a
+  // rejected request — the owner should see why it left the page.
+  // A rejected/revoked row is history once a newer request for the same badge
+  // exists (a re-request or renewal) — showing «התג הוסר» beside the re-approved
+  // badge would contradict it.
+  const newerRequestFor = (r) =>
+    requests.some(
+      (o) => o.id !== r.id && o.badge_code === r.badge_code && o.created_at > r.created_at,
+    );
   const openRequests = requests.filter(
-    (r) => r.status === "pending" || r.status === "rejected",
+    (r) =>
+      r.status === "pending" ||
+      ((r.status === "rejected" || r.status === "revoked") && !newerRequestFor(r)),
   );
   const isEmpty = approvedBadges.length === 0 && openRequests.length === 0;
   // MEH-2405: an approved badge is tappable on the public page only when a
@@ -1422,7 +1440,7 @@ export function KashrutCard({ profile, reportDirty = () => {} }) {
           {openRequests.map((r) => {
             const key = CODE_TO_KEY[r.badge_code];
             const label = key ? tBadges(`${key}.label`) : r.badge_code;
-            const rejected = r.status === "rejected";
+            const rejected = r.status === "rejected" || r.status === "revoked";
             return (
               <li key={r.id} className="flex flex-wrap items-center gap-2 text-sm">
                 <span className="font-medium">{label}</span>
@@ -1431,7 +1449,11 @@ export function KashrutCard({ profile, reportDirty = () => {} }) {
                     rejected ? "bg-error/10 text-error" : "bg-primary/10 text-primary"
                   }`}
                 >
-                  {rejected ? t("status_rejected") : t("status_pending")}
+                  {r.status === "revoked"
+                    ? t("status_revoked")
+                    : rejected
+                      ? t("status_rejected")
+                      : t("status_pending")}
                 </span>
                 {rejected && r.notes && (
                   <span className="text-xs text-fg-muted">{r.notes}</span>
@@ -1557,6 +1579,7 @@ const MAX_DELIVERY_MONEY = 1_000_000;
 // Exported for isolation tests (EditTabDeliveryCard.test.jsx).
 export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
   const t = useTranslations("dashboard.producer.delivery");
+  const tMap = useTranslations("map.producer_card");
   const initial = {
     hasPhysical: profile?.has_physical_location ?? true,
     offersDelivery: profile?.offers_delivery ?? false,
@@ -1636,6 +1659,22 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
   }, [dirty, reportDirty]);
 
   const neitherType = !form.hasPhysical && !form.offersDelivery;
+  // MEH-2561: the tag her /map card shows, from the SAME function the card
+  // uses. Delivery reads the live form (mirrors producer_queries.py:185 —
+  // offers_delivery AND (an area OR nationwide)), so toggling here updates the
+  // preview before saving. Pickup and hours live in LocationsEditor, so they
+  // read the locations loaded with the page (mirrors producer_queries.py:196).
+  const mapTags = fulfillmentTags(
+    {
+      delivers: form.offersDelivery && (form.nationwide || form.cities.length > 0),
+      offersPickup: (profile?.locations ?? []).some(
+        (loc) => loc?.kind === "pickup" || loc?.kind === "market_stand",
+      ),
+      storeWithHours: form.hasPhysical && !!resolveStoreHours(profile),
+    },
+    tMap,
+  );
+  const mapArranged = mapTags.length === 1 && mapTags[0].key === "arranged";
   const citiesMissing =
     form.offersDelivery && !form.nationwide && form.cities.length === 0;
   const blocked = neitherType || citiesMissing;
@@ -1751,6 +1790,31 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
       {/* MEH-1540: scope helper — this card is delivery destinations only,
           the business address itself lives in LocationCard. */}
       <p className="text-xs text-fg-muted mb-4">{t("scope_helper")}</p>
+
+      {/* MEH-2561: preview of the fulfillment tag on her /map card. The tag is
+          inferred, never chosen — this line is the only place she sees it. */}
+      <div className="mb-4 rounded-md border border-border px-3 py-2" data-testid="delivery-map-preview">
+        <div className="flex flex-wrap items-center gap-1.5 text-xs text-fg-muted">
+          <span>{t("map_preview_label")}</span>
+          {mapTags.map((tag) => (
+            <span
+              key={tag.key}
+              data-testid={`delivery-map-preview-${tag.key}`}
+              className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] leading-4 whitespace-nowrap ${
+                tag.neutral ? FULFILLMENT_WASH_NEUTRAL : FULFILLMENT_WASH_GREEN
+              }`}
+            >
+              {tag.Icon && <tag.Icon size={FULFILLMENT_ICON_PX} weight="regular" aria-hidden="true" />}
+              {tag.label}
+            </span>
+          ))}
+        </div>
+        {mapArranged && (
+          <p className="mt-1 text-xs text-fg-muted" data-testid="delivery-map-preview-hint">
+            {t("map_preview_arranged_hint")}
+          </p>
+        )}
+      </div>
 
       <div className="space-y-3">
         <label className="flex items-center gap-2 text-sm cursor-pointer">

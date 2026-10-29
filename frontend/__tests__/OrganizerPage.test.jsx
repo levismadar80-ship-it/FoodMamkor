@@ -25,8 +25,10 @@ vi.mock("@sentry/nextjs", () => ({
   captureException: vi.fn(),
 }));
 // MEH-2475: OwnerCard (shared with the business page) reads next-intl's hook.
+// MEH-2547: the event rows are EventEntryRow, which reads useLocale.
 vi.mock("next-intl", () => ({
   useTranslations: (namespace) => (k) => `${namespace}.${k}`,
+  useLocale: () => "he",
 }));
 vi.mock("@/components/ImageWithFallback", () => ({
   // eslint-disable-next-line @next/next/no-img-element -- test stub
@@ -41,6 +43,9 @@ vi.mock("@/i18n/navigation", () => ({
 }));
 
 import OrganizerPage from "@/app/[locale]/organizers/[slug]/page";
+
+// MEH-2559: the heart needs AuthProvider; its behaviour is SaveButton.test.jsx's.
+vi.mock("@/components/SaveButton", () => ({ default: () => null }));
 
 const ORG = {
   id: "o-1",
@@ -95,7 +100,11 @@ describe("MEH-2461 organizer page", () => {
     await renderPage();
     const rows = screen.getAllByTestId("organizer-event");
     expect(rows).toHaveLength(1);
-    expect(rows[0].getAttribute("href")).toBe("/events/e1");
+    expect(rows[0].querySelector("a").getAttribute("href")).toBe("/events/e1");
+    // MEH-2547: the /events date-rail row, minus the «who» line — every row
+    // here is this organizer's.
+    expect(rows[0].textContent).toContain("שוק e1");
+    expect(rows[0].textContent).not.toContain("organizer_line");
     expect(screen.queryByTestId("organizer-events-empty")).not.toBeInTheDocument();
   });
 
@@ -115,7 +124,7 @@ describe("MEH-2461 organizer page", () => {
       upcoming_events: [ev("e1", "2026-11-01"), ev("e2", "2026-11-08"), ev("e3", "2026-12-01")],
     });
     await renderPage();
-    expect(screen.getAllByTestId("organizer-event").map((a) => a.getAttribute("href"))).toEqual([
+    expect(screen.getAllByTestId("organizer-event").map((li) => li.querySelector("a").getAttribute("href"))).toEqual([
       "/events/e1",
       "/events/e2",
       "/events/e3",
@@ -178,19 +187,43 @@ describe("MEH-2461 organizer page", () => {
     expect(captureMessage).not.toHaveBeenCalled();
   });
 
-  it("MEH-2468: an event row shows its cover image only when it has one", async () => {
+  it("MEH-2468/2546: a row shows the event's own photo, else a category tile — never the organizer's photo", async () => {
     respond(200, {
       ...ORG,
+      images: ["https://res.cloudinary.com/x/image/upload/org.jpg"],
       upcoming_events: [
         { ...ev("e1", "2026-11-01"), image_url: "https://res.cloudinary.com/x/image/upload/a.jpg" },
-        ev("e2", "2026-11-08"),
+        { ...ev("e2", "2026-11-08"), owner_image_url: "https://res.cloudinary.com/x/image/upload/org.jpg" },
       ],
     });
     await renderPage();
-    const thumbs = screen.getAllByTestId("organizer-event-image");
-    expect(thumbs).toHaveLength(1);
+    const thumbs = screen.getAllByTestId("event-row-image");
+    expect(thumbs.map((el) => el.getAttribute("data-kind"))).toEqual(["event", "category"]);
     expect(thumbs[0].style.backgroundImage).toContain("a.jpg");
-    expect(screen.getAllByTestId("organizer-event")[1].querySelector('[data-testid="organizer-event-image"]')).toBeNull();
+  });
+
+  it("MEH-2547: masthead — the first photo as a cover, the initial in a round avatar", async () => {
+    respond(200, { ...ORG, images: ["https://res.cloudinary.com/x/image/upload/org.jpg"] });
+    await renderPage();
+    expect(screen.getByTestId("organizer-cover").getAttribute("src")).toContain("org.jpg");
+    // Decorative next to the h1 — a repeated name would be read twice.
+    expect(screen.getByTestId("organizer-cover").getAttribute("alt")).toBe("");
+    expect(screen.queryByTestId("organizer-cover-band")).toBeNull();
+    expect(screen.getByTestId("organizer-avatar").textContent).toBe("ש");
+  });
+
+  it("MEH-2547: no photo → a green band instead of a cover, avatar still there", async () => {
+    respond(200, ORG);
+    await renderPage();
+    expect(screen.queryByTestId("organizer-cover")).toBeNull();
+    expect(screen.getByTestId("organizer-cover-band")).toBeTruthy();
+    expect(screen.getByTestId("organizer-avatar").textContent).toBe("ש");
+  });
+
+  it("MEH-2547: a blank name → no empty avatar circle", async () => {
+    respond(200, { ...ORG, name: "  " });
+    await renderPage();
+    expect(screen.queryByTestId("organizer-avatar")).toBeNull();
   });
 
   it("a scanner-shaped slug never reaches the API", async () => {

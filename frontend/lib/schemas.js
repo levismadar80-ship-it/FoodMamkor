@@ -266,7 +266,7 @@ export const ProducerListSchema = z.object({
   // one strict declaration drops a whole business from the feed. Deliberately
   // `z.string()` and not `z.enum()` on the two availability fields — a new
   // backend state value must cost a dot, never a producer.
-  trust_tier: z.number().nullable().optional(),              // → TrustBadge ("מובילת קהילה"/"שגרירת מהמקור"), ProducerCard.jsx:353-354 gate `>= 4`
+  trust_tier: z.number().nullable().optional(),              // → TrustBadge ("מובילת קהילה"; tier 5 retired MEH-2509), ProducerCard.jsx:353-354 gate `>= 4`
   favorites_count: z.number().nullable().optional(),         // → heart counter seed, ProducerCard.jsx:161/:166
   short_description: z.string().nullable().optional(),       // → card description line, ProducerCard.jsx:202
   // MEH-2137: the featured-product vote by IDENTITY. Declared even though no
@@ -472,6 +472,9 @@ export const EventMetadataSchema = z.object({
   // MEH-2461: buildEventJsonLd picks the owner URL from these two.
   owner_kind: z.string().optional(),
   owner_slug: z.string().nullable().optional(),
+  // MEH-2546: parity with EventOut — the list rows' owner-photo fallback.
+  // (Probe only: the page renders the raw payload, never `parsed.data`.)
+  owner_image_url: z.string().nullable().optional(),
 });
 
 // MEH-2461: read by app/[locale]/organizers/[slug]/page.js (render + metadata).
@@ -526,6 +529,7 @@ export const GroupBuyMetadataSchema = z.object({
   id: z.union([z.string(), z.number()]),
   title: z.string(),
   description: z.string().nullable().optional(),
+  producer_image_url: z.string().nullable().optional(), // MEH-2544: og:image
 });
 
 // Read by app/[locale]/experiences/[id]/page.js generateMetadata.

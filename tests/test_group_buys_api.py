@@ -105,6 +105,54 @@ class TestListAndGet:
         assert resp.status_code == 200
         assert len(resp.json()) == 1
 
+    def test_open_list_hides_a_group_past_its_deadline(self, client, db):
+        """MEH-2540: nothing closes an open group buy after its deadline
+        (OWNER_TRANSITIONS note), so the «פתוחות» tab showed it with «פג התוקף»
+        next to a join button. The live control on the same path shows the
+        filter is the deadline, not the fixture."""
+        producer, _ = _producer_user(db)
+        live = _make_group_buy(db, producer, deadline=utc_now() + timedelta(days=1))
+        past = _make_group_buy(db, producer, deadline=utc_now() - timedelta(hours=1))
+        ids = {g["id"] for g in client.get("/group-buys").json()}
+        assert str(live.id) in ids
+        assert str(past.id) not in ids
+
+    def test_funded_list_keeps_a_group_past_its_deadline(self, client, db):
+        """MEH-2540: a funded group is waiting to be delivered after its
+        deadline — the deadline filter is for «open» only."""
+        producer, _ = _producer_user(db)
+        gb = _make_group_buy(
+            db, producer, status="funded", deadline=utc_now() - timedelta(days=1)
+        )
+        ids = {g["id"] for g in client.get("/group-buys", params={"status": "funded"}).json()}
+        assert str(gb.id) in ids
+
+    def test_expired_open_group_page_still_resolves(self, client, db):
+        """MEH-2540: the filter is the list's; a shared link to an expired group
+        still opens (its page already says the deadline passed)."""
+        producer, _ = _producer_user(db)
+        gb = _make_group_buy(db, producer, deadline=utc_now() - timedelta(hours=1))
+        resp = client.get(f"/group-buys/{gb.id}")
+        assert resp.status_code == 200
+        assert resp.json()["id"] == str(gb.id)
+
+    def test_card_carries_the_business_first_photo(self, client, db):
+        """MEH-2544: the list card and the page lead with the business's first
+        photo (same pick as ProducerCard, images[0]); none → null, so the
+        client draws its own placeholder."""
+        producer, _ = _producer_user(db)
+        producer.images = ["https://res.cloudinary.com/x/a.jpg", "https://res.cloudinary.com/x/b.jpg"]
+        db.commit()
+        gb = _make_group_buy(db, producer)
+        bare, _ = _producer_user(db, email="gb-bare@test.com")
+        gb_bare = _make_group_buy(db, bare)
+
+        listed = {g["id"]: g for g in client.get("/group-buys").json()}
+        assert listed[str(gb.id)]["producer_image_url"] == "https://res.cloudinary.com/x/a.jpg"
+        assert listed[str(gb_bare.id)]["producer_image_url"] is None
+        detail = client.get(f"/group-buys/{gb.id}").json()
+        assert detail["producer_image_url"] == "https://res.cloudinary.com/x/a.jpg"
+
     def test_get_detail_happy(self, client, db):
         producer, _ = _producer_user(db)
         gb = _make_group_buy(db, producer)
@@ -118,6 +166,88 @@ class TestListAndGet:
     def test_get_detail_404(self, client, db):
         resp = client.get(f"/group-buys/{uuid4()}")
         assert resp.status_code == 404
+
+
+# ---------- MEH-2484: only an approved business's group buys are public ----------
+#
+# LOCK «בתי עסק מאושרים בלבד». A group buy whose business was rejected or is
+# still pending must not reach the public list (and through it the sitemap),
+# its public page, or a stranger's join. Each case carries an approved-business
+# control on the same path, so a red names the gate and not the fixture.
+class TestApprovedBusinessOnly:
+    def test_list_hides_a_non_approved_business(self, client, db):
+        approved, _ = _producer_user(db, email="gb-ok@test.com")
+        _make_group_buy(db, approved, city="approved-city")
+        # "inactive" is what the admin suspend action writes (admin.py).
+        for i, status in enumerate(("pending", "rejected", "inactive")):
+            hidden, _ = _producer_user(
+                db, email=f"gb-hidden{i}@test.com", status=status
+            )
+            _make_group_buy(db, hidden, city=f"{status}-city")
+        cities = {g["city"] for g in client.get("/group-buys").json()}
+        assert "approved-city" in cities
+        assert "pending-city" not in cities
+        assert "rejected-city" not in cities
+        assert "inactive-city" not in cities
+
+    def test_detail_is_404_for_a_stranger_when_the_business_is_not_approved(
+        self, client, db
+    ):
+        producer, _ = _producer_user(db, email="gb-pend@test.com", status="pending")
+        gb = _make_group_buy(db, producer)
+        stranger = make_user(db, email="gb-stranger@test.com")
+        assert client.get(f"/group-buys/{gb.id}").status_code == 404
+        resp = client.get(f"/group-buys/{gb.id}", headers=auth_header(stranger))
+        assert resp.status_code == 404
+        assert resp.json()["detail"] == "קבוצת הרכש לא נמצאה"
+
+    def test_detail_stays_visible_to_its_owner_and_to_admin(self, client, db):
+        producer, owner = _producer_user(db, email="gb-own@test.com", status="pending")
+        gb = _make_group_buy(db, producer)
+        admin = make_user(db, email="gb-admin@test.com", role="admin")
+        assert (
+            client.get(f"/group-buys/{gb.id}", headers=auth_header(owner)).status_code
+            == 200
+        )
+        assert (
+            client.get(f"/group-buys/{gb.id}", headers=auth_header(admin)).status_code
+            == 200
+        )
+
+    def test_stranger_cannot_join_when_the_business_is_not_approved(self, client, db):
+        producer, _ = _producer_user(db, email="gb-rej@test.com", status="rejected")
+        gb = _make_group_buy(db, producer)
+        buyer = make_user(db, email="gb-buyer@test.com")
+        resp = client.post(
+            f"/group-buys/{gb.id}/commit",
+            json={"quantity": 1},
+            headers=auth_header(buyer),
+        )
+        assert resp.status_code == 404
+        assert db.query(GroupBuyCommit).filter_by(group_buy_id=gb.id).count() == 0
+
+    def test_another_business_owner_does_not_get_the_owner_carve_out(self, client, db):
+        hidden, _ = _producer_user(db, email="gb-a@test.com", status="inactive")
+        gb = _make_group_buy(db, hidden)
+        _, other_owner = _producer_user(db, email="gb-b@test.com")
+        resp = client.get(f"/group-buys/{gb.id}", headers=auth_header(other_owner))
+        assert resp.status_code == 404
+
+    def test_a_participant_can_still_leave_after_the_business_is_hidden(self, client, db):
+        # Guard against over-gating: leaving is never blocked by the visibility
+        # rule, only joining is.
+        producer, _ = _producer_user(db, email="gb-leave@test.com")
+        gb = _make_group_buy(db, producer, min_participants=5)
+        buyer = make_user(db, email="gb-leaver@test.com")
+        joined = client.post(
+            f"/group-buys/{gb.id}/commit", json={"quantity": 1}, headers=auth_header(buyer)
+        )
+        assert joined.status_code == 201
+        producer.status = "inactive"
+        db.commit()
+        left = client.delete(f"/group-buys/{gb.id}/commit", headers=auth_header(buyer))
+        assert left.status_code == 200
+        assert db.query(GroupBuyCommit).filter_by(group_buy_id=gb.id).count() == 0
 
 
 # ---------- the owner's own list (MEH-2437) ----------
@@ -1036,6 +1166,76 @@ class TestOwnerStatusChange:
             assert resp.status_code == 400, (final, resp.json())
             assert self._status_in_db(db, gb) == final
             assert db.query(GroupBuyCommit).filter_by(group_buy_id=gb.id).count() == 1
+
+
+# ---------- stale dashboard: expected_status (MEH-2489) ----------
+class TestExpectedStatus:
+    """The dashboard sends the status it showed; a row that moved on is a 409.
+
+    The race: the owner opens «ביטול» on an open group, a last participant
+    joins (open → funded), and the cancel still lands — funded → cancelled is
+    in the owner's table — on a group whose funded double-confirm she never saw.
+    """
+
+    def _patch(self, client, gb, body, user):
+        return client.patch(
+            f"/group-buys/{gb.id}/status", json=body, headers=auth_header(user)
+        )
+
+    def _status_in_db(self, db, gb):
+        db.expire_all()
+        return db.query(GroupBuy).filter(GroupBuy.id == gb.id).one().status
+
+    def test_dashboard_saw_open_but_group_funded_meanwhile_is_409(self, client, db):
+        producer, owner = _producer_user(db, email="exp1@test.com")
+        gb = _make_group_buy(db, producer, status="funded")
+        with mock.patch("app.routers.group_buys.send_cancelled_notifications") as send:
+            resp = self._patch(
+                client, gb, {"status": "cancelled", "expected_status": "open"}, owner
+            )
+        assert resp.status_code == 409, resp.json()
+        assert resp.json()["detail"] == "אי אפשר לשנות את קבוצת הרכש למצב הזה"
+        assert self._status_in_db(db, gb) == "funded"
+        send.assert_not_called()
+
+    def test_matching_expected_status_goes_through(self, client, db):
+        producer, owner = _producer_user(db, email="exp2@test.com")
+        gb = _make_group_buy(db, producer, status="funded")
+        resp = self._patch(
+            client, gb, {"status": "cancelled", "expected_status": "funded"}, owner
+        )
+        assert resp.status_code == 200
+        assert self._status_in_db(db, gb) == "cancelled"
+
+    def test_without_expected_status_behaviour_is_unchanged(self, client, db):
+        # Control: the same funded row and the same request minus the field is
+        # the pre-MEH-2489 behaviour — the cancel lands.
+        producer, owner = _producer_user(db, email="exp3@test.com")
+        gb = _make_group_buy(db, producer, status="funded")
+        resp = self._patch(client, gb, {"status": "cancelled"}, owner)
+        assert resp.status_code == 200
+        assert self._status_in_db(db, gb) == "cancelled"
+
+    def test_a_stranger_gets_403_not_409(self, client, db):
+        # The ownership check runs first: a mismatched expected_status must not
+        # let someone else's caller probe the row's state.
+        producer, _ = _producer_user(db, email="exp4@test.com")
+        _, other = _producer_user(db, email="exp4other@test.com")
+        gb = _make_group_buy(db, producer, status="funded")
+        resp = self._patch(
+            client, gb, {"status": "cancelled", "expected_status": "open"}, other
+        )
+        assert resp.status_code == 403
+        assert self._status_in_db(db, gb) == "funded"
+
+    def test_invalid_expected_status_is_422(self, client, db):
+        producer, owner = _producer_user(db, email="exp5@test.com")
+        gb = _make_group_buy(db, producer)
+        resp = self._patch(
+            client, gb, {"status": "cancelled", "expected_status": "deleted"}, owner
+        )
+        assert resp.status_code == 422
+        assert self._status_in_db(db, gb) == "open"
 
 
 # ---------- cancel email to participants (MEH-2435 chunk 4) ----------

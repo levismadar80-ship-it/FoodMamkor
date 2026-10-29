@@ -1,6 +1,8 @@
 "use client";
 
-import Link from "next/link";
+// MEH-2578: locale-aware Link — next/link dropped the /en prefix, and with
+// localeDetection off an /en reader landed on the Hebrew page.
+import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 

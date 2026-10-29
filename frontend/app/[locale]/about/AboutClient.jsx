@@ -380,7 +380,9 @@ export default function AboutPage() {
             </p>
             {/* aria-labelledby, and it is load-bearing rather than belt-and-braces.
                 The copy used to be ONE string inside the anchor, so the link's
-                accessible name was «בעלת עסק? כך זה עובד אצלנו» — self-describing.
+                accessible name was «בעלת עסק? כך זה עובד אצלנו» — self-describing
+                (MEH-2507 renamed the CTA «שאלות נפוצות על הצטרפות»: the old one
+                read like the checking process, which is the /about/process link).
                 Splitting the lead out into a sibling <p> for the visual design
                 silently cut that name down to «כך זה עובד אצלנו», which in a
                 screen reader's link list reads "here's how it works" with nothing
@@ -599,6 +601,20 @@ export default function AboutPage() {
           </h2>
           <p className="font-body-md text-fg-muted text-lg leading-relaxed mt-4 max-w-[58ch]">
             {t("editors_pick.body")}
+          </p>
+        </div>
+      </FadeInSection>
+
+      {/* ======== "מובילת קהילה" — MEH-2527: the automatic TrustBadge (tier 4,
+          10+ reviews, average 4.5+) was explained nowhere. Copy Sapir-approved
+          28/10, sits right after the editorial badge it is the opposite of. */}
+      <FadeInSection id="community-leader" as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
+        <div className="max-w-3xl mx-auto px-4 md:px-12">
+          <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight">
+            {t("community_leader.heading")}
+          </h2>
+          <p className="font-body-md text-fg-muted text-lg leading-relaxed mt-4 max-w-[58ch]">
+            {t("community_leader.body")}
           </p>
         </div>
       </FadeInSection>

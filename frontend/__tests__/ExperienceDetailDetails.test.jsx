@@ -11,13 +11,16 @@ import he from "../messages/he.json";
 import api from "@/lib/api";
 import ExperienceDetailClient from "@/app/[locale]/experiences/[id]/ExperienceDetailClient";
 
+// MEH-2559: the heart needs AuthProvider; its behaviour is SaveButton.test.jsx's.
+vi.mock("@/components/SaveButton", () => ({ default: () => null }));
+
 vi.mock("@/lib/api", () => ({ default: { get: vi.fn() } }));
 vi.mock("next/navigation", () => ({
   useParams: () => ({ id: "x-1" }),
   useSearchParams: () => new URLSearchParams(),
 }));
-vi.mock("next/link", () => ({
-  default: ({ href, children, ...rest }) => (
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ href, children, ...rest }) => (
     <a href={href} {...rest}>
       {children}
     </a>
@@ -108,7 +111,9 @@ describe("MEH-2476 — experience details", () => {
     });
     const link = screen.getByTestId("experience-host-link");
     expect(link.getAttribute("href")).toBe("/chavat-noa");
-    expect(link.textContent).toBe("חוות נועה");
+    // Avatar initial «ח», the label, the business name; plus a chevron.
+    expect(link.textContent).toBe(`ח${t.host_label} חוות נועה`);
+    expect(link.querySelector("svg")).not.toBeNull();
     expect(screen.getByRole("link", { name: t.whatsapp_cta }).getAttribute("href")).toMatch(
       /^https:\/\/wa\.me\/972521234567\?text=/,
     );
@@ -117,6 +122,10 @@ describe("MEH-2476 — experience details", () => {
   it("host without a business link keeps the plain name", async () => {
     await renderWith({});
     expect(screen.queryByTestId("experience-host-link")).not.toBeInTheDocument();
-    expect(screen.getByText("נועה")).toBeInTheDocument();
+    const row = screen.getByTestId("experience-host");
+    expect(row.textContent).toBe(`נ${t.host_label} נועה`);
+    // No link → no chevron promising one.
+    expect(row.querySelector("a")).toBeNull();
+    expect(row.querySelector("svg")).toBeNull();
   });
 });

@@ -13,6 +13,8 @@ frontend/app/[locale]/about/process/AboutProcessClient.jsx:z-[1]
 frontend/app/[locale]/admin/content/page.js:z-[9000]
 frontend/app/[locale]/admin/experiences/page.js:z-[9000]
 frontend/app/[locale]/admin/kashrut/page.js:z-[9000]
+frontend/app/[locale]/admin/kashrut/page.js:z-[9000]
+frontend/app/[locale]/admin/kashrut/page.js:z-[9000]
 frontend/app/[locale]/admin/outreach/page.jsx:z-[9500]
 frontend/app/[locale]/admin/outreach/page.jsx:z-[9500]
 frontend/app/[locale]/admin/outreach/page.jsx:z-[9500]
@@ -52,6 +54,7 @@ frontend/components/AddressSearch.jsx:z-[1010]
 frontend/components/BackToTop.jsx:z-[1000]
 frontend/components/BottomNav.jsx:z-[1000]
 frontend/components/CategoryRequestModal.jsx:z-[9000]
+frontend/components/ChatWidget.jsx:zIndex:1050
 frontend/components/ChatWidget.jsx:zIndex:9999
 frontend/components/ChatWidget.jsx:zIndex:9999
 frontend/components/CitiesAutocomplete.jsx:z-[1010]

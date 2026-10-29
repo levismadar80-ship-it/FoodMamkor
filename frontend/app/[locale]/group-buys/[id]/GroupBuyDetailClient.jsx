@@ -1,9 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import * as Sentry from "@sentry/nextjs";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { MagnifyingGlass } from "@phosphor-icons/react";
+import { MagnifyingGlass, MapPin, Clock, ShoppingCart } from "@phosphor-icons/react";
+import Image from "next/image";
+import OwnerRow from "@/components/OwnerRow";
+import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
 import { useAuth } from "@/lib/auth-context";
@@ -11,6 +15,7 @@ import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
 import { formatPrice } from "@/lib/utils";
+import { groupBuyProgressPct, groupBuyDiscountPct } from "@/lib/group-buy-progress"; // MEH-2540, MEH-2544
 import Input from "@/components/ui/Input";
 import DeliveryChecker from "@/components/DeliveryChecker";
 import api from "@/lib/api";
@@ -44,7 +49,7 @@ function Confetti() {
       x: Math.random() * canvas.width,
       y: -20,
       r: Math.random() * 6 + 3,
-      color: ["#2e6853", "#2e6853", "#F5F0E8", "#fbbf24", "#f87171"][Math.floor(Math.random() * 5)],
+      color: ["#2e6853", "#2e6853", "#F5F0E8", "#a3c9a8", "#c9a227"][Math.floor(Math.random() * 5)],
       vx: (Math.random() - 0.5) * 3,
       vy: Math.random() * 3 + 2,
       angle: Math.random() * Math.PI * 2,
@@ -88,11 +93,6 @@ function Confetti() {
   );
 }
 
-function progressPct(commits, min, max) {
-  const denom = max || min;
-  return Math.min(100, Math.round((commits / denom) * 100));
-}
-
 export default function GroupBuyDetailClient({ id }) {
   const t = useTranslations("group_buys.detail");
   // MEH-848: shared generic error copy (collapsed from group_buys.detail.errors.generic).
@@ -127,6 +127,8 @@ export default function GroupBuyDetailClient({ id }) {
   // fetched and valid; on any failure the checker simply stays away. (The
   // «מאת {name}» link to its page is MEH-2472's and needs no fetch.)
   const [producer, setProducer] = useState(null);
+  // MEH-2544: a photo url that fails to load falls back to the cart tile.
+  const [failedHero, setFailedHero] = useState(null);
 
   const load = async () => {
     try {
@@ -166,6 +168,14 @@ export default function GroupBuyDetailClient({ id }) {
       .get(`/producers/${producerId}`)
       .then((r) => {
         const parsed = GroupBuyProducerDeliverySchema.safeParse(r.data);
+        // MEH-2491: the checker hiding is the right fallback, but a payload
+        // the schema refuses is a contract drift someone should hear about.
+        if (alive && !parsed.success) {
+          Sentry.captureMessage("Group-buy business delivery payload failed schema validation", {
+            level: "warning",
+            extra: { producerId, issues: parsed.error.issues },
+          });
+        }
         if (alive) setProducer(parsed.success ? parsed.data : null);
       })
       .catch(() => {
@@ -309,12 +319,12 @@ export default function GroupBuyDetailClient({ id }) {
   const cancelled = gb.status === "cancelled";
   const open = gb.status === "open";
   const expired = new Date(gb.deadline) < new Date();
-  const pct = progressPct(gb.commits_count, gb.min_participants, gb.max_participants);
-  const discount = Math.round(
-    ((Number(gb.price_per_unit_regular) - Number(gb.price_per_unit_group)) /
-      Number(gb.price_per_unit_regular)) *
-      100,
-  );
+  const pct = groupBuyProgressPct(gb.commits_count, gb.min_participants);
+  const discount = groupBuyDiscountPct(gb.price_per_unit_regular, gb.price_per_unit_group);
+  const heroSrc = gb.producer_image_url
+    ? optimizeCloudinary(gb.producer_image_url, { aspectRatio: IMAGE_RATIOS.banner, width: 1200 })
+    : null;
+  const showHero = heroSrc && failedHero !== heroSrc;
   const waShareText = encodeURIComponent(
     t("share_text", {
       title: gb.title,
@@ -323,215 +333,241 @@ export default function GroupBuyDetailClient({ id }) {
     }),
   );
 
+  const joinCard = (
+    <div className="bg-white rounded-[16px] border border-border p-5 md:p-6">
+      <div className="flex items-baseline gap-2">
+        <span dir="ltr" className="text-4xl font-bold text-primary">{formatPrice(Number(gb.price_per_unit_group).toFixed(0))}</span>
+        <span dir="ltr" className="text-fg-muted line-through text-lg">{formatPrice(Number(gb.price_per_unit_regular).toFixed(0))}</span>
+        {gb.unit && <span className="text-sm text-fg-muted">{t("unit_suffix", { unit: gb.unit })}</span>}
+      </div>
+      {discount > 0 && <p className="text-sm text-fg-muted mt-1">{t("discount_hint", { discount })}</p>}
+
+      <div className="mt-5">
+        <div className="w-full bg-border rounded-full h-3 overflow-hidden">
+          <div className={`h-3 rounded-full transition-all duration-500 ${funded || fulfilled ? "bg-primary" : "bg-primary/80"}`} style={{ width: `${pct}%` }} />
+        </div>
+        <div className="flex justify-between text-sm mt-2">
+          <span className="font-medium text-text">{t("progress_label", { commits: gb.commits_count, min: gb.min_participants })}</span>
+        </div>
+        {!expired && open && (
+          <p className="text-sm text-primary font-medium mt-1">{t("remaining_to_open", { n: Math.max(0, gb.min_participants - gb.commits_count) })}</p>
+        )}
+        <p className="text-sm text-fg-muted mt-3 inline-flex items-center gap-1.5">
+          <Clock size={16} aria-hidden="true" />
+          {t("deadline_prefix", { date: formatEventDate(gb.deadline, locale, { day: "numeric", month: "long", year: "numeric" }) })}
+        </p>
+      </div>
+
+      <div className="mt-5">
+        {/* Commit form */}
+        {open && !expired && !gb.user_committed && (
+          <form onSubmit={handleCommit} className="space-y-4">
+            {/* MEH-1145 Wave E2: number field → ui/Input; the clamp-on-blur and
+                the ltr end-anchored digits (a text-align via className, not a
+                physical inset) pass through ...rest + className unchanged.
+                MEH-1651: the phone field that sat below was removed — it asked
+                for a number nothing read and implied a callback nobody made. */}
+            <Input
+              type="number"
+              label={t("quantity_label")}
+              min={QTY_MIN}
+              max={QTY_MAX}
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+              onBlur={(e) => setQuantity(clampQuantity(e.target.value))}
+              // rtl-ok — dir="ltr" numeric quantity: physical right IS the
+              // inline start of an LTR field inside the RTL form. Same
+              // documented exception as the licence number in
+              // RegisterProducerClient.jsx:815. MEH-1721 P7 filed this under
+              // F-1 (locale-breaking); it belongs in F-5 (correct use, marker
+              // missing) — swapping to text-start would misalign it.
+              className="text-right"
+              dir="ltr"
+            />
+            {error && <p className="text-red-500 text-sm" role="alert">{error}</p>}
+            <button
+              type="submit"
+              disabled={submitting}
+              className="w-full bg-primary text-white py-3 rounded-[12px] hover:bg-primary-dark transition font-medium disabled:opacity-50"
+            >
+              {submitting ? t("submitting") : user ? t("submit_join") : t("submit_login")}
+            </button>
+            {!user && (
+              <p className="text-center text-xs text-fg-muted">
+                {t("login_required")}
+              </p>
+            )}
+          </form>
+        )}
+
+        {/* Already committed */}
+        {gb.user_committed && (
+          <div className="space-y-3">
+            <div className="rounded-[12px] bg-green-50 border border-primary/20 px-4 py-3 text-primary text-sm font-medium text-center">
+              {t("committed_confirm")}
+              {gb.user_commit?.quantity > 1 && t("committed_units", { count: gb.user_commit.quantity })}
+            </div>
+            {open && !expired && (
+              <button
+                onClick={handleCancel}
+                disabled={cancelling}
+                className="w-full text-sm text-fg-muted hover:text-red-500 transition text-center"
+              >
+                {cancelling ? t("cancelling") : t("cancel_cta")}
+              </button>
+            )}
+          </div>
+        )}
+
+        {expired && open && (
+          <div className="rounded-[12px] bg-border px-4 py-3 text-fg-muted text-sm text-center">
+            {t("deadline_passed")}
+          </div>
+        )}
+      </div>
+      <div className="mt-5 pt-5 border-t border-border">
+        <a
+          href={`https://wa.me/?text=${waShareText}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn-whatsapp-outline flex items-center justify-center gap-2 w-full py-2.5 rounded-[10px] text-sm font-medium"
+        >
+          <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5" aria-hidden="true">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+          </svg>
+          {t("share_wa")}
+        </a>
+      </div>
+    </div>
+  );
+
   return (
     <>
       {showConfetti && <Confetti />}
 
-      <div className="max-w-2xl mx-auto px-4 py-10">
-        {/* Back */}
-        <Link href="/group-buys" className="text-sm text-primary hover:underline mb-6 inline-block">
+      {/* MEH-2544 — Groupon / Kickstarter shape: photo up top, story +
+          pickup + business on the start side, the join card (price, progress,
+          deadline, action, share) on the end side from lg, sticky. It renders
+          ONCE: on a phone, source order puts it right after the title; from lg
+          the grid moves it to column 2 across both rows. */}
+      <div className="max-w-6xl mx-auto px-4 py-6 md:py-8">
+        <Link href="/group-buys" className="text-sm text-primary hover:underline mb-4 inline-block">
           {t("back_to_list_arrow")}
         </Link>
 
-        {/* Funded banner */}
         {funded && (
-          <div className="mb-6 rounded-[12px] bg-primary text-white px-5 py-4 text-center">
+          <div className="mb-5 rounded-[12px] bg-primary text-white px-5 py-4 text-center">
             <p className="text-xl font-bold">{t("funded_title")}</p>
-            <p className="text-sm mt-1 opacity-90">
-              {t("funded_subtitle", { name: gb.producer_name })}
-            </p>
+            <p className="text-sm mt-1 opacity-90">{t("funded_subtitle", { name: gb.producer_name })}</p>
           </div>
         )}
         {cancelled && (
-          <div className="mb-6 rounded-[12px] bg-border px-5 py-3 text-center text-fg-muted text-sm">
-            {t("cancelled")}
-          </div>
+          <div className="mb-5 rounded-[12px] bg-border px-5 py-3 text-center text-fg-muted text-sm">{t("cancelled")}</div>
         )}
         {fulfilled && (
-          <div className="mb-6 rounded-[12px] bg-green-50 border border-primary/20 px-5 py-3 text-center text-primary text-sm font-medium">
-            {t("fulfilled")}
-          </div>
+          <div className="mb-5 rounded-[12px] bg-green-50 border border-primary/20 px-5 py-3 text-center text-primary text-sm font-medium">{t("fulfilled")}</div>
         )}
 
-        <div className="bg-white rounded-[16px] border border-border shadow-sm p-6 md:p-8">
-          {/* Header */}
-          <div className="mb-4">
-            {gb.city && (
-              <span className="text-xs bg-green-50 text-primary px-2 py-0.5 rounded-full">
-                {gb.city}
-              </span>
-            )}
-            <h1 className="font-headline-md text-2xl font-bold text-text mt-2 mb-1">
-              {gb.title}
-            </h1>
-            {/* MEH-2472: the product being bought, and a way to the business
-                that sells it (both were in the payload and never rendered). */}
-            {gb.product_name && (
-              <p className="text-base font-medium text-text" data-testid="group-buy-product-name">
-                {gb.product_name}
-              </p>
-            )}
-            {gb.producer_name &&
-              (gb.producer_id ? (
-                <Link
-                  href={`/producer/${gb.producer_id}`}
-                  data-testid="group-buy-producer-link"
-                  className="inline-block text-sm text-primary hover:underline"
-                >
-                  {t("by_producer", { name: gb.producer_name })}
-                </Link>
+        <div className="grid gap-6 lg:gap-x-10 lg:grid-cols-[1fr_380px] lg:items-start">
+          <div className="min-w-0">
+            <div className="relative aspect-[16/9] rounded-[16px] overflow-hidden bg-green-50">
+              {showHero ? (
+                <Image
+                  src={heroSrc}
+                  alt=""
+                  fill
+                  priority
+                  sizes="(max-width: 1023px) calc(100vw - 32px), 700px"
+                  className="object-cover"
+                  onError={() => setFailedHero(heroSrc)}
+                />
               ) : (
-                <p className="text-sm text-fg-muted">{t("by_producer", { name: gb.producer_name })}</p>
-              ))}
+                <div className="absolute inset-0 grid place-items-center" data-testid="group-buy-image-missing">
+                  <ShoppingCart size={56} weight="light" className="text-primary/70" aria-hidden="true" />
+                </div>
+              )}
+              {discount > 0 && (
+                <span dir="ltr" data-testid="group-buy-discount" className="absolute top-3 start-3 bg-primary text-white text-sm font-bold px-3 py-1 rounded-full">-{discount}%</span>
+              )}
+            </div>
+
+            <div className="mt-5">
+              <p className="text-[13px] text-fg-muted">{gb.city}</p>
+              <h1 className="font-headline-lg text-3xl md:text-4xl font-black text-text mt-1 leading-tight">{gb.title}</h1>
+              {/* MEH-2472: the product being bought. */}
+              {gb.product_name && (
+                <p className="text-base font-medium text-text mt-2" data-testid="group-buy-product-name">{gb.product_name}</p>
+              )}
+            </div>
+          </div>
+
+          <aside className="lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:sticky lg:top-24 lg:self-start">
+            {joinCard}
+          </aside>
+
+          <div className="min-w-0 lg:col-start-1">
             {gb.description && (
-              <p className="text-sm text-text mt-3 leading-relaxed">{gb.description}</p>
+              <p className="text-lg text-text/90 leading-relaxed whitespace-pre-line">{gb.description}</p>
             )}
-          </div>
 
-          {/* Price */}
-          <div className="flex items-center gap-3 mb-4 p-4 rounded-[12px] bg-green-50">
-            <div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold text-primary">
-                  {formatPrice(Number(gb.price_per_unit_group).toFixed(0))}
-                </span>
-                <span className="text-fg-muted line-through text-lg">
-                  {formatPrice(Number(gb.price_per_unit_regular).toFixed(0))}
-                </span>
-                {gb.unit && <span className="text-sm text-fg-muted">{t("unit_suffix", { unit: gb.unit })}</span>}
-              </div>
-              <p className="text-xs text-fg-muted mt-0.5">
-                {t("discount_hint", { discount })}
-              </p>
-            </div>
-          </div>
-
-          {/* Progress */}
-          <div className="mb-6">
-            <div className="flex justify-between text-sm mb-2">
-              <span className="font-medium text-text">
-                {t("progress_label", { commits: gb.commits_count, min: gb.min_participants })}
-              </span>
-              <span className="text-fg-muted text-xs">
-                {pct}%
-              </span>
-            </div>
-            <div className="w-full bg-border rounded-full h-3 overflow-hidden">
-              <div
-                className={`h-3 rounded-full transition-all duration-500 ${funded || fulfilled ? "bg-primary" : "bg-primary/50"}`}
-                style={{ width: `${pct}%` }}
-              />
-            </div>
-            {!expired && open && (
-              <p className="text-xs text-fg-muted mt-1.5">
-                {t("remaining_to_open", { n: Math.max(0, gb.min_participants - gb.commits_count) })}
-              </p>
+            {/* MEH-2544: how a group buy works, while it can still be joined —
+                copy approved by Sapir 29/10. */}
+            {open && (
+              <section className="mt-6 rounded-[12px] bg-green-50 p-4" data-testid="group-buy-how">
+                <h2 className="font-headline-md text-lg font-bold text-text mb-3">{t("how_title")}</h2>
+                <ol className="space-y-2">
+                  {[t("how_join"), t("how_unlock", { min: gb.min_participants }), t("how_no_commit")].map((line, i) => (
+                    <li key={i} className="flex gap-3 text-base text-text">
+                      <span
+                        aria-hidden="true"
+                        className="shrink-0 w-6 h-6 rounded-full bg-primary text-white text-sm font-bold grid place-items-center"
+                      >
+                        {i + 1}
+                      </span>
+                      <span>{line}</span>
+                    </li>
+                  ))}
+                </ol>
+              </section>
             )}
-            <p className="text-xs text-fg-muted mt-1">
-              {t("deadline_prefix", { date: formatEventDate(gb.deadline, locale, { day: "numeric", month: "long", year: "numeric" }) })}
-            </p>
+
             {/* MEH-1457: "מתי ואיך מקבלים" — shown only when the producer filled it. */}
             {gb.fulfillment_note && (
-              <p className="text-xs text-text mt-1 whitespace-pre-line">
-                <span className="font-medium">{t("fulfillment_prefix")}</span>
-                {gb.fulfillment_note}
-              </p>
-            )}
-          </div>
-
-          {/* MEH-2453: «מגיעים אלייך?» from the business's own delivery data,
-              same component and copy as its page. It hides itself for a
-              business that does not deliver, or whose answer is the same for
-              every city (DeliveryChecker gates 1–3). */}
-          {producer && (
-            <DeliveryChecker
-              offersDelivery={producer.offers_delivery}
-              nationwide={producer.delivery_nationwide}
-              excluded={producer.delivery_excluded_cities}
-              areas={producer.delivery_areas}
-              producer={producer}
-            />
-          )}
-
-          {/* Commit form */}
-          {open && !expired && !gb.user_committed && (
-            <form onSubmit={handleCommit} className="space-y-4">
-              {/* MEH-1145 Wave E2: number field → ui/Input; the clamp-on-blur and
-                  the ltr end-anchored digits (a text-align via className, not a
-                  physical inset) pass through ...rest + className unchanged.
-                  MEH-1651: the phone field that sat below was removed — it asked
-                  for a number nothing read and implied a callback nobody made. */}
-              <Input
-                type="number"
-                label={t("quantity_label")}
-                min={QTY_MIN}
-                max={QTY_MAX}
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
-                onBlur={(e) => setQuantity(clampQuantity(e.target.value))}
-                // rtl-ok — dir="ltr" numeric quantity: physical right IS the
-                // inline start of an LTR field inside the RTL form. Same
-                // documented exception as the licence number in
-                // RegisterProducerClient.jsx:815. MEH-1721 P7 filed this under
-                // F-1 (locale-breaking); it belongs in F-5 (correct use, marker
-                // missing) — swapping to text-start would misalign it.
-                className="text-right"
-                dir="ltr"
-              />
-              {error && <p className="text-red-500 text-sm" role="alert">{error}</p>}
-              <button
-                type="submit"
-                disabled={submitting}
-                className="w-full bg-primary text-white py-3 rounded-[12px] hover:bg-primary-dark transition font-medium disabled:opacity-50"
-              >
-                {submitting ? t("submitting") : user ? t("submit_join") : t("submit_login")}
-              </button>
-              {!user && (
-                <p className="text-center text-xs text-fg-muted">
-                  {t("login_required")}
+              <div className="mt-6 flex gap-3 rounded-[12px] border border-border bg-white p-4">
+                <MapPin size={22} className="text-primary shrink-0 mt-0.5" aria-hidden="true" />
+                <p className="text-base text-text whitespace-pre-line">
+                  <span className="font-medium">{t("fulfillment_prefix")}</span>
+                  {gb.fulfillment_note}
                 </p>
-              )}
-            </form>
-          )}
-
-          {/* Already committed */}
-          {gb.user_committed && (
-            <div className="space-y-3">
-              <div className="rounded-[12px] bg-green-50 border border-primary/20 px-4 py-3 text-primary text-sm font-medium text-center">
-                {t("committed_confirm")}
-                {gb.user_commit?.quantity > 1 && t("committed_units", { count: gb.user_commit.quantity })}
               </div>
-              {open && !expired && (
-                <button
-                  onClick={handleCancel}
-                  disabled={cancelling}
-                  className="w-full text-sm text-fg-muted hover:text-red-500 transition text-center"
-                >
-                  {cancelling ? t("cancelling") : t("cancel_cta")}
-                </button>
+            )}
+
+            {/* MEH-2472: the business, as a tappable row (MEH-2538 OwnerRow);
+                without a producer_id the row is plain text, never a dead link. */}
+            {gb.producer_name && (
+              <div className="mt-6 max-w-md">
+                <OwnerRow href={gb.producer_id ? `/producer/${gb.producer_id}` : undefined} name={gb.producer_name} testId="group-buy-producer-link">
+                  {t("by_producer", { name: gb.producer_name })}
+                </OwnerRow>
+              </div>
+            )}
+
+            {/* MEH-2453: «מגיעים אלייך?» from the business's own delivery data,
+                same component and copy as its page. It hides itself for a
+                business that does not deliver, or whose answer is the same for
+                every city (DeliveryChecker gates 1–3). */}
+            <div className="mt-6">
+              {producer && (
+                <DeliveryChecker
+                  offersDelivery={producer.offers_delivery}
+                  nationwide={producer.delivery_nationwide}
+                  excluded={producer.delivery_excluded_cities}
+                  areas={producer.delivery_areas}
+                  producer={producer}
+                />
               )}
-            </div>
-          )}
 
-          {expired && open && (
-            <div className="rounded-[12px] bg-border px-4 py-3 text-fg-muted text-sm text-center">
-              {t("deadline_passed")}
             </div>
-          )}
-
-          {/* WhatsApp share */}
-          <div className="mt-6 pt-5 border-t border-border">
-            <a
-              href={`https://wa.me/?text=${waShareText}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-whatsapp-outline flex items-center justify-center gap-2 w-full py-2.5 rounded-[10px] text-sm font-medium"
-            >
-              <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5" aria-hidden="true">
-                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-              </svg>
-              {t("share_wa")}
-            </a>
           </div>
         </div>
       </div>

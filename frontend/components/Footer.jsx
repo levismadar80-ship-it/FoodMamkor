@@ -1,6 +1,8 @@
 "use client";
 
-import Link from "next/link";
+// MEH-2578: locale-aware Link — next/link dropped the /en prefix, and with
+// localeDetection off an /en reader landed on the Hebrew page.
+import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { InstagramLogo, FacebookLogo, TiktokLogo, YoutubeLogo, ArrowRight, CaretDown } from "@phosphor-icons/react";
@@ -12,6 +14,7 @@ import { detailToMessage } from "@/lib/errors";
 import { BRAND_NAME } from "@/lib/constants";
 import { useExperiencesNavGate } from "@/lib/use-experiences-nav-gate";
 import { useEventsNavGate } from "@/lib/use-events-nav-gate";
+import { useAuth } from "@/lib/auth-context";
 
 /**
  * Footer (MEH-37 redesign) — brings the implementation in line with the
@@ -48,6 +51,8 @@ import { useEventsNavGate } from "@/lib/use-events-nav-gate";
  */
 export default function Footer() {
   const t = useTranslations();
+  // MEH-2554: «כניסה לחשבון» is a guest link — a signed-in reader saw it too.
+  const { user } = useAuth();
   // MEH-721: producer-CTA panel moved out of global footer — see file-header History block.
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState(null); // null | 'loading' | 'success' | 'error'
@@ -339,7 +344,7 @@ export default function Footer() {
               edge to edge under the floating back-to-top button. */}
           <ul className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2" data-testid="footer-utility-links">
             {[
-              { href: "/login", label: t("nav.footer.login") },
+              ...(user ? [] : [{ href: "/login", label: t("nav.footer.login") }]),
               { href: "/terms", label: t("nav.footer.terms") },
               { href: "/privacy", label: t("nav.footer.privacy_short") },
               // MEH-867: IL IS 5568 — accessibility statement must be reachable

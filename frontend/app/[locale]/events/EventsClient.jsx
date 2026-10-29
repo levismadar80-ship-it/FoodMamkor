@@ -9,29 +9,23 @@ import { useRouter } from "@/i18n/navigation";
 import {
   ArrowCounterClockwise,
   ArrowRight,
-  Basket,
   CalendarBlank,
   CalendarX,
   CookingPot,
-  Drop,
-  MapTrifold,
-  Path,
-  Plant,
   Plus,
   Rows,
-  Storefront,
 } from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
 import api from "@/lib/api";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { formatEventDate } from "@/lib/format-date";
-import { formatTimeRange } from "@/lib/time-range";
-// MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
-import { formatPrice } from "@/lib/utils";
 import CitySearch from "@/components/CitySearch";
 import Breadcrumb from "@/components/Breadcrumb";
 import ChipScrollRow from "@/components/ChipScrollRow";
 import CalendarView from "@/components/CalendarView";
+// MEH-2497: the date-rail row (and its row normalizer) now lives in one shared
+// component, so the home «אירועים קרובים» preview renders the same row.
+import EventEntryRow, { toEventEntry } from "@/components/EventEntryRow";
 import { EVENT_CATEGORIES, EXPERIENCE_CATEGORIES, withAll } from "@/lib/event-categories";
 // MEH-2199 chunk 3: this page shipped the tablist keyboard layer inline in
 // chunk 2; /settings then needed the identical behaviour, so it was lifted to
@@ -42,8 +36,8 @@ import useTabsKeyboard from "@/hooks/useTabsKeyboard";
 
 // MEH-134: S10 "The Almanac" visual port. Events API + filter logic +
 // date formatting (lib/format-date.js) untouched — layout layer only.
-// EventCard rewritten as the date-rail EntryRow (the page's signature
-// gesture); experiences render through the SAME EntryRow (gold accent),
+// EventCard rewritten as the date-rail EventEntryRow (components/) (the page's signature
+// gesture); experiences render through the SAME EventEntryRow (gold accent),
 // so the old experience card is no longer imported here (the route-as-tab
 // merge deleted its last route consumer, the old /experiences client, and
 // MEH-2248 deleted the component itself). Calendar view keeps
@@ -82,55 +76,6 @@ const HERO_SCRIM =
 const CATEGORY_KEYS = withAll(EVENT_CATEGORIES);
 
 const EXPERIENCE_CATEGORY_KEYS = withAll(EXPERIENCE_CATEGORIES);
-
-// Category glyph per wire value (Phosphor only — ADR-013). Falls back to
-// CalendarBlank for any unmapped/free-text category.
-const CATEGORY_ICON = {
-  "סדנה": CookingPot,
-  "סיור": Path,
-  "שוק": Storefront,
-  "קטיף": Basket,
-  "טעימות": Drop,
-  "בישול": CookingPot,
-  "תזונה": Plant,
-  "סיור אוכל": MapTrifold,
-  "חקלאות": Plant,
-};
-
-
-// Normalize an event OR experience row into one shape the rail renderer
-// understands. Field names diverge between the two APIs; the accent
-// ("green" event / "gold" experience) drives the species styling.
-function toEntry(row, tab, t) {
-  const isExp = tab === "experiences";
-  // MEH-2461: an organizer-owned event names its organizer with the approved
-  // «מארגן: {name}» line; a business keeps the bare business name.
-  const isOrganizerEvent = !isExp && row.owner_kind === "organizer" && row.producer_name;
-  return {
-    id: row.id,
-    title: row.title,
-    date: row.event_date,
-    time: row.event_time,
-    endTime: row.end_time ?? null, // MEH-2469
-    who: isExp
-      ? row.host?.name
-      : isOrganizerEvent
-        ? t("organizer_line", { name: row.producer_name })
-        : row.producer_name,
-    city: row.city,
-    // MEH-2476: a recurring experience names its schedule in the meta line,
-    // so the date rail reads as the first occasion, not the only one.
-    schedule: isExp && row.is_recurring ? row.recurring_schedule?.trim() || null : null,
-    category: row.category,
-    price: isExp ? row.price_per_person : row.price,
-    description: row.description,
-    accent: isExp ? "gold" : "green",
-    href: isExp ? `/experiences/${row.id}` : `/events/${row.id}`,
-    // MEH-2468: the cover image the owner uploaded (EventForm, MEH-988) —
-    // until now it showed only on the event page itself.
-    image: row.image_url || null,
-  };
-}
 
 // MEH-2245: one hub behind two routes. `initialTab` is decided by the route
 // that mounts this component (/events → "events", /experiences →
@@ -393,7 +338,7 @@ export default function EventsPage({ initialTab = "events" }) {
           </div>
           <Link
             href={isExp ? "/producer/dashboard/experiences/new" : "/producer/dashboard/events/new"}
-            className="ms-auto self-center min-h-[44px] inline-flex items-center text-sm font-medium text-primary hover:underline"
+            className="ms-auto min-w-0 self-center min-h-[44px] inline-flex items-center text-sm font-medium text-primary hover:underline"
           >
             {isExp ? t("submit_experience") : t("add_event")}
             {/* MEH-990: raw → dingbat → Phosphor ArrowRight; rtl:rotate-180 = reading-forward in he (MEH-938 pattern) */}
@@ -500,7 +445,7 @@ export default function EventsPage({ initialTab = "events" }) {
                 </div>
                 <div>
                   {group.items.map((row) => (
-                    <EntryRow key={row.id} entry={toEntry(row, tab, t)} freeLabel={t("free")} />
+                    <EventEntryRow key={row.id} entry={toEventEntry(row, tab, t)} freeLabel={t("free")} />
                   ))}
                 </div>
               </section>
@@ -509,97 +454,6 @@ export default function EventsPage({ initialTab = "events" }) {
         )}
       </section>
     </div>
-  );
-}
-
-// The date-rail row — the page's signature gesture. Date leads (Frank
-// Ruhl day numeral on a colored tick down the start edge); Latin
-// numerals (time, price) are Cormorant italic, Hebrew stays upright.
-function EntryRow({ entry, freeLabel }) {
-  const locale = useLocale();
-  const isExp = entry.accent === "gold";
-  const Icon = CATEGORY_ICON[entry.category] ?? CalendarBlank;
-  const accentText = isExp ? "text-accent" : "text-primary";
-  const tickBg = isExp ? "bg-accent" : "bg-primary";
-  // MEH-2069: bg-accent/10 on the page background (cream, #f5f0e8) computed
-  // 4.07:1 — AA fail for text-xs (12px). Same usage-level fix already applied
-  // twice (MEH-2025/#2825, MEH-2032/#2909): solid bg-surface-card gets
-  // text-accent to 5.19:1.
-  const catChip = isExp ? "bg-surface-card text-accent" : "bg-green-50 text-primary";
-  const day = formatEventDate(entry.date, locale, { day: "2-digit" });
-  const weekday = formatEventDate(entry.date, locale, { weekday: "long" });
-  const month = formatEventDate(entry.date, locale, { month: "long" });
-  // MEH-2469: «09:30–15:00» when the event has an end time.
-  const time = formatTimeRange(entry.time, entry.endTime);
-  const meta = [entry.who, entry.city, entry.schedule].filter(Boolean).join(" · ");
-  const isFree = !(entry.price > 0);
-
-  // MEH-2468: a third column only when there is an image — a row without one
-  // keeps today's two-column layout (no empty placeholder box).
-  const cols = entry.image
-    ? "grid-cols-[64px_1fr_auto] md:grid-cols-[104px_1fr_auto]"
-    : "grid-cols-[64px_1fr] md:grid-cols-[104px_1fr]";
-
-  return (
-    <Link
-      href={entry.href}
-      className={`relative grid ${cols} border-b border-border transition hover:bg-surface-card`}
-    >
-      {/* species tick — start edge, full height */}
-      <span aria-hidden="true" className={`absolute start-0 inset-y-0 w-[3px] ${tickBg}`} />
-      {/* date rail */}
-      <div className="py-4 md:py-5 grid justify-items-center content-start gap-0.5">
-        <span className="font-headline-display font-black text-3xl md:text-5xl leading-none text-text numeric">
-          {day}
-        </span>
-        <span className="text-xs font-semibold text-fg-muted mt-1">{weekday}</span>
-        <span className="text-[10px] text-fg-muted">{month}</span>
-        {time && (
-          <span dir="ltr" className={`font-english italic text-sm mt-1 numeric ${accentText}`}>
-            {time}
-          </span>
-        )}
-      </div>
-      {/* body */}
-      <div className="py-4 md:py-5 ps-3 pe-4 min-w-0">
-        {/* MEH-858 F5: category eyebrow removed — it duplicated the pill chip
-            below (and uppercase tracking was a no-op on Hebrew). The glyph now
-            leads the chip, so the category shows once, still with its icon. */}
-        <h3 className="font-headline-md text-lg md:text-2xl font-bold text-text leading-snug">
-          {entry.title}
-        </h3>
-        {/* MEH-2476: line-clamp — a long recurring schedule must not stack
-            several lines into a 375px row. */}
-        {meta && <p className="text-sm text-fg-muted mt-1 line-clamp-2">{meta}</p>}
-        {entry.description && (
-          <p className="text-sm text-text/85 line-clamp-2 mt-2 leading-relaxed">{entry.description}</p>
-        )}
-        <div className="flex items-center gap-2 mt-3 flex-wrap">
-          {entry.category && (
-            <span className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full ${catChip}`}>
-              <Icon size={12} weight="bold" aria-hidden="true" />
-              {entry.category}
-            </span>
-          )}
-          {isFree ? (
-            <span className={`ms-auto text-sm font-semibold ${accentText}`}>{freeLabel}</span>
-          ) : (
-            <span dir="ltr" className={`ms-auto font-english italic font-semibold numeric ${accentText}`}>
-              {formatPrice(entry.price)}
-            </span>
-          )}
-        </div>
-      </div>
-      {entry.image && (
-        // Decorative: the row is a link already named by its title.
-        <div
-          aria-hidden="true"
-          data-testid="event-row-image"
-          className="my-4 md:my-5 me-4 w-20 h-20 md:w-28 md:h-28 rounded-[10px] bg-border bg-cover bg-center"
-          style={{ backgroundImage: `url(${optimizeCloudinary(entry.image, { aspectRatio: "1:1", width: 224 })})` }}
-        />
-      )}
-    </Link>
   );
 }
 

@@ -36,7 +36,7 @@ function SettingsLoadingFallback() {
 
 /**
  * MEH-1638: what renders while useAuth() is still resolving /auth/me.
- * Same class of fix as producer/dashboard/layout.js (PR #2300) but this page
+ * Same class of fix as producer/dashboard/DashboardLayoutClient.jsx (PR #2300) but this page
  * sits OUTSIDE the dashboard layout, so it needs its own placeholder.
  * Shape-only, no text — mirrors the final geometry (heading mb-6 → pill tab
  * bar mb-8 → content card) so the real page swaps in without a shift.
@@ -122,7 +122,7 @@ function SettingsPageBody() {
   //   - authLoading → the answer is not back yet; show the page's shape.
   //   - !user → the effect above is already redirecting to /login; returning
   //     null is deliberate and UNCHANGED (rendering here would flash behind
-  //     the redirect). Same split as producer/dashboard/layout.js:125-132.
+  //     the redirect). Same split as producer/dashboard/DashboardLayoutClient.jsx:125-132.
   if (authLoading) return <SettingsSkeleton label={tA11y("loading")} />;
   if (!user) return null;
 
@@ -311,7 +311,9 @@ export function ProfileTab() {
   const initial = (user.name || user.email || "?").trim().charAt(0).toUpperCase();
 
   return (
-    <section role="tabpanel" aria-label={t("tabpanel_aria")} className="bg-white border border-border rounded-[16px] p-6">
+    // MEH-2565: card from md up only. On a phone the profile form uses the full
+    // width; the security tab keeps its cards (three separate sections).
+    <section role="tabpanel" aria-label={t("tabpanel_aria")} className="md:bg-white md:border md:border-border md:rounded-[16px] md:p-6">
       {/* Avatar */}
       <div className="flex items-center gap-4 mb-6">
         <label
@@ -387,7 +389,7 @@ export function ProfileTab() {
             value={user.email || ""}
             readOnly
             disabled
-            className="w-full border border-border rounded-[12px] px-3 py-2 bg-green-50 text-fg-muted cursor-not-allowed"
+            className="w-full border border-border rounded-[12px] px-3 py-2 bg-background-alt text-fg-muted cursor-not-allowed"
             dir="ltr"
           />
           <p className="text-xs text-fg-muted mt-1 text-right">

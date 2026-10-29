@@ -959,6 +959,29 @@ test.describe("manual › hero search placeholders (MEH-1800)", () => {
 });
 
 // ════════════════════════════════════════════════════════════════════════════
+test.describe("manual › chat launcher on mobile (MEH-2499)", () => {
+  // The launcher is back on phones above the BottomNav pill and steps aside on
+  // scroll-down, returning on scroll-up. Desktop never hides (unit-tested).
+  test("mobile: visible at the top, hidden after scrolling down, back after scrolling up", async ({ page }, info) => {
+    mobileOnly(info, "the hide-on-scroll behavior is mobile-only");
+    await consent(page);
+    await stubTiles(page);
+    await mockApi(page);
+    await gotoHome(page);
+    const launcher = page.getByTestId("chat-launcher");
+    await expect(launcher).toBeVisible(FIRST_PAINT);
+    await expect(launcher).toHaveAttribute("data-hidden", "false");
+    await page.evaluate(() => window.scrollTo(0, 900));
+    await expect(launcher).toHaveAttribute("data-hidden", "true");
+    // The attribute alone could flip with no visual change — pin the effect.
+    await expect(launcher).toHaveCSS("pointer-events", "none");
+    await expect(launcher).toHaveCSS("opacity", "0");
+    await page.evaluate(() => window.scrollTo(0, 600));
+    await expect(launcher).toHaveAttribute("data-hidden", "false");
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
 test.describe("manual › floating back-to-top (MEH-1309)", () => {
   // MT:1309:1 — hidden on load, before any scroll.
   test("it is absent before the page is scrolled", async ({ page }) => {
@@ -984,8 +1007,9 @@ test.describe("manual › floating back-to-top (MEH-1309)", () => {
     expect(b.x + b.width / 2, "the button sits in the inline-END half of an RTL page").toBeLessThan(vw / 2);
     expect(b.y + b.height / 2, "…and in the bottom half").toBeGreaterThan(vh / 2);
     if (isDesktop(info)) {
-      // The chat FAB is desktop-only (MEH-1410, ChatWidgetDesktopOnly.test.jsx:61),
-      // so on mobile its absence has two causes and proves nothing.
+      // Desktop only: on mobile the chat FAB steps aside on scroll-down
+      // (MEH-2499, ChatWidgetMobile.test.jsx), so at this scroll depth it is
+      // hidden and there is nothing to overlap.
       const fab = page.getByRole("button", { name: CHAT_LAUNCHER_NAME });
       await expect(fab).toHaveCount(1);
       const f = await box(fab);
@@ -1068,13 +1092,18 @@ test.describe("manual › filter chips + FilterSheet (MEH-1418 · task 12)", () 
   //   stale in docs/qa/conversion-progress.md. What survives from MEH-1418
   //   unchanged is the claim under test here: each toggle carries a leading
   //   aria-hidden glyph and the taxonomy's own label.
-  test("the home filter row is exactly the two promoted chips plus the sheet trigger, each with an aria-hidden glyph", async ({ page }) => {
+  test("the home filter row is exactly the two promoted chips plus the sheet trigger and the day chip, each promoted chip with an aria-hidden glyph", async ({ page }) => {
     await consent(page);
     await stubTiles(page);
     await mockApi(page);
     await gotoHome(page);
     const row = scope(page).getByTestId("home-filter-row");
-    await expect(row.getByRole("button")).toHaveCount(PROMOTED.length + 1); // + the sheet trigger
+    // Counted by testid, not by role: MEH-2537 moved the delivery-day chip into
+    // this row, and its ✕ appears whenever days are set, so a role count would
+    // depend on fixture state rather than on what this test is about.
+    await expect(row.locator('[data-testid^="home-promoted-chip-"]')).toHaveCount(PROMOTED.length);
+    await expect(row.getByTestId("home-filters-button")).toHaveCount(1);
+    await expect(row.getByTestId("delivery-day-chip")).toHaveCount(1);
     for (const key of PROMOTED) {
       const chip = promotedChip(page, key);
       await expect(chip).toBeVisible();
