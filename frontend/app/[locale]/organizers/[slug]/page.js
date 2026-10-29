@@ -197,13 +197,15 @@ export default async function OrganizerPage(props) {
               className="w-full h-[96px] md:h-[140px] md:rounded-[18px] bg-green-50"
             />
           )}
-          <span
-            aria-hidden="true"
-            data-testid="organizer-avatar"
-            className="absolute -bottom-10 start-4 md:start-14 w-20 h-20 rounded-full bg-primary text-white font-headline-md text-3xl font-bold grid place-items-center ring-4 ring-background"
-          >
-            {initial}
-          </span>
+          {initial && (
+            <span
+              aria-hidden="true"
+              data-testid="organizer-avatar"
+              className="absolute -bottom-10 start-4 md:start-14 w-20 h-20 rounded-full bg-primary text-white font-headline-md text-3xl font-bold grid place-items-center ring-4 ring-background"
+            >
+              {initial}
+            </span>
+          )}
         </div>
         <div className="px-4 pt-14 space-y-4 md:px-14">
           <h1 className="font-headline-lg text-3xl md:text-4xl font-bold text-text">{organizer.name}</h1>

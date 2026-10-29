@@ -115,6 +115,16 @@ describe("MEH-2101 — a missing entity is a 404, an unavailable backend is not"
       );
     });
 
+    // MEH-2552: the backend id param is a UUID, so a non-UUID id (/producer/1)
+    // is a 422 — an entity that cannot exist, not an unavailable backend.
+    // Old resolver: threw with status 422 (Sentry JAVASCRIPT-NEXTJS-4).
+    it("422 (malformed id) from the API → notFound()", async () => {
+      serverFetch.mockResolvedValue(response(422));
+      await expect(generateMetadata(freshProps())).rejects.toThrow(
+        "NEXT_NOT_FOUND"
+      );
+    });
+
     it.each([500, 502, 503])(
       "%i from the API → throws, and NOT as a not-found",
       async (status) => {
