@@ -527,8 +527,10 @@ async function sheetSettledAt(page: Page, shell: Locator, fraction: number): Pro
  * from the live `--bottom-nav-clearance` the nav publishes. A sheet stuck
  * anywhere else — 20vh, HALF, or a floor that lost its 3.5rem — misses by more
  * than 1px. (`≤ 0.2vh` passed any of those under 20vh.)
- * Mirrors PEEK and PEEK_FLOOR in components/MapBottomSheet.jsx: change both
- * together. The nav clearance itself is read live, not copied.
+ * The formula is the MEH-2510 spec written out on purpose, an oracle
+ * independent of PEEK/PEEK_FLOOR in MapBottomSheet.jsx: if the sheet's
+ * constants change, this goes red and someone decides whether the spec moved.
+ * Only the nav clearance is read live.
  */
 async function expectedPeekPx(page: Page): Promise<number> {
   return page.evaluate(() => {
@@ -1549,9 +1551,9 @@ test.describe("manual › /map service row fits narrow phones (MEH-2514)", () =>
       mobileOnly(info, "the service row's phone geometry");
       await page.setViewportSize({ width, height: 700 });
       const { shell } = await gotoWithCatalog(page, info);
-      for (const btn of [serviceChip(shell, "has_delivery"), serviceChip(shell, "pickup_points"), filtersButton(shell)]) {
+      for (const [name, btn] of [["has_delivery", serviceChip(shell, "has_delivery")], ["pickup_points", serviceChip(shell, "pickup_points")], ["filters", filtersButton(shell)]] as const) {
         const padding = await btn.evaluate((el) => [getComputedStyle(el).paddingInlineStart, getComputedStyle(el).paddingInlineEnd]);
-        expect(padding, `${await btn.textContent()} at ${width}px`).toEqual([`${pad}px`, `${pad}px`]);
+        expect(padding, `${name} inline padding at ${width}px`).toEqual([`${pad}px`, `${pad}px`]);
       }
     });
   }
