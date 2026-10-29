@@ -846,7 +846,13 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
   // MEH-2173: the promoted chips on the surface and the switches inside the
   // sheet are the SAME control over the same state — one toggle handler, so
   // there is no way for the two to disagree about what "on" means.
-  const handleToggleChip = (key) => applyChips({ ...chips, [key]: !chips[key] });
+  // MEH-2537: measured, so the promoted pair can be re-picked from use rather
+  // than judgement. `home_chip_navigate` stopped firing when MEH-2173 turned
+  // the chips into in-place toggles, which left home chip taps uncounted.
+  const handleToggleChip = (key) => {
+    trackEvent("home_chip_toggle", { chip: key, active: !chips[key] });
+    applyChips({ ...chips, [key]: !chips[key] });
+  };
 
   // MEH-2173: "ניקוי הכל" inside the sheet clears the ATTRIBUTE axes only —
   // never the category, city or day. Those are picked elsewhere on the page and

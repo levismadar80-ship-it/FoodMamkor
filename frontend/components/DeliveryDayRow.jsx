@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { CalendarBlank, CaretDown, CaretUp, X } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { DELIVERY_DAYS } from "@/lib/delivery-days";
@@ -129,11 +130,16 @@ const sortByWeek = (days) =>
  * one piece of state, and that state is presentational: whether the panel is
  * open.
  */
-export function DeliveryDayRow({ cityActive, daysActive, onSelectDay, onClearDays }) {
+// MEH-2537: `panelHost` (optional) is an element the surface renders below its
+// filter row. When given, the chip lives IN that row and the panel is portalled
+// into the host, because on a phone the row is a sideways-scrolling rail and a
+// panel inside it would be clipped. Without it (/producers) nothing changes.
+export function DeliveryDayRow({ cityActive, daysActive, onSelectDay, onClearDays, panelHost = null }) {
   const t = useTranslations();
   const [open, setOpen] = useState(false);
   const chipRef = useRef(null);
   const rootRef = useRef(null);
+  const panelRef = useRef(null);
   // useId, not a module constant: two mounts of this component on one page
   // would otherwise share an id, and aria-controls would point at whichever
   // panel rendered last. Nothing mounts it twice today; the id is free.
@@ -178,7 +184,9 @@ export function DeliveryDayRow({ cityActive, daysActive, onSelectDay, onClearDay
       chipRef.current?.focus();
     };
     const onMouseDown = (e) => {
-      if (!rootRef.current?.contains(e.target)) setOpen(false);
+      // MEH-2537: a portalled panel is outside rootRef's DOM, so check both.
+      if (rootRef.current?.contains(e.target) || panelRef.current?.contains(e.target)) return;
+      setOpen(false);
     };
     document.addEventListener("keydown", onKeyDown);
     document.addEventListener("mousedown", onMouseDown);
@@ -214,6 +222,8 @@ export function DeliveryDayRow({ cityActive, daysActive, onSelectDay, onClearDay
     setOpen((wasOpen) => !wasOpen);
   };
 
+  const portalOr = (node) => (panelHost ? createPortal(node, panelHost) : node);
+
   const handleClearClick = (e) => {
     // The ✕ sits INSIDE the chip's visual pill but is its own <button> (a
     // button cannot nest a button). stopPropagation is belt-and-braces for a
@@ -225,7 +235,7 @@ export function DeliveryDayRow({ cityActive, daysActive, onSelectDay, onClearDay
   return (
     <div
       ref={rootRef}
-      className="mb-6"
+      className={panelHost ? "shrink-0" : "mb-6"}
       data-testid="delivery-day-row"
       data-ghost={hasCity ? "false" : "true"}
       data-open={open ? "true" : "false"}
@@ -260,7 +270,7 @@ export function DeliveryDayRow({ cityActive, daysActive, onSelectDay, onClearDay
           aria-controls={open ? panelId : undefined}
           aria-label={chipAriaLabel}
           data-testid="delivery-day-chip"
-          className={`inline-flex items-center gap-1.5 py-1 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+          className={`inline-flex items-center gap-1.5 ${panelHost ? "py-2.5" : "py-1"} rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
             hasDays ? "ps-3 pe-1" : "ps-3 pe-3"
           }`}
         >
@@ -278,15 +288,16 @@ export function DeliveryDayRow({ cityActive, daysActive, onSelectDay, onClearDay
             onClick={handleClearClick}
             aria-label={t("home.producers.day_chip_clear_aria")}
             data-testid="delivery-day-clear"
-            className="inline-flex items-center ps-1 pe-2 py-1 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+            className={`inline-flex items-center ps-1 pe-2 ${panelHost ? "py-2.5" : "py-1"} rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60`}
           >
             <X size={12} weight="bold" aria-hidden="true" />
           </button>
         )}
       </div>
 
-      {open && (
+      {open && portalOr(
         <div
+          ref={panelRef}
           id={panelId}
           role="group"
           aria-label={t("home.producers.day_chip_idle")}
