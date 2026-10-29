@@ -1,7 +1,7 @@
 """meh2556_saved_items
 
 Revision ID: 9c534d477f2b
-Revises: c3d8e2f1a9b4
+Revises: 8600916f1942
 Create Date: 2026-10-29 14:30:00.000000+00:00
 
 MEH-2556 (chunk 1/5 of MEH-2555): adds the `saved_items` table — the recipes,
@@ -26,9 +26,8 @@ Adds one table → EXPECTED_TABLES 42 -> 43 (pr-checks.yml).
 downgrade() drops the table — every saved recipe/event/experience is
 forgotten, which is the pre-MEH-2556 state. Business favorites are untouched.
 
-Chained on c3d8e2f1a9b4 (staging head on 29/10), so `alembic heads` stays at
-one head. PR #3791 (MEH-2496) is chained on the same revision; whichever of
-the two merges second re-chains onto the other.
+Chained on 8600916f1942 (MEH-2496, staging head on 29/10 after #3791
+merged), so `alembic heads` stays at one head.
 
 # DO NOT create this table anywhere else — Alembic is the sole schema
 #        authority since MEH-267.
@@ -42,7 +41,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = "9c534d477f2b"
-down_revision: Union[str, None] = "c3d8e2f1a9b4"
+down_revision: Union[str, None] = "8600916f1942"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
