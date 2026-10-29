@@ -26,6 +26,11 @@ const listeners = new Set();
 // A save/unsave that lands while the first load is still in flight would be
 // wiped when the load replaces `keys`; it is replayed on top instead.
 let writesBeforeLoad = new Map();
+// Bumped by resetSavedCache. A GET that was in flight across a logout/expiry
+// settles into a stale generation and is dropped — else it would mark the
+// fresh cache `loaded` (empty hearts after re-login) or hand the previous
+// user's ids to the next one.
+let generation = 0;
 
 const keyOf = (itemType, itemId) => `${itemType}:${itemId}`;
 
@@ -49,9 +54,11 @@ export function subscribeSaved(listener) {
 export function ensureSavedLoaded() {
   if (loaded) return Promise.resolve(keys);
   if (loadingPromise) return loadingPromise;
+  const gen = generation;
   loadingPromise = api
     .get("/users/me/saved/ids")
     .then((res) => {
+      if (gen !== generation) return keys;
       // Rule 19: validate before use; a malformed payload → empty cache.
       const parsed = SavedIdsResponseSchema.safeParse(res.data);
       const list = parsed.success ? parsed.data : [];
@@ -66,11 +73,11 @@ export function ensureSavedLoaded() {
       return keys;
     })
     .catch(() => {
-      loaded = true;
+      if (gen === generation) loaded = true;
       return keys;
     })
     .finally(() => {
-      loadingPromise = null;
+      if (gen === generation) loadingPromise = null;
     });
   return loadingPromise;
 }
@@ -90,6 +97,7 @@ export function setSavedLocal(itemType, itemId, value) {
 
 /** Called by AuthContext on logout / expiry / account delete. */
 export function resetSavedCache() {
+  generation += 1;
   keys = new Set();
   writesBeforeLoad = new Map();
   loaded = false;
