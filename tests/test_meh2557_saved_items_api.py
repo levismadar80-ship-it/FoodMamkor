@@ -268,3 +268,14 @@ def test_remove_works_after_the_item_was_hidden(client, db):
     db.commit()
     resp = client.delete(f"{BASE}/recipe/{recipe.id}", headers=auth_header(user))
     assert resp.status_code == 200
+
+
+def test_api_type_list_matches_the_model_list():
+    """Third copy of the type list (the path Literal in schemas.py) — the
+    revision ↔ model pair is guarded in test_meh2556_saved_items_table.py."""
+    from typing import get_args
+
+    from app.models import SAVED_ITEM_TYPES
+    from app.schemas.schemas import SavedItemType
+
+    assert get_args(SavedItemType) == SAVED_ITEM_TYPES
