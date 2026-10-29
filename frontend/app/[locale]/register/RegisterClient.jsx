@@ -9,6 +9,7 @@ import { EnvelopeSimple } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
 import GoogleAuthButton from "@/components/GoogleAuthButton";
 import AppleAuthButton from "@/components/AppleAuthButton";
+import { oauthTermsKey } from "@/lib/oauthTermsKey";
 import ButtonSpinner from "@/components/ButtonSpinner";
 import PasswordInput from "@/components/PasswordInput";
 import Input from "@/components/ui/Input";
@@ -327,7 +328,7 @@ function RegisterPageBody() {
                 data-testid="register-oauth-terms"
                 className="text-[13px] leading-relaxed text-fg-muted text-start"
               >
-                {t.rich("auth.login.oauth_terms", {
+                {t.rich(`auth.login.${oauthTermsKey(googleConfigured, appleConfigured)}`, {
                   tos: (chunks) => (
                     <Link href="/terms" target="_blank" className="text-primary underline">
                       {chunks}

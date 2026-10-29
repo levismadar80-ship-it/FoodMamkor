@@ -96,6 +96,9 @@ describe("/login OAuth terms notice", () => {
     expect(n.querySelector('a[data-locale-link][href="/privacy"]')).not.toBeNull();
     expect(screen.getByTestId("google-btn").dataset.terms).toBe("true");
     expect(screen.queryByTestId("apple-btn")).toBeNull();
+    // The line names only the button on screen — no «או Apple» over a lone
+    // Google button.
+    expect(n.textContent).toContain("oauth_terms_google");
   });
 
   it("Google + Apple → one notice, both buttons send termsAccepted", () => {
@@ -107,6 +110,7 @@ describe("/login OAuth terms notice", () => {
     expect(screen.getAllByTestId("login-oauth-terms")).toHaveLength(1);
     expect(screen.getByTestId("google-btn").dataset.terms).toBe("true");
     expect(screen.getByTestId("apple-btn").dataset.terms).toBe("true");
+    expect(notice().textContent).toMatch(/^oauth_terms(?!_)/);
   });
 
   it("Apple only → notice, Apple sends termsAccepted", () => {
@@ -115,16 +119,21 @@ describe("/login OAuth terms notice", () => {
     expect(notice()).not.toBeNull();
     expect(screen.getByTestId("apple-btn").dataset.terms).toBe("true");
     expect(screen.queryByTestId("google-btn")).toBeNull();
+    expect(notice().textContent).toContain("oauth_terms_apple");
   });
 });
 
 // t.rich is mocked above, so the catalog's tags are checked here: a tag typo
 // would otherwise pass and render raw.
 describe.each([
-  ["he", he],
-  ["en", en],
-])("auth.login.oauth_terms in %s", (_, messages) => {
-  const text = messages.auth.login.oauth_terms;
+  ["he", "oauth_terms", he],
+  ["en", "oauth_terms", en],
+  ["he", "oauth_terms_google", he],
+  ["en", "oauth_terms_google", en],
+  ["he", "oauth_terms_apple", he],
+  ["en", "oauth_terms_apple", en],
+])("auth.login.%s %s", (_, key, messages) => {
+  const text = messages.auth.login[key];
   it("carries exactly one <tos> and one <privacy> pair", () => {
     expect(text.match(/<tos>[^<]+<\/tos>/g)).toHaveLength(1);
     expect(text.match(/<privacy>[^<]+<\/privacy>/g)).toHaveLength(1);

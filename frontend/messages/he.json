@@ -159,6 +159,8 @@
       "no_account": "אין לך חשבון?",
       "register_cta": "הצטרפו ←",
       "email_placeholder": "name@example.com",
+      "oauth_terms_google": "התחברות עם Google מהווה אישור שמלאו לך 18 והסכמה <tos>לתנאי השימוש</tos> ו<privacy>למדיניות הפרטיות</privacy>.",
+      "oauth_terms_apple": "התחברות עם Apple מהווה אישור שמלאו לך 18 והסכמה <tos>לתנאי השימוש</tos> ו<privacy>למדיניות הפרטיות</privacy>.",
       "oauth_terms": "התחברות עם Google או Apple מהווה אישור שמלאו לך 18 והסכמה <tos>לתנאי השימוש</tos> ו<privacy>למדיניות הפרטיות</privacy>."
     },
     "oauth": {
@@ -3401,7 +3403,7 @@
   },
   "story": {
     "canvas": {
-      "footer_url": "גלי עוד בתי עסק ב mehamakor.co.il",
+      "kicker": "בית עסק חדש במהמקור",
       "upload_error": "שגיאה בהעלאה לקלאודינרי",
       "default_country": "ישראל",
       "caption_prefix": "🌿 עסק חדש במהמקור!",
