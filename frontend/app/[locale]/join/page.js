@@ -77,7 +77,7 @@ export default async function JoinPage({ params }) {
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
         {/* ── Hero — single CTA of the page (positioning-FINAL order:
                eyebrow → H1 → subhead → CTA → trust hint) ── */}
-        <header className="text-center mb-14 sm:mb-20" data-testid="join-hero">
+        <header className="text-center mb-8 sm:mb-10" data-testid="join-hero">
           <p className="text-sm font-medium text-accent mb-3">{t("eyebrow")}</p>
           <h1 className="font-headline-lg font-black text-primary-dark leading-[1.15] mb-5 text-[clamp(32px,7vw,52px)]">
             {t("h1")}
@@ -96,11 +96,12 @@ export default async function JoinPage({ params }) {
         </header>
 
         {/* MEH-2597: a person at work, under the CTA so the CTA stays in the
-            first screen at 375. Swap for a Wave 1 business photo when one lands. */}
+            first screen at 375. The hero's bottom margin is the gap above the
+            photo; the photo carries the section gap below. Swap for a Wave 1 business photo when one lands. */}
         <EditorialPhoto
           src="https://res.cloudinary.com/dfzpscjks/image/upload/login/hero-produce-crate.jpg"
           testId="join-photo"
-          className="-mt-6 mb-14 sm:-mt-10 sm:mb-20"
+          className="mb-14 sm:mb-20"
         />
 
         {/* ── How it works — 4 numbered spreads ── */}
