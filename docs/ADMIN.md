@@ -8,7 +8,7 @@ sidebar קבוע ב: `frontend/app/[locale]/admin/layout.js`. **MEH-2359 (26/10)
 |----|-----|-------|
 | מה מחכה לטיפול | /admin | **MEH-2359:** רק מה שדורש החלטה — בתי עסק ממתינים (תצוגה מקדימה + «בדוק» + «צפה בכל») ושורה לכל תור אחר שיש בו פריטים. הסטטיסטיקה, הגרפים, DAU, ערים ובריאות השרת שהיו כאן ירדו; גרף הגידול, ערים ומפה נמצאים ב-/admin/analytics. ה-endpoint `GET /admin/dashboard` לא השתנה, רק קיבל חמישה מונים: `pending_category_requests`, `pending_name_change_requests`, `undelivered_whatsapp_7d`, `experiences_awaiting_review`, `recipes_awaiting_review` (השניים האחרונים = `status == "pending"` בלבד, תור האדמין) |
 | בתי עסק | /admin/producers | טבלה + חיפוש + ייצוא Excel (הייבוא הוסר, MEH-2516) + אישור מהיר inline; השהה/סטורי/מחיקה בתפריט ⋮ פר-שורה (MEH-1027) + **דחייה** (MEH-226, ⋮ tone danger, שורות pending בלבד — MEH-2124 הסיר את הסטטוס השני) → מודל 5 סיבות + פירוט → שלב אישור → מייל לבעלת העסק; שורות pending נושאות תת-שורה **«רשימת בדיקה לפני אישור»** + **«תיק בדיקה»** (MEH-1399) |
-| משתמשים | /admin/users | חיפוש + שינוי role + חסימה |
+| משתמשים | /admin/users | חיפוש + שינוי role + חסימה. **סיסמת האדמין (MEH-2575):** `ADMIN_PASSWORD` ב-Railway נקרא רק כשמשתמש האדמין נוצר בפעם הראשונה (`seed_data.py`, insert-only) — שינוי שלו אחר כך לא משנה סיסמה. משנים דרך «שכחת סיסמה?» בדף הכניסה |
 | תוכן | /admin/content | קטגוריות CRUD + עורך about/terms. **18 קטגוריות הזרע נעולות** (MEH-1456 chunk 2b) — ראו למטה |
 | דיווחים | /admin/reports | ממוין לפי דחיפות + פתור/השהה/התעלם |
 | אנליטיקס | /admin/analytics | גרפים + heat map + top producers. ה-heat map (וגם `map_points` ב-`/admin/dashboard`) מצייר כל עסק מאושר בשורת ה-`producer_locations` **הראשית** שלו — לא מ-`producers.lat/lng` (MEH-1938 chunk 5a, `admin_extra._primary_location_points`) |
