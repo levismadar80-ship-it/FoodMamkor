@@ -527,6 +527,8 @@ async function sheetSettledAt(page: Page, shell: Locator, fraction: number): Pro
  * from the live `--bottom-nav-clearance` the nav publishes. A sheet stuck
  * anywhere else — 20vh, HALF, or a floor that lost its 3.5rem — misses by more
  * than 1px. (`≤ 0.2vh` passed any of those under 20vh.)
+ * Mirrors PEEK and PEEK_FLOOR in components/MapBottomSheet.jsx: change both
+ * together. The nav clearance itself is read live, not copied.
  */
 async function expectedPeekPx(page: Page): Promise<number> {
   return page.evaluate(() => {
@@ -1596,8 +1598,9 @@ test.describe("manual › /map PEEK sheet count clears the nav pill on short pho
   // (claim 1, the sheet chrome): at 375×667 the list shows a 4px strip between
   // that row and the nav pill, too thin to aim a finger at, so claim 2 (`snap ===
   // PEEK`, a drag from the list) stays with its unit test in MapSheetGesture.
-  test("375×667: an upward drag from the count row at a floored PEEK opens the sheet to HALF", async ({ page }, info) => {
+  test("375×667: an upward drag from the count row at a floored PEEK opens the sheet to HALF", async ({ page, browserName }, info) => {
     mobileOnly(info, "the bottom sheet's touch drag is the mobile shell's");
+    test.skip(browserName !== "chromium", "the drag is dispatched over CDP, which only Chromium speaks (webkit-iphone13 shadow)");
     await page.setViewportSize({ width: 375, height: 667 });
     const { shell } = await gotoWithCatalog(page, info);
     await settleSheet(shell);
