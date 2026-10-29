@@ -553,6 +553,7 @@ function AdminProducersRow({ producer, isStoryOpen, handlers, checklist }) {
               /* MEH-1399 chunk 4: the evidence dossier reads this row's own
                  ProducerAdminOut fields — no extra fetch. */
               producer={p}
+              onGooglePlaceLinked={(placeId) => handlers.onGooglePlaceLinked?.(p.id, placeId)}
             />
           </td>
         </tr>
@@ -625,14 +626,14 @@ function EmptyRow({ incompleteOnly }) {
 export default function AdminProducersTable({
   rows, incompleteOnly, storyCardOpenId, onSetStoryCardOpenId, loadError, onRetryLoad,
   onQuickApprove, onApproveWithoutLicense, onRequestChanges, onReject, onToggleStatus, onDeleteProducer,
-  onUploadStoryCard, isBusy, checklist,
+  onUploadStoryCard, onGooglePlaceLinked, isBusy, checklist,
   page, totalPages, perPage, onPageChange, onPerPageChange, visibleCount,
 }) {
   const onToggleStoryCard = (id) =>
     onSetStoryCardOpenId((prev) => (prev === id ? null : id));
   const handlers = {
     onQuickApprove, onApproveWithoutLicense, onRequestChanges, onReject, onToggleStatus, onDeleteProducer,
-    onUploadStoryCard, onToggleStoryCard, isBusy,
+    onUploadStoryCard, onToggleStoryCard, onGooglePlaceLinked, isBusy,
     // MEH-2495: a claim-link 409 means the row is stale — reload the list.
     onReload: onRetryLoad,
   };

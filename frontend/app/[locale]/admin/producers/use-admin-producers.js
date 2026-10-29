@@ -228,6 +228,11 @@ export function useAdminProducers() {
   const handleStoryCardUpload = (id, url) =>
     data.setProducers((prev) => prev.map((p) => (p.id === id ? { ...p, story_card_url: url } : p)));
 
+  // MEH-2582: keep the row in step after the approval row links Google, so a
+  // collapse + reopen of the checklist does not show "not linked" again.
+  const handleGooglePlaceLinked = (id, placeId) =>
+    data.setProducers((prev) => prev.map((p) => (p.id === id ? { ...p, google_place_id: placeId } : p)));
+
   const handlePerPageChange = (n) => {
     data.setPerPage(n);
     data.setPage(1);
@@ -277,7 +282,7 @@ export function useAdminProducers() {
     // lands on the completion group without choosing for the admin.
     openReject: decision.openDecision,
     openRequestChanges: (producer) => decision.openDecision(producer, { focus: CHANGES }),
-    exportExcel, handleStoryCardUpload, handlePerPageChange,
+    exportExcel, handleStoryCardUpload, handleGooglePlaceLinked, handlePerPageChange,
     incompleteCount, visible, pagedVisible, safePage, totalPages,
   };
 }
