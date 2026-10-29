@@ -107,7 +107,8 @@ export default function SectionAnchorNav({ items, ariaLabel, className = "" }) {
       style={{ top: "var(--chrome-top, 82px)" }}
       // MEH-2593: the page's own cream (not a white band) under a hairline,
       // so the bar reads as part of the page rather than a separate strip.
-      className={`sticky z-30 bg-background/95 backdrop-blur-sm border-b border-primary/15 ${className}`}
+      // Opaque: at /95 the text scrolling underneath showed through.
+      className={`sticky z-30 bg-background border-b border-primary/15 ${className}`}
     >
       <div
         ref={rowRef}
@@ -129,7 +130,8 @@ export default function SectionAnchorNav({ items, ariaLabel, className = "" }) {
               // MEH-2593: underline tabs (Google Maps / Airbnb place pages) in
               // place of the boxed ChipScrollRow pills — text only, the active
               // tab is green with a bar under it. min-h-[48px] keeps the touch
-              // target.
+              // target; pt-[3px] balances the 3px bottom border so the label
+              // stays optically centred.
               className={`inline-flex items-center whitespace-nowrap px-3 pt-[3px] min-h-[48px] text-[15px] font-semibold border-b-[3px] transition shrink-0 snap-start focus-ring ${
                 active
                   ? "text-primary border-primary"
