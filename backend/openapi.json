@@ -2652,6 +2652,40 @@
         "title": "GoogleAuthResponse",
         "type": "object"
       },
+      "GooglePlaceIdIn": {
+        "properties": {
+          "google_place_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Google Place Id"
+          }
+        },
+        "title": "GooglePlaceIdIn",
+        "type": "object"
+      },
+      "GooglePlaceIdOut": {
+        "properties": {
+          "google_place_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Google Place Id"
+          }
+        },
+        "title": "GooglePlaceIdOut",
+        "type": "object"
+      },
       "GoogleRatingOut": {
         "properties": {
           "google_maps_uri": {
@@ -14915,6 +14949,65 @@
           }
         ],
         "summary": "Get Google Place Candidates",
+        "tags": [
+          "google-rating"
+        ]
+      }
+    },
+    "/admin/producers/{producer_id}/google-place-id": {
+      "put": {
+        "description": "Admin-only: set (or clear, with null/blank) one producer's place_id.\n\nWrites ONLY producers.google_place_id — the one Google datum the ToS lets us\nstore. 403 for non-admins (require_admin), 404 for an unknown id or an\norganizer (no Google line for organizers, MEH-2465), 422 for a value that\nis not a bare place_id (normalize_google_place_id).",
+        "operationId": "put_google_place_id_admin_producers__producer_id__google_place_id_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GooglePlaceIdIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GooglePlaceIdOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Put Google Place Id",
         "tags": [
           "google-rating"
         ]

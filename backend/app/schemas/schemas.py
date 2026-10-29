@@ -1997,6 +1997,26 @@ def state_to_legacy(state: str | None) -> tuple[bool, str]:
     return _STATE_TO_LEGACY.get(state or "", _STATE_TO_LEGACY["accepting_orders"])
 
 
+# MEH-1490: normalize the Google Place ID. Blank → None (admin clears the
+# mapping). URL-safe charset only ([A-Za-z0-9_-]) — a place_id is exactly that,
+# so a pasted Maps URL (contains "/", ":", ".") is rejected with a clear Hebrew
+# error instead of being stored and silently 204-ing forever. MEH-2582: one
+# function for both writers (ProducerUpdate and GooglePlaceIdIn).
+def normalize_google_place_id(v: str | None) -> str | None:
+    if v is None:
+        return None
+    v = v.strip()
+    if not v:
+        return None
+    if len(v) > 300:
+        raise ValueError("מזהה Google Place ארוך מדי")
+    if not re.fullmatch(r"[A-Za-z0-9_-]+", v):
+        raise ValueError(
+            "מזהה Google Place לא תקין — הדביקי את ה-place_id בלבד (לא כתובת URL)"
+        )
+    return v
+
+
 class ProducerUpdate(BaseModel):
     name: SanitizedBusinessNameField | None = None
     # MEH-1626 chunk 3: surfaced by the family-based guard, NOT by the
@@ -2206,25 +2226,11 @@ class ProducerUpdate(BaseModel):
     def _sanitize_address(cls, v):
         return sanitize_text(v, max_length=255)
 
-    # MEH-1490: normalize the Google Place ID. Blank → None (admin clears the
-    # mapping). URL-safe charset only ([A-Za-z0-9_-]) — a place_id is exactly
-    # that, so a pasted Maps URL (contains "/", ":", ".") is rejected with a
-    # clear Hebrew error instead of being stored and silently 204-ing forever.
+    # MEH-1490: see normalize_google_place_id above.
     @field_validator("google_place_id")
     @classmethod
     def _validate_google_place_id(cls, v):
-        if v is None:
-            return None
-        v = v.strip()
-        if not v:
-            return None
-        if len(v) > 300:
-            raise ValueError("מזהה Google Place ארוך מדי")
-        if not re.fullmatch(r"[A-Za-z0-9_-]+", v):
-            raise ValueError(
-                "מזהה Google Place לא תקין — הדביקי את ה-place_id בלבד (לא כתובת URL)"
-            )
-        return v
+        return normalize_google_place_id(v)
 
     # MEH-1335: owner bio — strip HTML + cap at 300 (spec: "כמה מילים עלייך",
     # dashboard textarea counter matches this server-side cap).
@@ -2899,6 +2905,21 @@ class ProducerDetailOut(ProducerListOut):
 # the client — NEVER persisted (Google Maps Platform ToS §3.2.3(b) No Caching).
 # The endpoint returns 204 (no body) whenever the line must not render, so this
 # shape is only ever produced for an eligible producer (place_id + ≥20 reviews).
+# MEH-2582: body of PUT /admin/producers/{id}/google-place-id — the approval
+# row's one-field write. Same normalisation as ProducerUpdate.google_place_id.
+class GooglePlaceIdIn(BaseModel):
+    google_place_id: str | None = None
+
+    @field_validator("google_place_id")
+    @classmethod
+    def _validate_google_place_id(cls, v):
+        return normalize_google_place_id(v)
+
+
+class GooglePlaceIdOut(BaseModel):
+    google_place_id: str | None = None
+
+
 class GoogleRatingOut(BaseModel):
     rating: float  # Google's average star rating, e.g. 4.7
     user_rating_count: int  # total Google reviews (guaranteed ≥ MIN_REVIEWS)

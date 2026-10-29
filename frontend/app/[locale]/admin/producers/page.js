@@ -174,6 +174,7 @@ function ProducersAdminPage() {
         onToggleStatus={h.toggleStatus}
         onDeleteProducer={h.deleteProducer}
         onUploadStoryCard={h.handleStoryCardUpload}
+        onGooglePlaceLinked={h.handleGooglePlaceLinked}
         isBusy={h.isBusy}
         checklist={checklist}
         page={h.safePage}

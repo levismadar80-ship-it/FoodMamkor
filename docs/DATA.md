@@ -778,6 +778,12 @@ GET    /producers/{producer_id}/google-rating     public — MEH-1490: live Goog
                                                google_maps_uri } only when a place_id is mapped AND count ≥ 20;
                                                204 (fail-quiet) on no place_id / count<20 / API error / no
                                                GOOGLE_PLACES_API_KEY; 404 only for an unknown producer. 60/min.
+PUT    /admin/producers/{producer_id}/google-place-id  admin — MEH-2582: body { google_place_id: str|null }
+                                               (blank/null clears; bare place_id only, a Maps URL → 422).
+                                               Writes ONLY that column; skips the full admin PUT's
+                                               effective-state gates (licence, delivery) on purpose — the
+                                               approval row maps pending businesses that still fail them.
+                                               404 for unknown id or an organizer. 30/min.
 GET    /producers/by-slug/{slug}                  public
                                                MEH-2534: miss on a slug whose business was DELETED (ownerless
                                                retired_slugs row) → 410 «בית העסק כבר לא במהמקור»; never-existed
