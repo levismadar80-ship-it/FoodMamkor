@@ -130,11 +130,14 @@ const sortByWeek = (days) =>
  * one piece of state, and that state is presentational: whether the panel is
  * open.
  */
-// MEH-2537: `panelHost` (optional) is an element the surface renders below its
-// filter row. When given, the chip lives IN that row and the panel is portalled
-// into the host, because on a phone the row is a sideways-scrolling rail and a
-// panel inside it would be clipped. Without it (/producers) nothing changes.
-export function DeliveryDayRow({ cityActive, daysActive, onSelectDay, onClearDays, panelHost = null }) {
+// MEH-2537: `inRow` says the chip sits inside a filter row (home) — it sizes
+// the chip to its neighbours and drops the block margin. It is a static flag so
+// the server HTML already has the in-row shape (no shift on hydration).
+// `panelHost` is the element under that row the panel is portalled into, since
+// on a phone the row is a sideways rail that would clip it. It is null until
+// the host mounts, which is before any tap can open the panel. Neither prop on
+// /producers → nothing changes there.
+export function DeliveryDayRow({ cityActive, daysActive, onSelectDay, onClearDays, inRow = false, panelHost = null }) {
   const t = useTranslations();
   const [open, setOpen] = useState(false);
   const chipRef = useRef(null);
@@ -223,6 +226,9 @@ export function DeliveryDayRow({ cityActive, daysActive, onSelectDay, onClearDay
   };
 
   const portalOr = (node) => (panelHost ? createPortal(node, panelHost) : node);
+  // In a row the chip matches the row's other controls (py-2.5); alone it
+  // keeps its compact pill height.
+  const chipPadY = inRow ? "py-2.5" : "py-1";
 
   const handleClearClick = (e) => {
     // The ✕ sits INSIDE the chip's visual pill but is its own <button> (a
@@ -235,7 +241,7 @@ export function DeliveryDayRow({ cityActive, daysActive, onSelectDay, onClearDay
   return (
     <div
       ref={rootRef}
-      className={panelHost ? "shrink-0" : "mb-6"}
+      className={inRow ? "shrink-0" : "mb-6"}
       data-testid="delivery-day-row"
       data-ghost={hasCity ? "false" : "true"}
       data-open={open ? "true" : "false"}
@@ -270,7 +276,7 @@ export function DeliveryDayRow({ cityActive, daysActive, onSelectDay, onClearDay
           aria-controls={open ? panelId : undefined}
           aria-label={chipAriaLabel}
           data-testid="delivery-day-chip"
-          className={`inline-flex items-center gap-1.5 ${panelHost ? "py-2.5" : "py-1"} rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+          className={`inline-flex items-center gap-1.5 ${chipPadY} rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
             hasDays ? "ps-3 pe-1" : "ps-3 pe-3"
           }`}
         >
@@ -288,7 +294,7 @@ export function DeliveryDayRow({ cityActive, daysActive, onSelectDay, onClearDay
             onClick={handleClearClick}
             aria-label={t("home.producers.day_chip_clear_aria")}
             data-testid="delivery-day-clear"
-            className={`inline-flex items-center ps-1 pe-2 ${panelHost ? "py-2.5" : "py-1"} rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60`}
+            className={`inline-flex items-center ps-1 pe-2 ${chipPadY} rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60`}
           >
             <X size={12} weight="bold" aria-hidden="true" />
           </button>
@@ -307,7 +313,9 @@ export function DeliveryDayRow({ cityActive, daysActive, onSelectDay, onClearDay
           // empty card to the inline-end of seven small pills and reads as a
           // layout bug. Hugging the content keeps it a dropdown at every width,
           // and `max-w-full` is what stops it overflowing at 375 where the
-          // pills wrap instead.
+          // pills wrap instead. MEH-2537: on home the panel sits under the
+          // whole filter row (portalled), starting at the row's inline-start,
+          // not under the chip itself — it opens as the row's own panel.
           className="mt-2 w-fit max-w-full rounded-2xl border border-border bg-surface p-3"
         >
           {/* MEH-2186: what MEH-2173's inline hint became. It names the city

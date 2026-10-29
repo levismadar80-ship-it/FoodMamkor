@@ -849,8 +849,10 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
   // MEH-2537: measured, so the promoted pair can be re-picked from use rather
   // than judgement. `home_chip_navigate` stopped firing when MEH-2173 turned
   // the chips into in-place toggles, which left home chip taps uncounted.
-  const handleToggleChip = (key) => {
-    trackEvent("home_chip_toggle", { chip: key, active: !chips[key] });
+  // `source` separates the promoted row from the sheet's switches (which call
+  // this with the key alone), so the two are not counted as one surface.
+  const handleToggleChip = (key, source = "sheet") => {
+    trackEvent("home_chip_toggle", { chip: key, active: !chips[key], source });
     applyChips({ ...chips, [key]: !chips[key] });
   };
 

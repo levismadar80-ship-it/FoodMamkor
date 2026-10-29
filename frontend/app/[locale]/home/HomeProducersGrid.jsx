@@ -249,6 +249,16 @@ export function HomeProducersGrid({
   // since the row scrolls sideways on a phone and would clip it. State, not a
   // ref, so the chip re-renders with the node once it exists.
   const [dayPanelHost, setDayPanelHost] = useState(null);
+  // MEH-2537: a chip that takes focus while under the sticky «סינון» is
+  // scrolled out from under it. Positive scrollBy moves the rail's content
+  // toward the inline-end in RTL, which is the direction that uncovers it.
+  // Skipped at lg+, where the trigger is not sticky and nothing overlaps.
+  const keepFocusedChipClear = (e) => {
+    const lead = e.currentTarget.firstElementChild;
+    if (!lead || lead.contains(e.target) || getComputedStyle(lead).position !== "sticky") return;
+    const overlap = e.target.getBoundingClientRect().right - lead.getBoundingClientRect().left;
+    if (overlap > 0) e.currentTarget.scrollBy({ left: overlap + 8 });
+  };
   return (
     <section id="producers-grid" className="max-w-7xl mx-auto px-4 pb-20">
       {/* MEH-2394: the first-visit coach-mark tour (step 0 here, step 1 by the
@@ -297,11 +307,16 @@ export function HomeProducersGrid({
           screen edge (-mx-4/px-4 against the section's px-4) so a chip that
           does not fit is cut at the glass, which reads as "scrolls", not at
           the gutter, which reads as a bug. py-1/-mt-1 keep the chips' focus
-          and active rings inside the scrollport (overflow clips box-shadow). lg+ fits on one line, so overflow is
+          and active rings inside the scrollport (overflow clips box-shadow).
+          onFocus nudges a focused chip out from under the sticky «סינון»
+          (WCAG 2.4.11). Measured in Chromium: neither scroll-padding on the
+          rail (it shifted the RESTING position, «מאומת» under «סינון») nor
+          scroll-margin on the chips (focus scrolling ignored it) did this. lg+ fits on one line, so overflow is
           visible there and the sheet's anchored panel is not clipped. */}
       <div
-        className="-mx-4 -mt-1 mb-3 flex items-center gap-2 min-w-0 overflow-x-auto px-4 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:-mx-1 lg:px-1 lg:overflow-visible"
+        className="-mx-4 -mt-1 mb-3 flex items-center gap-2 min-w-0 overflow-x-auto px-4 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:-mx-1 lg:px-1 lg:overflow-visible "
         data-testid="home-filter-row"
+        onFocus={keepFocusedChipClear}
       >
         {/* Anchor wrapper — FilterSheet's lg+ panel positions off this
             parent, exactly as on /map and /producers (sticky is positioned,
@@ -312,8 +327,10 @@ export function HomeProducersGrid({
             purpose: a positioned box already paints over the static chips,
             and a z-index would make a stacking context (the sheet portals to
             <body> below lg anyway, FilterSheet.jsx). -ms-4/ps-4 paint the
-            gutter strip beside it, so chips pass under it there too. */}
-        <div className="sticky start-0 -ms-4 ps-4 shrink-0 bg-background lg:relative lg:ms-0 lg:ps-0">
+            gutter strip beside it, so chips pass under it there too, and
+            -start-4 (not start-0) because a sticky box is held inside the
+            rail's PADDING edge: start-0 pinned it 16px in, over «מאומת». */}
+        <div className="sticky -start-4 -ms-4 ps-4 shrink-0 bg-background lg:relative lg:start-auto lg:ms-0 lg:ps-0">
           <button
             type="button"
             onClick={onToggleFilterSheet}
@@ -356,7 +373,7 @@ export function HomeProducersGrid({
             <button
               key={chip.key}
               type="button"
-              onClick={() => onToggleChip(chip.key)}
+              onClick={() => onToggleChip(chip.key, "row")}
               aria-pressed={active}
               data-testid={`home-promoted-chip-${chip.key}`}
               // REUSES: frontend/app/[locale]/map/components/ServiceChipRow.jsx:69-73
@@ -386,6 +403,7 @@ export function HomeProducersGrid({
           daysActive={daysActive}
           onSelectDay={onSelectDay}
           onClearDays={onClearDays}
+          inRow
           panelHost={dayPanelHost}
         />
       </div>
@@ -449,7 +467,8 @@ export function HomeProducersGrid({
 
       {/* MEH-1269: dismissible location-filter chip (geo "קרוב אליי" or an
           explicit city choice). Self-hides when no location filter is active.
-          MEH-2186: LOCATION-ONLY — the day value moved to the day chip below,
+          MEH-2186: LOCATION-ONLY — the day value moved to the day chip (in the
+          filter row above since MEH-2537),
           so `daysActive` is no longer passed here. It still reaches this
           component for the empty-state CTA further down. */}
       <ActiveFilterChip
@@ -457,7 +476,6 @@ export function HomeProducersGrid({
         cityActive={cityActive}
         onClear={onClearLocation}
       />
-
 
       {producersLoading ? (
         <SkeletonProducerGrid count={8} />

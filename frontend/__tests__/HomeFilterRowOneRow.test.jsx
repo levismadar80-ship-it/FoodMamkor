@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, renderHook, act } from "@testing-library/react";
 import { HomeProducersGrid } from "@/app/[locale]/home/HomeProducersGrid";
 import { useHomePage } from "@/lib/use-home-page";
+import { renderToString } from "react-dom/server";
 import { trackEvent } from "@/lib/analytics";
 
 /**
@@ -118,6 +119,23 @@ describe("MEH-2537 — one row", () => {
     expect(screen.queryByTestId("delivery-day-panel")).not.toBeNull();
   });
 
+  it("server HTML already has the in-row chip shape (no shift when the host mounts)", () => {
+    const html = renderToString(<HomeProducersGrid {...props()} />);
+    const root = html.match(/<div class="([^"]*)" data-testid="delivery-day-row"/);
+    expect(root?.[1]).toContain("shrink-0");
+    expect(root?.[1]).not.toContain("mb-6");
+    const chipTag = html.match(/<button[^>]*data-testid="delivery-day-chip"[^>]*>/)?.[0] ?? "";
+    expect(chipTag).toMatch(/class="[^"]*py-2\.5/);
+  });
+
+  it("many days: the value chip and its ✕ stay in the row; the panel still opens below it", () => {
+    render(<HomeProducersGrid {...props({ cityActive: "חיפה", daysActive: ["שני", "רביעי", "שישי"] })} />);
+    expect(row().contains(screen.getByTestId("delivery-day-chip"))).toBe(true);
+    expect(row().contains(screen.getByTestId("delivery-day-clear"))).toBe(true);
+    fireEvent.click(screen.getByTestId("delivery-day-chip"));
+    expect(row().contains(screen.getByTestId("delivery-day-panel"))).toBe(false);
+  });
+
   it("a tap outside both the chip and the panel still closes it", () => {
     render(<HomeProducersGrid {...props({ cityActive: "חיפה" })} />);
     fireEvent.click(screen.getByTestId("delivery-day-chip"));
@@ -132,12 +150,22 @@ describe("MEH-2537 — chip taps are measured", () => {
     vi.mocked(trackEvent).mockClear();
   });
 
-  it("handleToggleChip reports the axis and its new state", () => {
+  it("handleToggleChip reports the axis, its new state and the surface", () => {
     const { result } = renderHook(() => useHomePage());
+    act(() => result.current.handleToggleChip("verified", "row"));
+    expect(trackEvent).toHaveBeenCalledWith("home_chip_toggle", { chip: "verified", active: true, source: "row" });
+    // the sheet's switches pass the key alone
     act(() => result.current.handleToggleChip("verified"));
-    expect(trackEvent).toHaveBeenCalledWith("home_chip_toggle", { chip: "verified", active: true });
-    act(() => result.current.handleToggleChip("verified"));
-    expect(trackEvent).toHaveBeenCalledWith("home_chip_toggle", { chip: "verified", active: false });
+    expect(trackEvent).toHaveBeenCalledWith("home_chip_toggle", { chip: "verified", active: false, source: "sheet" });
+  });
+
+  it("a promoted chip tap is tagged as the row, a sheet switch is not", () => {
+    const p = props({ filterSheetOpen: true });
+    render(<HomeProducersGrid {...p} />);
+    fireEvent.click(screen.getByTestId("home-promoted-chip-has_delivery"));
+    expect(p.onToggleChip).toHaveBeenLastCalledWith("has_delivery", "row");
+    fireEvent.click(document.querySelector('#filter-sheet-panel [data-testid="chip-vegan"]'));
+    expect(p.onToggleChip).toHaveBeenLastCalledWith("vegan");
   });
 });
 

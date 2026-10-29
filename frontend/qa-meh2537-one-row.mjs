@@ -32,6 +32,8 @@ const measure = (page) =>
         row.children[0].contains(document.querySelector('[data-testid="home-filters-button"]')) &&
         Math.round(items[0].right) >= Math.max(...items.map((r) => Math.round(r.right))),
       buttonOnScreen: btn.left >= 0 && btn.right <= window.innerWidth,
+      // at rest the rail is unscrolled, so no chip is tucked under «סינון»
+      restClear: row.scrollLeft === 0 && items.slice(1).every((r) => r.right <= items[0].left + 1),
       rowScrolls: row.scrollWidth > row.clientWidth + 1,
       pageScrolls: document.documentElement.scrollWidth > window.innerWidth + 1,
       rowBottom: rr.bottom,
@@ -51,10 +53,12 @@ try {
       try { localStorage.setItem("cookieConsent", "all"); } catch {}
     });
     const page = await ctx.newPage();
-    for (const [state, url] of [["idle", "/"], ["city", "/?city=%D7%97%D7%99%D7%A4%D7%94"]]) {
+    const CITY = "/?city=%D7%97%D7%99%D7%A4%D7%94";
+    const MANY_DAYS = CITY + ["שני", "רביעי", "שישי"].map((d) => `&day=${encodeURIComponent(d)}`).join("");
+    for (const [state, url] of [["idle", "/"], ["city", CITY], ["many-days", MANY_DAYS]]) {
       await page.goto(`${BASE}${url}`, { waitUntil: "domcontentloaded" });
       await page.locator("#producers-grid .grid.grid-cols-2 > *").first().waitFor({ timeout: 20_000 });
-      await page.evaluate(() => window.scrollTo(0, document.querySelector("#producers-grid").getBoundingClientRect().top + window.scrollY - 60));
+      await page.evaluate(() => window.scrollTo(0, document.querySelector("[data-testid=home-filter-row]").getBoundingClientRect().top + window.scrollY - 120));
       await page.waitForTimeout(400);
       const m = await measure(page);
       const oneLine = new Set(m.tops).size === 1;
@@ -62,6 +66,7 @@ try {
       if (!oneLine) fails.push(`${vp.name} ${state}: items on ${new Set(m.tops).size} lines`);
       if (!m.buttonIsRightmost) fails.push(`${vp.name} ${state}: «סינון» not first`);
       if (m.pageScrolls) fails.push(`${vp.name} ${state}: page scrolls sideways`);
+      if (!m.restClear) fails.push(`${vp.name} ${state}: rail not at rest / a chip under «סינון»`);
       await page.screenshot({ path: `${OUT}/${vp.name}-${state}.png` });
       if (state === "city") {
         await page.getByTestId("delivery-day-chip").click();
@@ -86,13 +91,23 @@ try {
             return b.left >= 0 && b.right <= window.innerWidth;
           });
           if (!vis) fails.push(`${vp.name}: «סינון» scrolled out of view`);
+          // keyboard: focusing «מאומת» from the scrolled rail must not leave it
+          // under the sticky «סינון» (WCAG 2.4.11)
+          const obscured = await page.evaluate(() => {
+            const chip = document.querySelector('[data-testid="home-promoted-chip-verified"]');
+            chip.focus();
+            const c = chip.getBoundingClientRect();
+            const w = document.querySelector('[data-testid="home-filter-row"]').children[0].getBoundingClientRect();
+            return c.right > w.left + 1;
+          });
+          if (obscured) fails.push(`${vp.name}: focused «מאומת» sits under «סינון»`);
           await page.screenshot({ path: `${OUT}/${vp.name}-rail-scrolled.png` });
         }
       }
     }
     await page.goto(`${BASE}/`, { waitUntil: "domcontentloaded" });
     await page.locator("#producers-grid .grid.grid-cols-2 > *").first().waitFor({ timeout: 20_000 });
-    await page.evaluate(() => window.scrollTo(0, document.querySelector("#producers-grid").getBoundingClientRect().top + window.scrollY - 60));
+    await page.evaluate(() => window.scrollTo(0, document.querySelector("[data-testid=home-filter-row]").getBoundingClientRect().top + window.scrollY - 120));
     await page.getByTestId("home-filters-button").click();
     await page.waitForTimeout(500);
     const sb = await page.locator("#filter-sheet-panel").boundingBox();

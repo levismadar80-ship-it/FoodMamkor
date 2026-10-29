@@ -1098,10 +1098,12 @@ test.describe("manual › filter chips + FilterSheet (MEH-1418 · task 12)", () 
     await mockApi(page);
     await gotoHome(page);
     const row = scope(page).getByTestId("home-filter-row");
-    // + the sheet trigger + the delivery-day chip (MEH-2537 moved it into this
-    // row; no city → no day selected → no ✕, so one button, not two).
-    await expect(row.getByRole("button")).toHaveCount(PROMOTED.length + 2);
-    await expect(row.getByTestId("delivery-day-chip")).toBeVisible();
+    // Counted by testid, not by role: MEH-2537 moved the delivery-day chip into
+    // this row, and its ✕ appears whenever days are set, so a role count would
+    // depend on fixture state rather than on what this test is about.
+    await expect(row.locator('[data-testid^="home-promoted-chip-"]')).toHaveCount(PROMOTED.length);
+    await expect(row.getByTestId("home-filters-button")).toHaveCount(1);
+    await expect(row.getByTestId("delivery-day-chip")).toHaveCount(1);
     for (const key of PROMOTED) {
       const chip = promotedChip(page, key);
       await expect(chip).toBeVisible();
