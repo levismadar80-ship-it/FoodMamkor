@@ -17,6 +17,8 @@ export function groupBuyProgressPct(commits, min) {
  * badge then hides.
  */
 export function groupBuyDiscountPct(regular, group) {
+  // Number(null) and Number("") are 0 — a missing group price would read as 100% off.
+  if (group == null || group === "") return 0;
   const r = Number(regular);
   const g = Number(group);
   if (!(r > 0) || !Number.isFinite(g) || g >= r) return 0;
