@@ -1120,6 +1120,76 @@ class TestOwnerStatusChange:
             assert db.query(GroupBuyCommit).filter_by(group_buy_id=gb.id).count() == 1
 
 
+# ---------- stale dashboard: expected_status (MEH-2489) ----------
+class TestExpectedStatus:
+    """The dashboard sends the status it showed; a row that moved on is a 409.
+
+    The race: the owner opens «ביטול» on an open group, a last participant
+    joins (open → funded), and the cancel still lands — funded → cancelled is
+    in the owner's table — on a group whose funded double-confirm she never saw.
+    """
+
+    def _patch(self, client, gb, body, user):
+        return client.patch(
+            f"/group-buys/{gb.id}/status", json=body, headers=auth_header(user)
+        )
+
+    def _status_in_db(self, db, gb):
+        db.expire_all()
+        return db.query(GroupBuy).filter(GroupBuy.id == gb.id).one().status
+
+    def test_dashboard_saw_open_but_group_funded_meanwhile_is_409(self, client, db):
+        producer, owner = _producer_user(db, email="exp1@test.com")
+        gb = _make_group_buy(db, producer, status="funded")
+        with mock.patch("app.routers.group_buys.send_cancelled_notifications") as send:
+            resp = self._patch(
+                client, gb, {"status": "cancelled", "expected_status": "open"}, owner
+            )
+        assert resp.status_code == 409, resp.json()
+        assert resp.json()["detail"] == "אי אפשר לשנות את קבוצת הרכש למצב הזה"
+        assert self._status_in_db(db, gb) == "funded"
+        send.assert_not_called()
+
+    def test_matching_expected_status_goes_through(self, client, db):
+        producer, owner = _producer_user(db, email="exp2@test.com")
+        gb = _make_group_buy(db, producer, status="funded")
+        resp = self._patch(
+            client, gb, {"status": "cancelled", "expected_status": "funded"}, owner
+        )
+        assert resp.status_code == 200
+        assert self._status_in_db(db, gb) == "cancelled"
+
+    def test_without_expected_status_behaviour_is_unchanged(self, client, db):
+        # Control: the same funded row and the same request minus the field is
+        # the pre-MEH-2489 behaviour — the cancel lands.
+        producer, owner = _producer_user(db, email="exp3@test.com")
+        gb = _make_group_buy(db, producer, status="funded")
+        resp = self._patch(client, gb, {"status": "cancelled"}, owner)
+        assert resp.status_code == 200
+        assert self._status_in_db(db, gb) == "cancelled"
+
+    def test_a_stranger_gets_403_not_409(self, client, db):
+        # The ownership check runs first: a mismatched expected_status must not
+        # let someone else's caller probe the row's state.
+        producer, _ = _producer_user(db, email="exp4@test.com")
+        _, other = _producer_user(db, email="exp4other@test.com")
+        gb = _make_group_buy(db, producer, status="funded")
+        resp = self._patch(
+            client, gb, {"status": "cancelled", "expected_status": "open"}, other
+        )
+        assert resp.status_code == 403
+        assert self._status_in_db(db, gb) == "funded"
+
+    def test_invalid_expected_status_is_422(self, client, db):
+        producer, owner = _producer_user(db, email="exp5@test.com")
+        gb = _make_group_buy(db, producer)
+        resp = self._patch(
+            client, gb, {"status": "cancelled", "expected_status": "deleted"}, owner
+        )
+        assert resp.status_code == 422
+        assert self._status_in_db(db, gb) == "open"
+
+
 # ---------- cancel email to participants (MEH-2435 chunk 4) ----------
 class TestCancelNotification:
     """The business cancels (or closes) its group buy → each participant hears.

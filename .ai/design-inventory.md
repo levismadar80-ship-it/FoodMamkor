@@ -69,9 +69,9 @@ analytics:
 - `home_products_count` (`:556-564`)
 - `views_by_day` — 30-entry zero-filled daily series (`:566-587`)
 - `top_cities` — top-5 aggregated `{city, count}` (`:589-604`)
-- `rank_in_city` (`:606-631`) · `conversion_rate` — whatsapp/views ×100, 30d (`:633-638`)
-- `profile_strength` — 0–100 from 5 signals: images, description ≥50 chars, delivery area, reviews, phone_verified (`:640-662`). Note: this backend score **does** weigh description; the frontend completeness card does **not** (MEH-1002)
+- `conversion_rate` — whatsapp/views ×100, 30d (`:633-638`)
 - `weekly_trend` — categorical `up`/`down`/`stable` only (`:664-687`)
+- _(`rank_in_city` and `profile_strength` removed MEH-2529 — no screen read them; line refs above are pre-removal)_
 
 ### Backend capabilities (verified)
 

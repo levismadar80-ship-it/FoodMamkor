@@ -46,7 +46,7 @@
 | קורא | קובץ:שורה (03/09) | חלון | מה מוצג |
 |---|---|---|---|
 | `whatsapp_clicks_week` | `backend/app/routers/producer_me.py:1026-1030` | **7 ימים** | סיכום הדשבורד (`/producers/me/dashboard`) |
-| `rank_in_city` (`cutoff_30d`) | `producer_me.py:1077-1085` | **30 ימים** | דירוג העסק בעיר |
+| `rank_in_city` (`cutoff_30d`) | `producer_me.py:1077-1085` | **30 ימים** | דירוג העסק בעיר — **הוסר 29/10 (MEH-2529): אף מסך לא קרא אותו; הקורא הזה כבר לא קיים** |
 | `windowed()` — `last_7d` / `last_30d` / **`total` עם `days=None`** | `producer_me.py:1179` | 7 · 30 · **ללא חסם** | `profile_views` · `search_appearances` · `whatsapp_clicks` · `contact_clicks` (`:1187-1200`) |
 | `weekly_trend` (`week_ago`) | `producer_me.py:1214` | 7 ימים | מגמה שבועית |
 | `_recently_sent` (`_CAP_WINDOW`) | `backend/app/routers/alerts.py:175` (הגדרה, 24h) · `:182-189` (השאילתה) | **24 שעות** | frequency cap של התראות — EXISTS על `sent_at >= now-24h` |
