@@ -92,7 +92,8 @@ export async function generateMetadata(props) {
       title: organizer.name,
       description,
       locale: OG_LOCALE[locale],
-      images: organizer.images?.[0] ? [{ url: organizer.images[0] }] : undefined,
+      // MEH-2590: site image when none (an omitted key is not inherited).
+      images: organizer.images?.[0] ? [{ url: organizer.images[0] }] : ["/og-image.png"],
     },
     alternates,
   };
