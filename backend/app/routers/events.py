@@ -56,6 +56,18 @@ def _serialize(event: Event) -> EventOut:
         # MEH-2459: the event card links to the owner's page by kind.
         owner_kind=event.producer.kind if event.producer else "producer",
         owner_slug=event.producer.slug if event.producer else None,
+        # MEH-2546: the owner's first photo — the list rows fall back to it
+        # when the event has no image of its own (Meetup's group-cover rule).
+        # Read-only, no schema change.
+        # The first non-blank entry; blank / whitespace entries are skipped.
+        owner_image_url=(
+            next(
+                (u.strip() for u in (event.producer.images or []) if u and u.strip()),
+                None,
+            )
+            if event.producer
+            else None
+        ),
         title=event.title,
         description=event.description,
         event_date=event.event_date,

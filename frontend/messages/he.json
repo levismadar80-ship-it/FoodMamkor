@@ -4829,6 +4829,7 @@
       "field_max_participants_label": "מקסימום משתתפות",
       "field_max_participants_hint": "ריק = ללא הגבלה",
       "image_label": "תמונת האירוע",
+      "image_why": "אירוע עם תמונה בולט יותר ברשימות ובדף הבית",
       "image_upload_hint": "גררו לכאן או לחצו להעלאה · JPG / PNG / WebP",
       "image_uploading": "מעלה תמונה...",
       "image_remove": "הסרת תמונה",
