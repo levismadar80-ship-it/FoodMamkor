@@ -2510,7 +2510,13 @@
       "breadcrumb_home": "בית",
       "breadcrumb_events": "אירועים",
       "organizer_line": "מארגן: {name}",
-      "add_to_calendar": "הוספה ליומן"
+      "add_to_calendar": "הוספה ליומן",
+      "more_from": "עוד אירועים של {name}",
+      "when_today": "היום",
+      "when_tomorrow": "מחר",
+      "when_this_week": "השבוע",
+      "past_notice": "האירוע הזה כבר התקיים.",
+      "past_next": "האירוע הבא של {name}:"
     },
     "calendar": {
       "previous_month": "חודש קודם",
@@ -4473,6 +4479,8 @@
         "heading": "משלוחים ואיסוף",
         "subtitle": "איך הלקוחות מקבלים מכם — חנות פיזית, משלוחים, או שניהם.",
         "scope_helper": "כתובת בית העסק מוגדרת בכרטיס המיקום — כאן בוחרים רק לאן מגיעים עם משלוחים. הרשימה תוצג ללקוחות בעמוד שלך.",
+        "map_preview_label": "בכרטיס במפה יופיע:",
+        "map_preview_arranged_hint": "כדי שיופיע «משלוח», «איסוף עצמי» או «קנייה במקום» — הוסיפו אזורי משלוח, נקודת איסוף או שעות פתיחה.",
         "has_physical_location": "חנות פיזית (קבלת לקוחות)",
         "offers_delivery": "משלוחים",
         "type_validation": "חייב לסמן לפחות אחד מהשניים",

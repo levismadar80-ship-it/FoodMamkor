@@ -170,32 +170,21 @@ describe("MEH-2045 — counter", () => {
   });
 });
 
-describe("MEH-2045 — the list does not loop", () => {
-  it("first product: prev is aria-disabled + dimmed and clicking it does nothing", () => {
-    const { onPrev, onNext } = renderAt(0);
-    const prev = screen.getByTestId("product-sheet-prev");
-    expect(prev).toHaveAttribute("aria-disabled", "true");
-    expect(prev.className).toContain("opacity-40");
-    fireEvent.click(prev);
-    expect(onPrev).not.toHaveBeenCalled();
-
-    // …while next is live. Asserting the live half in the same spec is what
-    // stops "nothing is clickable" from passing as "the ends are guarded".
+describe("MEH-2045 / MEH-2562 — the list does not loop, and the dead end is not drawn", () => {
+  // MEH-2562: the edge chevron used to stay on screen, dimmed (opacity-40) and
+  // aria-disabled. On product 1 of N it still looked tappable — the hand went
+  // to it and nothing happened. Now it is simply not rendered.
+  it("first product: no prev chevron at all, next is live", () => {
+    const { onNext } = renderAt(0);
+    expect(screen.queryByTestId("product-sheet-prev")).toBeNull();
     const next = screen.getByTestId("product-sheet-next");
-    expect(next).toHaveAttribute("aria-disabled", "false");
-    expect(next.className).not.toContain("opacity-40");
     fireEvent.click(next);
     expect(onNext).toHaveBeenCalledTimes(1);
   });
 
-  it("last product: next is aria-disabled + dimmed and clicking it does nothing", () => {
-    const { onPrev, onNext } = renderAt(2);
-    const next = screen.getByTestId("product-sheet-next");
-    expect(next).toHaveAttribute("aria-disabled", "true");
-    expect(next.className).toContain("opacity-40");
-    fireEvent.click(next);
-    expect(onNext).not.toHaveBeenCalled();
-
+  it("last product: no next chevron at all, prev is live", () => {
+    const { onPrev } = renderAt(2);
+    expect(screen.queryByTestId("product-sheet-next")).toBeNull();
     fireEvent.click(screen.getByTestId("product-sheet-prev"));
     expect(onPrev).toHaveBeenCalledTimes(1);
   });
@@ -208,16 +197,66 @@ describe("MEH-2045 — the list does not loop", () => {
     expect(onNext).toHaveBeenCalledTimes(1);
   });
 
-  it("both chevrons keep the 44px tap target and stay in the tab order when dimmed", () => {
-    renderAt(0);
-    const prev = screen.getByTestId("product-sheet-prev");
-    // `disabled` would drop it out of the Tab cycle and change the focus
-    // trap's first/last pair as the reader pages — aria-disabled does not.
-    expect(prev).not.toBeDisabled();
-    for (const el of [prev, screen.getByTestId("product-sheet-next")]) {
+  it("both chevrons keep the 44px tap target", () => {
+    renderAt(1);
+    for (const el of [screen.getByTestId("product-sheet-prev"), screen.getByTestId("product-sheet-next")]) {
       expect(el.className).toContain("h-11");
       expect(el.className).toContain("w-11");
     }
+  });
+
+  it("paging onto the last product moves focus from the vanished next to prev, not to <body>", () => {
+    const { rerender, props } = renderAt(1);
+    const next = screen.getByTestId("product-sheet-next");
+    next.focus();
+    expect(document.activeElement).toBe(next);
+    rerender(<ProductSheet {...props} index={2} product={products[2]} />);
+    expect(screen.queryByTestId("product-sheet-next")).toBeNull();
+    expect(document.activeElement).toBe(screen.getByTestId("product-sheet-prev"));
+  });
+});
+
+describe("MEH-2562 — swipe pages, mapped like the chevrons", () => {
+  const swipe = (dx, dy = 0) => {
+    const media = screen.getByTestId("product-sheet-media");
+    fireEvent.touchStart(media, { touches: [{ clientX: 200, clientY: 200 }] });
+    fireEvent.touchEnd(media, { changedTouches: [{ clientX: 200 + dx, clientY: 200 + dy }] });
+  };
+
+  it("RTL: a finger moving right advances, moving left goes back", () => {
+    const { onPrev, onNext } = renderAt(1);
+    swipe(80);
+    expect(onNext).toHaveBeenCalledTimes(1);
+    expect(onPrev).not.toHaveBeenCalled();
+    swipe(-80);
+    expect(onPrev).toHaveBeenCalledTimes(1);
+  });
+
+  it("LTR (/en): the gesture mirrors", () => {
+    intl.locale = "en";
+    const { onPrev, onNext } = renderAt(1);
+    swipe(-80);
+    expect(onNext).toHaveBeenCalledTimes(1);
+    swipe(80);
+    expect(onPrev).toHaveBeenCalledTimes(1);
+  });
+
+  it("short or mostly-vertical moves (scrolling the sheet) never page", () => {
+    const { onPrev, onNext } = renderAt(1);
+    swipe(30);
+    swipe(80, 120);
+    expect(onNext).not.toHaveBeenCalled();
+    expect(onPrev).not.toHaveBeenCalled();
+  });
+
+  it("the ends are dead for the gesture too", () => {
+    const first = renderAt(0);
+    swipe(-80);
+    expect(first.onPrev).not.toHaveBeenCalled();
+    first.unmount();
+    const last = renderAt(2);
+    swipe(80);
+    expect(last.onNext).not.toHaveBeenCalled();
   });
 });
 
