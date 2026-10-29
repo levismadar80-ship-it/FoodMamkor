@@ -4,6 +4,16 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-10-29 13:20 — דף «בית העסק הזה כבר לא במהמקור» לכתובת של עסק שנמחק (#3797)
+
+**‏שורה אחת:** ‏כתובת של עסק שנמחק עונה 410 ומציגה דף משלה; כתובות בעברית, שהחזירו 404 גם לעסק חי, תוקנו.
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏Next מעביר את `[slug]` ואת ה-pathname ב-middleware **מקודדים** (`%D7…`). כל קריאה לפרמטר slug עוברת דרך `decodeSlugParam` (`lib/slug.js`) לפני `isSlugShaped` / fetch.
+- ‏ה-410 האמיתי נקבע ב-middleware (rewrite לעמוד עצמו עם `status: 410`, ומעביר את כותרות next-intl בלי `x-middleware-next`) — העמוד עצמו משודר ב-200.
+
+**‏לא עכשיו:** הפניית 301 אחרי שינוי שם; עסק לא מאושר שנמחק גם מקבל 410 (אין בטבלה סטטוס).
+
 ## 2026-10-29 09:20 — שמונה שיפורים בלי ספיר (#3793–#3800)
 
 **‏שורה אחת:** Sentry בדפדפן עובד, הסכמה לתנאים נרשמת בהרשמת OAuth, וה-HTML של כל דף קל ב-~98KB.
@@ -23,7 +33,7 @@
 - ‏כל כתיבה של `producers.slug` חייבת לקבל את הערך מ-`_ensure_unique_slug` (`routers/admin.py`) — רק שם ה-tombstone נבדק. כתיבת tombstone רק דרך `services/retired_slugs.py`.
 - ‏טבלה חדשה מזיזה את `EXPECTED_TABLES` ב-`pr-checks.yml` — עריכה של ספיר (פרומפט Chrome), ואחריה קומיט אמיתי עם `Builder-Model:` כדי ש-builder-model-guard יעבור.
 
-**‏לא עכשיו:** עמוד 410 «בית העסק כבר לא מופיע» (נוסח); הפניית 301 אחרי שינוי שם (`producer_id` כבר נשמר).
+**‏לא עכשיו:** ~~עמוד 410~~ (נעשה ב-#3797); הפניית 301 אחרי שינוי שם (`producer_id` כבר נשמר).
 
 ## 2026-10-29 01:00 — לוח הבקרה של בעלת העסק: השאריות נסגרו (#3780, #3783, #3785, #3786)
 
