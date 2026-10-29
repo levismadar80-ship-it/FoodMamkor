@@ -12,19 +12,19 @@
  *           metadata contract this mirrors), backend/app/routers/organizers.py.
  * History:  MEH-2461 (creation; review #3712: Rule 19 probe, safe links,
  *           setRequestLocale); MEH-2475 (owner story, preferred channel first,
- *           email / WhatsApp group / order form, founding year).
+ *           email / WhatsApp group / order form, founding year); MEH-2547
+ *           (cover + avatar masthead, EventEntryRow rows).
  */
 import { notFound } from "next/navigation";
 import * as Sentry from "@sentry/nextjs";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { CaretLeft } from "@phosphor-icons/react/ssr";
-import { Link } from "@/i18n/navigation";
 import { API_URL } from "@/lib/env";
 import { serverFetch } from "@/lib/server-fetch";
 import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 import { isSlugShaped } from "@/lib/slug";
 import { optimizeCloudinary } from "@/lib/cloudinary";
-import { formatTimeRange } from "@/lib/time-range";
+import { toEventEntry } from "@/lib/event-entry";
+import EventEntryRow from "@/components/EventEntryRow";
 import { getWhatsAppHref, normalizePhone } from "@/lib/utils";
 import { instagramUrl } from "@/lib/social-links";
 import { OrganizerPageSchema } from "@/lib/schemas";
@@ -96,17 +96,6 @@ export async function generateMetadata(props) {
     },
     alternates,
   };
-}
-
-/** A date-only "YYYY-MM-DD" rendered in the reader's locale. Pinned to UTC so
- *  the server's zone can never shift the calendar day of a date-only value. */
-function formatEventDate(isoDate, locale) {
-  return new Intl.DateTimeFormat(locale === "en" ? "en-GB" : "he-IL", {
-    weekday: "short",
-    day: "numeric",
-    month: "long",
-    timeZone: "UTC",
-  }).format(new Date(`${isoDate}T00:00:00Z`));
 }
 
 // MEH-2475: every channel the organizer can fill (dashboard «קשר» group), in
@@ -181,100 +170,99 @@ export default async function OrganizerPage(props) {
   const organizer = await getOrganizer(slug);
   if (!organizer) notFound();
   const t = await getTranslations({ locale, namespace: "organizers.page" });
+  const tList = await getTranslations({ locale, namespace: "events.list" });
   const events = organizer.upcoming_events || [];
   const image = organizer.images?.[0];
+  const initial = Array.from((organizer.name || "").trim())[0] ?? "";
 
   return (
-    <main className="max-w-3xl mx-auto px-4 py-10 space-y-8" data-testid="organizer-page">
-      <header className="space-y-4">
-        {image && (
-          // eslint-disable-next-line @next/next/no-img-element -- Cloudinary URL, sized by the helper
-          <img
-            src={optimizeCloudinary(image, { width: 960 })}
-            alt={organizer.name}
-            className="w-full aspect-[16/9] object-cover rounded-[16px] bg-border"
-          />
-        )}
-        <h1 className="font-headline-lg text-3xl font-bold text-text">{organizer.name}</h1>
-        {organizer.city && <p className="text-sm text-fg-muted">{organizer.city}</p>}
-        {/* MEH-2475: the quiet «since» line, as on a business masthead
-            (ProducerHeader established-year). Absent when unset. */}
-        {organizer.established_year ? (
-          <p className="text-sm text-fg-muted" data-testid="organizer-since">
-            {t("since_prefix")}{" "}
-            <span dir="ltr" className="numeric">{organizer.established_year}</span>
-          </p>
-        ) : null}
-        {organizer.description && (
-          <p className="text-base leading-relaxed text-text whitespace-pre-line">
-            {organizer.description}
-          </p>
-        )}
-        <ContactLinks organizer={organizer} t={t} />
+    <main className="max-w-3xl mx-auto pb-10 space-y-8" data-testid="organizer-page">
+      {/* MEH-2547: a masthead — the organizer's first photo as a cover (a
+          green band when there is none), and a round initial overlapping its
+          edge, the way Meetup and Luma head a group/calendar page. */}
+      <header>
+        <div className="relative md:px-4 md:pt-6">
+          {image ? (
+            // eslint-disable-next-line @next/next/no-img-element -- Cloudinary URL, sized by the helper
+            <img
+              src={optimizeCloudinary(image, { aspectRatio: "16:9", width: 1100 })}
+              alt="" // decorative: the h1 below names the organizer (review #3812)
+              data-testid="organizer-cover"
+              className="w-full h-[170px] md:h-[320px] object-cover md:rounded-[18px] bg-border"
+            />
+          ) : (
+            <div
+              aria-hidden="true"
+              data-testid="organizer-cover-band"
+              className="w-full h-[96px] md:h-[140px] md:rounded-[18px] bg-green-50"
+            />
+          )}
+          {initial && (
+            <span
+              aria-hidden="true"
+              data-testid="organizer-avatar"
+              className="absolute -bottom-10 start-4 md:start-14 w-20 h-20 rounded-full bg-primary text-white font-headline-md text-3xl font-bold grid place-items-center ring-4 ring-background"
+            >
+              {initial}
+            </span>
+          )}
+        </div>
+        <div className="px-4 pt-14 space-y-4 md:px-14">
+          <h1 className="font-headline-lg text-3xl md:text-4xl font-bold text-text">{organizer.name}</h1>
+          {(organizer.city || organizer.established_year) && (
+            <p className="text-sm text-fg-muted">
+              {organizer.city}
+              {organizer.city && organizer.established_year ? " · " : null}
+              {/* MEH-2475: the quiet «since» line, as on a business masthead
+                  (ProducerHeader established-year). Absent when unset. */}
+              {organizer.established_year ? (
+                <span data-testid="organizer-since">
+                  {t("since_prefix")}{" "}
+                  <span dir="ltr" className="numeric">{organizer.established_year}</span>
+                </span>
+              ) : null}
+            </p>
+          )}
+          {organizer.description && (
+            <p className="text-base leading-relaxed text-text whitespace-pre-line">
+              {organizer.description}
+            </p>
+          )}
+          <ContactLinks organizer={organizer} t={t} />
+        </div>
       </header>
 
-      {/* MEH-2475: the person behind the events — the business page's
-          OwnerCard (data-gated: renders nothing without a name, bio or
-          photo), under the organizer's own heading. */}
-      <OwnerCard producer={organizer} heading={t("owner_heading")} />
-
-      <section aria-labelledby="organizer-events-heading" className="space-y-3">
-        <h2 id="organizer-events-heading" className="text-xl font-bold text-text">
-          {t("events_heading")}
-        </h2>
-        {events.length === 0 ? (
-          <p className="text-fg-muted" data-testid="organizer-events-empty">
-            {t("empty")}
-          </p>
-        ) : (
-          <ul className="space-y-3" data-testid="organizer-events">
-            {events.map((ev) => (
-              <li key={ev.id}>
-                <Link
-                  href={`/events/${ev.id}`}
-                  data-testid="organizer-event"
-                  className="flex items-center gap-4 rounded-[12px] border border-border bg-white p-4 hover:border-primary transition focus-ring"
-                >
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-sm text-fg-muted">
-                      {formatEventDate(ev.event_date, locale)}
-                      {/* MEH-2469: start, or «09:30–15:00» with an end time. */}
-                      {ev.event_time && (
-                        <>
-                          {" · "}
-                          <span dir="ltr">{formatTimeRange(ev.event_time, ev.end_time)}</span>
-                        </>
-                      )}
-                      {ev.city ? ` · ${ev.city}` : ""}
-                    </span>
-                    <span className="block font-medium text-text mt-1">{ev.title}</span>
-                  </span>
-                  {/* MEH-2468: the event's cover image when it has one;
-                      decorative — the link is named by the title. */}
-                  {ev.image_url && (
-                    <span
-                      aria-hidden="true"
-                      data-testid="organizer-event-image"
-                      className="shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-[10px] bg-border bg-cover bg-center"
-                      style={{
-                        backgroundImage: `url(${optimizeCloudinary(ev.image_url, { aspectRatio: "1:1", width: 160 })})`,
-                      }}
-                    />
-                  )}
-                  {/* Forward chevron: the row is a link to the event. Points
-                      left in RTL; `ltr:rotate-180` flips it for /en. */}
-                  <CaretLeft
-                    size={18}
-                    aria-hidden="true"
-                    data-testid="organizer-event-chevron"
-                    className="shrink-0 text-primary ltr:rotate-180"
+      <div className="px-4 md:px-14 space-y-8">
+        <section aria-labelledby="organizer-events-heading" className="space-y-3">
+          <h2 id="organizer-events-heading" className="text-xl font-bold text-text">
+            {t("events_heading")}
+          </h2>
+          {events.length === 0 ? (
+            <p className="text-fg-muted" data-testid="organizer-events-empty">
+              {t("empty")}
+            </p>
+          ) : (
+            // MEH-2547: the same date-rail row as /events and the home preview.
+            // The «who» line and the owner-photo fallback are dropped here —
+            // every row is this organizer's, and its photo is the cover above.
+            <ul className="border-t border-border" data-testid="organizer-events">
+              {events.map((ev) => (
+                <li key={ev.id} data-testid="organizer-event">
+                  <EventEntryRow
+                    entry={toEventEntry({ ...ev, producer_name: null, owner_image_url: null }, "events", tList)}
+                    freeLabel={tList("free")}
                   />
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+        {/* MEH-2475: the person behind the events — the business page's
+            OwnerCard (data-gated: renders nothing without a name, bio or
+            photo), under the organizer's own heading. MEH-2547: after the
+            events, which are what a visitor came for. */}
+        <OwnerCard producer={organizer} heading={t("owner_heading")} />
+      </div>
     </main>
   );
 }

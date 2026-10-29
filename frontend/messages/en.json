@@ -1547,7 +1547,11 @@
           "owner_claimed": "Claimed, being completed",
           "copy_message": "Copy message with link",
           "message": "I prepared your page 🙂 Here is the link: {url}\nSign in with Google (fastest) or with email, review and confirm, and the page goes live after a short check. The link is valid for 14 days.",
-          "copied": "Message copied"
+          "copied": "Message copied",
+          "link_sent": "Link sent on {date}",
+          "link_valid_until": "Valid until {date}",
+          "link_expired": "The link expired — create a new one",
+          "waiting_7_days": "Waiting 7+ days"
         },
         "photo_preview": {
           "label": "Photos",
@@ -2506,7 +2510,13 @@
       "breadcrumb_home": "Home",
       "breadcrumb_events": "Events",
       "organizer_line": "Organizer: {name}",
-      "add_to_calendar": "Add to calendar"
+      "add_to_calendar": "Add to calendar",
+      "more_from": "More events from {name}",
+      "when_today": "Today",
+      "when_tomorrow": "Tomorrow",
+      "when_this_week": "This week",
+      "past_notice": "This event has already taken place.",
+      "past_next": "{name}'s next event:"
     },
     "calendar": {
       "previous_month": "Previous month",
@@ -4473,6 +4483,8 @@
         "heading": "Delivery & pickup",
         "subtitle": "How customers get your products — physical store, delivery, or both.",
         "scope_helper": "Your business address is set in the location card — here you only pick where deliveries go. The list is shown to customers on your page.",
+        "map_preview_label": "Your map card will show:",
+        "map_preview_arranged_hint": "To show \"Delivery\", \"Pickup\" or \"Buy on site\" instead, add delivery areas, a pickup point or opening hours.",
         "has_physical_location": "Physical store (welcomes customers)",
         "offers_delivery": "Delivery",
         "type_validation": "Must select at least one of the two",
