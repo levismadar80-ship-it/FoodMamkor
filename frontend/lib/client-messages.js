@@ -12,7 +12,7 @@
  * SERVER_ONLY: read only through getTranslations() in server pages, which
  * reads the request config directly and never needs the client copy.
  *
- * __tests__/ClientMessagesScope.test.js fails when a client component outside
+ * __tests__/ClientMessagesScope.test.jsx fails when a client component outside
  * those routes starts reading a namespace left out here.
  */
 export const ROUTE_SCOPED_NAMESPACES = ["admin", "dashboard"];

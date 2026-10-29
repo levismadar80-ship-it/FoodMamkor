@@ -9,13 +9,17 @@
  *     namespace and is reachable from a file outside those routes;
  *   - any client file reads a server-only namespace;
  *   - the sign-up form reads an admin key beyond the subtree it is given.
+ * LIMIT: the scan reads literal namespaces only — `useTranslations("ns…")`, or
+ * `t("ns.…")` under a bare `useTranslations()`. A computed namespace or key
+ * is invisible to it; the last case below fails on any non-literal
+ * `useTranslations(` argument so one cannot slip in unseen.
  * DISCRIMINATION: add useTranslations("dashboard.producer.draft") to
  * components/Header.jsx, or import DraftSubmitBanner from a public page, or
  * useTranslations("guides") anywhere — each turns this red.
  */
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { NextIntlClientProvider, useTranslations } from "next-intl";
+import { NextIntlClientProvider, useTimeZone, useTranslations } from "next-intl";
 import MergeMessagesProvider from "@/components/i18n/MergeMessagesProvider";
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import path from "node:path";
@@ -48,9 +52,9 @@ const src = new Map(files.map((f) => [f, readFileSync(f, "utf8")]));
 /** Top-level namespaces a client file reads: scoped hooks, plus `t("ns.…")` under a root-scoped hook. */
 function clientNamespaces(s) {
   if (!s.includes("useTranslations")) return [];
-  const found = [...s.matchAll(/useTranslations\(\s*["'`]([a-z_]+)[."'`]/g)].map((m) => m[1]);
+  const found = [...s.matchAll(/useTranslations\(\s*["'`]([a-z0-9_]+)[."'`]/g)].map((m) => m[1]);
   if (/useTranslations\(\s*\)/.test(s)) {
-    found.push(...[...s.matchAll(/\bt\(\s*["'`]([a-z_]+)\./g)].map((m) => m[1]));
+    found.push(...[...s.matchAll(/\bt\(\s*["'`]([a-z0-9_]+)\./g)].map((m) => m[1]));
   }
   return found;
 }
@@ -160,5 +164,27 @@ describe("root client messages (MEH-2233)", () => {
       </NextIntlClientProvider>,
     );
     expect(screen.getByText("שלום | לוח")).toBeTruthy();
+  });
+
+  it("the merge provider keeps the parent's time zone (only messages are replaced)", () => {
+    function Probe() {
+      return <p>{useTimeZone()}</p>;
+    }
+    render(
+      <NextIntlClientProvider locale="he" timeZone="Asia/Jerusalem" messages={{}} onError={() => {}}>
+        <MergeMessagesProvider messages={{ dashboard: {} }}>
+          <Probe />
+        </MergeMessagesProvider>
+      </NextIntlClientProvider>,
+    );
+    expect(screen.getByText("Asia/Jerusalem")).toBeTruthy();
+  });
+
+  it("every useTranslations() argument is a literal (the scan can see it)", () => {
+    const dynamic = [...src]
+      .flatMap(([f, s]) => [...s.matchAll(/useTranslations\(\s*([^)\s][^)]*)\)/g)].map((m) => [rel(f), m[1]]))
+      .filter(([, arg]) => !/^["'][A-Za-z0-9_.]*["'],?$/.test(arg.trim()))
+      .map(([f, arg]) => `${f}: ${arg}`);
+    expect(dynamic).toEqual([]);
   });
 });
