@@ -27,6 +27,7 @@ import Breadcrumb from "@/components/Breadcrumb";
 import OwnerRow from "@/components/OwnerRow";
 import ShareButton from "@/components/ShareButton";
 import { CATEGORY_ICON } from "@/components/EventEntryRow";
+import { cssUrl } from "@/lib/css-url";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import { downloadIcs } from "@/lib/event-ics";
 import { eventWhen, addressNavLinks } from "@/lib/event-when";
@@ -187,7 +188,7 @@ export default function ExperienceDetailClient() {
           <div
             data-testid="experience-cover"
             className="h-[210px] md:h-[300px] lg:h-[380px] bg-cover bg-center lg:rounded-[18px] bg-border"
-            style={{ backgroundImage: `url(${optimizeCloudinary(ex.image_url, { aspectRatio: IMAGE_RATIOS.banner, width: 1280 })})` }}
+            style={{ backgroundImage: cssUrl(optimizeCloudinary(ex.image_url, { aspectRatio: IMAGE_RATIOS.banner, width: 1280 })) }}
             role="img"
             aria-label={ex.title}
           />

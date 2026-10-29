@@ -70,6 +70,13 @@ describe("MEH-2549 — cover", () => {
     expect(bg).toContain("bread.jpg");
     expect(bg).toContain("w_1280");
   });
+
+  it("a photo URL with a quote or parenthesis stays inside one quoted url()", async () => {
+    await renderWith({ image_url: 'https://cdn.example.com/a b)"c.jpg' });
+    const bg = screen.getByTestId("experience-cover").style.backgroundImage;
+    expect(bg).toContain("a b)");
+    expect(bg.startsWith('url("')).toBe(true);
+  });
 });
 
 describe("MEH-2549 — byline", () => {
