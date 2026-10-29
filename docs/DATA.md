@@ -555,7 +555,7 @@ retired_slugs          (slug varchar(100) PK, producer_id uuid FK→producers SE
                         reason 'deleted'|'renamed', retired_at)  -- MEH-2528
 ```
 
-> **MEH-2528 — `retired_slugs` (28/10/2026):** tombstones for public business URLs. A business delete is a hard delete, so its UNIQUE `producers.slug` used to be free at once and the next business with the same name inherited every `/p/<slug>` link. Now admin delete, owner account delete and an admin slug change/clear write a row (`services/retired_slugs.py`, the only writer), and `_ensure_unique_slug` (`routers/admin.py`) treats a retired slug as taken (`-2`…). A business may take back a slug it retired itself (the row is then removed). Drafts are not retired — never public. `producer_id` = owner of a renamed slug (for a future redirect), NULL for a deleted business. Migration `c3d8e2f1a9b4`; **`EXPECTED_TABLES` 41 → 42**. Not yet: a "business no longer listed" page for a retired URL (needs copy) and a 301 from a renamed slug.
+> **MEH-2528 — `retired_slugs` (28/10/2026):** tombstones for public business URLs. A business delete is a hard delete, so its UNIQUE `producers.slug` used to be free at once and the next business with the same name inherited every `/p/<slug>` link. Now admin delete, owner account delete and an admin slug change/clear write a row (`services/retired_slugs.py`, the only writer), and `_ensure_unique_slug` (`routers/admin.py`) treats a retired slug as taken (`-2`…). A business may take back a slug it retired itself (the row is then removed). Drafts are not retired — never public. `producer_id` = owner of a renamed slug (for a future redirect), NULL for a deleted business. Migration `c3d8e2f1a9b4`; **`EXPECTED_TABLES` 41 → 42**. A deleted business's URL answers **410** and renders the «בית העסק הזה כבר לא במהמקור» page (MEH-2534). Not yet: a 301 from a renamed slug.
 
 ---
 
@@ -772,6 +772,10 @@ GET    /producers/{producer_id}/google-rating     public — MEH-1490: live Goog
                                                204 (fail-quiet) on no place_id / count<20 / API error / no
                                                GOOGLE_PLACES_API_KEY; 404 only for an unknown producer. 60/min.
 GET    /producers/by-slug/{slug}                  public
+                                               MEH-2534: miss on a slug whose business was DELETED (ownerless
+                                               retired_slugs row) → 410 «בית העסק כבר לא במהמקור»; never-existed
+                                               or renamed-away slug → 404. Middleware rewrites the page to a real HTTP 410;
+                                               the page renders ProducerGone (noindex).
 GET    /producers/cities                          public — MEH-970: per-city APPROVED-producer counts for /map.
                                                GROUP BY city over approved producers; NULL/blank city omitted;
                                                ordered count desc, then city. Counts live from DB (MEH-519 over-claim guard).

@@ -167,3 +167,31 @@ def test_a_deleted_tombstone_is_not_exempt_for_any_business(client, db):
 
     other = make_producer(db, name="עסק אחר")
     assert _ensure_unique_slug(db, SLUG, exclude_id=other.id) == f"{SLUG}-2"
+
+
+# ---------- MEH-2534: the public lookup says "gone", not "not found" ----------
+
+
+def test_by_slug_answers_410_for_a_deleted_business(client, db):
+    """Pre-fix a deleted business's URL answered the same 404 as a typo."""
+    producer = _business(db)
+    resp = client.delete(
+        f"/admin/producers/{producer.id}", headers=auth_header(_admin(db))
+    )
+    assert resp.status_code == 200, resp.text
+
+    resp = client.get(f"/producers/by-slug/{SLUG}")
+    assert resp.status_code == 410, resp.text
+
+
+def test_by_slug_answers_404_for_a_slug_that_never_existed(client, db):
+    assert client.get("/producers/by-slug/לא-היה-כזה").status_code == 404
+
+
+def test_by_slug_answers_404_for_a_renamed_slug_whose_business_lives(client, db):
+    """A rename moved the business; it is not gone (a redirect is separate)."""
+    producer = _business(db)
+    assert _put_slug(client, db, producer, "מאפייה-חדשה").status_code == 200
+
+    assert client.get(f"/producers/by-slug/{SLUG}").status_code == 404
+    assert client.get("/producers/by-slug/מאפייה-חדשה").status_code == 200
