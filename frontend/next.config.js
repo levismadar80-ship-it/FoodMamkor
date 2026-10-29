@@ -81,7 +81,9 @@ const securityHeaders = [
     value: [
       "default-src 'self'",
       `img-src 'self' https://res.cloudinary.com https://images.unsplash.com https://*.tile.openstreetmap.org https://unpkg.com https://*.googleusercontent.com data: blob:${vercelLiveImg}`,
-      `script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://appleid.cdn-apple.com${vercelLiveScript}`,
+      // MEH-435: PostHog's EU assets host serves the remote config script and
+      // any lazily loaded extension once NEXT_PUBLIC_POSTHOG_KEY is set.
+      `script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://appleid.cdn-apple.com https://eu-assets.i.posthog.com${vercelLiveScript}`,
       // MEH-1831: fonts.googleapis.com dropped from style-src — next/font
       // self-hosts every family, so no Google stylesheet is fetched any more
       // (neither the <link> in layout.js nor the @import that headed
@@ -105,7 +107,10 @@ const securityHeaders = [
       // FontGate.test.js keep the build off the network; this keeps the
       // browser off it too.
       `font-src 'self' data:${vercelLiveFont}`,
-      `connect-src 'self' https://accounts.google.com https://places.googleapis.com https://appleid.apple.com https://nominatim.openstreetmap.org https://*.ingest.sentry.io https://*.ingest.us.sentry.io${vercelLiveConnect}`,
+      // MEH-435: PostHog EU ingestion + assets. Tied to the api_host default
+      // in lib/analytics.js — a NEXT_PUBLIC_POSTHOG_HOST override needs its
+      // origin added here too (PosthogCsp.test.js checks the default).
+      `connect-src 'self' https://accounts.google.com https://places.googleapis.com https://appleid.apple.com https://nominatim.openstreetmap.org https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://eu.i.posthog.com https://eu-assets.i.posthog.com${vercelLiveConnect}`,
       `frame-src 'self' https://accounts.google.com https://appleid.apple.com${vercelLiveFrame}`,
       "object-src 'none'",
       "base-uri 'self'",
