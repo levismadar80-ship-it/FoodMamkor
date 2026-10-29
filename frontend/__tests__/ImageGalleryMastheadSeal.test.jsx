@@ -51,6 +51,17 @@ vi.mock("@phosphor-icons/react", () => ({
   SealCheck: (props) => <span data-testid="seal-icon" {...props} />,
   CaretLeft: (props) => <span data-testid="caret-icon" {...props} />,
   Images: (props) => <span data-testid="images-icon" {...props} />,
+  // MEH-2584: BadgeRow now imports lib/chip-icons.js (badge glyphs).
+  Truck: () => null,
+  Package: () => null,
+  Certificate: () => null,
+  Leaf: () => null,
+  Carrot: () => null,
+  GrainsSlash: () => null,
+  Barn: () => null,
+  DropSlash: () => null,
+  Cube: () => null,
+  Clock: () => null,
 }));
 
 import ImageGallery from "@/components/ImageGallery";
