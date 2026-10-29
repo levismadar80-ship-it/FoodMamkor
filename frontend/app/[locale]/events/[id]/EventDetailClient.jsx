@@ -22,6 +22,7 @@ import { formatEventDate } from "@/lib/format-date";
 import { formatTimeRange } from "@/lib/time-range";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
 import { formatPrice } from "@/lib/utils";
+import { cssUrl } from "@/lib/css-url";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import Breadcrumb from "@/components/Breadcrumb";
 import ShareButton from "@/components/ShareButton";
@@ -195,7 +196,7 @@ export default function EventDetailClient() {
           <div
             data-testid="event-cover"
             className="h-[210px] md:h-[300px] lg:h-[380px] bg-cover bg-center lg:rounded-[18px] bg-border"
-            style={{ backgroundImage: `url(${optimizeCloudinary(event.image_url, { aspectRatio: IMAGE_RATIOS.banner, width: 1280 })})` }}
+            style={{ backgroundImage: cssUrl(optimizeCloudinary(event.image_url, { aspectRatio: IMAGE_RATIOS.banner, width: 1280 })) }}
             role="img"
             aria-label={event.title}
           />

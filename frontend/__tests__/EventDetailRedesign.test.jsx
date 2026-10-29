@@ -71,6 +71,13 @@ describe("MEH-2548 — cover", () => {
     expect(screen.getByTestId("event-date-tile")).toBeTruthy();
   });
 
+  it("a photo URL with a quote or parenthesis stays inside one quoted url()", async () => {
+    await renderEvent({ image_url: 'https://cdn.example.com/a b)"c.jpg' });
+    const bg = screen.getByTestId("event-cover").style.backgroundImage;
+    expect(bg).toContain("a b)");
+    expect(bg.startsWith('url("')).toBe(true);
+  });
+
   it("a photo → the cover image", async () => {
     await renderEvent({ image_url: "https://res.cloudinary.com/x/image/upload/e.jpg" });
     expect(screen.getByTestId("event-cover").style.backgroundImage).toContain("e.jpg");
