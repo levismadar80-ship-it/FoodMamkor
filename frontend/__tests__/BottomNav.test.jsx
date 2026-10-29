@@ -8,6 +8,12 @@ const pathnameRef = { current: "/" };
 // avoids loading next-intl's createNavigation (which fails to resolve
 // `next/navigation` under the vitest ESM resolver).
 vi.mock("@/i18n/navigation", () => ({
+  // MEH-2578: the chrome now takes Link from here, not next/link.
+  Link: ({ children, href, ...props }) => (
+    <a href={typeof href === "string" ? href : "#"} {...props}>
+      {children}
+    </a>
+  ),
   usePathname: () => pathnameRef.current,
 }));
 

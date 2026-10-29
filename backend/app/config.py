@@ -116,6 +116,9 @@ class Settings(BaseSettings):
     # Admin account — used as the notification recipient AND as the initial
     # admin user seeded on first boot (see seed_data.py).
     # Leave admin_password empty in local dev to skip the admin seed.
+    # MEH-2575: admin_password is read ONLY when the admin row is first
+    # created. Changing ADMIN_PASSWORD later (e.g. in Railway) does not
+    # change the password of an existing admin — use forgot-password.
     admin_email: str = ""
     admin_password: str = ""
     # Destination for public contact-form submissions (POST /contact). Set

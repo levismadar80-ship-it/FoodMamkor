@@ -5878,6 +5878,111 @@ export const ChangePasswordUsersMePasswordPatchResponse = /*#__PURE__*/ zod.void
 
 
 /**
+ * @summary Get Saved
+ */
+export const getSavedUsersMeSavedGetResponseEventsItemOwnerKindDefault = `producer`;
+export const getSavedUsersMeSavedGetResponseExperiencesItemIsActiveDefault = true;
+export const getSavedUsersMeSavedGetResponseExperiencesItemIsRecurringDefault = false;
+export const getSavedUsersMeSavedGetResponseExperiencesItemParticipantsCountDefault = 0;
+
+export const GetSavedUsersMeSavedGetResponse = /*#__PURE__*/ zod.object({
+  "events": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "category": /*#__PURE__*/ zod.string(),
+  "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "end_time": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.time({}),/*#__PURE__*/ zod.null()])),
+  "event_date": /*#__PURE__*/ zod.iso.date(),
+  "event_time": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.time({}),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "is_active": /*#__PURE__*/ zod.boolean(),
+  "lat": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "lng": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "location": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "max_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "owner_image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "owner_kind": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getSavedUsersMeSavedGetResponseEventsItemOwnerKindDefault),
+  "owner_slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "price": /*#__PURE__*/ zod.int(),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "producer_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "registration_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "saved_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "title": /*#__PURE__*/ zod.string()
+})),
+  "experiences": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "category": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "description": /*#__PURE__*/ zod.string(),
+  "duration_minutes": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "event_date": /*#__PURE__*/ zod.iso.date(),
+  "event_time": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.time({}),/*#__PURE__*/ zod.null()])),
+  "host": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.object({
+  "id": /*#__PURE__*/ zod.uuid(),
+  "name": /*#__PURE__*/ zod.string(),
+  "producer_id": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.uuid(),/*#__PURE__*/ zod.null()])),
+  "producer_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "producer_phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "producer_slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+}),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "is_active": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getSavedUsersMeSavedGetResponseExperiencesItemIsActiveDefault),
+  "is_recurring": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getSavedUsersMeSavedGetResponseExperiencesItemIsRecurringDefault),
+  "location_type": /*#__PURE__*/ zod.string(),
+  "max_participants": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getSavedUsersMeSavedGetResponseExperiencesItemParticipantsCountDefault),
+  "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "saved_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "spots_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "status": /*#__PURE__*/ zod.string(),
+  "title": /*#__PURE__*/ zod.string()
+})),
+  "recipes": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
+  "cook_time_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "prep_time_min": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "producer_name": /*#__PURE__*/ zod.string(),
+  "producer_slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "saved_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "title": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('Card fields only. Deliberately NOT ProducerRecipeOut: that shape carries\nmoderation_notes, which is owner\/admin context, not public.')))
+}).check(/*#__PURE__*/ zod.describe('GET \/users\/me\/saved — newest save first within each type. Only items\nthat are still public are listed; a deleted or hidden one drops out.'))
+
+
+/**
+ * Every saved (type, id) of the current user, for the hearts' cache.
+ *
+ * Not filtered by visibility: a heart only ever renders on a page the viewer
+ * can already see, so an id of a hidden item here reveals nothing new and
+ * filtering would cost three joins on every page load.
+ * @summary Get Saved Ids
+ */
+export const GetSavedIdsUsersMeSavedIdsGetResponseItem = /*#__PURE__*/ zod.object({
+  "item_id": /*#__PURE__*/ zod.uuid(),
+  "item_type": /*#__PURE__*/ zod.enum(['recipe', 'event', 'experience'])
+}).check(/*#__PURE__*/ zod.describe('One saved item, ids only — hydrates the hearts\' cache in one call.'))
+export const GetSavedIdsUsersMeSavedIdsGetResponse = /*#__PURE__*/ zod.array(GetSavedIdsUsersMeSavedIdsGetResponseItem)
+
+
+/**
+ * @summary Unsave Item
+ */
+export const UnsaveItemUsersMeSavedItemTypeItemIdDeleteResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
+ * @summary Save Item
+ */
+export const SaveItemUsersMeSavedItemTypeItemIdPostResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
  * Respond to Meta's subscription challenge.
  *
  * Meta hits this URL once when the webhook is registered in the
