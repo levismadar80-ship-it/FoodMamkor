@@ -42,7 +42,6 @@ const EMOJI = /\p{Extended_Pictographic}(️)?/gu;
 const ALLOWLIST = {
   "©": "© — copyright symbol (Footer legal line) + Leaflet/OSM tile attribution; standard typography, not decorative emoji.",
   "\u{1F449}": "👉 — pointer in outbound WhatsApp/story share-message copy (ShareButton, StoryCardCanvas caption); message text sent to WhatsApp, not rendered UI chrome — changing it is a copy decision.",
-  "\u{1F33F}": "🌿 — brand leaf drawn onto the generated Instagram story-card via canvas fillText (StoryCardCanvas); raster graphic, not DOM/Phosphor-addressable.",
 };
 const ALLOWED = new Set(Object.keys(ALLOWLIST));
 
