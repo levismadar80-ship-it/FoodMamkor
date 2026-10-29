@@ -996,6 +996,7 @@ assertions של היעדר, לא רק נוכחות. תוכן העמודות נג
 - [ ] **step_viewed בקונסול (dev)** — פתחי DevTools → Console ב-`/register/producer`, לחצי "בואו נתחיל" ואז עברי בין השלבים — **תוצאה מצופה:** על כל מעבר שלב מודפס `[track] producer_register_step_viewed { step: "account"|"details"|"category"|"story"|"confirm" }` (רק אחרי אישור עוגיות "all"; אם דחית עוגיות — אין לוג).
 - [ ] **submitted + error** — השלימי טופס תקין ושלחי — **תוצאה מצופה:** `[track] producer_register_submitted`. בכשל שליחה (למשל שרת מחזיר שגיאה) — `[track] producer_register_error { step: "story" }`.
 - ✅ → `frontend/e2e/flows/manual/register-producer.spec.ts` (MT:MEH-435:3) — **no-op בלי מפתח** — בלי `NEXT_PUBLIC_POSTHOG_KEY` ב-production build — **תוצאה מצופה:** אפס בקשות רשת ל-PostHog (posthog-js לא נטען כלל); ההתנהגות זהה למצב שלפני ה-PR.
+- [ ] **CSP מאפשר PostHog (staging, אחרי הוספת המפתח)** — אשרי עוגיות "all", DevTools → Network, סנני `posthog`, עברי שלב ב-`/register/producer` — **תוצאה מצופה:** בקשות ל-`eu.i.posthog.com` / `eu-assets.i.posthog.com` מחזירות 200, ובקונסול אין שגיאת `Content Security Policy`. האירוע מופיע ב-PostHog → Activity.
 
 ## MEH-2418 — קטגוריות בבית: כניסה אחת לכל השורה, בלי "ריחוף" תקוע (27/10/2026)
 - [ ] אייפון, `/` — גוללים לקטגוריות: כל הכרטיסים מופיעים יחד (בהדרגה קצרה), ואז מחליקים הצידה — שום כרטיס לא "קופץ" או עולה מלמטה באמצע ההחלקה
