@@ -28,7 +28,7 @@ import type { Route } from "@playwright/test";
  *           backend tests; a real vacation toggle is a write against the
  *           RAILWAY STAGING backend the storageState specs share
  *           (.github/workflows/e2e.yml:229-233), forbidden 13/07.
- * Related:  app/[locale]/admin/page.js · app/[locale]/admin/layout.js
+ * Related:  app/[locale]/admin/page.js · app/[locale]/admin/AdminLayoutClient.jsx
  *           (badgeCountFor :228) · app/[locale]/admin/settings/page.js
  *           (saveVacation :105) · app/[locale]/admin/producers/AdminProducersTable.jsx
  *           (RiskBadge :123) · manual/admin-settings-licence-actions.spec.ts

@@ -372,12 +372,12 @@ export default function BottomNav() {
   // fixed bottom bar under it. Gate BottomNav OFF this route so mobile shows one
   // bottom layer, not two. Placed after every hook so rules-of-hooks holds.
   if (isProducerDetail(pathname)) return null;
-  // MEH-2359: /admin has its own mobile nav (admin/layout.js horizontal strip);
+  // MEH-2359: /admin has its own mobile nav (admin/AdminLayoutClient.jsx horizontal strip);
   // the consumer BottomNav floated over the approvals table at 375 (measured
   // 26/10, qa-artifacts/MEH-2359). Gate it off the admin subtree as a whole.
   if (isAdminRoute(pathname)) return null;
   // MEH-2431: same for the owner dashboard, which has its own tab nav
-  // (producer/dashboard/layout.js). The pill covered rows of the locations
+  // (producer/dashboard/DashboardLayoutClient.jsx). The pill covered rows of the locations
   // list at 375 (27/10 audit). This reverses MEH-1202's "dashboard subtree
   // keeps the nav"; the header logo leads back to the site, where the nav returns.
   if (isOwnerDashboardRoute(pathname)) return null;

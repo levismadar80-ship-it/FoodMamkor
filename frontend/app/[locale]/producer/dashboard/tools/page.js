@@ -11,7 +11,7 @@
  * Does NOT: build any tool internals — each link points at its existing,
  *           already-shipped route. The grid markup below is byte-identical to
  *           its prior definition in producer/dashboard/page.js.
- * Related:  app/[locale]/producer/dashboard/layout.js (tab nav + UX gate);
+ * Related:  app/[locale]/producer/dashboard/DashboardLayoutClient.jsx (tab nav + UX gate);
  *           events/new/page.js, group-buys/page.js, recipes/page.js,
  *           settings/page.jsx (link targets).
  * History:  MEH-964 (relocation, chunk 1A); MEH-1102 (removed the עריכת

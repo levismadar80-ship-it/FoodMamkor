@@ -22,7 +22,7 @@ import { settledField } from "./_settled-field";
  *           poll window, which is what made the mobile consumer test flaky.
  * Touches:  REAL backend (no mocks) via the Next.js /api proxy — the auth
  *           context calls GET /auth/me to resolve each role; the layout gates
- *           read `user.role` (admin/layout.js:120, producer/dashboard/layout.js).
+ *           read `user.role` (admin/AdminLayoutClient.jsx:120, producer/dashboard/DashboardLayoutClient.jsx).
  * Does NOT: exercise any admin/producer WRITE. This is a read-only reachability
  *           gate, not a lifecycle test (that is flows/19,20).
  * History:  MEH-1528 (creation); MEH-999 (fixture guard — see below);
@@ -96,7 +96,7 @@ const DASHBOARD_URL = /\/producer\/dashboard(\/|$|\?)/;
 const HOME_URL = /^https?:\/\/[^/]+\/(he|en)?\/?$/;
 
 // MEH-1599: the in-app 403 state. ONE testid across both gates
-// (producer/dashboard/layout.js, admin/layout.js) on purpose — it is a page
+// (producer/dashboard/DashboardLayoutClient.jsx, admin/AdminLayoutClient.jsx) on purpose — it is a page
 // STATE, not a per-surface control, so a single id lets the assertions below
 // count it and prove exactly one renders. The two gates never render together.
 const DENIED = "access-denied";

@@ -44,7 +44,7 @@ import type { Route } from "@playwright/test";
  *
  * D1 · MT:MEH-997:1 places «מתכונים» "between «חוויות» and «משתמשים»". Card
  *      1016 grouped the nav: recipes sits in the CONTENT section after
- *      experiences, while users is in CORE (admin/layout.js NAV_SECTIONS).
+ *      experiences, while users is in CORE (admin/AdminLayoutClient.jsx NAV_SECTIONS).
  *      The link, its target and its icon are asserted; the neighbour is not.
  * D2 · MT:MEH-530:37 says a pending row's kebab holds "only «מחקו»". Card 226
  *      added «דחייה» to it (AdminProducersTable.jsx, `tone: "danger"`). Two

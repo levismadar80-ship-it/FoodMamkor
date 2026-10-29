@@ -4,7 +4,7 @@ import { QUEUES, queueCount, visibleQueues } from "@/app/[locale]/admin/queues";
 
 /**
  * MEH-2399 — the queue filter the admin sidebar + home share (admin/queues.js),
- * and the one-fetch contract between admin/layout.js and admin/page.js.
+ * and the one-fetch contract between admin/AdminLayoutClient.jsx and admin/page.js.
  *
  * Each `visibleQueues` case is named after the input it covers. A count of 0
  * is the only input that hides a queue; every "unknown" spelling (no stats,
@@ -90,7 +90,7 @@ describe("admin layout + home share one /admin/dashboard fetch (MEH-2399)", () =
   const dashboardCalls = () => apiMock.get.mock.calls.filter(([url]) => url === "/admin/dashboard").length;
 
   it("landing on /admin → exactly 1 request, and the home renders its data", async () => {
-    const { default: AdminLayout } = await import("@/app/[locale]/admin/layout");
+    const { default: AdminLayout } = await import("@/app/[locale]/admin/AdminLayoutClient");
     const { default: AdminHome } = await import("@/app/[locale]/admin/page");
     render(<AdminLayout><AdminHome /></AdminLayout>);
     expect(await screen.findByText("חוות האגס")).toBeInTheDocument();
@@ -98,7 +98,7 @@ describe("admin layout + home share one /admin/dashboard fetch (MEH-2399)", () =
   });
 
   it("navigating /admin → /admin/kashrut → 2 requests total (one per navigation)", async () => {
-    const { default: AdminLayout } = await import("@/app/[locale]/admin/layout");
+    const { default: AdminLayout } = await import("@/app/[locale]/admin/AdminLayoutClient");
     const { default: AdminHome } = await import("@/app/[locale]/admin/page");
     const { rerender } = render(<AdminLayout><AdminHome /></AdminLayout>);
     await screen.findByText("חוות האגס");
@@ -125,7 +125,7 @@ describe("admin layout + home share one /admin/dashboard fetch (MEH-2399)", () =
 
   it("a failed fetch → the home shows the error line from the one shared request (no second fetch by the page)", async () => {
     apiMock.get.mockImplementation(() => Promise.reject({ response: { status: 500, data: {} } }));
-    const { default: AdminLayout } = await import("@/app/[locale]/admin/layout");
+    const { default: AdminLayout } = await import("@/app/[locale]/admin/AdminLayoutClient");
     const { default: AdminHome } = await import("@/app/[locale]/admin/page");
     render(<AdminLayout><AdminHome /></AdminLayout>);
     expect(await screen.findByText("admin.common.error_loading")).toBeInTheDocument();

@@ -304,7 +304,7 @@ export const NAV_ITEMS = Object.freeze([
       "approval is a LOCK and a solo operator has to be able to clear the " +
       "queue from a phone, so the approvals surface is responsive and the " +
       "rest of /admin carries a desktop-only banner instead of being " +
-      "unreachable. The banner lives in admin/layout.js, not here — this " +
+      "unreachable. The banner lives in admin/AdminLayoutClient.jsx, not here — this " +
       "registry owns entry points, not what a screen does once you arrive.",
   },
   {

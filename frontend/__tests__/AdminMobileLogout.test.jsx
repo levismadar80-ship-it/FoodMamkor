@@ -21,7 +21,7 @@ vi.mock("next-intl", () => ({
   useLocale: () => "he",
 }));
 
-import AdminLayout from "@/app/[locale]/admin/layout";
+import AdminLayout from "@/app/[locale]/admin/AdminLayoutClient";
 
 describe("MEH-2533 logout on the mobile admin", () => {
   beforeEach(() => authState.logout.mockClear());

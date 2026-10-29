@@ -25,7 +25,7 @@ export default function NewExperiencePage() {
 
   // Duplicate role guard, mirroring the sibling edit page
   // (producer/dashboard/experiences/[id]/edit/page.js:35-40). The real UX gate
-  // is producer/dashboard/layout.js:115-150 — 401 → /login?redirect=,
+  // is producer/dashboard/DashboardLayoutClient.jsx:115-150 — 401 → /login?redirect=,
   // 403 → the in-app denied state — and it returns BEFORE this page mounts, so
   // a consumer never reaches this push. The layout's own comment records that
   // child pages keep their duplicate guard until its Phase 2; this is that.

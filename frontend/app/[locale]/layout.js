@@ -3,7 +3,7 @@ import { FONT_VARIABLES } from "../fonts";
 import { notFound } from "next/navigation";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { MotionConfig } from "framer-motion";
-import { getTranslations, setRequestLocale } from "next-intl/server";
+import { getMessages, getTranslations, setRequestLocale } from "next-intl/server";
 import { AuthProvider } from "@/lib/auth-context";
 import { LanguageProvider } from "@/lib/language-context";
 import Header from "@/components/Header";
@@ -19,6 +19,7 @@ import InstallPrompt from "@/components/InstallPrompt";
 import ClarityScript from "@/components/ClarityScript";
 import SpeedInsightsRedacted from "@/components/SpeedInsightsRedacted";
 import { env, SITE_URL } from "@/lib/env";
+import { rootClientMessages } from "@/lib/client-messages";
 import { BRAND_NAME, SITE_DESCRIPTION } from "@/lib/constants";
 import { routing } from "@/i18n/routing";
 import {
@@ -238,7 +239,9 @@ export default async function LocaleLayout({ children, params }) {
         <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:start-2 focus:z-[10000] focus:bg-primary focus:text-white focus:px-4 focus:py-2 focus:rounded-lg">
           {tSweep("skip_to_main")}
         </a>
-        <NextIntlClientProvider>
+        {/* MEH-2233: not the whole catalog — admin/dashboard/server-only
+            namespaces stay out of every page's payload (lib/client-messages.js). */}
+        <NextIntlClientProvider messages={rootClientMessages(await getMessages())}>
           <AuthProvider>
             <LanguageProvider>
               <SmoothScrollProvider>
