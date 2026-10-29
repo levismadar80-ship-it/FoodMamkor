@@ -74,6 +74,10 @@ function RegisterPageBody() {
   const [form, setForm] = useState({ email: "", name: "", password: "" });
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [error, setError] = useState("");
+  // MEH-2577: Google/Apple sit above the form now, so their failure renders
+  // under them, not down by the email form's submit (below the fold on a
+  // phone, where it read as an email-form error).
+  const [oauthError, setOauthError] = useState("");
   // MEH-328 Chunk D: emailExistsError state removed. Backend returns an
   // identical 200 ack for new-email / password-collision / oauth-collision;
   // the legitimate owner finds out via the duplicate-attempt email.
@@ -243,7 +247,9 @@ function RegisterPageBody() {
           alt=""
           fill
           priority
-          sizes="(min-width: 1024px) 50vw"
+          // The pane is display:none below lg, but `priority` still preloads:
+          // the 1px fallback makes that preload the smallest variant.
+          sizes="(min-width: 1024px) 50vw, 1px"
           className="object-cover"
         />
         {/* scrim — keeps the overlay AA-readable over any part of the photo */}
@@ -306,14 +312,14 @@ function RegisterPageBody() {
                 <GoogleAuthButton
                   termsAccepted
                   onSuccess={() => router.push(redirectTo)}
-                  onError={(msg) => setError(msg)}
+                  onError={(msg) => setOauthError(msg)}
                 />
               )}
               {appleConfigured && (
                 <AppleAuthButton
                   termsAccepted
                   onSuccess={() => router.push(redirectTo)}
-                  onError={(msg) => setError(msg)}
+                  onError={(msg) => setOauthError(msg)}
                 />
               )}
               <p
@@ -333,6 +339,11 @@ function RegisterPageBody() {
                   ),
                 })}
               </p>
+              {oauthError && (
+                <p data-testid="register-oauth-error" className="text-error text-sm" role="alert">
+                  {oauthError}
+                </p>
+              )}
             </div>
             <div className="relative my-5">
               <div className="absolute inset-0 flex items-center" aria-hidden="true">

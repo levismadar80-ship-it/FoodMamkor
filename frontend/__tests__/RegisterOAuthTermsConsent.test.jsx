@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import RegisterClient from "@/app/[locale]/register/RegisterClient";
 
 /**
@@ -65,12 +65,17 @@ vi.mock("@/lib/validators", () => ({
   PASSWORD_MIN_LENGTH: 12,
 }));
 
-// Both OAuth buttons record the termsAccepted prop they were last rendered with.
+// Both OAuth buttons record the termsAccepted prop they were last rendered with;
+// Google's stand-in also exposes a button that fires its onError.
 const seen = { google: undefined, apple: undefined };
 vi.mock("@/components/GoogleAuthButton", () => ({
-  default: ({ termsAccepted }) => {
+  default: ({ termsAccepted, onError }) => {
     seen.google = termsAccepted;
-    return null;
+    return (
+      <button type="button" data-testid="google-fail" onClick={() => onError("google-failed")}>
+        g
+      </button>
+    );
   },
 }));
 vi.mock("@/components/AppleAuthButton", () => ({
@@ -82,11 +87,16 @@ vi.mock("@/components/AppleAuthButton", () => ({
 vi.mock("@/components/PasswordInput", async () => {
   const React = await import("react");
   return {
-    default: ({ ariaLabel, value, onChange }) =>
+    // Reports validity like the real one, so the terms box is the only gate
+    // left once the other fields are filled.
+    default: ({ ariaLabel, value, onChange, onValidityChange }) =>
       React.createElement("input", {
         "aria-label": ariaLabel,
         value: value || "",
-        onChange,
+        onChange: (e) => {
+          onChange(e);
+          onValidityChange?.(e.target.value.length >= 12);
+        },
         "data-testid": "pw",
       }),
   };
@@ -102,9 +112,12 @@ describe("MEH-2577 — /register opens with Google/Apple, under a consent line",
   // The buttons sit ABOVE the terms checkbox now, so they cannot read it:
   // they carry the consent the line under them states (/login's MEH-2080
   // sign-in wrap). Unticked box must still mean termsAccepted=true.
-  it("both buttons carry termsAccepted=true with the box unticked", () => {
+  it("both buttons carry termsAccepted=true whether or not the box is ticked", () => {
     render(<RegisterClient />);
     expect(screen.getByTestId("register-terms").checked).toBe(false);
+    expect(seen.google).toBe(true);
+    expect(seen.apple).toBe(true);
+    fireEvent.click(screen.getByTestId("register-terms"));
     expect(seen.google).toBe(true);
     expect(seen.apple).toBe(true);
   });
@@ -126,6 +139,21 @@ describe("MEH-2577 — /register opens with Google/Apple, under a consent line",
 
   it("the checkbox still gates the email form's submit", () => {
     render(<RegisterClient />);
-    expect(screen.getByTestId("register-submit").disabled).toBe(true);
+    fireEvent.change(screen.getByTestId("register-name"), { target: { value: "דנה" } });
+    fireEvent.change(screen.getByTestId("register-email"), { target: { value: "dana@example.org" } });
+    fireEvent.change(screen.getByTestId("pw"), { target: { value: "a-long-enough-pw" } });
+    const submit = screen.getByTestId("register-submit");
+    expect(submit.disabled).toBe(true); // everything valid but the box
+    fireEvent.click(screen.getByTestId("register-terms"));
+    expect(submit.disabled).toBe(false);
+  });
+
+  it("a Google failure shows under the consent line, not inside the email form", () => {
+    render(<RegisterClient />);
+    fireEvent.click(screen.getByTestId("google-fail"));
+    const err = screen.getByTestId("register-oauth-error");
+    expect(err.textContent).toBe("google-failed");
+    expect(screen.getByTestId("register-form").contains(err)).toBe(false);
+    expect(screen.queryByTestId("register-error")).toBeNull();
   });
 });
