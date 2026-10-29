@@ -463,7 +463,8 @@ jobs:
           # MEH-2079 chunk A: producer_analytics_daily (anonymous daily
           # roll-up so the raw analytics tables can be pruned) — 42 -> 43.
           # MEH-2392/2393: producer_followers + referral_clicks dropped — 43 -> 41.
-          EXPECTED_TABLES=41
+          # MEH-2528: retired_slugs (tombstones for deleted/renamed business URLs) — 41 -> 42.
+          EXPECTED_TABLES=42
 
           TABLE_COUNT=$(psql -h localhost -U postgres -d mehamakor_test -tAc \
             "SELECT COUNT(*) FROM information_schema.tables
