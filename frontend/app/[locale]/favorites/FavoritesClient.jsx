@@ -59,17 +59,25 @@ function FavoriteCardWrapper({ fav, open, onToggle, onClose }) {
       <button
         ref={bellRef}
         onClick={onToggle}
+        // MEH-2526: the accessible name starts with the visible bell_label
+        // (WCAG 2.5.3 label-in-name) and adds the business name, so the bells
+        // on a page of cards are told apart by a screen reader. The longer
+        // alerts_aria copy stays as the hover title.
+        aria-label={`${t("bell_label")} — ${fav.producer?.name ?? ""}`.trim()}
         title={t("alerts_aria")}
-        aria-label={t("alerts_aria")}
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-pressed={open}
+        data-testid="favorites-bell"
         // MEH-1203: mirror CardHeart's density variant (ProducerCard.jsx:144)
         // so the bell keeps a comfortable tap target inside the smaller 2-col
         // card — 34px on mobile, 44px sm: up, top-end corner opposite the heart.
-        className="absolute top-2 end-2 sm:top-3 sm:end-3 w-[34px] h-[34px] sm:w-11 sm:h-11 flex items-center justify-center rounded-full bg-background/90 hover:bg-background text-primary transition z-10"
+        // MEH-2526: circle → pill so the label sits beside the bell; same
+        // heights, same corner.
+        className="absolute top-2 end-2 sm:top-3 sm:end-3 h-[34px] sm:h-11 px-2.5 sm:px-3 gap-1 flex items-center justify-center rounded-full bg-background/90 hover:bg-background text-primary transition z-10"
       >
         <Bell size={18} weight={open ? "fill" : "regular"} aria-hidden="true" />
+        <span className="text-xs font-medium">{t("bell_label")}</span>
       </button>
       {open && (
         // MEH-1359: out of flow. Mobile → fixed bottom-sheet above BottomNav
