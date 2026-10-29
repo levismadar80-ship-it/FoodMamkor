@@ -3407,7 +3407,7 @@
   },
   "story": {
     "canvas": {
-      "footer_url": "Discover more businesses at mehamakor.co.il",
+      "kicker": "A new local business on Mehamakor",
       "upload_error": "Cloudinary upload error",
       "default_country": "Israel",
       "caption_prefix": "🌿 A new business on Mehamakor!",
