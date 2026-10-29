@@ -125,7 +125,9 @@ describe("MEH-2173 — the promoted row", () => {
     const p = props();
     render(<HomeProducersGrid {...p} />);
     fireEvent.click(screen.getByTestId("home-promoted-chip-verified"));
-    expect(p.onToggleChip).toHaveBeenCalledWith("verified");
+    // MEH-2537: the row tags its taps ("row") so analytics can tell them from
+    // the sheet's switches, which call the same handler with the key alone.
+    expect(p.onToggleChip).toHaveBeenCalledWith("verified", "row");
     expect(router.push).not.toHaveBeenCalled();
   });
 

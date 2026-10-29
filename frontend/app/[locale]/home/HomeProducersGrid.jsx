@@ -245,6 +245,28 @@ export function HomeProducersGrid({
   // more filter hidden in the sheet (Sapir 28/10, on /map's identical row).
   // /producers already excluded its visible city chip for the same reason.
   const sheetOnlyCount = tagChips.length;
+  // MEH-2537: where the day chip's panel opens — a node BELOW the filter row,
+  // since the row scrolls sideways on a phone and would clip it. State, not a
+  // ref, so the chip re-renders with the node once it exists.
+  const [dayPanelHost, setDayPanelHost] = useState(null);
+  // MEH-2537: a chip that takes focus while under the sticky «סינון» is
+  // scrolled out from under it. The lead sits at the inline-start edge: the
+  // RIGHT in he (overlap = chip.right − lead.left, scroll +x) and the LEFT in
+  // /en, which is dir=ltr (overlap = lead.right − chip.left, scroll −x).
+  // Skipped at lg+, where the trigger is not sticky and nothing overlaps.
+  // React focus events bubble through portals, so the day panel and the
+  // FilterSheet (both React children of this row, DOM-outside it) land here
+  // too — only focus that is IN the row's DOM counts.
+  const keepFocusedChipClear = (e) => {
+    if (!e.currentTarget.contains(e.target)) return;
+    const lead = e.currentTarget.firstElementChild;
+    if (!lead || lead.contains(e.target) || getComputedStyle(lead).position !== "sticky") return;
+    const chip = e.target.getBoundingClientRect();
+    const l = lead.getBoundingClientRect();
+    const rtl = getComputedStyle(e.currentTarget).direction === "rtl";
+    const overlap = rtl ? chip.right - l.left : l.right - chip.left;
+    if (overlap > 0) e.currentTarget.scrollBy({ left: rtl ? overlap + 8 : -(overlap + 8) });
+  };
   return (
     <section id="producers-grid" className="max-w-7xl mx-auto px-4 pb-20">
       {/* MEH-2394: the first-visit coach-mark tour (step 0 here, step 1 by the
@@ -287,36 +309,39 @@ export function HomeProducersGrid({
           the sheet filtered in place would be the same axis behaving two ways
           on one row. One state (`chips`), one handler (`onToggleChip`), for
           the surface chips and the sheet alike. */}
-      <div className="mb-3 flex flex-wrap items-center gap-2 min-w-0" data-testid="home-filter-row">
-        {promotedChips.map((chip) => {
-          const active = !!chips[chip.key];
-          return (
-            <button
-              key={chip.key}
-              type="button"
-              onClick={() => onToggleChip(chip.key)}
-              aria-pressed={active}
-              data-testid={`home-promoted-chip-${chip.key}`}
-              // REUSES: frontend/app/[locale]/map/components/ServiceChipRow.jsx:69-73
-              // — identical promoted-chip geometry and the MEH-1181-A Direction A
-              // wash+ring for the active state, so a promoted chip reads the same
-              // on home as it does on /map even though the PAIR differs.
-              className={`inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 rounded-md text-sm font-medium border transition shrink-0 ${
-                active
-                  ? "bg-green-50 text-primary border-primary ring-1 ring-primary"
-                  : "bg-white text-text border-border hover:border-primary hover:text-primary"
-              }`}
-            >
-              {/* MEH-2500: on = ✓ in place of the glyph, as on /map. */}
-              <span aria-hidden="true">{active ? <Check size={16} weight="bold" /> : chip.icon}</span>
-              {chip.label}
-            </button>
-          );
-        })}
+      {/* MEH-2537: ONE row — «סינון», the promoted pair, then the day chip
+          that used to sit alone on a second row (beside «משלוח», its axis).
+          Below lg it is a sideways rail rather than wrapping, bled to the
+          screen edge (-mx-4/px-4 against the section's px-4) so a chip that
+          does not fit is cut at the glass, which reads as "scrolls", not at
+          the gutter, which reads as a bug. py-1/-mt-1 keep the chips' focus
+          and active rings inside the scrollport (overflow clips box-shadow).
+          onFocus nudges a focused chip out from under the sticky «סינון»
+          (WCAG 2.4.11). Measured in Chromium: neither scroll-padding on the
+          rail (it shifted the RESTING position, «מאומת» under «סינון») nor
+          scroll-margin on the chips (focus scrolling ignored it) did this.
+          lg+ fits on one line, so overflow is
+          visible there and the sheet's anchored panel is not clipped. */}
+      <div
+        className="-mx-4 -mt-1 mb-3 flex items-center gap-2 min-w-0 overflow-x-auto px-4 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:-mx-1 lg:px-1 lg:overflow-visible"
+        data-testid="home-filter-row"
+        onFocus={keepFocusedChipClear}
+      >
         {/* Anchor wrapper — FilterSheet's lg+ panel positions off this
-            `relative` parent, exactly as on /map and /producers. `ms-auto`
-            pushes the trigger to the inline-END (the LEFT in RTL). */}
-        <div className="relative shrink-0 ms-auto">
+            parent, exactly as on /map and /producers (sticky is positioned,
+            so it anchors like `relative`).
+            MEH-2537: the trigger LEADS the row (inline-start, the RIGHT in
+            RTL) — Google Maps / Yelp / Etsy put "all filters" first — and
+            stays put while the rail scrolls under it below lg. Sticky makes
+            it a stacking context, which is harmless here: below lg the sheet
+            portals to <body> (FilterSheet.jsx), and at lg+ the wrapper is
+            plain `relative` again. It paints over the static chips by being
+            positioned; keep the chips unpositioned or give this a z-index.
+            -ms-4/ps-4 paint the
+            gutter strip beside it, so chips pass under it there too, and
+            -start-4 (not start-0) because a sticky box is held inside the
+            rail's PADDING edge: start-0 pinned it 16px in, over «מאומת». */}
+        <div className="sticky -start-4 -ms-4 ps-4 shrink-0 bg-background lg:relative lg:start-auto lg:ms-0 lg:ps-0">
           <button
             type="button"
             onClick={onToggleFilterSheet}
@@ -350,9 +375,50 @@ export function HomeProducersGrid({
             // grid says. `producers` is the FILTERED set home last fetched.
             resultCount={producers.length}
             onClearAll={onClearChips}
+            align="start"
           />
         </div>
+        {promotedChips.map((chip) => {
+          const active = !!chips[chip.key];
+          return (
+            <button
+              key={chip.key}
+              type="button"
+              onClick={() => onToggleChip(chip.key, "row")}
+              aria-pressed={active}
+              data-testid={`home-promoted-chip-${chip.key}`}
+              // REUSES: frontend/app/[locale]/map/components/ServiceChipRow.jsx:69-73
+              // — identical promoted-chip geometry and the MEH-1181-A Direction A
+              // wash+ring for the active state, so a promoted chip reads the same
+              // on home as it does on /map even though the PAIR differs.
+              className={`inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 rounded-md text-sm font-medium border transition shrink-0 ${
+                active
+                  ? "bg-green-50 text-primary border-primary ring-1 ring-primary"
+                  : "bg-white text-text border-border hover:border-primary hover:text-primary"
+              }`}
+            >
+              {/* MEH-2500: on = ✓ in place of the glyph, as on /map. */}
+              <span aria-hidden="true">{active ? <Check size={16} weight="bold" /> : chip.icon}</span>
+              {chip.label}
+            </button>
+          );
+        })}
+        {/* MEH-1645 day refinement, a permanent anchor since MEH-1771 and ONE
+            value-carrying dropdown chip since MEH-2186: always rendered — with
+            no city a tap routes into the LocationModal (handleDaySelected), with
+            a city it opens the inline day panel. `onClearDays` is the chip's ✕:
+            it drops the whole day set and leaves the city standing, which is the
+            same handler the empty-state CTA below already uses. */}
+        <DeliveryDayRow
+          cityActive={cityActive}
+          daysActive={daysActive}
+          onSelectDay={onSelectDay}
+          onClearDays={onClearDays}
+          inRow
+          panelHost={dayPanelHost}
+        />
       </div>
+      <div ref={setDayPanelHost} className="mb-3 empty:hidden" data-testid="home-day-panel-host" />
       {/* MEH-1174: single applied-filters summary row — the active category
           now lives here as a removable "× {name}" tag alongside the chip
           summary (replacing the old separate "מציג:" row). */}
@@ -412,26 +478,14 @@ export function HomeProducersGrid({
 
       {/* MEH-1269: dismissible location-filter chip (geo "קרוב אליי" or an
           explicit city choice). Self-hides when no location filter is active.
-          MEH-2186: LOCATION-ONLY — the day value moved to the day chip below,
+          MEH-2186: LOCATION-ONLY — the day value moved to the day chip (in the
+          filter row above since MEH-2537),
           so `daysActive` is no longer passed here. It still reaches this
           component for the empty-state CTA further down. */}
       <ActiveFilterChip
         geoActive={geoActive}
         cityActive={cityActive}
         onClear={onClearLocation}
-      />
-
-      {/* MEH-1645 day refinement, a permanent anchor since MEH-1771 and ONE
-          value-carrying dropdown chip since MEH-2186: always rendered — with
-          no city a tap routes into the LocationModal (handleDaySelected), with
-          a city it opens the inline day panel. `onClearDays` is the chip's ✕:
-          it drops the whole day set and leaves the city standing, which is the
-          same handler the empty-state CTA below already uses. */}
-      <DeliveryDayRow
-        cityActive={cityActive}
-        daysActive={daysActive}
-        onSelectDay={onSelectDay}
-        onClearDays={onClearDays}
       />
 
       {producersLoading ? (
