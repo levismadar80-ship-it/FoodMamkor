@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
+import AuthSplitLayout from "@/components/auth/AuthSplitLayout";
 import { useTranslations } from "next-intl";
-import { Leaf } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import Input from "@/components/ui/Input";
 import CollectionNotice from "@/components/CollectionNotice";
@@ -31,15 +31,13 @@ export default function ForgotPasswordClient() {
     }
   };
 
+  // MEH-2568: the /login template (AuthSplitLayout) instead of a white card
+  // with a leaf badge. Copy and testids unchanged.
   return (
-    <div className="min-h-[calc(100vh-200px)] flex items-center justify-center px-4 py-16">
-      <div className="bg-white rounded-[20px] p-8 sm:p-10 w-full max-w-md border border-border shadow-[0_4px_32px_rgba(46,104,83,0.08)] text-center">
-        <div className="w-16 h-16 rounded-full bg-green-50 mx-auto mb-4 flex items-center justify-center" aria-hidden="true">
-          <Leaf size={32} className="text-primary" />
-        </div>
-        <h1 className="font-headline-md text-2xl font-bold text-text mb-1">{t("auth.passwordRecovery.forgot.title")}</h1>
-        <p className="text-fg-muted text-sm mb-6">{t("auth.passwordRecovery.forgot.subtitle")}</p>
-
+    <AuthSplitLayout
+      title={t("auth.passwordRecovery.forgot.title")}
+      subtitle={t("auth.passwordRecovery.forgot.subtitle")}
+    >
         {submitted ? (
           /* MEH-215 journey C: the anti-enumeration ack (MEH-328). Same node
              for a known and an unknown address — the spec asserts exactly that. */
@@ -97,7 +95,6 @@ export default function ForgotPasswordClient() {
             </p>
           </form>
         )}
-      </div>
-    </div>
+    </AuthSplitLayout>
   );
 }

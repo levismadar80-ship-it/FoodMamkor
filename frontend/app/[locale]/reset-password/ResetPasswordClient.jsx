@@ -2,9 +2,10 @@
 
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
+import AuthSplitLayout from "@/components/auth/AuthSplitLayout";
 import { useTranslations } from "next-intl";
-import { Eye, EyeSlash, Leaf } from "@phosphor-icons/react";
+import { Eye, EyeSlash } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import PasswordInput from "@/components/PasswordInput";
 import { firstFailureMessage } from "@/lib/passwordMessages";
@@ -41,14 +42,14 @@ function ResetPasswordForm() {
 
   if (!token) {
     return (
-      <div className="min-h-[calc(100vh-200px)] flex items-center justify-center px-4 py-16">
-        <div className="bg-white rounded-[20px] p-8 sm:p-10 w-full max-w-md border border-border shadow-[0_4px_32px_rgba(46,104,83,0.08)] text-center">
-          <p className="text-red-600 font-medium mb-4">{t("auth.passwordRecovery.reset.invalid_link")}</p>
-          <Link href="/forgot-password" className="text-primary hover:underline text-sm">
+      <AuthSplitLayout title={t("auth.passwordRecovery.reset.title")}>
+        <div role="alert" className="bg-red-50 border border-red-200 rounded-md p-4 grid gap-2">
+          <p className="text-red-700 font-medium">{t("auth.passwordRecovery.reset.invalid_link")}</p>
+          <Link href="/forgot-password" className="text-primary font-medium hover:underline text-sm justify-self-start">
             {t("auth.passwordRecovery.reset.request_new_link")}
           </Link>
         </div>
-      </div>
+      </AuthSplitLayout>
     );
   }
 
@@ -96,30 +97,24 @@ function ResetPasswordForm() {
     }
   };
 
+  // MEH-2568: the /login template (AuthSplitLayout) instead of a white card
+  // with a leaf badge. Copy unchanged.
   if (done) {
     return (
-      <div className="min-h-[calc(100vh-200px)] flex items-center justify-center px-4 py-16">
-        <div className="bg-white rounded-[20px] p-8 sm:p-10 w-full max-w-md border border-border shadow-[0_4px_32px_rgba(46,104,83,0.08)] text-center">
-          <div className="w-16 h-16 rounded-full bg-green-50 mx-auto mb-4 flex items-center justify-center" aria-hidden="true">
-            <Leaf size={32} className="text-primary" />
-          </div>
-          <p className="text-primary font-semibold text-lg mb-1">{t("auth.passwordRecovery.reset.success_title")}</p>
-          <p className="text-fg-muted text-sm">{t("auth.passwordRecovery.reset.success_subtitle")}</p>
-        </div>
-      </div>
+      <AuthSplitLayout title={t("auth.passwordRecovery.reset.success_title")}>
+        <p className="text-fg-muted text-sm text-start" role="status">
+          {t("auth.passwordRecovery.reset.success_subtitle")}
+        </p>
+      </AuthSplitLayout>
     );
   }
 
   return (
-    <div className="min-h-[calc(100vh-200px)] flex items-center justify-center px-4 py-16">
-      <div className="bg-white rounded-[20px] p-8 sm:p-10 w-full max-w-md border border-border shadow-[0_4px_32px_rgba(46,104,83,0.08)] text-center">
-        <div className="w-16 h-16 rounded-full bg-green-50 mx-auto mb-4 flex items-center justify-center" aria-hidden="true">
-          <Leaf size={32} className="text-primary" />
-        </div>
-        <h1 className="font-headline-md text-2xl font-bold text-text mb-1">{t("auth.passwordRecovery.reset.title")}</h1>
-        <p className="text-fg-muted text-sm mb-6">{t("auth.passwordRecovery.reset.subtitle", { min: PASSWORD_MIN_LENGTH })}</p>
-
-        <form onSubmit={handleSubmit} className="space-y-4 text-right">
+    <AuthSplitLayout
+      title={t("auth.passwordRecovery.reset.title")}
+      subtitle={t("auth.passwordRecovery.reset.subtitle", { min: PASSWORD_MIN_LENGTH })}
+    >
+        <form onSubmit={handleSubmit} className="space-y-4 text-start">
           {/* MEH-306: PasswordInput owns the new-password input + eye toggle
               + live policy preview (length, breach). showCurrentPasswordReuse
               renders a "נבדק בשרת" pending tile because the server is the
@@ -141,12 +136,12 @@ function ResetPasswordForm() {
               placeholder={t("auth.passwordRecovery.reset.confirm_placeholder")}
               required
               dir="ltr"
-              className="w-full border border-border rounded-[10px] px-4 py-3 bg-white focus-visible:ring-2 focus-visible:ring-primary/40 outline-none transition focus:border-primary pr-10" // rtl-ok: pr-10 reserves space for dir="ltr" eye toggle (MEH-306 pattern)
+              className="w-full min-h-[44px] border border-border rounded-[10px] ps-4 py-3 bg-white focus-visible:ring-2 focus-visible:ring-primary/40 outline-none transition focus:border-primary pr-12" // rtl-ok: pr-12 reserves the 44px eye toggle inside the dir="ltr" input (MEH-2554 PasswordInput fix)
             />
             <button
               type="button"
               onClick={() => setShowConfirm((v) => !v)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center text-fg-muted hover:text-text" // rtl-ok: eye toggle inside dir="ltr" input
+              className="absolute right-0.5 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center text-fg-muted hover:text-text" // rtl-ok: eye toggle inside dir="ltr" input
               aria-label={showConfirm ? t("auth.passwordRecovery.reset.toggle_hide") : t("auth.passwordRecovery.reset.toggle_show")}
             >
               {showConfirm ? <EyeSlash size={18} /> : <Eye size={18} />}
@@ -172,7 +167,6 @@ function ResetPasswordForm() {
             {loading ? t("auth.passwordRecovery.reset.submit_updating") : t("auth.passwordRecovery.reset.submit")}
           </button>
         </form>
-      </div>
-    </div>
+    </AuthSplitLayout>
   );
 }

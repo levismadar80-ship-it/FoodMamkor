@@ -51,6 +51,16 @@ vi.mock("next/link", () => ({
   ),
 }));
 
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ children, href, ...props }) => (
+    <a href={typeof href === "string" ? href : "#"} {...props}>
+      {children}
+    </a>
+  ),
+}));
+
+vi.mock("next/image", () => ({ default: () => null }));
+
 vi.mock("@phosphor-icons/react", () => ({
   Eye: () => null,
   EyeSlash: () => null,
