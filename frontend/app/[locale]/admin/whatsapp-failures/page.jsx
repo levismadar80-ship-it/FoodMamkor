@@ -17,6 +17,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
+import { SkeletonList } from "@/components/Skeleton";
 
 const STATUS_COLORS = {
   failed: "bg-red-100 text-red-800",
@@ -38,7 +39,7 @@ export default function AdminWhatsappFailuresPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (loading) return <div className="text-fg-muted">{t("common.loading_f")}</div>;
+  if (loading) return <SkeletonList count={3} label={t("common.loading_f")} />;
 
   return (
     <div className="space-y-6" dir="rtl">

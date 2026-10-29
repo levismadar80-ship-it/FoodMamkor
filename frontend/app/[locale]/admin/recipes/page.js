@@ -7,6 +7,7 @@ import { formatEventDate } from "@/lib/format-date";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
+import { SkeletonTable } from "@/components/Skeleton";
 
 /**
  * Admin recipes moderation queue (MEH-997 seed fix).
@@ -150,7 +151,7 @@ export default function AdminRecipesPage() {
       )}
 
       {loading ? (
-        <p className="text-fg-muted">{t("common.loading_f")}</p>
+        <SkeletonTable rows={5} cols={5} label={t("common.loading_f")} />
       ) : rows.length === 0 ? (
         <div
           data-testid="admin-recipes-empty"

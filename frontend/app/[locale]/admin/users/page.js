@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useAdminAction } from "@/lib/use-admin-action";
 import AdminRowMenu from "@/components/admin/AdminRowMenu";
 import AdminLoadError from "@/components/admin/AdminLoadError";
+import { SkeletonTable } from "@/components/Skeleton";
 
 const SUPER_ADMIN_EMAIL = "levismadar80@gmail.com";
 
@@ -179,7 +180,7 @@ export default function AdminUsersPage() {
                   empty row cannot flash while the fetch is in flight. */}
               {loading && (
                 <tr>
-                  <td colSpan={7} className="text-center py-8 text-muted">{t("common.loading_f")}</td>
+                  <td colSpan={7} className="py-2"><SkeletonTable rows={5} cols={5} label={t("common.loading_f")} /></td>
                 </tr>
               )}
               {!loading && loadError && (
