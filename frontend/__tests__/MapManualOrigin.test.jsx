@@ -374,6 +374,38 @@ describe("MEH-2014 PR 2 — the two origins are mutually exclusive", () => {
   });
 });
 
+describe("MEH-2525 — the origin is announced, and the desktop chip keeps its tap height", () => {
+  it("one always-mounted live region names the origin after a pick and empties after ✕", async () => {
+    await renderMap();
+    // Mounted (and empty) BEFORE the change: a live region that appears with
+    // its text is not announced, which is the bug this region fixes.
+    const live = screen.getByTestId("sort-origin-live");
+    expect(live).toHaveAttribute("aria-live", "polite");
+    expect(live).toHaveTextContent("");
+    // One for the page, not one per shell: two would announce twice.
+    expect(screen.getAllByTestId("sort-origin-live")).toHaveLength(1);
+
+    await pickCity();
+    expect(screen.getByTestId("sort-origin-live")).toHaveTextContent("מרחק מ: חיפה");
+
+    await act(async () => {
+      fireEvent.click(screen.queryAllByTestId("clear-user-location")[0]);
+    });
+    expect(screen.getByTestId("sort-origin-live")).toHaveTextContent("");
+  });
+
+  it("the desktop chip (not the mobile tag) keeps min-h-[44px] and its border", async () => {
+    await renderMap();
+    await pickCity();
+    const bar = screen.getByTestId("map-mobile-bar");
+    const desktop = screen.getAllByTestId("sort-origin").filter((el) => !bar.contains(el));
+    expect(desktop).toHaveLength(1);
+    const chip = within(desktop[0]).getByTestId("sort-origin-chip");
+    expect(chip.className).toContain("min-h-[44px]");
+    expect(chip.className).toMatch(/(^|\s)border(\s|$)/);
+  });
+});
+
 describe("MEH-2014 PR 2 — don't-regress guards (green before AND after)", () => {
   it("does not geocode on page load", async () => {
     // Paired with "picking a city geocodes it", which IS red against old code.
