@@ -11,6 +11,14 @@ import api from "@/lib/api";
 import GroupBuyDetailClient from "@/app/[locale]/group-buys/[id]/GroupBuyDetailClient";
 import GroupBuysClient from "@/app/[locale]/group-buys/GroupBuysClient";
 
+// MEH-2544: the page's business row is OwnerRow, which links via @/i18n/navigation.
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ children, href, ...rest }) => (
+    <a href={href} {...rest}>
+      {children}
+    </a>
+  ),
+}));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock("@/lib/auth-context", () => ({ useAuth: () => ({ user: null, loading: false }) }));
 vi.mock("next-intl", () => ({

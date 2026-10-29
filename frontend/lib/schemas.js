@@ -472,6 +472,9 @@ export const EventMetadataSchema = z.object({
   // MEH-2461: buildEventJsonLd picks the owner URL from these two.
   owner_kind: z.string().optional(),
   owner_slug: z.string().nullable().optional(),
+  // MEH-2546: parity with EventOut — the list rows' owner-photo fallback.
+  // (Probe only: the page renders the raw payload, never `parsed.data`.)
+  owner_image_url: z.string().nullable().optional(),
 });
 
 // MEH-2461: read by app/[locale]/organizers/[slug]/page.js (render + metadata).
@@ -526,6 +529,7 @@ export const GroupBuyMetadataSchema = z.object({
   id: z.union([z.string(), z.number()]),
   title: z.string(),
   description: z.string().nullable().optional(),
+  producer_image_url: z.string().nullable().optional(), // MEH-2544: og:image
 });
 
 // Read by app/[locale]/experiences/[id]/page.js generateMetadata.
