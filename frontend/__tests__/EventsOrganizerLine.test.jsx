@@ -164,8 +164,8 @@ describe("MEH-2461 — organizer line on the events card", () => {
 
 /**
  * MEH-2468 — the owner's cover image on the list row. Cells: with image /
- * without image / many rows mixed. Without one the row keeps its two-column
- * layout — no empty box.
+ * without image / many rows mixed. MEH-2546: without one the row gets a
+ * category tile (no photo, no brand name) — never an empty box.
  */
 describe("MEH-2468 — event cover image on the /events row", () => {
   it("row with image_url: one thumbnail carrying that image", async () => {
@@ -176,11 +176,13 @@ describe("MEH-2468 — event cover image on the /events row", () => {
     expect(thumbs[0].style.backgroundImage).toContain("a.jpg");
   });
 
-  it("row without image_url: no thumbnail element at all", async () => {
+  it("row without image_url: a category tile, no photo", async () => {
     unfilteredRows = [row(1, { image_url: null })];
     await mount();
     expect(screen.getByText("event 1")).toBeInTheDocument();
-    expect(screen.queryByTestId("event-row-image")).not.toBeInTheDocument();
+    const tile = screen.getByTestId("event-row-image");
+    expect(tile.getAttribute("data-kind")).toBe("category");
+    expect(tile.style.backgroundImage).toBe("");
   });
 
   it("the /experiences tab gets the same rule (experiences carry image_url too)", async () => {
@@ -190,19 +192,20 @@ describe("MEH-2468 — event cover image on the /events row", () => {
     ];
     render(<EventsClient initialTab="experiences" />);
     await waitFor(() => expect(screen.queryByRole("status")).toBeNull());
-    const thumbs = screen.getAllByTestId("event-row-image");
-    expect(thumbs).toHaveLength(1);
-    expect(thumbs[0].style.backgroundImage).toContain("exp.jpg");
+    const kinds = screen.getAllByTestId("event-row-image").map((el) => el.getAttribute("data-kind"));
+    expect(kinds).toEqual(["event", "category"]);
+    expect(screen.getAllByTestId("event-row-image")[0].style.backgroundImage).toContain("exp.jpg");
   });
 
-  it("many rows, mixed: a thumbnail only on the rows that have an image", async () => {
+  it("many rows, mixed: a photo only on the rows that have an image", async () => {
     unfilteredRows = [
       row(1, { image_url: "https://res.cloudinary.com/x/image/upload/a.jpg" }),
       row(2, { image_url: null }),
       row(3, { image_url: "https://res.cloudinary.com/x/image/upload/c.jpg" }),
     ];
     await mount();
-    expect(screen.getAllByTestId("event-row-image")).toHaveLength(2);
+    const kinds = screen.getAllByTestId("event-row-image").map((el) => el.getAttribute("data-kind"));
+    expect(kinds).toEqual(["event", "category", "event"]);
   });
 
   it("MEH-2476: a recurring experience row names its schedule; a one-off does not", async () => {

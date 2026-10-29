@@ -70,7 +70,7 @@ describe("UpcomingEventsPreview", () => {
     await waitFor(() => expect(container.querySelector("section")).toBeNull());
   });
 
-  it("MEH-2497: a thumbnail only for the event with a photo — no placeholder box for the one without", async () => {
+  it("MEH-2546: a photo for the event with one, a category tile (no brand name) for the one without", async () => {
     apiResponseRef.current = { data: [IMAGED, IMAGELESS] };
     render(<UpcomingEventsPreview />);
     // Both titles render once the fetch resolves.
@@ -78,10 +78,13 @@ describe("UpcomingEventsPreview", () => {
       expect(screen.getByText("סדנת מאפים ביתיים")).toBeInTheDocument()
     );
     expect(screen.getByText("ארוחת שף בגינה")).toBeInTheDocument();
-    // The /events row (MEH-2468): one thumbnail, for the one imaged event.
-    expect(screen.getAllByTestId("event-row-image")).toHaveLength(1);
-    // 3-up from lg is too narrow for the thumbnail (CI review, 1440 capture).
-    expect(screen.getByTestId("event-row-image").className).toContain("lg:hidden");
+    // The /events row (MEH-2468 + MEH-2546): photo, then category tile.
+    const kinds = screen.getAllByTestId("event-row-image").map((el) => el.getAttribute("data-kind"));
+    expect(kinds).toEqual(["event", "category"]);
+    // 3-up from lg is too narrow for the side thumbnail (CI review, 1440
+    // capture) — the picture moves to a band across the top of the row there.
+    expect(screen.getAllByTestId("event-row-image")[0].className).toContain("lg:hidden");
+    expect(screen.getAllByTestId("event-row-band")).toHaveLength(2);
     // MEH-1143's fixed image area (Leaf + «מהמקור») is gone.
     expect(screen.queryByTestId("event-image-missing")).toBeNull();
     expect(screen.queryByText(BRAND_NAME)).toBeNull();

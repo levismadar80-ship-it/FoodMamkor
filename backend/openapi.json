@@ -1277,6 +1277,17 @@
             ],
             "title": "Max Participants"
           },
+          "owner_image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Image Url"
+          },
           "owner_kind": {
             "default": "producer",
             "title": "Owner Kind",

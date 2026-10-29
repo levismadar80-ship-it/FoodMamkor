@@ -106,7 +106,7 @@ graph TD
     NeighborList --> HPRate[POST /home-products/rate/{token}<br/>🌐 token-based single-use]
 
     Events[/events + /experiences] --> EventCreate[POST /events<br/>✅👤 verified producer — MEH-1164 F5;<br/>MEH-1161: pending producer's events stay hidden]
-    Events --> EventReads[GET /events + /upcoming + /id<br/>🌐 approved producers only — MEH-1161:<br/>pending filtered from lists, detail 404,<br/>owner/admin bypass;<br/>MEH-2459: organizer-owned events included,<br/>EventOut.owner_kind + owner_slug]
+    Events --> EventReads[GET /events + /upcoming + /id<br/>🌐 approved producers only — MEH-1161:<br/>pending filtered from lists, detail 404,<br/>owner/admin bypass;<br/>MEH-2459: organizer-owned events included,<br/>EventOut.owner_kind + owner_slug;<br/>MEH-2546: + owner_image_url]
     Events --> OrganizerPage[GET /organizers/{slug} + GET /organizers<br/>🌐 MEH-2461: approved organizers only,<br/>upcoming events; sitemap source<br/>MEH-2475: + owner story, contact channels]
     Events --> EventMine[GET /events/mine<br/>👤 producer — own events, all states<br/>incl. inactive — MEH-1405 manage list]
     Events --> ExpCreate[POST /experiences<br/>✅👤 verified producer — MEH-2246: same gate as<br/>POST /events, since MEH-1749 hides a<br/>non-business experience from every read path;<br/>then Claude Haiku pre-check + admin approval queue]
