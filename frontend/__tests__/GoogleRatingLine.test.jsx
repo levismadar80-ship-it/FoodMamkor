@@ -125,10 +125,15 @@ describe("GoogleRatingLine lazy fetch (MEH-2581)", () => {
     expect(observers[0].disconnect).toHaveBeenCalled();
   });
 
+  it("fetches on mount when the browser has no IntersectionObserver", async () => {
+    delete global.IntersectionObserver;
+    render(<GoogleRatingLine producerId="p1" producerName="x" />);
+    await waitFor(() => expect(apiMock.get).toHaveBeenCalledWith("/producers/p1/google-rating"));
+  });
+
   it("renders no visible box while waiting (the sentinel has no text, no classes)", () => {
     const { container } = render(<GoogleRatingLine producerId="p1" producerName="x" />);
     expect(container.textContent).toBe("");
     expect(container.querySelector("[class]")).toBeNull();
   });
 });
-
