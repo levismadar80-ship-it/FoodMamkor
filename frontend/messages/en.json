@@ -2427,7 +2427,8 @@
           "steps": [
             "On “Users”, search by email or name.",
             "In the ⋮ menu, “Make admin” or “Remove access”. Only after verifying identity outside the site.",
-            "“Block” prevents login. “Unblock” reverses it."
+            "“Block” prevents login. “Unblock” reverses it.",
+            "“Delete” removes the user and her business. Cannot be undone."
           ]
         },
         "reviews": {
