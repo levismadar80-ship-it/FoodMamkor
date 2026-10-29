@@ -42,7 +42,9 @@ export default function AuthSplitLayout({
           src={optimizeCloudinary(heroSrc)}
           alt=""
           fill
-          sizes="(min-width: 1024px) 50vw"
+          // Hidden below lg; a sizes list needs a default, and 1px keeps any
+          // fetch below lg to the smallest variant.
+          sizes="(min-width: 1024px) 50vw, 1px"
           className="object-cover"
         />
         <div
