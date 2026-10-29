@@ -1,4 +1,6 @@
 import { getTranslations } from "next-intl/server";
+import RouteMessagesProvider from "@/components/i18n/RouteMessagesProvider";
+import { registerProducerMessages } from "@/lib/client-messages";
 import RegisterProducerClient from "./RegisterProducerClient";
 import { buildAlternates } from "@/lib/i18n-seo";
 
@@ -21,6 +23,12 @@ export async function generateMetadata({ params }) {
   };
 }
 
+// MEH-2233: the form reuses admin.producers.form.fields, which the root client
+// provider omits — re-provide just that subtree.
 export default function RegisterProducerPage() {
-  return <RegisterProducerClient />;
+  return (
+    <RouteMessagesProvider pick={registerProducerMessages}>
+      <RegisterProducerClient />
+    </RouteMessagesProvider>
+  );
 }

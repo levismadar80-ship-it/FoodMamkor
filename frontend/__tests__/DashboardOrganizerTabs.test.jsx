@@ -24,7 +24,7 @@ vi.mock("@/i18n/navigation", () => ({
   ),
 }));
 
-import DashboardLayout from "@/app/[locale]/producer/dashboard/layout";
+import DashboardLayout from "@/app/[locale]/producer/dashboard/DashboardLayoutClient";
 
 const tabKeys = () =>
   screen
