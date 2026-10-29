@@ -26,6 +26,7 @@ import api from "@/lib/api";
 import Breadcrumb from "@/components/Breadcrumb";
 import OwnerRow from "@/components/OwnerRow";
 import ShareButton from "@/components/ShareButton";
+import SaveButton from "@/components/SaveButton";
 import { CATEGORY_ICON } from "@/components/EventEntryRow";
 import { cssUrl } from "@/lib/css-url";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
@@ -184,6 +185,12 @@ export default function ExperienceDetailClient() {
   return (
     <div className="pb-12" data-testid="experience-detail">
       <div className="relative max-w-[1100px] mx-auto lg:px-4 lg:pt-6">
+        {/* MEH-2559: the save heart on the cover's corner — the corner the recipe
+            and business pages use. Not in the share/calendar row: a third
+            button there wraps «הוספה ליומן» onto two lines below 375px. */}
+        <div className="absolute top-3 start-3 lg:top-9 lg:start-7 z-10" data-testid="experience-cover-actions">
+          <SaveButton itemType="experience" itemId={ex.id} />
+        </div>
         {ex.image_url ? (
           <div
             data-testid="experience-cover"

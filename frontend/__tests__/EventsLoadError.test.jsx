@@ -19,6 +19,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
 import EventsClient from "@/app/[locale]/events/EventsClient";
 
+// MEH-2559: the heart needs AuthProvider; its behaviour is SaveButton.test.jsx's.
+vi.mock("@/components/SaveButton", () => ({ default: () => null }));
+
 let params = {};
 let responder = () => Promise.resolve({ data: [] });
 const getMock = vi.fn((endpoint, config) => responder(endpoint, config));
