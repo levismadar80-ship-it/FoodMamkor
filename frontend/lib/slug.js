@@ -38,6 +38,8 @@ const RESERVED = new Set([
   "claim",
   // MEH-2461: public organizer pages (/organizers/{slug}).
   "organizers",
+  // MEH-2576: where the middleware rewrites a deleted business's URL.
+  "business-gone",
 ]);
 
 // Real slugs are produced by backend _slugify
