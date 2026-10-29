@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { Link as LocaleLink } from "@/i18n/navigation";
 import Image from "next/image";
 import { ArrowRight, EnvelopeSimple, Eye, EyeSlash, Lock } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
@@ -235,22 +236,22 @@ function LoginPageBody() {
                 />
               )}
               {/* Directly under the buttons it describes, before any other
-                  control — a notice set apart from its button is the failure
-                  mode courts name (Berman v. Freedom Financial, 9th Cir. 2022). */}
+                  control: a consent notice must sit next to the button that
+                  gives it. Locale-aware links, as on /register. */}
               <p
                 data-testid="login-oauth-terms"
                 className="text-[13px] leading-relaxed text-fg-muted text-start"
               >
                 {t.rich("oauth_terms", {
                   tos: (chunks) => (
-                    <Link href="/terms" target="_blank" className="text-primary underline">
+                    <LocaleLink href="/terms" target="_blank" className="text-primary underline">
                       {chunks}
-                    </Link>
+                    </LocaleLink>
                   ),
                   privacy: (chunks) => (
-                    <Link href="/privacy" target="_blank" className="text-primary underline">
+                    <LocaleLink href="/privacy" target="_blank" className="text-primary underline">
                       {chunks}
-                    </Link>
+                    </LocaleLink>
                   ),
                 })}
               </p>

@@ -32,6 +32,14 @@ vi.mock("@/lib/env", () => ({
 }));
 
 vi.mock("next/image", () => ({ default: () => null }));
+// The /login terms notice (MEH-2080) links through the locale-aware Link.
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ children, href, ...rest }) => (
+    <a href={href} {...rest}>
+      {children}
+    </a>
+  ),
+}));
 vi.mock("next/link", () => ({ default: ({ children }) => children }));
 vi.mock("@phosphor-icons/react", () => ({
   CaretDown: () => <span />,

@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import LoginClient from "@/app/[locale]/login/LoginClient";
+import he from "@/messages/he.json";
+import en from "@/messages/en.json";
 
 /**
  * MEH-2080 — an account created from /login with Google or Apple had no
@@ -45,6 +47,13 @@ vi.mock("next/link", () => ({
     </a>
   ),
 }));
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ children, href, ...rest }) => (
+    <a href={href} data-locale-link="" {...rest}>
+      {children}
+    </a>
+  ),
+}));
 vi.mock("@phosphor-icons/react", () => ({
   ArrowRight: () => null,
   EnvelopeSimple: () => null,
@@ -82,8 +91,9 @@ describe("/login OAuth terms notice", () => {
     render(<LoginClient />);
     const n = notice();
     expect(n).not.toBeNull();
-    expect(n.querySelector('a[href="/terms"]')).not.toBeNull();
-    expect(n.querySelector('a[href="/privacy"]')).not.toBeNull();
+    // Locale-aware links (an en reader gets /en/terms), as on /register.
+    expect(n.querySelector('a[data-locale-link][href="/terms"]')).not.toBeNull();
+    expect(n.querySelector('a[data-locale-link][href="/privacy"]')).not.toBeNull();
     expect(screen.getByTestId("google-btn").dataset.terms).toBe("true");
     expect(screen.queryByTestId("apple-btn")).toBeNull();
   });
@@ -97,5 +107,27 @@ describe("/login OAuth terms notice", () => {
     expect(screen.getAllByTestId("login-oauth-terms")).toHaveLength(1);
     expect(screen.getByTestId("google-btn").dataset.terms).toBe("true");
     expect(screen.getByTestId("apple-btn").dataset.terms).toBe("true");
+  });
+
+  it("Apple only → notice, Apple sends termsAccepted", () => {
+    envRef.current = { NEXT_PUBLIC_APPLE_CLIENT_ID: "id" };
+    render(<LoginClient />);
+    expect(notice()).not.toBeNull();
+    expect(screen.getByTestId("apple-btn").dataset.terms).toBe("true");
+    expect(screen.queryByTestId("google-btn")).toBeNull();
+  });
+});
+
+// t.rich is mocked above, so the catalog's tags are checked here: a tag typo
+// would otherwise pass and render raw.
+describe.each([
+  ["he", he],
+  ["en", en],
+])("auth.login.oauth_terms in %s", (_, messages) => {
+  const text = messages.auth.login.oauth_terms;
+  it("carries exactly one <tos> and one <privacy> pair", () => {
+    expect(text.match(/<tos>[^<]+<\/tos>/g)).toHaveLength(1);
+    expect(text.match(/<privacy>[^<]+<\/privacy>/g)).toHaveLength(1);
+    expect(text.replace(/<\/?(tos|privacy)>/g, "")).not.toMatch(/[<>]/);
   });
 });
