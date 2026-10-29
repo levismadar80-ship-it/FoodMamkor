@@ -28,6 +28,11 @@ describe("eventWhen", () => {
     expect(eventWhen(date, "2026-11-01")).toBe(want);
   });
 
+  it("on Friday, Sunday is next week; on Saturday, Sunday is «מחר»", () => {
+    expect(eventWhen("2026-11-01", "2026-10-30")).toBeNull();
+    expect(eventWhen("2026-11-01", "2026-10-31")).toBe("tomorrow");
+  });
+
   it("on Saturday the week is over: Monday is not «השבוע»", () => {
     expect(eventWhen("2026-11-02", "2026-10-31")).toBeNull();
   });
