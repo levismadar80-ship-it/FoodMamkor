@@ -21,6 +21,7 @@ import {
   Star,
   Megaphone,
   Lock,
+  SignOut,
 } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
@@ -99,7 +100,8 @@ export default function AdminLayout({ children }) {
 function AdminShell({ children }) {
   const t = useTranslations("admin");
   const tDenied = useTranslations("errors.access_denied.admin");
-  const { user, loading } = useAuth();
+  const tAccount = useTranslations("account.menu");
+  const { user, loading, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   // Per-queue counts for the sidebar badges + the queue filter. MEH-2359: the
@@ -325,6 +327,23 @@ function AdminShell({ children }) {
       {/* Content — offset by sidebar width on desktop */}
       <main className="flex-1 md:ms-60 min-w-0 p-5 md:p-8">
         {children}
+        {/* MEH-2533: below md /admin had no way out. The header avatar menu
+            is md+ only (Header.jsx UserMenu `hidden md:block`) and BottomNav,
+            whose account sheet carries «התנתקות», is gated off this subtree
+            (MEH-2359). Same key, icon and markup as the owner dashboard's
+            (MEH-2490, producer/dashboard/layout.js); no new copy. After
+            logout the 401 branch above sends her to /login. */}
+        <div className="md:hidden flex justify-center px-4 pt-6 pb-2">
+          <button
+            type="button"
+            data-testid="admin-mobile-logout"
+            onClick={logout}
+            className="inline-flex items-center gap-2 min-h-[44px] px-4 text-sm font-medium text-error focus-ring rounded-[8px]"
+          >
+            <SignOut size={18} aria-hidden="true" />
+            {tAccount("logout")}
+          </button>
+        </div>
       </main>
     </div>
   );
