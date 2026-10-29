@@ -40,7 +40,7 @@ vi.mock("@/i18n/navigation", () => ({
 const { holidayRef } = vi.hoisted(() => ({ holidayRef: { current: null } }));
 vi.mock("@/lib/holidays", () => ({ getUpcomingHoliday: () => holidayRef.current }));
 
-import DashboardLayout from "@/app/[locale]/producer/dashboard/layout";
+import DashboardLayout from "@/app/[locale]/producer/dashboard/DashboardLayoutClient";
 import ToolsPage from "@/app/[locale]/producer/dashboard/tools/page";
 import InsightsPage from "@/app/[locale]/producer/dashboard/insights/page";
 import OverviewPage from "@/app/[locale]/producer/dashboard/page";

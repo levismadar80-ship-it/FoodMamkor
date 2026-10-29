@@ -12,7 +12,7 @@ import {
  * Module:   admin/queues
  * Purpose:  MEH-2359 — the ONE list of secondary moderation queues the admin
  *           has, with the `/admin/dashboard` stats key that counts each one.
- *           Consumed by admin/layout.js (sidebar + mobile strip: a queue is
+ *           Consumed by admin/AdminLayoutClient.jsx (sidebar + mobile strip: a queue is
  *           listed only while its count is > 0) and admin/page.js (the
  *           «מה מחכה לטיפול» home: one row per non-empty queue).
  * Does NOT: include the approvals queue itself (/admin/producers) — that is
