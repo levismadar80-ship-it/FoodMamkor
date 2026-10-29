@@ -4072,6 +4072,7 @@ class GroupBuyOut(BaseModel):
     id: UUID
     producer_id: UUID
     producer_name: str | None = None
+    producer_image_url: str | None = None  # MEH-2544: business's first photo, read-only
     title: str
     description: str | None = None
     product_name: str

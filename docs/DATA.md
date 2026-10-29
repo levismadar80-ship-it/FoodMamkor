@@ -677,6 +677,11 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > scan in `tests/test_meh2503_delete_with_group_buys.py` guards the class. No
 > schema change.
 >
+> **MEH-2544 — a group buy carries its business's first photo.** `GroupBuyOut`
+> gains read-only `producer_image_url` (`producers.images[0]`, or `null`). The
+> public list card, the group page hero and its og:image use it; a group buy
+> has no photo of its own. No schema change.
+>
 > **MEH-1164 sub-chunk B — structured 403 detail.** The unverified-email 403
 > `detail` is now an **object** `{"code": "email_unverified", "message": "יש
 > לאמת את כתובת האימייל תחילה"}` (all four gated creates — the three above plus

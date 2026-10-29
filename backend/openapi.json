@@ -2929,6 +2929,17 @@
             "title": "Producer Id",
             "type": "string"
           },
+          "producer_image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Producer Image Url"
+          },
           "producer_name": {
             "anyOf": [
               {
@@ -3076,6 +3087,17 @@
             "format": "uuid",
             "title": "Producer Id",
             "type": "string"
+          },
+          "producer_image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Producer Image Url"
           },
           "producer_name": {
             "anyOf": [
