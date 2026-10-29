@@ -12,6 +12,8 @@ vi.mock("next-intl", () => ({
       trigger: "שתפו",
       modal_title: "שתפו לינק לעסק",
       modal_title_event: "שתפו את האירוע",
+      modal_title_experience: "שיתוף החוויה",
+      quiet_label: "שיתוף",
       copy_link: "שתפו לינק",
       wa_message_with_meta: "גיליתי את {title} במהמקור",
       wa_message_business_fallback: "בית עסק",
@@ -83,5 +85,15 @@ describe("ShareButton (MEH-1290)", () => {
   it("keeps the business label when no subject is given", () => {
     render(<ShareButton url="https://x/y" title="חוות השקמה" variant="quiet" />);
     expect(screen.getByRole("button", { name: "שתפו לינק לעסק" })).toBeInTheDocument();
+  });
+
+  // MEH-2548/2549: the outline variant beside «הוספה ליומן» on the event and
+  // experience pages — visible label + a subject-specific accessible name.
+  it("outline: an icon + «שיתוף» button named for an experience", () => {
+    render(<ShareButton url="https://x/y" title="קטיף" variant="outline" subject="experience" />);
+    const btn = screen.getByTestId("share-outline");
+    expect(btn.textContent).toBe("שיתוף");
+    expect(btn.getAttribute("aria-label")).toBe("שיתוף החוויה");
+    expect(btn.querySelector('[data-testid="icon-sharenetwork"]')).not.toBeNull();
   });
 });
