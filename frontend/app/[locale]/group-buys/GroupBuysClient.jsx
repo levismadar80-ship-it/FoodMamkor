@@ -8,6 +8,7 @@ import api from "@/lib/api";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
 import { formatPrice } from "@/lib/utils";
+import { groupBuyProgressPct } from "@/lib/group-buy-progress"; // MEH-2540
 import CitySearch from "@/components/CitySearch";
 
 // MEH-797: Sapir-mapped Cloudinary asset (staging/pick-pexels-35113948, 3732×4089)
@@ -19,15 +20,10 @@ const HERO_BG = optimizeCloudinary(
   { width: 1600 }
 );
 
-function progressPct(commits, min, max) {
-  const denom = max || min;
-  return Math.min(100, Math.round((commits / denom) * 100));
-}
-
 function GroupBuyCard({ gb }) {
   const t = useTranslations("group_buys.card");
   const funded = gb.status === "funded";
-  const pct = progressPct(gb.commits_count, gb.min_participants, gb.max_participants);
+  const pct = groupBuyProgressPct(gb.commits_count, gb.min_participants);
   const deadline = new Date(gb.deadline);
   const daysLeft = Math.max(0, Math.ceil((deadline - Date.now()) / 86400000));
 
