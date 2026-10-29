@@ -32,6 +32,8 @@ export default function OwnerRow({ href, name, testId, children }) {
       {body}
     </Link>
   ) : (
-    <div className={box}>{body}</div>
+    <div data-testid={testId ? `${testId}-static` : undefined} className={box}>
+      {body}
+    </div>
   );
 }

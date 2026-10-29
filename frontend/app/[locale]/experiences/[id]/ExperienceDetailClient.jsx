@@ -107,6 +107,7 @@ export default function ExperienceDetailClient() {
       ? `/${hostBiz.producer_slug}`
       : `/producer/${hostBiz.producer_id}`
     : null;
+  const hostName = hostBiz?.producer_name || ex.host?.name;
   // normalizePhone accepts Israeli MOBILE numbers only, so a landline (which
   // WhatsApp cannot reach) falls back to the recipient-less link below.
   const hostPhone = normalizePhone(hostBiz?.producer_phone);
@@ -270,13 +271,8 @@ export default function ExperienceDetailClient() {
             link-green there, though it went nowhere. */}
         {ex.host?.name && (
           <div className="mt-8" data-testid="experience-host">
-            <OwnerRow
-              href={hostHref}
-              name={hostBiz?.producer_name || ex.host.name}
-              testId="experience-host-link"
-            >
-              {t("host_label")}{" "}
-              <span className="font-semibold">{hostBiz?.producer_name || ex.host.name}</span>
+            <OwnerRow href={hostHref} name={hostName} testId="experience-host-link">
+              {t("host_label")} <span className="font-semibold">{hostName}</span>
             </OwnerRow>
           </div>
         )}

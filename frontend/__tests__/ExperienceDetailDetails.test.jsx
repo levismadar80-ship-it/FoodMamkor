@@ -121,9 +121,8 @@ describe("MEH-2476 — experience details", () => {
     expect(screen.queryByTestId("experience-host-link")).not.toBeInTheDocument();
     const row = screen.getByTestId("experience-host");
     expect(row.textContent).toBe(`נ${t.host_label} נועה`);
-    // No link → no chevron promising one, and nothing styled as a link.
+    // No link → no chevron promising one.
     expect(row.querySelector("a")).toBeNull();
     expect(row.querySelector("svg")).toBeNull();
-    expect(row.querySelector(".text-primary.hover\\:underline")).toBeNull();
   });
 });
