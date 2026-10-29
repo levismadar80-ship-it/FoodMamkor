@@ -33,9 +33,15 @@ vi.mock("@/lib/api", () => ({
 }));
 
 vi.mock("@phosphor-icons/react", () => ({
-  Envelope: () => null,
+  EnvelopeSimple: () => null,
   CheckCircle: () => null,
-  XCircle: () => null,
+  LinkBreak: () => null,
+}));
+
+// MEH-2567: the page renders through StatusPage, whose links are the
+// locale-aware i18n Link (next/link dropped /en under localePrefix as-needed).
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ children, href, ...props }) => <a href={href} {...props}>{children}</a>,
 }));
 
 // Longer than the component's REDIRECT_DELAY_MS (1500).
@@ -94,6 +100,8 @@ describe("verify-email next step (MEH-2492)", () => {
     render(<VerifyEmailClient />);
 
     await screen.findByTestId("verify-email-success");
+    // MEH-2567: rendered through the shared status layout.
+    expect(screen.getByTestId("verify-email-success").querySelector('[data-testid="status-page"]')).not.toBeNull();
     expect(screen.queryByTestId("verify-email-login")).toBeNull();
     expect(screen.queryByTestId("verify-email-continue")).toBeNull();
     await new Promise((r) => setTimeout(r, PAST_REDIRECT_MS));
