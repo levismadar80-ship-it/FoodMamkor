@@ -179,6 +179,14 @@ FIELD_CANDIDATES: dict[str, list[str]] = {
         "expiry",
         "expire_date",
     ],
+    # MEH-2135: the free-text activity description, carried as its own output
+    # column rather than being folded into `category`. It is the single most
+    # useful field for outreach — it says what the business actually makes
+    # (`ייצור מוצרי חלב`, `לחם קווקזי`, `עוגיות יבשות`) where `accountType`
+    # only says `מפעל מזון/יצור מזון` for 51 of the 69 leads. Deliberately NOT
+    # a filter input: see the note on `category` above. `accountType` is not a
+    # candidate here, so the two columns cannot collapse onto one field.
+    "activity": ["ProductActivityFoodType", "תחום פעילות", "activity"],
     "phone": ["טלפון", "phone", "tel"],
     "email": ["אימייל", 'דוא"ל', "email"],
 }
@@ -187,6 +195,7 @@ OUTPUT_COLUMNS = [
     "יישוב",
     "כתובת",
     "קטגוריה/סוג רישיון",
+    "סוג פעילות/מוצרים",  # MEH-2135: the free-text activity description
     "תוקף רישיון",
     "טלפון",
     "אימייל",
@@ -365,6 +374,7 @@ def run_filters(fields: list[str], rows: list[dict], *, out_dir: Path) -> int:
                     _norm(r.get(cols["city"])),
                     _norm(r.get(cols["address"])) if cols["address"] else "",
                     _norm(r.get(cat_col)) if cat_col else "",
+                    _norm(r.get(cols["activity"])) if cols["activity"] else "",
                     _norm(r.get(cols["license_valid_until"]))
                     if cols["license_valid_until"]
                     else "",
@@ -478,6 +488,11 @@ def self_test() -> int:
     # and is deliberately inverted. Filter B reads this field, and it has to be
     # the closed vocabulary — see the comment on FIELD_CANDIDATES["category"].
     check("cols/live-category", live["category"] == "accountType")
+    # MEH-2135: the two must resolve to DIFFERENT live columns. Asserting both
+    # separately is what makes a future candidate-list edit that collapses them
+    # onto one field fail here instead of silently duplicating a column.
+    check("cols/live-activity", live["activity"] == "ProductActivityFoodType")
+    check("cols/live-category-activity-distinct", live["category"] != live["activity"])
     check("cols/live-valid", live["license_valid_until"] == "expire_date")
     check("geo/live-maayan-zvi", in_wave1("מעין צבי"))
     check("geo/live-gan-hashomron", in_wave1("גן השומרון"))
@@ -504,25 +519,41 @@ def self_test() -> int:
     # End-to-end on synthetic rows, in a temp dir (no network).
 
     with tempfile.TemporaryDirectory() as td:
-        fields = ["שם עסק", "יישוב", "כתובת", "קטגוריה"]
+        # MEH-2135: the fixture carries BOTH `accountType` and
+        # `ProductActivityFoodType`, as the live schema does, instead of the
+        # synthetic `קטגוריה`. Adding only the activity field exposed why that
+        # matters: with no `accountType` present, `category` falls back to
+        # `ProductActivityFoodType`, so `הובלות דן` — which had no activity
+        # value — lost its exclusion string and survived the filter. The
+        # fixture now resolves the two fields to two columns, like a real run.
+        fields = [
+            "שם עסק",
+            "יישוב",
+            "כתובת",
+            "accountType",
+            "ProductActivityFoodType",
+        ]
         rows = [
             {
                 "שם עסק": "מאפיית הכפר",
                 "יישוב": "בנימינה",
                 "כתובת": "",
-                "קטגוריה": "ייצור מזון",
+                "accountType": "מאפיה",
+                "ProductActivityFoodType": "ייצור לחם קווקזי",
             },
             {
                 "שם עסק": "הובלות דן",
                 "יישוב": "בנימינה",
                 "כתובת": "",
-                "קטגוריה": "הובלת מזון",
+                "accountType": "הובלת מזון בטמפ מבוקרת",
+                "ProductActivityFoodType": "הובלה",
             },
             {
                 "שם עסק": "מחלבת רמות",
                 "יישוב": "תל אביב",
                 "כתובת": "",
-                "קטגוריה": "מחלבה",
+                "accountType": "מפעל מזון/יצור מזון",
+                "ProductActivityFoodType": "מחלבה",
             },
         ]
         rc = run_filters(fields, rows, out_dir=Path(td))
@@ -535,6 +566,28 @@ def self_test() -> int:
         check("e2e/header", out[0].split(",")[0] == "שם עסק")
         check("e2e/one-row", len(out) == 2)
         check("e2e/kept-bakery", "מאפיית הכפר" in out[1])
+        # MEH-2135: the COUNT, not the presence of a name — a count is what the
+        # column change can falsify, and it catches a cell added to the writer
+        # without a header (or the reverse), which a presence check cannot.
+        check("e2e/column-count", len(out[0].split(",")) == 8)
+        check("e2e/header-has-activity", "סוג פעילות/מוצרים" in out[0])
+        # Read the cell by its COLUMN INDEX, not as a substring of the row. A
+        # substring check passes when the value lands in the wrong column —
+        # measured: against the pre-column code it resolved into
+        # `קטגוריה/סוג רישיון` and `"…" in out[1]` was green either way.
+        parsed = list(
+            csv.reader(
+                (Path(td) / "wave1_moh_producers.csv")
+                .read_text(encoding="utf-8-sig")
+                .splitlines()
+            )
+        )
+        act_idx = parsed[0].index("סוג פעילות/מוצרים")
+        check("e2e/activity-in-its-own-column", parsed[1][act_idx] == "ייצור לחם קווקזי")
+        check(
+            "e2e/category-column-is-not-activity",
+            parsed[0].index("קטגוריה/סוג רישיון") != act_idx,
+        )
         check(
             "e2e/no-city-exit-2",
             run_filters(["שם", "כתובת"], rows, out_dir=Path(td)) == 2,
