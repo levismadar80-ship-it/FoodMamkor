@@ -311,7 +311,9 @@ export function ProfileTab() {
   const initial = (user.name || user.email || "?").trim().charAt(0).toUpperCase();
 
   return (
-    <section role="tabpanel" aria-label={t("tabpanel_aria")} className="bg-white border border-border rounded-[16px] p-6">
+    // MEH-2565: card from md up only. On a phone the profile form uses the full
+    // width; the security tab keeps its cards (three separate sections).
+    <section role="tabpanel" aria-label={t("tabpanel_aria")} className="md:bg-white md:border md:border-border md:rounded-[16px] md:p-6">
       {/* Avatar */}
       <div className="flex items-center gap-4 mb-6">
         <label

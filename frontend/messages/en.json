@@ -1915,7 +1915,6 @@
       },
       "filters": {
         "city_placeholder": "Filter by city...",
-        "all_statuses": "All statuses",
         "new_lead": "+ New lead"
       },
       "columns": {
@@ -3155,7 +3154,6 @@
   "contact": {
     "title": "Talk to us",
     "subtitle": "Questions, ideas, or just hi — we'd love to hear",
-    "response_time_inline": "We'll get back to you within <strong>3 business days</strong>.",
     "email_label": "Email address:",
     "response_sla": "Response time: up to 3 business days",
     "success_title": "Thanks! We got your message.",
