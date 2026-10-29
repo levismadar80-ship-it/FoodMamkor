@@ -64,8 +64,21 @@ const SERIF = `"Frank Ruhl Libre", serif`;
 const SANS = `"Heebo", sans-serif`;
 const PHOTO_H = 1500;
 const SIDE = 90;
-// public/logo-inverted.svg is the mark drawn for brand-green grounds.
-const MARK_URL = "/logo-inverted.svg";
+// The mark from public/logo-inverted.svg (the variant for brand-green
+// grounds), drawn as paths rather than loaded as an <img>: an SVG image can
+// taint the canvas in some WebKit builds, which would make toDataURL — and so
+// download and the Cloudinary upload — throw, and Firefox refuses drawImage
+// for an SVG with no intrinsic size. Values copied from the SVG; viewBox
+// -60 -60 120 120. [rotation°, opacity, petal fill, seed fill, seed opacity]
+const MARK_PETAL_D =
+  "M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z";
+const MARK_PETALS = [
+  [36, 0.96, "#F5F0E8", "#1F4A3A", 0.3],
+  [108, 0.96, "#E8823A", "#F5F0E8", 0.45],
+  [180, 0.96, "#E0B266", "#F5F0E8", 0.45],
+  [252, 0.92, "#D9C8B0", "#1F4A3A", 0.25],
+  [324, 0.96, "#8FB89F", "#F5F0E8", 0.5],
+];
 
 // Same ranges app/fonts.js declares for these families' next/font/local
 // calls (`declarations: [{ prop: "unicode-range", ... }]`) — literal, not
@@ -102,10 +115,10 @@ async function loadFonts() {
 }
 
 // Resolves to null on failure, so one missing image never blocks the card.
-function loadImage(src, crossOrigin) {
+function loadImage(src) {
   return new Promise((resolve) => {
     const img = new Image();
-    if (crossOrigin) img.crossOrigin = "anonymous";
+    img.crossOrigin = "anonymous";
     img.onload = () => resolve(img);
     img.onerror = () => resolve(null);
     img.src = src;
@@ -173,20 +186,43 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
+// Draws the mark centred on (cx, cy), `size` px square.
+function drawMark(ctx, cx, cy, size) {
+  if (typeof Path2D === "undefined") return;
+  const petal = new Path2D(MARK_PETAL_D);
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(size / 120, size / 120);
+  for (const [deg, alpha, fill, seed, seedAlpha] of MARK_PETALS) {
+    ctx.save();
+    ctx.rotate((deg * Math.PI) / 180);
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = fill;
+    ctx.fill(petal);
+    ctx.globalAlpha = alpha * seedAlpha;
+    ctx.fillStyle = seed;
+    ctx.beginPath();
+    ctx.ellipse(-3, -32, 2.5, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
 // Brand lockup centred on (cx, cy): wordmark with the mark at its start
 // (right) side, as on the site header.
-function drawLockup(ctx, mark, cx, cy) {
+function drawLockup(ctx, cx, cy) {
   const size = 56;
   ctx.font = `700 ${size}px ${SERIF}`;
   const textW = ctx.measureText(BRAND_NAME).width;
-  const markSize = mark ? size * 1.25 : 0;
-  const gap = mark ? size * 0.3 : 0;
+  const markSize = size * 1.25;
+  const gap = size * 0.3;
   const left = cx - (textW + gap + markSize) / 2;
   ctx.fillStyle = CREAM;
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
   ctx.fillText(BRAND_NAME, left, cy);
-  if (mark) ctx.drawImage(mark, left + textW + gap, cy - markSize / 2, markSize, markSize);
+  drawMark(ctx, left + textW + gap + markSize / 2, cy, markSize);
   ctx.textBaseline = "alphabetic";
 }
 
@@ -208,10 +244,7 @@ function drawLabel(ctx, text, right, cy) {
 export async function drawCard(canvas, producer, strings) {
   await loadFonts();
   const imageUrl = producer.images?.[0];
-  const [photo, mark] = await Promise.all([
-    imageUrl ? loadImage(photoSrc(imageUrl), true) : null,
-    loadImage(MARK_URL, false),
-  ]);
+  const photo = imageUrl ? await loadImage(photoSrc(imageUrl)) : null;
 
   const ctx = canvas.getContext("2d");
   canvas.width = W;
@@ -240,14 +273,12 @@ export async function drawCard(canvas, producer, strings) {
     g.addColorStop(1, GREEN_DEEP);
     ctx.fillStyle = g;
     ctx.fillRect(0, 820, W, H - 820);
-  } else if (mark) {
-    // No photo: the mark, large and quiet, where the photo would be.
-    ctx.globalAlpha = 0.9;
-    ctx.drawImage(mark, (W - 420) / 2, 450, 420, 420);
-    ctx.globalAlpha = 1;
+  } else {
+    // No photo: the mark, large, where the photo would be.
+    drawMark(ctx, W / 2, 660, 420);
   }
 
-  drawLockup(ctx, mark, W / 2, 300);
+  drawLockup(ctx, W / 2, 300);
 
   const right = W - SIDE;
   if (strings?.kicker) drawLabel(ctx, strings.kicker, right, 1060);
