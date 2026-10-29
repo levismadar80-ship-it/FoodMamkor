@@ -82,7 +82,7 @@ describe("MEH-2548 — when chip", () => {
   it.each([
     ["2026-10-29", "events.detail.when_today"],
     ["2026-10-30", "events.detail.when_tomorrow"],
-    ["2026-11-02", "events.detail.when_this_week"],
+    ["2026-10-31", "events.detail.when_this_week"],
   ])("%s → %s", async (date, label) => {
     await renderEvent({ event_date: date });
     expect(screen.getByTestId("event-when").textContent).toBe(label);
