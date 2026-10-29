@@ -12,10 +12,20 @@ import {
   isFavorited,
   subscribeFavorites,
 } from "@/lib/favorites-cache";
+import { ensureSavedLoaded, isSaved, subscribeSaved } from "@/lib/saved-cache";
 import ProducerCard from "@/components/ProducerCard";
 import AlertPrefsPanel from "@/components/AlertPrefsPanel";
 import Breadcrumb from "@/components/Breadcrumb";
+import ChipScrollRow from "@/components/ChipScrollRow";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
+import EventEntryRow, { toEventEntry } from "@/components/EventEntryRow";
+import RecipeCard from "@/components/public/RecipeCard";
+import SaveButton from "@/components/SaveButton";
+import { EMPTY_SAVED, loadSavedItems, splitByTime } from "./savedItems";
+
+// MEH-2560: the chips, in order. "all" mixes every type in sections headed by
+// the same labels; the others show one type.
+const FILTERS = ["all", "businesses", "events", "experiences", "recipes"];
 
 function FavoriteCardWrapper({ fav, open, onToggle, onClose }) {
   const t = useTranslations("favorites");
@@ -112,8 +122,36 @@ function FavoriteCardWrapper({ fav, open, onToggle, onClose }) {
   );
 }
 
+// MEH-2560: a saved recipe on /favorites — the producer page's card, with the
+// heart on its picture corner as a sibling of the card link (a button inside
+// an <a> would follow the link).
+function SavedRecipeCard({ recipe }) {
+  return (
+    <div className="relative h-full" data-testid="saved-recipe">
+      <RecipeCard slug={recipe.producer_slug} recipe={recipe} />
+      <div className="absolute top-1 start-1 z-10">
+        <SaveButton itemType="recipe" itemId={recipe.id} variant="row" />
+      </div>
+    </div>
+  );
+}
+
+// MEH-2560: one-line empty state for a type filter (0 of that type, others
+// saved). The «הכל» and «בתי עסק» empty states keep the full block below.
+function TypeEmpty({ text }) {
+  return (
+    <div className="text-center py-16" data-testid="favorites-type-empty">
+      <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-50 mb-4">
+        <HeartStraight size={28} weight="regular" className="text-primary" aria-hidden="true" />
+      </div>
+      <p className="text-fg-muted">{text}</p>
+    </div>
+  );
+}
+
 export default function FavoritesClient() {
   const t = useTranslations("favorites");
+  const tList = useTranslations("events.list");
   // MEH-996: shared generic error copy for the failed-fetch state.
   const tError = useTranslations("error");
   const { user, loading: authLoading } = useAuth();
@@ -130,6 +168,14 @@ export default function FavoritesClient() {
   // effect (it's in the deps) so "נסו שוב" refetches without a full reload —
   // mirrors SectionFetchError's onRetry contract (dashboard/page.js:88).
   const [attempt, setAttempt] = useState(0);
+  // MEH-2560: recipes / events / experiences, fetched beside the businesses.
+  // Their failure is their own: the businesses still render, and the saved
+  // part shows the error + retry where it would have been.
+  const [saved, setSaved] = useState(EMPTY_SAVED);
+  const [savedLoading, setSavedLoading] = useState(true);
+  const [savedError, setSavedError] = useState(false);
+  const [savedAttempt, setSavedAttempt] = useState(0);
+  const [filter, setFilter] = useState("all");
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -173,6 +219,17 @@ export default function FavoritesClient() {
         .finally(() => setLoading(false));
     }
   }, [user, authLoading, router, attempt]);
+
+  useEffect(() => {
+    if (!user) return;
+    loadSavedItems()
+      .then((parsed) => {
+        setSaved(parsed);
+        setSavedError(false);
+      })
+      .catch(() => setSavedError(true))
+      .finally(() => setSavedLoading(false));
+  }, [user, savedAttempt]);
 
   // MEH-2034: /favorites was the only favorites surface not subscribed to the
   // shared cache — its list lived in the local useState above, filled by the
@@ -222,6 +279,50 @@ export default function FavoritesClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [favorites, cacheKnownIds, cacheTick]);
 
+  // MEH-2560: the same contract for saved items, through saved-cache — a heart
+  // tapped here hides its row at once and brings it back if the call fails.
+  const [savedTick, setSavedTick] = useState(0);
+  const [savedKnownKeys, setSavedKnownKeys] = useState(null);
+  useEffect(() => {
+    if (!user) return undefined;
+    let alive = true;
+    const unsub = subscribeSaved(() => {
+      if (alive) setSavedTick((n) => n + 1);
+    });
+    ensureSavedLoaded().then((keys) => {
+      if (alive) setSavedKnownKeys(new Set(keys));
+    });
+    return () => {
+      alive = false;
+      unsub();
+    };
+  }, [user]);
+
+  const visibleSaved = useMemo(() => {
+    const keep = (type) => (row) =>
+      !savedKnownKeys?.has(`${type}:${row.id}`) || isSaved(type, row.id);
+    return {
+      recipes: saved.recipes.filter(keep("recipe")),
+      events: saved.events.filter(keep("event")),
+      experiences: saved.experiences.filter(keep("experience")),
+    };
+    // savedTick: isSaved reads module state (see cacheTick above).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [saved, savedKnownKeys, savedTick]);
+
+  const { upcomingEvents, upcomingExperiences, past } = useMemo(
+    () => splitByTime(visibleSaved.events, visibleSaved.experiences),
+    [visibleSaved],
+  );
+
+  const counts = {
+    businesses: visibleFavorites.length,
+    events: visibleSaved.events.length,
+    experiences: visibleSaved.experiences.length,
+    recipes: visibleSaved.recipes.length,
+  };
+  counts.all = counts.businesses + counts.events + counts.experiences + counts.recipes;
+
   // MEH-1479: clear the error, show the skeleton again, and bump attempt to
   // re-trigger the fetch effect.
   const handleRetry = () => {
@@ -230,63 +331,16 @@ export default function FavoritesClient() {
     setAttempt((n) => n + 1);
   };
 
-  if (authLoading || !user) return null;
+  const handleSavedRetry = () => {
+    setSavedError(false);
+    setSavedLoading(true);
+    setSavedAttempt((n) => n + 1);
+  };
 
-  return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <Breadcrumb
-        items={[{ href: "/", label: t("breadcrumb_home") }, { label: t("breadcrumb_favorites") }]}
-        className="mb-4"
-      />
-      <h1 className="font-headline-lg text-3xl font-bold mb-8 text-text inline-flex items-center gap-2">
-        <Heart size={28} weight="fill" className="text-primary" aria-hidden="true" />
-        {t("title")}
-      </h1>
-
-      {loading ? (
-        <SkeletonProducerGrid count={6} />
-      ) : loadError ? (
-        // MEH-1479: quiet error state (no red wash) + retry button under the
-        // text, mirroring SectionFetchError (dashboard/page.js:88).
-        <div className="text-center py-20" role="alert">
-          <p className="text-fg-muted">{tError("generic")}</p>
-          <button
-            type="button"
-            onClick={handleRetry}
-            data-testid="favorites-retry"
-            className="mt-4 text-sm text-primary font-medium hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-          >
-            {tError("retry")}
-          </button>
-        </div>
-      ) : visibleFavorites.length === 0 ? (
-        <div className="text-center py-20">
-          <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-green-50 mb-6">
-            {/* MEH-1628: HeartStraight, not the generic Leaf — the glyph must
-                echo the control empty_subtitle tells the user to press
-                (MEH-685 precedent: the favorites toast picked the same icon). */}
-            <HeartStraight size={40} weight="regular" className="text-primary" aria-hidden="true" />
-          </div>
-          <h2 className="font-headline-md text-2xl font-bold text-text mb-2">
-            {t("empty_title")}
-          </h2>
-          {/* MEH-1628: exactly ONE helper paragraph. The isFirstVisit tip block
-              that used to sit below said the same thing as empty_subtitle —
-              two helper paragraphs on one screen. Deleted, key removed. */}
-          <p className="text-fg-muted mb-6 max-w-md mx-auto">
-            {t("empty_subtitle")}
-          </p>
-          <div>
-            <button
-              onClick={() => router.push("/")}
-              className="bg-primary text-white px-6 py-3 rounded-full hover:bg-primary-dark transition font-medium"
-            >
-              {t("empty_cta")}
-            </button>
-          </div>
-        </div>
-      ) : (
-        <>
+  // MEH-2560: the page's blocks, shared by «הכל» and the single-type views.
+  function renderBusinesses() {
+    return (
+      <>
           {/* MEH-1628: the bell is the sentence's grammatical object, so it is
               interpolated INTO the string via t.rich — not a sibling glyph and
               never an emoji character (Emoji LOCK v2). The sibling <Bell> that
@@ -317,6 +371,201 @@ export default function FavoritesClient() {
               />
             ))}
           </div>
+        </>
+    );
+  }
+
+  // «בתי עסק» with no businesses: the pre-MEH-2560 empty state, unchanged.
+  function renderBusinessesEmpty() {
+    return (
+      <div className="text-center py-20">
+        <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-green-50 mb-6">
+          {/* MEH-1628: HeartStraight, not the generic Leaf — the glyph must
+              echo the control empty_subtitle tells the user to press
+              (MEH-685 precedent: the favorites toast picked the same icon). */}
+          <HeartStraight size={40} weight="regular" className="text-primary" aria-hidden="true" />
+        </div>
+        <h2 className="font-headline-md text-2xl font-bold text-text mb-2">
+          {t("empty_title")}
+        </h2>
+        {/* MEH-1628: exactly ONE helper paragraph. The isFirstVisit tip block
+            that used to sit below said the same thing as empty_subtitle —
+            two helper paragraphs on one screen. Deleted, key removed. */}
+        <p className="text-fg-muted mb-6 max-w-md mx-auto">
+          {t("empty_subtitle")}
+        </p>
+        <div>
+          <button
+            onClick={() => router.push("/")}
+            className="bg-primary text-white px-6 py-3 rounded-full hover:bg-primary-dark transition font-medium"
+          >
+            {t("empty_cta")}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  function renderEvents(rows, tab) {
+    return (
+      <div className="border-t border-border">
+        {rows.map((row) => (
+          <EventEntryRow key={row.id} entry={toEventEntry(row, tab, tList)} freeLabel={tList("free")} />
+        ))}
+      </div>
+    );
+  }
+
+  function renderRecipes() {
+    return (
+      <div className="grid grid-cols-2 gap-3 md:gap-6 lg:grid-cols-3 xl:grid-cols-4">
+        {visibleSaved.recipes.map((recipe) => (
+          <SavedRecipeCard key={recipe.id} recipe={recipe} />
+        ))}
+      </div>
+    );
+  }
+
+  // «עברו» — past events and finished/cancelled experiences, at the bottom.
+  function renderPast(items) {
+    if (items.length === 0) return null;
+    return (
+      <section aria-labelledby="favorites-h-past" data-testid="favorites-section-past">
+        <h2 id="favorites-h-past" className="font-headline-md text-xl font-bold text-fg-muted mb-4">
+          {t("past_heading")}
+        </h2>
+        <div className="border-t border-border opacity-80">
+          {items.map(({ kind, row }) => (
+            <EventEntryRow key={`${kind}:${row.id}`} entry={toEventEntry(row, kind, tList)} freeLabel={tList("free")} />
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  // The saved half failed while the businesses loaded: quiet error + retry in
+  // its place (the MEH-1479 pattern), never a false «nothing saved».
+  function renderSavedError() {
+    return (
+      <div className="text-center py-12" role="alert" data-testid="favorites-saved-error">
+        <p className="text-fg-muted">{tError("generic")}</p>
+        <button
+          type="button"
+          onClick={handleSavedRetry}
+          data-testid="favorites-saved-retry"
+          className="mt-4 text-sm text-primary font-medium hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+        >
+          {tError("retry")}
+        </button>
+      </div>
+    );
+  }
+
+  if (authLoading || !user) return null;
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 py-8">
+      <Breadcrumb
+        items={[{ href: "/", label: t("breadcrumb_home") }, { label: t("breadcrumb_favorites") }]}
+        className="mb-4"
+      />
+      <h1 className="font-headline-lg text-3xl font-bold mb-8 text-text inline-flex items-center gap-2">
+        <Heart size={28} weight="fill" className="text-primary" aria-hidden="true" />
+        {t("title")}
+      </h1>
+
+      {loading || savedLoading ? (
+        <SkeletonProducerGrid count={6} />
+      ) : loadError ? (
+        // MEH-1479: quiet error state (no red wash) + retry button under the
+        // text, mirroring SectionFetchError (dashboard/page.js:88).
+        <div className="text-center py-20" role="alert">
+          <p className="text-fg-muted">{tError("generic")}</p>
+          <button
+            type="button"
+            onClick={handleRetry}
+            data-testid="favorites-retry"
+            className="mt-4 text-sm text-primary font-medium hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+          >
+            {tError("retry")}
+          </button>
+        </div>
+      ) : counts.all === 0 && !savedError ? (
+        // MEH-2560: nothing saved of any type. Same block as the businesses
+        // empty state below, with the approved «הכל» copy.
+        <div className="text-center py-20" data-testid="favorites-empty-all">
+          <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-green-50 mb-6">
+            <HeartStraight size={40} weight="regular" className="text-primary" aria-hidden="true" />
+          </div>
+          <h2 className="font-headline-md text-2xl font-bold text-text mb-2">
+            {t("empty_all_title")}
+          </h2>
+          <p className="text-fg-muted mb-6 max-w-md mx-auto">{t("empty_all_subtitle")}</p>
+          <div>
+            <button
+              onClick={() => router.push("/")}
+              className="bg-primary text-white px-6 py-3 rounded-full hover:bg-primary-dark transition font-medium"
+            >
+              {t("empty_cta")}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* MEH-2560: one chip per type, each with its count. */}
+          <ChipScrollRow
+            variant="category"
+            className="mb-6"
+            chips={FILTERS.map((key) => ({
+              key,
+              label: (
+                <>
+                  {t(`filter_${key}`)}
+                  <span className="numeric text-xs opacity-70" data-testid={`favorites-count-${key}`}>
+                    {counts[key]}
+                  </span>
+                </>
+              ),
+            }))}
+            activeKey={filter}
+            onChipClick={setFilter}
+          />
+          {filter === "all" ? (
+            <div className="space-y-10">
+              {[
+                ["events", upcomingEvents.length > 0 && renderEvents(upcomingEvents, "events")],
+                ["experiences", upcomingExperiences.length > 0 && renderEvents(upcomingExperiences, "experiences")],
+                ["businesses", visibleFavorites.length > 0 && renderBusinesses()],
+                ["recipes", visibleSaved.recipes.length > 0 && renderRecipes()],
+              ]
+                .filter(([, body]) => body)
+                .map(([key, body]) => (
+                  <section key={key} aria-labelledby={`favorites-h-${key}`} data-testid={`favorites-section-${key}`}>
+                    <h2 id={`favorites-h-${key}`} className="font-headline-md text-xl font-bold text-text mb-4">
+                      {t(`filter_${key}`)}
+                    </h2>
+                    {body}
+                  </section>
+                ))}
+              {savedError && renderSavedError()}
+              {renderPast(past)}
+            </div>
+          ) : filter === "businesses" ? (
+            visibleFavorites.length > 0 ? renderBusinesses() : renderBusinessesEmpty()
+          ) : savedError ? (
+            renderSavedError()
+          ) : counts[filter] === 0 ? (
+            <TypeEmpty text={t(`empty_${filter}`)} />
+          ) : filter === "recipes" ? (
+            renderRecipes()
+          ) : (
+            <div className="space-y-10">
+              {filter === "events"
+                ? upcomingEvents.length > 0 && renderEvents(upcomingEvents, "events")
+                : upcomingExperiences.length > 0 && renderEvents(upcomingExperiences, "experiences")}
+              {renderPast(past.filter((p) => p.kind === filter))}
+            </div>
+          )}
         </>
       )}
     </div>
