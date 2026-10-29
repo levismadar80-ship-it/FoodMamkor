@@ -281,7 +281,7 @@ class TestOrganizerPresentThroughEvents:
         """A blank or whitespace first entry never becomes a broken url()."""
         organizer = _organizer(db)
         business = _business(db)
-        organizer.images = ["", "  ", "https://res.cloudinary.com/x/o2.jpg"]
+        organizer.images = ["", "  ", " https://res.cloudinary.com/x/o2.jpg "]
         business.images = ["", " "]
         db.commit()
         _event(db, organizer)

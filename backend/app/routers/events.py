@@ -61,7 +61,10 @@ def _serialize(event: Event) -> EventOut:
         # Read-only, no schema change.
         # The first non-blank entry; blank / whitespace entries are skipped.
         owner_image_url=(
-            next((u for u in (event.producer.images or []) if u and u.strip()), None)
+            next(
+                (u.strip() for u in (event.producer.images or []) if u and u.strip()),
+                None,
+            )
             if event.producer
             else None
         ),
