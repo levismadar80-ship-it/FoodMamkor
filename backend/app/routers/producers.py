@@ -734,6 +734,9 @@ def _servable_kashrut_certs(
             KashrutBadgeRequest.cert_url.isnot(None),
             KashrutBadgeRequest.cert_url != "",
         )
+        # MEH-2518: a renewal leaves two approved rows for one code; newest
+        # first so the proxy's next(...) serves the current certificate.
+        .order_by(KashrutBadgeRequest.created_at.desc())
         .all()
     )
 

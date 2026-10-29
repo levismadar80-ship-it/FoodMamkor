@@ -34,6 +34,7 @@ import {
   Eye,
   Storefront,
   CalendarBlank,
+  SignOut,
 } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
 import EmptyState from "@/components/ui/EmptyState";
@@ -112,9 +113,10 @@ export default function ProducerDashboardLayout({ children }) {
   const t = useTranslations("dashboard.producer.nav");
   const tDenied = useTranslations("errors.access_denied.producer");
   const tA11y = useTranslations("a11y");
+  const tAccount = useTranslations("account.menu");
   const router = useRouter();
   const pathname = usePathname();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, logout } = useAuth();
 
   // MEH-1599: 401 and 403 are DIFFERENT outcomes and must not share a branch.
   //   - unauthenticated (401) → /login, now carrying ?redirect= so she lands
@@ -235,6 +237,22 @@ export default function ProducerDashboardLayout({ children }) {
         </div>
       </nav>
       {children}
+      {/* MEH-2490: below md the dashboard had no way out. The header avatar
+          menu is md+ only (Header.jsx UserMenu `hidden md:block`), and the
+          consumer BottomNav, whose account sheet carried «התנתקות», is gated
+          off this subtree (MEH-2431). Same key and icon as that sheet row; no
+          new copy. After logout the gate above sends her to /login. */}
+      <div className="md:hidden flex justify-center px-4 pt-2 pb-6">
+        <button
+          type="button"
+          data-testid="dashboard-mobile-logout"
+          onClick={logout}
+          className="inline-flex items-center gap-2 min-h-[44px] px-4 text-sm font-medium text-error focus-ring rounded-[8px]"
+        >
+          <SignOut size={18} aria-hidden="true" />
+          {tAccount("logout")}
+        </button>
+      </div>
     </div>
   );
 }

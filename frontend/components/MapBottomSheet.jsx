@@ -14,6 +14,24 @@ const HALF = 45;
 const FULL = 92;
 const SNAPS = [PEEK, HALF];
 
+// MEH-2510: PEEK is 14vh, but the nav pill floating over the sheet is a FIXED
+// px band (`--bottom-nav-clearance`, BottomNav.jsx: viewport bottom → pill top,
+// 72px on a phone with no safe area). On a short phone 14vh is smaller than
+// that band plus the peek header, so the one line PEEK exists to show — the
+// «N בתי עסק» count — sat under the pill: fully hidden at 375×667 (14vh = 93px),
+// 8 of its 20px at 375×760. The floor is the band plus 3.5rem = drag handle
+// (21px) + the count row (20px) + ~15px air. Phones tall enough that 14vh
+// already clears it (≈ 915px and up) keep 14vh unchanged. The snap and drag
+// math stays in vh on purpose: on a floored phone the first few vh of an upward
+// drag from PEEK move nothing (~5vh = 33px at 667) — accepted over reworking
+// the MEH-2148 gesture arbitration, which keys on `snap === PEEK`.
+// Same fallback as the paddingBottom below, so both read one clearance.
+const PEEK_FLOOR = "calc(var(--bottom-nav-clearance, calc(4.5rem + env(safe-area-inset-bottom, 0px))) + 3.5rem)";
+// Every height the sheet renders or publishes goes through this, so the
+// controls riding `--map-sheet-h` (NearMePill, MapPane, the attribution) follow
+// the real edge, not the unfloored vh.
+const sheetHeight = (vh) => `max(${vh}vh, ${PEEK_FLOOR})`;
+
 function closest(value) {
   return SNAPS.reduce((a, b) => (Math.abs(b - value) < Math.abs(a - value) ? b : a));
 }
@@ -96,8 +114,8 @@ export default function MapBottomSheet({ snap, onSnapChange, children, count, lo
   // controls that must ride the sheet edge (the NearMePill) self-position via
   // calc(var(--map-sheet-h) + gap) instead of guessing a fixed offset. `heightVh`
   // is `transient ?? snap`, so this updates on every drag frame AND every snap —
-  // the pill tracks the edge continuously through both. Published as a `vh`
-  // string to match the sheet's own `height: ${heightVh}vh`.
+  // the pill tracks the edge continuously through both. Published as the same
+  // `sheetHeight()` string the sheet's own `height` uses (MEH-2510 floor).
   //
   // `--map-sheet-anim` publishes the sheet's OWN transition mode (this same
   // `transient != null ? "none" : 0.3s` split the sheet uses on its height, line
@@ -108,7 +126,7 @@ export default function MapBottomSheet({ snap, onSnapChange, children, count, lo
   // HALF→PEEK collapse — the very overlap class this ticket fixes).
   useEffect(() => {
     const root = document.documentElement;
-    root.style.setProperty("--map-sheet-h", `${heightVh}vh`);
+    root.style.setProperty("--map-sheet-h", sheetHeight(heightVh));
     root.style.setProperty("--map-sheet-anim", transient != null ? "0ms" : "300ms");
   }, [heightVh, transient]);
   // Clean up ONLY on unmount so a non-/map page never inherits a stale offset
@@ -207,7 +225,7 @@ export default function MapBottomSheet({ snap, onSnapChange, children, count, lo
       data-testid="map-bottom-sheet"
       className="fixed inset-x-0 bottom-0 z-[600] bg-background rounded-t-3xl border-t border-border flex flex-col"
       style={{
-        height: `${heightVh}vh`,
+        height: sheetHeight(heightVh),
         transition: transient != null ? "none" : "height 0.3s cubic-bezier(0.32,0.72,0,1)",
         // MEH-2148: was a flat 64-pixel literal -- a static twin of a nav band
         // that has not been that tall since the pill redesign. The live
@@ -261,7 +279,7 @@ export default function MapBottomSheet({ snap, onSnapChange, children, count, lo
             </button>
           </div>
         ) : (
-          <p className="text-sm font-medium text-accent numeric">
+          <p className="text-sm font-medium text-accent numeric" data-testid="sheet-count">
             {t("count", { count })}
           </p>
         )}

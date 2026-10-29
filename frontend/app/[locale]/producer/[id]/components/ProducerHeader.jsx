@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { Star, StarOfDavid } from "@phosphor-icons/react";
@@ -7,6 +7,7 @@ import AlertPrefsPanel from "@/components/AlertPrefsPanel";
 import BadgeRow from "@/components/BadgeRow";
 import FavoriteButton from "@/components/FavoriteButton";
 import KashrutBadgeStrip from "@/components/KashrutBadgeStrip";
+import ProducerUpdatesButton from "@/components/ProducerUpdatesButton";
 import ShareButton from "@/components/ShareButton";
 import { useAuth } from "@/lib/auth-context";
 import {
@@ -14,7 +15,7 @@ import {
   isFavorited as isFavoritedCache,
   subscribeFavorites,
 } from "@/lib/favorites-cache";
-import { allBadges } from "@/lib/badges";
+import { allBadges, isKashrutCurrent } from "@/lib/badges";
 import { getOrderWindowStatus } from "@/lib/orderWindow";
 import ReviewExcerpt from "./ReviewExcerpt";
 import { getVacationReturnDate } from "../lib/producer-format";
@@ -103,6 +104,12 @@ export default function ProducerHeader({
   }, [favorited, onCloseAlerts]);
 
   const showAlerts = Boolean(favorited && user);
+
+  // MEH-2526: the panel reads prefs once, on mount. A write from the updates
+  // button while it is open would leave it showing (and on Save, re-sending)
+  // the pre-write values — bumping its key re-mounts it so it re-reads.
+  const [panelKey, setPanelKey] = useState(0);
+  const remountPanel = useCallback(() => setPanelKey((k) => k + 1), []);
 
   // MEH-1334: 3-state status. Anything not closed/vacation reads as open —
   // matches the old ContactCard OPEN_STATES default-open behavior.
@@ -293,7 +300,9 @@ export default function ProducerHeader({
             certs={producer.kashrut_certs}
             producerId={producer.id}
           />
-        ) : producer.kashrut_verified_at ? (
+        ) : isKashrutCurrent(producer) ? (
+          /* MEH-2518: same expiry gate as the strip — this line used to check
+             kashrut_verified_at only, so a lapsed certificate still read «כשר». */
           <p className="flex items-center gap-1.5 text-[12.5px] text-muted">
             <StarOfDavid size={14} aria-hidden="true" />
             {t("producer.detail.header.attr.kosher")}
@@ -364,6 +373,20 @@ export default function ProducerHeader({
         />
       </div>
 
+      {/* MEH-2526: the permanent updates toggle — the owner could not find
+          the alerts switch, so it no longer appears only after a save. Every
+          viewport (unlike the desktop-only actions row above), in normal flow
+          directly above the panel it opens, so the panel lands under it. It
+          is the re-entry control the MEH-1693 trade-off note below asks for. */}
+      <div className="mt-3">
+        <ProducerUpdatesButton
+          producerId={producer.id}
+          onOpenAlerts={onOpenAlerts}
+          onChanged={remountPanel}
+          refreshSignal={alertsOpen}
+        />
+      </div>
+
       {/* MEH-1609 built this mount; MEH-1693 keeps it and changes only what
           opens it. It sits OUTSIDE the actions row, in normal flow: the row is
           `lg:absolute`-pinned to the title's inline-end, so a block panel
@@ -382,6 +405,7 @@ export default function ProducerHeader({
       {showAlerts && alertsOpen && (
         <div className="mt-3" data-testid="alerts-reentry-panel">
           <AlertPrefsPanel
+            key={panelKey}
             producerId={producer.id}
             producerName={producer.name}
             onClose={onCloseAlerts}
