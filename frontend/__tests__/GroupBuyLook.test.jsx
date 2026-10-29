@@ -116,6 +116,20 @@ describe("group-buy page", () => {
     expect(screen.getByTestId("group-buy-discount").textContent).toBe("-28%");
   });
 
+  it("open → «איך זה עובד» with the group's minimum; funded → no box", async () => {
+    api.get.mockResolvedValue({ data: GB });
+    const { unmount } = render(<GroupBuyDetailClient id="gb-1" />);
+    await screen.findByText("שק קמח כוסמין");
+    const how = screen.getByTestId("group-buy-how");
+    expect(how.querySelectorAll("li")).toHaveLength(3);
+    expect(how.textContent).toContain(`group_buys.detail.how_unlock ${GB.min_participants}`);
+    unmount();
+    api.get.mockResolvedValue({ data: { ...GB, status: "funded" } });
+    render(<GroupBuyDetailClient id="gb-1" />);
+    await screen.findByText("שק קמח כוסמין");
+    expect(screen.queryByTestId("group-buy-how")).toBeNull();
+  });
+
   it("no business photo → the cart tile", async () => {
     api.get.mockResolvedValue({ data: { ...GB, producer_image_url: null } });
     render(<GroupBuyDetailClient id="gb-1" />);

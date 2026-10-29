@@ -510,6 +510,27 @@ export default function GroupBuyDetailClient({ id }) {
               <p className="text-lg text-text/90 leading-relaxed whitespace-pre-line">{gb.description}</p>
             )}
 
+            {/* MEH-2544: how a group buy works, while it can still be joined —
+                copy approved by Sapir 29/10. */}
+            {open && (
+              <section className="mt-6 rounded-[12px] bg-green-50 p-4" data-testid="group-buy-how">
+                <h2 className="font-headline-md text-lg font-bold text-text mb-3">{t("how_title")}</h2>
+                <ol className="space-y-2">
+                  {[t("how_join"), t("how_unlock", { min: gb.min_participants }), t("how_no_commit")].map((line, i) => (
+                    <li key={i} className="flex gap-3 text-base text-text">
+                      <span
+                        aria-hidden="true"
+                        className="shrink-0 w-6 h-6 rounded-full bg-primary text-white text-sm font-bold grid place-items-center"
+                      >
+                        {i + 1}
+                      </span>
+                      <span>{line}</span>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            )}
+
             {/* MEH-1457: "מתי ואיך מקבלים" — shown only when the producer filled it. */}
             {gb.fulfillment_note && (
               <div className="mt-6 flex gap-3 rounded-[12px] border border-border bg-white p-4">
