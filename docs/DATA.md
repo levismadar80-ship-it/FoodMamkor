@@ -1102,6 +1102,7 @@ DELETE /admin/home-products/{id}               admin
 GET    /admin/users                            admin — search
 PUT    /admin/users/{id}/role                  admin
 POST   /admin/users/{id}/block                 admin
+DELETE /admin/users/{id}                       admin — hard delete + same cascade as DELETE /auth/me, no email; 403 on admins/super-admin, 400 on self (MEH-2585)
 GET    /admin/users/{id}/favorites             admin
 
 # Content
