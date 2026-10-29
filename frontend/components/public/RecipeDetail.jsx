@@ -146,7 +146,8 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
           )}
           <div className="mt-5 max-w-md">
             <OwnerRow href={`/${producer.slug}`} name={producer.name} testId="recipe-owner-row">
-              <span className="font-medium">{producer.name}</span>
+              <span className="block text-[13px] text-fg-muted">{t("by_label")}</span>
+              <span className="block font-medium">{producer.name}</span>
             </OwnerRow>
           </div>
           {facts.length > 0 && (

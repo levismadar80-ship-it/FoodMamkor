@@ -65,6 +65,14 @@ describe("RecipeDetail eyebrow", () => {
   });
 });
 
+describe("RecipeDetail byline", () => {
+  it("labels the business row «מאת» above the name", () => {
+    renderRecipe();
+    const row = screen.getByTestId("recipe-owner-row");
+    expect(row.textContent).toContain("recipes.detail.by_label");
+  });
+});
+
 describe("RecipeDetail facts", () => {
   it("renders no tile row when nothing is set", () => {
     renderRecipe();
