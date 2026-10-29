@@ -113,24 +113,22 @@ describe("MEH-2534 — middleware", () => {
     global.fetch = vi.fn(async () => ({ ok: status >= 200 && status < 300, status }));
   };
 
-  it("410 -> rewrites to the page itself with a real 410, without a fault log", async () => {
-    // The page streams (200 by the time it renders), so the status has to be
-    // set here or a crawler never sees the backend's 410.
+  it("410 -> passes the request through untouched (no status rewrite), without a fault log", async () => {
+    // MEH-2576: a middleware rewrite carrying status 410 is served on Vercel
+    // as the platform's own "410: GONE — deployment removed" page, so the
+    // response must be next-intl's own, with no 410 set here.
     backendReturns(410);
     const res = await middleware(requestFor(`/he/${SLUG}`));
-    expect(res.__rewrite && res.status).toBe(410);
-    expect(res.url.pathname).toBe(`/he/${SLUG}`);
+    expect(res.__intl).toBe(true);
+    expect(rewrite).not.toHaveBeenCalled();
     expect(console.error).not.toHaveBeenCalled();
-    // next-intl's locale override rides along; its routing verdict does not.
-    expect(res.headers.get("x-middleware-request-x-next-intl-locale")).toBe("en");
-    expect(res.headers.has("x-middleware-next")).toBe(false);
   });
 
-  it("410 on a prefix-less URL -> rewrites to the default locale", async () => {
+  it("410 on a prefix-less URL -> also passes through", async () => {
     backendReturns(410);
     const res = await middleware(requestFor(`/${SLUG}`));
-    expect(res.status).toBe(410);
-    expect(res.url.pathname).toBe(`/he/${SLUG}`);
+    expect(res.__intl).toBe(true);
+    expect(rewrite).not.toHaveBeenCalled();
   });
 
   it("404 control -> still the hard 404 rewrite", async () => {
