@@ -57,7 +57,7 @@ export const FavoritesResponseSchema = z.array(FavoriteSchema);
 // item_id } — the hearts' cache for saved recipes / events / experiences
 // (lib/saved-cache.js). item_type is the backend's closed Literal; an unknown
 // value fails the parse and the cache falls back to empty.
-export const SavedItemRefSchema = z.object({
+const SavedItemRefSchema = z.object({
   item_type: z.enum(["recipe", "event", "experience"]),
   item_id: z.string(),
 });

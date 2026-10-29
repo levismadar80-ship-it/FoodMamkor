@@ -11,7 +11,9 @@ function loadPosthog(key) {
     posthogPromise = import("posthog-js").then(({ default: posthog }) => {
       posthog.init(key, {
         // EU ingestion host by default (data residency); override per-env
-        // with NEXT_PUBLIC_POSTHOG_HOST.
+        // with NEXT_PUBLIC_POSTHOG_HOST. `eu.i.posthog.com` is PostHog's
+        // ingestion host (eu.posthog.com is the app UI); it must match
+        // connect-src in next.config.js (MEH-435).
         //
         // MEH-1981: this default is CITED IN THE PRIVACY POLICY
         // (`messages/{he,en}.json` → privacy.sections.third_parties.items.posthog,
@@ -22,7 +24,7 @@ function loadPosthog(key) {
         // override is ever used in an environment, update the policy string in
         // the same change.
         api_host:
-          process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://eu.posthog.com",
+          process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://eu.i.posthog.com",
         // Consent is already enforced by the cookieConsent gate in
         // trackEvent (this path is only reached when consent === "all");
         // we drive captures explicitly, so disable posthog's autocapture

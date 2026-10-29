@@ -11,13 +11,15 @@ vi.mock("@/lib/auth-context", () => ({
 
 // MEH-1176 F3: Header reads usePathname from "@/i18n/navigation" (locale-
 // stripped — MEH-731), NOT from next/navigation. The pathname fixture ref
-// is therefore routed through the i18n mock below; next/navigation only
-// supplies Header's useRouter. Default to /about so suites don't fight the
+// is therefore routed through the i18n mock below. MEH-2578: Header's
+// useRouter comes from there too; next/navigation's router gets its own spy,
+// so a regression back to it (which drops /en) fails the push assertions.
+// Default to /about so suites don't fight the
 // homepage trust strip / transparent surface; individual tests swap to "/".
 const pathnameRef = { current: "/about" };
 vi.mock("next/navigation", () => ({
   usePathname: () => "/about",
-  useRouter: () => ({ push: mockPush, replace: vi.fn(), back: vi.fn() }),
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() }),
 }));
 
 // MEH-629 item 6: the setLang mock was removed — PR #731 dropped the
@@ -96,7 +98,14 @@ vi.mock("@phosphor-icons/react", () => ({
 // (the next-intl-aware router). MEH-1176 F3: Header's OWN pathname comes from
 // here too (MEH-731) — this mock is now the single pathname source for tests.
 vi.mock("@/i18n/navigation", () => ({
-  useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
+  // MEH-2578: the chrome now takes Link from here, not next/link.
+  Link: ({ children, href, ...props }) => (
+    <a href={typeof href === "string" ? href : "#"} {...props}>
+      {children}
+    </a>
+  ),
+  // MEH-2578: Header takes its router from here now.
+  useRouter: () => ({ replace: vi.fn(), push: mockPush, back: vi.fn() }),
   usePathname: () => pathnameRef.current,
 }));
 

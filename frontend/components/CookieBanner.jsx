@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+// MEH-2578: locale-aware Link — the banner shows on every page for a first
+// visit, and next/link dropped the /en prefix on its /privacy link.
+import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { hasCookieConsent, setCookieConsent } from "@/lib/cookie-consent";
 

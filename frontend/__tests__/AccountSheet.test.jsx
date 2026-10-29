@@ -8,8 +8,9 @@ vi.mock("next-intl", () => ({
   useTranslations: (ns) => (key) => (ns ? `${ns}.${key}` : key),
 }));
 
-vi.mock("next/link", () => ({
-  default: ({ children, href, ...props }) => (
+// MEH-2578: the sheet takes Link from @/i18n/navigation (locale-aware).
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ children, href, ...props }) => (
     <a href={href} {...props}>
       {children}
     </a>

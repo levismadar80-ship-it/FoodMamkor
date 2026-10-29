@@ -74,6 +74,10 @@ function RegisterPageBody() {
   const [form, setForm] = useState({ email: "", name: "", password: "" });
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [error, setError] = useState("");
+  // MEH-2577: Google/Apple sit above the form now, so their failure renders
+  // under them, not down by the email form's submit (below the fold on a
+  // phone, where it read as an email-form error).
+  const [oauthError, setOauthError] = useState("");
   // MEH-328 Chunk D: emailExistsError state removed. Backend returns an
   // identical 200 ack for new-email / password-collision / oauth-collision;
   // the legitimate owner finds out via the duplicate-attempt email.
@@ -101,6 +105,7 @@ function RegisterPageBody() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setOauthError(""); // a stale Google/Apple failure must not sit over a new attempt
 
     // Client-side validation. The inline onBlur rules below already
     // disable the submit button when any field fails, so this is a
@@ -233,15 +238,19 @@ function RegisterPageBody() {
   return (
     <div className="min-h-[calc(100vh-200px)] flex flex-col bg-background lg:grid lg:grid-cols-2">
 
-      {/* Image pane — END (left) on desktop, top band on mobile.
-          REUSES: app/[locale]/login/LoginClient.jsx:129 (split pane + scrim + overlay) */}
-      <div data-testid="register-hero-pane" className="relative order-1 lg:order-2 h-[30vh] min-h-[220px] lg:h-auto overflow-hidden">
+      {/* Image pane — END (left) on desktop only. MEH-2568: the 30vh top band
+          on phones is gone, as on /login since MEH-2397 — it pushed the first
+          field below the fold, and the two pages looked like two sites.
+          REUSES: app/[locale]/login/LoginClient.jsx (split pane + scrim + overlay) */}
+      <div data-testid="register-hero-pane" className="relative hidden lg:block lg:order-2 overflow-hidden">
         <Image
           src={heroSrc}
           alt=""
           fill
           priority
-          sizes="(min-width: 1024px) 50vw, 100vw"
+          // The pane is display:none below lg, but `priority` still preloads:
+          // the 1px fallback makes that preload the smallest variant.
+          sizes="(min-width: 1024px) 50vw, 1px"
           className="object-cover"
         />
         {/* scrim — keeps the overlay AA-readable over any part of the photo */}
@@ -259,10 +268,10 @@ function RegisterPageBody() {
       </div>
 
       {/* Form pane — START (right) on desktop */}
-      <div data-testid="register-form-pane" className="order-2 lg:order-1 flex items-center justify-center px-4 py-12 md:py-16">
+      <div data-testid="register-form-pane" className="lg:order-1 flex items-center justify-center px-4 py-12 md:py-16">
       {/* MEH-839: de-boxed to match /login (LoginClient.jsx:157) — open form on
-          cream, no floating white card. Children order UNCHANGED: form-first,
-          OAuth below (MEH-132 #3 auth-order freeze respected). */}
+          cream, no floating white card. MEH-2577: OAuth now comes BEFORE the
+          form, as on /login. */}
       <div className="w-full max-w-[416px] mx-auto">
         {/* Brand mark + heading */}
         {/* MEH-909: decorative Leaf badge removed for register↔login parity (MEH-839). */}
@@ -288,6 +297,65 @@ function RegisterPageBody() {
             platform promise no business opted into (MEH-1050 ruling).
             MEH-2374 then removed the referral claim itself (no screen ever
             showed a user her link, and the claim 401'd since MEH-328). */}
+
+        {/* MEH-2577: Google/Apple FIRST, as on /login (Sapir, 29/10: "להעביר,
+            עם שורת ההסכמה") — one tap instead of four fields, and the two
+            account pages now open the same way. This lifts the MEH-132 #3
+            form-first order on purpose. The buttons can no longer read the
+            terms checkbox (it sits below them), so they carry the consent the
+            line under them states — the sign-in wrap /login has used since
+            MEH-2080, same locked string (auth.login.oauth_terms, single
+            owner). The checkbox still gates the email form. */}
+        {oauthAvailable && (
+          <>
+            <div className="grid gap-2.5">
+              {googleConfigured && (
+                <GoogleAuthButton
+                  termsAccepted
+                  onSuccess={() => router.push(redirectTo)}
+                  onError={(msg) => setOauthError(msg)}
+                />
+              )}
+              {appleConfigured && (
+                <AppleAuthButton
+                  termsAccepted
+                  onSuccess={() => router.push(redirectTo)}
+                  onError={(msg) => setOauthError(msg)}
+                />
+              )}
+              <p
+                data-testid="register-oauth-terms"
+                className="text-[13px] leading-relaxed text-fg-muted text-start"
+              >
+                {t.rich("auth.login.oauth_terms", {
+                  tos: (chunks) => (
+                    <Link href="/terms" target="_blank" className="text-primary underline">
+                      {chunks}
+                    </Link>
+                  ),
+                  privacy: (chunks) => (
+                    <Link href="/privacy" target="_blank" className="text-primary underline">
+                      {chunks}
+                    </Link>
+                  ),
+                })}
+              </p>
+              {oauthError && (
+                <p data-testid="register-oauth-error" className="text-error text-sm" role="alert">
+                  {oauthError}
+                </p>
+              )}
+            </div>
+            <div className="relative my-5">
+              <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                <div className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center text-xs">
+                <span className="px-3 bg-background text-fg-muted">{t("auth.register.consumer.oauth_divider")}</span>
+              </div>
+            </div>
+          </>
+        )}
 
         <form onSubmit={handleSubmit} data-testid="register-form" className="space-y-4">
           {/* MEH-1128 D2: name + email adopt ui/Input. text-end on the ltr email
@@ -393,36 +461,6 @@ function RegisterPageBody() {
             {t("auth.register.consumer.email_hint")}
           </p>
         </form>
-
-        {oauthAvailable && (
-          <>
-            <div className="relative my-5">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center text-xs">
-                {/* MEH-839: cream notch to match the de-boxed surface (was bg-white; mirrors LoginClient.jsx:193). */}
-                <span className="px-3 bg-background text-fg-muted">{t("auth.register.consumer.oauth_divider")}</span>
-              </div>
-            </div>
-            <div className="space-y-2.5">
-              {googleConfigured && (
-                <GoogleAuthButton
-                  termsAccepted={agreedToTerms}
-                  onSuccess={() => router.push(redirectTo)}
-                  onError={(msg) => setError(msg)}
-                />
-              )}
-              {appleConfigured && (
-                <AppleAuthButton
-                  termsAccepted={agreedToTerms}
-                  onSuccess={() => router.push(redirectTo)}
-                  onError={(msg) => setError(msg)}
-                />
-              )}
-            </div>
-          </>
-        )}
 
         <p className="text-center text-sm text-fg-muted mt-6">
           {t("auth.register.consumer.have_account")}{" "}

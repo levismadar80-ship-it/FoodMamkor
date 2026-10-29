@@ -345,3 +345,16 @@ def test_router_covers_every_saved_type():
     from app.routers.saved_items import _VISIBLE
 
     assert set(_VISIBLE) == set(SAVED_ITEM_TYPES)
+
+
+def test_writes_are_rate_limited(client, db):
+    """POST and DELETE carry a per-route limit (security.md): the 61st call in a
+    minute is refused, so a script cannot fill saved_items."""
+    user = make_user(db)
+    recipe = _recipe(db, make_producer(db))
+    url = f"{BASE}/recipe/{recipe.id}"
+    codes = [client.post(url, headers=auth_header(user)).status_code for _ in range(61)]
+    assert codes[:60] == [201] * 60
+    assert codes[60] == 429
+    codes = [client.delete(url, headers=auth_header(user)).status_code for _ in range(61)]
+    assert codes[60] == 429
