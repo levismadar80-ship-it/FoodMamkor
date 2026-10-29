@@ -4,6 +4,17 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-10-29 14:39 — רשימת הטיוטות באדמין: סטטוס בעלים, העתקת הודעה עם קישור, תאריך שליחה (#3751, #3791)
+
+**‏שורה אחת:** ‏בשורת כל טיוטה רואים אם בעלת העסק קלטה, מעתיקים בלחיצה הודעת וואטסאפ עם קישור חדש, ורואים מתי נשלח הקישור האחרון, עד מתי הוא בתוקף, ומי מחכה 7+ ימים.
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏כל נתיב שמחזיר `ProducerAdminOut` קורא ל-`_attach_has_owner` (`routers/admin.py`). ‏`TestFailsClosed` בונה את רשימת הנתיבים מה-OpenAPI ונכשל על נתיב שישי — צריך להוסיף אותו שם ולמלא את השדה.
+- ‏`CLAIM_LINK_TTL_DAYS` ב-`AdminDraftLinkAge.jsx` וה«14 יום» בהודעה צמודים ל-`auth.PRODUCER_CLAIM_TTL_DAYS` בטסטים. שינוי תוקף הטוקן מחייב לשנות את שלושתם (ואת הנוסח באישור).
+- ‏מיגרציה שממתינה ב-PR פתוח: לפני מיזוג, `alembic heads` על עץ ממוזג עם staging. ‏#3791 כמעט פיצל head כי #3781 נכנס בינתיים על אותו הורה.
+
+**‏לא עכשיו / מחכה לספיר:** נוסח לתיבת ההעתקה הידנית; אינדקס על `users.producer_id`; בדיקה בספארי באייפון.
+
 ## 2026-10-29 13:20 — דף «בית העסק הזה כבר לא במהמקור» לכתובת של עסק שנמחק (#3797)
 
 **‏שורה אחת:** ‏כתובת של עסק שנמחק עונה 410 ומציגה דף משלה; כתובות בעברית, שהחזירו 404 גם לעסק חי, תוקנו.
