@@ -198,13 +198,15 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
   // the strip wraps (narrow cards, long labels, iconed pills) the plate grows
   // its bottom padding to the strip's real height so the name never sits under
   // a badge. Single-line strips keep the class padding (stripLift stays 0).
+  const STRIP_ONE_LINE_MAX = 32; // px — one pill row is ~25px
+  const PLATE_CLEARANCE = 24; // px — strip's bottom-3 offset + breathing room
   const [stripLift, setStripLift] = useState(0);
   useEffect(() => {
     const el = badgeStripRef.current;
     if (!el || typeof ResizeObserver === "undefined") return undefined;
     const ro = new ResizeObserver(() => {
       const h = el.getBoundingClientRect().height;
-      setStripLift(h > 32 ? Math.ceil(h) + 24 : 0);
+      setStripLift(h > STRIP_ONE_LINE_MAX ? Math.ceil(h) + PLATE_CLEARANCE : 0);
     });
     ro.observe(el);
     return () => ro.disconnect();
@@ -511,13 +513,13 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
               <span className="flex flex-col gap-2" role="list">
                 {allBadges(producer)
                   .slice(2)
-                  .map((b) => (
+                  .map((b) => {
+                    const icon = badgeIcon(b.key);
+                    return (
                     <span key={b.key} role="listitem" className="block">
                       {/* MEH-2584: same leading glyph as the visible pills. */}
                       <span className="flex items-center gap-1">
-                        {badgeIcon(b.key) && (
-                          <span aria-hidden="true" className="inline-flex">{badgeIcon(b.key)}</span>
-                        )}
+                        {icon && <span aria-hidden="true" className="inline-flex">{icon}</span>}
                         {resolveBadgeLabel(b, producer, tKashrut)}
                       </span>
                       {b.tooltip && (
@@ -526,7 +528,8 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
                         </span>
                       )}
                     </span>
-                  ))}
+                    );
+                  })}
               </span>
             </Popover>
           )}

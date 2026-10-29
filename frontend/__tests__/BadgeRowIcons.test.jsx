@@ -40,6 +40,7 @@ describe("BadgeRow attribute icons (MEH-2584)", () => {
   it("delivery maps to the has_delivery chip glyph", () => {
     expect(badgeIcon("delivery")).not.toBeNull();
     expect(badgeIcon("new")).toBeNull();
+    expect(badgeIcon("verified")).toBeNull();
     expect(badgeIcon("not_a_badge")).toBeNull();
   });
 });
