@@ -216,18 +216,44 @@ function LoginPageBody() {
         {oauthAvailable && (
           <>
             <div className="grid gap-2.5">
+              {/* MEH-2080: Google/Apple can create an account from here, so
+                  the buttons carry the consent the notice below states
+                  (sign-in wrap). The backend stamps terms_accepted_at +
+                  terms_version, as for /register. */}
               {googleConfigured && (
                 <GoogleAuthButton
+                  termsAccepted
                   onSuccess={() => router.push(redirectTo)}
                   onError={(msg) => setError(msg)}
                 />
               )}
               {appleConfigured && (
                 <AppleAuthButton
+                  termsAccepted
                   onSuccess={() => router.push(redirectTo)}
                   onError={(msg) => setError(msg)}
                 />
               )}
+              {/* Directly under the buttons it describes, before any other
+                  control — a notice set apart from its button is the failure
+                  mode courts name (Berman v. Freedom Financial, 9th Cir. 2022). */}
+              <p
+                data-testid="login-oauth-terms"
+                className="text-[13px] leading-relaxed text-fg-muted text-start"
+              >
+                {t.rich("oauth_terms", {
+                  tos: (chunks) => (
+                    <Link href="/terms" target="_blank" className="text-primary underline">
+                      {chunks}
+                    </Link>
+                  ),
+                  privacy: (chunks) => (
+                    <Link href="/privacy" target="_blank" className="text-primary underline">
+                      {chunks}
+                    </Link>
+                  ),
+                })}
+              </p>
             </div>
             <div className="relative">
               <div className="absolute inset-0 flex items-center" aria-hidden="true">
