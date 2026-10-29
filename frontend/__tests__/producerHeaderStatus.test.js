@@ -15,6 +15,7 @@ import {
   israelDayKey,
   israelTime,
   resolveHeaderStatus,
+  statusTagTone,
 } from "@/app/[locale]/producer/[id]/lib/order-status";
 
 const OPEN = { state: "open", nextChange: new Date("2026-07-26T11:00:00Z") };
@@ -152,7 +153,6 @@ describe("israelTime / israelDayKey — Israel wall-clock, padded (MEH-2383)", (
 
 // MEH-2596: the tag tints its own text colour by 10%; `muted` fails AA on
 // that tint (4.33:1), so the grey states darken to fg-muted in the tag only.
-import { statusTagTone } from "@/app/[locale]/producer/[id]/lib/order-status";
 describe("statusTagTone — AA on the tinted tag (MEH-2596)", () => {
   it("darkens the grey states and keeps the coloured ones", () => {
     expect(statusTagTone("text-muted")).toBe("text-fg-muted");

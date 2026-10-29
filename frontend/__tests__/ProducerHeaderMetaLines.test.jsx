@@ -132,3 +132,27 @@ describe("ProducerHeader kosher fallback line — expiry gate (MEH-2518)", () =>
     expect(screen.getByText(KOSHER)).toBeInTheDocument();
   });
 });
+
+// MEH-2596: the status renders as a tinted tag, and the grey state uses the
+// darker fg-muted inside it (muted is 4.33:1 on its own 10% tint).
+describe("ProducerHeader status tag (MEH-2596)", () => {
+  it("open: a tinted tag in primary", () => {
+    render(<ProducerHeader producer={baseProducer} primaryCategory={category} hasImages />);
+    const tag = screen.getByTestId("status-open");
+    expect(tag.className).toContain("bg-[color-mix(in_srgb,currentColor_10%,transparent)]");
+    expect(tag.className).toMatch(/\btext-primary\b/);
+  });
+
+  it("full this week: the grey tag is fg-muted, not muted", () => {
+    render(
+      <ProducerHeader
+        producer={{ ...baseProducer, availability_state: "full_this_week" }}
+        primaryCategory={category}
+        hasImages
+      />,
+    );
+    const tag = screen.getByTestId("status-closed");
+    expect(tag.className).toMatch(/\btext-fg-muted\b/);
+    expect(tag.className).not.toMatch(/(^|\s)text-muted(\s|$)/);
+  });
+});
