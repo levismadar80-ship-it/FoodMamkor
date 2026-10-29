@@ -118,6 +118,16 @@ describe("MEH-2548 — navigation from the address", () => {
     expect(screen.queryByTestId("minimap")).toBeNull();
   });
 
+  // MEH-2588: each button carries its app's mark (same glyphs as the
+  // business-page map), and Google's visible name is its accessible name.
+  it("address links show the Waze and Google marks", async () => {
+    await renderEvent();
+    const [waze, google] = screen.getByTestId("event-nav-links").querySelectorAll("a");
+    expect(waze.querySelector("svg")).toBeTruthy();
+    expect(google.querySelector("svg clipPath")).toBeTruthy();
+    expect(google.hasAttribute("aria-label")).toBe(false);
+  });
+
   it("a map point → the map (with its own buttons), no address links", async () => {
     await renderEvent({ lat: 32.1, lng: 34.8 });
     expect(screen.getByTestId("minimap")).toBeTruthy();
