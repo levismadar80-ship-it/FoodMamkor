@@ -2632,6 +2632,10 @@
       "discover": "Find businesses on the map",
       "home": "Back to home"
     },
+    "producer_gone": {
+      "heading": "This business is no longer on Mehamakor",
+      "message": "Its page was removed from the site. Other local businesses are waiting for you on the map."
+    },
     "access_denied": {
       "producer": {
         "heading": "You don't have access to the dashboard",

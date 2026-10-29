@@ -60,6 +60,28 @@ export function isReserved(name) {
 }
 
 /**
+ * MEH-2534: the route param / pathname segment as the business's real slug.
+ *
+ * Next hands a non-ASCII dynamic segment over still percent-encoded — measured
+ * on `next dev` 16.3: `/חוות-הגליל` arrives as `%D7%97…`. SLUG_SHAPE has no
+ * `%`, so every Hebrew slug (which `_slugify` mints for self-registered
+ * businesses, MEH-1817) failed `isSlugShaped` and its page went straight to
+ * notFound() — and `encodeURIComponent` on the raw param double-encoded the
+ * backend lookup. Decoding an already-decoded slug is a no-op (no `%` in a
+ * valid slug); a malformed escape is returned untouched and then fails the
+ * shape check as before.
+ * @param {string} raw
+ * @returns {string}
+ */
+export function decodeSlugParam(raw) {
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
+  }
+}
+
+/**
  * True when `slug` could be a real producer slug (cheap shape check only).
  * @param {string} slug
  * @returns {boolean}
