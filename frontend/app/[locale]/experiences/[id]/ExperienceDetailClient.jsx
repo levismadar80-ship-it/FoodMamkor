@@ -185,6 +185,12 @@ export default function ExperienceDetailClient() {
   return (
     <div className="pb-12" data-testid="experience-detail">
       <div className="relative max-w-[1100px] mx-auto lg:px-4 lg:pt-6">
+        {/* MEH-2559: the save heart on the cover's corner — the corner the recipe
+            and business pages use. Not in the share/calendar row: a third
+            button there wraps «הוספה ליומן» onto two lines below 375px. */}
+        <div className="absolute top-3 start-3 lg:top-9 lg:start-7 z-10" data-testid="experience-cover-actions">
+          <SaveButton itemType="experience" itemId={ex.id} />
+        </div>
         {ex.image_url ? (
           <div
             data-testid="experience-cover"
@@ -392,8 +398,6 @@ export default function ExperienceDetailClient() {
                       {tEv("add_to_calendar")}
                     </button>
                   )}
-                  {/* MEH-2559: save beside share, as on the recipe and business pages. */}
-                  <SaveButton itemType="experience" itemId={ex.id} variant="outline" />
                 </div>
               </div>
             )}

@@ -107,11 +107,11 @@ describe("MEH-2549 — share + calendar", () => {
     expect(screen.getByRole("button", { name: he.share.modal_title_experience })).toBeTruthy();
   });
 
-  it("MEH-2559: a save heart for this experience sits in the action row", async () => {
+  it("MEH-2559: a save heart for this experience sits on the cover's corner", async () => {
     await renderWith();
     const heart = screen.getByTestId("save-experience");
-    expect(screen.getByTestId("experience-actions").contains(heart)).toBe(true);
-    expect(heart.getAttribute("data-variant")).toBe("outline");
+    expect(screen.getByTestId("experience-cover-actions").contains(heart)).toBe(true);
+    expect(heart.getAttribute("data-id")).toBe("x-1");
   });
 
   it("a one-off approved experience: «הוספה ליומן» downloads a .ics with start and end", async () => {

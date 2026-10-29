@@ -188,20 +188,25 @@ describe("MEH-2548 — byline under the title", () => {
   });
 });
 
-// MEH-2559: the heart sits beside share + calendar, and stays on a past event
-// (the saved list keeps past events, labelled «עברו»).
+// MEH-2559: the heart sits on the cover's corner (photo or band), and stays on
+// a past event (the saved list keeps past events, labelled «עברו»).
 describe("MEH-2559 — save heart", () => {
-  it("an upcoming event: a heart for this event in the action row", async () => {
+  it("no photo: a heart for this event on the band's corner, none in the action row", async () => {
     await renderEvent();
-    const hearts = [...screen.getByTestId("event-actions").querySelectorAll('[data-testid="save-event"]')];
+    const hearts = [...screen.getByTestId("event-cover-actions").querySelectorAll('[data-testid="save-event"]')];
     expect(hearts).toHaveLength(1);
     expect(hearts[0].getAttribute("data-id")).toBe("ev-1");
-    expect(hearts[0].getAttribute("data-variant")).toBe("outline");
+    expect(screen.getByTestId("event-actions").querySelector('[data-testid="save-event"]')).toBeNull();
+  });
+
+  it("a photo: the heart is still there", async () => {
+    await renderEvent({ image_url: "https://res.cloudinary.com/x/image/upload/e.jpg" });
+    expect(screen.getByTestId("event-cover-actions").querySelector('[data-testid="save-event"]')).toBeTruthy();
   });
 
   it("a past event keeps its heart though the calendar button goes", async () => {
     await renderEvent({ event_date: "2026-10-20" });
     expect(screen.queryByTestId("event-add-to-calendar")).toBeNull();
-    expect(screen.getByTestId("event-actions").querySelector('[data-testid="save-event"]')).toBeTruthy();
+    expect(screen.getByTestId("event-cover-actions").querySelector('[data-testid="save-event"]')).toBeTruthy();
   });
 });

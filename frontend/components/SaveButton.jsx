@@ -33,8 +33,6 @@ import LoginPromptModal from "./LoginPromptModal";
  * Variants:
  *   - "overlay" — white 44px circle on a hero image, next to ShareButton's
  *                 "overlay" (same look as FavoriteButton "gallery").
- *   - "outline" — 46px square beside ShareButton's "outline" in the event /
- *                 experience action row (MEH-2559).
  *   - "row"     — 32px white circle on a list row's thumbnail corner, inside
  *                 a 44px tap target (MEH-2559, EventEntryRow).
  */
@@ -43,11 +41,6 @@ const VARIANT = {
     button:
       "bg-white/95 hover:bg-white rounded-full w-11 h-11 flex items-center justify-center shadow-md hover:scale-105",
     size: 22,
-  },
-  outline: {
-    button:
-      "shrink-0 w-[46px] min-h-[46px] inline-flex items-center justify-center rounded-[10px] border border-primary hover:bg-green-50",
-    size: 20,
   },
   row: {
     button: "w-11 h-11 grid place-items-center rounded-full",
@@ -144,7 +137,7 @@ export default function SaveButton({ itemType, itemId, variant = "overlay" }) {
     <HeartStraight
       size={look.size}
       weight={saved ? "fill" : "regular"}
-      className={saved || variant === "outline" ? "text-primary" : "text-text"}
+      className={saved ? "text-primary" : "text-text"}
       aria-hidden="true"
     />
   );
