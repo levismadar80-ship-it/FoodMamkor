@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { usePathname } from "@/i18n/navigation";
+// MEH-2578: Link from here too — next/link dropped the /en prefix.
+import { Link, usePathname } from "@/i18n/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslations, useLocale } from "next-intl";

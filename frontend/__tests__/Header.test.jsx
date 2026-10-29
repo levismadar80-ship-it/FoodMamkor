@@ -96,6 +96,12 @@ vi.mock("@phosphor-icons/react", () => ({
 // (the next-intl-aware router). MEH-1176 F3: Header's OWN pathname comes from
 // here too (MEH-731) — this mock is now the single pathname source for tests.
 vi.mock("@/i18n/navigation", () => ({
+  // MEH-2578: the chrome now takes Link from here, not next/link.
+  Link: ({ children, href, ...props }) => (
+    <a href={typeof href === "string" ? href : "#"} {...props}>
+      {children}
+    </a>
+  ),
   useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
   usePathname: () => pathnameRef.current,
 }));
