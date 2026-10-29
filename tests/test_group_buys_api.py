@@ -105,6 +105,35 @@ class TestListAndGet:
         assert resp.status_code == 200
         assert len(resp.json()) == 1
 
+    def test_open_list_hides_a_group_past_its_deadline(self, client, db):
+        """MEH-2540: nothing closes an open group buy after its deadline
+        (OWNER_TRANSITIONS note), so the «פתוחות» tab showed it with «פג התוקף»
+        next to a join button. The live control on the same path shows the
+        filter is the deadline, not the fixture."""
+        producer, _ = _producer_user(db)
+        live = _make_group_buy(db, producer, deadline=utc_now() + timedelta(days=1))
+        past = _make_group_buy(db, producer, deadline=utc_now() - timedelta(hours=1))
+        ids = {g["id"] for g in client.get("/group-buys").json()}
+        assert str(live.id) in ids
+        assert str(past.id) not in ids
+
+    def test_funded_list_keeps_a_group_past_its_deadline(self, client, db):
+        """MEH-2540: a funded group is waiting to be delivered after its
+        deadline — the deadline filter is for «open» only."""
+        producer, _ = _producer_user(db)
+        gb = _make_group_buy(
+            db, producer, status="funded", deadline=utc_now() - timedelta(days=1)
+        )
+        ids = {g["id"] for g in client.get("/group-buys", params={"status": "funded"}).json()}
+        assert str(gb.id) in ids
+
+    def test_expired_open_group_page_still_resolves(self, client, db):
+        """MEH-2540: the filter is the list's; a shared link to an expired group
+        still opens (its page already says the deadline passed)."""
+        producer, _ = _producer_user(db)
+        gb = _make_group_buy(db, producer, deadline=utc_now() - timedelta(hours=1))
+        assert client.get(f"/group-buys/{gb.id}").status_code == 200
+
     def test_get_detail_happy(self, client, db):
         producer, _ = _producer_user(db)
         gb = _make_group_buy(db, producer)

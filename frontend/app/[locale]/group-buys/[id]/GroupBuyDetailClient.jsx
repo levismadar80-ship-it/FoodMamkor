@@ -12,6 +12,7 @@ import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
 import { formatPrice } from "@/lib/utils";
+import { groupBuyProgressPct } from "@/lib/group-buy-progress"; // MEH-2540
 import Input from "@/components/ui/Input";
 import DeliveryChecker from "@/components/DeliveryChecker";
 import api from "@/lib/api";
@@ -87,11 +88,6 @@ function Confetti() {
       style={{ zIndex: 9990 }}
     />
   );
-}
-
-function progressPct(commits, min, max) {
-  const denom = max || min;
-  return Math.min(100, Math.round((commits / denom) * 100));
 }
 
 export default function GroupBuyDetailClient({ id }) {
@@ -318,7 +314,7 @@ export default function GroupBuyDetailClient({ id }) {
   const cancelled = gb.status === "cancelled";
   const open = gb.status === "open";
   const expired = new Date(gb.deadline) < new Date();
-  const pct = progressPct(gb.commits_count, gb.min_participants, gb.max_participants);
+  const pct = groupBuyProgressPct(gb.commits_count, gb.min_participants);
   const discount = Math.round(
     ((Number(gb.price_per_unit_regular) - Number(gb.price_per_unit_group)) /
       Number(gb.price_per_unit_regular)) *

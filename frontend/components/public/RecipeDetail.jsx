@@ -29,19 +29,12 @@ import { useTranslations } from "next-intl";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import ImageWithFallback from "@/components/ImageWithFallback";
 import PrimaryContactButton from "@/components/PrimaryContactButton";
-
-function splitLines(text) {
-  if (!text) return [];
-  return text
-    .split("\n")
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
+import { splitRecipeLines } from "@/lib/recipe-lines"; // MEH-2540
 
 export default function RecipeDetail({ recipe, producer, relatedProducts }) {
   const t = useTranslations("recipes.detail");
-  const ingredients = splitLines(recipe.ingredients);
-  const steps = splitLines(recipe.instructions);
+  const ingredients = splitRecipeLines(recipe.ingredients);
+  const steps = splitRecipeLines(recipe.instructions);
   const totalMin =
     (recipe.prep_time_min || 0) + (recipe.cook_time_min || 0) || null;
 
