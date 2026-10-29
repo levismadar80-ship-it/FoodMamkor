@@ -60,3 +60,29 @@ export function computeMenuTop(
   // pin it inside the viewport rather than letting it run off the bottom.
   return clamp(pad, below, viewportHeight - panelHeight - pad);
 }
+
+/**
+ * The panel's inline-END offset (CSS `inset-inline-end`), clamped so the whole
+ * panel stays inside the viewport. MEH-2587: the row kebab pinned its end edge
+ * to the trigger's end edge with no width check. That only fits while the
+ * trigger sits near the viewport's end edge (the desktop table, actions column
+ * last). In the phone card layout (`.table-stack`, MEH-2426) the trigger sits
+ * mid-card, so in RTL the panel ran ~50px off the right edge of a 375 screen
+ * and the actions in it could not be tapped.
+ *
+ * Works in either direction: `preferred` is the distance from the viewport's
+ * inline-end edge (RTL: left, LTR: right), so the clamp is the same maths.
+ *
+ * @param {number} preferred — trigger-aligned offset from the inline-end edge.
+ * @param {number} panelWidth — the panel's measured width, in px.
+ * @param {number} viewportWidth — `document.documentElement.clientWidth`.
+ * @returns {number} the `inset-inline-end` value, in px.
+ */
+export function computeMenuInlineEnd(
+  preferred,
+  panelWidth,
+  viewportWidth,
+  pad = MENU_PAD_PX,
+) {
+  return clamp(pad, preferred, viewportWidth - panelWidth - pad);
+}
