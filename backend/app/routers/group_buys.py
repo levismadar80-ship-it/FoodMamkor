@@ -44,6 +44,10 @@ def _enrich(gb: GroupBuy, current_user: User | None = None) -> dict:
         "id": gb.id,
         "producer_id": gb.producer_id,
         "producer_name": gb.producer.name if gb.producer else None,
+        # MEH-2544: the card / page photo — the business's first image, the
+        # same pick as ProducerCard (images[0]). Read-only; a group buy has
+        # no image of its own.
+        "producer_image_url": (gb.producer.images or [None])[0] if gb.producer else None,
         "title": gb.title,
         "description": gb.description,
         "product_name": gb.product_name,

@@ -136,6 +136,23 @@ class TestListAndGet:
         assert resp.status_code == 200
         assert resp.json()["id"] == str(gb.id)
 
+    def test_card_carries_the_business_first_photo(self, client, db):
+        """MEH-2544: the list card and the page lead with the business's first
+        photo (same pick as ProducerCard, images[0]); none → null, so the
+        client draws its own placeholder."""
+        producer, _ = _producer_user(db)
+        producer.images = ["https://res.cloudinary.com/x/a.jpg", "https://res.cloudinary.com/x/b.jpg"]
+        db.commit()
+        gb = _make_group_buy(db, producer)
+        bare, _ = _producer_user(db, email="gb-bare@test.com")
+        gb_bare = _make_group_buy(db, bare)
+
+        listed = {g["id"]: g for g in client.get("/group-buys").json()}
+        assert listed[str(gb.id)]["producer_image_url"] == "https://res.cloudinary.com/x/a.jpg"
+        assert listed[str(gb_bare.id)]["producer_image_url"] is None
+        detail = client.get(f"/group-buys/{gb.id}").json()
+        assert detail["producer_image_url"] == "https://res.cloudinary.com/x/a.jpg"
+
     def test_get_detail_happy(self, client, db):
         producer, _ = _producer_user(db)
         gb = _make_group_buy(db, producer)
