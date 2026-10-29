@@ -51,6 +51,10 @@ const CATEGORY_ICON = {
 // existing client callers.
 export { toEventEntry } from "@/lib/event-entry";
 
+// A quoted, escaped CSS url() — the picture can be an owner-supplied URL, and
+// a `)`, quote or space in it must not end the declaration (review #3811).
+const cssUrl = (src) => `url(${JSON.stringify(String(src))})`;
+
 // The date-rail row — the page's signature gesture. Date leads (Frank
 // Ruhl day numeral on a colored tick down the start edge); Latin
 // numerals (time, price) are Cormorant italic, Hebrew stays upright.
@@ -83,7 +87,7 @@ export default function EventEntryRow({ entry, freeLabel, compact = false }) {
     ? "grid-cols-[64px_1fr_auto] md:grid-cols-[104px_1fr_auto] lg:grid-cols-[104px_1fr]"
     : "grid-cols-[64px_1fr_auto] md:grid-cols-[104px_1fr_auto]";
   const thumbBg = picture
-    ? { backgroundImage: `url(${optimizeCloudinary(picture, { aspectRatio: "1:1", width: 224 })})` }
+    ? { backgroundImage: cssUrl(optimizeCloudinary(picture, { aspectRatio: "1:1", width: 224 })) }
     : undefined;
   const tileTone = isExp ? "bg-surface-card text-accent" : "bg-green-50 text-primary";
   const pictureFace = picture ? (
@@ -166,7 +170,7 @@ export default function EventEntryRow({ entry, freeLabel, compact = false }) {
           className={`hidden lg:grid order-first col-span-full h-28 bg-cover bg-center place-items-center relative ${picture ? "bg-border" : tileTone}`}
           style={
             picture
-              ? { backgroundImage: `url(${optimizeCloudinary(picture, { aspectRatio: "16:9", width: 640 })})` }
+              ? { backgroundImage: cssUrl(optimizeCloudinary(picture, { aspectRatio: "16:9", width: 640 })) }
               : undefined
           }
         >

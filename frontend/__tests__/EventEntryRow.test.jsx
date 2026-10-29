@@ -87,6 +87,14 @@ describe("EventEntryRow", () => {
     expect(screen.queryByTestId("event-row-owner-initial")).toBeNull();
   });
 
+  it("a photo URL with a quote or parenthesis stays inside one quoted url()", () => {
+    const odd = { ...EVENT, image_url: 'https://cdn.example.com/a b)"c.jpg' };
+    render(<EventEntryRow entry={toEventEntry(odd, "events", t)} freeLabel="חינם" />);
+    const bg = screen.getByTestId("event-row-image").style.backgroundImage;
+    expect(bg).toContain("a b)");
+    expect(bg.startsWith('url("')).toBe(true);
+  });
+
   it("the event's own photo wins over the owner's, with no initial badge", () => {
     const both = {
       ...EVENT,
