@@ -30,7 +30,7 @@ import pytest
 
 from app.services import email as email_mod
 
-RECIPIENT = "someone@example.com"
+RECIPIENT = "someone@sample.co.il"
 LOCAL_PART = "someone"
 SUBJECT = "Verify your email"
 
@@ -253,7 +253,7 @@ def test_no_full_address_or_local_part_in_logs(monkeypatch, captures, caplog, se
     blob = " ".join(r.getMessage() for r in caplog.records)
     assert RECIPIENT not in blob, "full address leaked into a log line"
     assert LOCAL_PART not in blob, "local part leaked into a log line"
-    assert "***@example.com" in blob, "the domain-only mask should be present"
+    assert "***@sample.co.il" in blob, "the domain-only mask should be present"
 
 
 def test_success_log_is_also_domain_masked(monkeypatch, captures, caplog):
@@ -280,7 +280,7 @@ def test_success_log_is_also_domain_masked(monkeypatch, captures, caplog):
     assert sent, "the send should have gone through on the happy path"
     blob = " ".join(r.getMessage() for r in caplog.records)
     assert LOCAL_PART not in blob
-    assert "***@example.com" in blob
+    assert "***@sample.co.il" in blob
 
 
 # --- the reporting path itself must never break the caller ------------------
