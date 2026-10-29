@@ -14,11 +14,11 @@ import { BRAND_NAME } from "@/lib/constants";
 // MEH-2465 follow-up: what is being shared names the button for a screen
 // reader. The page decides; "business" stays the default so every existing
 // call site keeps «שתפו לינק לעסק».
-// MEH-2558: "recipe" → «שתפו את המתכון».
 const ARIA_LABEL_KEY = {
   business: "modal_title",
   event: "modal_title_event",
-  recipe: "modal_title_recipe",
+  experience: "modal_title_experience", // MEH-2549
+  recipe: "modal_title_recipe", // MEH-2558
 };
 
 export default function ShareButton({
