@@ -7,6 +7,16 @@
  * ran after the null-check at ProducerDetail.jsx:168-174).
  */
 
+/**
+ * MEH-2406: the one target for a business page's category links — the
+ * breadcrumb crumb and the header meta line. /producers?category=<id> is the
+ * canonical listing (home category cards, MEH-1080; the JSON-LD breadcrumb in
+ * lib/seo.js). /?category= stays a home-feed deep-link only.
+ */
+export function categoryListingHref(categoryId) {
+  return `/producers?category=${encodeURIComponent(categoryId)}`;
+}
+
 export function buildShareUrl(producer) {
   if (typeof window === "undefined") return "";
   const path = producer.slug ? `/${producer.slug}` : `/producer/${producer.id}`;

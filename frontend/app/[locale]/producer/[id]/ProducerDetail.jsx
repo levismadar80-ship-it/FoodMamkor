@@ -23,7 +23,7 @@ import StickyContactBar from "./components/StickyContactBar";
 import { useLazyReviews } from "./hooks/useLazyReviews";
 import { useProducerData } from "./hooks/useProducerData";
 import { useStickyBar } from "./hooks/useStickyBar";
-import { buildShareUrl, getRenderableImages } from "./lib/producer-format";
+import { buildShareUrl, categoryListingHref, getRenderableImages } from "./lib/producer-format";
 import { getSectionNavItems } from "./lib/section-nav";
 import { isOnVacation } from "@/lib/availability";
 
@@ -131,7 +131,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
           items={[
             { href: "/", label: t("producer.detail.breadcrumb_home") },
             ...(primaryCategory
-              ? [{ href: `/?category=${primaryCategory.id}`, label: primaryCategory.name }]
+              ? [{ href: categoryListingHref(primaryCategory.id), label: primaryCategory.name }]
               : []),
             { label: producer.name },
           ]}

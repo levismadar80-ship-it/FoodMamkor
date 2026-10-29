@@ -18,7 +18,7 @@ import {
 import { allBadges, isKashrutCurrent } from "@/lib/badges";
 import { getOrderWindowStatus } from "@/lib/orderWindow";
 import ReviewExcerpt from "./ReviewExcerpt";
-import { getVacationReturnDate } from "../lib/producer-format";
+import { categoryListingHref, getVacationReturnDate } from "../lib/producer-format";
 // MEH-1546: the meta-line status is the page's ONLY order-status element, so
 // order_window feeds THAT branch rather than adding a second line — see
 // lib/order-status.js for the precedence and the contradiction it avoids.
@@ -251,7 +251,7 @@ export default function ProducerHeader({
           >
             {primaryCategory && (
               <Link
-                href={`/producers?category=${encodeURIComponent(primaryCategory.id)}`}
+                href={categoryListingHref(primaryCategory.id)}
                 className="inline-flex min-h-[24px] items-center underline-offset-2 hover:underline hover:text-text transition"
                 data-testid="producer-header-category-link"
               >
