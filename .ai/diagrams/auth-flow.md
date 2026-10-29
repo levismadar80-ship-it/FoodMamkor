@@ -37,8 +37,8 @@ flowchart TD
     IssueJWTp --> ReturnTokenP[Return Token<br/>access_token 15min +<br/>HttpOnly refresh cookie 14d]
 
     Choice -->|OAuth one-click| OAuthChoice{Google or Apple?}
-    OAuthChoice -->|Google| GoogleFlow[POST /auth/google<br/>body: id_token]
-    OAuthChoice -->|Apple| AppleFlow[POST /auth/apple<br/>body: identity_token<br/>required for App Store]
+    OAuthChoice -->|Google| GoogleFlow[POST /auth/google<br/>body: id_token + terms_accepted?<br/>MEH-2080: true from /register → stamp terms]
+    OAuthChoice -->|Apple| AppleFlow[POST /auth/apple<br/>body: identity_token + terms_accepted?<br/>required for App Store]
     GoogleFlow --> VerifyG[google-auth:<br/>verify id_token against<br/>GOOGLE_CLIENT_ID]
     AppleFlow --> VerifyA[PyJWT:<br/>verify identity_token against<br/>Apple public keys + APPLE_CLIENT_ID]
     VerifyG --> UpsertG[Upsert User by google_id<br/>role=consumer]
