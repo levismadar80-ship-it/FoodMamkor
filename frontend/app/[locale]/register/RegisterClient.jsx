@@ -408,12 +408,14 @@ function RegisterPageBody() {
             <div className="space-y-2.5">
               {googleConfigured && (
                 <GoogleAuthButton
+                  termsAccepted={agreedToTerms}
                   onSuccess={() => router.push(redirectTo)}
                   onError={(msg) => setError(msg)}
                 />
               )}
               {appleConfigured && (
                 <AppleAuthButton
+                  termsAccepted={agreedToTerms}
                   onSuccess={() => router.push(redirectTo)}
                   onError={(msg) => setError(msg)}
                 />
