@@ -10,7 +10,7 @@
 
 **‏מה צריך לדעת לפני עבודה:**
 - ‏Next מעביר את `[slug]` ואת ה-pathname ב-middleware **מקודדים** (`%D7…`). כל קריאה לפרמטר slug עוברת דרך `decodeSlugParam` (`lib/slug.js`) לפני `isSlugShaped` / fetch.
-- ‏ה-410 האמיתי נקבע ב-middleware (rewrite לעמוד עצמו עם `status: 410`, ומעביר את כותרות next-intl בלי `x-middleware-next`) — העמוד עצמו משודר ב-200.
+- ‏~~ה-410 האמיתי נקבע ב-middleware~~ — בוטל ב-#3837: ב-Vercel זה מציג את דף ה-GONE של Vercel. מאז #3844 ה-middleware מפנה (בלי סטטוס) ל-`/[locale]/business-gone`, כי דף ה-`[slug]` מגיש מה-Data Cache את ה-200 הישן גם אחרי מחיקה (Next שומר רק 200). שינוי כאן נבדק רק אחרי deploy — `next dev` לא משחזר אף אחד מהשניים.
 
 **‏לא עכשיו:** הפניית 301 אחרי שינוי שם; עסק לא מאושר שנמחק גם מקבל 410 (אין בטבלה סטטוס).
 
