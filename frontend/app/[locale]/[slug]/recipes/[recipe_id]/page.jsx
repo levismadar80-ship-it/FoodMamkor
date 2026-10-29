@@ -25,6 +25,7 @@ import { serverFetch } from "@/lib/server-fetch"; // MEH-977: timeout + transien
 import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
 import { buildRecipeBreadcrumbJsonLd, serializeJsonLd } from "@/lib/seo"; // MEH-1062: recipe BreadcrumbList
 import { BRAND_NAME } from "@/lib/constants";
+import { decodeSlugParam } from "@/lib/slug"; // MEH-2534
 
 // MEH-1754: `null` means ONE thing — this entity does not exist. Every other
 // failure throws, so it reaches app/[locale]/error.js (Hebrew copy + retry +
@@ -54,7 +55,8 @@ async function getJson(path, slug) {
   // The one genuine not-found. Only a 404 may become notFound(). For the
   // recipe leg that covers unpublished/unapproved too — the backend filters
   // them out (chunks 1/2), which is the existence-hiding this page relies on.
-  if (res.status === 404) return null;
+  // MEH-2534: 410 = the business was deleted; its recipes are gone with it.
+  if (res.status === 404 || res.status === 410) return null;
   if (!res.ok) {
     const err = new Error(
       `recipe page lookup failed: ${res.status} ${res.statusText} (path=${path})`
@@ -67,7 +69,10 @@ async function getJson(path, slug) {
   return res.json();
 }
 
-async function getProducerAndRecipe(slug, recipeId) {
+async function getProducerAndRecipe(rawSlug, recipeId) {
+  // MEH-2534: a Hebrew slug arrives percent-encoded; encoding it again below
+  // sent the backend `%25D7…` and 404'd every recipe of a Hebrew-slug business.
+  const slug = decodeSlugParam(rawSlug);
   const [producer, recipe] = await Promise.all([
     getJson(`/producers/by-slug/${encodeURIComponent(slug)}`, slug),
     getJson(

@@ -14,6 +14,8 @@ Who calls it:
     the single choke point every producer slug passes through.
   - `reclaim`                       — admin_update_producer, when a business
     goes back to a slug it retired itself.
+  - `is_gone`                       — GET /producers/by-slug (MEH-2534), to
+    answer 410 instead of 404 for the URL of a deleted business.
 
 A new writer of `producers.slug` MUST take its value from
 `_ensure_unique_slug`: that call is the only place a tombstone is honoured,
@@ -84,3 +86,16 @@ def reclaim(db: "Session", slug: str, owner_id: UUID) -> None:
     if row is not None and row.producer_id == owner_id:
         db.delete(row)
         db.flush()
+
+
+def is_gone(db: "Session", slug: str) -> bool:
+    """MEH-2534 — True when `slug` was the URL of a business that was deleted.
+
+    Only an ownerless tombstone counts: a renamed slug whose business still
+    exists is not "gone" (it moved), and stays a plain 404 until a redirect
+    is built. Callers ask this only after the live lookup missed.
+    """
+    from app.models.models import RetiredSlug
+
+    row = db.get(RetiredSlug, slug)
+    return row is not None and row.producer_id is None
