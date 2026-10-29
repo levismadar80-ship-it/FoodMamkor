@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { Star, StarOfDavid } from "@phosphor-icons/react";
@@ -57,6 +57,9 @@ export default function ProducerHeader({
   alertsOpen = false,
   onOpenAlerts,
   onCloseAlerts,
+  panelKey = 0,
+  onUpdatesChanged,
+  updatesSignal,
 }) {
   const t = useTranslations();
   const locale = useLocale();
@@ -104,12 +107,6 @@ export default function ProducerHeader({
   }, [favorited, onCloseAlerts]);
 
   const showAlerts = Boolean(favorited && user);
-
-  // MEH-2526: the panel reads prefs once, on mount. A write from the updates
-  // button while it is open would leave it showing (and on Save, re-sending)
-  // the pre-write values — bumping its key re-mounts it so it re-reads.
-  const [panelKey, setPanelKey] = useState(0);
-  const remountPanel = useCallback(() => setPanelKey((k) => k + 1), []);
 
   // MEH-1334: 3-state status. Anything not closed/vacation reads as open —
   // matches the old ContactCard OPEN_STATES default-open behavior.
@@ -170,9 +167,10 @@ export default function ProducerHeader({
     <div className="relative" data-testid="producer-header">
       {/* Group 1 — name + single ✓מאומתת seal (richer popover in BadgeRow).
           MEH-815: imageless profiles carry the h1 in the Tinted Masthead, so
-          it is omitted here to keep the name singular. lg:pe-56 reserves the
-          title row's inline-end for the absolutely-pinned actions row. */}
-      <div className="flex items-center flex-wrap gap-2 lg:pe-56">
+          it is omitted here to keep the name singular. lg:pe-72 reserves the
+          title row's inline-end for the absolutely-pinned actions row (pe-56
+          until MEH-2562 added the third action, «קבלת עדכונים»). */}
+      <div className="flex items-center flex-wrap gap-2 lg:pe-72">
         {hasImages && (
           <h1 className="font-headline-lg text-4xl font-black text-text me-3">
             {producer.name}
@@ -186,7 +184,7 @@ export default function ProducerHeader({
           must clear the absolutely-pinned desktop actions row itself —
           adversarial-review fix (imageless-desktop overlap). */}
       {producer.short_description && (
-        <p className={`text-[15px] leading-relaxed text-text mt-2${hasImages ? "" : " lg:pe-56"}`}>
+        <p className={`text-[15px] leading-relaxed text-text mt-2${hasImages ? "" : " lg:pe-72"}`}>
           {producer.short_description}
         </p>
       )}
@@ -371,19 +369,15 @@ export default function ProducerHeader({
           city={producer.city}
           category={primaryCategory?.name}
         />
-      </div>
-
-      {/* MEH-2526: the permanent updates toggle — the owner could not find
-          the alerts switch, so it no longer appears only after a save. Every
-          viewport (unlike the desktop-only actions row above), in normal flow
-          directly above the panel it opens, so the panel lands under it. It
-          is the re-entry control the MEH-1693 trade-off note below asks for. */}
-      <div className="mt-3">
+        {/* MEH-2526 permanent updates toggle; MEH-2562 moved it into this row
+            (desktop) and onto the hero circles (mobile, ImageGallery) — as a
+            lone pill under the header it read as an orphan. */}
         <ProducerUpdatesButton
+          variant="quiet"
           producerId={producer.id}
           onOpenAlerts={onOpenAlerts}
-          onChanged={remountPanel}
-          refreshSignal={alertsOpen}
+          onChanged={onUpdatesChanged}
+          refreshSignal={updatesSignal ?? alertsOpen}
         />
       </div>
 
