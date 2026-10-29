@@ -55,7 +55,7 @@ const OVERLAY_CONTROL_CLS =
  *   startIndex: number     — which image opens first
  *   onClose: () => void
  *
- * RTL: ArrowLeft=next, ArrowRight=prev (Hebrew reading direction).
+ * RTL: ArrowLeft=next, ArrowRight=prev, swipe right=next; /en mirrors (MEH-2562).
  * z-index 9000 — below chat (9999) + cookie (9998) + login-prompt (9500).
  */
 export default function Lightbox({ images = [], startIndex = 0, onClose }) {
@@ -94,8 +94,10 @@ export default function Lightbox({ images = [], startIndex = 0, onClose }) {
     const FOCUSABLE = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
     const onKey = (e) => {
       if (e.key === "Escape") { onClose(); return; }
-      if (e.key === "ArrowLeft") { goNext(); return; }
-      if (e.key === "ArrowRight") { goPrev(); return; }
+      // MEH-2562: mapped to the document direction (was RTL-only) — /en is LTR.
+      const rtl = document.documentElement.dir !== "ltr";
+      if (e.key === "ArrowLeft") { if (rtl) goNext(); else goPrev(); return; }
+      if (e.key === "ArrowRight") { if (rtl) goPrev(); else goNext(); return; }
       if (e.key === "Tab") {
         const els = Array.from(dialogRef.current?.querySelectorAll(FOCUSABLE) ?? []);
         if (!els.length) return;
@@ -121,8 +123,11 @@ export default function Lightbox({ images = [], startIndex = 0, onClose }) {
   }, []);
   const handleTouchEnd = useCallback(() => {
     if (touchStartX.current === null || touchEndX.current === null) return;
-    const diff = touchStartX.current - touchEndX.current;
-    if (Math.abs(diff) > 50) { if (diff > 0) goNext(); else goPrev(); }
+    // MEH-2562: "next" sits on the visual left in RTL, so a finger moving
+    // RIGHT pulls it in (it used to be the LTR gesture in both directions).
+    const dx = touchEndX.current - touchStartX.current;
+    const rtl = document.documentElement.dir !== "ltr";
+    if (Math.abs(dx) > 50) { if ((rtl ? dx > 0 : dx < 0)) goNext(); else goPrev(); }
     touchStartX.current = null;
     touchEndX.current = null;
   }, [goNext, goPrev]);
@@ -196,28 +201,35 @@ export default function Lightbox({ images = [], startIndex = 0, onClose }) {
         </div>
 
         {images.length > 1 && (
-          // MEH-877: carousel prev/next glyph arrows — RTL-correct as-is via
-          // logical end-4/start-4 positioning. Intentionally NOT bidi-flipped
-          // (documented rtl.md exception "Carousel prev/next arrows"); do not
-          // re-flag in future bidi sweeps.
+          // MEH-877: carousel prev/next glyph arrows. Intentionally NOT
+          // bidi-flipped (documented rtl.md exception "Carousel prev/next
+          // arrows"); do not re-flag in future bidi sweeps.
+          // MEH-2562: the old comments here said "end-4 = visual right in RTL"
+          // — it is the visual LEFT (inline-end), so "next" sat on the right
+          // with an arrow pointing left, the opposite of ProductSheet. Now the
+          // same as ProductSheet.jsx: previous at start (right in RTL), next at
+          // end (left in RTL), each glyph pointing outward; ltr:rotate-180
+          // turns the glyphs for /en, where start/end mirror on their own.
           <>
-            {/* end-4 = visual right in RTL = "previous" */}
+            {/* start-4 = visual right in RTL = "previous" */}
             <button
               type="button"
               onClick={goPrev}
               aria-label={t("prev_aria")}
-              className={`absolute top-1/2 -translate-y-1/2 end-4 w-12 h-12 text-xl ${OVERLAY_CONTROL_CLS}`}
+              data-testid="lightbox-prev"
+              className={`absolute top-1/2 -translate-y-1/2 start-4 w-12 h-12 text-xl ${OVERLAY_CONTROL_CLS}`}
             >
-              <span aria-hidden="true">→</span>
+              <span aria-hidden="true" className="inline-block ltr:rotate-180">→</span>
             </button>
-            {/* start-4 = visual left in RTL = "next" */}
+            {/* end-4 = visual left in RTL = "next" */}
             <button
               type="button"
               onClick={goNext}
               aria-label={t("next_aria")}
-              className={`absolute top-1/2 -translate-y-1/2 start-4 w-12 h-12 text-xl ${OVERLAY_CONTROL_CLS}`}
+              data-testid="lightbox-next"
+              className={`absolute top-1/2 -translate-y-1/2 end-4 w-12 h-12 text-xl ${OVERLAY_CONTROL_CLS}`}
             >
-              <span aria-hidden="true">←</span>
+              <span aria-hidden="true" className="inline-block ltr:rotate-180">←</span>
             </button>
 
             {/* Counter — horizontal center */}

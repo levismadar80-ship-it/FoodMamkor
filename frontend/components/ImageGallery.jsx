@@ -26,7 +26,7 @@ import { getVerifiedPopoverBody } from "./BadgeRow";
 // to match this component's existing prop style (producerId / producerName /
 // verified are all scalars). Absent → getVerifiedPopoverBody falls back to the
 // generic dateless sentence, which is still true, just less specific.
-export default function ImageGallery({ images = [], producerId = null, producerName = "", verified = false, verificationDocType = null, verifiedAt = null, shareUrl = "", onFavorited }) {
+export default function ImageGallery({ images = [], producerId = null, producerName = "", verified = false, verificationDocType = null, verifiedAt = null, shareUrl = "", onFavorited, updatesButton = null }) {
   const t = useTranslations("gallery");
   // MEH-1168 P2: the verified "מאומת" seal anchors to the name. For imageless
   // producers the name lives here in the Tinted Masthead (ProducerHeader omits
@@ -221,6 +221,7 @@ export default function ImageGallery({ images = [], producerId = null, producerN
               variant="gallery"
               onFavorited={onFavorited}
             />
+            {updatesButton}
           </div>
         )}
       </div>
@@ -381,6 +382,7 @@ export default function ImageGallery({ images = [], producerId = null, producerN
           variant="gallery"
           onFavorited={onFavorited}
         />
+        {updatesButton}
       </div>
     )}
     </div>

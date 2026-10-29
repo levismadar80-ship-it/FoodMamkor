@@ -348,3 +348,28 @@ describe("MEH-2526 · ProducerUpdatesButton", () => {
     expect(button()).toHaveAttribute("aria-pressed", "false");
   });
 });
+
+describe("MEH-2562 · variants", () => {
+  it("gallery: an icon-only 44px circle, named by aria-label", () => {
+    renderButton({ variant: "gallery" });
+    expect(button()).toHaveAccessibleName("קבלת עדכונים");
+    expect(button()).toHaveAttribute("aria-label", "קבלת עדכונים");
+    expect(button().textContent).toBe("");
+    expect(button().className).toMatch(/w-11 h-11/);
+    expect(button().className).toMatch(/rounded-full/);
+  });
+
+  it("quiet: visible label, no aria-label override, ≥44px hit area", () => {
+    renderButton({ variant: "quiet" });
+    expect(button()).toHaveTextContent("קבלת עדכונים");
+    expect(button()).not.toHaveAttribute("aria-label");
+    expect(button().className).toMatch(/min-h-\[44px\]/);
+  });
+
+  it("gallery reports ON through aria-pressed like the pill", async () => {
+    mockUser.current = { id: "u1" };
+    serve({ favorites: [{ producer_id: PID }], alerts: { ...OFF, enabled: true, notify_new_event: true } });
+    renderButton({ variant: "gallery" });
+    await waitFor(() => expect(button()).toHaveAttribute("aria-pressed", "true"));
+  });
+});
