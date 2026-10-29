@@ -11,6 +11,9 @@ import he from "../messages/he.json";
 import api from "@/lib/api";
 import ExperienceDetailClient from "@/app/[locale]/experiences/[id]/ExperienceDetailClient";
 
+// MEH-2559: the heart needs AuthProvider; its behaviour is SaveButton.test.jsx's.
+vi.mock("@/components/SaveButton", () => ({ default: () => null }));
+
 vi.mock("@/lib/api", () => ({ default: { get: vi.fn() } }));
 vi.mock("next/navigation", () => ({
   useParams: () => ({ id: "x-1" }),
