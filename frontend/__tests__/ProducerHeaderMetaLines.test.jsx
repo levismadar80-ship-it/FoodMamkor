@@ -99,3 +99,36 @@ describe("ProducerHeader meta block — two lines (MEH-2403)", () => {
     expect(screen.getByTestId("status-open")).toBeInTheDocument();
   });
 });
+
+// MEH-2518: the generic «כשר» fallback (no badge codes) shares the strip's
+// expiry gate. It used to read kashrut_verified_at only, so a lapsed
+// certificate still said «כשר». Cells: (current) · (lapsed) · (legacy NULL expiry).
+describe("ProducerHeader kosher fallback line — expiry gate (MEH-2518)", () => {
+  const verified = { ...baseProducer, kashrut_badges: [], kashrut_verified_at: "2026-01-01T00:00:00" };
+  const KOSHER = "producer.detail.header.attr.kosher";
+
+  it("current certificate: the line renders", () => {
+    const future = new Date(Date.now() + 30 * 86400000).toISOString();
+    render(<ProducerHeader producer={{ ...verified, kashrut_expires_at: future }} primaryCategory={category} hasImages />);
+    expect(screen.getByText(KOSHER)).toBeInTheDocument();
+  });
+
+  it("lapsed certificate: the line is absent", () => {
+    const past = new Date(Date.now() - 86400000).toISOString();
+    render(<ProducerHeader producer={{ ...verified, kashrut_expires_at: past }} primaryCategory={category} hasImages />);
+    expect(screen.queryByText(KOSHER)).toBeNull();
+  });
+
+  it("naive-UTC wire format (no Z) is read as UTC, not local time", () => {
+    // The backend sends kashrut_expires_at without a zone. 2h ago in UTC,
+    // spelled the way the API spells it: lapsed in every viewer timezone.
+    const past = new Date(Date.now() - 2 * 3600000).toISOString().replace("Z", "");
+    render(<ProducerHeader producer={{ ...verified, kashrut_expires_at: past }} primaryCategory={category} hasImages />);
+    expect(screen.queryByText(KOSHER)).toBeNull();
+  });
+
+  it("legacy NULL expiry (MEH-1260): the line renders", () => {
+    render(<ProducerHeader producer={{ ...verified, kashrut_expires_at: null }} primaryCategory={category} hasImages />);
+    expect(screen.getByText(KOSHER)).toBeInTheDocument();
+  });
+});

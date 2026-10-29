@@ -169,6 +169,20 @@ function newStore(producer: FeedProducer | null = null): FavStore {
  * `addInitScript` runs on every document, including client-side navigations.
  */
 async function stubSignedIn(page: Page) {
+  // MEH-2531: the stub token is not a session the backend knows. An /api call
+  // this spec does NOT stub (the detail page's GET /events?producer_id=…) would
+  // carry it to the real backend, whose optional-auth routes answer an invalid
+  // Bearer with 401 (get_current_user_optional, MEH-1627) → /auth/refresh 401 →
+  // `auth:expired` → signed out mid-test, so the heart opens the login modal
+  // and no POST is ever sent. Timing-dependent: red 3/4 at 3 workers, green
+  // serially. Strip it so those calls reach the backend as a real anonymous
+  // visitor. Registered FIRST on purpose — a later page.route() wins, so the
+  // /auth/me and favourites stubs below still take precedence.
+  await page.route("**/api/**", (route) => {
+    const headers = { ...route.request().headers() };
+    if (headers.authorization === `Bearer ${STUB_TOKEN}`) delete headers.authorization;
+    return route.continue({ headers });
+  });
   await page.addInitScript((token) => {
     window.localStorage.setItem("token", token);
   }, STUB_TOKEN);

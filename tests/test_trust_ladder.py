@@ -6,7 +6,7 @@ from app.models.models import KashrutBadgeRequest, PhoneOtpToken
 from app.services.trust_tier import compute_trust_tier, VALID_BADGE_CODES
 
 from tests.conftest import make_producer, make_user, auth_header
-from app.utils.clock import utc_now
+from app.utils.clock import israel_today, utc_now
 
 
 # ---------------------------------------------------------------------------
@@ -286,6 +286,7 @@ def test_admin_approve_kashrut(client, db):
 
     r = client.post(
         f"/admin/kashrut/{req.id}/approve",
+        json={"expires_on": (israel_today() + timedelta(days=90)).isoformat()},
         headers=auth_header(admin),
     )
     assert r.status_code == 200

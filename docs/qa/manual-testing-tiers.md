@@ -830,7 +830,7 @@ Listed by line so the acceptance is auditable — not silently blank.
 | 1046 | MEH-964 chunk 1A — producer dashboard nested-route shell | **נייד (375px)** — שורת הטאבים נקראת ללא horizontal scroll; כל טאב נפתח תקין |
 | 1047 | MEH-964 chunk 1A — producer dashboard nested-route shell | **/en** — תוויות הטאבים באנגלית (Overview / Edit / Tools); אין מחרוזות מפתח גולמיות |
 | 1054 | MEH-964 chunk 1B — KPI strip on Overview + תובנות tab | **ללא דלתות/חצים** — אין מגמה/חץ ליד מספר; תווית חלון אחידה "7 הימים האחרונים" בשלושה הקלפים (דירוג מציג "{N} … |
-| 1056 | MEH-964 chunk 1B — KPI strip on Overview + תובנות tab | **תג "בעלת עסק השבוע"** — נשאר ב-Overview כשמתקיימים התנאים (profile_strength≥80 + rank=1) |
+| 1056 | MEH-964 chunk 1B — KPI strip on Overview + תובנות tab | **תג "בעלת עסק השבוע"** — נשאר ב-Overview כשמתקיימים התנאים (profile_strength≥80 + rank=1) — **הוצא משימוש:** התג הוסר מהלוח, ו-MEH-2529 הסיר את שני השדות מה-API |
 | 1058 | MEH-964 chunk 1B — KPI strip on Overview + תובנות tab | **אין כפילות** — רצועת ה-KPI מופיעה רק ב-Overview, לא ב-תובנות (אנטי-MEH-961/963) |
 | 1059 | MEH-964 chunk 1B — KPI strip on Overview + תובנות tab | **נייד (375px)** — 4 הטאבים: אם צרים מדי יש גלילה אופקית (overflow-x-auto), בלי חיתוך; רצועת ה-2×2 נקראת |
 | 1066 | MEH-1134 — סקירה: סדר כרטיסים מותנה-מצב (completeness מעל av… | **עסק pending (או פרופיל חלקי)** — כרטיס השלמת הפרופיל מופיע מיד מתחת לבאנרי הסטטוס ו**מעל** כרטיס הזמינות (המ… |

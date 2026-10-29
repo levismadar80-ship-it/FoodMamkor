@@ -3143,6 +3143,23 @@
       },
       "GroupBuyStatusUpdate": {
         "properties": {
+          "expected_status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "open",
+                  "funded",
+                  "cancelled",
+                  "fulfilled"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Status"
+          },
           "status": {
             "enum": [
               "open",
@@ -3171,6 +3188,20 @@
           }
         },
         "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "KashrutApproveIn": {
+        "properties": {
+          "expires_on": {
+            "format": "date",
+            "title": "Expires On",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expires_on"
+        ],
+        "title": "KashrutApproveIn",
         "type": "object"
       },
       "KashrutCertRef": {
@@ -3286,6 +3317,7 @@
           "notes": {
             "anyOf": [
               {
+                "maxLength": 1000,
                 "type": "string"
               },
               {
@@ -3389,6 +3421,24 @@
           "created_at"
         ],
         "title": "KashrutRequestOut",
+        "type": "object"
+      },
+      "KashrutRevokeIn": {
+        "properties": {
+          "notes": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "title": "KashrutRevokeIn",
         "type": "object"
       },
       "LicenseExpiryReminderOut": {
@@ -13088,6 +13138,16 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KashrutApproveIn"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {
@@ -13170,6 +13230,63 @@
           }
         ],
         "summary": "Reject Kashrut Request",
+        "tags": [
+          "admin-kashrut"
+        ]
+      }
+    },
+    "/admin/kashrut/{request_id}/revoke": {
+      "post": {
+        "description": "MEH-2518: take an approved kashrut badge down (e.g. the certificate was\nwithdrawn). Before this the only way was SQL. Revokes every approved\nrequest for that badge code on the business — a renewal leaves two — and\nwhen no badge is left clears the verified/expiry pair, so the «כשר» header\nline, the ?kosher filter and the certificate proxy all stop at once.",
+        "operationId": "revoke_kashrut_badge_admin_kashrut__request_id__revoke_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KashrutRevokeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Revoke Kashrut Badge",
         "tags": [
           "admin-kashrut"
         ]

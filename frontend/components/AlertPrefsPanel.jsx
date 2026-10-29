@@ -307,6 +307,17 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
               {t("push_active")}
             </p>
           )}
+
+          {/* MEH-2526: alert types without a delivery channel deliver nothing --
+              fire_alerts only sends Web Push or WhatsApp. Say so while neither
+              is chosen (granted push permission counts: save() subscribes). */}
+          {/* Gated on a RESOLVED push status: while it is still "unknown" a
+              user who already granted push would see the warning flash. */}
+          {!prefs.whatsapp_opt_in && pushStatus !== "unknown" && pushStatus !== "granted" && (
+            <p className="text-xs text-text" data-testid="alert-channel-required">
+              {t("channel_required")}
+            </p>
+          )}
         </div>
       </div>
 
