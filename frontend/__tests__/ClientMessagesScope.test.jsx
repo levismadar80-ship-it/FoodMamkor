@@ -30,6 +30,7 @@ import {
   SERVER_ONLY_NAMESPACES,
   rootClientMessages,
   registerProducerMessages,
+  routeScopedMessages,
 } from "@/lib/client-messages";
 
 const ROOT = path.resolve(__dirname, "..");
@@ -88,6 +89,11 @@ describe("root client messages (MEH-2233)", () => {
     }
   });
 
+  it("the route extras never shadow a root namespace (the merge is shallow)", () => {
+    const root = Object.keys(rootClientMessages(he));
+    expect(Object.keys(routeScopedMessages(he)).filter((ns) => root.includes(ns))).toEqual([]);
+  });
+
   it("the root set drops exactly the omitted namespaces and keeps the rest", () => {
     const kept = Object.keys(rootClientMessages(he));
     const omitted = [...ROUTE_SCOPED_NAMESPACES, ...SERVER_ONLY_NAMESPACES];
@@ -130,10 +136,15 @@ describe("root client messages (MEH-2233)", () => {
     const keys = [...s.matchAll(/\bt\(\s*["'`](admin\.[a-z_.]+)["'`]/g)].map((m) => m[1]);
     expect(keys.length).toBeGreaterThan(0);
     for (const k of keys) expect(k.startsWith("admin.producers.form.fields.")).toBe(true);
-    const given = registerProducerMessages(he);
-    for (const k of keys) {
-      const value = k.split(".").reduce((o, part) => o?.[part], given);
-      expect(typeof value, k).toBe("string");
+    for (const catalog of [he, en]) {
+      const given = registerProducerMessages(catalog);
+      for (const k of keys) {
+        const value = k.split(".").reduce((o, part) => o?.[part], given);
+        expect(typeof value, k).toBe("string");
+      }
+      // The merge is shallow: a route's extras must never shadow a root namespace.
+      const root = Object.keys(rootClientMessages(catalog));
+      expect(Object.keys(given).filter((ns) => root.includes(ns))).toEqual([]);
     }
   });
 
