@@ -61,6 +61,8 @@
 
 > **MEH-762 (ADR-022 public tier contract, 2026-06-06):** `producers.verified_at` (TIMESTAMP WITH TIME ZONE, nullable, migration `f1c7b9a3e264`, Chunk 1) + `producers.verification_doc_type` (VARCHAR(20), nullable; `license`\|`exemption`\|`cosmetics`) record the tier-1 "מאומת" document review. **Chunk 2:** admin stamping via `POST /admin/producers/{id}/grant-verified` (`{doc_type}`) + `/revoke-verified`; the legacy `is_verified` column was fully retired and DROPPED in MEH-766 (writers ch3 #1420, contract ch5 #1578, column ch6 revision `d4e7a92c81b5`). **Chunk 3 public exposure:** `ProducerListOut`/`ProducerDetailOut` now carry `verification_tier` (`"verified"`\|`"declared"`\|`null` — **computed** in `_compute_verification_tier`, never stored), `verified_at` (**date granularity only** — the TIMESTAMPTZ is truncated so no time leaks), and `verification_doc_type`. Resolver (D2/D3): `verified_at` set → `"verified"`; else if no category is in `LICENSE_REQUIRED_CATEGORIES` → `"declared"`; else `null` (no badge, no negative label). Mirrors the MEH-530 name-membership predicate (`license_validation.categories_require_license`) against the loaded categories. Privacy: `verified_at`(date)/`doc_type`/`tier` are public; `declared_at`/`declaration_version`/`producer_license_number` stay admin-only (`ProducerAdminOut`, which also inherits the three public fields at date granularity).
 
+> **MEH-2520 (2026-10-28) — the tier says only what is still true.** The resolver above is narrowed, not replaced; predicate in `app/services/verification_status.py`, shared by the schema tier and the `?verified` filter. `"verified"` additionally requires that the admin-captured `license_expires_at` (MEH-2072) is not before `israel_today()` — NULL = not captured, never expired; the business stays listed, only the badge drops, and a lapsed row counts under `?verified=false`. `"declared"` additionally requires `declared_at IS NOT NULL` — an admin-created, unclaimed business signed nothing, so it gets `null` and the «חתם על הצהרה מחייבת» line is not shown. No backfill (ADR-007): a retroactive `declared_at` would assert a signature nobody gave. Production impact, as last recorded 26/10 (not re-measured here — CC cannot query prod): 1 business, status draft, so no approved row loses a tier.
+
 > **MEH-1011 (2026-07-03):** producer **request-changes** (completion request) flow — the non-terminal twin of reject. Two nullable `producers` columns (migration `a1b2c3d4e5f6`): `requested_changes` (TEXT — the admin's free-text feedback) + `changes_requested_at` (TIMESTAMPTZ, tz-aware). `POST /admin/producers/{id}/request-changes` (`{feedback}`, empty → 400) records the feedback, KEEPS status `pending`, emails the producer, WhatsApps the producer (**MEH-1051** — Meta-approved `producer_changes_requested_v1`, 2 body params `{name, missing}`, fail-open post-commit), and WhatsApps admin; `approve_producer` clears both columns on success. Admin-only exposure via `ProducerAdminOut` (both fields), never public `ProducerListOut`/`ProducerDetailOut`.
 
 > **MEH-2210 chunk A (2026-09-04):** the **rejected → resubmit** loop. Three additive `producers` columns (migration `2c1033ca5745`, expand-only, no backfill): `rejection_reason_code` (VARCHAR(40), nullable — the admin's `preset_key` from `PRODUCER_REJECTION_PRESETS`, stored beside the composed text so the owner banner can branch on it; NULL on legacy rows and free-text rejections), `resubmission_count` (INTEGER NOT NULL DEFAULT 0 — history, never reset by approve), `resubmitted_at` (TIMESTAMPTZ, nullable). `POST /producers/me/request-review` now also admits `status=rejected`: cap `constants.MAX_PRODUCER_RESUBMISSIONS` (3) → 409 «הגעתן למספר השליחות המקסימלי», otherwise the same MEH-2120 completeness gate (unverified phone → 422 `missing=["phone_verified"]` — no `pending_whatsapp`, removed in MEH-2124), then `status=pending`, `resubmission_count += 1`, `resubmitted_at=now()`, admin ping «🔁 שליחה חוזרת #n». `reject` persists the code; `approve` clears `rejection_reason` + `rejection_reason_code` (symmetric with MEH-1011's clearing) and keeps the count. Exposed on `ProducerAdminOut`, `ProducerOwnerOut` and `GET /auth/me` (`producer_rejection_reason_code`, `producer_resubmission_count`).
@@ -109,6 +111,8 @@
 > **MEH-2459 (2026-10-28) — `producers.kind` (ADR-036):** `VARCHAR(20) NOT NULL DEFAULT 'producer'`, CHECK `producer_kind_values` (`producer`\|`organizer`), migration `f1a2b3c4d5e6`. An **organizer** (markets / events, sells nothing) is a `producers` row, not a new entity — `events.producer_id` is NOT NULL. One predicate, `producer_listing.is_business()` = `status='approved' AND kind='producer'`, is composed by every business surface: `GET /producers` (list, `?q=`, geo), `/producers/count` · `/cities` · `/random` · `/by-slug/{slug}` (organizer → 404) · `/producers/{id}` (public 404; owner/admin 200), `GET /search`, `GET /stats`, `cities.py`, public experiences/recipes joins, the dashboard city rank, admin stats/analytics/map pins. **Not** applied to `GET /events` / `/events/upcoming` (organizer events are the point) or the admin queue (`ProducerAdminOut.kind`, «מארגן» chip). `POST /admin/producers/{id}/grant-verified` → **409** for an organizer (never «מאומת»). Serialized as `ProducerListOut.kind`; `EventOut` gains `owner_kind` (`producer`\|`organizer`) + `owner_slug` for the event card's owner link (chunk 3).
 >
 > **MEH-2465 (2026-10-28) — existence-only gates closed:** endpoints that used to check only that the row exists now refuse or skip `kind='organizer'`: `POST /favorites/{id}` → 404, `GET /favorites` skips organizer rows; `POST /producers/{id}/reviews` → **409** «אי אפשר לכתוב ביקורת על מארגן», `GET /producers/{id}/reviews` + legacy `GET /reviews` return nothing for an organizer; `GET /producers/{id}/google-rating` → 404; `POST /reports/producer-info` → 404 (slug or id); `GET /producers/{id}/kashrut-cert/{code}` → 404 before any fetch (`_servable_kashrut_certs` checks `kind`). Admin `total_producers`, `new_producers_this_week` and the monthly series (dashboard + `/admin/analytics`) count `kind='producer'`; `pending_producers` and recent activity still include organizers (they are approved through the same queue).
+
+> **MEH-2513 (2026-10-28) — not-live businesses gated the same way:** a business whose `status` is not `approved` (inactive / rejected / pending / draft) is treated like a missing one on the side doors: `POST /users/me/favorites/{id}` → 404, `GET /users/me/favorites` skips it (the row is kept, so a reinstated business returns to the list), `POST /producers/{id}/reviews` → 404 «בית עסק לא נמצא», and `fire_alerts` sends nothing for it (one gate for new product / event / delivery area / recipe alerts). All three use `is_business()`. `GET /producers/{id}/reviews` is unchanged, since the owner's own page preview reads it.
 > **MEH-2460 (2026-10-28) — registering as an organizer:** `POST /auth/register/producer` accepts `kind` (`producer` default \| `organizer`). For an organizer the schema drops any `category_ids` (and skips the ≥1 rule), and writes `has_physical_location=true, offers_delivery=false, delivery_nationwide=false`, no delivery cities/areas, no license — the one shape CHECK `producer_location_mode` accepts with no delivery claim (the row is never shown as a business). `GET /auth/me` → `UserOut.producer_kind`. Submission gate (`services/submission_gate.py`): an organizer needs image + description + ≥1 active event dated today-or-later (Israel) + verified WhatsApp — codes `image` · `description` · `upcoming_event` · `phone_verified` (`ORGANIZER_SUBMISSION_REQUIREMENTS`); never product / category / location. `ProducerOwnerOut.upcoming_events_count` (filled by `GET`/`PUT /producers/me` for organizers, 0 otherwise) feeds the client mirror. An organizer row stores no `address` / `lat` / `lng` and gets no `producer_locations` row (no map point). The registration placeholder description («אכתוב אחר כך» → `auth.register.producer.default_description`) counts as missing (`DEFAULT_PRODUCER_DESCRIPTIONS`, parity-tested against `lib/producer-completeness.js`). Onboarding follow-up emails (`services/onboarding_followup.py`) select `kind='producer'` only. Edit hub: an organizer sees the profile + contact groups; a deep link or `?group=` into another group stays on the hub, and the «חובה» chips follow her gate (bio required).
 > **MEH-2475 (2026-10-28) — organizer page fields + organizer city:** `OrganizerPublicOut` also carries the dashboard's profile + contact fields (null when unfilled). `PUT /producers/me` writes `city` for `kind='organizer'` only (stripped, 1–100 chars, blank → 422 «יש לבחור עיר»); for a business `city` is still ignored, because its city follows the primary location row (MEH-1938 ruling A) and an organizer has no location rows. Editor: `OrganizerCityCard` in the dashboard «קשר» group (anchor `#organizer-city`).
 > **MEH-2461 (2026-10-28) — public organizer page:** `GET /organizers/{slug}` (`routers/organizers.py`) → `OrganizerPublicOut` {id, name, slug, description, short_description, city, images, phone, instagram, website, facebook, owner_bio, owner_photo_url, contact_name, established_year, primary_contact_method, contact_email, whatsapp_group, external_order_form (MEH-2475), upcoming_events: `EventOut[]`} for an **approved organizer only** — 404 «מארגן לא נמצא» for a business slug, a pending organizer or an unknown slug; upcoming = active, dated today-or-later (Israel), soonest first. No address / license / business fields. `GET /organizers` → `[{slug, name}]` (approved organizers with a slug) — the sitemap's source for `/organizers/{slug}`. `organizers` is a reserved slug (backend `slug_utils.RESERVED_SLUGS`, frontend `lib/slug.js` RESERVED). Both routes: 120/min (parity with `/producers/by-slug` and `/events/{id}`), `Cache-Control: public, s-maxage=30, stale-while-revalidate=30` on 200 only. Event JSON-LD (`lib/seo.js buildEventJsonLd`) points an organizer's event at `/organizers/{slug}` (no URL when the organizer has no slug).
@@ -583,6 +587,14 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > checked path per caller, not two to the same state. The check and the write run under a row lock
 > (`with_for_update`, like `/commit`). 30/minute. No schema change.
 >
+> **MEH-2489 — `expected_status` (optional).** Same body plus
+> `"expected_status": "open"|"funded"|"cancelled"|"fulfilled"`: the status the
+> dashboard showed. Checked under the row lock, after the IDOR check; a mismatch
+> → 409 with the same detail as a refused transition, nothing written, no email.
+> Omitted → the behaviour above, unchanged. The owner dashboard always sends it,
+> so a cancel opened on an open group that funded meanwhile is refused instead
+> of landing on a funded group whose double confirm she never saw.
+>
 > **MEH-2435 chunk 4 — cancel email.** When that owner route writes
 > `cancelled` (cancel before the deadline, close after it, or cancel a funded
 > group), every participant gets «מהמקור — הקבוצה "{title}" בוטלה», naming the
@@ -631,9 +643,7 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > **MEH-2498 — taking a business off the site cancels its live group buys.**
 > When an admin moves a business out of `approved` — `POST
 > /admin/producers/{id}/toggle-status` (approved→inactive), `POST
-> /admin/producers/{id}/reject` (approved→rejected), or `PUT
-> /admin/producers/{id}` with a `status` other than `approved` (the admin
-> schema accepts it) — every group buy of it in
+> /admin/producers/{id}/reject` (approved→rejected) — every group buy of it in
 > `open` / `funded` becomes `cancelled` in the same commit
 > (`services/group_buy_delist.cancel_live_group_buys`), and each participant
 > except the business's own users gets the **delisted-cancel email**
@@ -641,6 +651,25 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > מופיע במהמקור», no link, no contact details). `fulfilled` / `cancelled` are
 > untouched; re-activation un-cancels nothing; a failing email never fails the
 > admin action. No schema change.
+>
+> **MEH-2502 — the admin edit cannot change status.** `PUT
+> /admin/producers/{id}` with `status` in the body → **422** «לא ניתן לשנות
+> סטטוס בעריכה — יש להשתמש באישור, בדחייה או בהשעיה.», nothing written. Status
+> moves only through approve / reject / toggle-status, which carry the approval
+> gate, the MEH-509 hooks and the MEH-2498 cancel. `ProducerAdminUpdate` still
+> declares the inherited field; the route refuses it. No schema change.
+>
+> **MEH-2503 — deleting a business or an account with group buys.** `DELETE
+> /admin/producers/{id}` and the owner's `DELETE /auth/me` first run the same
+> cancel + delisted email on the business's `open` / `funded` group buys, then
+> the DB cascade removes them. A participant's `DELETE /auth/me` removes her
+> commits (DB cascade) and reverts any `funded` group that drops below
+> `min_participants` to `open`, as leaving does
+> (`group_buy_delist.withdraw_user_commits`). Before this all three deletes
+> 500'd: `Producer.group_buys`, `Producer.name_change_requests` and
+> `User.group_buy_commits` lacked `passive_deletes` on a NOT NULL FK. A mapper
+> scan in `tests/test_meh2503_delete_with_group_buys.py` guards the class. No
+> schema change.
 >
 > **MEH-1164 sub-chunk B — structured 403 detail.** The unverified-email 403
 > `detail` is now an **object** `{"code": "email_unverified", "message": "יש
@@ -956,7 +985,7 @@ POST   /admin/producers/{id}/toggle-status     admin
 DELETE /admin/producers/{id}                   admin
 GET    /admin/producers/pending                admin
 POST   /admin/producers/{id}/approve           admin — emails + WhatsApp; ?allow_without_license=true overrides the MEH-971 license-pending guard (refuses approval when a license-required category has no producer_license_number)
-POST   /admin/producers/{id}/set-ambassador    admin — toggle ambassador flag (trust tier 5)
+POST   /admin/producers/{id}/set-ambassador    admin — toggle ambassador flag (no UI and no trust-tier effect since MEH-2509)
 POST   /admin/producers/{id}/grant-verified    admin — MEH-762: stamp tier-1 verified_at + verification_doc_type (license|exemption|cosmetics)
 POST   /admin/producers/{id}/revoke-verified   admin — MEH-762: clear verified_at + verification_doc_type (mistake correction)
 GET    /admin/license-expiry-reminders         admin — MEH-2072: approved producers whose producers.license_expires_at falls in
@@ -999,8 +1028,18 @@ PUT    /admin/producers/{producer_id}/review-checks   admin — MEH-1399: record
                                                see). Both writes are set-based statements — INSERT ... ON CONFLICT DO NOTHING and
                                                one bulk DELETE ... WHERE — so a concurrent save resolves instead of 500ing on the
                                                unique constraint or raising StaleDataError on a row already gone. 60/minute.
-GET    /admin/kashrut                          admin — list badge requests (?status=pending|approved|rejected)
-POST   /admin/kashrut/{id}/approve             admin — activates badge in kashrut_badges[], sets expiry
+GET    /admin/kashrut                          admin — list badge requests (?status=pending|approved|rejected|revoked)
+POST   /admin/kashrut/{id}/approve             admin — body {expires_on: date} = the expiry printed on the certificate
+                                               (MEH-2518; 422 unless after today and ≤ today+400d). Activates the badge in
+                                               kashrut_badges[]; kashrut_expires_at = end of that day in Israel (naive UTC).
+                                               With another badge still live the EARLIER date wins (one expiry per
+                                               business); approving the only badge replaces it. KNOWN LIMIT (fail-closed):
+                                               with no per-badge date, renewing one badge while another is live, or
+                                               revoking one of two, cannot move the date LATER — the badge may drop
+                                               early, never late. Per-badge expiry needs an Alembic expand (follow-up).
+POST   /admin/kashrut/{id}/revoke              admin — MEH-2518: body {notes?}. 409 unless approved. Marks every approved
+                                               request for that badge code "revoked", drops the code from kashrut_badges[];
+                                               no badge left → kashrut_verified_at/expires_at cleared.
 POST   /admin/kashrut/{id}/reject              admin — rejects request with optional notes
 GET    /admin/producers/rejection-presets      admin — MEH-226: the 5 canonical rejection reasons as [{key,label}].
                                                Backend is the single owner of the Hebrew labels; the admin reject
@@ -1021,7 +1060,6 @@ POST   /admin/producers/{id}/reject            admin — terminal → status=rej
                                                preset_key is ALSO persisted to producers.rejection_reason_code
                                                (NULL for a free-text-only body); approve clears both columns.
 POST   /admin/producers/{id}/request-changes   admin — MEH-1011: feedback required (empty → 400); pending-only (409 if status != pending, MEH-769 precedent; MEH-2124 dropped the second status); NON-terminal (status stays pending), sets requested_changes + changes_requested_at (tz-aware), emails producer + WhatsApp admin; cleared on approve
-POST   /admin/producers/import                 admin — Excel/CSV upload, dry_run=true by default
 
 # Home products moderation
 GET    /admin/home-products/flagged            admin
@@ -1317,7 +1355,8 @@ See [DEPLOYMENT.md](./DEPLOYMENT.md) §1 for the full setup matrix.
 ## Apple App Store compliance
 
 - `DELETE /auth/me` — deletes the user row + cascaded rows (favorites,
-  home_products, home_product_ratings, producer_reviews, experiences).
+  home_products, home_product_ratings, producer_reviews, experiences,
+  group_buy_commits — MEH-2503).
   Events hosted by the user's producer are NOT
   cascaded — they belong to the producer record.
 - `POST /auth/apple` — identity token verification + user create/link.

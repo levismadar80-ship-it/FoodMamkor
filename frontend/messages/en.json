@@ -795,13 +795,9 @@
       "header": {
         "review_count": "{count, plural, =0 {No reviews} one {1 review} other {# reviews}}",
         "review_excerpt_aria": "Go to all reviews",
-        "premium": "Premium",
         "favorites_count": "{count, plural, one {1 saved this business} other {# saved this business}}",
         "behind": "Behind the business: {name}",
         "attr": {
-          "grass_fed": "Grass-fed",
-          "organic": "Certified organic",
-          "delivery": "Delivery",
           "kosher": "Kosher"
         },
         "gluten_facility": {
@@ -887,6 +883,7 @@
       },
       "favorites": {
         "saved_login_prompt": "Saved — log in to see all your favorites",
+        "saved_toast": "Saved to favorites. Want updates from this business? You can turn them on in Favorites.",
         "login_cta": "Log in",
         "remove": "Remove from favorites",
         "add": "Add to favorites",
@@ -1472,32 +1469,9 @@
         "show_all": "Show all",
         "incomplete_label": "Missing details",
         "export": "Export",
-        "import_excel": "Import from Excel",
         "new_producer": "+ New business",
         "review_due_label": "Picks due for review",
         "review_due_title": "Businesses tagged as recommended that have not been re-checked in over 12 months, or were picked before the date existed"
-      },
-      "import": {
-        "errors_loading": "Error reading file",
-        "errors_importing": "Import error"
-      },
-      "preview": {
-        "title": "Import preview",
-        "importing": "Importing...",
-        "confirm": "Confirm import ({count})",
-        "stats": {
-          "to_import": "To import",
-          "skipped": "Skipped",
-          "errors": "Errors"
-        },
-        "table": {
-          "row": "Row",
-          "name": "Name",
-          "city": "City",
-          "category": "Category",
-          "slug": "Slug",
-          "status": "Status"
-        }
       },
       "table": {
         "status_tooltip_draft": "draft = not yet submitted for review",
@@ -1518,10 +1492,7 @@
         },
         "tags": {
           "verified": "Verified",
-          "organic_certified": "Certified organic",
           "grass_fed": "Grass-fed",
-          "delivery": "Delivery",
-          "pickup_points": "Pickup points",
           "license_pending": "License pending",
           "license_pending_title": "In a license-required category with no license number — verify before approving.",
           "organizer": "Organizer",
@@ -1539,9 +1510,6 @@
           "view": "View",
           "suspend": "Suspend",
           "activate": "Activate",
-          "remove_ambassador_title": "Remove ambassador role",
-          "set_ambassador_title": "Set as ambassador",
-          "ambassador_tooltip": "Manual flag for a leading business — promotes to Trust Tier 5 with a public badge",
           "story_card_title": "Create Instagram card",
           "story_card": "Story",
           "delete": "Delete",
@@ -1671,7 +1639,6 @@
           "google_place_low_reviews": "Fewer than 20 reviews — the line won't show",
           "lat": "Latitude",
           "lng": "Longitude",
-          "organic_certified": "Certified organic",
           "grass_fed": "Grass-fed",
           "verified": "Verified",
           "recommended": "Recommended (editor's pick)",
@@ -1680,11 +1647,6 @@
           "recommended_note_placeholder": "e.g. bakery that mills its own flour, site visit 03/2026",
           "recommended_at": "Picked on",
           "recommended_at_never": "Picked before there was a clock — review due now",
-          "kosher": "Kosher",
-          "kosher_none": "—",
-          "kosher_kosher": "Kosher",
-          "kosher_mehadrin": "Kosher mehadrin",
-          "kosher_not_kosher": "Not kosher",
           "license_label": "Producer license number",
           "license_required_suffix": " (required)",
           "license_required_hint": "Food production in this category requires a producer license from the Ministry of Health",
@@ -1703,7 +1665,6 @@
           "delivery_excluded_label": "Except:",
           "delivery_excluded_hint": "Optional — cities you don't deliver to",
           "delivery_cities_required": "Select at least one city or mark nationwide delivery",
-          "has_delivery": "Offers delivery",
           "pickup_points": "Pickup points across the country",
           "pickup_managed_in_locations": "Pickup points are managed in the locations editor",
           "delivery_area_cities": "Delivery cities (comma-separated)",
@@ -2019,7 +1980,8 @@
       "status": {
         "pending": "Pending",
         "approved": "Approved",
-        "rejected": "Rejected"
+        "rejected": "Rejected",
+        "revoked": "Revoked"
       },
       "load_error": "Error loading requests",
       "no_requests": "No requests",
@@ -2038,7 +2000,8 @@
       "no_cert": "Not uploaded",
       "actions": {
         "approve": "Approve",
-        "reject": "Reject"
+        "reject": "Reject",
+        "revoke": "Revoke badge"
       },
       "reject_modal": {
         "title": "Reject request",
@@ -2058,6 +2021,21 @@
         "row_sent": "Sent",
         "row_failed": "Failed",
         "sent_toast": "Sent {count} reminders"
+      },
+      "revoked_toast": "Badge revoked",
+      "approve_modal": {
+        "title": "Approve kashrut badge",
+        "date_label": "Certificate expiry (as printed on it)",
+        "hint": "After this date the badge leaves the site on its own.",
+        "submit": "Approve",
+        "submitting": "Approving..."
+      },
+      "revoke_modal": {
+        "title": "Revoke kashrut badge",
+        "body": "The badge leaves the business page right away, and the owner sees the reason on her dashboard.",
+        "placeholder": "Reason (e.g. the certificate was withdrawn)",
+        "submit": "Revoke badge",
+        "submitting": "Revoking..."
       }
     },
     "reports": {
@@ -2793,11 +2771,15 @@
       },
       "verification": {
         "heading": "How we verify",
-        "body": "Every business on Mehamakor is approved by hand — we check a valid business license and talk with the owner before anything goes live. No automatic sign-ups, no shortcuts. So when you see the ✓ Verified seal, you know a real person actually checked."
+        "body": "Every business on Mehamakor is approved by hand: we talk with the owner, she signs a declaration that the details are true, and only then does the business go live. No automatic sign-ups, no shortcuts. And if the business has a licence, we check it ourselves: when you see the ✓ Verified seal, you know a real person actually saw the document."
       },
       "editors_pick": {
         "heading": "Editor's Pick",
         "body": "Every so often I mark a business I especially loved — for the quality of its products, its freshness, or a story worth knowing. It's my personal choice, after getting to know the business. Two things worth knowing: you can't pay for this tag — not with premium, not in any other way. And it isn't a score — a business without it is no less good; I simply haven't gotten to it yet, or the moment hasn't come."
+      },
+      "community_leader": {
+        "heading": "Community leader",
+        "body": "We don't award this badge, customers do. It appears on its own for a business with at least 10 reviews and an average rating of 4.5 or higher. You can't ask for it and you can't pay for it, and it goes away on its own if the average drops. And a business without it is no less good: sometimes it's simply new here, and you haven't had the chance to write about it yet."
       },
       "cta": {
         "heading": "Built a business that deserves a home? We'd love to meet you.",
@@ -2972,21 +2954,9 @@
     }
   },
   "trust": {
-    "tier_2": {
-      "label": "✓ Phone verified",
-      "tooltip": "The business owner's phone number was verified via a one-time code"
-    },
-    "tier_3": {
-      "label": "Verified business",
-      "tooltip": "The business was manually verified by the Mehamakor team"
-    },
     "tier_4": {
       "label": "Community leader",
       "tooltip": "10+ reviews with an average rating of 4.5 or above"
-    },
-    "tier_5": {
-      "label": "Mehamakor ambassador",
-      "tooltip": "The leading business owner in the area — selected manually by Mehamakor"
     }
   },
   "forms": {
@@ -3117,7 +3087,6 @@
   "reviews": {
     "section_heading": "What customers say",
     "anonymous_fallback": "Customer",
-    "user_anonymous": "Anonymous",
     "star_aria": "{value, plural, one {1 star} other {{value} stars}}",
     "summary_based_on": "{total, plural, one {Based on 1 review} other {Based on {total} reviews}}",
     "summary_count": "{count, plural, one {1 review} other {{count} reviews}}",
@@ -3229,6 +3198,7 @@
   },
   "favorites": {
     "alerts_aria": "Set up alerts",
+    "bell_label": "Updates",
     "breadcrumb_home": "Home",
     "breadcrumb_favorites": "Favorites",
     "title": "My favorites",
@@ -3236,6 +3206,9 @@
     "empty_subtitle": "Tap the heart on a business card to save it here for quick access.",
     "empty_cta": "Discover businesses",
     "list_alerts_hint": "Tap the <icon></icon> on any card to get alerts about new events and products",
+    "updates_button": {
+      "label": "Get updates"
+    },
     "button": {
       "saved_toast_first_time": "Saved! Find all your favorites on the Favorites page in the menu",
       "saved_toast": "Saved to favorites",
@@ -3476,11 +3449,11 @@
       },
       "analytics": {
         "q": "How will I know if this is even working for me?",
-        "a": "You get your own dashboard: how many viewed your page this week, how many tapped WhatsApp, which cities they came from, and how many saved you to their favourites. No need to guess — you can see it."
+        "a": "You get your own dashboard: how many viewed your page this week, how many tapped WhatsApp, which cities the signed-in visitors came from, and how many saved you to their favourites. No need to guess, you can see it."
       },
       "repeat_customers": {
         "q": "What makes customers come back to me?",
-        "a": "Everyone who saves you to their favourites gets an automatic update whenever you have something new — a product, an event, a recipe or a delivery area. Like a mailing list that works for you, without you having to manage it."
+        "a": "Customers who save you to their favourites can turn on alerts, and then they get an update whenever you have something new: a product, an event, a recipe or a delivery area. Like a mailing list that works for you, without you having to manage it."
       },
       "visibility": {
         "q": "How do I avoid disappearing among all the businesses on the site? Is there paid promotion?",
@@ -3492,7 +3465,7 @@
       },
       "license": {
         "q": "Why do you require a licence — and what if I'm still in the process?",
-        "a": "The licence is what protects customers' trust in every business on the site — including yours. If you're in the process of getting a licence, tell us: we'll keep your details and publish the business the moment it comes through. And later you can strengthen that trust further: a \"verified\" badge after a cross-check against the Ministry of Health's official registry, and a kashrut badge if you have a certificate."
+        "a": "The licence is what protects customers' trust in every business on the site — including yours. If you're in the process of getting a licence, tell us: we'll keep your details and publish the business the moment it comes through. And later you can strengthen that trust further: a \"verified\" badge after we have checked the licence or exemption ourselves, and a kashrut badge if you have a certificate."
       },
       "time": {
         "q": "How much time and effort does this take from me?",
@@ -3520,7 +3493,7 @@
         },
         "verified": {
           "title": "Verified badge",
-          "desc": "A checked, valid license — customers see a clear trust mark next to your name."
+          "desc": "A licence or approval we checked ourselves, and customers see a clear trust mark next to your name."
         },
         "products": {
           "title": "Items with price ranges",
@@ -4662,6 +4635,7 @@
         "error_submit": "Failed to send request — please try again.",
         "status_pending": "Pending approval",
         "status_rejected": "Rejected",
+        "status_revoked": "Badge removed",
         "empty": "No kosher badge yet. You can request one here.",
         "filter_hint": "To appear in the \"Kosher\" filter, upload a kashrut certificate for verification.",
         "missing_cert": "The \"{badge}\" badge shows on your business page without a certificate. Upload a photo of it below so customers can tap the badge and see it."
@@ -4819,6 +4793,7 @@
       "push_blocked": "Push notifications blocked in the browser",
       "push_enable": "Get updates even when the site is closed",
       "push_active": "Push notifications active",
+      "channel_required": "For updates to reach you, choose at least one way: WhatsApp or browser notifications.",
       "save_cta": "Save settings",
       "saving": "Saving…",
       "save_success_toast": "Settings updated",
@@ -5381,7 +5356,7 @@
       },
       "no_added_sugar": {
         "meta_description": "Local businesses that marked products with no added sugar in their catalog — sweets, breads and spreads. Marked by the business itself.",
-        "intro": "Sweets without white sugar, sourdough breads with no sweetening, and spreads where the fruit does the work. Every business here marked at least one product in its catalog as having no added sugar — suitable both for those building a low-carb or ketogenic menu, and for anyone who simply wants less sugar at home.",
+        "intro": "Sweets without white sugar, sourdough breads with no sweetening, and spreads where the fruit does the work. Every business here marked at least one product in its catalog as having no added sugar, for anyone who simply wants less sugar at home.",
         "faq": [
           {
             "question": "What counts as no added sugar?",

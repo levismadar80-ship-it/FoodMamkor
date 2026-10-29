@@ -10,11 +10,9 @@ from fastapi import (
     BackgroundTasks,
     Body,
     Depends,
-    File,
     HTTPException,
     Query,
     Request,
-    UploadFile,
 )
 from sqlalchemy import func, text
 from sqlalchemy.exc import IntegrityError
@@ -823,18 +821,23 @@ def admin_update_producer(
     # keeps `in_season_until` off the owner's schema entirely rather than merely
     # filtered out of it.
     data: ProducerAdminUpdate,
-    background_tasks: BackgroundTasks,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
-    # MEH-2498: this PUT can write `status` too (ProducerUpdate.status), so it
-    # is the third way a business leaves 'approved' — read before the setattr.
-    was_approved = producer.status == "approved"
 
     payload = data.model_dump(exclude_unset=True)
+    # MEH-2502: status moves only through approve / reject / toggle-status —
+    # the routes that carry the approval gate, the MEH-509 hooks and the
+    # MEH-2498 group-buy cancel. ProducerAdminUpdate inherits `status` from the
+    # owner's ProducerUpdate, so it is refused here, loudly, before any write.
+    if "status" in payload:
+        raise HTTPException(
+            status_code=422,
+            detail="לא ניתן לשנות סטטוס בעריכה — יש להשתמש באישור, בדחייה או בהשעיה.",
+        )
     category_ids = payload.pop("category_ids", None)
     delivery_area_cities = payload.pop("delivery_area_cities", None)
     # MEH-903 A: stop writing the legacy delivery_cities column — delivery_areas
@@ -890,11 +893,6 @@ def admin_update_producer(
 
     for field, value in payload.items():
         setattr(producer, field, value)
-
-    # MEH-2498: same rule as toggle-status and reject — off the site means the
-    # business's live group buys are cancelled in this commit.
-    if was_approved and producer.status != "approved":
-        cancel_live_group_buys(db, producer, background_tasks)
 
     if category_ids is not None:
         _apply_categories(db, producer, category_ids)
@@ -982,6 +980,7 @@ def toggle_producer_status(
 @router.delete("/producers/{producer_id}")
 def admin_delete_producer(
     producer_id: UUID,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
@@ -1010,6 +1009,11 @@ def admin_delete_producer(
     # its destroy below needs no bypass. Same orphan class as story_card:
     # overwrite=True on upload prevents duplicates, not delete-orphans.
     old_owner_photo_url = producer.owner_photo_url
+
+    # MEH-2503: a live group buy's participants are told before the cascade
+    # removes it — same delisted email as a suspension (MEH-2498). Runs before
+    # the unlink below: it reads User.producer_id to skip the owner herself.
+    cancel_live_group_buys(db, producer, background_tasks)
 
     # MEH-747: unlink any user pointing at this producer BEFORE db.delete.
     # User.producer_id has no ondelete (models.py), so deleting the producer
@@ -1058,42 +1062,6 @@ def admin_delete_producer(
     )
 
     return {"detail": "Producer deleted"}
-
-
-@router.post("/producers/import")
-async def import_producers_excel(
-    file: UploadFile = File(...),
-    dry_run: bool = Query(
-        True, description="Preview only — set false to actually save"
-    ),
-    user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
-):
-    """Upload Excel/CSV file and import producers. dry_run=true returns preview only."""
-    from io import BytesIO
-
-    try:
-        from openpyxl import load_workbook
-    except ImportError:
-        raise HTTPException(status_code=500, detail="openpyxl not installed")
-
-    contents = await file.read()
-    if len(contents) > 10_000_000:
-        raise HTTPException(status_code=413, detail="קובץ גדול מדי — מקסימום 10MB")
-    try:
-        wb = load_workbook(BytesIO(contents), data_only=True)
-    except Exception:
-        # MEH-2375: the parser's message stays in the log, never in the response.
-        logger.exception("producer import: workbook could not be parsed")
-        raise HTTPException(status_code=400, detail="לא ניתן לקרוא את הקובץ")
-
-    ws = wb.active
-    # Skip header row
-    rows = [list(r) for r in ws.iter_rows(min_row=2, values_only=True)]
-
-    from app.services.producer_import import import_rows
-
-    return import_rows(db, rows, dry_run=dry_run)
 
 
 @router.get("/producers/pending", response_model=list[ProducerAdminOut])

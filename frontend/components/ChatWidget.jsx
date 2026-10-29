@@ -86,7 +86,7 @@ const SUGGESTED_PROMPT_IDS = [
 // they're registering. That copy now lives verbatim at chat.answers.*.
 const ANSWERED_PROMPT_IDS = new Set(["register", "find_nearby"]);
 
-export default function ChatWidget() {
+export default function ChatWidget({ hideOnMobile = false } = {}) {
   const t = useTranslations("chat");
   // MEH-1981: notice-at-collection. The line names Anthropic itself — "to whom
   // the data is passed" is a mandatory §11 item, not something a link can
@@ -293,6 +293,8 @@ export default function ChatWidget() {
   };
 
   if (!viewportKnown) return null;
+  // MEH-2512: form pages (ChatWidgetLazy) keep the launcher off phones.
+  if (hideOnMobile && !isDesktop) return null;
 
   // Desktop pill with text on first visit, icon-only after; mobile always icon-only.
   const showPillText = isDesktop && !wasOpened;

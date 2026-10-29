@@ -16,7 +16,9 @@
  */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+// MEH-2491: focus trap + return for the two confirm dialogs below.
+import useDialogFocus from "@/hooks/useDialogFocus";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { CaretDown, CaretUp, Package, Pencil, Plus, Star, Trash, X } from "@phosphor-icons/react";
@@ -467,6 +469,18 @@ export default function ProductsSection({
     }
   };
 
+  // MEH-2491: both dialogs declare aria-modal; this keeps Tab inside them and
+  // returns focus to the button that opened them (the row's delete, or the
+  // add form's submit).
+  const deleteDialogRef = useRef(null);
+  const duplicateDialogRef = useRef(null);
+  // A confirmed delete removes the row, and its button, before close: focus
+  // falls back to the products section rather than the top of the page (the
+  // section, not its heading: embedded mode renders no heading).
+  const sectionRef = useRef(null);
+  useDialogFocus(deleteDialogRef, !!confirmDelete, () => sectionRef.current);
+  useDialogFocus(duplicateDialogRef, confirmDuplicate, () => sectionRef.current);
+
   // MEH-1447: Escape closes the delete-confirm dialog unless a delete is in
   // flight. Mirrors admin/producers DeleteConfirmDialog (MEH-1023/1027).
   useEffect(() => {
@@ -493,7 +507,11 @@ export default function ProductsSection({
   if (loading) return null;
 
   return (
-    <div className={embedded ? "" : "bg-white border border-border rounded-[16px] p-6"}>
+    <div
+      ref={sectionRef}
+      tabIndex={-1}
+      className={`focus:outline-none ${embedded ? "" : "bg-white border border-border rounded-[16px] p-6"}`}
+    >
       <div className={embedded ? "flex items-center justify-end mb-4" : "flex items-center justify-between mb-4"}>
         {!embedded && (
           <h3 className="font-headline-md text-lg font-bold text-text">{t("section_heading")}</h3>
@@ -916,6 +934,7 @@ export default function ProductsSection({
       {confirmDelete && (
         <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40 px-4">
           <div
+            ref={deleteDialogRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="product-delete-title"
@@ -937,6 +956,7 @@ export default function ProductsSection({
               </button>
               <button
                 type="button"
+                data-autofocus
                 disabled={deletingId != null}
                 onClick={() => setConfirmDelete(null)}
                 className="px-4 py-2 rounded-[10px] text-sm border border-border text-fg-muted hover:bg-gray-50 transition disabled:opacity-50"
@@ -955,6 +975,7 @@ export default function ProductsSection({
       {confirmDuplicate && (
         <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40 px-4">
           <div
+            ref={duplicateDialogRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="product-duplicate-title"
@@ -979,6 +1000,7 @@ export default function ProductsSection({
               <button
                 type="button"
                 data-testid="duplicate-cancel"
+                data-autofocus
                 disabled={saving}
                 onClick={() => setConfirmDuplicate(false)}
                 className="px-4 py-2 rounded-[10px] text-sm border border-border text-fg-muted hover:bg-gray-50 transition disabled:opacity-50"

@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { Cow, Leaf, Package, Seal, Truck, Circle, StarOfDavid, Warning } from "@phosphor-icons/react";
+import { Cow, Seal, Circle, StarOfDavid, Warning } from "@phosphor-icons/react";
 import Pagination from "@/components/Pagination";
 import AdminLoadError from "@/components/admin/AdminLoadError";
 import StoryCardCanvas from "@/components/StoryCardCanvas";
@@ -14,6 +14,7 @@ import { CopyClaimMessageButton, DraftOwnerBadge } from "./AdminDraftClaimAction
 import { SLA_STATUSES } from "./sla-statuses";
 import { getProducerStatusLabel, getProducerStatusColor } from "@/lib/producer-status";
 import { optimizeCloudinary } from "@/lib/cloudinary";
+import { BADGE_CONFIG, isKashrutCurrent } from "@/lib/badges";
 
 // Phosphor icon size used in trait tags + the action row.
 const ICON_SIZE_SM = 16;
@@ -208,7 +209,11 @@ function CompletenessBadge({ missing, priority }) {
   );
 }
 
-function ProducerTags({ producer }) {
+// MEH-2521: the admin ✡ follows VERIFIED kashrut — the same predicate the
+// public kosher badge uses (lib/badges.js, case "kosher": MEH-986 + MEH-1260
+// expiry) — never the free-text `producer.kosher` string, which no public
+// surface renders. Same predicate as the public strip (lib/badges.js).
+export function ProducerTags({ producer }) {
   const t = useTranslations("admin");
   return (
     <div className="flex gap-1 flex-wrap">
@@ -225,11 +230,16 @@ function ProducerTags({ producer }) {
         </span>
       )}
       {producer.verification_tier === "verified" && <span title={t("producers.table.tags.verified")}><Seal size={ICON_SIZE_SM} weight="fill" className="text-primary" aria-hidden="true" /></span>}
-      {producer.organic_certified && <span title={t("producers.table.tags.organic_certified")}><Leaf size={ICON_SIZE_SM} className="text-primary" aria-hidden="true" /></span>}
       {producer.grass_fed && <span title={t("producers.table.tags.grass_fed")}><Cow size={ICON_SIZE_SM} className="text-primary" aria-hidden="true" /></span>}
-      {producer.has_delivery && <span title={t("producers.table.tags.delivery")}><Truck size={ICON_SIZE_SM} className="text-primary" aria-hidden="true" /></span>}
-      {producer.pickup_points && <span title={t("producers.table.tags.pickup_points")}><Package size={ICON_SIZE_SM} className="text-primary" aria-hidden="true" /></span>}
-      {producer.kosher && <span title={producer.kosher}><StarOfDavid size={ICON_SIZE_SM} className="text-primary" aria-hidden="true" /></span>}
+      {/* MEH-2521: the organic (Leaf), delivery (Truck) and pickup (Package)
+          tags are gone — each read a column no public surface shows any more
+          (MEH-1259 organic; delivery is derived from delivery areas; pickup
+          from ProducerLocation rows, MEH-2046/2060). */}
+      {isKashrutCurrent(producer) && (
+        <span data-testid="admin-tag-kashrut" title={BADGE_CONFIG.kosher.label}>
+          <StarOfDavid size={ICON_SIZE_SM} className="text-primary" aria-hidden="true" />
+        </span>
+      )}
       {/* MEH-971 chunk 3: license-pending flag — license-required category with
           no license number. Unmissable text badge so the admin verifies before
           approving (the chunk-4 guard blocks approval without an override). */}
@@ -289,7 +299,7 @@ function ReferralSource({ producer }) {
   );
 }
 
-export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onApproveWithoutLicense, onRequestChanges, onReject, onToggleStatus, onToggleAmbassador, onDeleteProducer, onToggleStoryCard, onReload, isBusy }) {
+export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onApproveWithoutLicense, onRequestChanges, onReject, onToggleStatus, onDeleteProducer, onToggleStoryCard, onReload, isBusy }) {
   const t = useTranslations("admin");
   const p = producer;
   // UIS Pattern A (MEH-228): disable the in-flight action's button. `isBusy`
@@ -324,7 +334,8 @@ export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onAppro
       {/* MEH-1027 Chunk A: secondary + destructive actions live in the kebab
           (MEH-1023 pattern) — same guards, same handlers, same busy keys as
           the inline buttons they replace; only the trigger location moved.
-          Ambassador + story-card behavior is unchanged (reposition only). */}
+          Story-card behavior is unchanged (reposition only). MEH-2509 removed
+          the ambassador item (it duplicated «בחירת העורכת»). */}
       <AdminRowMenu
         ariaLabel={t("producers.table.actions.menu_aria")}
         items={[
@@ -334,24 +345,6 @@ export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onAppro
                 label: p.status === "approved" ? t("producers.table.actions.suspend") : t("producers.table.actions.activate"),
                 disabled: busy(`status:${p.id}`),
                 onSelect: () => onToggleStatus(p.id),
-              }]
-            : []),
-          ...(p.status === "approved"
-            ? [{
-                key: "ambassador",
-                // MEH-1267: title explains the ambassador action (Trust Tier 5)
-                // for admins who don't know what "שגריר" means.
-                // MEH-1681: the label names the ACTION the click performs, not the
-                // current state. It previously read "שגרירה" / "☆ שגריר" — state
-                // descriptions, where only the ☆ glyph carried the direction, so an
-                // admin could not tell whether clicking would set or remove the role.
-                label: (
-                  <span title={t("producers.table.actions.ambassador_tooltip")}>
-                    {p.ambassador ? t("producers.table.actions.remove_ambassador_title") : t("producers.table.actions.set_ambassador_title")}
-                  </span>
-                ),
-                disabled: busy(`ambassador:${p.id}`),
-                onSelect: () => onToggleAmbassador(p.id, p.ambassador),
               }]
             : []),
           ...(p.status === "approved" && p.slug
@@ -628,14 +621,14 @@ function EmptyRow({ incompleteOnly }) {
 
 export default function AdminProducersTable({
   rows, incompleteOnly, storyCardOpenId, onSetStoryCardOpenId, loadError, onRetryLoad,
-  onQuickApprove, onApproveWithoutLicense, onRequestChanges, onReject, onToggleStatus, onToggleAmbassador, onDeleteProducer,
+  onQuickApprove, onApproveWithoutLicense, onRequestChanges, onReject, onToggleStatus, onDeleteProducer,
   onUploadStoryCard, isBusy, checklist,
   page, totalPages, perPage, onPageChange, onPerPageChange, visibleCount,
 }) {
   const onToggleStoryCard = (id) =>
     onSetStoryCardOpenId((prev) => (prev === id ? null : id));
   const handlers = {
-    onQuickApprove, onApproveWithoutLicense, onRequestChanges, onReject, onToggleStatus, onToggleAmbassador, onDeleteProducer,
+    onQuickApprove, onApproveWithoutLicense, onRequestChanges, onReject, onToggleStatus, onDeleteProducer,
     onUploadStoryCard, onToggleStoryCard, isBusy,
     // MEH-2495: a claim-link 409 means the row is stale — reload the list.
     onReload: onRetryLoad,

@@ -6,7 +6,7 @@ from app.models.models import KashrutBadgeRequest, PhoneOtpToken
 from app.services.trust_tier import compute_trust_tier, VALID_BADGE_CODES
 
 from tests.conftest import make_producer, make_user, auth_header
-from app.utils.clock import utc_now
+from app.utils.clock import israel_today, utc_now
 
 
 # ---------------------------------------------------------------------------
@@ -61,16 +61,18 @@ def test_tier4_requires_both_criteria():
     assert compute_trust_tier(_FakeProducer(reviews_count=9, avg_rating=4.5)) == 1
 
 
-def test_tier5_ambassador():
-    assert compute_trust_tier(_FakeProducer(ambassador=True)) == 5
+def test_ambassador_no_longer_grants_tier5():
+    # MEH-2509: ambassador duplicated «בחירת העורכת» (is_recommended) and is
+    # hidden — the flag is still stored but no longer moves the trust tier.
+    assert compute_trust_tier(_FakeProducer(ambassador=True)) == 1
 
 
-def test_tier5_supersedes_all():
+def test_ambassador_does_not_mask_tier4():
     p = _FakeProducer(
         ambassador=True, phone_verified=True,
         reviews_count=10, avg_rating=4.9,
     )
-    assert compute_trust_tier(p) == 5
+    assert compute_trust_tier(p) == 4
 
 
 def test_valid_badge_codes_not_empty():
@@ -284,6 +286,7 @@ def test_admin_approve_kashrut(client, db):
 
     r = client.post(
         f"/admin/kashrut/{req.id}/approve",
+        json={"expires_on": (israel_today() + timedelta(days=90)).isoformat()},
         headers=auth_header(admin),
     )
     assert r.status_code == 200

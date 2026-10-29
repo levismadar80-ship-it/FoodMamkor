@@ -482,6 +482,17 @@ export const RejectKashrutRequestAdminKashrutRequestIdRejectPostResponse = /*#__
 
 
 /**
+ * MEH-2518: take an approved kashrut badge down (e.g. the certificate was
+ * withdrawn). Before this the only way was SQL. Revokes every approved
+ * request for that badge code on the business — a renewal leaves two — and
+ * when no badge is left clears the verified/expiry pair, so the «כשר» header
+ * line, the ?kosher filter and the certificate proxy all stop at once.
+ * @summary Revoke Kashrut Badge
+ */
+export const RevokeKashrutBadgeAdminKashrutRequestIdRevokePostResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
  * MEH-2072: approved businesses whose licence expires within 30 days.
  *
  * Read-only. Nothing is sent, nothing is hidden, nothing is un-verified — v1
@@ -1167,13 +1178,6 @@ export const AdminCreateProducerAdminProducersPostResponse = /*#__PURE__*/ zod.o
   "website": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "whatsapp_group": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })
-
-
-/**
- * Upload Excel/CSV file and import producers. dry_run=true returns preview only.
- * @summary Import Producers Excel
- */
-export const ImportProducersExcelAdminProducersImportPostResponse = /*#__PURE__*/ zod.unknown()
 
 
 /**
@@ -5317,7 +5321,8 @@ export const ListReviewsNestedProducersProducerIdReviewsGetResponse = /*#__PURE_
  * Submit or update a review.
  *
  * Guards (checked in order):
- *   1. Producer must exist.
+ *   1. Producer must exist and be live (status approved) — a suspended,
+ *      rejected, draft or pending one is a 404 like a missing one (MEH-2513).
  *   1b. Producer must be a business — an organizer gets 409 (MEH-2465).
  *   2. Producer owner cannot review their own business.
  *   2b. Producer owner cannot review a business sharing a category with
