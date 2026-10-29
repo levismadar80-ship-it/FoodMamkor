@@ -289,8 +289,11 @@ function AdminShell({ children }) {
         </div>
       </aside>
 
-      {/* Mobile: horizontal scrollable nav */}
-      <div ref={stripRef} className="md:hidden w-full bg-primary-dark sticky top-16 z-40 overflow-x-auto">
+      {/* Mobile: horizontal scrollable nav. MEH-2587: sticks below the LIVE
+          header height (`--chrome-top`, published by Header.jsx) — `top-16`
+          (64px) parked it under the 82px header, hiding the top 18px of the
+          tabs once the page scrolled (Sapir's iPhone screenshot, 29/10). */}
+      <div ref={stripRef} className="md:hidden w-full bg-primary-dark sticky top-[var(--chrome-top,82px)] z-40 overflow-x-auto">
         <nav className="flex gap-1 px-3 py-2 whitespace-nowrap">
           {navHrefs.map((n) => {
             const active = isActive(n.href);
