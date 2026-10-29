@@ -3234,7 +3234,8 @@
       "remove_aria": "הסר ממועדפים",
       "inline_label": "שמרו",
       "quiet_label": "שמירה",
-      "login_prompt_message": "כדי לשמור עסקים אוהבים — היכנסו"
+      "login_prompt_message": "כדי לשמור עסקים אוהבים — היכנסו",
+      "login_prompt_message_saved_item": "כדי לשמור למועדפים — היכנסו"
     }
   },
   "report": {
@@ -3252,6 +3253,7 @@
     "trigger": "שתפו",
     "modal_title": "שתפו לינק לעסק",
     "modal_title_event": "שתפו את האירוע",
+    "modal_title_recipe": "שתפו את המתכון",
     "copy_link": "שתפו לינק",
     "wa_message_with_meta": "גיליתי את {title} במהמקור 🌿",
     "wa_message_business_fallback": "בית עסק",
