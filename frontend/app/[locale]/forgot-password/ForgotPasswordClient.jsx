@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
+import AuthSplitLayout from "@/components/auth/AuthSplitLayout";
 import { useTranslations } from "next-intl";
-import { Leaf } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import Input from "@/components/ui/Input";
 import CollectionNotice from "@/components/CollectionNotice";
@@ -31,73 +31,81 @@ export default function ForgotPasswordClient() {
     }
   };
 
+  // MEH-2568: the /login template (AuthSplitLayout) instead of a white card
+  // with a leaf badge. Copy and testids unchanged.
   return (
-    <div className="min-h-[calc(100vh-200px)] flex items-center justify-center px-4 py-16">
-      <div className="bg-white rounded-[20px] p-8 sm:p-10 w-full max-w-md border border-border shadow-[0_4px_32px_rgba(46,104,83,0.08)] text-center">
-        <div className="w-16 h-16 rounded-full bg-green-50 mx-auto mb-4 flex items-center justify-center" aria-hidden="true">
-          <Leaf size={32} className="text-primary" />
-        </div>
-        <h1 className="font-headline-md text-2xl font-bold text-text mb-1">{t("auth.passwordRecovery.forgot.title")}</h1>
-        <p className="text-fg-muted text-sm mb-6">{t("auth.passwordRecovery.forgot.subtitle")}</p>
-
-        {submitted ? (
-          /* MEH-215 journey C: the anti-enumeration ack (MEH-328). Same node
+    <AuthSplitLayout
+      testId="forgot-password-page"
+      title={t("auth.passwordRecovery.forgot.title")}
+      subtitle={t("auth.passwordRecovery.forgot.subtitle")}
+    >
+      {submitted ? (
+        /* MEH-215 journey C: the anti-enumeration ack (MEH-328). Same node
              for a known and an unknown address — the spec asserts exactly that. */
-          <div
-            data-testid="forgot-sent"
-            className="bg-green-50 border border-primary/20 rounded-[12px] px-5 py-4 text-primary text-sm"
-          >
-            <p className="font-medium mb-1">{t("auth.passwordRecovery.forgot.success_main")}</p>
-            <p className="text-fg-muted text-xs mt-2">
-              {t("auth.passwordRecovery.forgot.success_contact_prefix")}{" "}
-              <a
-                href={`mailto:${CONTACT_EMAIL}`}
-                className="text-primary hover:underline break-all"
-                dir="ltr"
-              >
-                {CONTACT_EMAIL}
-              </a>
-            </p>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-4 text-start">
-            {/* MEH-1145 Wave E1: plain email field → ui/Input (placeholder-only,
-                no label invented; recipe converges to the canon). */}
-            <Input
-              data-testid="forgot-email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder={t("auth.passwordRecovery.forgot.email_placeholder")}
-              required
+        <div
+          data-testid="forgot-sent"
+          className="bg-green-50 border border-primary/20 rounded-[12px] px-5 py-4 text-primary text-sm"
+        >
+          <p className="font-medium mb-1">
+            {t("auth.passwordRecovery.forgot.success_main")}
+          </p>
+          <p className="text-fg-muted text-xs mt-2">
+            {t("auth.passwordRecovery.forgot.success_contact_prefix")}{" "}
+            <a
+              href={`mailto:${CONTACT_EMAIL}`}
+              className="text-primary hover:underline break-all"
               dir="ltr"
-            />
-            {/* MEH-1981: notice-at-collection — purpose of the one field this
-                form takes. Copy approved verbatim 02/09 (rule 22). */}
-            <CollectionNotice
-              message={t("privacy.collection_notice.password_reset")}
-              linkLabel={t("auth.register.consumer.terms.privacy_link")}
-              testId="forgot-collection-notice"
-            />
-            {error && (
-              <p className="text-red-600 text-sm text-center" role="alert">{error}</p>
-            )}
-            <button
-              type="submit"
-              data-testid="forgot-submit"
-              disabled={loading || !email}
-              className="w-full bg-primary text-white py-3.5 rounded-[10px] hover:bg-primary-dark transition font-medium disabled:opacity-50"
             >
-              {loading ? t("auth.passwordRecovery.forgot.submit_sending") : t("auth.passwordRecovery.forgot.submit")}
-            </button>
-            <p className="text-center text-sm text-fg-muted">
-              <Link href="/login" data-testid="forgot-back-to-login" className="text-primary hover:underline">
-                {t("auth.passwordRecovery.forgot.back_to_login")}
-              </Link>
+              {CONTACT_EMAIL}
+            </a>
+          </p>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-4 text-start">
+          {/* MEH-1145 Wave E1: plain email field → ui/Input (placeholder-only,
+                no label invented; recipe converges to the canon). */}
+          <Input
+            data-testid="forgot-email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder={t("auth.passwordRecovery.forgot.email_placeholder")}
+            required
+            dir="ltr"
+          />
+          {/* MEH-1981: notice-at-collection — purpose of the one field this
+                form takes. Copy approved verbatim 02/09 (rule 22). */}
+          <CollectionNotice
+            message={t("privacy.collection_notice.password_reset")}
+            linkLabel={t("auth.register.consumer.terms.privacy_link")}
+            testId="forgot-collection-notice"
+          />
+          {error && (
+            <p className="text-red-600 text-sm text-center" role="alert">
+              {error}
             </p>
-          </form>
-        )}
-      </div>
-    </div>
+          )}
+          <button
+            type="submit"
+            data-testid="forgot-submit"
+            disabled={loading || !email}
+            className="w-full bg-primary text-white py-3.5 rounded-[10px] hover:bg-primary-dark transition font-medium disabled:opacity-50"
+          >
+            {loading
+              ? t("auth.passwordRecovery.forgot.submit_sending")
+              : t("auth.passwordRecovery.forgot.submit")}
+          </button>
+          <p className="text-center text-sm text-fg-muted">
+            <Link
+              href="/login"
+              data-testid="forgot-back-to-login"
+              className="text-primary hover:underline"
+            >
+              {t("auth.passwordRecovery.forgot.back_to_login")}
+            </Link>
+          </p>
+        </form>
+      )}
+    </AuthSplitLayout>
   );
 }

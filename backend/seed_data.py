@@ -539,7 +539,18 @@ def seed():
                 db.commit()
                 print(f"Admin user created: {settings.admin_email}")
             else:
-                print(f"Admin user already exists: {settings.admin_email}")
+                # MEH-2575: insert-only on purpose. ADMIN_PASSWORD is applied
+                # only when this row is first created; changing it in Railway
+                # afterwards changes nothing. Syncing it here would make an env
+                # var the password authority and skip the token_version /
+                # password-change invalidation that /auth/reset-password does.
+                # The way to change an existing admin password is «שכחת
+                # סיסמה?» on /login (/auth/forgot-password).
+                print(
+                    f"Admin user already exists: {settings.admin_email} "
+                    "(ADMIN_PASSWORD is NOT applied to an existing user; "
+                    "change the password via forgot-password)"
+                )
         else:
             print("ADMIN_EMAIL or ADMIN_PASSWORD not set — skipping admin seed")
 
