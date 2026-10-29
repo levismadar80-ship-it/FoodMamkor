@@ -10,6 +10,7 @@ import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import GoogleAuthButton from "@/components/GoogleAuthButton";
 import AppleAuthButton from "@/components/AppleAuthButton";
+import { oauthTermsKey } from "@/lib/oauthTermsKey";
 import ButtonSpinner from "@/components/ButtonSpinner";
 import { validateEmail } from "@/lib/validators";
 import { safeInternalRedirect } from "@/lib/safe-redirect";
@@ -242,7 +243,7 @@ function LoginPageBody() {
                 data-testid="login-oauth-terms"
                 className="text-[13px] leading-relaxed text-fg-muted text-start"
               >
-                {t.rich("oauth_terms", {
+                {t.rich(oauthTermsKey(googleConfigured, appleConfigured), {
                   tos: (chunks) => (
                     <LocaleLink href="/terms" target="_blank" className="text-primary underline">
                       {chunks}
