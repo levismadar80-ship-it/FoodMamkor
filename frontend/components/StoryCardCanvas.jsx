@@ -156,23 +156,35 @@ function wrapLines(ctx, text, maxWidth) {
   return out;
 }
 
-// Largest size from `max` down to `min` at which the name fits in two lines;
-// at `min` anything past line two is cut and the second line ends with «…».
+// Largest size from `max` down to `min` at which the name fits in two lines
+// with no line wider than maxWidth; at `min` anything past line two is cut and
+// the second line ends with «…». A single word too wide for the line is cut by
+// characters as the last resort.
 function fitName(ctx, text, maxWidth) {
   const max = 120;
   const min = 76;
+  const fits = (l) => ctx.measureText(l).width <= maxWidth;
   for (let size = max; size >= min; size -= 4) {
     ctx.font = `900 ${size}px ${SERIF}`;
     const lines = wrapLines(ctx, text, maxWidth);
-    if (lines.length <= 2) return { size, lines };
+    if (lines.length <= 2 && lines.every(fits)) return { size, lines };
   }
   ctx.font = `900 ${min}px ${SERIF}`;
-  const lines = wrapLines(ctx, text, maxWidth).slice(0, 2);
-  let last = `${lines[1]}…`;
-  while (ctx.measureText(last).width > maxWidth && last.includes(" ")) {
-    last = `${last.slice(0, -1).replace(/\s*\S+$/, "")}…`;
+  const all = wrapLines(ctx, text, maxWidth);
+  const lines = all.slice(0, 2);
+  const cutChars = (line) => {
+    let out = line;
+    while (!fits(`${out}…`) && out.length > 1) out = out.slice(0, -1);
+    return `${out.trimEnd()}…`;
+  };
+  if (lines[0] && !fits(lines[0])) lines[0] = cutChars(lines[0]);
+  if (all.length > 2 || (lines[1] && !fits(lines[1]))) {
+    let last = `${lines[1]}…`;
+    while (!fits(last) && last.includes(" ")) {
+      last = `${last.slice(0, -1).replace(/\s*\S+$/, "")}…`;
+    }
+    lines[1] = fits(last) ? last : cutChars(lines[1]);
   }
-  lines[1] = last;
   return { size: min, lines };
 }
 

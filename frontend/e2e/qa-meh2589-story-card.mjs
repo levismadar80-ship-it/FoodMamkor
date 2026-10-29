@@ -8,21 +8,28 @@
  * screenshots the panel at 375 and 1440, and writes each canvas out at its
  * full 1080×1920 so the card itself can be read, not just the preview.
  *
- * The Cloudinary photo is served from QA_PHOTO (a local file) with CORS
+ * The Cloudinary photo is served from <photo.png> (a local file) with CORS
  * headers, because the canvas loads it crossOrigin=anonymous.
  *
  * CONTROL, run first and failing loudly: the canvas exists and is 1080×1920.
  * A missing or 300×150 canvas means the panel never drew, and every PNG
  * below would be void.
  *
- * Run: QA_PHOTO=/path/to/photo.png node e2e/qa-meh2589-story-card.mjs
+ * Run: node e2e/qa-meh2589-story-card.mjs /path/to/photo.png
+ *      (PLAYWRIGHT_CHROMIUM_PATH=<chrome> where Playwright's own browser is absent)
  */
 import { chromium } from "@playwright/test";
 import fs from "node:fs";
 
 const BASE = process.env.QA_BASE_URL || "http://localhost:3100";
-const OUT = process.env.QA_OUT || "qa-artifacts/MEH-2589";
-const PHOTO = process.env.QA_PHOTO;
+// Photo and output dir are CLI args, not env vars: env names are gated by
+// scripts/check_env_drift.sh and these are not app config.
+const PHOTO = process.argv[2];
+const OUT = process.argv[3] || "qa-artifacts/MEH-2589";
+if (!PHOTO) {
+  console.log("usage: node e2e/qa-meh2589-story-card.mjs <photo.png> [outDir]");
+  process.exit(2);
+}
 const ADMIN = { id: 1, email: "admin@example.com", role: "admin", name: "ספיר" };
 
 const row = (i, extra) => ({
@@ -79,8 +86,8 @@ async function openStory(page, index) {
 }
 
 async function run(width, height) {
-  // QA_CHROME: the sandbox ships one Chromium outside the pinned Playwright cache.
-  const browser = await chromium.launch(process.env.QA_CHROME ? { executablePath: process.env.QA_CHROME } : {});
+  const exe = process.env.PLAYWRIGHT_CHROMIUM_PATH;
+  const browser = await chromium.launch(exe ? { executablePath: exe } : {});
   const ctx = await browser.newContext({ viewport: { width, height }, locale: "he-IL", timezoneId: "Asia/Jerusalem", reducedMotion: "reduce" });
   await ctx.route("**/*", async (route) => {
     const url = route.request().url();
