@@ -139,6 +139,7 @@ graph TD
     Users[/admin/users page] --> AdminUsers[GET /admin/users<br/>🛡️ search + role filter]
     Users --> Role[PUT /admin/users/{id}/role<br/>🛡️]
     Users --> Block[POST /admin/users/{id}/block<br/>🛡️]
+    Users --> DelUser[DELETE /admin/users/{id}<br/>🛡️ not admins, MEH-2585]
 
     Content[/admin/content page] --> AdminCats[GET/POST/PUT/DELETE /admin/categories<br/>🛡️ CRUD]
     Content --> AdminPages[GET/PUT /admin/pages/{slug}<br/>🛡️ about/terms editor]

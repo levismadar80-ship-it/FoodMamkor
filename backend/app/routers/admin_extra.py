@@ -9,7 +9,7 @@ MEH-460 Pkg 1: Pydantic schemas live in app.schemas.schemas per ADR-006 R1.
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
-from fastapi import APIRouter, Body, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -53,6 +53,7 @@ from app.schemas.schemas import (
 )
 from app.services.analytics import israel_day_of, server_health, unique_views_count
 from app.services.category_slug import resolve_unique_slug
+from app.services.user_deletion import delete_user_and_data  # MEH-2585
 from app.services.vacation_state import read_vacation_state
 from app.services.whatsapp import UNDELIVERED_STATUSES, UNDELIVERED_WINDOW_DAYS
 from app.utils.clock import ISRAEL_TZ, israel_today, utc_now
@@ -209,6 +210,36 @@ def block_user(
     target.is_blocked = not bool(target.is_blocked)
     db.commit()
     return {"detail": "Blocked toggled", "is_blocked": target.is_blocked}
+
+
+@router.delete("/users/{user_id}")
+def admin_delete_user(
+    user_id: UUID,
+    background_tasks: BackgroundTasks,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """MEH-2585: hard-delete a user and her data — same cascade as the
+    self-service DELETE /auth/me (services/user_deletion.py), minus the
+    confirmation email (an admin removal, often of a test account).
+
+    Admins are refused: demote first, so removing an admin is always two
+    deliberate steps and the protected super-admin can never be deleted.
+    """
+    target = db.query(User).filter(User.id == user_id).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="משתמש לא נמצא")
+    if target.id == user.id:
+        raise HTTPException(status_code=400, detail="אי אפשר למחוק את עצמך מכאן")
+    if target.email == SUPER_ADMIN_EMAIL:
+        raise HTTPException(status_code=403, detail="לא ניתן למחוק את האדמין הראשי")
+    if target.role == "admin":
+        raise HTTPException(
+            status_code=403,
+            detail="לא ניתן למחוק אדמין. קודם מורידים את הרשאת האדמין.",
+        )
+    delete_user_and_data(db, target, background_tasks, context="admin.delete_user")
+    return {"detail": "User deleted"}
 
 
 @router.get("/users/{user_id}/favorites")
