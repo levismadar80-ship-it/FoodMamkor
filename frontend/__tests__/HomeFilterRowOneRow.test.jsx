@@ -267,3 +267,12 @@ describe("MEH-2537 — a focused chip is not left under the sticky «סינון�
     expect(row().scrollBy).not.toHaveBeenCalled();
   });
 });
+
+// MEH-2574: on iPhone the rail rubber-banded past its start edge, dragging the
+// sticky «סינון» off the glass. Shown failing: without the class this is red.
+describe("MEH-2574 — the rail stops at its edges", () => {
+  it("the filter row turns off horizontal overscroll (no iOS bounce)", () => {
+    render(<HomeProducersGrid {...props()} />);
+    expect(row().className.split(/\s+/)).toContain("overscroll-x-none");
+  });
+});
