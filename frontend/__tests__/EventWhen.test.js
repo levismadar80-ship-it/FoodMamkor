@@ -28,6 +28,10 @@ describe("eventWhen", () => {
     expect(eventWhen(date, "2026-11-01")).toBe(want);
   });
 
+  it("on Saturday the week is over: Monday is not «השבוע»", () => {
+    expect(eventWhen("2026-11-02", "2026-10-31")).toBeNull();
+  });
+
   it("counts calendar days across the DST switch (25 Oct 2026), not 24h blocks", () => {
     expect(eventWhen("2026-10-26", "2026-10-25")).toBe("tomorrow");
   });
