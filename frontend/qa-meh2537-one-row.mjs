@@ -17,7 +17,12 @@ const VIEWPORTS = [
   { name: "1440", width: 1440, height: 900, isMobile: false },
 ];
 
-const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium" });
+// --chromium=<path> overrides; the default is the CC sandbox's preinstalled
+// binary (the repo's pinned Playwright build is not downloadable there).
+// `--chromium=` with no value launches Playwright's own bundled browser.
+const chromiumFlag = process.argv.slice(2).find((a) => a.startsWith("--chromium="));
+const executablePath = chromiumFlag ? chromiumFlag.slice(11) || undefined : "/opt/pw-browsers/chromium";
+const browser = await chromium.launch({ executablePath });
 const fails = [];
 const measure = (page) =>
   page.evaluate(() => {

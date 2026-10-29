@@ -253,7 +253,11 @@ export function HomeProducersGrid({
   // scrolled out from under it. Positive scrollBy moves the rail's content
   // toward the inline-end in RTL, which is the direction that uncovers it.
   // Skipped at lg+, where the trigger is not sticky and nothing overlaps.
+  // React focus events bubble through portals, so the day panel and the
+  // FilterSheet (both React children of this row, DOM-outside it) land here
+  // too — only focus that is IN the row's DOM counts.
   const keepFocusedChipClear = (e) => {
+    if (!e.currentTarget.contains(e.target)) return;
     const lead = e.currentTarget.firstElementChild;
     if (!lead || lead.contains(e.target) || getComputedStyle(lead).position !== "sticky") return;
     const overlap = e.target.getBoundingClientRect().right - lead.getBoundingClientRect().left;
@@ -323,10 +327,11 @@ export function HomeProducersGrid({
             so it anchors like `relative`).
             MEH-2537: the trigger LEADS the row (inline-start, the RIGHT in
             RTL) — Google Maps / Yelp / Etsy put "all filters" first — and
-            stays put while the rail scrolls under it below lg. No z-index on
-            purpose: a positioned box already paints over the static chips,
-            and a z-index would make a stacking context (the sheet portals to
-            <body> below lg anyway, FilterSheet.jsx). -ms-4/ps-4 paint the
+            stays put while the rail scrolls under it below lg. Sticky makes
+            it a stacking context, which is harmless here: below lg the sheet
+            portals to <body> (FilterSheet.jsx), and at lg+ the wrapper is
+            plain `relative` again. It paints over the static chips by being
+            positioned; keep the chips unpositioned or give this a z-index. -ms-4/ps-4 paint the
             gutter strip beside it, so chips pass under it there too, and
             -start-4 (not start-0) because a sticky box is held inside the
             rail's PADDING edge: start-0 pinned it 16px in, over «מאומת». */}

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, renderHook, act } from "@testing-library/react";
 import { HomeProducersGrid } from "@/app/[locale]/home/HomeProducersGrid";
 import { useHomePage } from "@/lib/use-home-page";
@@ -136,6 +136,20 @@ describe("MEH-2537 — one row", () => {
     expect(row().contains(screen.getByTestId("delivery-day-panel"))).toBe(false);
   });
 
+  it("one day, closed: the value chip and its ✕ sit in the row, no panel", () => {
+    render(<HomeProducersGrid {...props({ cityActive: "חיפה", daysActive: ["שישי"] })} />);
+    expect(row().contains(screen.getByTestId("delivery-day-clear"))).toBe(true);
+    expect(screen.getByTestId("delivery-day-chip").textContent).toContain("שישי");
+    expect(screen.queryByTestId("delivery-day-panel")).toBeNull();
+  });
+
+  it("one day, open: the panel opens below the row with that day pressed", () => {
+    render(<HomeProducersGrid {...props({ cityActive: "חיפה", daysActive: ["שישי"] })} />);
+    fireEvent.click(screen.getByTestId("delivery-day-chip"));
+    expect(row().contains(screen.getByTestId("delivery-day-panel"))).toBe(false);
+    expect(screen.getByTestId("delivery-day-pill-שישי").getAttribute("aria-pressed")).toBe("true");
+  });
+
   it("a tap outside both the chip and the panel still closes it", () => {
     render(<HomeProducersGrid {...props({ cityActive: "חיפה" })} />);
     fireEvent.click(screen.getByTestId("delivery-day-chip"));
@@ -175,5 +189,64 @@ describe("MEH-2537 — the lg+ sheet opens toward the page, not off it", () => {
     const panel = document.getElementById("filter-sheet-panel");
     expect(panel.className).toContain("lg:start-0");
     expect(panel.className).not.toContain("lg:end-0");
+  });
+});
+
+describe("MEH-2537 — a focused chip is not left under the sticky «סינון»", () => {
+  // jsdom has no layout: stub the lead as sticky and give each node a rect.
+  const rects = new Map();
+  let gcs;
+  beforeEach(() => {
+    gcs = vi.spyOn(window, "getComputedStyle").mockImplementation(() => ({ position: "sticky" }));
+    vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function () {
+      return rects.get(this) ?? { left: 0, right: 0, top: 0, bottom: 0, width: 0, height: 0 };
+    });
+    Element.prototype.scrollBy = vi.fn();
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+    rects.clear();
+  });
+
+  it("scrolls a focused chip out from under the lead (RTL: positive scrollBy)", () => {
+    render(<HomeProducersGrid {...props()} />);
+    const lead = row().firstElementChild;
+    const chip = screen.getByTestId("home-promoted-chip-verified");
+    rects.set(lead, { left: 276, right: 375 });
+    rects.set(chip, { left: 200, right: 290 }); // 14px under the lead
+    fireEvent.focus(chip);
+    expect(row().scrollBy).toHaveBeenCalledWith({ left: 22 });
+  });
+
+  it("leaves a chip that is already clear alone", () => {
+    render(<HomeProducersGrid {...props()} />);
+    const lead = row().firstElementChild;
+    const chip = screen.getByTestId("home-promoted-chip-verified");
+    rects.set(lead, { left: 276, right: 375 });
+    rects.set(chip, { left: 172, right: 268 });
+    fireEvent.focus(chip);
+    expect(row().scrollBy).not.toHaveBeenCalled();
+  });
+
+  it("ignores focus inside the portalled day panel (React bubbles it through the portal)", () => {
+    render(<HomeProducersGrid {...props({ cityActive: "חיפה" })} />);
+    fireEvent.click(screen.getByTestId("delivery-day-chip"));
+    const lead = row().firstElementChild;
+    const pill = screen.getByTestId("delivery-day-pill-שישי");
+    rects.set(lead, { left: 276, right: 375 });
+    rects.set(pill, { left: 300, right: 360 });
+    fireEvent.focus(pill);
+    expect(row().scrollBy).not.toHaveBeenCalled();
+  });
+
+  it("does nothing when the lead is not sticky (lg+)", () => {
+    gcs.mockImplementation(() => ({ position: "relative" }));
+    render(<HomeProducersGrid {...props()} />);
+    const lead = row().firstElementChild;
+    const chip = screen.getByTestId("home-promoted-chip-verified");
+    rects.set(lead, { left: 276, right: 375 });
+    rects.set(chip, { left: 200, right: 290 });
+    fireEvent.focus(chip);
+    expect(row().scrollBy).not.toHaveBeenCalled();
   });
 });

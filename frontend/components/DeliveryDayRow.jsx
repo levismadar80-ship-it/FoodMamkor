@@ -316,7 +316,7 @@ export function DeliveryDayRow({ cityActive, daysActive, onSelectDay, onClearDay
           // pills wrap instead. MEH-2537: on home the panel sits under the
           // whole filter row (portalled), starting at the row's inline-start,
           // not under the chip itself — it opens as the row's own panel.
-          className="mt-2 w-fit max-w-full rounded-2xl border border-border bg-surface p-3"
+          className={`${inRow ? "" : "mt-2 "}w-fit max-w-full rounded-2xl border border-border bg-surface p-3`}
         >
           {/* MEH-2186: what MEH-2173's inline hint became. It names the city
               because the panel is the one place where "which city am I
