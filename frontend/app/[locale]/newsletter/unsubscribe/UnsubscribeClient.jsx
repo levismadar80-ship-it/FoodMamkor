@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Leaf } from "@phosphor-icons/react";
+import { EnvelopeSimple, LinkBreak, Leaf } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
-import { Link } from "@/i18n/navigation";
+import StatusPage from "@/components/StatusPage";
 import api from "@/lib/api";
 
 /**
@@ -32,53 +32,17 @@ export default function UnsubscribeClient({ token }) {
     };
   }, [token]);
 
+  // MEH-2567: shared StatusPage layout; copy unchanged.
+  if (status === "loading") {
+    return <StatusPage icon={EnvelopeSimple} body={t("loading")} bodyRole="status" />;
+  }
+  const ok = status === "success";
   return (
-    <section className="min-h-screen flex items-center justify-center px-4 py-16">
-      <div className="max-w-md w-full bg-white rounded-[16px] p-8 border border-border text-center shadow-[0_2px_12px_rgba(46,104,83,0.04)]">
-        <Leaf
-          size={56}
-          weight="fill"
-          className="mx-auto mb-4 text-primary"
-          aria-hidden="true"
-        />
-
-        {status === "loading" && (
-          <p className="text-fg-muted leading-relaxed" role="status">
-            {t("loading")}
-          </p>
-        )}
-
-        {status === "success" && (
-          <>
-            <h1 className="font-headline-md text-2xl font-bold text-text mb-3">
-              {t("success_title")}
-            </h1>
-            <p className="text-fg-muted leading-relaxed mb-6">
-              {t("success_body")}
-            </p>
-          </>
-        )}
-
-        {status === "error" && (
-          <>
-            <h1 className="font-headline-md text-2xl font-bold text-text mb-3">
-              {t("error_title")}
-            </h1>
-            <p className="text-fg-muted leading-relaxed mb-6">
-              {t("error_body")}
-            </p>
-          </>
-        )}
-
-        {status !== "loading" && (
-          <Link
-            href="/"
-            className="inline-flex items-center justify-center bg-primary text-white px-6 py-3 rounded-full hover:bg-primary-dark transition font-medium focus-visible:ring-2 focus-visible:ring-primary/40"
-          >
-            {t("cta_home")}
-          </Link>
-        )}
-      </div>
-    </section>
+    <StatusPage
+      icon={ok ? Leaf : LinkBreak}
+      title={ok ? t("success_title") : t("error_title")}
+      body={ok ? t("success_body") : t("error_body")}
+      primary={{ href: "/", label: t("cta_home") }}
+    />
   );
 }

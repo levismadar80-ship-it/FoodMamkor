@@ -24,7 +24,7 @@ comes back if the item is reinstated (the MEH-2513 rule for businesses).
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
@@ -39,6 +39,7 @@ from app.models import (
     SavedItem,
     User,
 )
+from app.rate_limit import limiter
 from app.routers.events import _serialize as serialize_event
 from app.routers.experiences import _publicly_visible_query, _serialize_list
 from app.schemas.schemas import SavedItemRefOut, SavedItemsOut, SavedItemType
@@ -162,8 +163,12 @@ def get_saved(user: User = Depends(get_current_user), db: Session = Depends(get_
     return out
 
 
+# Per-route limits (security.md): generous for a person tapping hearts, a
+# ceiling for a script filling saved_items.
 @router.post("/{item_type}/{item_id}", status_code=201)
+@limiter.limit("60/minute")
 def save_item(
+    request: Request,
     item_type: SavedItemType,
     item_id: UUID,
     user: User = Depends(get_current_user),
@@ -196,7 +201,9 @@ def save_item(
 
 
 @router.delete("/{item_type}/{item_id}")
+@limiter.limit("60/minute")
 def unsave_item(
+    request: Request,
     item_type: SavedItemType,
     item_id: UUID,
     user: User = Depends(get_current_user),

@@ -321,9 +321,14 @@ export function HomeProducersGrid({
           rail (it shifted the RESTING position, «מאומת» under «סינון») nor
           scroll-margin on the chips (focus scrolling ignored it) did this.
           lg+ fits on one line, so overflow is
-          visible there and the sheet's anchored panel is not clipped. */}
+          visible there and the sheet's anchored panel is not clipped.
+          MEH-2574: overscroll-x-none — iOS rubber-banding dragged the whole
+          rail past its start edge, so the sticky «סינון» slid off the glass
+          and the row looked lopsided (Sapir's iPhone, 29/10). The rail now
+          stops at its edges, as chip rails do on Google Maps / Airbnb; it only
+          governs this scroller's x-axis, so page scroll is untouched. */}
       <div
-        className="-mx-4 -mt-1 mb-3 flex items-center gap-2 min-w-0 overflow-x-auto px-4 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:-mx-1 lg:px-1 lg:overflow-visible"
+        className="-mx-4 -mt-1 mb-3 flex items-center gap-2 min-w-0 overflow-x-auto overscroll-x-none px-4 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:-mx-1 lg:px-1 lg:overflow-visible"
         data-testid="home-filter-row"
         onFocus={keepFocusedChipClear}
       >
