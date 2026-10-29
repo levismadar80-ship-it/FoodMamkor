@@ -4,6 +4,16 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-10-29 07:55 — כתובת של בית עסק שנמחק לא עוברת לעסק אחר (#3781)
+
+**‏שורה אחת:** ‏slug של עסק שהיה ציבורי ונמחק או ששינה כתובת נשמר ב-`retired_slugs` ולא מוקצה שוב.
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏כל כתיבה של `producers.slug` חייבת לקבל את הערך מ-`_ensure_unique_slug` (`routers/admin.py`) — רק שם ה-tombstone נבדק. כתיבת tombstone רק דרך `services/retired_slugs.py`.
+- ‏טבלה חדשה מזיזה את `EXPECTED_TABLES` ב-`pr-checks.yml` — עריכה של ספיר (פרומפט Chrome), ואחריה קומיט אמיתי עם `Builder-Model:` כדי ש-builder-model-guard יעבור.
+
+**‏לא עכשיו:** עמוד 410 «בית העסק כבר לא מופיע» (נוסח); הפניית 301 אחרי שינוי שם (`producer_id` כבר נשמר).
+
 ## 2026-10-29 01:00 — לוח הבקרה של בעלת העסק: השאריות נסגרו (#3780, #3783, #3785, #3786)
 
 **‏שורה אחת:** חלונות האישור בלוח נגישים במקלדת, אין פס ריק בתחתית בנייד ויש התנתקות, ביטול לא עובר על קבוצה שהתמלאה באותו רגע, ושני שדות מתים הוסרו מה-API.
