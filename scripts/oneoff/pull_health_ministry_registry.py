@@ -130,7 +130,10 @@ WAVE1_TOWNS = [
 # Filter B — EXCLUDE non-production categories by STEM. Anything not matching
 # an exclusion stem is kept (see LIMITS: exclusion, not whitelist).
 # ---------------------------------------------------------------------------
-EXCLUDE_STEMS = ("הובל", "אחסנ", "אחסון", "שיווק בלבד", "הפצה")
+# MEH-2135: `מחסן` added on top of PR #3834. The other stems were written
+# against a guessed vocabulary (`אחסנה`), but the registry's own word for a
+# warehouse is `מחסן`, which contains none of them — neither does `חדר קירור`.
+EXCLUDE_STEMS = ("הובל", "אחסנ", "אחסון", "מחסן", "שיווק בלבד", "הפצה")
 
 # ---------------------------------------------------------------------------
 # Column resolution — candidates per logical field, first match wins, choice
@@ -144,6 +147,21 @@ FIELD_CANDIDATES: dict[str, list[str]] = {
     "city": ["יישוב", "ישוב", "עיר", "שם יישוב", "שם_ישוב", "city", "settlement"],
     "address": ["כתובת", "רחוב", "address", "addr"],
     "category": [
+        # MEH-2135: `accountType` leads, ahead of `ProductActivityFoodType`
+        # (which PR #3834 put first). Filter B stem-matches whatever resolves
+        # here, and only `accountType` is a closed vocabulary — 19 values
+        # across the whole dataset, one of which is literally
+        # `מחסן מזון בטמפ מבוקרת`. `ProductActivityFoodType` is free prose
+        # written per business: the same warehouse appears there as
+        # `מחסן יבש`, `מחסן יבואן מזון`, `מחסן למוצרים מזון יבשים` or
+        # `חדר קירור`, and a stem list cannot keep up with prose. Measured on
+        # the 29/10 rows: filtering on the free-text field leaves 4 warehouse
+        # businesses in the leads file (6 rows), one of them a pharmaceuticals
+        # and medical-equipment importer. Filtering on `accountType` drops all
+        # of them and nothing else — 75 rows becomes 69.
+        # The free-text field is the better human DESCRIPTION and the worse
+        # FILTER INPUT, so it stays a candidate but not the first one.
+        "accountType",
         "ProductActivityFoodType",
         "קטגוריה",
         "סוג רישיון",
@@ -456,11 +474,33 @@ def self_test() -> int:
     )
     check("cols/live-name", live["name"] == "title")
     check("cols/live-address", live["address"] == "Addr")
-    check("cols/live-category", live["category"] == "ProductActivityFoodType")
+    # MEH-2135: this assertion read `== "ProductActivityFoodType"` in PR #3834
+    # and is deliberately inverted. Filter B reads this field, and it has to be
+    # the closed vocabulary — see the comment on FIELD_CANDIDATES["category"].
+    check("cols/live-category", live["category"] == "accountType")
     check("cols/live-valid", live["license_valid_until"] == "expire_date")
     check("geo/live-maayan-zvi", in_wave1("מעין צבי"))
     check("geo/live-gan-hashomron", in_wave1("גן השומרון"))
     check("type/live-cold-storage", is_excluded_type("אחסנה בטמפרטורה מבוקרת"))
+    # MEH-2135: the four accountType values that reach filter B as warehouses.
+    # Each of these is a real value from the 29/10 rows, and before `מחסן` was
+    # a stem every one of them passed as a producer lead.
+    check("type/live-warehouse-controlled", is_excluded_type("מחסן מזון בטמפ מבוקרת"))
+    check(
+        "type/live-warehouse-uncontrolled",
+        is_excluded_type("מחסן מזון שאיננו בטמפ מבוקרת"),
+    )
+    check("type/live-warehouse-bare", is_excluded_type("מחסן מזון"))
+    check("type/live-haulage-controlled", is_excluded_type("הובלת מזון בטמפ מבוקרת"))
+    # The production values that must survive — exclusion, not whitelist, so
+    # אריזה and הסעדה stay in: better to see and trim than to lose.
+    check("type/live-factory-kept", not is_excluded_type("מפעל מזון/יצור מזון"))
+    check("type/live-bakery-kept", not is_excluded_type("מאפיה"))
+    check("type/live-patisserie-kept", not is_excluded_type("קונדיטוריה"))
+    check("type/live-butcher-kept", not is_excluded_type("אטליז בשר"))
+    check("type/live-meat-plant-kept", not is_excluded_type("מפעל בשר"))
+    check("type/live-packing-kept", not is_excluded_type("אריזת מזון"))
+    check("type/live-catering-kept", not is_excluded_type("הסעדה/קייטרינג"))
     # End-to-end on synthetic rows, in a temp dir (no network).
 
     with tempfile.TemporaryDirectory() as td:
