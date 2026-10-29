@@ -4,6 +4,15 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-10-29 19:10 — אייקון ליד המילה בתגי התכונות בכרטיס (#3850)
+
+**‏שורה אחת:** ‏תגי התכונות בכרטיס בית העסק מציגים את אותו אייקון כמו כפתור הסינון.
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏אייקון חדש ל-chip ב-`lib/chip-icons.js` מגיע גם לתג בכרטיס. «new», «recommended» ו-«verified» חסומים ב-`TEXT_ONLY_BADGES`.
+- ‏שש סוויטות טסט מגדירות mock קשיח ל-`@phosphor-icons/react`. אייקון חדש ב-chip-icons דורש להוסיף את שמו ל-mocks האלה (ImageGallery*, ProducerCard*).
+- ‏בכרטיס ב-375 נשארו בערך 1px של מרווח לשורה אחת. תווית ארוכה תרד לשורה שנייה, והשם יעלה מעליה.
+
 ## 2026-10-29 13:20 — דף «בית העסק הזה כבר לא במהמקור» לכתובת של עסק שנמחק (#3797)
 
 **‏שורה אחת:** ‏כתובת של עסק שנמחק עונה 410 ומציגה דף משלה; כתובות בעברית, שהחזירו 404 גם לעסק חי, תוקנו.
