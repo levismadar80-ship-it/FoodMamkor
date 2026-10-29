@@ -92,6 +92,20 @@ describe("MEH-2526 · favorites bell label", () => {
     }
   });
 
+  // MEH-2535: a business whose name is empty gets the label alone — no trailing «—».
+  it("1 card whose name is empty → the accessible name is the label alone", async () => {
+    const [row] = rows(1);
+    row.producer.name = "";
+    api.get.mockResolvedValue({ data: [row] });
+    render(
+      <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
+        <FavoritesClient />
+      </NextIntlClientProvider>,
+    );
+    await waitFor(() => expect(bells()).toHaveLength(1));
+    expect(bells()[0].getAttribute("aria-label")).toBe(LABEL);
+  });
+
   it.each([1, 3])("%i card(s), one panel open → labels unchanged, one panel", async (n) => {
     await renderWith(n);
     fireEvent.click(bells()[0]);
