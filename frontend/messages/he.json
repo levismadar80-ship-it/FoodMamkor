@@ -1915,7 +1915,6 @@
       },
       "filters": {
         "city_placeholder": "סינון לפי עיר...",
-        "all_statuses": "כל הסטטוסים",
         "new_lead": "+ ליד חדש"
       },
       "columns": {
