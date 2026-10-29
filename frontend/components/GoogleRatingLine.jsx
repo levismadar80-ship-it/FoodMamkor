@@ -27,8 +27,14 @@
  *
  * Does NOT: fetch when producerId is falsy; the caller additionally gates the
  * mount on producer.google_place_id so unmapped producers make zero requests.
+ *
+ * MEH-2581: each fetch is one billed Google Enterprise call and nothing may be
+ * cached, so the request waits until the line nears the viewport (same
+ * IntersectionObserver gate as ReviewsSection). Until then an empty, unstyled
+ * sentinel holds the spot — zero height, no layout hole. A browser without
+ * IntersectionObserver fetches on mount, as before.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import api from "@/lib/api";
@@ -36,9 +42,33 @@ import api from "@/lib/api";
 export default function GoogleRatingLine({ producerId, producerName }) {
   const t = useTranslations("producer.detail.google_rating");
   const [data, setData] = useState(null);
+  const [inView, setInView] = useState(false);
+  const sentinelRef = useRef(null);
+
+  // MEH-2581: flip inView once, the first time the sentinel nears the viewport.
+  useEffect(() => {
+    if (!producerId || inView) return undefined;
+    if (typeof IntersectionObserver === "undefined") {
+      setInView(true);
+      return undefined;
+    }
+    const el = sentinelRef.current;
+    if (!el) return undefined;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          io.disconnect();
+          setInView(true);
+        }
+      },
+      { rootMargin: "200px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [producerId, inView]);
 
   useEffect(() => {
-    if (!producerId) return undefined;
+    if (!producerId || !inView) return undefined;
     let active = true;
     api
       .get(`/producers/${producerId}/google-rating`)
@@ -54,9 +84,9 @@ export default function GoogleRatingLine({ producerId, producerName }) {
     return () => {
       active = false;
     };
-  }, [producerId]);
+  }, [producerId, inView]);
 
-  if (!data) return null;
+  if (!data) return producerId && !inView ? <div ref={sentinelRef} aria-hidden="true" /> : null;
 
   return (
     <div className="mt-8 border-t border-border pt-4 text-sm text-fg-muted">

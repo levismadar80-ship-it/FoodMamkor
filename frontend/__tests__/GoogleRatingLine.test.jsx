@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import GoogleRatingLine from "@/components/GoogleRatingLine";
 
 // MEH-1490 — the quiet Google-rating SENTENCE: renders ONLY on a 200 with a
@@ -74,3 +74,61 @@ describe("GoogleRatingLine (MEH-1490)", () => {
     expect(apiMock.get).not.toHaveBeenCalled();
   });
 });
+
+// MEH-2581 — every fetch is one billed Google Enterprise call (nothing may be
+// cached, ToS), so the line asks only once it nears the viewport. The
+// IntersectionObserver is stubbed so each test decides WHEN it intersects.
+describe("GoogleRatingLine lazy fetch (MEH-2581)", () => {
+  let observers;
+  let originalIO;
+
+  beforeEach(() => {
+    observers = [];
+    originalIO = global.IntersectionObserver;
+    global.IntersectionObserver = class {
+      constructor(cb, opts) {
+        this.cb = cb;
+        this.opts = opts;
+        this.disconnect = vi.fn();
+        observers.push(this);
+      }
+      observe(el) {
+        this.el = el;
+      }
+    };
+    apiMock.get.mockResolvedValue({ status: 204, data: "" });
+  });
+
+  afterEach(() => {
+    global.IntersectionObserver = originalIO;
+  });
+
+  it("does not call the API before the line scrolls near the viewport", () => {
+    render(<GoogleRatingLine producerId="p1" producerName="x" />);
+    expect(observers).toHaveLength(1);
+    expect(observers[0].el).toBeTruthy();
+    expect(apiMock.get).not.toHaveBeenCalled();
+  });
+
+  it("does not call the API on a non-intersecting callback", () => {
+    render(<GoogleRatingLine producerId="p1" producerName="x" />);
+    act(() => observers[0].cb([{ isIntersecting: false }]));
+    expect(apiMock.get).not.toHaveBeenCalled();
+  });
+
+  it("calls the API exactly once when it intersects, then stops observing", async () => {
+    render(<GoogleRatingLine producerId="p1" producerName="x" />);
+    act(() => observers[0].cb([{ isIntersecting: true }]));
+    act(() => observers[0].cb([{ isIntersecting: true }]));
+    await waitFor(() => expect(apiMock.get).toHaveBeenCalledTimes(1));
+    expect(apiMock.get).toHaveBeenCalledWith("/producers/p1/google-rating");
+    expect(observers[0].disconnect).toHaveBeenCalled();
+  });
+
+  it("renders no visible box while waiting (the sentinel has no text, no classes)", () => {
+    const { container } = render(<GoogleRatingLine producerId="p1" producerName="x" />);
+    expect(container.textContent).toBe("");
+    expect(container.querySelector("[class]")).toBeNull();
+  });
+});
+
