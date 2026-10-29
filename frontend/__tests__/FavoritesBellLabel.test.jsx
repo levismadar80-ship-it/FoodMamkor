@@ -22,6 +22,18 @@ const stableUser = { id: "u1" };
 vi.mock("@/lib/auth-context", () => ({
   useAuth: () => ({ user: stableUser, loading: false }),
 }));
+// MEH-2560: /favorites also loads saved recipes / events / experiences. These
+// tests are about the businesses, so that half answers "nothing saved" and
+// stays off the api.get mock whose call order they assert.
+vi.mock("@/app/[locale]/favorites/savedItems", async (importOriginal) => ({
+  ...(await importOriginal()),
+  loadSavedItems: () => Promise.resolve({ recipes: [], events: [], experiences: [] }),
+}));
+vi.mock("@/lib/saved-cache", () => ({
+  ensureSavedLoaded: () => Promise.resolve(new Set()),
+  isSaved: () => false,
+  subscribeSaved: () => () => {},
+}));
 vi.mock("@/lib/api", () => ({ default: { get: vi.fn() } }));
 vi.mock("@/lib/favorites-cache", () => ({
   ensureFavoritesLoaded: () => Promise.resolve(new Set()),
@@ -35,6 +47,11 @@ vi.mock("@/components/AlertPrefsPanel", () => ({
   default: () => <div data-testid="alert-panel" />,
 }));
 vi.mock("@/components/Breadcrumb", () => ({ default: () => <nav /> }));
+// MEH-2560: the page now imports EventEntryRow (saved events), whose
+// locale-aware Link pulls next-intl navigation in.
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ children, href, ...props }) => <a href={href} {...props}>{children}</a>,
+}));
 
 import api from "@/lib/api";
 import FavoritesClient from "@/app/[locale]/favorites/FavoritesClient";
@@ -55,7 +72,7 @@ const renderWith = async (n) => {
     </NextIntlClientProvider>,
   );
   if (n === 0) {
-    await screen.findByText(he.favorites.empty_title);
+    await screen.findByText(he.favorites.empty_all_title); // MEH-2560: nothing of any type
   } else {
     await waitFor(() => expect(screen.getAllByTestId("card")).toHaveLength(n));
   }
