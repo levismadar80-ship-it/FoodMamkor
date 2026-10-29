@@ -6,6 +6,7 @@ Lives in a separate file from admin.py to keep things readable.
 MEH-460 Pkg 1: Pydantic schemas live in app.schemas.schemas per ADR-006 R1.
 """
 
+import logging
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
@@ -60,6 +61,7 @@ from app.utils.clock import ISRAEL_TZ, israel_today, utc_now
 from app.utils.sql import LIKE_ESCAPE, escape_like
 
 router = APIRouter(prefix="/admin", tags=["admin-extra"])
+logger = logging.getLogger(__name__)
 
 SUPER_ADMIN_EMAIL = "levismadar80@gmail.com"
 
@@ -238,6 +240,14 @@ def admin_delete_user(
             status_code=403,
             detail="לא ניתן למחוק אדמין. קודם מורידים את הרשאת האדמין.",
         )
+    # Irreversible, so leave a trail in the Railway logs: ids only, no email.
+    logger.info(
+        "[admin.delete_user] admin_id=%s deleted user_id=%s role=%s producer_id=%s",
+        user.id,
+        target.id,
+        target.role,
+        target.producer_id,
+    )
     delete_user_and_data(db, target, background_tasks, context="admin.delete_user")
     return {"detail": "User deleted"}
 
