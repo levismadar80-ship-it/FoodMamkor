@@ -159,6 +159,8 @@
       "no_account": "Don't have an account?",
       "register_cta": "Join →",
       "email_placeholder": "name@example.com",
+      "oauth_terms_google": "By continuing with Google, you confirm you are over 18 and agree to the <tos>Terms of Use</tos> and the <privacy>Privacy Policy</privacy>.",
+      "oauth_terms_apple": "By continuing with Apple, you confirm you are over 18 and agree to the <tos>Terms of Use</tos> and the <privacy>Privacy Policy</privacy>.",
       "oauth_terms": "By continuing with Google or Apple, you confirm you are over 18 and agree to the <tos>Terms of Use</tos> and the <privacy>Privacy Policy</privacy>."
     },
     "oauth": {
