@@ -36,6 +36,7 @@ describe("MEH-2170 — visibleMapToggleChips", () => {
       "gluten_free",
       "lactose_free",
       "no_added_sugar",
+      "on_site", // MEH-2598: new axis, gated on sells_on_site
     ]);
     // Every gated key is a real /map chip — a typo here would gate nothing.
     for (const k of DIET_GATED_KEYS) expect(keys(TOGGLE_CHIPS)).toContain(k);
