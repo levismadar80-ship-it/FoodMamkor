@@ -186,7 +186,7 @@ export default async function OrganizerPage(props) {
             // eslint-disable-next-line @next/next/no-img-element -- Cloudinary URL, sized by the helper
             <img
               src={optimizeCloudinary(image, { aspectRatio: "16:9", width: 1100 })}
-              alt={organizer.name}
+              alt="" // decorative: the h1 below names the organizer (review #3812)
               data-testid="organizer-cover"
               className="w-full h-[170px] md:h-[320px] object-cover md:rounded-[18px] bg-border"
             />
