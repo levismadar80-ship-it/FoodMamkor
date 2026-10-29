@@ -1771,7 +1771,8 @@
         "protected_title": "Cannot remove permissions from the primary admin",
         "menu_aria": "More actions",
         "unblock": "Unblock",
-        "block": "Block"
+        "block": "Block",
+        "delete": "Delete"
       },
       "favorites": {
         "of": "Favorites of {name}:",
@@ -1781,7 +1782,8 @@
         "promote": "Are you sure you want to grant admin permissions to {name}?",
         "demote": "Are you sure you want to remove admin permissions from {name}?",
         "submitting": "...",
-        "confirm": "Confirm"
+        "confirm": "Confirm",
+        "delete": "Delete \"{name}\" ({email})? Their business, favourites and reviews will be deleted too. This cannot be undone."
       },
       "pagination": {
         "page_size": "Rows per page",
