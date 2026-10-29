@@ -14,6 +14,10 @@ Who calls it:
     the single choke point every producer slug passes through.
   - `reclaim`                       — admin_update_producer, when a business
     goes back to a slug it retired itself.
+
+A new writer of `producers.slug` MUST take its value from
+`_ensure_unique_slug`: that call is the only place a tombstone is honoured,
+so a slug assigned around it can still land on a retired URL.
 """
 
 from __future__ import annotations
