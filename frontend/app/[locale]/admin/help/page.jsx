@@ -120,7 +120,7 @@ function Topic({ topic, open, onToggle, openScreenLabel }) {
         type="button"
         onClick={onToggle}
         aria-expanded={open}
-        aria-controls={panelId}
+        aria-controls={open ? panelId : undefined}
         className="w-full flex items-center justify-between gap-3 text-start px-4 py-3 min-h-[48px] font-medium"
       >
         <span>{topic.question}</span>
