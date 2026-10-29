@@ -1,7 +1,10 @@
 // Sentry client-side init.
 //
-// Loaded automatically by @sentry/nextjs in the browser. Runs only when
-// NEXT_PUBLIC_SENTRY_DSN is set so local dev and CI stay quiet.
+// Next.js runs instrumentation-client.js in the browser before the app
+// hydrates. MEH-2536: this used to be sentry.client.config.js, which
+// @sentry/nextjs only injects through webpack; Next 16 builds with Turbopack,
+// so the file was never loaded and the browser sent Sentry nothing.
+// Runs only when NEXT_PUBLIC_SENTRY_DSN is set so local dev and CI stay quiet.
 import * as Sentry from "@sentry/nextjs";
 import { scrubClaimTokens } from "./lib/claim-token";
 
@@ -39,3 +42,6 @@ if (dsn) {
     beforeSendTransaction: (event) => scrubClaimTokens(event),
   });
 }
+
+// Navigation spans for the App Router (Sentry's instrumentation-client hook).
+export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
