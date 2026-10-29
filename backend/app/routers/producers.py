@@ -43,6 +43,7 @@ from app.services.analytics import (
     record_analytics_event,
 )
 from app.services.license_validation import ensure_license_for_categories
+from app.services import retired_slugs  # MEH-2534
 from app.services.producer_listing import (
     build_producers_query,
     catalog_default_availability_condition,
@@ -387,6 +388,11 @@ def get_producer_by_slug(slug: str, request: Request, db: Session = Depends(get_
         .first()
     )
     if not producer:
+        # MEH-2534: the URL of a deleted business answers 410, so the page can
+        # say it is no longer listed instead of "not found" — and a crawler
+        # drops it as gone. Everything else that misses stays 404.
+        if retired_slugs.is_gone(db, slug):
+            raise HTTPException(status_code=410, detail="בית העסק כבר לא במהמקור")
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
     attach_badge_fields(producer)
     attach_favorites_count(producer, db)

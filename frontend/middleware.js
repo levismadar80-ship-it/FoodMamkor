@@ -2,7 +2,7 @@ import * as Sentry from "@sentry/nextjs";
 import createMiddleware from "next-intl/middleware";
 import { NextResponse } from "next/server";
 import { routing } from "./i18n/routing";
-import { isSlugShaped } from "./lib/slug";
+import { isSlugShaped, decodeSlugParam } from "./lib/slug";
 import staticRoutes from "./lib/static-routes.json";
 
 /**
@@ -125,6 +125,11 @@ async function producerExists(url) {
     // this producer's existence, and must not be read as "no such business".
     if (res.status === 404) return false;
 
+    // MEH-2534: 410 = a business that was deleted. The page renders its own
+    // "no longer listed" screen for it (noindex), so let the request through
+    // without logging it as a backend fault.
+    if (res.status === 410) return true;
+
     // 5xx · 429 · anything else → fail OPEN, same decision as "unreachable".
     // `return res.ok` used to collapse these onto the 404 branch, so a backend
     // that stuttered produced a HARD 404 on the canonical, indexable URL
@@ -191,7 +196,9 @@ export default async function middleware(request) {
 
   let existsUrl = null;
   if (segs.length === 1) {
-    const slug = segs[0];
+    // MEH-2534: the pathname is percent-encoded; a Hebrew slug never passed
+    // isSlugShaped, so it skipped this check entirely.
+    const slug = decodeSlugParam(segs[0]);
     if (!STATIC_ROUTES.has(slug.toLowerCase()) && isSlugShaped(slug)) {
       existsUrl = `${API_URL}/producers/by-slug/${encodeURIComponent(slug)}`;
     }
