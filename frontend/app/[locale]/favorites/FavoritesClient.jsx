@@ -63,7 +63,10 @@ function FavoriteCardWrapper({ fav, open, onToggle, onClose }) {
         // (WCAG 2.5.3 label-in-name) and adds the business name, so the bells
         // on a page of cards are told apart by a screen reader. The longer
         // alerts_aria copy stays as the hover title.
-        aria-label={`${t("bell_label")} — ${fav.producer?.name ?? ""}`.trim()}
+        // MEH-2535: no name → the label alone, not «label —».
+        aria-label={
+          fav.producer?.name ? `${t("bell_label")} — ${fav.producer.name}` : t("bell_label")
+        }
         title={t("alerts_aria")}
         aria-haspopup="dialog"
         aria-expanded={open}

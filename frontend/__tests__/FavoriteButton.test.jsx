@@ -294,3 +294,45 @@ describe("FavoriteButton", () => {
     }
   });
 });
+
+// MEH-2535: one confirmation per save. A page that handles the save itself
+// (onFavorited — the business page opens its «קבלת עדכונים» dialog) gets no
+// toast on top of it; without the callback the toast is unchanged. The
+// first-time hint is not burned by a suppressed save.
+describe("FavoriteButton — toast vs page handoff (MEH-2535)", () => {
+  beforeEach(async () => {
+    mockUser.current = { id: 1, name: "Test" };
+    resetFavoritesCache();
+    localStorage.clear();
+    const { showToast } = await import("@/lib/toast");
+    showToast.success.mockClear();
+  });
+
+  it("with onFavorited: the callback fires, no toast, the first-time hint is kept", async () => {
+    const { showToast } = await import("@/lib/toast");
+    const onFavorited = vi.fn();
+    render(<FavoriteButton producerId={7} variant="quiet" onFavorited={onFavorited} />);
+    fireEvent.click(screen.getByRole("button", { name: "הוסף למועדפים" }));
+    await waitFor(() => expect(onFavorited).toHaveBeenCalledTimes(1));
+    expect(showToast.success).not.toHaveBeenCalled();
+    expect(localStorage.getItem("favorite_hint_shown")).toBeNull();
+  });
+
+  it("without onFavorited, first save: the first-time toast, flag written", async () => {
+    const { showToast } = await import("@/lib/toast");
+    render(<FavoriteButton producerId={8} />);
+    fireEvent.click(screen.getByRole("button", { name: "הוסף למועדפים" }));
+    await waitFor(() => expect(showToast.success).toHaveBeenCalledTimes(1));
+    expect(showToast.success.mock.calls[0][0]).toBe("נשמר! תמצאי את המועדפים בלשונית ❤️ בתחתית");
+    expect(localStorage.getItem("favorite_hint_shown")).toBe("1");
+  });
+
+  it("without onFavorited, later save: the regular toast", async () => {
+    const { showToast } = await import("@/lib/toast");
+    localStorage.setItem("favorite_hint_shown", "1");
+    render(<FavoriteButton producerId={9} />);
+    fireEvent.click(screen.getByRole("button", { name: "הוסף למועדפים" }));
+    await waitFor(() => expect(showToast.success).toHaveBeenCalledTimes(1));
+    expect(showToast.success.mock.calls[0][0]).toBe("נשמר למועדפים ❤️");
+  });
+});

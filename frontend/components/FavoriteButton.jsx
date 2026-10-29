@@ -128,7 +128,14 @@ export default function FavoriteButton({
         // that passes no callback is unaffected. Placed after the await so it
         // only fires on a save the server accepted.
         onFavorited?.();
-        if (!localStorage.getItem("favorite_hint_shown")) {
+        // MEH-2535: a page that handles the save itself (onFavorited opens the
+        // business page's «קבלת עדכונים» dialog) gets no toast on top of it —
+        // two confirmations for one tap, and on a phone the toast covers the
+        // dialog. The first-time hint is not burned here: its flag is only
+        // written when the hint is actually shown.
+        if (onFavorited) {
+          // The page's own feedback stands in for the toast.
+        } else if (!localStorage.getItem("favorite_hint_shown")) {
           localStorage.setItem("favorite_hint_shown", "1");
           showToast.success(t("saved_toast_first_time"), {
             icon: <HeartStraight size={18} weight="fill" />,
