@@ -474,6 +474,32 @@ def _primary_location_points(db: Session, *, limit: int | None = None):
     return q.all()
 
 
+def _last_six_months(now):
+    """[(month_start, next_month_start)] for the last 6 months, oldest first."""
+    buckets = []
+    for i in range(5, -1, -1):
+        ref = (now.replace(day=1) - timedelta(days=30 * i)).replace(day=1)
+        buckets.append((ref, (ref + timedelta(days=32)).replace(day=1)))
+    return buckets
+
+
+def _counts_per_bucket(db, id_col, created_col, buckets, *filters):
+    """One SELECT for every bucket: count(id) FILTER (WHERE start <= created < end).
+
+    MEH-2553: was one count query per month (Sentry N+1 MEHAMAKOR-BACKEND-25/-1N).
+    Same half-open boundaries as before, so the numbers cannot move.
+    """
+    q = db.query(
+        *[
+            func.count(id_col).filter(created_col >= start, created_col < end)
+            for start, end in buckets
+        ]
+    )
+    if filters:
+        q = q.filter(*filters)
+    return [int(n or 0) for n in q.one()]
+
+
 @router.get("/analytics")
 def get_analytics(
     user: User = Depends(require_admin),
@@ -483,31 +509,16 @@ def get_analytics(
     now = utc_now()
 
     # Time series: producers/users per month for last 6 months
-    months = []
-    for i in range(5, -1, -1):
-        ref = (now.replace(day=1) - timedelta(days=30 * i)).replace(day=1)
-        next_month = (ref + timedelta(days=32)).replace(day=1)
-        producers = (
-            db.query(func.count(Producer.id))
-            .filter(
-                Producer.created_at >= ref,
-                Producer.created_at < next_month,
-                Producer.kind == "producer",  # MEH-2465
-            )
-            .scalar()
-        )
-        users = (
-            db.query(func.count(User.id))
-            .filter(User.created_at >= ref, User.created_at < next_month)
-            .scalar()
-        )
-        months.append(
-            {
-                "month": ref.strftime("%Y-%m"),
-                "producers": int(producers or 0),
-                "users": int(users or 0),
-            }
-        )
+    buckets = _last_six_months(now)
+    producer_counts = _counts_per_bucket(
+        db, Producer.id, Producer.created_at, buckets,
+        Producer.kind == "producer",  # MEH-2465
+    )
+    user_counts = _counts_per_bucket(db, User.id, User.created_at, buckets)
+    months = [
+        {"month": ref.strftime("%Y-%m"), "producers": p, "users": u}
+        for (ref, _), p, u in zip(buckets, producer_counts, user_counts)
+    ]
 
     # Producers per category
     cat_rows = (
@@ -915,22 +926,15 @@ def get_dashboard(
     ]
 
     # Per-month for last 6 months
-    months = []
-    for i in range(5, -1, -1):
-        ref = (now.replace(day=1) - timedelta(days=30 * i)).replace(day=1)
-        next_month = (ref + timedelta(days=32)).replace(day=1)
-        producers = (
-            db.query(func.count(Producer.id))
-            .filter(
-                Producer.created_at >= ref,
-                Producer.created_at < next_month,
-                Producer.kind == "producer",  # MEH-2465
-            )
-            .scalar()
-        )
-        months.append(
-            {"month": ref.strftime("%Y-%m"), "producers": int(producers or 0)}
-        )
+    buckets = _last_six_months(now)
+    producer_counts = _counts_per_bucket(
+        db, Producer.id, Producer.created_at, buckets,
+        Producer.kind == "producer",  # MEH-2465
+    )
+    months = [
+        {"month": ref.strftime("%Y-%m"), "producers": n}
+        for (ref, _), n in zip(buckets, producer_counts)
+    ]
 
     # MEH-1938 chunk 5a: primary-location rows, not Producer.lat/lng — see
     # _primary_location_points. The 200 cap is the pre-existing one.
