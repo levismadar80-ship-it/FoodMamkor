@@ -511,7 +511,10 @@ def get_analytics(
     # Time series: producers/users per month for last 6 months
     buckets = _last_six_months(now)
     producer_counts = _counts_per_bucket(
-        db, Producer.id, Producer.created_at, buckets,
+        db,
+        Producer.id,
+        Producer.created_at,
+        buckets,
         Producer.kind == "producer",  # MEH-2465
     )
     user_counts = _counts_per_bucket(db, User.id, User.created_at, buckets)
@@ -928,7 +931,10 @@ def get_dashboard(
     # Per-month for last 6 months
     buckets = _last_six_months(now)
     producer_counts = _counts_per_bucket(
-        db, Producer.id, Producer.created_at, buckets,
+        db,
+        Producer.id,
+        Producer.created_at,
+        buckets,
         Producer.kind == "producer",  # MEH-2465
     )
     months = [

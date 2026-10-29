@@ -51,8 +51,10 @@ def _in_month(months_back):
 def _monthly_queries(seen, table):
     """Count queries bounded by created_at on `table` — the monthly series."""
     return [
-        s for s in seen
-        if "count(" in s.lower() and f"from {table}" in s.lower()
+        s
+        for s in seen
+        if "count(" in s.lower()
+        and f"from {table}" in s.lower()
         and f"{table}.created_at <" in s.lower()  # month buckets have an upper bound
     ]
 
@@ -85,7 +87,9 @@ def test_dashboard_monthly_producers_one_query_same_numbers(client, db):
     assert months[this_month] == 2
     assert months[two_back] == 1
     assert sum(months.values()) == 3
-    assert len(_monthly_queries(seen, "producers")) == 1, _monthly_queries(seen, "producers")
+    assert len(_monthly_queries(seen, "producers")) == 1, _monthly_queries(
+        seen, "producers"
+    )
 
 
 def test_analytics_monthly_series_one_query_per_table(client, db):
@@ -101,21 +105,34 @@ def test_analytics_monthly_series_one_query_per_table(client, db):
     assert monthly[two_back]["producers"] == 1
     assert monthly[this_month]["users"] >= 1  # the admin, created now
     # The monthly series used to be 6 count queries on each table.
-    assert len(_monthly_queries(seen, "producers")) == 1, _monthly_queries(seen, "producers")
+    assert len(_monthly_queries(seen, "producers")) == 1, _monthly_queries(
+        seen, "producers"
+    )
     assert len(_monthly_queries(seen, "users")) == 1, _monthly_queries(seen, "users")
 
 
 def test_outreach_summary_one_query_same_numbers(client, db):
     admin = make_user(db, role="admin")
-    for i, status in enumerate(["new", "new", "contacted", "registered", "declined", "replied", "replied"]):
-        db.add(OutreachLead(name=f"עסק {i}", phone=f"05000000{i:02d}", city="חיפה", status=status))
+    for i, status in enumerate(
+        ["new", "new", "contacted", "registered", "declined", "replied", "replied"]
+    ):
+        db.add(
+            OutreachLead(
+                name=f"עסק {i}", phone=f"05000000{i:02d}", city="חיפה", status=status
+            )
+        )
     db.commit()
     client.get("/admin/outreach/metrics/summary", headers=auth_header(admin))  # warm-up
     with _selects() as seen:
         r = client.get("/admin/outreach/metrics/summary", headers=auth_header(admin))
     assert r.status_code == 200, r.text
     assert r.json() == {
-        "total": 7, "new": 2, "contacted": 1, "replied": 2, "registered": 1, "declined": 1,
+        "total": 7,
+        "new": 2,
+        "contacted": 1,
+        "replied": 2,
+        "registered": 1,
+        "declined": 1,
     }
     leads = [s for s in seen if "outreach_leads" in s.lower()]
     assert len(leads) == 1, leads
