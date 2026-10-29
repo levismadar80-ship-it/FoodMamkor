@@ -90,6 +90,17 @@ describe("StoryCardCanvas drawing (MEH-2589)", () => {
     expect(nameLines[1].text.endsWith("…")).toBe(true);
   });
 
+  it("never lets a name line run wider than the text column, even one long word", async () => {
+    const calls = await draw({ ...base, name: "א".repeat(40) });
+    const nameLines = calls.filter((c) => c.font.includes("Frank Ruhl") && c.text !== "מהמקור");
+    expect(nameLines.length).toBeGreaterThan(0);
+    for (const l of nameLines) {
+      // same width model as recordingCtx.measureText; column = 1080 - 2×90
+      expect(l.text.length * fontSize(l.font) * 0.5).toBeLessThanOrEqual(900);
+    }
+    expect(nameLines.at(-1).text.endsWith("…")).toBe(true);
+  });
+
   it("shows at most the first two categories", async () => {
     const calls = await draw({
       ...base,
