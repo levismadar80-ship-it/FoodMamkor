@@ -13,6 +13,7 @@ import { ActiveFilterChip } from "@/app/[locale]/home/ActiveFilterChip";
 import FilterSheet from "@/components/FilterSheet";
 // MEH-1825: the day row is shared with /producers — one definition in components/.
 import { DeliveryDayRow } from "@/components/DeliveryDayRow";
+import { keepFocusedChipClear } from "@/lib/keepFocusedChipClear";
 import { DELIVERY_DAYS } from "@/lib/delivery-days";
 // MEH-1934: visibleGatedDietKeys gates the two newest diet chips here too.
 // CHIPS_CONFIG is shared with /producers, so a chip added there appears on
@@ -249,24 +250,7 @@ export function HomeProducersGrid({
   // since the row scrolls sideways on a phone and would clip it. State, not a
   // ref, so the chip re-renders with the node once it exists.
   const [dayPanelHost, setDayPanelHost] = useState(null);
-  // MEH-2537: a chip that takes focus while under the sticky «סינון» is
-  // scrolled out from under it. The lead sits at the inline-start edge: the
-  // RIGHT in he (overlap = chip.right − lead.left, scroll +x) and the LEFT in
-  // /en, which is dir=ltr (overlap = lead.right − chip.left, scroll −x).
-  // Skipped at lg+, where the trigger is not sticky and nothing overlaps.
-  // React focus events bubble through portals, so the day panel and the
-  // FilterSheet (both React children of this row, DOM-outside it) land here
-  // too — only focus that is IN the row's DOM counts.
-  const keepFocusedChipClear = (e) => {
-    if (!e.currentTarget.contains(e.target)) return;
-    const lead = e.currentTarget.firstElementChild;
-    if (!lead || lead.contains(e.target) || getComputedStyle(lead).position !== "sticky") return;
-    const chip = e.target.getBoundingClientRect();
-    const l = lead.getBoundingClientRect();
-    const rtl = getComputedStyle(e.currentTarget).direction === "rtl";
-    const overlap = rtl ? chip.right - l.left : l.right - chip.left;
-    if (overlap > 0) e.currentTarget.scrollBy({ left: rtl ? overlap + 8 : -(overlap + 8) });
-  };
+  // MEH-2537: focus under the sticky «סינון» — lib/keepFocusedChipClear.js.
   return (
     <section id="producers-grid" className="max-w-7xl mx-auto px-4 pb-20">
       {/* MEH-2394: the first-visit coach-mark tour (step 0 here, step 1 by the
