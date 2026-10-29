@@ -1384,8 +1384,10 @@ class SavedItem(Base):
         UniqueConstraint(
             "user_id", "item_type", "item_id", name="uq_saved_items_user_item"
         ),
+        # Built from SAVED_ITEM_TYPES so the model holds one copy of the list,
+        # not two; the revision's literal CHECK is pinned by a test.
         CheckConstraint(
-            "item_type IN ('recipe', 'event', 'experience')",
+            "item_type IN ({})".format(", ".join(f"'{t}'" for t in SAVED_ITEM_TYPES)),
             name="saved_items_item_type_check",
         ),
     )

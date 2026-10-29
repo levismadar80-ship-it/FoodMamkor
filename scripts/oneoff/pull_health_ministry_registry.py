@@ -113,9 +113,11 @@ WAVE1_TOWNS = [
     "אביאל",
     "עמיקם",
     "מעיין צבי",
+    "מעין צבי",  # the dataset's spelling (29/10 live run)
     "מעגן מיכאל",
     "עין שמר",
     "גן שומרון",
+    "גן השומרון",  # the dataset's spelling (29/10 live run)
     "תלמי אלעזר",
     "כפר גליקסון",
     "עתלית",
@@ -134,11 +136,15 @@ EXCLUDE_STEMS = ("הובל", "אחסנ", "אחסון", "שיווק בלבד", "�
 # Column resolution — candidates per logical field, first match wins, choice
 # is printed. Extend from the printed live schema, never by guessing.
 # ---------------------------------------------------------------------------
+# Live schema (29/10/2026 run, 5,041 rows): _id, license, title, expire_date,
+# gmp_expire_date, ProductActivityFoodType, accountType, gmpstatuscode,
+# health_district_desc, city_number, city, Addr. No phone or email column.
 FIELD_CANDIDATES: dict[str, list[str]] = {
-    "name": ["שם עסק", "שם העסק", "שם_עסק", "business_name", "name"],
+    "name": ["שם עסק", "שם העסק", "שם_עסק", "business_name", "name", "title"],
     "city": ["יישוב", "ישוב", "עיר", "שם יישוב", "שם_ישוב", "city", "settlement"],
-    "address": ["כתובת", "רחוב", "address"],
+    "address": ["כתובת", "רחוב", "address", "addr"],
     "category": [
+        "ProductActivityFoodType",
         "קטגוריה",
         "סוג רישיון",
         "סוג_רישיון",
@@ -153,6 +159,7 @@ FIELD_CANDIDATES: dict[str, list[str]] = {
         "תאריך תוקף",
         "valid_until",
         "expiry",
+        "expire_date",
     ],
     "phone": ["טלפון", "phone", "tel"],
     "email": ["אימייל", 'דוא"ל', "email"],
@@ -274,6 +281,17 @@ def run_filters(fields: list[str], rows: list[dict], *, out_dir: Path) -> int:
             file=sys.stderr,
         )
         return 2
+
+    # MEH-2135 (29/10): the first live run resolved only `city`, wrote a CSV of
+    # town names and skipped the type filter with a one-line note. Without a
+    # name or a category the output is not a lead list, so stop instead.
+    missing = [k for k in ("name", "category") if not cols[k]]
+    if missing:
+        print(
+            f"[columns] no {', '.join(missing)} column recognised — extend FIELD_CANDIDATES from the schema above.",
+            file=sys.stderr,
+        )
+        return 6
 
     cat_col = cols["category"]
     if cat_col:
@@ -420,6 +438,29 @@ def self_test() -> int:
         cols2["name"] == "Business_Name" and cols2["city"] == "CITY",
     )
     check("cols/no-city", resolve_columns(["שם", "כתובת"])["city"] is None)
+    live = resolve_columns(
+        [
+            "_id",
+            "license",
+            "title",
+            "expire_date",
+            "gmp_expire_date",
+            "ProductActivityFoodType",
+            "accountType",
+            "gmpstatuscode",
+            "health_district_desc",
+            "city_number",
+            "city",
+            "Addr",
+        ]
+    )
+    check("cols/live-name", live["name"] == "title")
+    check("cols/live-address", live["address"] == "Addr")
+    check("cols/live-category", live["category"] == "ProductActivityFoodType")
+    check("cols/live-valid", live["license_valid_until"] == "expire_date")
+    check("geo/live-maayan-zvi", in_wave1("מעין צבי"))
+    check("geo/live-gan-hashomron", in_wave1("גן השומרון"))
+    check("type/live-cold-storage", is_excluded_type("אחסנה בטמפרטורה מבוקרת"))
     # End-to-end on synthetic rows, in a temp dir (no network).
 
     with tempfile.TemporaryDirectory() as td:
@@ -458,6 +499,10 @@ def self_test() -> int:
             "e2e/no-city-exit-2",
             run_filters(["שם", "כתובת"], rows, out_dir=Path(td)) == 2,
         )
+        check(
+            "e2e/no-name-exit-6",
+            run_filters(["יישוב", "קטגוריה"], rows, out_dir=Path(td)) == 6,
+        )
         far = [dict(r, **{"יישוב": "תל אביב"}) for r in rows]
         check("e2e/zero-geo-exit-3", run_filters(fields, far, out_dir=Path(td)) == 3)
 
@@ -488,16 +533,30 @@ def main(argv: list[str] | None = None) -> int:
         help="output directory (default ./moh-registry)",
     )
     p.add_argument(
+        "--from-json",
+        default=None,
+        help="re-run the filters on a saved moh_raw_rows.json; no network",
+    )
+    p.add_argument(
         "--resource-id",
         default=None,
         help="skip discovery and use this datastore resource id",
     )
     a = p.parse_args(argv)
+    # Windows consoles default to cp1252 and the reports print Hebrew.
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except (AttributeError, ValueError):
+            pass
 
     if a.dry_run:
         return dry_run()
     if a.self_test:
         return self_test()
+    if a.from_json:
+        saved = json.loads(Path(a.from_json).read_text(encoding="utf-8"))
+        return run_filters(saved["fields"], saved["rows"], out_dir=Path(a.out))
     if not a.confirm:
         print(
             "refusing to fetch: pass --confirm to hit data.gov.il (or --dry-run / --self-test for offline modes).",

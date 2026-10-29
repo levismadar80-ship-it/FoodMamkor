@@ -98,3 +98,13 @@ def test_python_type_list_matches_the_revision_check():
     assert check, "CHECK clause not found in the revision"
     in_revision = tuple(re.findall(r"'([a-z_]+)'", check.group(1)))
     assert in_revision == SAVED_ITEM_TYPES
+
+
+def test_model_check_is_built_from_the_python_list():
+    """The model's CHECK text equals the revision's CHECK text, so ORM-created
+    test schemas enforce exactly what production enforces."""
+    (model_check,) = [
+        c for c in SavedItem.__table__.constraints if c.name == "saved_items_item_type_check"
+    ]
+    source = REVISION.read_text(encoding="utf-8")
+    assert str(model_check.sqltext) in source
