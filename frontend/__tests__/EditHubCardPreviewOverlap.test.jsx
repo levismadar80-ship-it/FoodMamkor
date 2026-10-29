@@ -9,17 +9,18 @@ vi.mock("@phosphor-icons/react", () => ({ CaretRight: () => <span /> }));
 
 import EditHubCard from "@/components/EditHubCard";
 
-function slots() {
+function slots(labels = ["thumbs", "chips"]) {
   render(
     <EditHubCard
       testId="hub-card-profile"
       title="העסק"
       statusLine="4 מתוך 4 הושלמו"
-      previews={[<span key="a">thumbs</span>, <span key="b">chips</span>]}
+      previews={labels.map((l) => <span key={l}>{l}</span>)}
       onClick={() => {}}
     />,
   );
-  return [...screen.getByText("thumbs").parentElement.parentElement.children];
+  if (labels.length === 0) return [];
+  return [...screen.getByText(labels[0]).parentElement.parentElement.children];
 }
 
 describe("EditHubCard preview slots (MEH-2605)", () => {
@@ -33,5 +34,28 @@ describe("EditHubCard preview slots (MEH-2605)", () => {
     const [, second] = slots();
     expect(second.className).toContain("min-w-0");
     expect(second.className).toContain("overflow-hidden");
+  });
+
+  it("keeps a single preview at its own width", () => {
+    const all = slots(["thumbs"]);
+    expect(all).toHaveLength(1);
+    expect(all[0].className).toContain("shrink-0");
+  });
+
+  it("clips every slot after the first when there are three", () => {
+    const [first, ...rest] = slots(["thumbs", "chips", "license"]);
+    expect(first.className).toContain("shrink-0");
+    expect(rest).toHaveLength(2);
+    for (const slot of rest) {
+      expect(slot.className).toContain("min-w-0");
+      expect(slot.className).toContain("overflow-hidden");
+    }
+  });
+
+  it("draws no preview row without previews", () => {
+    render(
+      <EditHubCard testId="hub-card-empty" title="העסק" previews={[]} onClick={() => {}} />,
+    );
+    expect(screen.getByTestId("hub-card-empty").querySelector(".mt-2.overflow-hidden")).toBeNull();
   });
 });

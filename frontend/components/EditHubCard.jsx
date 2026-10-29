@@ -59,7 +59,9 @@ export default function EditHubCard({
                 way. With every slot min-w-0 the thumbnail row (fixed-size items)
                 shrank below its content and its "+N" chip painted over the
                 category chips beside it at 375px. The later slots clip, so a
-                long chip truncates to "…" instead of being covered. */}
+                long chip truncates to "…" instead of being covered.
+                Contract: slot 0 must be a short, fixed-shape preview — the
+                caller's HUB_PREVIEW_KEYS allowlist (edit/page.js) guarantees it. */}
             {previews.map((node, i) => (
               <span key={i} className={i === 0 ? "shrink-0" : "min-w-0 overflow-hidden"}>
                 {node}
