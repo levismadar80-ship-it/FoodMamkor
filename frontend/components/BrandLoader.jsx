@@ -5,8 +5,9 @@
  * still while its five seeds light up in sequence — the Google-dots rhythm in
  * the brand's own colours. It does NOT rotate: the big sites animate colour,
  * not the logo itself (Google's arc, Netflix's ring), and a spinning logo
- * reads as dated. Sapir confirmed this call on 29/10. Pure CSS (`.brand-loader*` rules in app/globals.css); no JS
- * timers, so it works inside a server component (`app/[locale]/loading.js`)
+ * reads as dated. Sapir confirmed this call on 29/10.
+ *
+ * Pure CSS (`.brand-loader*` rules in app/globals.css); no JS timers, so it works inside a server component (`app/[locale]/loading.js`)
  * and inside client auth gates alike.
  *
  * Rules it encodes (MEH-2599 research: NN/g "Skeleton Screens 101" and
