@@ -529,6 +529,7 @@ export const GroupBuyMetadataSchema = z.object({
   id: z.union([z.string(), z.number()]),
   title: z.string(),
   description: z.string().nullable().optional(),
+  producer_image_url: z.string().nullable().optional(), // MEH-2544: og:image
 });
 
 // Read by app/[locale]/experiences/[id]/page.js generateMetadata.
