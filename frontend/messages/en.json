@@ -158,7 +158,8 @@
       "or": "or",
       "no_account": "Don't have an account?",
       "register_cta": "Join →",
-      "email_placeholder": "name@example.com"
+      "email_placeholder": "name@example.com",
+      "oauth_terms": "By continuing with Google or Apple, you confirm you are over 18 and agree to the <tos>Terms of Use</tos> and the <privacy>Privacy Policy</privacy>."
     },
     "oauth": {
       "google_error": "Google sign-in failed",
