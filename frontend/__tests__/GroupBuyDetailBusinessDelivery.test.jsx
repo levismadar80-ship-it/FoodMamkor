@@ -15,7 +15,17 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { act, render, screen, waitFor } from "@testing-library/react";
 import GroupBuyDetailClient from "@/app/[locale]/group-buys/[id]/GroupBuyDetailClient";
 
+// MEH-2544: the page's business row is OwnerRow, which links via @/i18n/navigation.
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ children, href, ...rest }) => (
+    <a href={href} {...rest}>
+      {children}
+    </a>
+  ),
+}));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
+const captureMessage = vi.fn();
+vi.mock("@sentry/nextjs", () => ({ captureMessage: (...a) => captureMessage(...a) }));
 vi.mock("@/lib/auth-context", () => ({ useAuth: () => ({ user: null, loading: false }) }));
 vi.mock("next-intl", () => ({
   useLocale: () => "he",
@@ -83,6 +93,7 @@ async function renderPage() {
 beforeEach(() => {
   get.mockClear();
   get.mockImplementation(defaultGet);
+  captureMessage.mockReset();
   fixture.producer = producer();
   fixture.producerError = null;
   fixture.gb = {};
@@ -103,6 +114,20 @@ describe("the business fetch", () => {
     await renderPage();
     await waitFor(() => expect(get).toHaveBeenCalledWith("/producers/p-1"));
     expect(screen.queryByTestId("delivery-checker")).toBeNull();
+  });
+
+  // MEH-2491: ...and says so, rather than hiding the checker in silence.
+  it("a body that fails validation is reported as a warning", async () => {
+    fixture.producer = producer({ delivery_areas: "חדרה" });
+    await renderPage();
+    await waitFor(() => expect(captureMessage).toHaveBeenCalledTimes(1));
+    expect(captureMessage.mock.calls[0][1].level).toBe("warning");
+  });
+
+  it("a valid body reports nothing", async () => {
+    await renderPage();
+    await waitFor(() => expect(get).toHaveBeenCalledWith("/producers/p-1"));
+    expect(captureMessage).not.toHaveBeenCalled();
   });
 
   it("fetches nothing when the group carries no producer id", async () => {

@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation";
 // next/link on the strength of a sibling file doing the same, which is
 // precedent, not verification.
 import { Link } from "@/i18n/navigation";
-import { MagnifyingGlass, ClockCounterClockwise, Fire } from "@phosphor-icons/react";
+import { MagnifyingGlass, ClockCounterClockwise, TrendUp } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { highlightMatch } from "@/lib/highlightMatch";
@@ -24,7 +24,7 @@ import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
  *
  * Three dropdown states:
  *   empty + focused + recent exist    → recent searches (🕐, localStorage)
- *   empty + focused + no recent       → trending searches (🔥, /search/trending)
+ *   empty + focused + no recent       → trending searches (TrendUp, /search/trending)
  *   ≥2 chars typed                    → live autocomplete (producers / categories / cities)
  *
  * MEH-1684: the submit control is a CIRCLE (rounded-full) — it is the single
@@ -593,9 +593,13 @@ export default function HeroSearch({
                     submitRaw(q);
                   }}
                 >
-                  <Fire
+                  {/* MEH-2508: a quiet trend arrow, the same muted line glyph as
+                      the recent-search clock above — the green flame read as an
+                      emoji (Sapir 28/10). Google/YouTube mark trending queries
+                      with this arrow. */}
+                  <TrendUp
                     size={16}
-                    className="text-primary shrink-0"
+                    className="text-fg-muted shrink-0"
                     aria-hidden="true"
                   />
                   {q}

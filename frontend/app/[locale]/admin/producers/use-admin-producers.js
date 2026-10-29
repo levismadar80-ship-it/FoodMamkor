@@ -8,7 +8,7 @@ import { producerCompleteness } from "@/lib/producer-completeness";
 import { clampPage } from "@/lib/pagination";
 import { exportProducersToCSV } from "@/lib/admin-producers-export";
 import { useAdminAction } from "@/lib/use-admin-action";
-import { detailToMessage, errorMessage } from "@/lib/errors";
+import { errorMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 import { useDecisionFlow } from "./use-reject-flow";
 import { CHANGES, decisionValue } from "./ProducerDecisionModal";
@@ -200,66 +200,14 @@ function useProducerActions(loadAllProducers, deps) {
       t("producers.table.delete_error"),
     );
   };
-  const toggleAmbassador = (id, current) =>
-    run(`ambassador:${id}`, async () => {
-      await api.post(`/admin/producers/${id}/set-ambassador`, { ambassador: !current });
-      loadAllProducers();
-    });
   return {
-    quickApprove, toggleStatus, deleteProducer, toggleAmbassador,
+    quickApprove, toggleStatus, deleteProducer,
     // MEH-1027 Chunk B: delete confirm dialog controller.
     confirmDelete, closeDeleteConfirm, confirmDeleteProducer,
   };
 }
 
-// Sub-hook 3 — Excel import flow (dry-run preview, then confirm).
-function useImportFlow(loadAllProducers) {
-  const t = useTranslations("admin");
-  const [importPreview, setImportPreview] = useState(null);
-  const [importing, setImporting] = useState(false);
-  const [importError, setImportError] = useState("");
-
-  const handleImportFile = async (file) => {
-    if (!file) return;
-    setImportError("");
-    setImporting(true);
-    try {
-      const fd = new FormData();
-      fd.append("file", file);
-      const r = await api.post("/admin/producers/import?dry_run=true", fd, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      setImportPreview({ ...r.data, _file: file });
-    } catch (err) {
-      setImportError(detailToMessage(err.response?.data?.detail) || t("producers.import.errors_loading"));
-    } finally {
-      setImporting(false);
-    }
-  };
-
-  const confirmImport = async () => {
-    if (!importPreview?._file) return;
-    setImporting(true);
-    setImportError("");
-    try {
-      const fd = new FormData();
-      fd.append("file", importPreview._file);
-      await api.post("/admin/producers/import?dry_run=false", fd, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      setImportPreview(null);
-      loadAllProducers();
-    } catch (err) {
-      setImportError(detailToMessage(err.response?.data?.detail) || t("producers.import.errors_importing"));
-    } finally {
-      setImporting(false);
-    }
-  };
-
-  return { importPreview, setImportPreview, importing, importError, handleImportFile, confirmImport };
-}
-
-// Outer orchestrator — composes the three sub-hooks and computes
+// Outer orchestrator — composes the sub-hooks and computes
 // completeness / pagination derivatives. The return object is the
 // only surface page.js consumes.
 export function useAdminProducers() {
@@ -274,12 +222,16 @@ export function useAdminProducers() {
   const actions = useProducerActions(data.loadAllProducers, {
     run, openDecision: decision.openDecision,
   });
-  const importFlow = useImportFlow(data.loadAllProducers);
 
   const exportExcel = () => exportProducersToCSV(data.producers);
 
   const handleStoryCardUpload = (id, url) =>
     data.setProducers((prev) => prev.map((p) => (p.id === id ? { ...p, story_card_url: url } : p)));
+
+  // MEH-2582: keep the row in step after the approval row links Google, so a
+  // collapse + reopen of the checklist does not show "not linked" again.
+  const handleGooglePlaceLinked = (id, placeId) =>
+    data.setProducers((prev) => prev.map((p) => (p.id === id ? { ...p, google_place_id: placeId } : p)));
 
   const handlePerPageChange = (n) => {
     data.setPerPage(n);
@@ -323,14 +275,14 @@ export function useAdminProducers() {
   const pagedVisible = visible.slice((safePage - 1) * data.perPage, safePage * data.perPage);
 
   return {
-    ...data, ...actions, ...decision, ...importFlow, isBusy,
+    ...data, ...actions, ...decision, isBusy,
     // MEH-2209: the two row entry points keep their names and signatures, so
     // AdminProducersTable's wiring is untouched — only where they land moved.
     // The kebab's "דחייה" opens with nothing chosen; the row's "בקשת השלמה"
     // lands on the completion group without choosing for the admin.
     openReject: decision.openDecision,
     openRequestChanges: (producer) => decision.openDecision(producer, { focus: CHANGES }),
-    exportExcel, handleStoryCardUpload, handlePerPageChange,
+    exportExcel, handleStoryCardUpload, handleGooglePlaceLinked, handlePerPageChange,
     incompleteCount, visible, pagedVisible, safePage, totalPages,
   };
 }

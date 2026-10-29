@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Faders, Info, Leaf, MapPin, X } from "@phosphor-icons/react";
+import { Check, Faders, Info, Leaf, MapPin, X } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import ProducerCard from "@/components/ProducerCard";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
@@ -13,6 +13,7 @@ import { ActiveFilterChip } from "@/app/[locale]/home/ActiveFilterChip";
 import FilterSheet from "@/components/FilterSheet";
 // MEH-1825: the day row is shared with /producers — one definition in components/.
 import { DeliveryDayRow } from "@/components/DeliveryDayRow";
+import { keepFocusedChipClear } from "@/lib/keepFocusedChipClear";
 import { DELIVERY_DAYS } from "@/lib/delivery-days";
 // MEH-1934: visibleGatedDietKeys gates the two newest diet chips here too.
 // CHIPS_CONFIG is shared with /producers, so a chip added there appears on
@@ -215,10 +216,6 @@ export function HomeProducersGrid({
   );
   // The sheet gets the gated list plus its group metadata (MEH-1862's seam).
   const sheetChips = useMemo(() => withChipGroups(gatedChips), [gatedChips]);
-  // The "· N" on the trigger counts ACTIVE ATTRIBUTE axes, promoted included:
-  // the button stands for the whole attribute surface, and a visitor who
-  // switched on a promoted chip has one filter active, not zero.
-  const activeAttributeCount = gatedChips.filter((c) => chips[c.key]).length;
 
   // MEH-1174: derive the active category once — drives both the dynamic
   // heading and the removable applied-filters tag. `null` when no category
@@ -243,6 +240,17 @@ export function HomeProducersGrid({
   const tagChips = gatedChips.filter(
     (c) => chips[c.key] && !PROMOTED_KEYS.includes(c.key),
   );
+  // The "· N" on the trigger counts what is NOT already on screen — the same
+  // non-promoted set as the strip. MEH-2500 reversed "promoted included"
+  // (MEH-2173): with a promoted chip lit beside it, «סינון · 1» read as one
+  // more filter hidden in the sheet (Sapir 28/10, on /map's identical row).
+  // /producers already excluded its visible city chip for the same reason.
+  const sheetOnlyCount = tagChips.length;
+  // MEH-2537: where the day chip's panel opens — a node BELOW the filter row,
+  // since the row scrolls sideways on a phone and would clip it. State, not a
+  // ref, so the chip re-renders with the node once it exists.
+  const [dayPanelHost, setDayPanelHost] = useState(null);
+  // MEH-2537: focus under the sticky «סינון» — lib/keepFocusedChipClear.js.
   return (
     <section id="producers-grid" className="max-w-7xl mx-auto px-4 pb-20">
       {/* MEH-2394: the first-visit coach-mark tour (step 0 here, step 1 by the
@@ -285,35 +293,44 @@ export function HomeProducersGrid({
           the sheet filtered in place would be the same axis behaving two ways
           on one row. One state (`chips`), one handler (`onToggleChip`), for
           the surface chips and the sheet alike. */}
-      <div className="mb-3 flex items-center gap-2 min-w-0" data-testid="home-filter-row">
-        {promotedChips.map((chip) => {
-          const active = !!chips[chip.key];
-          return (
-            <button
-              key={chip.key}
-              type="button"
-              onClick={() => onToggleChip(chip.key)}
-              aria-pressed={active}
-              data-testid={`home-promoted-chip-${chip.key}`}
-              // REUSES: frontend/app/[locale]/map/components/ServiceChipRow.jsx:69-73
-              // — identical promoted-chip geometry and the MEH-1181-A Direction A
-              // wash+ring for the active state, so a promoted chip reads the same
-              // on home as it does on /map even though the PAIR differs.
-              className={`inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 rounded-md text-sm font-medium border transition shrink-0 ${
-                active
-                  ? "bg-green-50 text-primary border-primary ring-1 ring-primary"
-                  : "bg-white text-text border-border hover:border-primary hover:text-primary"
-              }`}
-            >
-              <span aria-hidden="true">{chip.icon}</span>
-              {chip.label}
-            </button>
-          );
-        })}
+      {/* MEH-2537: ONE row — «סינון», the promoted pair, then the day chip
+          that used to sit alone on a second row (beside «משלוח», its axis).
+          Below lg it is a sideways rail rather than wrapping, bled to the
+          screen edge (-mx-4/px-4 against the section's px-4) so a chip that
+          does not fit is cut at the glass, which reads as "scrolls", not at
+          the gutter, which reads as a bug. py-1/-mt-1 keep the chips' focus
+          and active rings inside the scrollport (overflow clips box-shadow).
+          onFocus nudges a focused chip out from under the sticky «סינון»
+          (WCAG 2.4.11). Measured in Chromium: neither scroll-padding on the
+          rail (it shifted the RESTING position, «מאומת» under «סינון») nor
+          scroll-margin on the chips (focus scrolling ignored it) did this.
+          lg+ fits on one line, so overflow is
+          visible there and the sheet's anchored panel is not clipped.
+          MEH-2574: overscroll-x-none — iOS rubber-banding dragged the whole
+          rail past its start edge, so the sticky «סינון» slid off the glass
+          and the row looked lopsided (Sapir's iPhone, 29/10). The rail now
+          stops at its edges, as chip rails do on Google Maps / Airbnb; it only
+          governs this scroller's x-axis, so page scroll is untouched. */}
+      <div
+        className="-mx-4 -mt-1 mb-3 flex items-center gap-2 min-w-0 overflow-x-auto overscroll-x-none px-4 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:-mx-1 lg:px-1 lg:overflow-visible"
+        data-testid="home-filter-row"
+        onFocus={keepFocusedChipClear}
+      >
         {/* Anchor wrapper — FilterSheet's lg+ panel positions off this
-            `relative` parent, exactly as on /map and /producers. `ms-auto`
-            pushes the trigger to the inline-END (the LEFT in RTL). */}
-        <div className="relative shrink-0 ms-auto">
+            parent, exactly as on /map and /producers (sticky is positioned,
+            so it anchors like `relative`).
+            MEH-2537: the trigger LEADS the row (inline-start, the RIGHT in
+            RTL) — Google Maps / Yelp / Etsy put "all filters" first — and
+            stays put while the rail scrolls under it below lg. Sticky makes
+            it a stacking context, which is harmless here: below lg the sheet
+            portals to <body> (FilterSheet.jsx), and at lg+ the wrapper is
+            plain `relative` again. It paints over the static chips by being
+            positioned; keep the chips unpositioned or give this a z-index.
+            -ms-4/ps-4 paint the
+            gutter strip beside it, so chips pass under it there too, and
+            -start-4 (not start-0) because a sticky box is held inside the
+            rail's PADDING edge: start-0 pinned it 16px in, over «מאומת». */}
+        <div className="sticky -start-4 -ms-4 ps-4 shrink-0 bg-background lg:relative lg:start-auto lg:ms-0 lg:ps-0">
           <button
             type="button"
             onClick={onToggleFilterSheet}
@@ -333,8 +350,8 @@ export function HomeProducersGrid({
             <Faders size={16} aria-hidden="true" />
             {t("filters.button")}
             {/* `.numeric` = tabular/LTR digits inside the RTL button. */}
-            {activeAttributeCount > 0 && (
-              <span className="numeric">{` · ${activeAttributeCount}`}</span>
+            {sheetOnlyCount > 0 && (
+              <span className="numeric">{` · ${sheetOnlyCount}`}</span>
             )}
           </button>
           <FilterSheet
@@ -347,9 +364,50 @@ export function HomeProducersGrid({
             // grid says. `producers` is the FILTERED set home last fetched.
             resultCount={producers.length}
             onClearAll={onClearChips}
+            align="start"
           />
         </div>
+        {promotedChips.map((chip) => {
+          const active = !!chips[chip.key];
+          return (
+            <button
+              key={chip.key}
+              type="button"
+              onClick={() => onToggleChip(chip.key, "row")}
+              aria-pressed={active}
+              data-testid={`home-promoted-chip-${chip.key}`}
+              // REUSES: frontend/app/[locale]/map/components/ServiceChipRow.jsx:69-73
+              // — identical promoted-chip geometry and the MEH-1181-A Direction A
+              // wash+ring for the active state, so a promoted chip reads the same
+              // on home as it does on /map even though the PAIR differs.
+              className={`inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 rounded-md text-sm font-medium border transition shrink-0 ${
+                active
+                  ? "bg-green-50 text-primary border-primary ring-1 ring-primary"
+                  : "bg-white text-text border-border hover:border-primary hover:text-primary"
+              }`}
+            >
+              {/* MEH-2500: on = ✓ in place of the glyph, as on /map. */}
+              <span aria-hidden="true">{active ? <Check size={16} weight="bold" /> : chip.icon}</span>
+              {chip.label}
+            </button>
+          );
+        })}
+        {/* MEH-1645 day refinement, a permanent anchor since MEH-1771 and ONE
+            value-carrying dropdown chip since MEH-2186: always rendered — with
+            no city a tap routes into the LocationModal (handleDaySelected), with
+            a city it opens the inline day panel. `onClearDays` is the chip's ✕:
+            it drops the whole day set and leaves the city standing, which is the
+            same handler the empty-state CTA below already uses. */}
+        <DeliveryDayRow
+          cityActive={cityActive}
+          daysActive={daysActive}
+          onSelectDay={onSelectDay}
+          onClearDays={onClearDays}
+          inRow
+          panelHost={dayPanelHost}
+        />
       </div>
+      <div ref={setDayPanelHost} className="mb-3 empty:hidden" data-testid="home-day-panel-host" />
       {/* MEH-1174: single applied-filters summary row — the active category
           now lives here as a removable "× {name}" tag alongside the chip
           summary (replacing the old separate "מציג:" row). */}
@@ -409,26 +467,14 @@ export function HomeProducersGrid({
 
       {/* MEH-1269: dismissible location-filter chip (geo "קרוב אליי" or an
           explicit city choice). Self-hides when no location filter is active.
-          MEH-2186: LOCATION-ONLY — the day value moved to the day chip below,
+          MEH-2186: LOCATION-ONLY — the day value moved to the day chip (in the
+          filter row above since MEH-2537),
           so `daysActive` is no longer passed here. It still reaches this
           component for the empty-state CTA further down. */}
       <ActiveFilterChip
         geoActive={geoActive}
         cityActive={cityActive}
         onClear={onClearLocation}
-      />
-
-      {/* MEH-1645 day refinement, a permanent anchor since MEH-1771 and ONE
-          value-carrying dropdown chip since MEH-2186: always rendered — with
-          no city a tap routes into the LocationModal (handleDaySelected), with
-          a city it opens the inline day panel. `onClearDays` is the chip's ✕:
-          it drops the whole day set and leaves the city standing, which is the
-          same handler the empty-state CTA below already uses. */}
-      <DeliveryDayRow
-        cityActive={cityActive}
-        daysActive={daysActive}
-        onSelectDay={onSelectDay}
-        onClearDays={onClearDays}
       />
 
       {producersLoading ? (

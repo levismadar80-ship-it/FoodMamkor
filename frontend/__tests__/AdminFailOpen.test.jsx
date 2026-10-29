@@ -135,7 +135,7 @@ describe("no fail-open catch survives under admin/ (MEH-2096)", () => {
    *
    * The second half is load-bearing and was missing at first: the stronger
    * scanner immediately flagged two catches that null state *deliberately*
-   * while setting an error flag beside it — `admin/layout.js` (counts stay
+   * while setting an error flag beside it — `admin/AdminLayoutClient.jsx` (counts stay
    * null so no number is fabricated, `setCountsError(true)` carries the
    * distinction) and `producers/[id]/edit` (`setProducer(null)` only on a real
    * 404, `setLoadError(true)` otherwise). Nulling is not the defect. Nulling

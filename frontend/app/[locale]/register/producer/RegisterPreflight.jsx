@@ -67,13 +67,14 @@ export default function RegisterPreflight({ showAccountLine, onStart }) {
         </Link>
       </div>
 
-      {/* Single CTA — hands off to the untouched step machinery. Mirrors the
-          wizard's outline next/submit button convention. */}
+      {/* Single CTA — hands off to the untouched step machinery. MEH-2565: a
+          filled primary button — it is the only action on the screen, and the
+          outline style read as secondary. */}
       <button
         type="button"
         data-testid="register-preflight-start"
         onClick={onStart}
-        className="w-full border-2 border-primary-dark text-primary-dark bg-transparent py-3 rounded-md hover:bg-primary-dark hover:text-white transition font-medium"
+        className="w-full bg-primary text-white py-3 rounded-md hover:bg-primary-dark transition font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
       >
         {t("cta")}
       </button>

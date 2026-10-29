@@ -45,7 +45,9 @@ async function getProducer(id) {
     throw err;
   }
 
-  if (res.status === 404) return null;
+  // MEH-2552: 422 = the backend rejected the id itself (the param is a UUID,
+  // so /producer/1 can never exist) — a missing entity, not an outage.
+  if (res.status === 404 || res.status === 422) return null;
 
   if (!res.ok) {
     Sentry.captureMessage("SSR fetch failed", {

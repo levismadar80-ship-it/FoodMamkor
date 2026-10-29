@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import { LinkBreak, Storefront, WarningCircle } from "@phosphor-icons/react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link, getPathname, useRouter } from "@/i18n/navigation";
 import api from "@/lib/api";
@@ -12,6 +13,7 @@ import { ProducerClaimPreviewSchema, ProducerClaimResultSchema } from "@/lib/api
 import { requiresFarmerDeclaration } from "@/lib/farmer-declaration";
 import { clearClaimToken, readClaimToken, stashClaimToken } from "@/lib/claim-token";
 import GoogleAuthButton from "@/components/GoogleAuthButton";
+import StatusPage from "@/components/StatusPage";
 
 /**
  * Module:   ClaimClient
@@ -179,44 +181,43 @@ export default function ClaimClient({ tokenFromPath = null }) {
     );
   }
 
+  // MEH-2567: the three dead-end states share StatusPage (line icon, no
+  // card, centred) with the 404 and the email pages. Copy unchanged.
   if (view === VIEW.INVALID) {
     return (
-      <Shell testid="claim-invalid">
-        <h1 className="font-headline-lg text-2xl font-black text-text mb-3">{t("invalid.title")}</h1>
-        <p className="text-fg-muted mb-6">{t("invalid.body")}</p>
-        <PrimaryLink href="/contact">{t("invalid.contact")}</PrimaryLink>
-      </Shell>
+      <StatusPage
+        testid="claim-invalid"
+        icon={LinkBreak}
+        title={t("invalid.title")}
+        body={t("invalid.body")}
+        primary={{ href: "/contact", label: t("invalid.contact") }}
+      />
     );
   }
 
   if (view === VIEW.CLAIMED) {
+    const contact = { href: "/contact", label: t("claimed.contact") };
     return (
-      <Shell testid="claim-claimed">
-        <h1 className="font-headline-lg text-2xl font-black text-text mb-3">{t("claimed.title")}</h1>
-        <p className="text-fg-muted mb-6">{t("claimed.body")}</p>
-        <div className="flex flex-col sm:flex-row gap-3">
-          {!user && <PrimaryLink href="/login">{t("claimed.login")}</PrimaryLink>}
-          <SecondaryLink href="/contact">{t("claimed.contact")}</SecondaryLink>
-        </div>
-      </Shell>
+      <StatusPage
+        testid="claim-claimed"
+        icon={Storefront}
+        title={t("claimed.title")}
+        body={t("claimed.body")}
+        primary={user ? contact : { href: "/login", label: t("claimed.login") }}
+        secondary={user ? null : contact}
+      />
     );
   }
 
   if (view === VIEW.LOAD_ERROR) {
     return (
-      <Shell testid="claim-load-error">
-        <p className="text-fg-muted mb-6" role="alert">
-          {tErr("generic")}
-        </p>
-        <button
-          type="button"
-          data-testid="claim-retry"
-          onClick={() => setAttempt((n) => n + 1)}
-          className="min-h-[44px] w-full sm:w-auto bg-primary text-white rounded-[12px] px-6 py-2 font-medium hover:bg-primary-dark transition"
-        >
-          {tErr("retry")}
-        </button>
-      </Shell>
+      <StatusPage
+        testid="claim-load-error"
+        icon={WarningCircle}
+        body={tErr("generic")}
+        bodyRole="alert"
+        primary={{ label: tErr("retry"), onClick: () => setAttempt((n) => n + 1), testid: "claim-retry" }}
+      />
     );
   }
 
@@ -393,17 +394,6 @@ function PrimaryLink({ href, children, testid }) {
       href={href}
       data-testid={testid}
       className="min-h-[44px] w-full sm:w-auto inline-flex items-center justify-center bg-primary text-white rounded-[12px] px-6 py-2 font-medium hover:bg-primary-dark transition"
-    >
-      {children}
-    </Link>
-  );
-}
-
-function SecondaryLink({ href, children }) {
-  return (
-    <Link
-      href={href}
-      className="min-h-[44px] w-full sm:w-auto inline-flex items-center justify-center bg-white border border-primary text-primary rounded-[12px] px-6 py-2 font-medium hover:bg-background transition"
     >
       {children}
     </Link>

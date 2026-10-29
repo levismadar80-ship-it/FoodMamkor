@@ -285,13 +285,20 @@ const menu = (page: Page) => page.getByRole("menu");
 const roleDialog = (page: Page, name?: string | RegExp) =>
   page.getByRole("dialog", { name: name ?? /^את בטוחה שברצונך/ });
 
+/** Two frames for a scroll from scrollIntoView/focus to land — AdminRowMenu
+ *  closes on ANY scroll, so opening before it lands closes the menu again.
+ *  Shared by `openKebab` and the keyboard open (MEH-2323). */
+async function settleScroll(page: Page): Promise<void> {
+  await page.evaluate(() => new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r()))));
+}
+
 /** The chunk-12b/12d open: scroll first, let the reflow settle, then click —
  *  AdminRowMenu closes on ANY scroll, and a bare click on the Pixel 5 profile
  *  scrolls the row into view AFTER the menu opened. */
 async function openKebab(row: Locator): Promise<Locator> {
   const btn = kebab(row);
   await btn.scrollIntoViewIfNeeded();
-  await btn.page().evaluate(() => new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r()))));
+  await settleScroll(btn.page());
   await btn.click();
   await expect(btn).toHaveAttribute("aria-expanded", "true");
   return btn;
@@ -617,6 +624,13 @@ test.describe("/admin/users — the role kebab", () => {
     const btn = kebab(row);
     await btn.scrollIntoViewIfNeeded();
     await btn.focus();
+    // MEH-2323 (:611 flake): AdminRowMenu closes on ANY scroll (capture). The
+    // other tests open through `openKebab`, which lets the scroll settle for
+    // two frames first; this one skipped it, so a scroll event still in flight
+    // from scrollIntoView/focus on a slow mobile runner could close the menu
+    // right after aria-expanded flipped — CI saw expanded=true, then 0 items
+    // for 20 s. Same settle, then the keyboard open.
+    await settleScroll(page);
     await page.keyboard.press("Enter");
     await expect(btn).toHaveAttribute("aria-expanded", "true");
     const m = menu(page);

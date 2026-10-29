@@ -121,7 +121,7 @@ async function stubEdit(page: Page, opts: EditOpts = {}): Promise<void> {
   await page.route("**/producers/me/analytics**", (r) =>
     r.fulfill({ status: 200, contentType: "application/json",
       body: JSON.stringify({ profile_views: { total: 0, last_7d: 0 }, whatsapp_clicks: { total: 0, last_7d: 0 }, contact_clicks: { total: 0, last_7d: 0 },
-        average_rating: null, total_reviews: 0, rank_in_city: null, conversion_rate: "0%", profile_strength: 10, top_cities: [], follower_count: 0, new_followers_this_week: 0 }) }));
+        average_rating: null, total_reviews: 0, conversion_rate: "0%", top_cities: [], follower_count: 0, new_followers_this_week: 0 }) }));
   await page.route("**/producers/me", (r: Route) => {
     if (r.request().method() === "PUT") {
       puts?.push(r.request().postDataJSON());

@@ -343,9 +343,19 @@ def _apply_review_edit(
     that window must be the is_hidden this compares against. Compared before
     the assignment; an unchanged re-save does not stamp.
     """
-    # The refresh discards unflushed changes on `review`: nothing may be
-    # assigned to it before this line.
-    db.refresh(review, with_for_update=True)
+    # The re-read discards unflushed changes on `review`: nothing may be
+    # assigned to it before this line. MEH-2409: a query, not db.refresh — an
+    # admin may delete the row inside the same window, and refresh raises
+    # InvalidRequestError (500) on a vanished row where this returns None.
+    locked = (
+        db.query(ProducerReview)
+        .filter(ProducerReview.id == review.id)
+        .populate_existing()
+        .with_for_update()
+        .first()
+    )
+    if locked is None:
+        raise HTTPException(status_code=404, detail="ביקורת לא נמצאה")
     if review.is_hidden and (review.body != data.body or review.stars != data.stars):
         review.edited_after_hidden_at = utc_now()
     review.stars = data.stars
@@ -369,7 +379,8 @@ def create_review_nested(
     """Submit or update a review.
 
     Guards (checked in order):
-      1. Producer must exist.
+      1. Producer must exist and be live (status approved) — a suspended,
+         rejected, draft or pending one is a 404 like a missing one (MEH-2513).
       1b. Producer must be a business — an organizer gets 409 (MEH-2465).
       2. Producer owner cannot review their own business.
       2b. Producer owner cannot review a business sharing a category with
@@ -379,7 +390,10 @@ def create_review_nested(
       4. Body is moderated by Haiku (fail-open).
     """
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
-    if not producer:
+    # MEH-2513: a business that is not live (suspended, rejected, draft,
+    # pending) takes no new reviews — same 404 as a missing one, since its
+    # public page is a 404 too.
+    if not producer or producer.status != "approved":
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
     # MEH-2465: a review is about a business; an organizer is not one (ADR-036).
     if producer.kind != "producer":

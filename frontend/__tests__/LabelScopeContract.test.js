@@ -212,7 +212,7 @@ describe("MEH-1507 Label Scope Contract — every label declares scope + evidenc
       grass_fed: {
         key: "grass_fed",
         label: "גראס פד",
-        tooltip: "בעלי החיים גדלים על מרעה ולא על תערובת תעשייתית.",
+        tooltip: "בעלי החיים גדלים על מרעה ולא על תערובת תעשייתית, לפי הצהרת בית העסק.",
         color: "muted",
         aboutHref: null,
       },

@@ -102,7 +102,8 @@ describe("AdminDashboard — null array guards (MEH-147)", () => {
   it("renders without crash when pending_producers and recent_activity are null", async () => {
     apiResponseRef.current = { data: minDashboard() };
     const { default: AdminDashboard } = await import("@/app/[locale]/admin/page");
-    render(<AdminDashboard />);
+    const { AdminDashboardProvider } = await import("@/app/[locale]/admin/dashboard-data");
+    render(<AdminDashboardProvider><AdminDashboard /></AdminDashboardProvider>);
     // MEH-729: admin/page migrated to next-intl (MEH-475); the identity mock
     // above renders the i18n *key*, so assert on keys, not the Hebrew literals.
     await waitFor(() => expect(screen.getByText("dashboard.title")).toBeInTheDocument());
@@ -123,7 +124,8 @@ describe("AdminDashboard — null array guards (MEH-147)", () => {
       }),
     };
     const { default: AdminDashboard } = await import("@/app/[locale]/admin/page");
-    render(<AdminDashboard />);
+    const { AdminDashboardProvider } = await import("@/app/[locale]/admin/dashboard-data");
+    render(<AdminDashboardProvider><AdminDashboard /></AdminDashboardProvider>);
     await waitFor(() => expect(screen.getByText("חוות האגס")).toBeInTheDocument());
   });
 });

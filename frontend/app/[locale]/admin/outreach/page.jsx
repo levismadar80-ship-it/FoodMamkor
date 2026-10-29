@@ -9,6 +9,7 @@ import { getWhatsAppHref, normalizePhone } from "@/lib/utils";
 import { instagramHandle, instagramUrl } from "@/lib/social-links";
 import Input from "@/components/ui/Input";
 import AdminLoadError from "@/components/admin/AdminLoadError";
+import Pagination from "@/components/Pagination";
 
 /**
  * /admin/outreach — manual lead pipeline (MEH-22).
@@ -40,6 +41,11 @@ const STATUS_ORDER = ["new", "contacted", "replied", "registered", "declined"];
 // placeholders survive verbatim for client-side replaceAll.
 const WA_TEMPLATE_KEYS = [{ key: "warm" }, { key: "professional" }, { key: "short" }];
 
+// MEH-2566: staging carried 323 leads in one render (82,000px on a phone).
+// The list is paged client-side — the endpoint already returns the filtered
+// set, newest first, so a slice keeps order and filters exact.
+const PAGE_SIZE = 25;
+
 
 export default function AdminOutreachPage() {
   const t = useTranslations("admin");
@@ -55,6 +61,7 @@ export default function AdminOutreachPage() {
   });
   const [cityFilter, setCityFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [page, setPage] = useState(1);
   const [addOpen, setAddOpen] = useState(false);
   const [scriptOpen, setScriptOpen] = useState(false);
   const [waLeadId, setWaLeadId] = useState(null);
@@ -83,6 +90,12 @@ export default function AdminOutreachPage() {
   };
 
   useEffect(load, [cityFilter, statusFilter]);
+  // A new filter starts from page 1; a shrinking list (status change, delete)
+  // never strands the view past its last page.
+  useEffect(() => setPage(1), [cityFilter, statusFilter]);
+  const totalPages = Math.max(1, Math.ceil(leads.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pageLeads = leads.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   const handleStatusChange = async (id, status) => {
     await api
@@ -139,12 +152,25 @@ export default function AdminOutreachPage() {
         </button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <MetricCard label={t("outreach.metrics.total")} value={metrics.total} />
-        <MetricCard label={t("outreach.metrics.new")} value={metrics.new} />
-        <MetricCard label={t("outreach.metrics.contacted")} value={metrics.contacted} tone="accent" />
-        <MetricCard label={t("outreach.metrics.replied")} value={metrics.replied} tone="primary" />
-        <MetricCard label={t("outreach.metrics.registered")} value={metrics.registered} tone="success" />
+      {/* MEH-2566: the five counters ARE the status filter — one chip row in
+          brand colours instead of a counter grid plus a separate <select>.
+          «סה"כ» clears the filter; declined («סירבה») gets a chip too, so every
+          status stays reachable. */}
+      <div className="flex flex-wrap gap-2" role="group" aria-label={t("outreach.columns.status")} data-testid="outreach-status-chips">
+        {[["all", t("outreach.metrics.total"), metrics.total], ...STATUS_ORDER.map((s) => [
+          s,
+          s === "declined" ? t(`outreach.status.${s}`) : t(`outreach.metrics.${s}`),
+          metrics[s],
+        ])].map(([id, label, count]) => (
+          <StatusChip
+            key={id}
+            id={id}
+            label={label}
+            count={count}
+            active={statusFilter === id}
+            onClick={() => setStatusFilter(id)}
+          />
+        ))}
       </div>
 
       {/* Filters + add */}
@@ -155,21 +181,10 @@ export default function AdminOutreachPage() {
           onChange={(e) => setCityFilter(e.target.value)}
           className="flex-1 border border-border rounded-[12px] px-3 py-2"
         />
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="border border-border rounded-[12px] px-3 py-2 bg-white"
-        >
-          <option value="all">{t("outreach.filters.all_statuses")}</option>
-          {STATUS_ORDER.map((s) => (
-            <option key={s} value={s}>
-              {t(`outreach.status.${s}`)}
-            </option>
-          ))}
-        </select>
         <button
           type="button"
           onClick={() => setAddOpen(true)}
+          data-testid="outreach-new-lead"
           className="bg-primary text-white px-4 py-2 rounded-[12px] text-sm font-medium hover:bg-primary-dark transition"
         >
           {t("outreach.filters.new_lead")}
@@ -215,7 +230,7 @@ export default function AdminOutreachPage() {
                 </tr>
               )}
               {!loading &&
-                leads.map((lead) => (
+                pageLeads.map((lead) => (
                   <tr key={lead.id} className="border-t align-top">
                     <td className="px-3 py-3 font-medium">{lead.name}</td>
                     <td className="px-3 py-3 text-muted" data-label={t("outreach.columns.city")}>{lead.city || "—"}</td>
@@ -295,6 +310,17 @@ export default function AdminOutreachPage() {
         </div>
       </div>
 
+      {!loading && !loadError && totalPages > 1 && (
+        <Pagination
+          page={safePage}
+          totalPages={totalPages}
+          onChange={(n) => {
+            setPage(n);
+            window.scrollTo({ top: 0 });
+          }}
+        />
+      )}
+
       {addOpen && (
         <AddLeadModal
           onClose={() => setAddOpen(false)}
@@ -318,18 +344,24 @@ export default function AdminOutreachPage() {
   );
 }
 
-function MetricCard({ label, value, tone }) {
-  const toneClass =
-    {
-      success: "text-[#22c55e]",
-      primary: "text-primary",
-      accent: "text-accent",
-    }[tone] || "text-text";
+function StatusChip({ id, label, count, active, onClick }) {
   return (
-    <div className="bg-white border border-border rounded-[12px] p-3 text-center">
-      <div className={`text-2xl font-bold ${toneClass}`}>{value}</div>
-      <div className="text-xs text-fg-muted mt-0.5">{label}</div>
-    </div>
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      data-testid={`outreach-chip-${id}`}
+      className={`inline-flex items-center gap-2 min-h-[44px] px-4 rounded-full border text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+        active
+          ? "bg-primary text-white border-primary"
+          : "bg-white text-text border-border hover:border-primary/40"
+      }`}
+    >
+      {label}
+      <span className={`numeric text-xs font-bold ${active ? "text-white/85" : "text-fg-muted"}`}>
+        {count ?? 0}
+      </span>
+    </button>
   );
 }
 

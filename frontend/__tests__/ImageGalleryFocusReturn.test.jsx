@@ -48,6 +48,18 @@ vi.mock("@/components/Lightbox", () => ({
 
 vi.mock("@phosphor-icons/react", () => ({
   Images: (props) => <span data-testid="images-icon" {...props} />,
+  // MEH-2584: BadgeRow now imports lib/chip-icons.js (badge glyphs).
+  SealCheck: () => null,
+  Truck: () => null,
+  Package: () => null,
+  Certificate: () => null,
+  Leaf: () => null,
+  Carrot: () => null,
+  GrainsSlash: () => null,
+  Barn: () => null,
+  DropSlash: () => null,
+  Cube: () => null,
+  Clock: () => null,
 }));
 
 const urls = (n) => Array.from({ length: n }, (_, i) => `https://res.cloudinary.com/x/img${i}.jpg`);

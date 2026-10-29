@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { Check } from "@phosphor-icons/react";
 
 import { chipIcon } from "@/lib/chip-icons";
 import { SERVICE_CHIP_KEYS as SERVICE_KEYS, TOGGLE_CHIPS } from "@/lib/map-chips";
@@ -52,7 +53,9 @@ export default function ServiceChipRow({ chipState, onToggleChip, children }) {
   );
 
   return (
-    <div dir="rtl" className="mt-2 flex items-center gap-2 min-w-0">
+    // MEH-2514: below 375px the row tightens (gap-1.5, chips px-3) so the
+    // three buttons fit a 320 phone; 375 and up are unchanged.
+    <div dir="rtl" data-testid="map-service-row" className="mt-2 flex items-center gap-2 max-[374px]:gap-1.5 min-w-0">
       {chips.map((chip) => {
         const active = !!chipState[chip.key];
         return (
@@ -66,13 +69,15 @@ export default function ServiceChipRow({ chipState, onToggleChip, children }) {
             // the Direction A wash+ring (MEH-1181-A), matching a selected
             // category chip rather than the solid toggle fill, because these
             // two sit in their own row and read as a pair.
-            className={`inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 rounded-md text-sm font-medium border transition shrink-0 ${
+            className={`inline-flex items-center gap-1.5 whitespace-nowrap px-4 max-[374px]:px-3 py-2.5 rounded-md text-sm font-medium border transition shrink-0 ${
               active
                 ? "bg-green-50 text-primary border-primary ring-1 ring-primary"
                 : "bg-white text-text border-border hover:border-primary hover:text-primary"
             }`}
           >
-            <span aria-hidden="true">{chip.icon}</span>
+            {/* MEH-2500: on = ✓ in place of the glyph, same cue as a selected
+                category chip (ChipScrollRow) — the wash alone was too quiet. */}
+            <span aria-hidden="true">{active ? <Check size={16} weight="bold" /> : chip.icon}</span>
             {chip.label}
           </button>
         );

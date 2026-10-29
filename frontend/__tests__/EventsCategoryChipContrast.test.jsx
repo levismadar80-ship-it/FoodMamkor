@@ -2,6 +2,9 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import EventsClient from "@/app/[locale]/events/EventsClient";
 
+// MEH-2559: the heart needs AuthProvider; its behaviour is SaveButton.test.jsx's.
+vi.mock("@/components/SaveButton", () => ({ default: () => null }));
+
 // MEH-2069: bg-accent/10 on the page background (cream, #f5f0e8) composited
 // under the experience-row category chip computes 4.07:1 — AA fail for the
 // text-xs (12px) label (Bug Protocol rule 2 sibling of MEH-2032/#2909, which

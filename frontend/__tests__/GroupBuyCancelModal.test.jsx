@@ -14,6 +14,14 @@ import { render, screen, fireEvent, waitFor, within } from "@testing-library/rea
 import api from "@/lib/api";
 import GroupBuyDetailClient from "@/app/[locale]/group-buys/[id]/GroupBuyDetailClient";
 
+// MEH-2544: the page's business row is OwnerRow, which links via @/i18n/navigation.
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ children, href, ...rest }) => (
+    <a href={href} {...rest}>
+      {children}
+    </a>
+  ),
+}));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
 vi.mock("@/lib/auth-context", () => {

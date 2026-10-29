@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MapContainer, TileLayer, Marker, Tooltip, useMap } from "react-leaflet";
 import { useTranslations } from "next-intl";
 import { ArrowsOut, X } from "@phosphor-icons/react";
@@ -10,6 +10,7 @@ import { CoordSchema } from "@/lib/schemas";
 import { styleForProducer } from "@/lib/category-registry";
 import { categoryGlyphSvg } from "@/lib/marker-glyph";
 import { useFocusReturn } from "@/lib/use-focus-return";
+import { WazeGlyph, GoogleMapsGlyph } from "@/components/NavAppGlyphs";
 
 // Fix Leaflet's broken default icon paths in Next.js/webpack builds.
 // MEH-1834: served from /public/leaflet instead of a third-party CDN — three
@@ -273,52 +274,6 @@ function CanvasClickToExpand({ onExpand }) {
   return null;
 }
 
-// MEH-1334 chunk 3: real brand glyphs from the approved design bundle —
-// resolves the MEH-1305 B fallback (Phosphor MapPin) now that a clean inline
-// SVG source exists. Brand-lock (mockup RTL notes): the logos are NOT
-// mirrored and NOT recolored.
-function WazeGlyph() {
-  return (
-    <svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true">
-      <path
-        fill="#33CCFF"
-        d="M12 2C6.5 2 2 6.3 2 11.6c0 2.9 1.4 5.5 3.6 7.2-.2.5-.6 1.1-1.3 1.6-.4.3-.3.9.2 1 1.7.4 3.4.1 4.7-.6.9.2 1.8.3 2.8.3 5.5 0 10-4.3 10-9.5S17.5 2 12 2z"
-      />
-      <circle cx="9" cy="10" r="1.3" fill="#1C1A17" />
-      <circle cx="15" cy="10" r="1.3" fill="#1C1A17" />
-      <path
-        d="M8.5 13.5c.8 1.5 2 2.3 3.5 2.3s2.7-.8 3.5-2.3"
-        fill="none"
-        stroke="#1C1A17"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function GoogleMapsGlyph() {
-  // clipPath id must be unique per mount (useId) — duplicate SVG ids break
-  // the clip when the component ever renders twice on one page.
-  const clipId = useId();
-  return (
-    <svg viewBox="0 0 24 34" width="14" height="19" aria-hidden="true">
-      <defs>
-        <clipPath id={clipId}>
-          <path d="M12 0C5.4 0 0 5.4 0 12c0 8.5 12 22 12 22s12-13.5 12-22C24 5.4 18.6 0 12 0z" />
-        </clipPath>
-      </defs>
-      <g clipPath={`url(#${clipId})`}>
-        <rect x="-2" y="-2" width="28" height="38" fill="#34A853" />
-        <polygon fill="#FBBC04" points="-2,10 26,-8 26,4 -2,24" />
-        <polygon fill="#EA4335" points="-2,-2 13,-2 -2,15" />
-        <polygon fill="#4285F4" points="7,-2 26,-2 26,10 13,5" />
-      </g>
-      <circle cx="12" cy="11" r="4.2" fill="#fff" />
-    </svg>
-  );
-}
-
 // MEH-2182: which Leaflet events the single-point marker binds. Drag and
 // tap-to-expand are mutually exclusive by design — see the comment on the
 // Marker below for why the click is dropped rather than kept alongside.
@@ -345,10 +300,18 @@ function singlePointHandlers({ draggableMarker, onMarkerDragEnd, onExpand }) {
 // data. `mapKey` gives the overlay its own MapContainer instance: Leaflet must
 // measure a container that already has its final size, and the overlay's box
 // only exists once it is open.
+//
+// `isolate` on the container keeps Leaflet's own z scale (panes 400, controls
+// 1000 — leaflet.css) INSIDE the map, so the expand/close button's `z-10`
+// sibling outranks every tile. Without it the map pane (`z-index: 400`)
+// competes with that button in the parent's stacking context and wins: the
+// button stayed visible only over the grey not-yet-loaded area, and vanished as
+// soon as a pan or zoom put tiles under it — the overlay lost its only exit.
 function MapSurface({ interactive, onExpand, mapKey, center, points, lat, lng, name, fallbackLabel, producer, zoom, draggableMarker, onMarkerDragEnd }) {
   return (
     <MapContainer
       key={mapKey}
+      className="isolate"
       center={[Number(center.lat), Number(center.lng)]}
       zoom={zoom}
       style={{ height: "100%", width: "100%" }}

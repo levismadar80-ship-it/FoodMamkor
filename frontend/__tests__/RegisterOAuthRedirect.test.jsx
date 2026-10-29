@@ -22,7 +22,14 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => paramsRef.current,
 }));
 
-vi.mock("next-intl", () => ({ useTranslations: () => (key) => key }));
+vi.mock("next-intl", () => ({
+  useTranslations: () => {
+    const t = (key) => key;
+    // MEH-2577: the OAuth consent line above the form is a t.rich string.
+    t.rich = (key) => key;
+    return t;
+  },
+}));
 vi.mock("@/lib/auth-context", () => ({
   useAuth: () => ({ register: vi.fn().mockResolvedValue({}) }),
 }));

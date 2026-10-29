@@ -142,6 +142,15 @@ vi.mock("@phosphor-icons/react", () => ({
   Note: (props) => <span data-testid="icon-note" {...props} />,
   // MEH-1459: Truck glyph in the "משלוחים בלבד" card badge (replaces 🚚).
   Truck: (props) => <span data-testid="icon-truck" {...props} />,
+  // MEH-2584: BadgeRow now imports lib/chip-icons.js (badge glyphs).
+  Package: () => null,
+  Certificate: () => null,
+  Carrot: () => null,
+  GrainsSlash: () => null,
+  Barn: () => null,
+  DropSlash: () => null,
+  Cube: () => null,
+  Clock: () => null,
 }));
 
 const fullProducer = {

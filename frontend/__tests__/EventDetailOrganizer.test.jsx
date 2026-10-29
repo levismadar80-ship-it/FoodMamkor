@@ -10,10 +10,13 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import api from "@/lib/api";
 import EventDetailClient from "@/app/[locale]/events/[id]/EventDetailClient";
 
+// MEH-2559: the heart needs AuthProvider; its behaviour is SaveButton.test.jsx's.
+vi.mock("@/components/SaveButton", () => ({ default: () => null }));
+
 vi.mock("next/navigation", () => ({ useParams: () => ({ id: "ev-1" }) }));
 vi.mock("next/dynamic", () => ({ default: () => () => null }));
-vi.mock("next/link", () => ({
-  default: ({ children, href, ...rest }) => (
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ children, href, ...rest }) => (
     <a href={href} {...rest}>
       {children}
     </a>
@@ -26,7 +29,8 @@ vi.mock("next-intl", () => ({
 }));
 vi.mock("@phosphor-icons/react", () => {
   const Stub = () => null;
-  return { Calendar: Stub, CalendarPlus: Stub, Coins: Stub, Leaf: Stub, MapPin: Stub, UsersThree: Stub };
+  const Caret = () => <svg data-testid="owner-chevron" />;
+  return { Basket: Stub, CalendarBlank: Stub, CookingPot: Stub, Drop: Stub, MapTrifold: Stub, Path: Stub, Plant: Stub, Storefront: Stub, Calendar: Stub, CalendarPlus: Stub, CaretLeft: Caret, Coins: Stub, Leaf: Stub, MapPin: Stub, UsersThree: Stub };
 });
 // MEH-2468: the page now mounts ShareButton; its own suite covers it.
 vi.mock("@/components/ShareButton", () => ({
@@ -62,8 +66,12 @@ describe("MEH-2461 — event page owner line by kind", () => {
   it("organizer with slug: «מארגן:» links to the organizer page, no business contact button", async () => {
     await renderEvent({ producer_name: "שוק גלם", owner_kind: "organizer", owner_slug: "gelem" });
     const line = screen.getByTestId("event-organizer-line");
-    expect(line.textContent).toBe("events.detail.organizer_line שוק גלם");
-    expect(line.querySelector("a").getAttribute("href")).toBe("/organizers/gelem");
+    // The avatar initial «ש» is aria-hidden; the link's accessible text is the line.
+    const link = line.querySelector("a");
+    expect(link.getAttribute("href")).toBe("/organizers/gelem");
+    expect(link.textContent).toBe("שevents.detail.organizer_line שוק גלם");
+    // Affordance: the row carries a forward chevron, so it reads as tappable.
+    expect(link.querySelector('[data-testid="owner-chevron"]')).not.toBeNull();
     expect(screen.queryByText("events.detail.contact_producer")).not.toBeInTheDocument();
     expect(document.querySelector('a[href="/producer/p-1"]')).toBeNull();
   });
@@ -71,15 +79,20 @@ describe("MEH-2461 — event page owner line by kind", () => {
   it("organizer without a slug: the line renders as text, never a dead link", async () => {
     await renderEvent({ producer_name: "שוק גלם", owner_kind: "organizer", owner_slug: null });
     const line = screen.getByTestId("event-organizer-line");
-    expect(line.textContent).toBe("events.detail.organizer_line שוק גלם");
+    expect(line.textContent).toBe("שevents.detail.organizer_line שוק גלם");
     expect(line.querySelector("a")).toBeNull();
+    // No link → no chevron promising one.
+    expect(screen.queryByTestId("owner-chevron")).toBeNull();
   });
 
   it("business: unchanged — «מאורגן על ידי» + /producer link + contact button", async () => {
     await renderEvent({ producer_name: "חוות הניסוי", owner_kind: "producer", owner_slug: "farm" });
     expect(screen.queryByTestId("event-organizer-line")).not.toBeInTheDocument();
     expect(screen.getByText("events.detail.contact_producer")).toBeInTheDocument();
-    expect(screen.getByText("חוות הניסוי").getAttribute("href")).toBe("/producer/p-1");
+    const row = screen.getByTestId("event-business-line").querySelector("a");
+    expect(row.getAttribute("href")).toBe("/producer/p-1");
+    expect(row.textContent).toContain("events.detail.organized_by חוות הניסוי");
+    expect(row.querySelector('[data-testid="owner-chevron"]')).not.toBeNull();
   });
 });
 

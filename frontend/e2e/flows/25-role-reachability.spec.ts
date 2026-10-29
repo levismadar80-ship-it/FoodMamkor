@@ -1,6 +1,7 @@
 import { test, expect, type Page } from "./_cloudinary-stub";
 import fs from "node:fs";
 import path from "node:path";
+import { settledField } from "./_settled-field";
 
 /**
  * Spec:     25-role-reachability
@@ -21,7 +22,7 @@ import path from "node:path";
  *           poll window, which is what made the mobile consumer test flaky.
  * Touches:  REAL backend (no mocks) via the Next.js /api proxy — the auth
  *           context calls GET /auth/me to resolve each role; the layout gates
- *           read `user.role` (admin/layout.js:120, producer/dashboard/layout.js).
+ *           read `user.role` (admin/AdminLayoutClient.jsx:120, producer/dashboard/DashboardLayoutClient.jsx).
  * Does NOT: exercise any admin/producer WRITE. This is a read-only reachability
  *           gate, not a lifecycle test (that is flows/19,20).
  * History:  MEH-1528 (creation); MEH-999 (fixture guard — see below);
@@ -95,7 +96,7 @@ const DASHBOARD_URL = /\/producer\/dashboard(\/|$|\?)/;
 const HOME_URL = /^https?:\/\/[^/]+\/(he|en)?\/?$/;
 
 // MEH-1599: the in-app 403 state. ONE testid across both gates
-// (producer/dashboard/layout.js, admin/layout.js) on purpose — it is a page
+// (producer/dashboard/DashboardLayoutClient.jsx, admin/AdminLayoutClient.jsx) on purpose — it is a page
 // STATE, not a per-surface control, so a single id lets the assertions below
 // count it and prove exactly one renders. The two gates never render together.
 const DENIED = "access-denied";
@@ -204,8 +205,11 @@ test.describe("unauthenticated visitor is redirected with a return target", () =
     await page.goto("/producer/dashboard");
     await expect(page).toHaveURL(LOGIN_WITH_DASHBOARD_REDIRECT);
 
-    await page.getByTestId("login-email").fill("demo-owner@example.com");
-    await page.getByTestId("login-password").fill(password as string);
+    // MEH-2323: same form, same race as flows/30 C2/C3 — fill only the one
+    // React-owned copy, or the value lands on a node React discards and the
+    // submit goes out empty (the :196 flake).
+    await (await settledField(page, "login-email")).fill("demo-owner@example.com");
+    await (await settledField(page, "login-password")).fill(password as string);
     await page.getByTestId("login-submit").click();
 
     // Back on the target, not on "/" — the redirect survived the login.

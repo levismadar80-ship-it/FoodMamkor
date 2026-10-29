@@ -1,7 +1,7 @@
 /**
  * MEH-2249 — experience creation lives under the producer dashboard.
  *
- * The real UX gate is producer/dashboard/layout.js (401 → /login?redirect=,
+ * The real UX gate is producer/dashboard/DashboardLayoutClient.jsx (401 → /login?redirect=,
  * 403 → the in-app denied state), which returns before this page mounts. This
  * suite covers the page's own duplicate guard — the one the layout comment
  * says child pages keep until its Phase 2 — plus the crumb wiring.

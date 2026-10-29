@@ -31,6 +31,7 @@ from app.routers import (
     report_info,
     reports,
     reviews,
+    saved_items,
     search,
     system,
     upload,
@@ -56,6 +57,7 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(producers.router)
     app.include_router(organizers.router)  # MEH-2461
     app.include_router(favorites.router)
+    app.include_router(saved_items.router)  # MEH-2557
     app.include_router(admin.router)
     app.include_router(admin_extra.router)
     # MEH-1406: home_products.router disabled per brand LOCK (licensed

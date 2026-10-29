@@ -40,6 +40,7 @@ import { TOGGLE_CHIPS, chipStateToParams } from "@/lib/map-chips";
 import { ATTRIBUTE_LABELS } from "@/lib/attribute-labels";
 import { CHIPS_CONFIG } from "@/lib/producer-filters";
 import { useMapFilters } from "@/app/[locale]/map/state/useMapFilters";
+import { Check } from "@phosphor-icons/react";
 
 const EMPTY = {
   categoryKeys: [],
@@ -72,6 +73,20 @@ describe("ServiceChipRow — the promoted /map service pair (MEH-2046)", () => {
       "aria-pressed",
       "true",
     );
+  });
+
+  // MEH-2500: the wash + ring alone was too quiet a cue (Sapir 28/10: "you
+  // can't tell what is selected") — an ON chip shows a ✓ where its glyph was.
+  it("an ON chip shows a ✓ in place of its glyph; an OFF chip keeps its glyph", () => {
+    const { container: ref } = render(<Check size={16} weight="bold" />);
+    const checkSvg = ref.querySelector("svg").innerHTML;
+    render(
+      <ServiceChipRow chipState={{ ...EMPTY, pickup_points: true }} onToggleChip={() => {}} />,
+    );
+    const glyph = (name) =>
+      screen.getByRole("button", { name }).querySelector('span[aria-hidden="true"] svg').innerHTML;
+    expect(glyph("איסוף עצמי")).toBe(checkSvg);
+    expect(glyph("משלוח")).not.toBe(checkSvg);
   });
 
   it("toggles each chip by its own key", () => {

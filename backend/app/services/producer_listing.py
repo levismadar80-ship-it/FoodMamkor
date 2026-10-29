@@ -42,6 +42,7 @@ from app.services.producer_queries import (
     attach_favorites_counts,
     haversine_min_km,
 )
+from app.services.verification_status import verified_current_condition
 from app.utils.clock import israel_now, israel_today, utc_now
 from app.utils.hebrew_search import token_patterns, tokenize
 from app.utils.sql import LIKE_ESCAPE, escape_like
@@ -842,14 +843,17 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, P
     # MEH-766: ?verified filters on verified_at (document-verified, MEH-762),
     # NOT the legacy is_verified boolean. # REUSES: kosher block above —
     # presence/absence pattern, filter BOTH q and count_q.
+    # MEH-2520: "verified" now also needs the captured licence not to have
+    # lapsed — the same predicate the public badge uses
+    # (services/verification_status.py), so the filter and the badge cannot
+    # disagree about one business.
     verified = filters.get("verified")
     if verified is not None:
-        if verified:
-            q = q.filter(Producer.verified_at.isnot(None))
-            count_q = count_q.filter(Producer.verified_at.isnot(None))
-        else:
-            q = q.filter(Producer.verified_at.is_(None))
-            count_q = count_q.filter(Producer.verified_at.is_(None))
+        verified_cond = verified_current_condition(Producer)
+        if not verified:
+            verified_cond = ~verified_cond
+        q = q.filter(verified_cond)
+        count_q = count_q.filter(verified_cond)
 
     # MEH-1465: category filter is now OR over a list of ids. An EXISTS
     # (Producer.categories.any) replaces the prior JOIN — a producer linked to

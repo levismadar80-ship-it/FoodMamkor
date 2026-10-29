@@ -31,7 +31,7 @@
  * (MapSsrFallback.test.jsx carries the standing reason).
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, act } from "@testing-library/react";
+import { render, screen, fireEvent, act, within } from "@testing-library/react";
 import he from "../messages/he.json";
 import { STORAGE_KEY } from "@/lib/user-location";
 
@@ -77,7 +77,11 @@ vi.mock("@/components/LocationModal", () => ({
 vi.mock("@/components/CitySearch", () => ({ default: () => null }));
 vi.mock("@/components/MapBottomSheet", () => ({ default: () => null }));
 vi.mock("@/app/[locale]/map/components/CityPickerModal", () => ({ default: () => null }));
-vi.mock("@/app/[locale]/map/components/FilterChipsBar", () => ({ default: () => null }));
+// MEH-2506: a marker that renders the origin tag it is handed, so where the
+// mobile tag goes (into the filter bar's strip) is checkable.
+vi.mock("@/app/[locale]/map/components/FilterChipsBar", () => ({
+  default: ({ originTag }) => <div data-testid="filter-chips-bar">{originTag}</div>,
+}));
 vi.mock("@/app/[locale]/map/components/MapCardList", () => ({ default: () => null }));
 // MapPane owns the GPS crosshair. Stubbed to a button firing its real
 // onGpsClick prop, because that — not the sort select — is the path by which a
@@ -252,6 +256,16 @@ describe("MEH-2014 PR 2 — a picked city becomes the sort origin", () => {
     // One per shell — desktop + mobile are both mounted, CSS hides one.
     expect(labels).toHaveLength(2);
     expect(labels[0]).toHaveTextContent("מרחק מ: חיפה");
+    // MEH-2506: on mobile it is a compact tag handed to the filter bar (its
+    // active-filter strip, under the chips) — it was a full 44px bordered row
+    // above the bar — in the active-filter tag colours.
+    const bar = screen.getByTestId("map-mobile-bar");
+    const chips = within(bar).getByTestId("filter-chips-bar");
+    const origin = within(bar).getByTestId("sort-origin");
+    expect(chips).toContainElement(origin);
+    const tag = within(origin).getByTestId("sort-origin-label").parentElement;
+    expect(tag.className).toContain("bg-green-50");
+    expect(tag.className).not.toContain("min-h-[44px]");
   });
 
   it("still applies the city FILTER when the geocode fails", async () => {
@@ -357,6 +371,38 @@ describe("MEH-2014 PR 2 — the two origins are mutually exclusive", () => {
 
     expect(stored()).toBe(null);
     expect(originLabels()).toHaveLength(0);
+  });
+});
+
+describe("MEH-2525 — the origin is announced, and the desktop chip keeps its tap height", () => {
+  it("one always-mounted live region names the origin after a pick and empties after ✕", async () => {
+    await renderMap();
+    // Mounted (and empty) BEFORE the change: a live region that appears with
+    // its text is not announced, which is the bug this region fixes.
+    const live = screen.getByTestId("sort-origin-live");
+    expect(live).toHaveAttribute("aria-live", "polite");
+    expect(live).toHaveTextContent("");
+    // One for the page, not one per shell: two would announce twice.
+    expect(screen.getAllByTestId("sort-origin-live")).toHaveLength(1);
+
+    await pickCity();
+    expect(screen.getByTestId("sort-origin-live")).toHaveTextContent("מרחק מ: חיפה");
+
+    await act(async () => {
+      fireEvent.click(screen.queryAllByTestId("clear-user-location")[0]);
+    });
+    expect(screen.getByTestId("sort-origin-live")).toHaveTextContent("");
+  });
+
+  it("the desktop chip (not the mobile tag) keeps min-h-[44px] and its border", async () => {
+    await renderMap();
+    await pickCity();
+    const bar = screen.getByTestId("map-mobile-bar");
+    const desktop = screen.getAllByTestId("sort-origin").filter((el) => !bar.contains(el));
+    expect(desktop).toHaveLength(1);
+    const chip = within(desktop[0]).getByTestId("sort-origin-chip");
+    expect(chip.className).toContain("min-h-[44px]");
+    expect(chip.className).toMatch(/(^|\s)border(\s|$)/);
   });
 });
 

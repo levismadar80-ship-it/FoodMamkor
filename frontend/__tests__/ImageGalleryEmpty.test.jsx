@@ -54,6 +54,17 @@ vi.mock("@/components/ImageWithFallback", () => ({
 // Mock Phosphor icon
 vi.mock("@phosphor-icons/react", () => ({
   Leaf: (props) => <span data-testid="leaf-icon" {...props} />,
+  // MEH-2584: BadgeRow now imports lib/chip-icons.js (badge glyphs).
+  SealCheck: () => null,
+  Truck: () => null,
+  Package: () => null,
+  Certificate: () => null,
+  Carrot: () => null,
+  GrainsSlash: () => null,
+  Barn: () => null,
+  DropSlash: () => null,
+  Cube: () => null,
+  Clock: () => null,
 }));
 
 describe("ImageGallery empty state — Tinted Masthead (MEH-815)", () => {

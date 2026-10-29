@@ -2,7 +2,8 @@
 
 `admin.py` built `detail=` strings from `str(exc)` in the producer-import
 parser error, the story-card Cloudinary failure and the seed-cities fetch
-failure (one test each below). Exception text from a
+failure. The import route was removed in MEH-2516, so its case is now a
+route-is-gone check; the other two keep one test each below. Exception text from a
 third-party library can carry internals (paths, cloud names, request ids,
 library versions) and is English, so it also broke the Hebrew-detail rule
 (backend/app/routers/CLAUDE.md). The fix logs the exception server-side and
@@ -10,7 +11,7 @@ returns a fixed Hebrew message.
 
 DISCRIMINATION: each test plants a sentinel string in the raised exception and
 asserts it is absent from the response. Against the old f-string the sentinel
-is present, so all three go red.
+is present, so both go red.
 """
 
 import base64
@@ -22,27 +23,19 @@ from conftest import auth_header, make_producer, make_user
 SENTINEL = "SENTINEL-internal-detail-9f3a"
 
 
-def test_import_parse_error_does_not_echo_exception(client, db):
+def test_producer_import_route_is_gone(client, db):
+    """MEH-2516 removed the Excel/CSV import (it published rows with no
+    licence, photo or declaration). Its parser-error case lived here; the
+    route itself must now be absent, not merely unlinked from the UI."""
     admin = make_user(db, role="admin")
-    with patch("openpyxl.load_workbook", side_effect=ValueError(SENTINEL)) as parse:
-        resp = client.post(
-            "/admin/producers/import",
-            files={
-                "file": (
-                    "x.xlsx",
-                    io.BytesIO(b"not a workbook"),
-                    "application/octet-stream",
-                )
-            },
-            headers=auth_header(admin),
-        )
-    # The patch only bites while admin.py imports load_workbook inside the
-    # handler; if that import moves, this goes red instead of passing vacuously.
-    assert parse.called
-    assert resp.status_code == 400
-    detail = resp.json()["detail"]
-    assert SENTINEL not in detail
-    assert detail == "לא ניתן לקרוא את הקובץ"
+    resp = client.post(
+        "/admin/producers/import",
+        files={"file": ("x.xlsx", io.BytesIO(b"x"), "application/octet-stream")},
+        headers=auth_header(admin),
+    )
+    # 405: `/producers/{producer_id}` style routes may match the path with
+    # another verb; 404 when nothing does. Either way, no handler ran.
+    assert resp.status_code in (404, 405)
 
 
 def test_story_card_upload_failure_does_not_echo_exception(client, db):

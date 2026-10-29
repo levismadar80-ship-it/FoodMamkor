@@ -69,6 +69,8 @@ const bodyRows = () => document.querySelectorAll("tbody tr");
 const statusSelect = () => screen.getByRole("combobox");
 // The reject modal carries no role="dialog"; its panel is the h2's parent.
 const rejectPanel = () => screen.getByRole("heading", { name: K.reject_modal.title }).parentElement;
+const approvePanel = () => screen.getByRole("heading", { name: K.approve_modal.title }).parentElement;
+const revokePanel = () => screen.getByRole("heading", { name: K.revoke_modal.title }).parentElement;
 
 async function renderWith(rows) {
   apiMock.state.rows = rows;
@@ -134,7 +136,7 @@ describe("AdminKashrutPage — queue rendering (MEH-2280)", () => {
     expect(within(third).getByText("נשלח שוב")).toBeInTheDocument();
   });
 
-  it("pending rows carry approve + reject; switching the filter refetches and drops the actions column", async () => {
+  it("pending rows carry approve + reject; approved carries revoke only; rejected drops the actions column", async () => {
     await renderWith([REQUEST]);
     expect(screen.getByRole("columnheader", { name: K.columns.actions })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: K.actions.approve })).toBeInTheDocument();
@@ -148,9 +150,16 @@ describe("AdminKashrutPage — queue rendering (MEH-2280)", () => {
     // actions column" a statement about the approved view rather than about
     // an empty loading frame.
     await waitFor(() => expect(bodyRows()).toHaveLength(1));
-    expect(screen.queryByRole("columnheader", { name: K.columns.actions })).toBeNull();
+    // MEH-2518: the approved view keeps an actions column, holding revoke only.
+    expect(screen.getByRole("button", { name: K.actions.revoke })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: K.actions.approve })).toBeNull();
     expect(screen.queryByRole("button", { name: K.actions.reject })).toBeNull();
+
+    fireEvent.change(statusSelect(), { target: { value: "rejected" } });
+    await waitFor(() => expect(apiMock.get).toHaveBeenCalledTimes(3));
+    await waitFor(() => expect(bodyRows()).toHaveLength(1));
+    expect(screen.queryByRole("columnheader", { name: K.columns.actions })).toBeNull();
+    expect(screen.queryByRole("button", { name: K.actions.revoke })).toBeNull();
   });
 
   it("a load failure toasts the load error and leaves the queue empty", async () => {
@@ -210,22 +219,60 @@ describe("AdminKashrutPage — «מאומת» is never derived from a self-decla
 describe("AdminKashrutPage — decision wiring", () => {
   beforeEach(resetMocks);
 
-  it("approve → POST /admin/kashrut/{id}/approve with no body, success toast, reload", async () => {
+  it("approve opens the date modal; no call until a date is chosen; submit → POST { expires_on }, toast, reload (MEH-2518)", async () => {
     await renderWith([REQUEST]);
     fireEvent.click(screen.getByRole("button", { name: K.actions.approve }));
+    expect(apiMock.post).not.toHaveBeenCalled();
+    const submit = within(approvePanel()).getByRole("button", { name: K.approve_modal.submit });
+    expect(submit).toBeDisabled();
+    fireEvent.change(within(approvePanel()).getByLabelText(K.approve_modal.date_label), {
+      target: { value: "2027-03-31" },
+    });
+    fireEvent.click(within(approvePanel()).getByRole("button", { name: K.approve_modal.submit }));
     await waitFor(() => expect(apiMock.post).toHaveBeenCalledTimes(1));
-    expect(apiMock.post).toHaveBeenCalledWith("/admin/kashrut/k1/approve");
+    expect(apiMock.post).toHaveBeenCalledWith("/admin/kashrut/k1/approve", { expires_on: "2027-03-31" });
     await waitFor(() => expect(toastMock.success).toHaveBeenCalledWith(K.approved_toast));
     await waitFor(() => expect(apiMock.get).toHaveBeenCalledTimes(2));
+    expect(screen.queryByRole("heading", { name: K.approve_modal.title })).not.toBeInTheDocument();
+  });
+
+  it("approve modal cancel closes it with no call", async () => {
+    await renderWith([REQUEST]);
+    fireEvent.click(screen.getByRole("button", { name: K.actions.approve }));
+    fireEvent.click(within(approvePanel()).getByRole("button", { name: COMMON.cancel }));
+    expect(screen.queryByRole("heading", { name: K.approve_modal.title })).not.toBeInTheDocument();
+    expect(apiMock.post).not.toHaveBeenCalled();
   });
 
   it("approve failure → error toast with the backend detail, no reload", async () => {
     apiMock.state.postError = { response: { data: { detail: "התעודה פגה" } } };
     await renderWith([REQUEST]);
     fireEvent.click(screen.getByRole("button", { name: K.actions.approve }));
+    fireEvent.change(within(approvePanel()).getByLabelText(K.approve_modal.date_label), {
+      target: { value: "2027-03-31" },
+    });
+    fireEvent.click(within(approvePanel()).getByRole("button", { name: K.approve_modal.submit }));
     await waitFor(() => expect(toastMock.error).toHaveBeenCalledWith("התעודה פגה"));
     expect(toastMock.success).not.toHaveBeenCalled();
     expect(apiMock.get).toHaveBeenCalledTimes(1);
+  });
+
+  it("approved filter: revoke opens the modal → POST /revoke with { notes }, toast, reload (MEH-2518)", async () => {
+    await renderWith([{ ...REQUEST, status: "approved" }]);
+    fireEvent.change(statusSelect(), { target: { value: "approved" } });
+    await waitFor(() => expect(apiMock.get).toHaveBeenCalledTimes(2));
+    fireEvent.click(await screen.findByRole("button", { name: K.actions.revoke }));
+    fireEvent.change(within(revokePanel()).getByRole("textbox"), { target: { value: "התעודה בוטלה" } });
+    fireEvent.click(within(revokePanel()).getByRole("button", { name: K.revoke_modal.submit }));
+    await waitFor(() => expect(apiMock.post).toHaveBeenCalledTimes(1));
+    expect(apiMock.post).toHaveBeenCalledWith("/admin/kashrut/k1/revoke", { notes: "התעודה בוטלה" });
+    await waitFor(() => expect(toastMock.success).toHaveBeenCalledWith(K.revoked_toast));
+    await waitFor(() => expect(apiMock.get).toHaveBeenCalledTimes(3));
+  });
+
+  it("pending filter shows no revoke button", async () => {
+    await renderWith([REQUEST]);
+    expect(screen.queryByRole("button", { name: K.actions.revoke })).not.toBeInTheDocument();
   });
 
   it("reject: opens the modal, cancel closes it with no call, re-open + notes → POST /reject with { notes }, modal closes, reload", async () => {

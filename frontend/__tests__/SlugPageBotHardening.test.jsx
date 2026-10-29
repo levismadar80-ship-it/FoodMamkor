@@ -22,6 +22,8 @@ vi.mock("@/lib/server-fetch", () => ({
 vi.mock("@/app/[locale]/producer/[id]/ProducerDetail", () => ({
   default: () => null,
 }));
+// MEH-2534: page.js now imports ProducerGone, which uses the locale-aware Link.
+vi.mock("@/i18n/navigation", () => ({ Link: () => null }));
 
 import ProducerSlugPage, {
   generateMetadata,

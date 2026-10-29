@@ -1,42 +1,20 @@
 "use client";
 
-import Link from "next/link";
-import { Leaf, MapTrifold, House } from "@phosphor-icons/react";
+import { Leaf } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
+import StatusPage from "@/components/StatusPage";
 
+// MEH-2567: shared StatusPage layout (also swaps next/link, which dropped /en,
+// for the locale-aware Link inside it). Copy unchanged.
 export default function ProducerNotFound() {
   const t = useTranslations("errors.producer_not_found");
   return (
-    <main className="min-h-[calc(100vh-200px)] flex items-center justify-center px-4">
-      <div className="text-center max-w-md">
-        <Leaf
-          size={72}
-          className="mx-auto mb-4 text-primary"
-          aria-hidden="true"
-        />
-        <h1 className="font-headline-lg text-3xl font-bold text-text mb-3">
-          {t("heading")}
-        </h1>
-        <p className="text-fg-muted mb-8">
-          {t("message")}
-        </p>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Link
-            href="/map"
-            className="inline-flex items-center justify-center gap-2 bg-primary text-white px-6 py-3 rounded-full hover:bg-primary-dark transition font-medium focus-visible:ring-2 focus-visible:ring-primary/40"
-          >
-            <MapTrifold size={18} />
-            {t("discover")}
-          </Link>
-          <Link
-            href="/"
-            className="inline-flex items-center justify-center gap-2 border border-primary text-primary px-6 py-3 rounded-full hover:bg-green-50 transition font-medium"
-          >
-            <House size={18} />
-            {t("home")}
-          </Link>
-        </div>
-      </div>
-    </main>
+    <StatusPage
+      icon={Leaf}
+      title={t("heading")}
+      body={t("message")}
+      primary={{ href: "/map", label: t("discover") }}
+      secondary={{ href: "/", label: t("home") }}
+    />
   );
 }

@@ -21,6 +21,11 @@ if (!window.matchMedia) {
 }
 
 // `Element.prototype.scrollIntoView` — called by the settings page tab nav.
+// `Element.prototype.scrollTo` — ChipScrollRow scrolls the active chip into
+// view (/favorites mounts one since MEH-2560).
+if (!Element.prototype.scrollTo) {
+  Element.prototype.scrollTo = vi.fn();
+}
 if (!Element.prototype.scrollIntoView) {
   Element.prototype.scrollIntoView = vi.fn();
 }

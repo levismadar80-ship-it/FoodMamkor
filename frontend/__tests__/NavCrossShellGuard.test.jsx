@@ -69,7 +69,16 @@ const pathnameRef = { current: "/about" };
 const userRef = { current: null };
 const experiencesGateRef = { current: true };
 
-vi.mock("@/i18n/navigation", () => ({ usePathname: () => pathnameRef.current }));
+vi.mock("@/i18n/navigation", () => ({
+  // MEH-2578: the chrome now takes Link from here, not next/link.
+  Link: ({ children, href, ...props }) => (
+    <a href={typeof href === "string" ? href : "#"} {...props}>
+      {children}
+    </a>
+  ),
+  usePathname: () => pathnameRef.current,
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() }),
+}));
 vi.mock("next/navigation", () => ({
   usePathname: () => pathnameRef.current,
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() }),

@@ -2,6 +2,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor, cleanup, within } from "@testing-library/react";
 import EventsClient from "@/app/[locale]/events/EventsClient";
 
+// MEH-2559: the heart needs AuthProvider; its behaviour is SaveButton.test.jsx's.
+vi.mock("@/components/SaveButton", () => ({ default: () => null }));
+
 // MEH-2199 chunk 2 — /events declares two tablists (the events/experiences pair
 // and the list/calendar view toggle) with role="tab" + aria-selected, and until
 // this ticket neither carried the keyboard layer that contract promises: every

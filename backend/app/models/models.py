@@ -522,6 +522,11 @@ class Producer(Base):
     rejection_reason_code = Column(String(40), nullable=True)
     resubmission_count = Column(Integer, nullable=False, default=0, server_default="0")
     resubmitted_at = Column(DateTime(timezone=True), nullable=True)
+    # MEH-2496: tz-aware stamp of the latest owner-claim link an admin minted
+    # for this draft (producer_claim.create_claim_link, same transaction, on
+    # success only). NULL = none minted since the column existed (revision
+    # 8600916f1942, no backfill). Admin-only via ProducerAdminOut.
+    claim_link_sent_at = Column(DateTime(timezone=True), nullable=True)
     # MEH-1011: producer "request-changes" trail — the non-terminal twin of
     # rejection_reason. When the admin sends a completion request (missing
     # photo / license), status STAYS "pending"; `requested_changes` holds the
@@ -809,6 +814,40 @@ class User(Base):
         password-change form for accounts that have no password_hash.
         """
         return not self.password_hash
+
+
+class RetiredSlug(Base):
+    """MEH-2528 — a public business URL that must never pass to another row.
+
+    `producers.slug` is UNIQUE, but deletion is a hard delete, so the moment a
+    business is deleted (or an admin changes its slug) the old `/p/<slug>` is
+    free again and the next business with that name inherits every link still
+    circulating in WhatsApp, Instagram and search results. This table is the
+    tombstone: `_ensure_unique_slug` (routers/admin.py) treats a retired slug
+    exactly like a taken one and suffixes past it.
+
+    `producer_id` is the business that owns the URL's history — set when the
+    slug was retired by a rename (the business still exists, so a later 301
+    can follow it), NULL when the business was deleted. ON DELETE SET NULL, so
+    deleting a renamed business leaves its old URLs reserved, not freed.
+
+    Only slugs that were ever public are retired (`retire_slug` in
+    services/retired_slugs.py checks the status): a draft that was never
+    approved had no live URL, and reserving its slug would only push a
+    re-created business onto `-2`.
+    """
+
+    __tablename__ = "retired_slugs"
+
+    slug = Column(String(100), primary_key=True)
+    producer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("producers.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    reason = Column(String(20), nullable=False)  # deleted | renamed
+    retired_at = Column(DateTime, default=utc_now, nullable=False)
 
 
 class AdminSetting(Base):
@@ -1315,6 +1354,55 @@ class Favorite(Base):
     producer = relationship("Producer", back_populates="favorited_by")
 
 
+# MEH-2556: the content types a user can save next to a business. One list,
+# mirrored by the DB CHECK in Alembic revision 9c534d477f2b — a new type means
+# a new revision AND an entry here, never one without the other.
+SAVED_ITEM_TYPES = ("recipe", "event", "experience")
+
+
+class SavedItem(Base):
+    """MEH-2556 — a recipe, event or experience a user saved to «המועדפים שלי».
+
+    Businesses keep their own `favorites` table: `FavoriteAlert` (the
+    «קבלת עדכונים» preferences) hangs off a saved business, and nothing hangs
+    off a saved recipe or event. Two tables, two jobs — this one is not a
+    second owner of business favorites (MEH-271 smell #1).
+
+    `item_id` has no foreign key on purpose: it points at a different table per
+    `item_type`. The read path (MEH-2557) joins each type against its own table
+    and serves only rows that are still public, so a deleted or hidden item
+    drops out of the list instead of 500'ing — the same contract
+    `GET /users/me/favorites` keeps for businesses (MEH-248, MEH-2513).
+
+    `user_id` cascades: deleting an account deletes its saves. No separate
+    index on it: the UNIQUE (user_id, item_type, item_id) btree leads with
+    user_id and already serves every per-user query.
+    """
+
+    __tablename__ = "saved_items"
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id", "item_type", "item_id", name="uq_saved_items_user_item"
+        ),
+        # Built from SAVED_ITEM_TYPES so the model holds one copy of the list,
+        # not two; the revision's literal CHECK is pinned by a test.
+        CheckConstraint(
+            "item_type IN ({})".format(", ".join(f"'{t}'" for t in SAVED_ITEM_TYPES)),
+            name="saved_items_item_type_check",
+        ),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    item_type = Column(String(20), nullable=False)
+    item_id = Column(UUID(as_uuid=True), nullable=False)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
+
+
 class FavoriteAlert(Base):
     """MEH-54: per-producer alert preferences for favorited producers.
 
@@ -1797,7 +1885,8 @@ class ProducerPageView(Base):
     The row is the source of truth for:
       - Producer dashboard: profile_views (7d / 30d / total), views_by_day
         (30-day chart), top_cities aggregation, search_appearances (rows
-        with referrer='search'), rank_in_city, weekly_trend.
+        with referrer='search'), weekly_trend (rank_in_city too, until MEH-2529
+        removed it).
       - Admin dashboard: top cities across all producers.
 
     MEH-160: EVERY one of those readers counts through
@@ -2040,7 +2129,12 @@ class GroupBuy(Base):
     funded_notified_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=utc_now, nullable=False)
 
-    producer = relationship("Producer", backref="group_buys")
+    # MEH-2503: passive_deletes defers to the DB ON DELETE CASCADE. Without it
+    # db.delete(producer) tried to NULL the NOT NULL producer_id → 500 on
+    # every delete of a business that ever had a group buy (MEH-816 class).
+    producer = relationship(
+        "Producer", backref=backref("group_buys", passive_deletes=True)
+    )
     commits = relationship(
         "GroupBuyCommit", back_populates="group_buy", cascade="all, delete-orphan"
     )
@@ -2073,7 +2167,11 @@ class GroupBuyCommit(Base):
     )
 
     group_buy = relationship("GroupBuy", back_populates="commits")
-    user = relationship("User", backref="group_buy_commits")
+    # MEH-2503: same as GroupBuy.producer — a user who ever joined a group buy
+    # could not delete her account (NotNullViolation on user_id).
+    user = relationship(
+        "User", backref=backref("group_buy_commits", passive_deletes=True)
+    )
 
 
 class PhoneOtpToken(Base):
@@ -2197,7 +2295,10 @@ class ProducerNameChangeRequest(Base):
     created_at = Column(DateTime, default=utc_now, nullable=False)
     reviewed_at = Column(DateTime, nullable=True)
 
-    producer = relationship("Producer", backref="name_change_requests")
+    # MEH-2503: same NOT NULL + no-cascade shape as GroupBuy.producer.
+    producer = relationship(
+        "Producer", backref=backref("name_change_requests", passive_deletes=True)
+    )
 
 
 class SearchQuery(Base):

@@ -5,6 +5,7 @@ import GroupBuyDetailClient from "./GroupBuyDetailClient";
 import { GroupBuyMetadataSchema } from "@/lib/schemas"; // MEH-1885: minimal metadata contract
 import { API_URL } from "@/lib/env";
 import { serverFetch } from "@/lib/server-fetch"; // MEH-977: timeout + transient-retry
+import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 import { buildGroupBuyJsonLd, serializeJsonLd } from "@/lib/seo"; // MEH-2478: Product + Offer JSON-LD
 
@@ -39,7 +40,9 @@ async function getGroupBuy(id) {
     throw err;
   }
 
-  if (res.status === 404) return null;
+  // MEH-2552: 422 = the backend rejected the id itself (the param is a UUID,
+  // so /producer/1 can never exist) — a missing entity, not an outage.
+  if (res.status === 404 || res.status === 422) return null;
 
   if (!res.ok) {
     Sentry.captureMessage("SSR fetch failed", {
@@ -108,10 +111,14 @@ export async function generateMetadata(props) {
     openGraph: {
       type: "article",
       locale: OG_LOCALE[locale],
-      // MEH-2478: was `groupBuy?.image_url`, a field GroupBuyOut does not have,
-      // so the branch never fired. The payload carries no image and no
-      // producer images either, so the share image is the site's own.
-      images: ["/og-image.png"],
+      // MEH-2478 → MEH-2544: the payload now carries the business's first
+      // photo (producer_image_url), the same one the card and the page lead
+      // with; without one the share image stays the site's own.
+      images: [
+        groupBuy?.producer_image_url
+          ? optimizeCloudinary(groupBuy.producer_image_url, { aspectRatio: IMAGE_RATIOS.banner, width: 1200 })
+          : "/og-image.png",
+      ],
     },
     alternates,
   };

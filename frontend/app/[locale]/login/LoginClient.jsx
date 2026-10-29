@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { Link as LocaleLink } from "@/i18n/navigation";
 import Image from "next/image";
 import { ArrowRight, EnvelopeSimple, Eye, EyeSlash, Lock } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
@@ -216,18 +217,44 @@ function LoginPageBody() {
         {oauthAvailable && (
           <>
             <div className="grid gap-2.5">
+              {/* MEH-2080: Google/Apple can create an account from here, so
+                  the buttons carry the consent the notice below states
+                  (sign-in wrap). The backend stamps terms_accepted_at +
+                  terms_version, as for /register. */}
               {googleConfigured && (
                 <GoogleAuthButton
+                  termsAccepted
                   onSuccess={() => router.push(redirectTo)}
                   onError={(msg) => setError(msg)}
                 />
               )}
               {appleConfigured && (
                 <AppleAuthButton
+                  termsAccepted
                   onSuccess={() => router.push(redirectTo)}
                   onError={(msg) => setError(msg)}
                 />
               )}
+              {/* Directly under the buttons it describes, before any other
+                  control: a consent notice must sit next to the button that
+                  gives it. Locale-aware links, as on /register. */}
+              <p
+                data-testid="login-oauth-terms"
+                className="text-[13px] leading-relaxed text-fg-muted text-start"
+              >
+                {t.rich("oauth_terms", {
+                  tos: (chunks) => (
+                    <LocaleLink href="/terms" target="_blank" className="text-primary underline">
+                      {chunks}
+                    </LocaleLink>
+                  ),
+                  privacy: (chunks) => (
+                    <LocaleLink href="/privacy" target="_blank" className="text-primary underline">
+                      {chunks}
+                    </LocaleLink>
+                  ),
+                })}
+              </p>
             </div>
             <div className="relative">
               <div className="absolute inset-0 flex items-center" aria-hidden="true">

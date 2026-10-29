@@ -7,10 +7,13 @@ import { render, screen } from "@testing-library/react";
 import api from "@/lib/api";
 import EventDetailClient from "@/app/[locale]/events/[id]/EventDetailClient";
 
+// MEH-2559: the heart needs AuthProvider; its behaviour is SaveButton.test.jsx's.
+vi.mock("@/components/SaveButton", () => ({ default: () => null }));
+
 vi.mock("next/navigation", () => ({ useParams: () => ({ id: "ev-1" }) }));
 vi.mock("next/dynamic", () => ({ default: () => () => null }));
-vi.mock("next/link", () => ({
-  default: ({ children, href, ...rest }) => (
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ children, href, ...rest }) => (
     <a href={href} {...rest}>
       {children}
     </a>
@@ -22,7 +25,7 @@ vi.mock("next-intl", () => ({
 }));
 vi.mock("@phosphor-icons/react", () => {
   const Stub = () => null;
-  return { Calendar: Stub, CalendarPlus: Stub, Coins: Stub, Leaf: Stub, MapPin: Stub, UsersThree: Stub };
+  return { Basket: Stub, CalendarBlank: Stub, CookingPot: Stub, Drop: Stub, MapTrifold: Stub, Path: Stub, Plant: Stub, Storefront: Stub, Calendar: Stub, CalendarPlus: Stub, CaretLeft: Stub, Coins: Stub, Leaf: Stub, MapPin: Stub, UsersThree: Stub };
 });
 vi.mock("@/components/ShareButton", () => ({ default: () => null }));
 vi.mock("@/lib/api", () => ({ default: { get: vi.fn() } }));

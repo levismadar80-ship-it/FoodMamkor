@@ -189,7 +189,9 @@ report.sheetHeightVh = await page.evaluate(() =>
 // CONTROL 3 — the sheet actually opened. At PEEK the list viewport is ~12px
 // tall and every "card" shot photographs the chrome on top of it, which is
 // exactly what the first run of this harness produced.
-if (!report.sheetHeightVh.startsWith("45")) {
+// Since MEH-2510 the value is `max(45vh, <floor>)`, not a bare `45vh`. This
+// only checks that the sheet opened; it does not verify the floor.
+if (!/^(max\()?45vh\b/.test(report.sheetHeightVh)) {
   console.error(`SHEET DID NOT OPEN — --map-sheet-h = ${report.sheetHeightVh}, expected 45vh. Screenshots void.`);
   process.exit(4);
 }

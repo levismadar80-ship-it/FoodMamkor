@@ -37,6 +37,7 @@ from app.schemas.schemas import (
     ProducerViewIn,
     WhatsAppClickIn,
 )
+from app.services import retired_slugs  # MEH-2534
 from app.services.analytics import (
     EventContext,
     is_internal_viewer,
@@ -387,6 +388,12 @@ def get_producer_by_slug(slug: str, request: Request, db: Session = Depends(get_
         .first()
     )
     if not producer:
+        # MEH-2534: the URL of a deleted business answers 410, so the page can
+        # say it is no longer listed instead of "not found". The page itself
+        # streams 200 + noindex (like the MEH-1045 404 path); 410 is the API's
+        # status, not the HTML's. Everything else that misses stays 404.
+        if retired_slugs.is_gone(db, slug):
+            raise HTTPException(status_code=410, detail="בית העסק כבר לא במהמקור")
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
     attach_badge_fields(producer)
     attach_favorites_count(producer, db)
@@ -734,6 +741,9 @@ def _servable_kashrut_certs(
             KashrutBadgeRequest.cert_url.isnot(None),
             KashrutBadgeRequest.cert_url != "",
         )
+        # MEH-2518: a renewal leaves two approved rows for one code; newest
+        # first so the proxy's next(...) serves the current certificate.
+        .order_by(KashrutBadgeRequest.created_at.desc())
         .all()
     )
 

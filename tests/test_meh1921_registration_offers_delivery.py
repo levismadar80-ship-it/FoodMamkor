@@ -45,6 +45,9 @@ their rows are born `status="approved"` and are live with no approval step, and
 the importer's sheet column K writes the legacy `has_delivery` column that no
 delivery predicate consults (MEH-1849).
 
+MEH-2516 deleted the CSV importer, so its case is gone from this file; the
+other four create paths keep theirs.
+
 EDIT, flag left alone — `producer_me.py:97,145` and `admin.py:286`. The owner or
 an admin states `offers_delivery` explicitly there (`producer_me.py:387-391`,
 policed by `delivery_validation.py:68-74`); deriving would override a deliberate
@@ -168,54 +171,6 @@ def test_authenticated_create_producer_with_areas_is_discoverable(client, db):
     listing = client.get("/producers", params=HAS_DELIVERY)
     assert listing.status_code == 200, listing.text
     assert "משק היצירה" in _names(listing)
-
-
-def test_csv_import_with_delivery_areas_is_discoverable(client, db):
-    """The admin CSV importer (`producer_import.py`) — the fourth create path.
-
-    Rows land `status="approved"`, so unlike the three signup paths this one puts
-    the contradictory business straight in front of consumers with no approval
-    step in between.
-    """
-    from app.models.models import Category
-    from app.services.producer_import import import_rows
-
-    # Column layout per producer_import.parse_row (:160-181) — I=category (must
-    # MEH-1534), L=delivery areas (comma-split), K=has_delivery.
-    row = [
-        "מאפיית הייבוא",
-        "שרה כהן",
-        "0541234567",
-        None,
-        None,
-        None,
-        None,
-        "חיפה",
-        "מאפים",
-        None,
-        "כן",
-        "חיפה, קריית ביאליק",
-        None,
-        "תיאור הבדיקה",
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-    ]
-    db.add(Category(name="מאפים", emoji="🥖"))
-    db.commit()
-
-    result = import_rows(db, [row], dry_run=False)
-    assert result["imported"] == 1, result
-
-    listing = client.get("/producers", params=HAS_DELIVERY)
-    assert listing.status_code == 200, listing.text
-    assert "מאפיית הייבוא" in _names(listing)
 
 
 def test_admin_create_with_delivery_cities_is_discoverable(client, db):

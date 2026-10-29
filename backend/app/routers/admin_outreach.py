@@ -179,19 +179,19 @@ def metrics_summary(
       registered = נרשמו
     """
 
-    def _count(predicate=None):
-        q = db.query(func.count(OutreachLead.id))
-        if predicate is not None:
-            q = q.filter(predicate)
-        return int(q.scalar() or 0)
-
+    # MEH-2553: one GROUP BY instead of a count per status (Sentry N+1
+    # MEHAMAKOR-BACKEND-1P). `total` sums every status, as before.
+    by_status = dict(
+        db.query(OutreachLead.status, func.count(OutreachLead.id))
+        .group_by(OutreachLead.status)
+        .all()
+    )
     return {
-        "total": _count(),
-        "new": _count(OutreachLead.status == "new"),
-        "contacted": _count(OutreachLead.status == "contacted"),
-        "replied": _count(OutreachLead.status == "replied"),
-        "registered": _count(OutreachLead.status == "registered"),
-        "declined": _count(OutreachLead.status == "declined"),
+        "total": int(sum(by_status.values())),
+        **{
+            s: int(by_status.get(s, 0))
+            for s in ("new", "contacted", "replied", "registered", "declined")
+        },
     }
 
 

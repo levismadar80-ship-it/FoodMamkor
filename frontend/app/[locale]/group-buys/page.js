@@ -26,6 +26,7 @@ export async function generateMetadata({ params }) {
       url: urlForLocalePath("/group-buys", locale),
       siteName: BRAND_NAME,
       locale: OG_LOCALE[locale],
+      images: ["/og-image.png"], // MEH-2590: not inherited from the layout
     },
     alternates: buildAlternates("/group-buys", locale),
   };

@@ -16,6 +16,10 @@ Related:  routers/reviews.py:46 (fail-quiet external-call idiom this mirrors),
 History:  MEH-1490 (creation) — external trust signal, live-fetch only.
           MEH-1506 — admin-only Places Text Search to map a place_id
           semi-automatically (search here, a human picks in ProducerForm).
+          MEH-2582 — admin-only one-field write of google_place_id for the
+          approval row. Not the full admin PUT: that one re-checks every
+          effective-state gate (licence, delivery), so a pending business that
+          still fails one could not be mapped at all.
 """
 
 import logging
@@ -30,7 +34,7 @@ from app.config import settings
 from app.database import get_db
 from app.models import Producer, User
 from app.rate_limit import limiter
-from app.schemas.schemas import GoogleRatingOut
+from app.schemas.schemas import GooglePlaceIdIn, GooglePlaceIdOut, GoogleRatingOut
 
 router = APIRouter(tags=["google-rating"])
 log = logging.getLogger(__name__)
@@ -214,3 +218,34 @@ def get_google_place_candidates(
     if not candidates:
         return Response(status_code=204)
     return {"candidates": candidates}
+
+
+@router.put(
+    "/admin/producers/{producer_id}/google-place-id",
+    response_model=GooglePlaceIdOut,
+)
+@limiter.limit("30/minute")
+def put_google_place_id(
+    producer_id: UUID,
+    body: GooglePlaceIdIn,
+    request: Request,
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Admin-only: set (or clear, with null/blank) one producer's place_id.
+
+    Writes ONLY producers.google_place_id — the one Google datum the ToS lets us
+    store. 403 for non-admins (require_admin), 404 for an unknown id or an
+    organizer (no Google line for organizers, MEH-2465), 422 for a value that
+    is not a bare place_id (normalize_google_place_id).
+    """
+    producer = (
+        db.query(Producer)
+        .filter(Producer.id == producer_id, Producer.kind == "producer")
+        .first()
+    )
+    if producer is None:
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    producer.google_place_id = body.google_place_id
+    db.commit()
+    return GooglePlaceIdOut(google_place_id=producer.google_place_id)

@@ -95,6 +95,18 @@ vi.mock("@/lib/auth-context", () => ({
   useAuth: () => ({ user: stableUser, loading: false }),
 }));
 
+// MEH-2560: /favorites also loads saved recipes / events / experiences. These
+// tests are about the businesses, so that half answers "nothing saved" and
+// stays off the api.get mock whose call order they assert.
+vi.mock("@/app/[locale]/favorites/savedItems", async (importOriginal) => ({
+  ...(await importOriginal()),
+  loadSavedItems: () => Promise.resolve({ recipes: [], events: [], experiences: [] }),
+}));
+vi.mock("@/lib/saved-cache", () => ({
+  ensureSavedLoaded: () => Promise.resolve(new Set()),
+  isSaved: () => false,
+  subscribeSaved: () => () => {},
+}));
 vi.mock("@/lib/api", () => ({
   default: {
     get: vi.fn(() => Promise.resolve({ data: [] })),
@@ -122,7 +134,7 @@ beforeEach(() => {
 describe("MEH-1628 · favorites empty state", () => {
   it("renders HeartStraight — and ZERO Leaf — as the empty-state glyph", async () => {
     const { container } = render(<FavoritesClient />);
-    await screen.findByText("favorites.empty_title");
+    await screen.findByText("favorites.empty_all_title");
     const empty = emptyStateOf(container);
 
     expect(empty.querySelectorAll('[data-icon="HeartStraight"]')).toHaveLength(1);
@@ -136,7 +148,7 @@ describe("MEH-1628 · favorites empty state", () => {
 
   it("keeps the green-50 circle around the glyph untouched", async () => {
     const { container } = render(<FavoritesClient />);
-    await screen.findByText("favorites.empty_title");
+    await screen.findByText("favorites.empty_all_title");
     const circle = emptyStateOf(container).querySelector("div.rounded-full");
 
     expect(circle).toBeTruthy();
@@ -147,18 +159,18 @@ describe("MEH-1628 · favorites empty state", () => {
 
   it("shows EXACTLY ONE helper paragraph — the duplicate first-visit tip is gone", async () => {
     const { container } = render(<FavoritesClient />);
-    await screen.findByText("favorites.empty_title");
+    await screen.findByText("favorites.empty_all_title");
     const empty = emptyStateOf(container);
 
     // useFirstVisit returned true on a clean sessionStorage, so the pre-fix
     // component rendered BOTH helper lines here. Equality, not `>= 1`.
     const helpers = Array.from(empty.querySelectorAll("p, span")).filter((el) =>
-      ["favorites.empty_subtitle", "favorites.first_visit_tip"].includes(
+      ["favorites.empty_all_subtitle", "favorites.empty_subtitle", "favorites.first_visit_tip"].includes(
         el.textContent.trim(),
       ),
     );
     expect(helpers).toHaveLength(1);
-    expect(helpers[0].textContent.trim()).toBe("favorites.empty_subtitle");
+    expect(helpers[0].textContent.trim()).toBe("favorites.empty_all_subtitle");
     expect(screen.queryByText("favorites.first_visit_tip")).toBeNull();
   });
 });

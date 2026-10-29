@@ -15,16 +15,20 @@ VALID_BADGE_CODES = frozenset(
 
 
 def compute_trust_tier(producer) -> int:
-    """Return the highest tier (1-5) the producer qualifies for.
+    """Return the highest tier (1-4) the producer qualifies for.
 
     Tier 1 — profile exists (always)
     Tier 2 — phone_verified = true
     Tier 3 — verified_at set (document-verified, MEH-766)
     Tier 4 — reviews_count >= 10 AND avg_rating >= 4.5
-    Tier 5 — ambassador = true (admin-manual, top producer in city)
+
+    MEH-2509: Tier 5 (ambassador = true, admin-manual) is retired. It was a
+    second manual badge doing the job of «בחירת העורכת» (is_recommended,
+    MEH-1492) — the one the About page describes. The column is still stored;
+    it no longer affects the tier.
     """
-    if getattr(producer, "ambassador", False):
-        return 5
+    # The About page states 10 / 4.5 (about.consumer.community_leader);
+    # frontend/__tests__/TrustCopyMeh2527.test.js pins this line (MEH-2527).
     if (getattr(producer, "reviews_count", 0) or 0) >= 10 and (
         getattr(producer, "avg_rating", 0) or 0
     ) >= 4.5:

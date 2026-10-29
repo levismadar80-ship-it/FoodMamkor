@@ -26,7 +26,6 @@ function renderActions(status) {
       onQuickApprove={onQuickApprove}
       onRequestChanges={onRequestChanges}
       onToggleStatus={vi.fn()}
-      onToggleAmbassador={vi.fn()}
       onDeleteProducer={vi.fn()}
       onToggleStoryCard={vi.fn()}
     />
@@ -109,12 +108,8 @@ describe("approveGateReason — 422 detail → chip mapping (MEH-1011)", () => {
 const MENU_ARIA_KEY = "admin.producers.table.actions.menu_aria";
 const SUSPEND_KEY = "admin.producers.table.actions.suspend";
 const ACTIVATE_KEY = "admin.producers.table.actions.activate";
-// MEH-1681: the kebab item names the ACTION, not the state. ambassador=false
-// offers "set", ambassador=true offers "remove". The two state keys this
-// replaced are retired from both locales and are deliberately not named here —
-// asserting their absence would be entailed by the two assertions below (a
-// reverted JSX cannot render set_ambassador_title), and the card's removal
-// spec requires zero references to them anywhere under frontend/.
+// MEH-2509: the ambassador item is gone from the kebab (it duplicated
+// «בחירת העורכת»). Its two action keys are named here only to assert absence.
 const AMBASSADOR_OFF_KEY = "admin.producers.table.actions.set_ambassador_title";
 const AMBASSADOR_ON_KEY = "admin.producers.table.actions.remove_ambassador_title";
 const STORY_KEY = "admin.producers.table.actions.story_card";
@@ -127,7 +122,6 @@ function renderRow(producer, { isBusy } = {}) {
     onQuickApprove: vi.fn(),
     onRequestChanges: vi.fn(),
     onToggleStatus: vi.fn(),
-    onToggleAmbassador: vi.fn(),
     onDeleteProducer: vi.fn(),
     onReject: vi.fn(),
     onToggleStoryCard: vi.fn(),
@@ -142,16 +136,19 @@ const openMenu = () =>
   fireEvent.click(screen.getByRole("button", { name: MENU_ARIA_KEY }));
 
 describe("ProducerActions — overflow menu (MEH-1027 Chunk A)", () => {
-  it("approved row: status/ambassador/story/delete are NOT inline, all appear in the kebab", () => {
+  // MEH-2509: an EXACT list — status, story, delete, in that order. A
+  // re-added ambassador item (or any stray entry) breaks the count.
+  it("approved row: status/story/delete are NOT inline, and are exactly the kebab's items", () => {
     renderRow({ id: "p1", status: "approved", slug: "farm", ambassador: false, name: "חוה" });
-    [SUSPEND_KEY, AMBASSADOR_OFF_KEY, STORY_KEY, DELETE_KEY].forEach((k) =>
+    [SUSPEND_KEY, STORY_KEY, DELETE_KEY].forEach((k) =>
       expect(screen.queryByText(k)).not.toBeInTheDocument()
     );
     openMenu();
-    expect(screen.getByRole("menuitem", { name: SUSPEND_KEY })).toBeInTheDocument();
-    expect(screen.getByRole("menuitem", { name: AMBASSADOR_OFF_KEY })).toBeInTheDocument();
-    expect(screen.getByRole("menuitem", { name: STORY_KEY })).toBeInTheDocument();
-    expect(screen.getByRole("menuitem", { name: DELETE_KEY })).toBeInTheDocument();
+    const items = screen.getAllByRole("menuitem");
+    expect(items).toHaveLength(3);
+    expect(items[0]).toHaveTextContent(SUSPEND_KEY);
+    expect(items[1]).toHaveTextContent(STORY_KEY);
+    expect(items[2]).toHaveTextContent(DELETE_KEY);
   });
 
   // MEH-226 changed this row's expected contents: reject joined delete in the
@@ -206,37 +203,19 @@ describe("ProducerActions — overflow menu (MEH-1027 Chunk A)", () => {
     expect(h.onToggleStoryCard).toHaveBeenCalledWith("p1");
   });
 
-  // MEH-1681 — the label must name the action, not the state.
-  //
-  // Asserting only "the two labels differ" would NOT discriminate: the old
-  // state copy differed too ("שגרירה" vs "☆ שגריר"), so that assertion passed
-  // against the bug it is meant to catch. What separates the two
-  // implementations is WHICH key renders in each state — so this names the
-  // action keys explicitly. A revert to the state copy fails the very first
-  // expectation, because the retired state key is not set_ambassador_title.
-  it("ambassador=false offers set_ambassador_title; ambassador=true offers remove_ambassador_title", () => {
+  // MEH-2509 — neither direction of the retired ambassador toggle renders,
+  // whatever the stored flag says.
+  it("ambassador item is absent for ambassador=false and ambassador=true", () => {
     renderRow({ id: "p1", status: "approved", slug: "farm", ambassador: false, name: "חוה" });
     openMenu();
-    expect(screen.getByRole("menuitem", { name: AMBASSADOR_OFF_KEY })).toBeInTheDocument();
-    expect(screen.queryByRole("menuitem", { name: AMBASSADOR_ON_KEY })).not.toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: AMBASSADOR_OFF_KEY })).not.toBeInTheDocument();
 
     cleanup();
 
     renderRow({ id: "p2", status: "approved", slug: "farm", ambassador: true, name: "חוה" });
     openMenu();
-    expect(screen.getByRole("menuitem", { name: AMBASSADOR_ON_KEY })).toBeInTheDocument();
-    expect(screen.queryByRole("menuitem", { name: AMBASSADOR_OFF_KEY })).not.toBeInTheDocument();
-    // No "the two constants differ" assertion here: both are string literals
-    // declared above, so it could never fail whatever the JSX does. The four
-    // getByRole/queryByRole pairs are the discrimination — the directional
-    // information living in the copy rather than in a glyph is what they check.
-  });
-
-  it("ambassador item fires onToggleAmbassador(id, current) — behavior unchanged", () => {
-    const h = renderRow({ id: "p1", status: "approved", slug: "farm", ambassador: false, name: "חוה" });
-    openMenu();
-    fireEvent.click(screen.getByRole("menuitem", { name: AMBASSADOR_OFF_KEY }));
-    expect(h.onToggleAmbassador).toHaveBeenCalledWith("p1", false);
+    expect(screen.queryByRole("menuitem", { name: AMBASSADOR_ON_KEY })).not.toBeInTheDocument();
+    expect(screen.getAllByRole("menuitem")).toHaveLength(3);
   });
 
   it("busy action marks its menu item aria-disabled and blocks the handler (isBusy keys unchanged)", () => {

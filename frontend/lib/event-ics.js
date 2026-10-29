@@ -132,3 +132,22 @@ export function buildEventIcs(event, { url = "", now = new Date() } = {}) {
   lines.push("END:VEVENT", "END:VCALENDAR");
   return lines.map(fold).join("\r\n") + "\r\n";
 }
+
+// MEH-2468: «הוספה ליומן» — the .ics is built in the browser from what is
+// already on the page (no endpoint) and downloaded through a Blob URL. What a
+// phone does with a text/calendar download (open the calendar app, or save it
+// to Files) varies by browser — NOT verified on devices from the CC sandbox.
+// MEH-2549: moved here from EventDetailClient so the experience page shares it.
+export function downloadIcs(event, { url = "", filename = `event-${event.id}.ics` } = {}) {
+  const blob = new Blob([buildEventIcs(event, { url })], { type: "text/calendar;charset=utf-8" });
+  const href = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = href;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  // Revoking synchronously can abort the download in WebKit (review #3716 F7;
+  // FileSaver.js delays it for the same reason).
+  setTimeout(() => URL.revokeObjectURL(href), 30_000);
+}

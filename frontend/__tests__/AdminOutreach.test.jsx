@@ -219,3 +219,62 @@ describe("AdminOutreachPage", () => {
     confirmSpy.mockRestore();
   });
 });
+
+describe("MEH-2566 · counters are the status filter; the list pages by 25", () => {
+  const many = (n) =>
+    Array.from({ length: n }, (_, i) => ({ ...sampleLead, id: `lead-${i + 1}`, name: `ליד ${i + 1}` }));
+
+  beforeEach(() => {
+    metricsRef.current = {
+      data: { total: 30, new: 20, contacted: 5, replied: 3, registered: 1, declined: 1 },
+    };
+  });
+
+  it("one chip per status plus «סה״כ», each with its count; «סה״כ» starts pressed", async () => {
+    listRef.current = { data: [sampleLead] };
+    render(<AdminOutreachPage />);
+    const total = await screen.findByTestId("outreach-chip-all");
+    await waitFor(() => expect(total).toHaveTextContent("30"));
+    expect(total).toHaveAttribute("aria-pressed", "true");
+    for (const [id, n] of [["new", 20], ["contacted", 5], ["replied", 3], ["registered", 1], ["declined", 1]]) {
+      const chip = screen.getByTestId(`outreach-chip-${id}`);
+      expect(chip).toHaveTextContent(String(n));
+      expect(chip).toHaveAttribute("aria-pressed", "false");
+    }
+  });
+
+  it("clicking a chip filters by that status through the API", async () => {
+    const api = (await import("@/lib/api")).default;
+    listRef.current = { data: [sampleLead] };
+    render(<AdminOutreachPage />);
+    await screen.findByText("מאפיית אביב");
+    api.get.mockClear();
+    fireEvent.click(screen.getByTestId("outreach-chip-replied"));
+    await waitFor(() =>
+      expect(api.get).toHaveBeenCalledWith("/admin/outreach", { params: { status: "replied" } }),
+    );
+    expect(screen.getByTestId("outreach-chip-replied")).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByTestId("outreach-chip-all")).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("30 leads → 25 on page 1, the other 5 on page 2", async () => {
+    listRef.current = { data: many(30) };
+    render(<AdminOutreachPage />);
+    await screen.findByText("ליד 1");
+    expect(screen.getByText("ליד 25")).toBeInTheDocument();
+    expect(screen.queryByText("ליד 26")).toBeNull();
+    window.scrollTo = vi.fn();
+    const pager = screen.getByTestId("pagination");
+    fireEvent.click([...pager.querySelectorAll("button")].find((b) => b.textContent.trim() === "2"));
+    await screen.findByText("ליד 26");
+    expect(screen.getByText("ליד 30")).toBeInTheDocument();
+    expect(screen.queryByText("ליד 1")).toBeNull();
+  });
+
+  it("25 leads or fewer → no pager", async () => {
+    listRef.current = { data: many(25) };
+    render(<AdminOutreachPage />);
+    await screen.findByText("ליד 25");
+    expect(screen.queryByTestId("pagination")).toBeNull();
+  });
+});

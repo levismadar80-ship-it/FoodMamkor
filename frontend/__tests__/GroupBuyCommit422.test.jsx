@@ -17,6 +17,14 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import GroupBuyDetailClient from "@/app/[locale]/group-buys/[id]/GroupBuyDetailClient";
 
 const mockPush = vi.fn();
+// MEH-2544: the page's business row is OwnerRow, which links via @/i18n/navigation.
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ children, href, ...rest }) => (
+    <a href={href} {...rest}>
+      {children}
+    </a>
+  ),
+}));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush }),
 }));

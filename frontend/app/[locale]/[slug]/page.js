@@ -7,7 +7,13 @@ import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 // MEH-1119: isSlugShaped (+ its RESERVED / SLUG_SHAPE / SCANNER_PREFIXES) moved
 // to lib/slug.js — a non-Page `export` in a page.js file breaks the Next Page
 // type contract under `next build --webpack`. The test imports it from there.
-import { isSlugShaped } from "@/lib/slug";
+import { isSlugShaped, decodeSlugParam } from "@/lib/slug";
+import ProducerGone from "./ProducerGone";
+
+// MEH-2534: what the resolver returns for a 410 — the URL of a business that
+// was deleted (backend `retired_slugs`). Not `null`: that still means "never
+// existed" and stays notFound().
+const GONE = { gone: true };
 
 // MEH-1754: `null` means ONE thing — this business does not exist. Every other
 // failure throws, so it reaches app/[locale]/error.js (Hebrew copy + retry +
@@ -29,6 +35,8 @@ async function getProducerBySlug(slug) {
   const res = await serverFetch(url, { next: { revalidate: 60 } });
   // The one genuine not-found. Only a 404 may become notFound().
   if (res.status === 404) return null;
+  // MEH-2534: the business existed and was deleted — its own page, not a 404.
+  if (res.status === 410) return GONE;
   if (!res.ok) {
     const err = new Error(
       `producer by-slug lookup failed: ${res.status} ${res.statusText} (slug=${slug})`
@@ -47,7 +55,8 @@ async function getProducerBySlug(slug) {
 // crawlers don't ingest a partial signal.
 export async function generateMetadata(props) {
   const params = await props.params;
-  const { slug, locale } = params;
+  const { locale } = params;
+  const slug = decodeSlugParam(params.slug); // MEH-2534
   // MEH-1045: notFound() here (pre-streaming) returns a REAL 404 status.
   // A page-level notFound() alone streams a 200 + 404 UI because the
   // [locale] loading.js boundary flushes the shell first — bots would keep
@@ -55,10 +64,10 @@ export async function generateMetadata(props) {
   // slug-shaped misses keep the MEH-476 hreflang-carrying 404 metadata.
   if (!isSlugShaped(slug)) notFound();
   const producer = await getProducerBySlug(slug);
-  const path = `/${slug}`;
+  const path = `/${params.slug}`; // the URL as requested (still encoded)
   const alternates = buildAlternates(path, locale);
 
-  if (!producer) {
+  if (!producer || producer === GONE) {
     // MEH-641: titleless entity treated as 404; SEO-worthless by design — see ticket for rationale.
     return {
       // title.absolute prevents layout's `%s | brand` template double-suffix.
@@ -95,8 +104,10 @@ function ProducerJsonLd({ producer, locale }) {
 
 export default async function ProducerSlugPage(props) {
   const params = await props.params;
-  const producer = await getProducerBySlug(params.slug);
+  const slug = decodeSlugParam(params.slug); // MEH-2534
+  const producer = await getProducerBySlug(slug);
   if (!producer) notFound();
+  if (producer === GONE) return <ProducerGone />;
 
   return (
     <>
@@ -111,9 +122,9 @@ export default async function ProducerSlugPage(props) {
         (e.g. via a "similar producers" card). Remount re-seeds state fresh.
       */}
       <ProducerDetail
-        key={params.slug}
+        key={slug}
         initialProducer={producer}
-        fetchPath={`/producers/by-slug/${encodeURIComponent(params.slug)}`}
+        fetchPath={`/producers/by-slug/${encodeURIComponent(slug)}`}
       />
     </>
   );

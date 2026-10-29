@@ -2,7 +2,6 @@
 
 import { Suspense, useEffect } from "react";
 import { useTranslations } from "next-intl";
-import AdminProducersImportPreview from "./AdminProducersImportPreview";
 import AdminProducersToolbar from "./AdminProducersToolbar";
 import AdminProducersTable from "./AdminProducersTable";
 import QueueSlaSummary from "./QueueSlaSummary";
@@ -157,24 +156,9 @@ function ProducersAdminPage() {
         incompleteCount={h.incompleteCount}
         reviewDueOnly={h.reviewDueOnly}
         setReviewDueOnly={h.setReviewDueOnly}
-        importing={h.importing}
         onSearch={h.loadAllProducers}
         onExport={h.exportExcel}
-        onImportFile={h.handleImportFile}
       />
-
-      {h.importError && (
-        <div className="bg-red-50 border border-red-200 text-red-700 rounded-[12px] p-3 text-sm">{h.importError}</div>
-      )}
-
-      {h.importPreview && (
-        <AdminProducersImportPreview
-          preview={h.importPreview}
-          importing={h.importing}
-          onConfirm={h.confirmImport}
-          onCancel={() => h.setImportPreview(null)}
-        />
-      )}
 
       <AdminProducersTable
         rows={h.pagedVisible}
@@ -188,9 +172,9 @@ function ProducersAdminPage() {
         onRequestChanges={h.openRequestChanges}
         onReject={h.openReject}
         onToggleStatus={h.toggleStatus}
-        onToggleAmbassador={h.toggleAmbassador}
         onDeleteProducer={h.deleteProducer}
         onUploadStoryCard={h.handleStoryCardUpload}
+        onGooglePlaceLinked={h.handleGooglePlaceLinked}
         isBusy={h.isBusy}
         checklist={checklist}
         page={h.safePage}

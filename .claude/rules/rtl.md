@@ -113,9 +113,9 @@ cases, always use logical properties.
 ```
 tiles:0 → markers:400 → tooltips:500 → bottom-sheet:600 →
 legend:800 → controls/zoom/search:1000 → BottomNav pill:1000 →
-address suggestions:1010 → global header/nav (+ account dropdown):1050 →
+address suggestions:1010 → global header/nav (+ account dropdown, mobile chat launcher):1050 →
 cookie banner:1100 → filter-sheet:1200 → Toaster (toast stack):2000 →
-modals:9000 → interrupt modals:9500 → chat FAB / tooltips:9999 →
+modals:9000 → interrupt modals:9500 → chat panel + desktop FAB / tooltips:9999 →
 skip link:10000 → custom cursor dot:10001 (top of the scale, MEH-2300)
 ```
 
@@ -140,10 +140,10 @@ over a CTA), which is why the gate sits in front of it.
 | token | n | representative owner | what it is |
 |---|---|---|---|
 | `z-[10000]` | 1 | `app/[locale]/layout.js:232` | skip-to-content link, on focus only |
-| `z-[9999]` | 3 | `components/ui/Tooltip.jsx:148` · `InfoTooltip.jsx:101` | tooltips. ChatWidget's FAB and open panel share the value via inline `zIndex: 9999` (`ChatWidget.jsx:222,230`) — not a Tailwind token, so a grep for `z-[9999]` misses it |
+| `z-[9999]` | 3 | `components/ui/Tooltip.jsx:148` · `InfoTooltip.jsx:101` | tooltips. ChatWidget's open panel and its DESKTOP launcher use inline `zIndex: 9999` — not a Tailwind token, so a grep for `z-[9999]` misses it. Since MEH-2499 the MOBILE launcher is inline `zIndex: 1050` (above BottomNav/BackToTop, below cookie banner / filter sheet / toasts / install prompt) |
 | `z-[9997]` | 1 | `components/InstallPrompt.jsx:97` | PWA install prompt |
 | `z-[9500]` | 6 | `components/LoginPromptModal.jsx:85` | **interrupt modals** — must sit above an ordinary modal |
-| `z-[9000]` | 21 | `components/LocationModal.jsx:156` | **ordinary modals.** MEH-2093 chunk B moved 14 dialogs here from `z-50`; 20 → 21 in MEH-2137 chunk 3, which replaced a native `window.confirm` on the duplicate-product-name path with a real dialog beside `ProductsSection`'s existing delete-confirm; back to 20 in MEH-2209, which merged the admin producer reject + request-changes modals into one `ProducerDecisionModal`; 20 → 21 in MEH-2435, the owner's cancel / close / delivered confirm on the group-buys dashboard |
+| `z-[9000]` | 23 | `components/LocationModal.jsx:156` | **ordinary modals.** MEH-2093 chunk B moved 14 dialogs here from `z-50`; 20 → 21 in MEH-2137 chunk 3, which replaced a native `window.confirm` on the duplicate-product-name path with a real dialog beside `ProductsSection`'s existing delete-confirm; back to 20 in MEH-2209, which merged the admin producer reject + request-changes modals into one `ProducerDecisionModal`; 20 → 21 in MEH-2435, the owner's cancel / close / delivered confirm on the group-buys dashboard; 21 → 23 in MEH-2518, the admin kashrut approve-with-expiry and revoke dialogs |
 | `z-[2000]` | 1 | `components/Toaster.jsx:54` | toast stack — **below** both modal tiers, deliberately |
 | `z-[1210]` | 2 | `components/ui/Popover.jsx:321` | Popover mobile bottom sheet |
 | `z-[1200]` | 3 | `components/FilterSheet.jsx:200` | filter sheet; portaled to `<body>` below lg |

@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
 // MEH-731: locale-stripping usePathname (returns "/" on /he and /en) so the
 // home-tab match fires on the localized homepage. next/navigation's is
 // locale-prefixed (/he) and left the home tab permanently unhighlighted.
-import { usePathname } from "@/i18n/navigation";
+// MEH-2578: Link from here too — next/link dropped the /en prefix.
+import { Link, usePathname } from "@/i18n/navigation";
 // MEH-1202: gate BottomNav OFF the producer detail page (shared route helper).
 import { isProducerDetail } from "@/lib/producer-route";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -14,6 +14,14 @@ import { useAuth } from "@/lib/auth-context";
 import { useTranslations } from "next-intl";
 import AccountSheet from "@/components/AccountSheet";
 import { itemsForSurface } from "@/lib/nav-registry";
+
+// MEH-2359 / MEH-2431: subtrees with their own nav, where the pill never
+// renders. Shared by the render gates and the clearance publish (MEH-2490).
+const isAdminRoute = (p) => p === "/admin" || (p || "").startsWith("/admin/");
+// MEH-2490: what those routes publish instead of removing the var.
+const NO_PILL_CLEARANCE = "calc(env(safe-area-inset-bottom, 0px) + 12px)";
+const isOwnerDashboardRoute = (p) =>
+  p === "/producer/dashboard" || (p || "").startsWith("/producer/dashboard/");
 
 /**
  * Mobile bottom nav — MEH-789 (Phase 6 "Cream Signature" port).
@@ -262,10 +270,24 @@ export default function BottomNav() {
   useEffect(() => {
     compactRef.current = compact && !sheetOpen;
   }, [compact, sheetOpen]);
+  // MEH-2490: routes with their own top nav and NO bottom layer at all (the
+  // gates at the end of this component). Removing the var there let every
+  // consumer fall back to the expanded-pill value, so the owner dashboard and
+  // /admin kept ~80px of dead padding under the last row at 375 for a pill
+  // that never renders. On these routes the clearance is the safe area plus a
+  // 12px gutter: Toaster reads this var with no gap of its own, so a bare
+  // safe-area value set toasts flush on the screen edge (review on #3783).
+  // The producer-detail gate is NOT in this set: its StickyContactBar is a
+  // bottom layer, and the fallback is what keeps content clear of it.
+  const noBottomChrome = isAdminRoute(pathname) || isOwnerDashboardRoute(pathname);
   useEffect(() => {
     const root = document.documentElement;
     const nav = navRef.current;
     if (!nav) {
+      if (noBottomChrome) {
+        root.style.setProperty("--bottom-nav-clearance", NO_PILL_CLEARANCE);
+        return () => root.style.removeProperty("--bottom-nav-clearance");
+      }
       root.style.removeProperty("--bottom-nav-clearance");
       return;
     }
@@ -300,7 +322,7 @@ export default function BottomNav() {
       if (ro) ro.disconnect();
       root.style.removeProperty("--bottom-nav-clearance");
     };
-  }, [pathname]);
+  }, [pathname, noBottomChrome]);
 
   // MEH-1014: the sheet always renders the pill expanded (it must sit above its
   // own sheet at full size), so the render-time compact flag folds in sheetOpen.
@@ -350,15 +372,15 @@ export default function BottomNav() {
   // fixed bottom bar under it. Gate BottomNav OFF this route so mobile shows one
   // bottom layer, not two. Placed after every hook so rules-of-hooks holds.
   if (isProducerDetail(pathname)) return null;
-  // MEH-2359: /admin has its own mobile nav (admin/layout.js horizontal strip);
+  // MEH-2359: /admin has its own mobile nav (admin/AdminLayoutClient.jsx horizontal strip);
   // the consumer BottomNav floated over the approvals table at 375 (measured
   // 26/10, qa-artifacts/MEH-2359). Gate it off the admin subtree as a whole.
-  if (pathname === "/admin" || (pathname || "").startsWith("/admin/")) return null;
+  if (isAdminRoute(pathname)) return null;
   // MEH-2431: same for the owner dashboard, which has its own tab nav
-  // (producer/dashboard/layout.js). The pill covered rows of the locations
+  // (producer/dashboard/DashboardLayoutClient.jsx). The pill covered rows of the locations
   // list at 375 (27/10 audit). This reverses MEH-1202's "dashboard subtree
   // keeps the nav"; the header logo leads back to the site, where the nav returns.
-  if (pathname === "/producer/dashboard" || (pathname || "").startsWith("/producer/dashboard/")) return null;
+  if (isOwnerDashboardRoute(pathname)) return null;
 
   return (
     <>

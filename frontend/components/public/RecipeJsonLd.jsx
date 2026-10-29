@@ -12,6 +12,7 @@
  */
 
 import { serializeJsonLd } from "@/lib/seo"; // MEH-1069: shared JSON-LD escaper
+import { splitRecipeLines } from "@/lib/recipe-lines"; // MEH-2540: shared with RecipeDetail
 
 const ISO_MIN_LIMIT = 1440; // matches the Pydantic ge/le on prep/cook fields.
 
@@ -32,14 +33,6 @@ function minutesToIso8601(minutes) {
   return out === "PT" ? undefined : out;
 }
 
-function splitLines(text) {
-  if (!text) return [];
-  return text
-    .split("\n")
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
-
 export function buildRecipeSchema({ recipe, producerName, canonicalUrl }) {
   const schema = {
     "@context": "https://schema.org",
@@ -50,8 +43,8 @@ export function buildRecipeSchema({ recipe, producerName, canonicalUrl }) {
     author: producerName
       ? { "@type": "Organization", name: producerName }
       : undefined,
-    recipeIngredient: splitLines(recipe.ingredients),
-    recipeInstructions: splitLines(recipe.instructions).map((step) => ({
+    recipeIngredient: splitRecipeLines(recipe.ingredients),
+    recipeInstructions: splitRecipeLines(recipe.instructions).map((step) => ({
       "@type": "HowToStep",
       text: step,
     })),

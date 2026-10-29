@@ -1126,11 +1126,16 @@ class ProducerRegister(BaseModel):
 
 class GoogleAuthRequest(BaseModel):
     id_token: str
+    # MEH-2080 chunk 2: the /register checkbox, forwarded when the consumer
+    # signs up with Google. Optional — /login sends nothing — and only a True
+    # value is ever written (NULL stays the honest state).
+    terms_accepted: bool = False
 
 
 class AppleAuthRequest(BaseModel):
     id_token: str
     name: SanitizedPersonNameField | None = None  # Apple sends it once
+    terms_accepted: bool = False  # MEH-2080 chunk 2, as GoogleAuthRequest
 
 
 # MEH-170 — Step-0 OAuth on producer signup. Same shape as Google/Apple
@@ -1947,20 +1952,6 @@ class ProducerAdminCreate(BaseModel):
         return self
 
 
-class ProducerImportPreviewRow(BaseModel):
-    row_number: int
-    data: dict
-    errors: list[str] = []
-    warnings: list[str] = []
-
-
-class ProducerImportResult(BaseModel):
-    imported: int
-    skipped: int
-    errors: int
-    rows: list[ProducerImportPreviewRow]
-
-
 # MEH-291: 4-value enum that consolidates is_available_today + availability_status.
 # Tuple form is the runtime allowlist used by the field validator below and by
 # routers/producer_me.py for dual-write mirroring during the 7-day overlap.
@@ -2004,6 +1995,26 @@ def state_to_legacy(state: str | None) -> tuple[bool, str]:
     have raised ``KeyError`` on exactly that input.
     """
     return _STATE_TO_LEGACY.get(state or "", _STATE_TO_LEGACY["accepting_orders"])
+
+
+# MEH-1490: normalize the Google Place ID. Blank → None (admin clears the
+# mapping). URL-safe charset only ([A-Za-z0-9_-]) — a place_id is exactly that,
+# so a pasted Maps URL (contains "/", ":", ".") is rejected with a clear Hebrew
+# error instead of being stored and silently 204-ing forever. MEH-2582: one
+# function for both writers (ProducerUpdate and GooglePlaceIdIn).
+def normalize_google_place_id(v: str | None) -> str | None:
+    if v is None:
+        return None
+    v = v.strip()
+    if not v:
+        return None
+    if len(v) > 300:
+        raise ValueError("מזהה Google Place ארוך מדי")
+    if not re.fullmatch(r"[A-Za-z0-9_-]+", v):
+        raise ValueError(
+            "מזהה Google Place לא תקין — הדביקי את ה-place_id בלבד (לא כתובת URL)"
+        )
+    return v
 
 
 class ProducerUpdate(BaseModel):
@@ -2215,25 +2226,11 @@ class ProducerUpdate(BaseModel):
     def _sanitize_address(cls, v):
         return sanitize_text(v, max_length=255)
 
-    # MEH-1490: normalize the Google Place ID. Blank → None (admin clears the
-    # mapping). URL-safe charset only ([A-Za-z0-9_-]) — a place_id is exactly
-    # that, so a pasted Maps URL (contains "/", ":", ".") is rejected with a
-    # clear Hebrew error instead of being stored and silently 204-ing forever.
+    # MEH-1490: see normalize_google_place_id above.
     @field_validator("google_place_id")
     @classmethod
     def _validate_google_place_id(cls, v):
-        if v is None:
-            return None
-        v = v.strip()
-        if not v:
-            return None
-        if len(v) > 300:
-            raise ValueError("מזהה Google Place ארוך מדי")
-        if not re.fullmatch(r"[A-Za-z0-9_-]+", v):
-            raise ValueError(
-                "מזהה Google Place לא תקין — הדביקי את ה-place_id בלבד (לא כתובת URL)"
-            )
-        return v
+        return normalize_google_place_id(v)
 
     # MEH-1335: owner bio — strip HTML + cap at 300 (spec: "כמה מילים עלייך",
     # dashboard textarea counter matches this server-side cap).
@@ -2764,8 +2761,9 @@ class ProducerListOut(BaseModel):
         )
         return self
 
-    @model_validator(mode="after")
-    def _compute_verification_tier(self):
+    @model_validator(mode="wrap")
+    @classmethod
+    def _compute_verification_tier(cls, data, handler):
         # MEH-762 (ADR-022 D2/D3): resolve the public tier from verified_at +
         # the category licensing requirement. Mirrors the MEH-530 name-
         # membership predicate (license_validation.categories_require_license)
@@ -2775,17 +2773,41 @@ class ProducerListOut(BaseModel):
         # exclude "declared"; an unverified license-required producer resolves
         # to None (no badge, no negative label — D3). Does NOT touch
         # trust_tier (MEH-51, separate axis — Chunk-4 decoupling).
+        #
+        # MEH-2520: two more facts gate the tier, and both are admin-only
+        # columns that must NOT join the public contract — so this is a WRAP
+        # validator that reads them off the source row (`data`, the ORM
+        # object) instead of declaring fields:
+        #   * "verified" needs the captured licence not to have lapsed
+        #     (`license_expires_at`); a lapsed one falls back by the rules
+        #     below, the business itself stays listed.
+        #   * "declared" needs a signed declaration (`declared_at`). An
+        #     admin-built business nobody has claimed signed nothing, so the
+        #     «חתם על הצהרה מחייבת» explainer must not render for it.
+        # Only an ORM row is resolved here. A dict or an already-built model
+        # is a payload this class produced earlier (FastAPI re-validates the
+        # returned model against response_model), whose tier was resolved
+        # from the row then — it is kept as is. A dict without one stays None
+        # (fail-closed).
         from app.constants import LICENSE_REQUIRED_CATEGORIES
+        from app.services.verification_status import verification_is_current
 
-        if self.verified_at is not None:
-            self.verification_tier = "verified"
-        elif not any(
-            c.name in LICENSE_REQUIRED_CATEGORIES for c in (self.categories or [])
+        model = handler(data)
+        if isinstance(data, (dict, BaseModel)):
+            return model
+
+        def source(name):
+            return getattr(data, name, None)
+
+        if verification_is_current(model.verified_at, source("license_expires_at")):
+            model.verification_tier = "verified"
+        elif source("declared_at") is not None and not any(
+            c.name in LICENSE_REQUIRED_CATEGORIES for c in (model.categories or [])
         ):
-            self.verification_tier = "declared"
+            model.verification_tier = "declared"
         else:
-            self.verification_tier = None
-        return self
+            model.verification_tier = None
+        return model
 
     @model_validator(mode="after")
     def _derive_lat_lng_from_primary_location(self):
@@ -2883,6 +2905,21 @@ class ProducerDetailOut(ProducerListOut):
 # the client — NEVER persisted (Google Maps Platform ToS §3.2.3(b) No Caching).
 # The endpoint returns 204 (no body) whenever the line must not render, so this
 # shape is only ever produced for an eligible producer (place_id + ≥20 reviews).
+# MEH-2582: body of PUT /admin/producers/{id}/google-place-id — the approval
+# row's one-field write. Same normalisation as ProducerUpdate.google_place_id.
+class GooglePlaceIdIn(BaseModel):
+    google_place_id: str | None = None
+
+    @field_validator("google_place_id")
+    @classmethod
+    def _validate_google_place_id(cls, v):
+        return normalize_google_place_id(v)
+
+
+class GooglePlaceIdOut(BaseModel):
+    google_place_id: str | None = None
+
+
 class GoogleRatingOut(BaseModel):
     rating: float  # Google's average star rating, e.g. 4.7
     user_rating_count: int  # total Google reviews (guaranteed ≥ MIN_REVIEWS)
@@ -2910,6 +2947,16 @@ class ProducerAdminOut(ProducerDetailOut):
     # so the badge and the queue ordering can never disagree about age.
     # Israeli work week Sun–Thu, no holiday calendar (MEH-2110 scope).
     business_days_waiting: int = 0
+    # MEH-2495: does an account own this row (EXISTS users.producer_id = id)?
+    # Derived, never stored — hydrated per response by routers/admin.py
+    # `_attach_has_owner` in ONE batched query (no N+1). It drives the drafts
+    # list: «מחכה לבעלים» vs «נקלט, בהשלמה», and whether the row offers the
+    # claim-link copy. Admin-only: which pages have an account behind them is
+    # nobody's business but the admin's — not on ProducerDetailOut/ListOut.
+    # None, not False, by default: a route that forgot to hydrate must fail
+    # CLOSED — the UI renders neither chip nor action for a non-boolean —
+    # instead of reporting a claimed draft as ownerless.
+    has_owner: bool | None = None
     # MEH-986 ch3b: free-text kosher re-declared here — it was removed from the
     # public ProducerListOut but stays admin-internal (the admin table + form).
     kosher: str | None = None
@@ -2956,6 +3003,12 @@ class ProducerAdminOut(ProducerDetailOut):
     rejection_reason_code: str | None = None
     resubmission_count: int = 0
     resubmitted_at: datetime | None = None
+    # MEH-2496: when the latest owner-claim link was minted (producer_claim.py
+    # stamps it). Admin-only — when an admin chased an owner is internal
+    # operations data, MEH-530 precedent; never on the public or owner shapes.
+    # NULL = none minted since the column existed; the drafts list renders
+    # nothing for it rather than an empty date.
+    claim_link_sent_at: datetime | None = None
     # MEH-1287 chunk B — the editorial seasonal mark, admin-only and READ-BACK
     # (ADR-006 R2: `ProducerAdminUpdate` writes it, so something has to return
     # it, or the admin form reopens empty and the next save silently clears a
@@ -3243,12 +3296,33 @@ class LicenseExpiryReminderOut(BaseModel):
     rows: list[LicenseExpiryReminderRow] = []
 
 
-class KashrutApproveIn(BaseModel):
-    pass
-
-
 class KashrutRejectIn(BaseModel):
-    notes: str | None = None
+    # MEH-2518: the owner reads this in her dashboard — bound it.
+    notes: str | None = Field(None, max_length=1000)
+
+
+# MEH-2518: kashrut certificates carry a printed expiry, usually 3-12 months
+# out. The approve action takes that date from the certificate instead of
+# inventing approval + 365 days. 400 days is a typo guard, not a policy.
+KASHRUT_EXPIRY_MAX_DAYS = 400
+
+
+class KashrutApproveIn(BaseModel):
+    expires_on: date
+
+    @field_validator("expires_on")
+    @classmethod
+    def _expires_on_in_range(cls, v: date) -> date:
+        today = israel_today()
+        if v <= today:
+            raise ValueError("תאריך התוקף של התעודה חייב להיות אחרי היום")
+        if v > today + timedelta(days=KASHRUT_EXPIRY_MAX_DAYS):
+            raise ValueError("תאריך התוקף רחוק מדי — בדקי את התאריך שמודפס על התעודה")
+        return v
+
+
+class KashrutRevokeIn(BaseModel):
+    notes: str | None = Field(None, max_length=1000)
 
 
 class OtpConfirmIn(BaseModel):
@@ -4025,6 +4099,7 @@ class GroupBuyOut(BaseModel):
     id: UUID
     producer_id: UUID
     producer_name: str | None = None
+    producer_image_url: str | None = None  # MEH-2544: business's first photo, read-only
     title: str
     description: str | None = None
     product_name: str
@@ -4123,6 +4198,12 @@ class GroupBuyCommitRequest(BaseModel):
 # GroupBuy.status; which of them a caller may move to is decided in the router.
 class GroupBuyStatusUpdate(BaseModel):
     status: Literal["open", "funded", "cancelled", "fulfilled"]
+    # MEH-2489: the status the dashboard showed when the owner pressed the
+    # button. Optional, so a caller that omits it behaves exactly as before;
+    # when sent and the row has moved on (a last participant joined, open →
+    # funded), the router refuses with 409 instead of acting on a state she
+    # never saw.
+    expected_status: Literal["open", "funded", "cancelled", "fulfilled"] | None = None
 
 
 class GroupBuyStatusOut(BaseModel):
@@ -4387,6 +4468,8 @@ class EventOut(BaseModel):
     # mints one.
     owner_kind: str = "producer"
     owner_slug: str | None = None
+    # MEH-2546: the owner's first photo, the rows' fallback image.
+    owner_image_url: str | None = None
     title: str
     description: str | None = None
     event_date: date
@@ -4975,3 +5058,49 @@ class OutboundMessageAdminOut(BaseModel):
     updated_at: datetime | None = None
 
     model_config = {"from_attributes": True}
+
+
+# MEH-2557: saved recipes / events / experiences (table saved_items, MEH-2556).
+SavedItemType = Literal["recipe", "event", "experience"]
+
+
+class SavedItemRefOut(BaseModel):
+    """One saved item, ids only — hydrates the hearts' cache in one call."""
+
+    item_type: SavedItemType
+    item_id: UUID
+
+
+class SavedRecipeOut(BaseModel):
+    """Card fields only. Deliberately NOT ProducerRecipeOut: that shape carries
+    moderation_notes, which is owner/admin context, not public."""
+
+    id: UUID
+    title: str
+    description: str | None = None
+    image_url: str | None = None
+    prep_time_min: int | None = None
+    cook_time_min: int | None = None
+    producer_name: str
+    producer_slug: str | None = None
+    saved_at: datetime
+
+
+class SavedEventOut(EventOut):
+    saved_at: datetime
+
+
+class SavedExperienceOut(ExperienceListOut):
+    # Not on ExperienceListOut: the public feed lists active ones only. A saved
+    # one may since have been cancelled by its host — the page labels it.
+    is_active: bool = True
+    saved_at: datetime
+
+
+class SavedItemsOut(BaseModel):
+    """GET /users/me/saved — newest save first within each type. Only items
+    that are still public are listed; a deleted or hidden one drops out."""
+
+    recipes: list[SavedRecipeOut]
+    events: list[SavedEventOut]
+    experiences: list[SavedExperienceOut]

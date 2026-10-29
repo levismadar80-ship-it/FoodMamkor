@@ -59,6 +59,24 @@ def _mask(to: str | None) -> str:
     return f"***@{domain}" if domain else "***"
 
 
+_RESERVED_DOMAINS = frozenset({"example.com", "example.net", "example.org"})
+_RESERVED_TLDS = frozenset({"example", "test", "invalid", "localhost"})
+
+
+def _is_reserved_domain(to: str) -> bool:
+    """True for an address on a domain reserved for testing (RFC 2606 / 6761).
+
+    Subdomains count (`a@mail.example.com`). Case-insensitive; a trailing dot
+    is ignored.
+    """
+    domain = to.rpartition("@")[2].strip().rstrip(".").lower()
+    if not domain:
+        return False
+    if domain.rsplit(".", 1)[-1] in _RESERVED_TLDS:
+        return True
+    return any(domain == d or domain.endswith("." + d) for d in _RESERVED_DOMAINS)
+
+
 class _EmailNotSent(RuntimeError):
     """Sentry payload for a non-exception swallow point. NEVER RAISED.
 
@@ -172,6 +190,14 @@ def send_email(
                 _mask(to),
                 subject[:80],
             )
+        return
+
+    # MEH-2550: a reserved test domain (RFC 2606 / 6761) can never receive
+    # mail, and Resend rejects it with a ValidationError that swallow point 3
+    # below reported to Sentry on every E2E signup — 1,955 events that buried
+    # real delivery failures. Skipped before the API call, logged at INFO.
+    if _is_reserved_domain(to):
+        logger.info("[EMAIL] Skipped reserved test domain %s", _mask(to))
         return
     try:
         import resend  # lazy import — only installed when key is configured

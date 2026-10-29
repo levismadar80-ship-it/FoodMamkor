@@ -73,6 +73,29 @@ export function chipIcon(key) {
   return Icon ? <Icon size={CHIP_ICON_SIZE} /> : null;
 }
 
+// MEH-2584: badge keys that name the same claim as a filter chip under a
+// different key. Every other badge key is looked up as-is.
+const BADGE_TO_CHIP_KEY = { delivery: "has_delivery" };
+
+// MEH-2584: badges that are NOT attributes of the food — they keep the text-only
+// pill even if a chip with the same key ever gains a glyph.
+const TEXT_ONLY_BADGES = new Set(["new", "recommended", "verified"]);
+
+const BADGE_ICON_SIZE = 14;
+
+/**
+ * MEH-2584: the leading glyph for a BadgeRow pill, so the card and the business
+ * page show the same icon the reader just filtered by (Sapir picked "icon + word"
+ * on 29/10). 14px (12px on the card surface) keeps the pill height of the
+ * 12px label. Returns null for
+ * the non-attribute badges and for any key with no chip icon.
+ */
+export function badgeIcon(key, size = BADGE_ICON_SIZE) {
+  if (TEXT_ONLY_BADGES.has(key)) return null;
+  const Icon = CHIP_ICON_COMPONENTS[BADGE_TO_CHIP_KEY[key] ?? key];
+  return Icon ? <Icon size={size} className="shrink-0" /> : null;
+}
+
 /**
  * Shallow copy of a chip-config array with a rendered `icon` element attached
  * to each chip that has one (ChipScrollRow reads chip.icon). Chips with no icon

@@ -7,6 +7,7 @@ import AlertPrefsPanel from "@/components/AlertPrefsPanel";
 import BadgeRow from "@/components/BadgeRow";
 import FavoriteButton from "@/components/FavoriteButton";
 import KashrutBadgeStrip from "@/components/KashrutBadgeStrip";
+import ProducerUpdatesButton from "@/components/ProducerUpdatesButton";
 import ShareButton from "@/components/ShareButton";
 import { useAuth } from "@/lib/auth-context";
 import {
@@ -14,10 +15,10 @@ import {
   isFavorited as isFavoritedCache,
   subscribeFavorites,
 } from "@/lib/favorites-cache";
-import { allBadges } from "@/lib/badges";
+import { allBadges, isKashrutCurrent } from "@/lib/badges";
 import { getOrderWindowStatus } from "@/lib/orderWindow";
 import ReviewExcerpt from "./ReviewExcerpt";
-import { getVacationReturnDate } from "../lib/producer-format";
+import { categoryListingHref, getVacationReturnDate } from "../lib/producer-format";
 // MEH-1546: the meta-line status is the page's ONLY order-status element, so
 // order_window feeds THAT branch rather than adding a second line — see
 // lib/order-status.js for the precedence and the contradiction it avoids.
@@ -56,6 +57,9 @@ export default function ProducerHeader({
   alertsOpen = false,
   onOpenAlerts,
   onCloseAlerts,
+  panelKey = 0,
+  onUpdatesChanged,
+  updatesSignal,
 }) {
   const t = useTranslations();
   const locale = useLocale();
@@ -163,9 +167,10 @@ export default function ProducerHeader({
     <div className="relative" data-testid="producer-header">
       {/* Group 1 — name + single ✓מאומתת seal (richer popover in BadgeRow).
           MEH-815: imageless profiles carry the h1 in the Tinted Masthead, so
-          it is omitted here to keep the name singular. lg:pe-56 reserves the
-          title row's inline-end for the absolutely-pinned actions row. */}
-      <div className="flex items-center flex-wrap gap-2 lg:pe-56">
+          it is omitted here to keep the name singular. lg:pe-72 reserves the
+          title row's inline-end for the absolutely-pinned actions row (pe-56
+          until MEH-2562 added the third action, «קבלת עדכונים»). */}
+      <div className="flex items-center flex-wrap gap-2 lg:pe-72">
         {hasImages && (
           <h1 className="font-headline-lg text-4xl font-black text-text me-3">
             {producer.name}
@@ -179,7 +184,7 @@ export default function ProducerHeader({
           must clear the absolutely-pinned desktop actions row itself —
           adversarial-review fix (imageless-desktop overlap). */}
       {producer.short_description && (
-        <p className={`text-[15px] leading-relaxed text-text mt-2${hasImages ? "" : " lg:pe-56"}`}>
+        <p className={`text-[15px] leading-relaxed text-text mt-2${hasImages ? "" : " lg:pe-72"}`}>
           {producer.short_description}
         </p>
       )}
@@ -244,7 +249,7 @@ export default function ProducerHeader({
           >
             {primaryCategory && (
               <Link
-                href={`/producers?category=${encodeURIComponent(primaryCategory.id)}`}
+                href={categoryListingHref(primaryCategory.id)}
                 className="inline-flex min-h-[24px] items-center underline-offset-2 hover:underline hover:text-text transition"
                 data-testid="producer-header-category-link"
               >
@@ -293,7 +298,9 @@ export default function ProducerHeader({
             certs={producer.kashrut_certs}
             producerId={producer.id}
           />
-        ) : producer.kashrut_verified_at ? (
+        ) : isKashrutCurrent(producer) ? (
+          /* MEH-2518: same expiry gate as the strip — this line used to check
+             kashrut_verified_at only, so a lapsed certificate still read «כשר». */
           <p className="flex items-center gap-1.5 text-[12.5px] text-muted">
             <StarOfDavid size={14} aria-hidden="true" />
             {t("producer.detail.header.attr.kosher")}
@@ -362,6 +369,16 @@ export default function ProducerHeader({
           city={producer.city}
           category={primaryCategory?.name}
         />
+        {/* MEH-2526 permanent updates toggle; MEH-2562 moved it into this row
+            (desktop) and onto the hero circles (mobile, ImageGallery) — as a
+            lone pill under the header it read as an orphan. */}
+        <ProducerUpdatesButton
+          variant="quiet"
+          producerId={producer.id}
+          onOpenAlerts={onOpenAlerts}
+          onChanged={onUpdatesChanged}
+          refreshSignal={updatesSignal ?? alertsOpen}
+        />
       </div>
 
       {/* MEH-1609 built this mount; MEH-1693 keeps it and changes only what
@@ -382,6 +399,7 @@ export default function ProducerHeader({
       {showAlerts && alertsOpen && (
         <div className="mt-3" data-testid="alerts-reentry-panel">
           <AlertPrefsPanel
+            key={panelKey}
             producerId={producer.id}
             producerName={producer.name}
             onClose={onCloseAlerts}
