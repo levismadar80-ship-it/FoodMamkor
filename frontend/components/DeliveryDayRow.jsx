@@ -129,14 +129,15 @@ const sortByWeek = (days) =>
  * hydration (both surfaces do) and the backend re-validates. It owns exactly
  * one piece of state, and that state is presentational: whether the panel is
  * open.
+ *
+ * MEH-2537: `inRow` says the chip sits inside a filter row (home) — it sizes
+ * the chip to its neighbours and drops the block margin. It is a static flag so
+ * the server HTML already has the in-row shape (no shift on hydration).
+ * `panelHost` is the element under that row the panel is portalled into, since
+ * on a phone the row is a sideways rail that would clip it. It is null until
+ * the host mounts, which is before any tap can open the panel. Neither prop on
+ * /producers → nothing changes there.
  */
-// MEH-2537: `inRow` says the chip sits inside a filter row (home) — it sizes
-// the chip to its neighbours and drops the block margin. It is a static flag so
-// the server HTML already has the in-row shape (no shift on hydration).
-// `panelHost` is the element under that row the panel is portalled into, since
-// on a phone the row is a sideways rail that would clip it. It is null until
-// the host mounts, which is before any tap can open the panel. Neither prop on
-// /producers → nothing changes there.
 export function DeliveryDayRow({ cityActive, daysActive, onSelectDay, onClearDays, inRow = false, panelHost = null }) {
   const t = useTranslations();
   const [open, setOpen] = useState(false);

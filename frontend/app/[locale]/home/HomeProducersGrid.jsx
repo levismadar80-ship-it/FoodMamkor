@@ -323,7 +323,7 @@ export function HomeProducersGrid({
           lg+ fits on one line, so overflow is
           visible there and the sheet's anchored panel is not clipped. */}
       <div
-        className="-mx-4 -mt-1 mb-3 flex items-center gap-2 min-w-0 overflow-x-auto px-4 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:-mx-1 lg:px-1 lg:overflow-visible "
+        className="-mx-4 -mt-1 mb-3 flex items-center gap-2 min-w-0 overflow-x-auto px-4 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:-mx-1 lg:px-1 lg:overflow-visible"
         data-testid="home-filter-row"
         onFocus={keepFocusedChipClear}
       >
