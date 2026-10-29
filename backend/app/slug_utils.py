@@ -33,6 +33,8 @@ RESERVED_SLUGS: frozenset[str] = frozenset(
         "producers",
         # MEH-2461: public organizer pages live at /organizers/{slug}.
         "organizers",
+        # MEH-2576: the frontend rewrites a deleted business's URL here.
+        "business-gone",
         # Admin
         "admin",
         # Content/legal

@@ -781,8 +781,9 @@ GET    /producers/{producer_id}/google-rating     public — MEH-1490: live Goog
 GET    /producers/by-slug/{slug}                  public
                                                MEH-2534: miss on a slug whose business was DELETED (ownerless
                                                retired_slugs row) → 410 «בית העסק כבר לא במהמקור»; never-existed
-                                               or renamed-away slug → 404. Middleware lets it through (MEH-2576: a 410 rewrite
-                                               shows Vercel's own GONE page); the page renders ProducerGone (200 + noindex).
+                                               or renamed-away slug → 404. Middleware rewrites (no status — a 410 rewrite shows Vercel's
+                                               own GONE page) to /[locale]/business-gone → ProducerGone, 200 + noindex.
+                                               Not via [slug]: its Data Cache keeps the last 200 after a delete (MEH-2576).
 GET    /producers/cities                          public — MEH-970: per-city APPROVED-producer counts for /map.
                                                GROUP BY city over approved producers; NULL/blank city omitted;
                                                ordered count desc, then city. Counts live from DB (MEH-519 over-claim guard).
