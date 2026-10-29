@@ -3,10 +3,11 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 /**
  * MEH-2526 — ProducerHeader mounts the permanent «קבלת עדכונים» button.
+ * MEH-2562 moved it: desktop = quiet variant inside the actions row; mobile =
+ * a circle on the hero (ImageGallery), so the header has no below-lg mount.
  *
- * Pins WHERE (exactly one, on every viewport — i.e. NOT inside the desktop-only
- * `hidden lg:flex` actions row) and the WIRING (it opens the page's single
- * AlertPrefsPanel through onOpenAlerts). The button's own behaviour is pinned in
+ * Pins WHERE and the WIRING (it opens the page's single AlertPrefsPanel through
+ * onOpenAlerts; writes reach the page through onUpdatesChanged). The button's own behaviour is pinned in
  * ProducerUpdatesButton.test.jsx.
  */
 
@@ -80,55 +81,59 @@ beforeEach(() => {
   session.favorited = false;
 });
 
-describe("MEH-2526 · ProducerHeader mounts the updates button", () => {
-  it("renders exactly one, outside the desktop-only actions row", () => {
+describe("MEH-2562 · ProducerHeader mounts the updates bell in the quiet actions row", () => {
+  it("renders exactly one, the quiet variant, inside the desktop actions row", () => {
     render(<ProducerHeader producer={producer} primaryCategory={null} hasImages />);
     const buttons = screen.getAllByTestId("producer-updates-button");
     expect(buttons).toHaveLength(1);
-    expect(screen.getByTestId("producer-actions-row").contains(buttons[0])).toBe(false);
-    // No ancestor hides it at any breakpoint.
-    for (let el = buttons[0].parentElement; el; el = el.parentElement) {
-      expect(el.className || "").not.toMatch(/(^|\s)hidden(\s|$)/);
-    }
+    // Mobile gets its own circle on the hero (ImageGallery); a second header
+    // mount below lg would be the orphaned pill MEH-2562 removed.
+    expect(screen.getByTestId("producer-actions-row").contains(buttons[0])).toBe(true);
+    expect(seen.props.at(-1).variant).toBe("quiet");
   });
 
-  it("passes the producer id and the page's onOpenAlerts", () => {
+  it("passes the producer id, the page's onOpenAlerts, onUpdatesChanged and updatesSignal", () => {
     const onOpenAlerts = vi.fn();
+    const onUpdatesChanged = vi.fn();
     render(
       <ProducerHeader
         producer={producer}
         primaryCategory={null}
         hasImages
         onOpenAlerts={onOpenAlerts}
+        onUpdatesChanged={onUpdatesChanged}
+        updatesSignal="true:3"
       />,
     );
     expect(seen.props.at(-1).producerId).toBe("p-1");
+    expect(seen.props.at(-1).refreshSignal).toBe("true:3");
     fireEvent.click(screen.getByTestId("producer-updates-button"));
     expect(onOpenAlerts).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByTestId("stub-write"));
+    expect(onUpdatesChanged).toHaveBeenCalledTimes(1);
   });
 });
 
 describe("MEH-2526 · an open panel never shows prefs older than the button's write", () => {
-  it("a write from the updates button re-mounts (re-reads) the open AlertPrefsPanel", async () => {
+  it("a new panelKey from the page re-mounts (re-reads) the open AlertPrefsPanel", async () => {
     session.user = { id: "u1" };
     session.favorited = true;
-    render(
-      <ProducerHeader
-        producer={producer}
-        primaryCategory={null}
-        hasImages
-        alertsOpen
-        onOpenAlerts={() => {}}
-        onCloseAlerts={() => {}}
-      />,
-    );
+    const props = {
+      producer,
+      primaryCategory: null,
+      hasImages: true,
+      alertsOpen: true,
+      onOpenAlerts: () => {},
+      onCloseAlerts: () => {},
+    };
+    const { rerender } = render(<ProducerHeader {...props} panelKey={0} />);
     await screen.findByTestId("alert-prefs-panel");
     expect(panel.mounts).toBe(1);
 
-    fireEvent.click(screen.getByTestId("stub-write"));
+    // The page bumps panelKey after any bell write (hero circle or this row).
+    // A stale mount would let the panel's Save PUT the pre-write values back.
+    rerender(<ProducerHeader {...props} panelKey={1} />);
 
-    // The panel reads its prefs once, on mount; a stale mount would let its
-    // Save button PUT the pre-write values back over the button's write.
     await waitFor(() => expect(panel.mounts).toBe(2));
     expect(screen.getAllByTestId("alert-prefs-panel")).toHaveLength(1);
   });

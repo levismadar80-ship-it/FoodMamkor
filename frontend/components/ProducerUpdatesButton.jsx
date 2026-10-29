@@ -51,6 +51,26 @@ import LoginPromptModal from "./LoginPromptModal";
  */
 const TYPES = ["notify_new_event", "notify_new_product", "notify_delivery_area", "notify_new_recipe"];
 
+// MEH-2562: the pill sat alone under the header and read as an orphan. On the
+// page it now matches its neighbours instead: "gallery" = the hero circle
+// beside share + heart (mobile), "quiet" = the desktop actions row next to
+// «שמירה» / «שיתוף». Same anatomy as FavoriteButton's variants of those names.
+const FOCUS = "transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40";
+const VARIANT_CLASS = {
+  pill: (on) =>
+    `inline-flex items-center gap-1.5 min-h-[44px] px-4 rounded-full text-sm font-medium border ${FOCUS} ${
+      on
+        ? "bg-primary/10 text-primary border-primary/30 hover:bg-primary/15"
+        : "bg-white text-text border-border hover:bg-green-50"
+    }`,
+  gallery: () =>
+    `bg-white/95 hover:bg-white rounded-full w-11 h-11 flex items-center justify-center shadow-md hover:scale-105 ${FOCUS}`,
+  quiet: (on) =>
+    `inline-flex items-center gap-1.5 min-h-[44px] py-2 text-[13px] font-medium rounded ${FOCUS} ${
+      on ? "text-primary" : "text-text hover:text-primary"
+    }`,
+};
+
 const typesTo = (value) => Object.fromEntries(TYPES.map((k) => [k, value]));
 
 export default function ProducerUpdatesButton({
@@ -58,6 +78,7 @@ export default function ProducerUpdatesButton({
   onOpenAlerts,
   onChanged,
   refreshSignal,
+  variant = "pill",
 }) {
   const t = useTranslations("favorites");
   const tError = useTranslations("error");
@@ -208,15 +229,19 @@ export default function ProducerUpdatesButton({
         onClick={toggle}
         disabled={busy || (Boolean(user) && (prefs === null || loadFailed))}
         aria-pressed={on}
+        // The circle carries no visible text, so the label moves to aria-label.
+        aria-label={variant === "gallery" ? t("updates_button.label") : undefined}
         data-testid="producer-updates-button"
-        className={`inline-flex items-center gap-1.5 min-h-[44px] px-4 rounded-full text-sm font-medium border transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40 ${
-          on
-            ? "bg-primary/10 text-primary border-primary/30 hover:bg-primary/15"
-            : "bg-white text-text border-border hover:bg-green-50"
-        }`}
+        data-variant={variant}
+        className={VARIANT_CLASS[variant](on)}
       >
-        <Bell size={18} weight={on ? "fill" : "regular"} className="text-primary" aria-hidden="true" />
-        {t("updates_button.label")}
+        <Bell
+          size={variant === "gallery" ? 20 : variant === "quiet" ? 17 : 18}
+          weight={on ? "fill" : "regular"}
+          className={variant === "quiet" && !on ? "text-primary-dark" : "text-primary"}
+          aria-hidden="true"
+        />
+        {variant !== "gallery" && t("updates_button.label")}
       </button>
       <LoginPromptModal
         open={showLoginModal}
