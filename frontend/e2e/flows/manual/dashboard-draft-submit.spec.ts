@@ -102,7 +102,7 @@ async function stubOverview(page: Page, profile: Record<string, unknown>, posts:
     json(r, 200, { producer: { id: 7, name: ALL_DONE.name, slug: null, status: "draft", availability_state: "accepting_orders", vacation_until: null }, stats: {} }));
   await page.route("**/producers/me/analytics**", (r) =>
     json(r, 200, { profile_views: { total: 0, last_7d: 0 }, whatsapp_clicks: { total: 0, last_7d: 0 }, contact_clicks: { total: 0, last_7d: 0 },
-      average_rating: null, total_reviews: 0, rank_in_city: null, conversion_rate: "0%", profile_strength: 10, top_cities: [], follower_count: 0, new_followers_this_week: 0 }));
+      average_rating: null, total_reviews: 0, conversion_rate: "0%", top_cities: [], follower_count: 0, new_followers_this_week: 0 }));
   // The three writers. Each records what left the browser; none reaches a server.
   for (const path of ["submit-for-review", "verify-phone", "verify-phone/confirm"]) {
     await page.route(`**/producers/me/${path}`, (r: Route) => {
