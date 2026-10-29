@@ -497,6 +497,9 @@ def list_producers(
         # derivation below. selectinload (not joinedload) — a 4th collection
         # joinedload here would widen the existing 3-way cartesian.
         selectinload(Producer.locations),
+        # MEH-2541: ProducerListOut.active_offer reads this collection; without
+        # it every row paid one producer_offers SELECT (Sentry N+1).
+        selectinload(Producer.offers),
     )
     # MEH-2100: three-way, and the DEFAULT (no `status` param) is the one that
     # changed. The admin toolbar sends no param for its "כל הסטטוסים" option
