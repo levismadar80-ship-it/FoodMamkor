@@ -14,7 +14,11 @@ import path from "node:path";
 import { render } from "@testing-library/react";
 
 const init = vi.fn();
-vi.mock("@sentry/nextjs", () => ({ init: (...args) => init(...args), replayIntegration: () => ({}) }));
+vi.mock("@sentry/nextjs", () => ({
+  init: (...args) => init(...args),
+  replayIntegration: () => ({}),
+  captureRouterTransitionStart: () => {},
+}));
 
 let speedInsightsProps;
 vi.mock("@vercel/speed-insights/next", () => ({
@@ -43,8 +47,9 @@ describe("Sentry configs redact the claim token", () => {
     process.env = { ...env };
   });
 
-  it.each([["server"], ["edge"], ["client"]])("sentry.%s.config", async (name) => {
-    await import(`../sentry.${name}.config.js`);
+  // MEH-2536: the browser init moved to instrumentation-client.js.
+  it.each([["sentry.server.config"], ["sentry.edge.config"], ["instrumentation-client"]])("%s", async (file) => {
+    await import(`../${file}.js`);
     expect(init).toHaveBeenCalledTimes(1);
     const options = init.mock.calls[0][0];
     for (const hook of ["beforeSend", "beforeSendTransaction"]) {
@@ -76,7 +81,7 @@ describe("Sentry client records no replay on a claim link", () => {
     ["/producers", 1],
   ])("opened on %s → %s replay integration(s)", async (path, count) => {
     window.history.replaceState({}, "", path);
-    await import("../sentry.client.config.js");
+    await import("../instrumentation-client.js");
     expect(init.mock.calls[0][0].integrations).toHaveLength(count);
   });
 });

@@ -6,7 +6,7 @@
     "middleware.js",
     "next.config.js",
     "instrumentation.js",
-    "sentry.client.config.js",
+    "instrumentation-client.js",
     "sentry.server.config.js",
     "sentry.edge.config.js",
     "playwright.config.ts",
