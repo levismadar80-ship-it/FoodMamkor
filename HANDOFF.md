@@ -4,6 +4,17 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-10-29 09:20 — שמונה שיפורים בלי ספיר (#3793–#3800)
+
+**‏שורה אחת:** Sentry בדפדפן עובד, הסכמה לתנאים נרשמת בהרשמת OAuth, וה-HTML של כל דף קל ב-~98KB.
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏namespace חדש של next-intl שקומפוננטת client קוראת מחוץ ל-`/admin`, `/producer/dashboard`: אל תוסיפי אותו ל-`ROUTE_SCOPED_NAMESPACES`/`SERVER_ONLY_NAMESPACES` (`lib/client-messages.js`). `ClientMessagesScope.test.jsx` נכשל אם כן.
+- ‏ה-shell של האדמין ושל לוח הבקרה נמצאים ב-`AdminLayoutClient.jsx` / `DashboardLayoutClient.jsx`; ה-`layout.js` הוא עטיפת שרת דקה.
+- ‏ה-init של Sentry בדפדפן: `frontend/instrumentation-client.js` (לא `sentry.client.config.js`).
+
+**‏לא עכשיו / מחכה לספיר:** מפתח PostHog ב-Vercel; נוסח הסכמה ל-`/login` עם Google/Apple; LCP (MEH-2233) — החשוד הבא הוא JS; `NoEmojiInComponents.test.js` אדום ב-staging (★ ב-`admin/reviews/page.jsx:232`).
+
 ## 2026-10-29 07:55 — כתובת של בית עסק שנמחק לא עוברת לעסק אחר (#3781)
 
 **‏שורה אחת:** ‏slug של עסק שהיה ציבורי ונמחק או ששינה כתובת נשמר ב-`retired_slugs` ולא מוקצה שוב.

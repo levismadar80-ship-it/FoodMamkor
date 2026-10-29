@@ -12,7 +12,7 @@
  *           recreate the MEH-961/963 stale-duplicate bug. Card/chart bodies
  *           are byte-identical to their prior definitions in
  *           producer/dashboard/page.js (relocate-don't-rewrite).
- * Related:  app/[locale]/producer/dashboard/layout.js (tab nav + UX gate);
+ * Related:  app/[locale]/producer/dashboard/DashboardLayoutClient.jsx (tab nav + UX gate);
  *           app/[locale]/producer/dashboard/page.js (Overview — KPI strip);
  *           backend/app/routers/producer_me.py:489 (analytics endpoint).
  * History:  MEH-964 (relocation, chunk 1B); MEH-1090 (chart Y-axis + tokens);

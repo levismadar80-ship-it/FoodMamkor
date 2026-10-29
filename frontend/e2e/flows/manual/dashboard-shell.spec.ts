@@ -21,7 +21,7 @@ import { test, expect, type Page } from "../_cloudinary-stub";
  *           would be a write against staging — which Sapir's 13/07 ruling
  *           forbids. Read-only rendering is the whole scope here; the edit
  *           tab's writes are chunk 11b/11c and stay reported, not converted.
- * Related:  app/[locale]/producer/dashboard/layout.js · page.js ·
+ * Related:  app/[locale]/producer/dashboard/DashboardLayoutClient.jsx · page.js ·
  *           insights/page.js · tools/page.js · flows/34 (the stub pattern) ·
  *           flows/25-role-reachability (the storageState counterpart).
  * History:  MEH-1249 chunk 11a.
