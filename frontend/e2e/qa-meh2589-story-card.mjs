@@ -64,8 +64,13 @@ async function openStory(page, index) {
   for (let i = 0; i < (await triggers.count()); i++) {
     if (await triggers.nth(i).isVisible()) visible.push(triggers.nth(i));
   }
-  await visible[index].click();
-  await page.locator('[role="menuitem"]', { hasText: "סטורי" }).first().click();
+  // A click that lands before hydration opens nothing; retry until the menu shows.
+  const item = page.locator('[role="menuitem"]', { hasText: "סטורי" }).first();
+  for (let attempt = 0; attempt < 5 && !(await item.isVisible()); attempt++) {
+    await visible[index].click();
+    await item.waitFor({ timeout: 2000 }).catch(() => {});
+  }
+  await item.click();
   await page.getByText("כרטיס אינסטגרם מוכן").first().waitFor();
   await page.waitForFunction(() => {
     const c = document.querySelector("canvas");
