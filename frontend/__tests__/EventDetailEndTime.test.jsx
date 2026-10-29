@@ -9,8 +9,8 @@ import EventDetailClient from "@/app/[locale]/events/[id]/EventDetailClient";
 
 vi.mock("next/navigation", () => ({ useParams: () => ({ id: "ev-1" }) }));
 vi.mock("next/dynamic", () => ({ default: () => () => null }));
-vi.mock("next/link", () => ({
-  default: ({ children, href, ...rest }) => (
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ children, href, ...rest }) => (
     <a href={href} {...rest}>
       {children}
     </a>
@@ -22,7 +22,7 @@ vi.mock("next-intl", () => ({
 }));
 vi.mock("@phosphor-icons/react", () => {
   const Stub = () => null;
-  return { Calendar: Stub, CalendarPlus: Stub, Coins: Stub, Leaf: Stub, MapPin: Stub, UsersThree: Stub };
+  return { Calendar: Stub, CalendarPlus: Stub, CaretLeft: Stub, Coins: Stub, Leaf: Stub, MapPin: Stub, UsersThree: Stub };
 });
 vi.mock("@/components/ShareButton", () => ({ default: () => null }));
 vi.mock("@/lib/api", () => ({ default: { get: vi.fn() } }));
