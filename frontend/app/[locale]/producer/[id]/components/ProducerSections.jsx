@@ -675,7 +675,9 @@ export default function ProducerSections({
           unmapped producers make zero requests; the component itself renders
           nothing on a 204 (< 20 reviews / API error / no key). */}
       {producer.google_place_id && (
-        <GoogleRatingLine producerId={producer.id} producerName={producer.name} />
+        // MEH-2581: keyed so a client-side move to another business starts
+        // fresh (no previous business's rating, no carried-over inView).
+        <GoogleRatingLine key={producer.id} producerId={producer.id} producerName={producer.name} />
       )}
 
       {/* MEH-102: Similar producers — MEH-788: scroll-reveal (below fold). */}
