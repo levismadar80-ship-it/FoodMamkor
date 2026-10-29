@@ -85,6 +85,9 @@ export async function generateMetadata(props) {
     title: { absolute: buildEntityTitle(producer.name, locale) },
     openGraph: {
       ...base.openGraph,
+      // MEH-2594: the page's own canonical — buildProducerMetadata's url is
+      // always the Hebrew one, so /en/<slug> shared as the Hebrew page.
+      url: alternates.canonical,
       locale: OG_LOCALE[locale],
     },
     alternates,

@@ -22,6 +22,7 @@ import { API_URL } from "@/lib/env";
 import { serverFetch } from "@/lib/server-fetch";
 import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 import { isSlugShaped } from "@/lib/slug";
+import { BRAND_NAME } from "@/lib/constants";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { toEventEntry } from "@/lib/event-entry";
 import EventEntryRow from "@/components/EventEntryRow";
@@ -89,8 +90,12 @@ export async function generateMetadata(props) {
     title: { absolute: buildEntityTitle(organizer.name, locale) },
     description,
     openGraph: {
+      // MEH-2594: url/type/siteName, as on the event and business pages.
+      type: "website",
       title: organizer.name,
       description,
+      url: alternates.canonical,
+      siteName: BRAND_NAME,
       locale: OG_LOCALE[locale],
       // MEH-2590: site image when none (an omitted key is not inherited).
       images: organizer.images?.[0] ? [{ url: organizer.images[0] }] : ["/og-image.png"],
