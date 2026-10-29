@@ -5037,3 +5037,49 @@ class OutboundMessageAdminOut(BaseModel):
     updated_at: datetime | None = None
 
     model_config = {"from_attributes": True}
+
+
+# MEH-2557: saved recipes / events / experiences (table saved_items, MEH-2556).
+SavedItemType = Literal["recipe", "event", "experience"]
+
+
+class SavedItemRefOut(BaseModel):
+    """One saved item, ids only — hydrates the hearts' cache in one call."""
+
+    item_type: SavedItemType
+    item_id: UUID
+
+
+class SavedRecipeOut(BaseModel):
+    """Card fields only. Deliberately NOT ProducerRecipeOut: that shape carries
+    moderation_notes, which is owner/admin context, not public."""
+
+    id: UUID
+    title: str
+    description: str | None = None
+    image_url: str | None = None
+    prep_time_min: int | None = None
+    cook_time_min: int | None = None
+    producer_name: str
+    producer_slug: str | None = None
+    saved_at: datetime
+
+
+class SavedEventOut(EventOut):
+    saved_at: datetime
+
+
+class SavedExperienceOut(ExperienceListOut):
+    # Not on ExperienceListOut: the public feed lists active ones only. A saved
+    # one may since have been cancelled by its host — the page labels it.
+    is_active: bool = True
+    saved_at: datetime
+
+
+class SavedItemsOut(BaseModel):
+    """GET /users/me/saved — newest save first within each type. Only items
+    that are still public are listed; a deleted or hidden one drops out."""
+
+    recipes: list[SavedRecipeOut]
+    events: list[SavedEventOut]
+    experiences: list[SavedExperienceOut]

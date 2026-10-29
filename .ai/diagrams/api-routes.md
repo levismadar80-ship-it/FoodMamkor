@@ -23,6 +23,7 @@ graph LR
     App --> ProducerClaim[producer_claim.router<br/>/admin/producers/:id/claim-link · /producer-claim/preview · /producer-claim<br/>MEH-2322 owner-claim link: 14-day HS256 scope=producer_claim, draft + ownerless only,<br/>claim stamps her declaration + terms, status stays draft]
     App --> NameRequests[producer_name_requests.router<br/>/producers/me/name-change-requests<br/>/admin/name-change-requests]
     App --> Favorites[favorites.router<br/>/users/me/favorites/*]
+    App --> Saved[saved_items.router<br/>/users/me/saved/* MEH-2557]
     App --> HomeProducts[home_products.router<br/>/home-products/*]
     App --> Events[events.router<br/>/events/*]
     App --> Experiences[experiences.router<br/>/experiences/*<br/>MEH-2476: host carries her public business]
@@ -82,6 +83,10 @@ graph TD
     Favorites[/favorites page] --> ListFavs[GET /users/me/favorites<br/>🔑 skips not-live businesses MEH-2513]
     Favorites --> AddFav[POST /users/me/favorites/{id}<br/>🔑 404 for an organizer MEH-2465<br/>or a not-live business MEH-2513]
     Favorites --> DelFav[DELETE /users/me/favorites/{id}<br/>🔑]
+    Favorites --> ListSaved[GET /users/me/saved<br/>🔑 recipes/events/experiences, public only MEH-2557]
+    Favorites --> SavedIds[GET /users/me/saved/ids<br/>🔑 hearts cache]
+    Favorites --> AddSaved[POST /users/me/saved/{type}/{id}<br/>🔑 404 unless public]
+    Favorites --> DelSaved[DELETE /users/me/saved/{type}/{id}<br/>🔑 own rows only]
 ```
 
 ## 4. Producer self-management (role=producer)
