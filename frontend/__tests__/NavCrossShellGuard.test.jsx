@@ -75,7 +75,10 @@ vi.mock("@/i18n/navigation", () => ({
     <a href={typeof href === "string" ? href : "#"} {...props}>
       {children}
     </a>
-  ), usePathname: () => pathnameRef.current }));
+  ),
+  usePathname: () => pathnameRef.current,
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() }),
+}));
 vi.mock("next/navigation", () => ({
   usePathname: () => pathnameRef.current,
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() }),

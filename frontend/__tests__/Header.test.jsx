@@ -102,7 +102,8 @@ vi.mock("@/i18n/navigation", () => ({
       {children}
     </a>
   ),
-  useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
+  // MEH-2578: Header takes its router from here now.
+  useRouter: () => ({ replace: vi.fn(), push: mockPush, back: vi.fn() }),
   usePathname: () => pathnameRef.current,
 }));
 
