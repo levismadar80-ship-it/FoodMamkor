@@ -60,9 +60,21 @@ describe("MEH-2597 · placement", () => {
     expect(hero.contains(photo)).toBe(false);
   });
 
+  it("/about/for-businesses: the photo sits between the header CTA and the questions", async () => {
+    const { container } = render(await ForBusinessesPage(params));
+    const header = container.querySelector("header");
+    const photo = screen.getByTestId("for-businesses-photo");
+    const firstQuestion = container.querySelector("h2");
+    expect(header.contains(photo)).toBe(false);
+    expect(header.compareDocumentPosition(photo) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(photo.compareDocumentPosition(firstQuestion) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it("/about/why-local: the photo sits inside the second reason, mid-article", async () => {
     render(await WhyLocalPage(params));
     const sections = screen.getByTestId("why-local-article").querySelectorAll("section");
+    // Mid-article: there must be reasons after the one carrying the photo.
+    expect(sections.length).toBeGreaterThan(2);
     expect(sections[1].querySelector('[data-testid="why-local-photo"]')).not.toBeNull();
   });
 });

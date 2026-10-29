@@ -13,7 +13,10 @@ import { optimizeCloudinary } from "@/lib/cloudinary";
  *           front image, AboutClient.jsx:52).
  */
 // Delivered width: 2× the 343px phone column, and above the ~720px desktop
-// column, without passing hero-market's 2400px source on the c_fill path.
+// column. c_fill can upscale, so this stays under every source in use:
+// hero-market 2400px (AboutClient.jsx:66), hero-produce-crate and
+// hero-box-produce both ≥ 3840px (measured through the staging optimizer,
+// 29/10).
 const PHOTO_WIDTH = 1200;
 
 export default function EditorialPhoto({ src, testId, priority = false, className = "" }) {
