@@ -3,8 +3,8 @@
  * Times are Israel wall-clock; the file carries UTC, so the DST side of the
  * date matters (Israel: +3 summer, +2 winter; 2026 switch back is 25 Oct).
  */
-import { describe, it, expect } from "vitest";
-import { buildEventIcs, escapeIcsText, israelLocalToUtcStamp } from "@/lib/event-ics";
+import { describe, it, expect, vi } from "vitest";
+import { buildEventIcs, downloadIcs, escapeIcsText, israelLocalToUtcStamp } from "@/lib/event-ics";
 
 const NOW = new Date(Date.UTC(2026, 9, 28, 12, 0, 0));
 const base = {
@@ -90,5 +90,43 @@ describe("buildEventIcs", () => {
     expect(l.some((x) => x.startsWith("LOCATION"))).toBe(false);
     expect(l.some((x) => x.startsWith("DESCRIPTION"))).toBe(false);
     expect(l.some((x) => x.startsWith("URL"))).toBe(false);
+  });
+});
+
+describe("downloadIcs", () => {
+  // The Blob → anchor → click path both detail pages share (MEH-2549).
+  function capture(run) {
+    const made = [];
+    const origCreate = URL.createObjectURL;
+    const origRevoke = URL.revokeObjectURL;
+    URL.createObjectURL = vi.fn((blob) => {
+      made.push(blob);
+      return "blob:ics";
+    });
+    URL.revokeObjectURL = vi.fn();
+    const names = [];
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function () {
+      names.push(this.download);
+    });
+    try {
+      run();
+    } finally {
+      URL.createObjectURL = origCreate;
+      URL.revokeObjectURL = origRevoke;
+      click.mockRestore();
+    }
+    return { made, names };
+  }
+  const ev = { id: 7, title: "שוק", event_date: "2026-11-10", event_time: "09:00:00" };
+
+  it("defaults the filename to event-<id>.ics, as a text/calendar Blob", () => {
+    const { made, names } = capture(() => downloadIcs(ev));
+    expect(names).toEqual(["event-7.ics"]);
+    expect(made[0].type).toBe("text/calendar;charset=utf-8");
+  });
+
+  it("takes the caller's filename (the experience page)", () => {
+    const { names } = capture(() => downloadIcs(ev, { filename: "experience-7.ics" }));
+    expect(names).toEqual(["experience-7.ics"]);
   });
 });
