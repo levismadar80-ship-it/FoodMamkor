@@ -80,8 +80,8 @@ const ZERO = {
   profile_views: { last_7d: 0, last_30d: 0, total: 0 },
   whatsapp_clicks: { last_7d: 0, last_30d: 0, total: 0 },
   contact_clicks: { last_7d: 0, last_30d: 0, total: 0 },
-  average_rating: 0, total_reviews: 0, rank_in_city: null,
-  conversion_rate: 0, profile_strength: 0,
+  average_rating: 0, total_reviews: 0,
+  conversion_rate: 0,
 };
 const ACTIVE = { ...ZERO, profile_views: { last_7d: 2, last_30d: 4, total: 9 } };
 
