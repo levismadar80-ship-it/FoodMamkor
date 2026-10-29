@@ -105,6 +105,9 @@ function reportFiveHundredToSentry(url, status) {
 // can absorb.
 const EXISTENCE_CHECK_TIMEOUT_MS = 3000;
 
+// producerExists() result for a deleted business (truthy: it is not a 404).
+const GONE = "gone";
+
 async function producerExists(url) {
   try {
     // NOTE: the `next.revalidate` hint below is honored by Next's Data Cache
@@ -126,15 +129,13 @@ async function producerExists(url) {
     if (res.status === 404) return false;
 
     // MEH-2534: 410 = a business that was deleted. Not a backend fault, and
-    // not a plain miss: let the request through and the [slug] page renders
-    // its own "no longer listed" screen (noindex).
+    // not a plain miss: the caller rewrites to the business-gone page.
     //
-    // MEH-2576: do NOT turn this into `NextResponse.rewrite(..., { status:
-    // 410 })`. On Vercel a 410 from middleware is read as the platform's own
-    // `x-vercel-error: GONE`, and Vercel serves its "deployment removed" page
-    // instead of ours — measured on staging 29/10. `next dev` does not
-    // reproduce it, so only a deployed check can catch a regression here.
-    if (res.status === 410) return true;
+    // MEH-2576: never as `rewrite(..., { status: 410 })` — on Vercel a 410
+    // from middleware is served as the platform's own `x-vercel-error: GONE`
+    // "deployment removed" page (measured on staging 29/10; `next dev` does
+    // not reproduce it).
+    if (res.status === 410) return GONE;
 
     // 5xx · 429 · anything else → fail OPEN, same decision as "unreachable".
     // `return res.ok` used to collapse these onto the 404 branch, so a backend
@@ -234,11 +235,29 @@ export default async function middleware(request) {
   // above is untouched, so the canonical, indexable, crawler-facing shape
   // keeps its real 404 and MEH-1398's SEO guarantee holds where it matters.
 
-  if (existsUrl && !(await producerExists(existsUrl))) {
+  const exists = existsUrl ? await producerExists(existsUrl) : true;
+  if (!exists) {
     // Rewrite to a guaranteed-unmatched path → globalNotFound renders a real 404.
     const nf = request.nextUrl.clone();
     nf.pathname = "/__mm_not_found__";
     return NextResponse.rewrite(nf, { status: 404 });
+  }
+  if (exists === GONE) {
+    // MEH-2576: not the [slug] page — its Data Cache keeps serving the
+    // business's last 200 after the delete (only 200s are cached, so the
+    // revalidating 410 is dropped). This lookup is uncached; trust it.
+    const gone = request.nextUrl.clone();
+    gone.pathname = `/${locale ?? routing.defaultLocale}/business-gone`;
+    const res = NextResponse.rewrite(gone);
+    // Carry next-intl's request-header overrides (the resolved locale) and
+    // cookies, or /en/<slug> would render in the default locale. Its own
+    // routing verdict (rewrite / next) would contradict ours.
+    intlResponse.headers.forEach((value, key) => {
+      if (key !== "x-middleware-rewrite" && key !== "x-middleware-next") {
+        res.headers.set(key, value);
+      }
+    });
+    return res;
   }
 
   return intlResponse;
