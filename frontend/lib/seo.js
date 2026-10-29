@@ -489,23 +489,23 @@ export function buildProducerMetadata(producer) {
       title: producer.name,
       description,
       url: pageUrl,
-      // HOT-017 (MEH-782): omit `images` when there's no image rather than
-      // emitting an empty array — Next.js drops the undefined key, so no empty
-      // `og:image` is rendered (omit, never null/empty — MEH-741 precedent).
-      images: img ? [{ url: img, width: 1200, height: 630 }] : undefined,
+      // MEH-2590: no image → the branded site image, never an omitted key.
+      // HOT-017 (MEH-782) omitted it expecting the layout's og:image to be
+      // inherited; it is not — a page-level `openGraph` replaces the layout's,
+      // so imageless business pages shared with no preview image at all.
+      images: [{ url: img || "/og-image.png", width: 1200, height: 630 }],
       type: "website",
       locale: "he_IL",
       siteName: BRAND_NAME,
     },
     // MEH-1062 (SEO-05): entity-specific Twitter/X card. Reuses the same
     // OG-transformed image + producer name so the card shows the producer,
-    // not the layout's generic site image. `undefined` images key is dropped
-    // by Next.js (omit, never empty — HOT-017/MEH-741 precedent).
+    // not the layout's generic site image. MEH-2590: site image when none.
     twitter: {
       card: "summary_large_image",
       title: producer.name,
       description,
-      images: img ? [img] : undefined,
+      images: [img || "/og-image.png"],
     },
   };
 }

@@ -31,6 +31,7 @@ export async function generateMetadata({ params }) {
       type: "website",
       siteName: BRAND_NAME,
       locale: OG_LOCALE[locale],
+      images: ["/og-image.png"], // MEH-2590: not inherited from the layout
     },
     alternates: buildAlternates("/about/for-businesses/guides", locale),
   };
