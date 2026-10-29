@@ -64,8 +64,8 @@ const scope = (page: Page) => page.locator("#main-content");
 /** Deny-list for item 1 — the hero must not mention premium tiers or fees (MEH-617: the price answer lives in the FAQ, Etsy pattern). */
 const HERO_FEES_VOCAB = ["פרימיום", "עמלה", "עמלות"];
 
-/** Derived, not stated: the numerals the page renders are `0${n}` for n = 1..4. */
-const STEP_NUMERALS = ["1", "2", "3", "4"].map((n) => `0${n}`);
+/** The numerals the page renders: 1..4 (MEH-2564 dropped the «01–04» zero-pad). */
+const STEP_NUMERALS = ["1", "2", "3", "4"];
 
 /** The five showcase item titles the page renders today (verified is MEH-1285 gated). */
 const SHOWCASE_ITEM_TITLES_HE = Object.values(SHOWCASE_HE.items).map((item) => item.title);
@@ -112,8 +112,9 @@ test.describe("manual › /join (MEH-995)", () => {
     }
   });
 
-  // MT:MEH-995:2 — "איך זה עובד": Cormorant numerals 01–04 intact (not clipped, even at 320px), 4 titles + texts, link → /about/process.
-  test("four steps: numerals 01–04 unclipped at 320px, titles from copy, process link", async ({ page }) => {
+  // MT:MEH-995:2 — "איך זה עובד": numerals 1–4 intact (not clipped, even at 320px), 4 titles + texts, link → /about/process.
+  // MEH-2564: the numerals are 36px round badges now, not 01–04 in Cormorant.
+  test("four steps: numerals 1–4 unclipped at 320px, titles from copy, process link", async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 720 });
     await gotoJoin(page);
     const how = scope(page).getByTestId("join-how");
@@ -132,9 +133,9 @@ test.describe("manual › /join (MEH-995)", () => {
       // past 320 is what "clipped" looks like in RTL flow.
       expect(box!.x, `numeral ${STEP_NUMERALS[i]} left edge`).toBeGreaterThanOrEqual(0);
       expect(box!.x + box!.width, `numeral ${STEP_NUMERALS[i]} right edge`).toBeLessThanOrEqual(320);
-      // leading-none: one line of glyphs. A wrapped "0" / "1" would double the height.
-      const fontSize = await numeral.evaluate((node) => parseFloat(getComputedStyle(node).fontSize));
-      expect(box!.height, `numeral ${STEP_NUMERALS[i]} must sit on one line`).toBeLessThan(fontSize * 1.5);
+      // MEH-2564: a round badge — as tall as it is wide. A squeezed or wrapped
+      // badge breaks that ratio.
+      expect(Math.abs(box!.height - box!.width), `numeral ${STEP_NUMERALS[i]} badge must stay round`).toBeLessThan(1);
       await noHorizontalOverflow(numeral);
     }
     await noHorizontalOverflow(how);
