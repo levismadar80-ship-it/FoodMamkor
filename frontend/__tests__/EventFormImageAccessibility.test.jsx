@@ -145,3 +145,15 @@ describe("MEH-2031 — EventForm upload control accessibility", () => {
     expect(fileInput()).toBeTruthy();
   });
 });
+
+describe("MEH-2546 — why add a photo", () => {
+  it("shows the hint while there is no photo, and drops it once one is uploaded", async () => {
+    api.post.mockResolvedValueOnce({ data: { url: CLOUD_URL } });
+    renderForm();
+    expect(screen.getByTestId("event-image-why").textContent).toBe(T.image_why);
+
+    await selectFile(fileInput());
+    await waitFor(() => expect(preview()).toBeInTheDocument());
+    expect(screen.queryByTestId("event-image-why")).toBeNull();
+  });
+});
