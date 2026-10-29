@@ -15,6 +15,8 @@ import en from "../messages/en.json";
 import { BRAND_SAME_AS } from "@/lib/constants";
 import Footer from "@/components/Footer";
 
+// MEH-2554: Footer reads the signed-in user (the guest-only login link).
+vi.mock("@/lib/auth-context", () => ({ useAuth: () => ({ user: null }) }));
 vi.mock("@/lib/api", () => ({ default: { get: vi.fn(() => new Promise(() => {})), post: vi.fn() } }));
 vi.mock("next/link", () => ({
   default: ({ href, children, ...rest }) => (

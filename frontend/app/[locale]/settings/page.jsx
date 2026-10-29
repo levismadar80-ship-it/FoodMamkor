@@ -387,7 +387,7 @@ export function ProfileTab() {
             value={user.email || ""}
             readOnly
             disabled
-            className="w-full border border-border rounded-[12px] px-3 py-2 bg-green-50 text-fg-muted cursor-not-allowed"
+            className="w-full border border-border rounded-[12px] px-3 py-2 bg-background-alt text-fg-muted cursor-not-allowed"
             dir="ltr"
           />
           <p className="text-xs text-fg-muted mt-1 text-right">

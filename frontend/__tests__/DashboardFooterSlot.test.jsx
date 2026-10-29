@@ -40,6 +40,8 @@ vi.mock("@phosphor-icons/react", () => ({
 vi.mock("@/components/ButtonSpinner", () => ({ default: () => <span /> }));
 // Fail-closed experiences gate (see FooterNavGroups.test.jsx) — keeps the
 // consumer-footer render independent of experience supply.
+// MEH-2554: Footer reads the signed-in user (the guest-only login link).
+vi.mock("@/lib/auth-context", () => ({ useAuth: () => ({ user: null }) }));
 vi.mock("@/lib/api", () => ({
   default: { post: vi.fn(), get: vi.fn(() => new Promise(() => {})) },
 }));

@@ -47,6 +47,8 @@ vi.mock("@/components/ButtonSpinner", () => ({ default: () => <span /> }));
 // in its fail-closed state for this spec, so the link counts below stay about
 // the MEH-1177 split and not about experience supply. The gate's own behaviour
 // is asserted in ExperiencesNavGate.test.jsx.
+// MEH-2554: Footer reads the signed-in user (the guest-only login link).
+vi.mock("@/lib/auth-context", () => ({ useAuth: () => ({ user: null }) }));
 vi.mock("@/lib/api", () => ({
   default: { post: vi.fn(), get: vi.fn(() => new Promise(() => {})) },
 }));
