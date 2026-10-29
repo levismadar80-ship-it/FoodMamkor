@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
-import Link from "next/link";
-import { Calendar, CalendarPlus, Coins, Leaf, MapPin, UsersThree } from "@phosphor-icons/react";
+// next-intl's Link keeps the /en prefix (next/link drops it under
+// localePrefix: as-needed — MEH-2403 review).
+import { Link } from "@/i18n/navigation";
+import { Calendar, CalendarPlus, CaretLeft, Coins, Leaf, MapPin, UsersThree } from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
 import api from "@/lib/api";
 import { formatEventDate } from "@/lib/format-date";
@@ -44,6 +46,34 @@ const DETAIL_DATE_OPTIONS = {
   month: "long",
   year: "numeric",
 };
+
+// The event's owner as one tappable row: initial avatar, the line, and a
+// forward chevron (points left in RTL; `ltr:rotate-180` flips it for /en, as
+// BackLink does). Without an href it renders the same row with no chevron, so
+// a missing slug is never a dead link.
+function OwnerRow({ href, name, children }) {
+  const initial = Array.from((name || "").trim())[0] ?? "";
+  const body = (
+    <>
+      <span
+        aria-hidden="true"
+        className="shrink-0 w-11 h-11 rounded-full bg-green-50 text-primary font-headline-md text-lg font-bold grid place-items-center"
+      >
+        {initial}
+      </span>
+      <span className="min-w-0 flex-1 text-base text-text">{children}</span>
+      {href && <CaretLeft size={18} className="shrink-0 text-primary ltr:rotate-180" aria-hidden="true" />}
+    </>
+  );
+  const box = "flex items-center gap-3 rounded-[12px] border border-border bg-white p-3 min-h-[64px]";
+  return href ? (
+    <Link href={href} className={`${box} hover:border-primary transition focus-ring`}>
+      {body}
+    </Link>
+  ) : (
+    <div className={box}>{body}</div>
+  );
+}
 
 // MEH-476 PR 3b2: extracted from app/[locale]/events/[id]/page.js so the
 // route can export generateMetadata (Client Components cannot). page.js
@@ -240,28 +270,29 @@ export default function EventDetailClient() {
         </div>
 
         {/* MEH-2461: an organizer's event links to /organizers/{slug} (its
-            business page 404s since MEH-2459) with the approved line. */}
+            business page 404s since MEH-2459) with the approved line.
+            Organizer-link affordance: the owner line is a full-width card with
+            an initial avatar and a forward chevron (the Eventbrite / Meetup
+            organizer row) — as bare green text nothing said it was tappable. */}
         {event.producer_name && isOrganizerEvent && (
-          <p className="text-sm text-fg-muted mt-8" data-testid="event-organizer-line">
+          <div className="mt-8" data-testid="event-organizer-line">
             {event.owner_slug ? (
-              <Link
-                href={`/organizers/${event.owner_slug}`}
-                className="text-primary hover:underline"
-              >
+              <OwnerRow href={`/organizers/${event.owner_slug}`} name={event.producer_name}>
                 {t("organizer_line", { name: event.producer_name })}
-              </Link>
+              </OwnerRow>
             ) : (
-              t("organizer_line", { name: event.producer_name })
+              <OwnerRow name={event.producer_name}>
+                {t("organizer_line", { name: event.producer_name })}
+              </OwnerRow>
             )}
-          </p>
+          </div>
         )}
         {event.producer_name && !isOrganizerEvent && (
-          <p className="text-sm text-fg-muted mt-8">
-            {t("organized_by")}{" "}
-            <Link href={`/producer/${event.producer_id}`} className="text-primary hover:underline">
-              {event.producer_name}
-            </Link>
-          </p>
+          <div className="mt-8" data-testid="event-business-line">
+            <OwnerRow href={`/producer/${event.producer_id}`} name={event.producer_name}>
+              {t("organized_by")} <span className="font-semibold">{event.producer_name}</span>
+            </OwnerRow>
+          </div>
         )}
       </div>
     </div>

@@ -17,6 +17,7 @@
 import { notFound } from "next/navigation";
 import * as Sentry from "@sentry/nextjs";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { CaretLeft } from "@phosphor-icons/react/ssr";
 import { Link } from "@/i18n/navigation";
 import { API_URL } from "@/lib/env";
 import { serverFetch } from "@/lib/server-fetch";
@@ -260,6 +261,14 @@ export default async function OrganizerPage(props) {
                       }}
                     />
                   )}
+                  {/* Forward chevron: the row is a link to the event. Points
+                      left in RTL; `ltr:rotate-180` flips it for /en. */}
+                  <CaretLeft
+                    size={18}
+                    aria-hidden="true"
+                    data-testid="organizer-event-chevron"
+                    className="shrink-0 text-primary ltr:rotate-180"
+                  />
                 </Link>
               </li>
             ))}
