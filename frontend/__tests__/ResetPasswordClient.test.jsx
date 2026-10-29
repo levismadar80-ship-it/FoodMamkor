@@ -43,14 +43,6 @@ vi.mock("next-intl", () => ({
   useTranslations: (scope) => (key) => (scope ? `${scope}.${key}` : key),
 }));
 
-vi.mock("next/link", () => ({
-  default: ({ children, href, ...props }) => (
-    <a href={typeof href === "string" ? href : "#"} {...props}>
-      {children}
-    </a>
-  ),
-}));
-
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ children, href, ...props }) => (
     <a href={typeof href === "string" ? href : "#"} {...props}>

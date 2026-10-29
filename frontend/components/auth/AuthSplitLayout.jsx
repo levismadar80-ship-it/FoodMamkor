@@ -18,17 +18,33 @@ import { optimizeCloudinary } from "@/lib/cloudinary";
  *           (defaults to the /login photo).
  * Does NOT: own any form logic or copy beyond the shared overlay key.
  */
-const DEFAULT_HERO = "https://res.cloudinary.com/dfzpscjks/image/upload/login/hero-produce-crate.jpg";
+const DEFAULT_HERO =
+  "https://res.cloudinary.com/dfzpscjks/image/upload/login/hero-produce-crate.jpg";
 
-export default function AuthSplitLayout({ title, subtitle, children, heroSrc = DEFAULT_HERO, testId }) {
+export default function AuthSplitLayout({
+  title,
+  subtitle,
+  children,
+  heroSrc = DEFAULT_HERO,
+  testId,
+}) {
   const t = useTranslations("auth.login");
   return (
     <div
       className="min-h-[calc(100vh-180px)] flex flex-col bg-background lg:grid lg:grid-cols-2"
       data-testid={testId}
     >
-      <div className="relative hidden lg:block lg:order-2 overflow-hidden" data-testid="auth-hero-pane">
-        <Image src={optimizeCloudinary(heroSrc)} alt="" fill sizes="(min-width: 1024px) 50vw" className="object-cover" />
+      <div
+        className="relative hidden lg:block lg:order-2 overflow-hidden"
+        data-testid="auth-hero-pane"
+      >
+        <Image
+          src={optimizeCloudinary(heroSrc)}
+          alt=""
+          fill
+          sizes="(min-width: 1024px) 50vw"
+          className="object-cover"
+        />
         <div
           className="absolute inset-0 bg-gradient-to-t from-green-900/90 via-green-900/30 to-transparent"
           aria-hidden="true"
@@ -41,11 +57,16 @@ export default function AuthSplitLayout({ title, subtitle, children, heroSrc = D
       </div>
 
       <div className="lg:order-1 flex items-center justify-center px-4 py-12 md:py-16">
-        <div className="w-full max-w-[416px] mx-auto grid gap-6" data-testid="auth-form-pane">
+        <div
+          className="w-full max-w-[416px] mx-auto grid gap-6"
+          data-testid="auth-form-pane"
+        >
           {(title || subtitle) && (
             <div className="grid gap-2 text-start">
               {title && (
-                <h1 className="font-headline-lg font-black text-headline-lg leading-tight text-text">{title}</h1>
+                <h1 className="font-headline-lg font-black text-headline-lg leading-tight text-text">
+                  {title}
+                </h1>
               )}
               {subtitle && <p className="text-fg-muted text-sm">{subtitle}</p>}
             </div>

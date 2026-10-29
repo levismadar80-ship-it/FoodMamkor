@@ -449,8 +449,10 @@ test.describe("manual › /register split-editorial layout (MEH-788)", () => {
 
     await expect(page.getByTestId("register-hero-pane")).toBeHidden();
     await expect(page.getByTestId("register-form")).toBeVisible();
-    const formBox = (await page.getByTestId("register-heading").boundingBox())!;
-    expect(formBox.y, "the heading starts in the first screen, not under a 30vh band").toBeLessThan(260);
+    // 260px ≈ header (~90px) + section padding; the old 30vh band alone put
+    // the heading past 300px on a 844px-tall phone.
+    const headingBox = (await page.getByTestId("register-heading").boundingBox())!;
+    expect(headingBox.y, "the heading starts in the first screen, not under a 30vh band").toBeLessThan(260);
 
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
