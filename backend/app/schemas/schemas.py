@@ -1947,20 +1947,6 @@ class ProducerAdminCreate(BaseModel):
         return self
 
 
-class ProducerImportPreviewRow(BaseModel):
-    row_number: int
-    data: dict
-    errors: list[str] = []
-    warnings: list[str] = []
-
-
-class ProducerImportResult(BaseModel):
-    imported: int
-    skipped: int
-    errors: int
-    rows: list[ProducerImportPreviewRow]
-
-
 # MEH-291: 4-value enum that consolidates is_available_today + availability_status.
 # Tuple form is the runtime allowlist used by the field validator below and by
 # routers/producer_me.py for dual-write mirroring during the 7-day overlap.
@@ -2764,8 +2750,9 @@ class ProducerListOut(BaseModel):
         )
         return self
 
-    @model_validator(mode="after")
-    def _compute_verification_tier(self):
+    @model_validator(mode="wrap")
+    @classmethod
+    def _compute_verification_tier(cls, data, handler):
         # MEH-762 (ADR-022 D2/D3): resolve the public tier from verified_at +
         # the category licensing requirement. Mirrors the MEH-530 name-
         # membership predicate (license_validation.categories_require_license)
@@ -2775,17 +2762,41 @@ class ProducerListOut(BaseModel):
         # exclude "declared"; an unverified license-required producer resolves
         # to None (no badge, no negative label — D3). Does NOT touch
         # trust_tier (MEH-51, separate axis — Chunk-4 decoupling).
+        #
+        # MEH-2520: two more facts gate the tier, and both are admin-only
+        # columns that must NOT join the public contract — so this is a WRAP
+        # validator that reads them off the source row (`data`, the ORM
+        # object) instead of declaring fields:
+        #   * "verified" needs the captured licence not to have lapsed
+        #     (`license_expires_at`); a lapsed one falls back by the rules
+        #     below, the business itself stays listed.
+        #   * "declared" needs a signed declaration (`declared_at`). An
+        #     admin-built business nobody has claimed signed nothing, so the
+        #     «חתם על הצהרה מחייבת» explainer must not render for it.
+        # Only an ORM row is resolved here. A dict or an already-built model
+        # is a payload this class produced earlier (FastAPI re-validates the
+        # returned model against response_model), whose tier was resolved
+        # from the row then — it is kept as is. A dict without one stays None
+        # (fail-closed).
         from app.constants import LICENSE_REQUIRED_CATEGORIES
+        from app.services.verification_status import verification_is_current
 
-        if self.verified_at is not None:
-            self.verification_tier = "verified"
-        elif not any(
-            c.name in LICENSE_REQUIRED_CATEGORIES for c in (self.categories or [])
+        model = handler(data)
+        if isinstance(data, (dict, BaseModel)):
+            return model
+
+        def source(name):
+            return getattr(data, name, None)
+
+        if verification_is_current(model.verified_at, source("license_expires_at")):
+            model.verification_tier = "verified"
+        elif source("declared_at") is not None and not any(
+            c.name in LICENSE_REQUIRED_CATEGORIES for c in (model.categories or [])
         ):
-            self.verification_tier = "declared"
+            model.verification_tier = "declared"
         else:
-            self.verification_tier = None
-        return self
+            model.verification_tier = None
+        return model
 
     @model_validator(mode="after")
     def _derive_lat_lng_from_primary_location(self):
@@ -2910,6 +2921,16 @@ class ProducerAdminOut(ProducerDetailOut):
     # so the badge and the queue ordering can never disagree about age.
     # Israeli work week Sun–Thu, no holiday calendar (MEH-2110 scope).
     business_days_waiting: int = 0
+    # MEH-2495: does an account own this row (EXISTS users.producer_id = id)?
+    # Derived, never stored — hydrated per response by routers/admin.py
+    # `_attach_has_owner` in ONE batched query (no N+1). It drives the drafts
+    # list: «מחכה לבעלים» vs «נקלט, בהשלמה», and whether the row offers the
+    # claim-link copy. Admin-only: which pages have an account behind them is
+    # nobody's business but the admin's — not on ProducerDetailOut/ListOut.
+    # None, not False, by default: a route that forgot to hydrate must fail
+    # CLOSED — the UI renders neither chip nor action for a non-boolean —
+    # instead of reporting a claimed draft as ownerless.
+    has_owner: bool | None = None
     # MEH-986 ch3b: free-text kosher re-declared here — it was removed from the
     # public ProducerListOut but stays admin-internal (the admin table + form).
     kosher: str | None = None
@@ -3249,12 +3270,33 @@ class LicenseExpiryReminderOut(BaseModel):
     rows: list[LicenseExpiryReminderRow] = []
 
 
-class KashrutApproveIn(BaseModel):
-    pass
-
-
 class KashrutRejectIn(BaseModel):
-    notes: str | None = None
+    # MEH-2518: the owner reads this in her dashboard — bound it.
+    notes: str | None = Field(None, max_length=1000)
+
+
+# MEH-2518: kashrut certificates carry a printed expiry, usually 3-12 months
+# out. The approve action takes that date from the certificate instead of
+# inventing approval + 365 days. 400 days is a typo guard, not a policy.
+KASHRUT_EXPIRY_MAX_DAYS = 400
+
+
+class KashrutApproveIn(BaseModel):
+    expires_on: date
+
+    @field_validator("expires_on")
+    @classmethod
+    def _expires_on_in_range(cls, v: date) -> date:
+        today = israel_today()
+        if v <= today:
+            raise ValueError("תאריך התוקף של התעודה חייב להיות אחרי היום")
+        if v > today + timedelta(days=KASHRUT_EXPIRY_MAX_DAYS):
+            raise ValueError("תאריך התוקף רחוק מדי — בדקי את התאריך שמודפס על התעודה")
+        return v
+
+
+class KashrutRevokeIn(BaseModel):
+    notes: str | None = Field(None, max_length=1000)
 
 
 class OtpConfirmIn(BaseModel):
@@ -4129,6 +4171,12 @@ class GroupBuyCommitRequest(BaseModel):
 # GroupBuy.status; which of them a caller may move to is decided in the router.
 class GroupBuyStatusUpdate(BaseModel):
     status: Literal["open", "funded", "cancelled", "fulfilled"]
+    # MEH-2489: the status the dashboard showed when the owner pressed the
+    # button. Optional, so a caller that omits it behaves exactly as before;
+    # when sent and the row has moved on (a last participant joined, open →
+    # funded), the router refuses with 409 instead of acting on a state she
+    # never saw.
+    expected_status: Literal["open", "funded", "cancelled", "fulfilled"] | None = None
 
 
 class GroupBuyStatusOut(BaseModel):

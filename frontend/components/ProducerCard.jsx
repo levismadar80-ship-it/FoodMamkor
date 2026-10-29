@@ -132,6 +132,11 @@ function CardHeart({ producer, onCountChange }) {
     try {
       if (next) {
         await api.post(`/users/me/favorites/${producer.id}`);
+        // MEH-2526: after the server accepts, point at where updates live.
+        showToast.success(t("producer.card.favorites.saved_toast"), {
+          icon: <HeartStraight size={18} weight="fill" />,
+          duration: 5000,
+        });
       } else {
         await api.delete(`/users/me/favorites/${producer.id}`);
       }

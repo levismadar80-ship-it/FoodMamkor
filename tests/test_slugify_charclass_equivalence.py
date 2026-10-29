@@ -20,12 +20,13 @@ Three sites used to carry three COPIES of the same character class (grepped
 
   * `backend/app/slug_utils.py::slugify`                — the implementation
   * `backend/app/routers/admin.py::_slugify`            — alias
-  * `backend/app/services/producer_import.py::_slugify` — alias
+  * `backend/app/services/producer_import.py::_slugify` — was an alias; the
+    module was deleted with the CSV import (MEH-2516)
 
 The parametrisation below is therefore no longer three independent
 measurements, and saying so matters: a suite that reads as 3x coverage while
 exercising one function is the "artifact that asserts coverage" failure this
-repo has a rule about. `test_the_three_names_are_one_object` is what carries
+repo has a rule about. `test_the_two_names_are_one_object` is what carries
 the real content now — it reds if someone re-forks a copy, which is the only
 way the three could diverge again.
 """
@@ -40,20 +41,18 @@ from pathlib import Path
 import pytest
 
 from app.routers.admin import _slugify as admin_slugify
-from app.services.producer_import import _slugify as import_slugify
 from app.slug_utils import slugify as utils_slugify
 
 HEBREW_BLOCK = range(0x0590, 0x0600)
 
-# The three production entry NAMES. Since MEH-2020 they resolve to one object,
-# so the parametrisation re-runs one function three times rather than comparing
-# three. Kept deliberately: the names are what the rest of the codebase imports,
-# so a future re-fork shows up here as three differing results — and
-# `test_the_three_names_are_one_object` catches it directly.
+# The production entry NAMES (three until MEH-2516 deleted producer_import.py).
+# Since MEH-2020 they resolve to one object, so the parametrisation re-runs one
+# function rather than comparing copies. Kept deliberately: the names are what the rest of the codebase imports,
+# so a future re-fork shows up here as differing results — and
+# `test_the_two_names_are_one_object` catches it directly.
 IMPLEMENTATIONS = (
     ("admin._slugify", admin_slugify),
     ("slug_utils.slugify", utils_slugify),
-    ("producer_import._slugify", import_slugify),
 )
 
 
@@ -148,7 +147,7 @@ def test_range_removal_changes_output(
         )
 
 
-def test_the_three_names_are_one_object() -> None:
+def test_the_two_names_are_one_object() -> None:
     """MEH-2020 — identity, not agreement.
 
     Agreement on a corpus was the best available check while these were three
@@ -200,7 +199,7 @@ def test_range_is_live_in_source() -> None:
     both are in use and both are correct.
     """
     # Two spellings of the same range are in use and both are correct:
-    #   admin.py / producer_import.py -> the six-character escape sequence
+    #   admin.py                      -> the six-character escape sequence
     #   slug_utils.py                 -> the literal characters
     # `"\\u0590-\\u05FF"` here is the *source text* `֐-׿`, not the
     # characters it denotes — inside an r-string those are different things,
@@ -229,7 +228,6 @@ def test_docstrings_do_not_claim_the_range_is_redundant() -> None:
     sources = (
         root / "backend" / "app" / "routers" / "admin.py",
         root / "backend" / "app" / "slug_utils.py",
-        root / "backend" / "app" / "services" / "producer_import.py",
     )
 
     checked = 0

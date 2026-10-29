@@ -398,7 +398,7 @@ export default function AboutProcessClient() {
               {/* MEH-1489: auth-state-aware CTA (producer -> dashboard, admin -> hidden). */}
               <BusinessCtaLink
                 href="/register/producer"
-                className="inline-flex items-center gap-2 min-h-[52px] px-7 py-3.5 bg-background text-primary rounded-lg font-body-md font-semibold text-base hover:bg-background-alt transition-colors duration-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-on-dark focus-visible:ring-offset-2 focus-visible:ring-offset-primary whitespace-nowrap"
+                className="inline-flex items-center gap-2 min-h-[52px] px-7 py-3.5 bg-background text-primary rounded-lg font-body-md font-semibold text-base hover:bg-background-alt transition-colors duration-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-on-dark focus-visible:ring-offset-2 focus-visible:ring-offset-primary max-w-full"
               >
                 {t("cta.submit")}
                 <ArrowLeft size={19} aria-hidden />

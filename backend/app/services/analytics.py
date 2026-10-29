@@ -108,7 +108,8 @@ def unique_views_count(
     which would trade over-counting for under-counting.
 
     `row_id_col` gates that NULL arm on the row existing at all. Under the
-    LEFT JOIN in `rank_in_city`, a producer with zero views still produces
+    LEFT JOIN in `rank_in_city` (since removed, MEH-2529; any LEFT-JOIN caller
+    has the same shape), a producer with zero views still produces
     one all-NULL row — without the gate, `hash IS NULL` matches it and every
     view-less producer scores 1 instead of 0.
 

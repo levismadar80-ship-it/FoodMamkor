@@ -406,10 +406,10 @@ export function useMapFilters({
     return tags;
   }, [chipState]);
 
-  // MEH-1368: count of ALL active attribute toggles — drives the inline
-  // "סינון · N" count on the FilterChipsBar button. Replaces the old corner
-  // badge's sheet-only count (countActiveSheetOnlyFilters), now that the inline
-  // quick-chip row is gone and every attribute lives in FilterSheet.
+  // MEH-1368: count of ALL active attribute toggles. MEH-2505: the
+  // "סינון · N" button count now reads activeFilterTags.length (sheet-only
+  // tags, so a lit service chip is not counted twice); this count only feeds
+  // hasActiveFilters below.
   const activeAttributeCount = useMemo(
     () => TOGGLE_CHIPS.filter((c) => chipState[c.key]).length,
     [chipState],

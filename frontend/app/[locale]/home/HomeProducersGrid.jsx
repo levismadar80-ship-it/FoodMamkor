@@ -287,7 +287,7 @@ export function HomeProducersGrid({
           the sheet filtered in place would be the same axis behaving two ways
           on one row. One state (`chips`), one handler (`onToggleChip`), for
           the surface chips and the sheet alike. */}
-      <div className="mb-3 flex items-center gap-2 min-w-0" data-testid="home-filter-row">
+      <div className="mb-3 flex flex-wrap items-center gap-2 min-w-0" data-testid="home-filter-row">
         {promotedChips.map((chip) => {
           const active = !!chips[chip.key];
           return (

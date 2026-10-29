@@ -16,6 +16,10 @@ const ChatWidget = dynamic(() => import("@/components/ChatWidget"), {
   ssr: false,
 });
 
+// MEH-2512: form pages whose primary control sits under the mobile launcher.
+// Exact path or a subpath ("/register/producer"), never a shared prefix.
+const FORM_ROUTES = ["/login", "/register", "/forgot-password", "/reset-password", "/contact"];
+
 // MEH-1168 P3: the global chat FAB is suppressed on the public producer detail
 // page (/producer/[id]) ONLY — that page already carries a primary contact CTA
 // + a sticky contact bar, so the FAB was a second green action that overlapped
@@ -50,5 +54,10 @@ export default function ChatWidgetLazy() {
   // its bottom-END corner sat over the row-action column of the approvals
   // table. Same pathname gate as above.
   if (pathname === "/admin" || pathname.startsWith("/admin/")) return null;
-  return <ChatWidget />;
+  // MEH-2512: on phones the launcher's bottom-END corner sat over the primary
+  // control of every form page (login submit, register preflight, password
+  // field, contact input). No floating launcher over a form — mobile only; on
+  // desktop it sits in the page corner, clear of the centred form.
+  const isFormPage = FORM_ROUTES.some((r) => pathname === r || pathname.startsWith(`${r}/`));
+  return <ChatWidget hideOnMobile={isFormPage} />;
 }

@@ -468,20 +468,6 @@
         "title": "BioGenerateIn",
         "type": "object"
       },
-      "Body_import_producers_excel_admin_producers_import_post": {
-        "properties": {
-          "file": {
-            "contentMediaType": "application/octet-stream",
-            "title": "File",
-            "type": "string"
-          }
-        },
-        "required": [
-          "file"
-        ],
-        "title": "Body_import_producers_excel_admin_producers_import_post",
-        "type": "object"
-      },
       "Body_upload_avatar_upload_avatar_post": {
         "properties": {
           "file": {
@@ -3157,6 +3143,23 @@
       },
       "GroupBuyStatusUpdate": {
         "properties": {
+          "expected_status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "open",
+                  "funded",
+                  "cancelled",
+                  "fulfilled"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Status"
+          },
           "status": {
             "enum": [
               "open",
@@ -3185,6 +3188,20 @@
           }
         },
         "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "KashrutApproveIn": {
+        "properties": {
+          "expires_on": {
+            "format": "date",
+            "title": "Expires On",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expires_on"
+        ],
+        "title": "KashrutApproveIn",
         "type": "object"
       },
       "KashrutCertRef": {
@@ -3300,6 +3317,7 @@
           "notes": {
             "anyOf": [
               {
+                "maxLength": 1000,
                 "type": "string"
               },
               {
@@ -3403,6 +3421,24 @@
           "created_at"
         ],
         "title": "KashrutRequestOut",
+        "type": "object"
+      },
+      "KashrutRevokeIn": {
+        "properties": {
+          "notes": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "title": "KashrutRevokeIn",
         "type": "object"
       },
       "LicenseExpiryReminderOut": {
@@ -4896,6 +4932,17 @@
             "default": false,
             "title": "Has No Added Sugar Products",
             "type": "boolean"
+          },
+          "has_owner": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Has Owner"
           },
           "has_physical_location": {
             "default": true,
@@ -13114,6 +13161,16 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KashrutApproveIn"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {
@@ -13196,6 +13253,63 @@
           }
         ],
         "summary": "Reject Kashrut Request",
+        "tags": [
+          "admin-kashrut"
+        ]
+      }
+    },
+    "/admin/kashrut/{request_id}/revoke": {
+      "post": {
+        "description": "MEH-2518: take an approved kashrut badge down (e.g. the certificate was\nwithdrawn). Before this the only way was SQL. Revokes every approved\nrequest for that badge code on the business — a renewal leaves two — and\nwhen no badge is left clears the verified/expiry pair, so the «כשר» header\nline, the ?kosher filter and the certificate proxy all stop at once.",
+        "operationId": "revoke_kashrut_badge_admin_kashrut__request_id__revoke_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KashrutRevokeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Revoke Kashrut Badge",
         "tags": [
           "admin-kashrut"
         ]
@@ -13858,65 +13972,6 @@
           }
         ],
         "summary": "Admin Create Producer",
-        "tags": [
-          "admin"
-        ]
-      }
-    },
-    "/admin/producers/import": {
-      "post": {
-        "description": "Upload Excel/CSV file and import producers. dry_run=true returns preview only.",
-        "operationId": "import_producers_excel_admin_producers_import_post",
-        "parameters": [
-          {
-            "description": "Preview only — set false to actually save",
-            "in": "query",
-            "name": "dry_run",
-            "required": false,
-            "schema": {
-              "default": true,
-              "description": "Preview only — set false to actually save",
-              "title": "Dry Run",
-              "type": "boolean"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_import_producers_excel_admin_producers_import_post"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "summary": "Import Producers Excel",
         "tags": [
           "admin"
         ]
@@ -20334,7 +20389,7 @@
         ]
       },
       "post": {
-        "description": "Submit or update a review.\n\nGuards (checked in order):\n  1. Producer must exist.\n  1b. Producer must be a business — an organizer gets 409 (MEH-2465).\n  2. Producer owner cannot review their own business.\n  2b. Producer owner cannot review a business sharing a category with\n      hers (MEH-2076 — conflict of interest; cross-category stays open).\n  3. First-time reviewers must have a click on ANY of this producer's\n     contact channels — a WhatsApp click OR a contact click (MEH-2204).\n  4. Body is moderated by Haiku (fail-open).",
+        "description": "Submit or update a review.\n\nGuards (checked in order):\n  1. Producer must exist and be live (status approved) — a suspended,\n     rejected, draft or pending one is a 404 like a missing one (MEH-2513).\n  1b. Producer must be a business — an organizer gets 409 (MEH-2465).\n  2. Producer owner cannot review their own business.\n  2b. Producer owner cannot review a business sharing a category with\n      hers (MEH-2076 — conflict of interest; cross-category stays open).\n  3. First-time reviewers must have a click on ANY of this producer's\n     contact channels — a WhatsApp click OR a contact click (MEH-2204).\n  4. Body is moderated by Haiku (fail-open).",
         "operationId": "create_review_nested_producers__producer_id__reviews_post",
         "parameters": [
           {
