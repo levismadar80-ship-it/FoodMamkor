@@ -991,6 +991,8 @@ def google_auth(
             db.refresh(user)
             is_new = True
 
+    _record_oauth_terms(db, user, data.terms_accepted)
+
     # MEH-138 + MEH-375: backfill avatar_url for existing users that
     # don't have one yet — and only those. is_new path already set
     # avatar_url above; skip to avoid a second upload (which would
@@ -1015,6 +1017,20 @@ def google_auth(
         ),
         email_sent=email_expected,
     )
+
+
+def _record_oauth_terms(db: Session, user: User, accepted: bool) -> None:
+    """MEH-2080 chunk 2: stamp the terms consent a consumer gave on /register
+    before choosing Google or Apple — the same columns the email path writes
+    (MEH-1995). Guarded on the flag and never nulled: /login sends no flag, and
+    an absent/False one must leave an earlier consent intact. A True flag
+    overwrites, as register_producer does, so terms_version names the wording
+    most recently agreed to."""
+    if not accepted:
+        return
+    user.terms_accepted_at = datetime.now(timezone.utc)
+    user.terms_version = TERMS_VERSION
+    db.commit()
 
 
 @router.post(
@@ -1340,6 +1356,8 @@ def apple_auth(
             db.commit()
             db.refresh(user)
             is_new = True
+
+    _record_oauth_terms(db, user, data.terms_accepted)
 
     if is_new:
         background_tasks.add_task(

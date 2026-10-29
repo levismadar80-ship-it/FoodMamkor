@@ -96,6 +96,8 @@ describe("MEH-2461 organizer page", () => {
     const rows = screen.getAllByTestId("organizer-event");
     expect(rows).toHaveLength(1);
     expect(rows[0].getAttribute("href")).toBe("/events/e1");
+    // Affordance: each event row ends with a forward chevron.
+    expect(rows[0].querySelector('[data-testid="organizer-event-chevron"]')).not.toBeNull();
     expect(screen.queryByTestId("organizer-events-empty")).not.toBeInTheDocument();
   });
 

@@ -41,7 +41,7 @@ import { PRODUCER_STATUS_LABELS, PRODUCER_STATUS_COLORS, UNKNOWN_STATUS_COLOR } 
  *   2. The contracts are pinned: ProducerAdminOut (schemas.py) carries
  *      `status`, `business_days_waiting`, `submitted_for_review_at`, `images`;
  *      /admin/dashboard's `stats` + `recent_activity` are read by two live
- *      pages and by admin/layout.js.
+ *      pages and by admin/AdminLayoutClient.jsx.
  *   3. The unmocked alternative is worse than the rate-limiter case the rule
  *      cites: a pending business that has waited exactly 2 or 3 business days,
  *      a draft that has waited 40, a 30-deep queue, a broken image URL — every

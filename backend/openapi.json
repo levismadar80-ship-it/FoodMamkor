@@ -332,6 +332,11 @@
               }
             ],
             "title": "Name"
+          },
+          "terms_accepted": {
+            "default": false,
+            "title": "Terms Accepted",
+            "type": "boolean"
           }
         },
         "required": [
@@ -2600,6 +2605,11 @@
           "id_token": {
             "title": "Id Token",
             "type": "string"
+          },
+          "terms_accepted": {
+            "default": false,
+            "title": "Terms Accepted",
+            "type": "boolean"
           }
         },
         "required": [

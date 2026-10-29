@@ -77,7 +77,7 @@ function VanityLinkCard({ slug }) {
  * Does NOT: render the deep analytics (windowed cards + charts) — those live
  *           in the insights tab (dashboard/insights/page.js); nor the edit
  *           forms (dashboard/edit) or quick links (dashboard/tools).
- * Related:  app/[locale]/producer/dashboard/layout.js (tab nav + UX gate);
+ * Related:  app/[locale]/producer/dashboard/DashboardLayoutClient.jsx (tab nav + UX gate);
  *           insights/page.js (deep analytics); backend producer_me.py:489.
  * History:  MEH-57 (analytics); MEH-288 (completeness); MEH-291 (availability);
  *           MEH-964 1A (hub split); MEH-964 1B (KPI strip + insights split);

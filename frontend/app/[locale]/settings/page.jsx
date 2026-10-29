@@ -36,7 +36,7 @@ function SettingsLoadingFallback() {
 
 /**
  * MEH-1638: what renders while useAuth() is still resolving /auth/me.
- * Same class of fix as producer/dashboard/layout.js (PR #2300) but this page
+ * Same class of fix as producer/dashboard/DashboardLayoutClient.jsx (PR #2300) but this page
  * sits OUTSIDE the dashboard layout, so it needs its own placeholder.
  * Shape-only, no text — mirrors the final geometry (heading mb-6 → pill tab
  * bar mb-8 → content card) so the real page swaps in without a shift.
@@ -122,7 +122,7 @@ function SettingsPageBody() {
   //   - authLoading → the answer is not back yet; show the page's shape.
   //   - !user → the effect above is already redirecting to /login; returning
   //     null is deliberate and UNCHANGED (rendering here would flash behind
-  //     the redirect). Same split as producer/dashboard/layout.js:125-132.
+  //     the redirect). Same split as producer/dashboard/DashboardLayoutClient.jsx:125-132.
   if (authLoading) return <SettingsSkeleton label={tA11y("loading")} />;
   if (!user) return null;
 
