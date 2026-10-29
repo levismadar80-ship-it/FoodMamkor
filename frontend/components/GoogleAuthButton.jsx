@@ -7,7 +7,7 @@ import { gsiLang, useGoogleSignIn } from "@/lib/use-google-sign-in";
 import { env } from "@/lib/env";
 import { detailToMessage } from "@/lib/errors";
 
-export default function GoogleAuthButton({ onSuccess, onError }) {
+export default function GoogleAuthButton({ onSuccess, onError, termsAccepted = false }) {
   const t = useTranslations("auth.oauth");
   const { loginWithGoogle } = useAuth();
   const buttonRef = useRef(null);
@@ -15,7 +15,9 @@ export default function GoogleAuthButton({ onSuccess, onError }) {
 
   const handleCredentialResponse = async (response) => {
     try {
-      await loginWithGoogle(response.credential);
+      // MEH-2080: read at callback time (useGoogleSignIn keeps the latest
+      // closure), so a box ticked after the button rendered still counts.
+      await loginWithGoogle(response.credential, { termsAccepted });
       onSuccess?.();
     } catch (err) {
       onError?.(detailToMessage(err.response?.data?.detail) || t("google_error"));

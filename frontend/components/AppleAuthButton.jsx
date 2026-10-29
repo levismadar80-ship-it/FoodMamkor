@@ -1,16 +1,20 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import { env } from "@/lib/env";
 import { detailToMessage } from "@/lib/errors";
 
-export default function AppleAuthButton({ onSuccess, onError }) {
+export default function AppleAuthButton({ onSuccess, onError, termsAccepted = false }) {
   const t = useTranslations("auth.oauth");
   const { loginWithApple } = useAuth();
   const clientId = env.NEXT_PUBLIC_APPLE_CLIENT_ID;
   const redirectUri = env.NEXT_PUBLIC_APPLE_REDIRECT_URI;
+  // MEH-2080: the listener below is bound once per clientId, so it reads the
+  // checkbox through a ref — a box ticked after mount still counts.
+  const termsRef = useRef(termsAccepted);
+  termsRef.current = termsAccepted;
 
   useEffect(() => {
     if (!clientId || typeof window === "undefined") return;
@@ -32,7 +36,7 @@ export default function AppleAuthButton({ onSuccess, onError }) {
       try {
         const { authorization, user } = event.detail;
         const name = user ? `${user.name?.firstName || ""} ${user.name?.lastName || ""}`.trim() : null;
-        await loginWithApple(authorization.id_token, name);
+        await loginWithApple(authorization.id_token, name, { termsAccepted: termsRef.current });
         onSuccess?.();
       } catch (err) {
         onError?.(detailToMessage(err.response?.data?.detail) || t("apple_error"));
