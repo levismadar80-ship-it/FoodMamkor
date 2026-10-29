@@ -10,7 +10,9 @@
 // Pure presentation: the stored string is untouched, nothing is parsed or
 // reformatted, and text outside a range stays in the page direction.
 
-const TIME_RANGE_RE = /(\d{1,2}(?::\d{2})?\s*[–—-]\s*\d{1,2}(?::\d{2})?)/g;
+// The lookarounds keep a longer digit run (a phone number like 050-1234567)
+// from being cut into a fake range.
+const TIME_RANGE_RE = /(?<!\d)(\d{1,2}(?::\d{2})?\s*[–—-]\s*\d{1,2}(?::\d{2})?)(?!\d)/g;
 
 export default function HoursText({ text }) {
   if (!text) return null;

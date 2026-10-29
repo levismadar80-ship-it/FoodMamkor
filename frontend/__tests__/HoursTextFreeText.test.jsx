@@ -66,4 +66,14 @@ describe("HoursText", () => {
     expect(container.querySelector('[dir="ltr"]')).toBeNull();
     expect(container.textContent).toBe("בתיאום מראש");
   });
+
+  it("does not split a phone number typed into the hours field", () => {
+    const { container } = render(
+      <p>
+        <HoursText text="בתיאום בטלפון 050-1234567" />
+      </p>,
+    );
+    expect(container.querySelector('[dir="ltr"]')).toBeNull();
+    expect(container.textContent).toBe("בתיאום בטלפון 050-1234567");
+  });
 });
