@@ -20,8 +20,9 @@ function daysUntil(date, today = israelToday()) {
 
 /**
  * "past" | "today" | "tomorrow" | "this_week" | null.
- * "this_week" = the next 2–6 days (a rolling week, as Eventbrite's «this
- * week» filter reads), not the calendar week — no Sunday/Monday ambiguity.
+ * "this_week" = later in the same Israeli calendar week (Sunday–Saturday),
+ * from the day after tomorrow — what «השבוע» means to a Hebrew reader. On a
+ * Thursday, next Tuesday is not «השבוע» (review #3813).
  */
 export function eventWhen(date, today = israelToday()) {
   const d = daysUntil(date, today);
@@ -29,7 +30,8 @@ export function eventWhen(date, today = israelToday()) {
   if (d < 0) return "past";
   if (d === 0) return "today";
   if (d === 1) return "tomorrow";
-  if (d <= 6) return "this_week";
+  const dow = new Date(`${String(today).slice(0, 10)}T00:00:00Z`).getUTCDay(); // 0 = Sunday
+  if (dow + d <= 6) return "this_week";
   return null;
 }
 

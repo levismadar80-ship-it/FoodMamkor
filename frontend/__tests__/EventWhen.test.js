@@ -13,11 +13,19 @@ describe("eventWhen", () => {
     ["2026-10-28", "past"],
     ["2026-10-29", "today"],
     ["2026-10-30", "tomorrow"],
-    ["2026-10-31", "this_week"],
-    ["2026-11-04", "this_week"],
-    ["2026-11-05", null],
-  ])("%s → %s", (date, want) => {
+    ["2026-10-31", "this_week"], // Saturday — still this week
+    ["2026-11-01", null], // Sunday — next week, not «השבוע»
+    ["2026-11-04", null],
+  ])("%s → %s (today Thursday)", (date, want) => {
     expect(eventWhen(date, TODAY)).toBe(want);
+  });
+
+  it.each([
+    ["2026-11-03", "this_week"],
+    ["2026-11-07", "this_week"], // Saturday closes the Israeli week
+    ["2026-11-08", null],
+  ])("%s → %s (today Sunday)", (date, want) => {
+    expect(eventWhen(date, "2026-11-01")).toBe(want);
   });
 
   it("counts calendar days across the DST switch (25 Oct 2026), not 24h blocks", () => {
