@@ -782,7 +782,7 @@ export default function ProducersClient({
         <label htmlFor="producers-search-input" className="sr-only">
           {t("search_input.label")}
         </label>
-        <div className="flex-1 flex items-center gap-2 border border-border rounded-full px-4 min-h-[44px] bg-white focus-within:ring-2 focus-within:ring-primary/40">
+        <div className="flex-1 min-w-0 flex items-center gap-2 border border-border rounded-full px-4 min-h-[44px] bg-white focus-within:ring-2 focus-within:ring-primary/40">
           <MagnifyingGlass size={18} weight="regular" aria-hidden="true" className="text-fg-muted" />
           <input
             id="producers-search-input"
@@ -791,12 +791,12 @@ export default function ProducersClient({
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             placeholder={t("search_input.placeholder")}
-            className="flex-1 bg-transparent outline-none text-text placeholder:text-fg-muted text-sm"
+            className="flex-1 min-w-0 bg-transparent outline-none text-text placeholder:text-fg-muted text-sm"
           />
         </div>
         <button
           type="submit"
-          className="bg-primary text-white px-4 min-h-[44px] rounded-full text-sm font-medium hover:bg-primary-dark transition"
+          className="shrink-0 bg-primary text-white px-4 min-h-[44px] rounded-full text-sm font-medium hover:bg-primary-dark transition"
         >
           {t("search_input.submit")}
         </button>

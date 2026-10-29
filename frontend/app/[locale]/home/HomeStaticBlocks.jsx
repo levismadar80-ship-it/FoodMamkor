@@ -130,7 +130,11 @@ export function HomeFeaturedProducer({ featured }) {
           <span className="absolute top-0 start-0 w-10 h-[2px] bg-gold-on-dark" aria-hidden="true" />
           <h2 className="font-headline-lg text-[26px] md:text-[34px] font-black text-background">{t("eyebrow")}</h2>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-12 items-end">
+        {/* The column gap is in px on purpose: twelve columns carry eleven
+            gaps, so a rem gap grows elevenfold with the reader's text size
+            (150% text at 768px made the row 792px wide). 48px = gap-12 at the
+            default size, so nothing moves there. */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-y-12 md:gap-x-[48px] items-end">
           <FadeInSection className="md:col-span-7">
             {photo && !photoFailed ? (
               <Image
