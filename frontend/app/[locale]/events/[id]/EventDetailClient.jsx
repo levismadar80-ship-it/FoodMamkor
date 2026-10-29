@@ -31,6 +31,7 @@ import OwnerRow from "@/components/OwnerRow";
 import EventEntryRow, { CATEGORY_ICON } from "@/components/EventEntryRow";
 import { toEventEntry } from "@/lib/event-entry";
 import { eventWhen, addressNavLinks } from "@/lib/event-when";
+import { AddressNavLinks } from "@/components/NavAppGlyphs";
 import { downloadIcs } from "@/lib/event-ics";
 
 // MEH-1404: reuse the producer-detail static map + Waze/Gmaps block on events
@@ -56,7 +57,6 @@ export default function EventDetailClient() {
   // MEH-2548: the owner's upcoming events — «עוד אירועים של…» and, on a
   // past event, «the next one». Best effort: a failure just hides them.
   const [moreEvents, setMoreEvents] = useState([]);
-  const tMap = useTranslations("map.mini");
 
   useEffect(() => {
     api
@@ -307,18 +307,7 @@ export default function EventDetailClient() {
                     {event.location && event.city && <p className="text-sm text-fg-muted">{event.city}</p>}
                   </div>
                 </div>
-                {nav && (
-                  <div className="flex gap-2 px-4 pb-3" data-testid="event-nav-links">
-                    <a href={nav.waze} target="_blank" rel="noopener noreferrer" aria-label={tMap("open_in_waze_aria")}
-                      className="flex-1 inline-flex items-center justify-center min-h-[44px] rounded-[10px] border border-border text-sm font-medium text-primary hover:bg-green-50 transition focus-ring">
-                      {tMap("open_in_waze")}
-                    </a>
-                    <a href={nav.google} target="_blank" rel="noopener noreferrer" aria-label={tMap("open_in_google_aria")}
-                      className="flex-1 inline-flex items-center justify-center min-h-[44px] rounded-[10px] border border-border text-sm font-medium text-primary hover:bg-green-50 transition focus-ring">
-                      {tMap("open_in_google")}
-                    </a>
-                  </div>
-                )}
+                {nav && <AddressNavLinks links={nav} testId="event-nav-links" />}
               </div>
             )}
             <div className={`${infoRow} border-t border-border`}>
