@@ -45,7 +45,6 @@ const CATEGORY_ICON = {
   "חקלאות": Plant,
 };
 
-
 // MEH-2547: toEventEntry lives in lib/event-entry.js (no "use client") so the
 // server-rendered organizer page can build rows too; re-exported for the
 // existing client callers.
