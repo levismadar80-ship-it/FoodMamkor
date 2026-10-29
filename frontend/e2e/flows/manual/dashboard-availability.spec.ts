@@ -73,7 +73,7 @@ async function stubDashboard(page: Page, state: Avail, posts: Rec[] = []) {
     json(r, 200, { producer: { id: 7, name: APPROVED.name, slug: APPROVED.slug, status: "approved", ...state }, stats: {} }));
   await page.route("**/producers/me/analytics**", (r) =>
     json(r, 200, { profile_views: { total: 3, last_7d: 1 }, whatsapp_clicks: { total: 1, last_7d: 0 }, contact_clicks: { total: 0, last_7d: 0 },
-      average_rating: null, total_reviews: 0, rank_in_city: null, conversion_rate: "0%", profile_strength: 100, top_cities: [], follower_count: 0, new_followers_this_week: 0 }));
+      average_rating: null, total_reviews: 0, conversion_rate: "0%", top_cities: [], follower_count: 0, new_followers_this_week: 0 }));
   await page.route("**/producers/me", (r) => json(r, 200, APPROVED));
 }
 

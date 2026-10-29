@@ -83,7 +83,7 @@ async function stubEdit(page: Page, opts: { profile?: Record<string, unknown>; w
     json(r, 200, { producer: { id: 7, name: BASE.name, slug: null, status: "approved", availability_state: "accepting_orders", vacation_until: null }, stats: {} }));
   await page.route("**/producers/me/analytics**", (r) =>
     json(r, 200, { profile_views: { total: 0, last_7d: 0 }, whatsapp_clicks: { total: 0, last_7d: 0 }, contact_clicks: { total: 0, last_7d: 0 },
-      average_rating: null, total_reviews: 0, rank_in_city: null, conversion_rate: "0%", profile_strength: 10, top_cities: [], follower_count: 0, new_followers_this_week: 0 }));
+      average_rating: null, total_reviews: 0, conversion_rate: "0%", top_cities: [], follower_count: 0, new_followers_this_week: 0 }));
   await page.route("**/producers/me", (r: Route) => {
     if (r.request().method() === "PUT") {
       const body = r.request().postDataJSON() as Record<string, unknown>;
