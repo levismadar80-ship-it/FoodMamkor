@@ -176,3 +176,23 @@ describe("ImageGallery imaged state — mobile carousel (MEH-1047 chunk 2)", () 
     expect(screen.queryByTestId("gallery-progress")).not.toBeInTheDocument();
   });
 });
+
+// MEH-2593: the phone hero is edge to edge and ~4:3. The -mx-4 on the shared
+// wrapper cancels ProducerDetail's px-4 (the only mount point); a single image
+// on md+ stands 380px instead of the old 208px (h-52) strip.
+describe("ImageGallery hero size — MEH-2593", () => {
+  it("the carousel is ~4:3 on phones and 380px for a single image on md+", () => {
+    render(<ImageGallery images={urls(1)} producerId="p1" producerName="X" />);
+    const carousel = screen.getByTestId("gallery-carousel");
+    expect(carousel.className).toContain("h-[min(78vw,340px)]");
+    expect(carousel.className).toContain("md:h-[380px]");
+    expect(carousel.className).not.toContain("h-52");
+  });
+
+  it("the wrapper bleeds to the screen edge on phones only", () => {
+    render(<ImageGallery images={urls(3)} producerId="p1" producerName="X" />);
+    const wrapper = screen.getByTestId("gallery-carousel").parentElement;
+    expect(wrapper.className).toContain("-mx-4");
+    expect(wrapper.className).toContain("md:mx-0");
+  });
+});
