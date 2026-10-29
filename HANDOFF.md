@@ -4,6 +4,15 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-10-29 23:15 — דף העזרה באדמין: שאלות «איך עושים…» (#3860)
+
+**‏שורה אחת:** ‏`/admin/help` הוא עכשיו 22 שאלות עם חיפוש, מקובצות כמו בתפריט, וכל אחת נפתחת לצעדים וכפתור «למסך ←».
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏מסך אדמין חדש = שורה ב-`admin/help/topics.js` + `admin.help.topics.<id>` ב-he/en. `AdminHelp.test.jsx` נכשל כשמסך בתפריט בלי נושא.
+- ‏`#<id>` בכתובת פותח נושא. המשך אפשרי: כפתור «?» בכל מסך אדמין שמקשר לנושא שלו, יחד עם ייצוא `NAV_SECTIONS` מ-`AdminLayoutClient.jsx`.
+- ‏«תקלות חירום» ו«כתובות חשובות» הוסרו מהדף. המקום שלהם הוא docs/ACCESS.md + docs/DEPLOYMENT.md.
+
 ## 2026-10-29 20:12 — ניהול האדמין מהנייד: תפריט ⋮ ופס הלשוניות (#3858)
 
 **‏שורה אחת:** ‏תפריט ⋮ בשורות האדמין ופס הלשוניות הירוק נשארים בתוך המסך בנייד.
