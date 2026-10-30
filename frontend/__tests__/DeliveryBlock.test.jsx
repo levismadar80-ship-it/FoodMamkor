@@ -66,7 +66,8 @@ vi.mock("@/lib/utils", async (importOriginal) => ({
 }));
 
 vi.mock("@phosphor-icons/react", () => {
-  const Stub = () => <span />;
+  // Forwards data-testid so a test can find a specific icon (MEH-2592).
+  const Stub = (props) => <span data-testid={props["data-testid"]} />;
   // MEH-1675 added ChatCircle to the icons this tree reaches: DeliveryChecker
   // renders CoverageRequestCta on a negative verdict. The stub list is
   // exhaustive, so a missing name throws rather than rendering nothing.
@@ -131,6 +132,9 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
     expect(screen.getByText("ימי שלישי")).toBeInTheDocument();
     expect(screen.getByText("חיפה")).toBeInTheDocument();
     expect(screen.getByText("עכו")).toBeInTheDocument();
+    // MEH-2592: the truck beside each day heading came back — one per group.
+    expect(screen.getAllByTestId("area-group-icon")).toHaveLength(2);
+    expect(screen.getAllByTestId("delivery-heading-icon")).toHaveLength(1);
   });
 
   it("shows the self-pickup line only when pickup_points is set", () => {
@@ -477,6 +481,8 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
       />,
     );
     expect(screen.getAllByText("חינם")).toHaveLength(1); // once, for two rows
+    // MEH-2592: the box icon beside «איסוף עצמי» came back, once per heading.
+    expect(screen.getAllByTestId("pickup-heading-icon")).toHaveLength(1);
     // MEH-2592 C: each stop with coordinates gets Waze AND Google Maps.
     expect(screen.getAllByTestId("pickup-nav-waze")).toHaveLength(2);
     const google = screen.getAllByTestId("pickup-nav-google");
@@ -487,6 +493,7 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
     );
     expect(screen.getByText("איסוף עצמי")).toBeInTheDocument();
     expect(screen.getAllByText("חינם")).toHaveLength(1); // fallback line
+    expect(screen.getAllByTestId("pickup-heading-icon")).toHaveLength(1);
   });
 
   // ---------- MEH-1577: structured delivery cost ----------
