@@ -459,7 +459,8 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
     expect(screen.queryByText(/מקבלים הזמנות עד/)).not.toBeInTheDocument();
   });
 
-  // MEH-1646 (b) — pickup rows carry the "חינם" tag at the min_order hierarchy.
+  // MEH-1646 (b) — every pickup shape says "חינם". MEH-2592 C: the rows say it
+  // ONCE, as a tag beside the "איסוף עצמי" heading, not on every row.
   it("MEH-1646: pickup location rows and the generic fallback line both carry חינם", () => {
     const { rerender } = render(
       <DeliveryBlock
@@ -475,7 +476,12 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
         }}
       />,
     );
-    expect(screen.getAllByText("חינם")).toHaveLength(2); // one per pickup row
+    expect(screen.getAllByText("חינם")).toHaveLength(1); // once, for two rows
+    // MEH-2592 C: each stop with coordinates gets Waze AND Google Maps.
+    expect(screen.getAllByTestId("pickup-nav-waze")).toHaveLength(2);
+    const google = screen.getAllByTestId("pickup-nav-google");
+    expect(google).toHaveLength(2);
+    expect(google[0].getAttribute("href")).toContain("google.com/maps/dir/?api=1&destination=");
     rerender(
       <DeliveryBlock nationwide={false} areas={[]} pickup={true} producer={producer} />,
     );
