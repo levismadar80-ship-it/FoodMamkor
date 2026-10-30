@@ -34,7 +34,9 @@ def _seed(db):
     # Oldest row: under the default created_at DESC sort it would come LAST.
     local = make_producer(db, name="מאפייה בעיר", city=CITY)
     local.created_at = now - timedelta(days=3)
-    deliverer = make_producer(db, name="מחלבה שמשלחת", city="חדרה", delivery_cities=[CITY])
+    deliverer = make_producer(
+        db, name="מחלבה שמשלחת", city="חדרה", delivery_cities=[CITY]
+    )
     deliverer.created_at = now - timedelta(days=1)
     make_producer(db, name="עסק רחוק", city="אילת")
     db.commit()
