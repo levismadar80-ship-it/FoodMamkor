@@ -10,7 +10,7 @@
  * Behaviour, not constants (ADR-032 §3.6): the hook's tag list, the rendered
  * bar, and the sheet's zero line are each driven and read back.
  */
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, renderHook, fireEvent, act } from "@testing-library/react";
 
 import FilterChipsBar from "@/app/[locale]/map/components/FilterChipsBar";
@@ -39,6 +39,11 @@ const hook = () =>
   ).result;
 
 const ALL_ON = Object.fromEntries(TOGGLE_CHIPS.map((c) => [c.key, true]));
+
+// MEH-2598: useMapFilters now mirrors its chips into the URL and reads them
+// back on mount, so a test that switches every chip on would otherwise hand
+// its URL to the next renderHook in this file.
+beforeEach(() => window.history.replaceState(null, "", "/"));
 
 describe("active-filter tags never repeat a chip that is already on screen", () => {
   it("the service keys are real toggle chips (control: the filter below has something to drop)", () => {

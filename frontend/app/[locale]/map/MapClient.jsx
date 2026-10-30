@@ -10,6 +10,7 @@ import MapBottomSheet from "@/components/MapBottomSheet";
 import { haversineKm } from "@/lib/distance";
 import { defaultsForKeys } from "@/lib/filter-taxonomy";
 import { TOGGLE_CHIPS, chipStateToParams } from "@/lib/map-chips";
+import { chipsFromQuery } from "@/lib/filter-url";
 import { geocodeCity } from "@/lib/places";
 import { producerPoints, hiddenWhenSecondaryOff } from "@/lib/producerPoints";
 import { isRatingSortEnabled } from "@/lib/rating-gate";
@@ -76,7 +77,7 @@ const MOBILE_BANNER_RESERVE =
  * Full split rationale + cycle-break notes in
  * docs/REFACTOR_PLAN.md §File 1 ("Implementation note").
  */
-export default function MapPage({ initialChips = {} }) {
+export default function MapPage() {
   // MEH-473: i18n Wave 3.
   const t = useTranslations();
   // Self-contained hook (zero cross-hook inputs after 11a).
@@ -295,9 +296,17 @@ export default function MapPage({ initialChips = {} }) {
     return () => document.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  // MEH-2598: filters carried in from the list (page.js reads the URL).
+  // MEH-2598: filters carried in from the list (`/map?on_site=1`, lib/filter-url)
+  // — the first fetch is already filtered; useMapFilters presses the chips.
   const feed = useProducersFeed({
-    initialParams: chipStateToParams({ categoryKeys: [], ...initialChips }, []),
+    readInitialParams: () =>
+      chipStateToParams(
+        {
+          categoryKeys: [],
+          ...chipsFromQuery(new URLSearchParams(window.location.search), TOGGLE_CHIPS.map((c) => c.key)),
+        },
+        [],
+      ),
   });
   // MEH-1864: "לפי דירוג" is offered only once RATING_SORT_THRESHOLD businesses
   // carry >= 1 review. /map holds the whole feed client-side, so the count is
@@ -322,7 +331,6 @@ export default function MapPage({ initialChips = {} }) {
     // MEH-1670: the viewport filter derives points the same way the marker layer
     // does, so it needs the same layer-toggle state.
     showSecondaryLayer,
-    initialChips,
   });
   const sync = useMapSync({
     chipState: filters.chipState,
