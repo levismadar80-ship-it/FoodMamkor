@@ -1348,6 +1348,10 @@ GET/HEAD /health                 public — backwards-compat alias, the path Rai
 | Experience approved | Email | Host | `experience_notifications.py` |
 | Experience changes-requested | Email | Host (feedback verbatim) | `experience_notifications.py` |
 | Experience rejected | Email | Host (reason verbatim) | `experience_notifications.py` |
+| Recipe approved / changes-requested / rejected (MEH-2602) | Email | Business owner | `content_notifications.py` |
+| Kashrut certificate approved (with expiry) / rejected (MEH-2602) | Email | Business owner | `content_notifications.py` |
+| New review — not an edit (MEH-2602) | Email | Business owner | `content_notifications.py` |
+| Owner's first reply to a review — not an edit (MEH-2602) | Email | Reviewer | `content_notifications.py` |
 | Home product removed | Email | Seller | `admin.py` |
 | Newsletter signup | Email | Admin | `marketing.py` |
 | Contact form | Email | Admin | `marketing.py` |
