@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { formatPrice } from "@/lib/utils";
 import CitySearch from "@/components/CitySearch";
 import CoverageRequestCta from "@/components/CoverageRequestCta";
+import DeliveryWaitlistForm from "@/components/DeliveryWaitlistForm";
 import { useUserCity } from "@/lib/use-user-city";
 
 /**
@@ -195,6 +196,14 @@ export default function DeliveryChecker({
             {result.status === "no" && (
               <div className="ms-6">
                 <CoverageRequestCta producer={producer} city={result.city} />
+                {/* MEH-2618: the no-account waitlist, same single mount rule.
+                    Keyed by city so a new verdict starts a fresh form instead
+                    of showing "נודיע לך כשיגיעו לחיפה" under a נתניה verdict. */}
+                <DeliveryWaitlistForm
+                  key={result.city}
+                  producer={producer}
+                  city={result.city}
+                />
               </div>
             )}
           </>

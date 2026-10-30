@@ -5045,6 +5045,60 @@ class WhatsAppClickIn(BaseModel):
         return trimmed[:COVERAGE_CITY_MAX_LENGTH]
 
 
+# Control characters (incl. \n / \r) are in the same class: the value is
+# echoed into an email, and a newline in it is an extra line in the mail body.
+_CITY_URLISH_REGEX = re.compile(r"[./:@\\\x00-\x1f\x7f]|https?|www", re.IGNORECASE)
+
+
+class DeliveryWaitlistIn(BaseModel):
+    """MEH-2618: body of POST /producers/{id}/delivery-waitlist.
+
+    Unlike WhatsAppClickIn above, `city` is REQUIRED and RAISES: this is a
+    form the visitor fills on purpose, not a beacon — a junk city here would
+    make a promise («נודיע לך כשיגיעו ל???») that can never be kept. Same
+    letter floor as the siblings (MEH-555), same 60-char cap as
+    producer_whatsapp_clicks.city so the dashboard's demand row can one day
+    count both sources on one key.
+    """
+
+    email: EmailStr
+    city: str = Field(..., min_length=1, max_length=COVERAGE_CITY_MAX_LENGTH)
+
+    @field_validator("email", mode="after")
+    @classmethod
+    def _normalize_email(cls, v: str) -> str:
+        return v.strip().lower()
+
+    @field_validator("city", mode="after")
+    @classmethod
+    def _validate_city(cls, v: str) -> str:
+        trimmed = v.strip()
+        if not _LETTER_REGEX.sub("", trimmed):
+            raise ValueError("עיר חייבת להכיל אותיות")
+        # The value is echoed verbatim into the email we send to this address
+        # (subject + body). A URL-shaped "city" would put attacker text and a
+        # link into mail sent under the platform's name. No Israeli locality
+        # carries any of these characters; hyphens and parentheses do occur
+        # («בנימינה-גבעת עדה», «יקנעם (מושבה)») and stay allowed.
+        if _CITY_URLISH_REGEX.search(trimmed):
+            raise ValueError("עיר לא יכולה להכיל קישור")
+        return trimmed
+
+
+class DeliveryWaitlistOut(BaseModel):
+    """MEH-2618: `added` (201) on a new row, `exists` (200) when the same
+    email already waits for the same business + city — the form shows the
+    same calm confirmation for both."""
+
+    status: Literal["added", "exists"]
+
+
+class DeliveryWaitlistUnsubscribeIn(BaseModel):
+    """MEH-2618: the signed token from the «לא רוצה עדכונים» link."""
+
+    token: str = Field(..., min_length=1)
+
+
 class ProducerViewIn(BaseModel):
     """MEH-2159: body of POST /producers/{id}/view.
 

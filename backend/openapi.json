@@ -1010,6 +1010,61 @@
         "title": "DeliveryAreaOut",
         "type": "object"
       },
+      "DeliveryWaitlistIn": {
+        "description": "MEH-2618: body of POST /producers/{id}/delivery-waitlist.\n\nUnlike WhatsAppClickIn above, `city` is REQUIRED and RAISES: this is a\nform the visitor fills on purpose, not a beacon — a junk city here would\nmake a promise («נודיע לך כשיגיעו ל???») that can never be kept. Same\nletter floor as the siblings (MEH-555), same 60-char cap as\nproducer_whatsapp_clicks.city so the dashboard's demand row can one day\ncount both sources on one key.",
+        "properties": {
+          "city": {
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "City",
+            "type": "string"
+          },
+          "email": {
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "city"
+        ],
+        "title": "DeliveryWaitlistIn",
+        "type": "object"
+      },
+      "DeliveryWaitlistOut": {
+        "description": "MEH-2618: `added` (201) on a new row, `exists` (200) when the same\nemail already waits for the same business + city — the form shows the\nsame calm confirmation for both.",
+        "properties": {
+          "status": {
+            "enum": [
+              "added",
+              "exists"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "DeliveryWaitlistOut",
+        "type": "object"
+      },
+      "DeliveryWaitlistUnsubscribeIn": {
+        "description": "MEH-2618: the signed token from the «לא רוצה עדכונים» link.",
+        "properties": {
+          "token": {
+            "minLength": 1,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "title": "DeliveryWaitlistUnsubscribeIn",
+        "type": "object"
+      },
       "EventCreate": {
         "properties": {
           "category": {
@@ -17518,6 +17573,46 @@
         ]
       }
     },
+    "/delivery-waitlist/unsubscribe": {
+      "post": {
+        "description": "Remove one delivery-waitlist entry via the signed token from its email.\n\nIdempotent: an already-removed entry is still 200. 400 on a token that\ndoes not verify.",
+        "operationId": "unsubscribe_delivery_waitlist_delivery_waitlist_unsubscribe_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeliveryWaitlistUnsubscribeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Unsubscribe Delivery Waitlist",
+        "tags": [
+          "producers"
+        ]
+      }
+    },
     "/events": {
       "get": {
         "operationId": "list_events_events_get",
@@ -20993,6 +21088,65 @@
           }
         ],
         "summary": "Record Contact Click",
+        "tags": [
+          "producers"
+        ]
+      }
+    },
+    "/producers/{producer_id}/delivery-waitlist": {
+      "post": {
+        "description": "«תודיעו לי כשתגיעו ל{עיר}» — join a business's per-city delivery waitlist.\n\nNo account needed: email + city. Returns 201 `added`, or 200 `exists`\nwhen this email already waits for this business and city. 404 for an\nunknown or not-yet-live business. When the business later adds the\ncity to its delivery areas, one email goes out (see\nservices/delivery_waitlist). Rate-limited 10/minute per IP.",
+        "operationId": "join_delivery_waitlist_producers__producer_id__delivery_waitlist_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeliveryWaitlistIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeliveryWaitlistOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Join Delivery Waitlist",
         "tags": [
           "producers"
         ]

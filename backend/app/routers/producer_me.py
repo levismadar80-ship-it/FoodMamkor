@@ -885,6 +885,14 @@ def update_my_producer(
             ),
             new_cities,
         )
+        # MEH-2618: the no-account sibling of the alert above — everyone who
+        # left «תודיעו לי כשתגיעו ל{עיר}» for one of these cities gets her
+        # one email. Called through the module so tests can patch it.
+        from app.services import delivery_waitlist
+
+        background_tasks.add_task(
+            delivery_waitlist.notify_cities, db, producer.id, new_cities
+        )
 
     _maybe_fire_review_ready(background_tasks, db, producer, was_approvable)
     # MEH-2073: notification only — runs after the commit above, adds a
