@@ -204,6 +204,8 @@ class TestNotify:
         assert _entries(db, p.id)[0].notified_at is None
 
     def test_send_failure_does_not_mark_notified(self, db, monkeypatch):
+        # Pins the defensive branch only: the real send_email never raises
+        # (fail-open), so a Resend failure is reported to Sentry, not retried.
         def _boom(*a, **k):
             raise RuntimeError("resend down")
 

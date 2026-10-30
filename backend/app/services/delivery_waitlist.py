@@ -41,6 +41,8 @@ __all__ = [
     "city_key",
     "create_unsubscribe_token",
     "decode_unsubscribe_token",
+    "find_entry",
+    "normalize_email",
     "notify_cities",
 ]
 
@@ -152,11 +154,16 @@ def notify_cities(db: Session, producer_id: UUID, cities: list[str]) -> None:
 
     Runs as a FastAPI BackgroundTask after PUT /producers/me committed the new
     delivery areas (producer_me.py — the same hop the favorite `delivery_area`
-    alert takes, with the same `new_cities` list). Fail-open per recipient: a
-    send that raises is logged and the row stays un-notified, so the next add
-    of the same city retries it rather than losing it. Nothing is sent for a
-    business that is not live (MEH-2513 — every link points at a page that is
-    a 404 for the public).
+    alert takes, with the same `new_cities` list). Delivery is BEST-EFFORT,
+    like every other mail in the app: `send_email` is fail-open by contract
+    (services/email.py: a missing key, an empty recipient or a Resend error
+    is reported to Sentry and swallowed, it never raises), so `notified_at`
+    means "handed to the mailer once", not "delivered". There is no retry;
+    a delivery failure is visible in Sentry, not in this table. The
+    `except` below is defence for a mailer that one day raises; in that case
+    the row stays un-notified and the next add of the same city retries it.
+    Nothing is sent for a business that is not live (MEH-2513: every link
+    points at a page that is a 404 for the public).
     """
     keys = {k for k in (city_key(c) for c in cities) if k}
     if not keys:
@@ -179,7 +186,7 @@ def notify_cities(db: Session, producer_id: UUID, cities: list[str]) -> None:
         subject, body = _email_copy(producer.name, entry.city, producer.id, entry.id)
         try:
             send_email(entry.email, subject, body)
-        except Exception as exc:  # noqa: BLE001 — fail-open, per recipient
+        except Exception as exc:  # noqa: BLE001 — defence only; see docstring
             logger.warning(
                 "delivery_waitlist: send failed for entry %s: %s", entry.id, exc
             )
