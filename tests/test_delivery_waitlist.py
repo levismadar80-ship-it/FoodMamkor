@@ -103,7 +103,16 @@ class TestSignup:
         # so a URL-shaped value would put attacker text + a link into mail
         # sent under the platform's name to a third party's address.
         p = make_producer(db)
-        for city in ["evil.example/x", "http://evil", "חיפה@x", "www.evil"]:
+        # "חיפה\nX" — a control character is the same class (reviewer #5):
+        # a newline in `city` is an extra line in the mail body.
+        for city in [
+            "evil.example/x",
+            "http://evil",
+            "חיפה@x",
+            "www.evil",
+            "חיפה\nשורה",
+            "חיפה\tx",
+        ]:
             r = client.post(
                 f"/producers/{p.id}/delivery-waitlist",
                 json={"email": "a@b.co", "city": city},

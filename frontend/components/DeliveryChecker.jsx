@@ -199,7 +199,11 @@ export default function DeliveryChecker({
                 {/* MEH-2618: the no-account waitlist, same single mount rule.
                     Keyed by city so a new verdict starts a fresh form instead
                     of showing "נודיע לך כשיגיעו לחיפה" under a נתניה verdict. */}
-                <DeliveryWaitlistForm key={result.city} producer={producer} city={result.city} />
+                <DeliveryWaitlistForm
+                  key={result.city}
+                  producer={producer}
+                  city={result.city}
+                />
               </div>
             )}
           </>

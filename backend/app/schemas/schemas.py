@@ -5045,7 +5045,9 @@ class WhatsAppClickIn(BaseModel):
         return trimmed[:COVERAGE_CITY_MAX_LENGTH]
 
 
-_CITY_URLISH_REGEX = re.compile(r"[./:@\\]|https?|www", re.IGNORECASE)
+# Control characters (incl. \n / \r) are in the same class: the value is
+# echoed into an email, and a newline in it is an extra line in the mail body.
+_CITY_URLISH_REGEX = re.compile(r"[./:@\\\x00-\x1f\x7f]|https?|www", re.IGNORECASE)
 
 
 class DeliveryWaitlistIn(BaseModel):
