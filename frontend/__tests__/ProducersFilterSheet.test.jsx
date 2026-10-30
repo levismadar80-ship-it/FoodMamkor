@@ -372,3 +372,18 @@ describe("MEH-2598 — the shared promoted service trio (one row on all three su
     expect(TRIGGER().textContent).not.toMatch(/\d/);
   });
 });
+
+describe("MEH-2598 — «הצגה במפה» carries the active filters", () => {
+  const mapLink = () => screen.getByText("producers.title.map_link").closest("a");
+
+  it("is a bare /map link when no filter is on", () => {
+    render(<ProducersClient {...props(items(3))} />);
+    expect(mapLink().getAttribute("href")).toBe("/map");
+  });
+
+  it("follows the chips as they toggle", () => {
+    render(<ProducersClient {...props(items(3))} />);
+    fireEvent.click(screen.getByTestId("producers-promoted-chip-has_delivery"));
+    expect(mapLink().getAttribute("href")).toBe("/map?has_delivery=1");
+  });
+});
