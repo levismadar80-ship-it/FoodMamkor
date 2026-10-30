@@ -60,6 +60,7 @@ vi.mock("@phosphor-icons/react", () => ({
   Star: (props) => <span data-testid="icon-star" {...props} />,
   Leaf: (props) => <span data-testid="icon-leaf" {...props} />,
   EyeSlash: (props) => <span data-testid="icon-eyeslash" {...props} />,
+  CaretDown: (props) => <span {...props} />,
   ArrowLeft: (props) => <span {...props} />,
   ArrowRight: (props) => <span {...props} />,
 }));
@@ -384,5 +385,83 @@ describe("ReviewsSection — review-invite token (MEH-1428 chunk 2)", () => {
     await waitFor(() => expect(apiMock.get).toHaveBeenCalled());
     expect(sessionStorage.getItem(`review_invite_${PID}`)).toBeNull();
     expect(screen.queryByText("write_cta")).not.toBeInTheDocument();
+  });
+});
+
+// MEH-2592 — the reviews look: one-line summary, initial + name + date with the
+// stars under the name, the business reply as a side rule, the write-a-review
+// gate as a quiet line UNDER the list, and a full-width "show more".
+describe("ReviewsSection — reviews look (MEH-2592)", () => {
+  const following = (a, b) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+
+  it("summary is one row (number · stars · count), not a centred box", async () => {
+    apiMock.get.mockResolvedValue({ data: { reviews: [], total: 3, page: 1, pages: 1 } });
+    render(<ReviewsSection producerId="p-1" avgRating={4.7} reviewCount={3} />);
+    const number = await screen.findByText("4.7");
+    const summary = screen.getByTestId("reviews-summary");
+    expect(summary).toContainElement(number);
+    expect(summary).toContainElement(screen.getByRole("img"));
+    expect(summary).toContainElement(screen.getByText("summary_count"));
+    expect(summary.className).toContain("flex");
+    expect(summary.className).not.toContain("text-center");
+  });
+
+  it("each review: initial circle, then name; its stars sit under the name", async () => {
+    mockReviews([noReply]);
+    render(<ReviewsSection producerId="p-1" />);
+    const name = await screen.findByText(/^לקוח/);
+    const initial = screen.getByTestId("review-initial");
+    expect(initial).toHaveTextContent("ל");
+    expect(following(initial, name)).toBe(true);
+    const stars = screen.getByRole("img");
+    expect(following(name, stars)).toBe(true);
+    // the stars share the name's column, not a far-edge sibling of it
+    expect(name.parentElement).toContainElement(stars);
+  });
+
+  it("business reply is a side rule, not a green box", async () => {
+    mockReviews([withReply]);
+    render(<ReviewsSection producerId="p-1" />);
+    await screen.findByText("תודה רבה על המילים החמות!");
+    const reply = screen.getByTestId("review-reply");
+    expect(reply.className).toContain("border-s-2");
+    expect(reply.className).not.toContain("bg-green-50");
+  });
+
+  it("guest: the login line sits UNDER the reviews, as plain text", async () => {
+    authState.user = null;
+    mockReviews([noReply]);
+    render(<ReviewsSection producerId="p-1" />);
+    const body = await screen.findByText("טעים");
+    const hint = screen.getByTestId("reviews-write-hint");
+    expect(hint).toContainElement(screen.getByTestId("reviews-login-link"));
+    expect(following(body, hint)).toBe(true);
+    expect(hint.className).not.toContain("border");
+  });
+
+  it("logged-in, not gated, reviews exist: the WhatsApp-gate line sits UNDER the reviews", async () => {
+    authState.user = { id: "u-9", producer_id: null };
+    mockReviews([noReply]);
+    render(<ReviewsSection producerId="p-1" />);
+    const body = await screen.findByText("טעים");
+    const hint = screen.getByTestId("reviews-write-hint");
+    expect(hint).toHaveTextContent("wa_gate_message");
+    expect(following(body, hint)).toBe(true);
+  });
+
+  it("owner: no write hint at all", async () => {
+    authState.user = { id: "u-o", producer_id: "p-1" };
+    mockReviews([noReply]);
+    render(<ReviewsSection producerId="p-1" isOwner />);
+    await screen.findByText("טעים");
+    expect(screen.queryByTestId("reviews-write-hint")).toBeNull();
+  });
+
+  it("show more is a full-width button", async () => {
+    const many = Array.from({ length: 4 }, (_, i) => ({ ...noReply, id: `r${i}`, user_id: `u${i}` }));
+    apiMock.get.mockResolvedValue({ data: { reviews: many, total: 4, page: 1, pages: 1 } });
+    render(<ReviewsSection producerId="p-1" />);
+    const more = await screen.findByRole("button", { name: /show_more/ });
+    expect(more.className).toContain("w-full");
   });
 });
