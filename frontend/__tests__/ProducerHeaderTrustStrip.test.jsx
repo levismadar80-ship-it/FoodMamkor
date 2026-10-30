@@ -26,13 +26,16 @@ vi.mock("@/components/BadgeRow", () => ({ default: () => <div data-testid="badge
 vi.mock("@/components/CategoryTag", () => ({ default: () => <span data-testid="cat" /> }));
 vi.mock("@/components/KashrutBadgeStrip", () => ({ default: () => <div data-testid="kashrut" /> }));
 vi.mock("@/components/TrustBadge", () => ({ default: () => <div data-testid="trust" /> }));
-vi.mock("@phosphor-icons/react", () => ({
+vi.mock("@phosphor-icons/react", async (importOriginal) => ({
+  // MEH-2592: the header now renders the category's registry glyph, which
+  // pulls the whole Phosphor family through lib/category-registry — keep the
+  // real module and override only the stubs this file always stubbed.
+  ...(await importOriginal()),
   MapPin: () => <span />,
   Heart: () => <span />,
   Star: () => <span data-testid="star" />,
   Truck: () => <span />,
   StarOfDavid: () => <span />,
-  // MEH-1609: the alerts re-entry control's glyph.
   Bell: () => <span />,
 }));
 // MEH-1609: the header now reads auth + the favorites-cache to decide whether
@@ -180,7 +183,9 @@ describe("ProducerHeader status line + חדש fallback (MEH-1334)", () => {
     expect(screen.queryByTestId("status-open")).not.toBeInTheDocument();
   });
 
-  it("shows the 'חדש' fallback in the rating slot when there are zero reviews", () => {
+  it("zero reviews: NOTHING in the rating slot — the MEH-1411 pill is retired (MEH-2592, 30/10/2026)", () => {
+    // Wolt / Booking / Airbnb show nothing in the rating's place until a
+    // review exists; a line announcing the absence only underlined it.
     render(
       <ProducerHeader
         producer={{ ...baseProducer, reviews_count: 0 }}
@@ -188,7 +193,8 @@ describe("ProducerHeader status line + חדש fallback (MEH-1334)", () => {
         hasImages
       />,
     );
-    expect(screen.getByTestId("new-mark")).toBeInTheDocument();
+    expect(screen.queryByTestId("new-mark")).toBeNull();
+    expect(screen.queryByText("producer.detail.header.new_mark")).toBeNull();
   });
 });
 

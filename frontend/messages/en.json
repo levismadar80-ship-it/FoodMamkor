@@ -819,7 +819,6 @@
         "vacation_return": "{label} — you can leave a message",
         "vacation_back": "Back on {date}",
         "vacation_back_soon": "Back soon",
-        "new_mark": "No reviews yet",
         "since_prefix": "Since",
         "status": {
           "open": "Open for orders",
