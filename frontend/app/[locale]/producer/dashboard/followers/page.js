@@ -11,6 +11,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import { SITE_URL } from "@/lib/env";
 // MEH-999: shared back link — one owner for target + arrow direction.
 import BackLink from "@/components/ui/BackLink";
+import { SkeletonList } from "@/components/Skeleton";
 
 export default function FollowersPage() {
   const router = useRouter();
@@ -81,7 +82,7 @@ export default function FollowersPage() {
       </div>
 
       {followerCount === null ? (
-        <div className="text-center py-16 text-fg-muted">{t("loading")}</div>
+        <SkeletonList count={4} label={t("loading")} className="py-4" />
       ) : followerCount === 0 ? (
         <>
           {/* MEH-1356: CTA only when the link works (approved + slug);

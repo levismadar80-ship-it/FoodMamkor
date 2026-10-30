@@ -14,7 +14,7 @@ vi.mock("next-intl", () => {
   const flat = {
     "story.canvas.title": "כרטיס אינסטגרם מוכן",
     "story.canvas.close": "סגירת פאנל הסטורי",
-    "story.canvas.footer_url": "גלי עוד בתי עסק ב mehamakor.co.il",
+    "story.canvas.kicker": "בית עסק חדש במהמקור",
     "story.canvas.generating": "מייצר",
   };
   const resolve = (fullKey) => flat[fullKey] ?? fullKey;
@@ -28,7 +28,8 @@ beforeAll(() => {
     fillRect: () => {}, beginPath: () => {}, arc: () => {}, fill: () => {},
     save: () => {}, clip: () => {}, drawImage: () => {}, restore: () => {},
     stroke: () => {}, moveTo: () => {}, lineTo: () => {}, closePath: () => {},
-    fillText: () => {}, measureText: () => ({ width: 0 }),
+    fillText: () => {}, measureText: () => ({ width: 0 }), arcTo: () => {},
+    createLinearGradient: () => ({ addColorStop: () => {} }),
   };
   HTMLCanvasElement.prototype.getContext = () => ctxStub;
 });

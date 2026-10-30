@@ -1,16 +1,21 @@
 "use client";
 
 /**
- * MEH-53: Instagram story card generator (1080×1920px).
- * Uses Canvas API to compose the card entirely in-browser.
- * Design spec:
- *   - Background: #2E4A2E (dark green)
- *   - Producer image: centered, 600×600px, circle-clipped
- *   - Logo text: מהמקור, white, bottom-center
- *   - Producer name: Frank Ruhl Libre 52px white
- *   - City + category: DM Sans 24px #EAF3DE
- *   - Vanity URL: DM Sans 20px #2e6853
- *   - CTA: "גלי עוד בתי עסק ב {SITE_HOST}"
+ * MEH-53: Instagram story card generator (1080×1920px), composed in-browser
+ * with the Canvas API.
+ *
+ * MEH-2589 redesign ("magazine cover"):
+ *   - Business photo full-bleed (1080×1500, cover-fit), fading into brand
+ *     green #1f4a3a at the bottom. No photo → brand-green ground + large mark.
+ *   - Brand lockup (mark + מהמקור) at the top, just below Instagram's header.
+ *   - Cream label pill, then the business name in Frank Ruhl Libre 900,
+ *     120px shrinking to 76px to fit two lines (then «…»), then
+ *     city · first two categories in Heebo 44px.
+ *   - Every line of text sits between STORY_SAFE_TOP and STORY_SAFE_BOTTOM —
+ *     Instagram's own UI covers the band above (progress bar, account row)
+ *     and below (reply bar).
+ *   - No printed URL: text in a story image is not clickable. The link goes
+ *     on as an Instagram link sticker in the empty band under the city line.
  */
 
 import { useEffect, useRef, useState } from "react";
@@ -23,57 +28,84 @@ import { showToast } from "@/lib/toast";
 import { BRAND_NAME } from "@/lib/constants";
 // MEH-1267: canonical public domain (MEH-1242 PR4). mehamakor.online is the
 // staging alias — never the public-facing address; SITE_URL is mehamakor.co.il.
+// Used by the caption only; the card itself carries no URL (MEH-2589).
 import { SITE_URL } from "@/lib/env";
 // MEH-2043: the same committed binaries app/fonts.js feeds to next/font/local
 // (MEH-2029 provenance: byte-for-byte copies of what next/font/google last
 // emitted — see app/fonts/README.md). Canvas 2D's `font` property can't go
 // through next/font/local itself (it publishes a CSS variable + class, not a
 // URL a FontFace can load), so this imports the raw files directly — Next's
-// static-asset loader resolves each import to its build URL. Both Frank Ruhl
-// Libre subsets are loaded under the SAME family name below, exactly like
-// fonts.js's dual-call pattern, so the browser's own glyph-coverage matching
-// picks hebrew vs. latin per character — the business name is Hebrew and
-// MUST resolve to the hebrew-subset file, not fall back to a system font.
+// static-asset loader resolves each import to its build URL. Each family's
+// hebrew and latin subsets are loaded under the SAME family name below,
+// exactly like fonts.js's dual-call pattern, so the browser's own
+// glyph-coverage matching picks hebrew vs. latin per character.
+// MEH-2589: Heebo replaces DM Sans for the small lines — DM Sans has no Hebrew
+// glyphs, so city/category text used to fall back to whatever system font the
+// phone had.
 import frankRuhlLibreHebrewUrl from "@/app/fonts/frank-ruhl-libre-hebrew.woff2";
 import frankRuhlLibreLatinUrl from "@/app/fonts/frank-ruhl-libre-latin.woff2";
-import dmSansLatinUrl from "@/app/fonts/dm-sans-latin.woff2";
+import heeboHebrewUrl from "@/app/fonts/heebo-hebrew.woff2";
+import heeboLatinUrl from "@/app/fonts/heebo-latin.woff2";
 
 const W = 1080;
 const H = 1920;
-// Bare host for on-card display (SITE_URL is the full https:// origin).
+// Bare host for the caption (SITE_URL is the full https:// origin).
 const SITE_HOST = SITE_URL.replace(/^https?:\/\//, "");
 
-// Same two ranges app/fonts.js declares for this family's next/font/local
+// Instagram story chrome: ~250px on top, ~340px at the bottom (the larger,
+// ad-placement figure, so organic stories are covered too).
+export const STORY_SAFE_TOP = 250;
+export const STORY_SAFE_BOTTOM = H - 340;
+
+const GREEN = "#2e6853";
+const GREEN_DEEP = "#1f4a3a";
+const CREAM = "#F5F0E8";
+const SERIF = `"Frank Ruhl Libre", serif`;
+const SANS = `"Heebo", sans-serif`;
+const PHOTO_H = 1500;
+const SIDE = 90;
+// The mark from public/logo-inverted.svg (the variant for brand-green
+// grounds), drawn as paths rather than loaded as an <img>: an SVG image can
+// taint the canvas in some WebKit builds, which would make toDataURL — and so
+// download and the Cloudinary upload — throw, and Firefox refuses drawImage
+// for an SVG with no intrinsic size. Values copied from the SVG; viewBox
+// -60 -60 120 120. [rotation°, opacity, petal fill, seed fill, seed opacity]
+const MARK_PETAL_D =
+  "M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z";
+const MARK_PETALS = [
+  [36, 0.96, "#F5F0E8", "#1F4A3A", 0.3],
+  [108, 0.96, "#E8823A", "#F5F0E8", 0.45],
+  [180, 0.96, "#E0B266", "#F5F0E8", 0.45],
+  [252, 0.92, "#D9C8B0", "#1F4A3A", 0.25],
+  [324, 0.96, "#8FB89F", "#F5F0E8", 0.5],
+];
+
+// Same ranges app/fonts.js declares for these families' next/font/local
 // calls (`declarations: [{ prop: "unicode-range", ... }]`) — literal, not
 // imported: a FontFace() descriptor isn't under next/font/local's
 // static-serialization constraint, but duplicating the exact values (rather
 // than sharing a constant) matches how fonts.js already repeats this same
 // latin range across its own calls, for a different but adjacent reason.
-const FRANK_RUHL_LIBRE_HEBREW_RANGE =
+const HEBREW_RANGE =
   "U+0307-0308,U+0590-05FF,U+200C-2010,U+20AA,U+25CC,U+FB1D-FB4F";
 const LATIN_RANGE =
   "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD";
 
 async function loadFonts() {
-  // Same family name twice (hebrew + latin subsets) is deliberate — see the
-  // import comment above. Each FontFace carries an explicit `unicodeRange`
-  // descriptor (3rd constructor arg): without one it defaults to the full
-  // codespace, so BOTH faces would claim to cover every character and which
-  // one wins for a given glyph is unspecified — exactly the ambiguity
-  // fonts.js's own unicode-range declarations exist to remove for the CSS
-  // path, and the reason a same-model review flagged this as a real gap
-  // rather than a cosmetic one. DM Sans stays latin-only, no range needed:
-  // that mirrors fonts.js (city/category text already fell back to the
-  // system Hebrew font for Hebrew glyphs before this change; unrelated to
-  // what this ticket fixes).
+  // Each FontFace carries an explicit `unicodeRange` descriptor (3rd
+  // constructor arg): without one it defaults to the full codespace, so BOTH
+  // same-named faces would claim every character and which one wins for a
+  // given glyph is unspecified. The weight range lets one variable file serve
+  // every weight drawn below.
   const faces = [
-    ["Frank Ruhl Libre", frankRuhlLibreHebrewUrl, FRANK_RUHL_LIBRE_HEBREW_RANGE],
+    ["Frank Ruhl Libre", frankRuhlLibreHebrewUrl, HEBREW_RANGE],
     ["Frank Ruhl Libre", frankRuhlLibreLatinUrl, LATIN_RANGE],
-    ["DM Sans", dmSansLatinUrl, undefined],
+    ["Heebo", heeboHebrewUrl, HEBREW_RANGE],
+    ["Heebo", heeboLatinUrl, LATIN_RANGE],
   ];
   for (const [name, url, unicodeRange] of faces) {
     try {
-      const f = new FontFace(name, `url(${url})`, unicodeRange ? { unicodeRange } : undefined);
+      const f = new FontFace(name, `url(${url})`, { unicodeRange, weight: "100 900" });
       await f.load();
       document.fonts.add(f);
     } catch {
@@ -82,146 +114,210 @@ async function loadFonts() {
   }
 }
 
-function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
-  const words = text.split(" ");
+// Resolves to null on failure, so one missing image never blocks the card.
+function loadImage(src) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    img.src = src;
+  });
+}
+
+function photoSrc(url) {
+  // g_auto: Cloudinary picks the crop around the subject, not the centre.
+  return url.includes("cloudinary.com")
+    ? url.replace("/upload/", `/upload/f_auto,q_auto,w_${W},h_${PHOTO_H},c_fill,g_auto/`)
+    : url;
+}
+
+// Draws img over (x, y, w, h) like CSS object-fit: cover.
+function drawCover(ctx, img, x, y, w, h) {
+  const s = Math.max(w / img.width, h / img.height);
+  const sw = w / s;
+  const sh = h / s;
+  ctx.drawImage(img, (img.width - sw) / 2, (img.height - sh) / 2, sw, sh, x, y, w, h);
+}
+
+function wrapLines(ctx, text, maxWidth) {
+  const out = [];
   let line = "";
-  let currentY = y;
-  for (const word of words) {
+  for (const word of (text || "").split(/\s+/).filter(Boolean)) {
     const test = line ? `${line} ${word}` : word;
     if (ctx.measureText(test).width > maxWidth && line) {
-      ctx.fillText(line, x, currentY);
+      out.push(line);
       line = word;
-      currentY += lineHeight;
     } else {
       line = test;
     }
   }
-  if (line) ctx.fillText(line, x, currentY);
-  return currentY + lineHeight;
+  if (line) out.push(line);
+  return out;
 }
 
-async function drawCard(canvas, producer, strings) {
+// Largest size from `max` down to `min` at which the name fits in two lines
+// with no line wider than maxWidth; at `min` anything past line two is cut and
+// the second line ends with «…». A single word too wide for the line is cut by
+// characters as the last resort.
+function fitName(ctx, text, maxWidth) {
+  const max = 120;
+  const min = 76;
+  const fits = (l) => ctx.measureText(l).width <= maxWidth;
+  for (let size = max; size >= min; size -= 4) {
+    ctx.font = `900 ${size}px ${SERIF}`;
+    const lines = wrapLines(ctx, text, maxWidth);
+    if (lines.length <= 2 && lines.every(fits)) return { size, lines };
+  }
+  ctx.font = `900 ${min}px ${SERIF}`;
+  const all = wrapLines(ctx, text, maxWidth);
+  const lines = all.slice(0, 2);
+  const cutChars = (line) => {
+    let out = line;
+    while (!fits(`${out}…`) && out.length > 1) out = out.slice(0, -1);
+    return `${out.trimEnd()}…`;
+  };
+  if (lines[0] && !fits(lines[0])) lines[0] = cutChars(lines[0]);
+  if (all.length > 2 || (lines[1] && !fits(lines[1]))) {
+    let last = `${lines[1]}…`;
+    while (!fits(last) && last.includes(" ")) {
+      last = `${last.slice(0, -1).replace(/\s*\S+$/, "")}…`;
+    }
+    lines[1] = fits(last) ? last : cutChars(lines[1]);
+  }
+  return { size: min, lines };
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+// Draws the mark centred on (cx, cy), `size` px square.
+function drawMark(ctx, cx, cy, size) {
+  if (typeof Path2D === "undefined") return;
+  const petal = new Path2D(MARK_PETAL_D);
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(size / 120, size / 120);
+  for (const [deg, alpha, fill, seed, seedAlpha] of MARK_PETALS) {
+    ctx.save();
+    ctx.rotate((deg * Math.PI) / 180);
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = fill;
+    ctx.fill(petal);
+    ctx.globalAlpha = alpha * seedAlpha;
+    ctx.fillStyle = seed;
+    ctx.beginPath();
+    ctx.ellipse(-3, -32, 2.5, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+// Brand lockup centred on (cx, cy): wordmark with the mark at its start
+// (right) side, as on the site header.
+function drawLockup(ctx, cx, cy) {
+  const size = 56;
+  ctx.font = `700 ${size}px ${SERIF}`;
+  const textW = ctx.measureText(BRAND_NAME).width;
+  const markSize = size * 1.25;
+  const gap = size * 0.3;
+  const left = cx - (textW + gap + markSize) / 2;
+  ctx.fillStyle = CREAM;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillText(BRAND_NAME, left, cy);
+  drawMark(ctx, left + textW + gap + markSize / 2, cy, markSize);
+  ctx.textBaseline = "alphabetic";
+}
+
+// Cream pill whose end (right) edge sits at `right`.
+function drawLabel(ctx, text, right, cy) {
+  const h = 68;
+  ctx.font = `600 34px ${SANS}`;
+  const w = ctx.measureText(text).width + 60;
+  ctx.fillStyle = CREAM;
+  roundRect(ctx, right - w, cy - h / 2, w, h, h / 2);
+  ctx.fill();
+  ctx.fillStyle = GREEN;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, right - w / 2, cy + 2);
+  ctx.textBaseline = "alphabetic";
+}
+
+export async function drawCard(canvas, producer, strings) {
   await loadFonts();
+  const imageUrl = producer.images?.[0];
+  const photo = imageUrl ? await loadImage(photoSrc(imageUrl)) : null;
 
   const ctx = canvas.getContext("2d");
   canvas.width = W;
   canvas.height = H;
+  ctx.direction = "rtl";
 
-  // Background
-  ctx.fillStyle = "#2E4A2E";
+  // Ground
+  let g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, GREEN);
+  g.addColorStop(1, GREEN_DEEP);
+  ctx.fillStyle = g;
   ctx.fillRect(0, 0, W, H);
 
-  // Subtle pattern overlay (dots)
-  ctx.fillStyle = "rgba(255,255,255,0.03)";
-  for (let y = 0; y < H; y += 60) {
-    for (let x = 0; x < W; x += 60) {
-      ctx.beginPath();
-      ctx.arc(x, y, 2, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }
-
-  // Producer image (circle-clipped, centered)
-  const imgSize = 600;
-  const imgX = (W - imgSize) / 2;
-  const imgY = 320;
-  const imgCenterX = imgX + imgSize / 2;
-  const imgCenterY = imgY + imgSize / 2;
-  const imgRadius = imgSize / 2;
-
-  const imageUrl = producer.images?.[0];
-  if (imageUrl) {
-    try {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      await new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = reject;
-        // Request Cloudinary image with f_auto,q_auto for fast load
-        img.src = imageUrl.includes("cloudinary.com")
-          ? imageUrl.replace("/upload/", "/upload/f_auto,q_auto,w_600,h_600,c_fill/")
-          : imageUrl;
-      });
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(imgCenterX, imgCenterY, imgRadius, 0, Math.PI * 2);
-      ctx.closePath();
-      ctx.clip();
-      ctx.drawImage(img, imgX, imgY, imgSize, imgSize);
-      ctx.restore();
-
-      // Soft ring around image
-      ctx.strokeStyle = "rgba(255,255,255,0.15)";
-      ctx.lineWidth = 6;
-      ctx.beginPath();
-      ctx.arc(imgCenterX, imgCenterY, imgRadius + 3, 0, Math.PI * 2);
-      ctx.stroke();
-    } catch {
-      // Draw placeholder circle on image load failure
-      ctx.fillStyle = "rgba(255,255,255,0.1)";
-      ctx.beginPath();
-      ctx.arc(imgCenterX, imgCenterY, imgRadius, 0, Math.PI * 2);
-      ctx.fill();
-    }
+  if (photo) {
+    drawCover(ctx, photo, 0, 0, W, PHOTO_H);
+    // Top scrim keeps Instagram's header and the lockup readable on a light photo.
+    g = ctx.createLinearGradient(0, 0, 0, 420);
+    g.addColorStop(0, "rgba(20,40,32,0.55)");
+    g.addColorStop(1, "rgba(20,40,32,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, 420);
+    // Bottom fade into brand green, under the label/name/city block.
+    g = ctx.createLinearGradient(0, 820, 0, PHOTO_H);
+    g.addColorStop(0, "rgba(31,74,58,0)");
+    g.addColorStop(0.55, "rgba(31,74,58,0.85)");
+    g.addColorStop(1, GREEN_DEEP);
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 820, W, H - 820);
   } else {
-    ctx.fillStyle = "rgba(255,255,255,0.1)";
-    ctx.beginPath();
-    ctx.arc(imgCenterX, imgCenterY, imgRadius, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "rgba(255,255,255,0.4)";
-    ctx.font = "120px serif";
-    ctx.textAlign = "center";
-    ctx.fillText("🌿", imgCenterX, imgCenterY + 40);
+    // No photo: the mark, large, where the photo would be.
+    drawMark(ctx, W / 2, 660, 420);
   }
 
-  ctx.textAlign = "center";
+  drawLockup(ctx, W / 2, 300);
 
-  // Producer name
+  const right = W - SIDE;
+  if (strings?.kicker) drawLabel(ctx, strings.kicker, right, 1060);
+
+  ctx.textAlign = "right";
   ctx.fillStyle = "#FFFFFF";
-  ctx.font = `bold 52px "Frank Ruhl Libre", serif`;
-  const nameY = imgY + imgSize + 80;
-  wrapText(ctx, producer.name || "", W / 2, nameY, W - 160, 68);
+  const name = fitName(ctx, producer.name || "", W - SIDE * 2);
+  let y = 1130 + name.size;
+  for (const line of name.lines) {
+    ctx.fillText(line, right, y);
+    y += name.size * 1.12;
+  }
 
-  // City + category line
   // MEH-1297: cap at the first 2 categories (primary-first order) so a producer
-  // with up to 3 categories can't overflow the fixed-width canvas line.
+  // with up to 3 categories can't overflow the line.
   const categories =
     producer.categories
       ?.slice(0, 2)
       .map((c) => c.name)
-      .join("  ·  ") || "";
-  const cityLine = [producer.city, categories].filter(Boolean).join("  ·  ");
-  ctx.fillStyle = "#EAF3DE";
-  ctx.font = `400 28px "DM Sans", sans-serif`;
-  ctx.fillText(cityLine, W / 2, nameY + 120);
-
-  // Vanity URL
-  const slug = producer.slug || "";
-  if (slug) {
-    ctx.fillStyle = "#2e6853";
-    ctx.font = `500 24px "DM Sans", sans-serif`;
-    ctx.fillText(`${SITE_HOST}/p/${slug}`, W / 2, nameY + 190);
+      .join(" · ") || "";
+  const metaLine = [producer.city, categories].filter(Boolean).join("  ·  ");
+  if (metaLine) {
+    ctx.fillStyle = "#EAF3DE";
+    ctx.font = `400 44px ${SANS}`;
+    ctx.fillText(metaLine, right, y + 12);
   }
-
-  // Divider
-  const divY = H - 340;
-  ctx.strokeStyle = "rgba(255,255,255,0.12)";
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(160, divY);
-  ctx.lineTo(W - 160, divY);
-  ctx.stroke();
-
-  // מהמקור logo text
-  ctx.fillStyle = "#FFFFFF";
-  ctx.font = `bold 72px "Frank Ruhl Libre", serif`;
-  ctx.fillText(BRAND_NAME, W / 2, H - 220);
-
-  // CTA text — strings passed from React component since canvas API doesn't
-  // go through next-intl context. Falls back to HE if missing for safety.
-  ctx.fillStyle = "rgba(255,255,255,0.6)";
-  ctx.font = `400 24px "DM Sans", sans-serif`;
-  ctx.fillText(strings?.footer_url || `גלי עוד בתי עסק ב ${SITE_HOST}`, W / 2, H - 150);
+  ctx.textAlign = "center";
 }
 
 export default function StoryCardCanvas({ producer, onUploaded, onClose }) {
@@ -234,7 +330,7 @@ export default function StoryCardCanvas({ producer, onUploaded, onClose }) {
 
   useEffect(() => {
     if (!canvasRef.current) return;
-    drawCard(canvasRef.current, producer, { footer_url: t("footer_url") }).then(() => setRendered(true));
+    drawCard(canvasRef.current, producer, { kicker: t("kicker") }).then(() => setRendered(true));
   }, [producer, t]);
 
   // MEH-1267: Esc closes the story panel (mirrors the kebab toggle). The panel
@@ -308,7 +404,7 @@ export default function StoryCardCanvas({ producer, onUploaded, onClose }) {
           canvas fell back to its intrinsic 1920px and showed stretched ×4 and
           clipped on iPhone. The wrapper keeps the ratio too, so the
           «מייצר...» overlay has a frame before the first draw. */}
-      <div className="relative bg-[#2E4A2E] rounded-[12px] overflow-hidden" style={{ aspectRatio: "9/16", maxWidth: 270 }}>
+      <div className="relative bg-[#1f4a3a] rounded-[12px] overflow-hidden" style={{ aspectRatio: "9/16", maxWidth: 270 }}>
         <canvas
           ref={canvasRef}
           style={{ width: "100%", height: "auto", aspectRatio: "9/16", display: "block" }}

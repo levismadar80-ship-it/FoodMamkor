@@ -12,7 +12,6 @@ import { styleForProducer } from "@/lib/category-registry";
 import { useUserLocation } from "@/lib/user-location";
 import { haversineKm, formatDistance } from "@/lib/distance";
 import { producerPoints } from "@/lib/producerPoints";
-import { resolveStoreHours } from "@/lib/hours";
 import {
   fulfillmentTags,
   FULFILLMENT_WASH_GREEN,
@@ -216,7 +215,9 @@ export default function MapProducerCard({ producer, active, onClick }) {
             {
               delivers: !!p.delivers,
               offersPickup: !!p.offers_pickup,
-              storeWithHours: p.has_physical_location === true && !!resolveStoreHours(p),
+              // MEH-2598: the server's answer, like the other two — it is
+              // the ?on_site predicate's own result, so tag and filter agree.
+              storeWithHours: !!p.sells_on_site,
             },
             t,
           ).map((tag) => (

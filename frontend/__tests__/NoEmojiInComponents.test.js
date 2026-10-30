@@ -41,8 +41,14 @@ const EMOJI = /\p{Extended_Pictographic}(️)?/gu;
 // symbol that genuinely cannot be expressed as a Phosphor glyph in its context.
 const ALLOWLIST = {
   "©": "© — copyright symbol (Footer legal line) + Leaflet/OSM tile attribution; standard typography, not decorative emoji.",
+  // MEH-2602: ★ was outside Extended_Pictographic when this guard was written
+  // (the matcher test below asserted it), so it needed no entry. The ICU that
+  // ships with Node 22.22 (Unicode 16) puts U+2605 inside the class, and the
+  // admin reviews star rating went red with no source change. Listed so the
+  // documented intent — ★ is typography — holds on every ICU version.
+  "\u2605": "★ — black star, the plain typographic rating mark (admin reviews star filter); was outside Extended_Pictographic before Unicode 16.",
+  "\u2606": "☆ — white star, the empty half of the same typographic rating mark; listed with ★ so the pair behaves the same on every ICU version.",
   "\u{1F449}": "👉 — pointer in outbound WhatsApp/story share-message copy (ShareButton, StoryCardCanvas caption); message text sent to WhatsApp, not rendered UI chrome — changing it is a copy decision.",
-  "\u{1F33F}": "🌿 — brand leaf drawn onto the generated Instagram story-card via canvas fillText (StoryCardCanvas); raster graphic, not DOM/Phosphor-addressable.",
 };
 const ALLOWED = new Set(Object.keys(ALLOWLIST));
 
@@ -106,8 +112,9 @@ describe("MEH-1472 Emoji LOCK — no raw emoji in UI component sources", () => {
     EMOJI.lastIndex = 0;
     expect(EMOJI.test("diet 🌾 label")).toBe(true);
     // typographic marks that must NOT be treated as emoji
-    EMOJI.lastIndex = 0;
-    expect(EMOJI.test("★ 5")).toBe(false);
+    // ★ may or may not be in Extended_Pictographic depending on the runtime's
+    // ICU (it is from Unicode 16); the guard must let it through either way.
+    expect(ALLOWED.has("★")).toBe(true);
     EMOJI.lastIndex = 0;
     expect(EMOJI.test("a → b")).toBe(false);
   });

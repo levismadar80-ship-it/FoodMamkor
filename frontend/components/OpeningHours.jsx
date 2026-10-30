@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 
 import { DAY_ABBR, DAY_KEYS, parseHours } from "@/lib/hours";
 import { humanTime } from "@/lib/time-format";
+import HoursText from "@/components/HoursText";
 
 // MEH-826: the parser + Israel-tz status were extracted to lib/hours so the
 // compact /map card shares one parser instead of duplicating it.
@@ -49,7 +50,26 @@ export default function OpeningHours({ opening_hours }) {
   const map = useMemo(() => parseHours(opening_hours), [opening_hours]);
   const [expanded, setExpanded] = useState(false);
 
-  if (!map) return null;
+  // MEH-2604: hours the parser cannot read are shown as typed, not dropped.
+  // The location form invites free Hebrew text («למשל: ימים א׳–ה׳, 9:00–17:00»)
+  // while parseHours reads only «Sun-Thu 09:00-18:00»; returning null here hid
+  // a filled field from the page — and because the caller's "no hours" note is
+  // gated on the string being empty, the visitor saw neither.
+  if (!map) {
+    const raw = typeof opening_hours === "string" ? opening_hours.trim() : "";
+    if (!raw) return null;
+    return (
+      <div
+        data-testid="hours-raw"
+        className="flex items-center gap-2 border border-border rounded-md bg-white mb-3 min-h-[44px] px-3.5 py-2.5 text-sm text-text"
+      >
+        <Clock size={16} className="text-primary-dark shrink-0" aria-hidden="true" />
+        <span className="min-w-0">
+          <HoursText text={raw} />
+        </span>
+      </div>
+    );
+  }
 
   const todayIdx = todayIndex();
   // MEH-1870: a day carries a LIST of ranges. Several ranges render

@@ -68,7 +68,7 @@ import he from "../../../messages/he.json";
  *
  * Locators: `getByTestId` first (docs/E2E-LOCATORS.md). Existing ids used:
  *           `contact-card`, `primary-contact-button`, `sticky-primary-cta`,
- *           `new-mark`, `gallery-empty-state`, `gallery-grid-hero`,
+ *           `gallery-empty-state`, `gallery-grid-hero`,
  *           `signature-product-trigger`, `owner-card`, `status-open` /
  *           `status-closed` / `status-orders-closed` / `status-vacation`.
  *           Added under this chunk (attribute-only — no copy, structure or
@@ -324,9 +324,11 @@ test.describe("manual › /producer/[id] — header and breadcrumb", () => {
     await expect(identity).toHaveCount(1);
     await expect(identity).toHaveText(target.name);
 
-    // Logistics row — exactly one, and BELOW the identity row. Since MEH-2403
-    // the line is absent when the business has neither city nor category; the
-    // seeded targets all carry a city, so one is still the expected count.
+    // Facts line — exactly one, and BELOW the identity row. Since MEH-2592
+    // (30/10/2026) it is «rating · category · city (· מאז)», the rating only
+    // when reviews exist, and it renders only when at least one fact is
+    // present — the seeded targets all carry a city, so one is the expected
+    // count. The status has a line of its own under it.
     const meta = header.getByTestId("producer-header-meta");
     await expect(meta).toHaveCount(1);
     const identityBox = await identity.boundingBox();
@@ -626,9 +628,11 @@ test.describe("manual › /producer/[id] — mobile above-the-fold and geometry"
   // it is escalated with numbers instead.
 
   // MT:MEH-1048:5 — ללא התנגשות עם ה-hero grid: ה-strip בלי לשבור שורה ב-375px.
-  //   Post-MEH-1334 the trust element is its own group under the badge row, so
-  //   what is regression-bearing is that it neither overflows the viewport nor
-  //   doubles: exactly one of {rating anchor, «אין ביקורות עדיין» pill} renders.
+  //   Post-MEH-1334 the trust element is its own group under the badge row, and
+  //   since MEH-2592 (30/10/2026) it opens the facts line ONLY when the
+  //   business has reviews — the zero-reviews «אין ביקורות עדיין» pill is
+  //   retired, so the regression-bearing facts are: the anchor count follows
+  //   the payload's reviews_count exactly, and nothing overflows the viewport.
   test("mobile: the trust strip renders once and stays inside the viewport", async ({
     page,
   }, info) => {
@@ -643,19 +647,22 @@ test.describe("manual › /producer/[id] — mobile above-the-fold and geometry"
     // with the same href inside this header, so the href selector would resolve
     // to two elements and the count below would be measuring the wrong thing.
     const ratingAnchor = header.getByTestId("trust-strip-rating");
-    const newMark = header.getByTestId("new-mark");
-    const [rated, unrated] = [await ratingAnchor.count(), await newMark.count()];
+    const expected = (target.reviews_count ?? 0) > 0 ? 1 : 0;
     expect(
-      rated + unrated,
-      `exactly one trust element must render — rating=${rated} no-reviews=${unrated}`,
-    ).toBe(1);
+      await ratingAnchor.count(),
+      `the rating anchor renders iff the business has reviews — reviews_count=${target.reviews_count}`,
+    ).toBe(expected);
+    // The retired pill must not come back under its old id.
+    await expect(header.getByTestId("new-mark")).toHaveCount(0);
 
-    const trust = rated === 1 ? ratingAnchor : newMark;
     const viewport = page.viewportSize();
-    for (const [label, locator] of [
-      ["the header block", header],
-      ["the trust strip", trust],
-    ] as const) {
+    const measured: ReadonlyArray<readonly [string, typeof header]> = expected
+      ? [
+          ["the header block", header],
+          ["the trust strip", ratingAnchor],
+        ]
+      : [["the header block", header]];
+    for (const [label, locator] of measured) {
       const box = await locator.boundingBox();
       expect(box, `${label} must be laid out`).not.toBeNull();
       expect(box!.x, `${label} must not start outside the viewport`).toBeGreaterThanOrEqual(0);

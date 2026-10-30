@@ -9,6 +9,7 @@ import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
 import { formatPrice } from "@/lib/utils";
+import { SkeletonList } from "@/components/Skeleton";
 
 // Status class map; labels resolved via t() in render
 const STATUS_CLS = {
@@ -103,7 +104,7 @@ export default function AdminGroupBuysPage() {
       </div>
 
       {items === null ? (
-        <div className="text-center py-16 text-fg-muted">{t("common.loading_f")}</div>
+        <SkeletonList count={4} label={t("common.loading_f")} />
       ) : items.length === 0 ? (
         <div className="text-center py-16 text-fg-muted">
           <ShoppingCart size={36} className="text-fg-muted mx-auto mb-3" aria-hidden="true" />

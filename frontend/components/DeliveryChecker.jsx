@@ -132,8 +132,13 @@ export default function DeliveryChecker({
   const day = result?.status === "yes" ? result.day : null;
 
   return (
-    <div className="mb-4 rounded-md border border-border bg-surface-card p-3" data-testid="delivery-checker">
-      <div data-testid="delivery-checker-input">
+    // MEH-2592 C: a soft green band instead of a bordered card, a round field
+    // (CitySearch's `pill`), and the label as the band's heading.
+    <div className="mb-6 rounded-2xl bg-green-50 p-3.5" data-testid="delivery-checker">
+      <div
+        data-testid="delivery-checker-input"
+        className="[&_label]:text-[15px] [&_label]:font-bold [&_label]:mb-2"
+      >
         <CitySearch
           id="delivery-checker-city"
           value={city}
@@ -144,6 +149,7 @@ export default function DeliveryChecker({
           onSubmit={setChecked}
           label={t("checker.label")}
           labelVisible
+          pill
           placeholder={t("checker.placeholder")}
         />
       </div>
@@ -152,7 +158,7 @@ export default function DeliveryChecker({
           Always mounted (an element that appears cannot be announced reliably). */}
       <div
         aria-live="polite"
-        className="mt-2 min-h-[1.25rem]"
+        className="mt-2.5 empty:mt-0"
         data-testid="delivery-checker-result"
         data-result={result?.status ?? "none"}
       >

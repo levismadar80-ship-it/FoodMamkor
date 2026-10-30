@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CaretLeft, Quotes } from "@phosphor-icons/react";
+import { CaretLeft } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import * as Sentry from "@sentry/nextjs";
 import api from "@/lib/api";
@@ -62,17 +62,18 @@ export default function ReviewExcerpt({ producerId, reviewsCount = 0 }) {
 
   if (!excerpt) return null;
 
-  // MEH-1334: restyled as the mockup's editorial pull-quote — hairline
-  // border-block frame, italic serif-adjacent quote, quiet source footer.
+  // MEH-1334: the editorial pull-quote, quiet source footer.
+  // MEH-2596: a gold rule at the inline-start replaces the hairline frame and
+  // the small quote mark, and the text is upright — Hebrew has no italic, so
+  // `italic` only made the browser slant the letters. Display face, 20px.
   // The #reviews anchor, self-hiding guards, and testids are unchanged.
   return (
     <a
       href="#reviews"
-      className="mt-4 block border-y border-border py-4 rounded-none transition-colors hover:bg-primary/[0.03] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/40"
+      className="mt-6 block border-s-[3px] border-accent ps-4 py-1 rounded-none transition-colors hover:bg-primary/[0.03] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/40"
       data-testid="review-excerpt"
     >
-      <span className="flex items-start gap-1.5 text-[17px] leading-relaxed italic text-text">
-        <Quotes size={15} weight="fill" className="mt-1 shrink-0 text-accent" aria-hidden="true" />
+      <span className="block font-headline-md text-[20px] leading-normal text-text">
         {/* The quote text IS the link's accessible name so AT users hear the
             actual review; the nav purpose is an sr-only suffix instead of an
             aria-label (which would override — and hide — the quote). */}

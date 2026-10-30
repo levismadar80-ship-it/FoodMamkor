@@ -9,6 +9,7 @@ import {
 } from "@phosphor-icons/react/ssr";
 import { Link } from "@/i18n/navigation";
 import BusinessCtaLink from "@/components/BusinessCtaLink";
+import EditorialPhoto from "@/components/EditorialPhoto";
 import { BRAND_NAME } from "@/lib/constants";
 import { SITE_URL, serializeJsonLd } from "@/lib/seo";
 import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
@@ -162,6 +163,13 @@ export default async function FaqForBusinessesPage({ params }) {
             {t("cta")}
           </BusinessCtaLink>
         </header>
+
+        {/* MEH-2597: a packed order, between the header CTA and the questions. */}
+        <EditorialPhoto
+          src="https://res.cloudinary.com/dfzpscjks/image/upload/register/hero-box-produce.jpg"
+          testId="for-businesses-photo"
+          className="mb-10 sm:mb-14"
+        />
 
         <div className="flex flex-col gap-10 sm:gap-12">
           {CATEGORIES.map((cat) => (

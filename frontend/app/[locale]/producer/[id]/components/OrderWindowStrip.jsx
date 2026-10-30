@@ -200,7 +200,7 @@ export function OrderWindowScheduleBlock({ orderWindow, specialHours = null }) {
   if (rows.length === 0 && upcoming.length === 0) return null;
 
   return (
-    <section className="mt-8 border-t border-border pt-8" data-testid="order-window-schedule">
+    <section className="mt-12" data-testid="order-window-schedule">
       <h2 className="font-headline-md text-2xl font-bold text-text mb-3">
         {t("schedule_heading")}
       </h2>

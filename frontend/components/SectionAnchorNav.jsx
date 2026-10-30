@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 /**
- * Sticky in-page section anchor-nav (a row of pills). Each pill is a real
+ * Sticky in-page section anchor-nav (a row of underline tabs). Each tab is a real
  * `<a href="#id">` — keyboard-reachable, and it still jumps with JS off. The
  * landing offset is the TARGET's own `scroll-margin-top` (no JS offset math);
  * this component publishes its live height as `--section-nav-h` on :root so
@@ -17,7 +17,7 @@ import { useEffect, useRef, useState } from "react";
  * library). `aria-current="true"` marks it. prefers-reduced-motion → instant
  * jump instead of a smooth scroll.
  *
- * @param {{ items: Array<{id: string, label: string, Icon?: any, show?: boolean}>,
+ * @param {{ items: Array<{id: string, label: string, show?: boolean}>,
  *           ariaLabel: string, className?: string }} props
  */
 export default function SectionAnchorNav({ items, ariaLabel, className = "" }) {
@@ -105,13 +105,16 @@ export default function SectionAnchorNav({ items, ariaLabel, className = "" }) {
       aria-label={ariaLabel}
       data-testid="section-anchor-nav"
       style={{ top: "var(--chrome-top, 82px)" }}
-      className={`sticky z-30 bg-white border-b border-border ${className}`}
+      // MEH-2593: the page's own cream (not a white band) under a hairline,
+      // so the bar reads as part of the page rather than a separate strip.
+      // Opaque: at /95 the text scrolling underneath showed through.
+      className={`sticky z-30 bg-background border-b border-primary/15 ${className}`}
     >
       <div
         ref={rowRef}
-        className="flex gap-2 overflow-x-auto py-2 scrollbar-hide min-w-0 snap-x snap-proximity"
+        className="flex gap-1 overflow-x-auto scrollbar-hide min-w-0 snap-x snap-proximity"
       >
-        {visible.map(({ id, label, Icon }) => {
+        {visible.map(({ id, label }) => {
           const active = id === effectiveActive;
           return (
             <a
@@ -124,16 +127,17 @@ export default function SectionAnchorNav({ items, ariaLabel, className = "" }) {
               onClick={(e) => onPillClick(e, id)}
               aria-current={active ? "true" : undefined}
               data-testid={`section-nav-pill-${id}`}
-              // Chip styling from ChipScrollRow (the /producers category row):
-              // rounded-md, px-4, text-sm, border; solid state-selected fill
-              // when active. min-h-[44px] keeps the touch target.
-              className={`inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 min-h-[44px] rounded-md text-sm font-medium border transition shrink-0 snap-start focus-ring ${
+              // MEH-2593: underline tabs (Google Maps / Airbnb place pages) in
+              // place of the boxed ChipScrollRow pills — text only, the active
+              // tab is green with a bar under it. min-h-[48px] keeps the touch
+              // target; pt-[3px] balances the 3px bottom border so the label
+              // stays optically centred.
+              className={`inline-flex items-center whitespace-nowrap px-3 pt-[3px] min-h-[48px] text-[15px] font-semibold border-b-[3px] transition shrink-0 snap-start focus-ring ${
                 active
-                  ? "bg-state-selected text-white border-state-selected"
-                  : "bg-white text-text border-border hover:border-primary hover:text-primary"
+                  ? "text-primary border-primary"
+                  : "text-fg-muted border-transparent hover:text-text"
               }`}
             >
-              {Icon && <Icon size={16} weight={active ? "fill" : "regular"} aria-hidden="true" />}
               {label}
             </a>
           );

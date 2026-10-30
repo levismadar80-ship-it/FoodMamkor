@@ -56,8 +56,11 @@ import { resolveProducerQuestions } from "@/lib/resolvedQuestions";
 
 const chips = he.whatsapp.question_chips;
 
-const labelsFor = (producer) => ({
-  deliveryQuestion: chips.delivery_to_city.replace("{city}", producer?.city || chips.my_area),
+// MEH-2602: the delivery chip asks about the VISITOR's city, not the
+// business's own; with no visitor city (this test, the owner's dashboard
+// preview) it reads «אפשר משלוח לאזור שלי?».
+const labelsFor = () => ({
+  deliveryQuestion: chips.delivery_to_my_area,
   orderingQuestion: chips.ordering_q,
   escalationQuestion: chips.escalation,
 });

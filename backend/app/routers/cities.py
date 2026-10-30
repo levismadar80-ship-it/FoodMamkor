@@ -8,13 +8,15 @@ unioned with live producer/delivery cities; the static ISRAEL_CITIES list
 Rate-limited 60/min (anonymous). Returns up to 20 cities matching the query
 string (prefix match, case-insensitive), exact match first then alphabetical.
 MEH-2456: one entry per city — spelling variants collapse on city_key and the
-answer uses the static list's spelling when one shares the key.
+answer uses the static list's spelling when one shares the key. MEH-2602: the
+answer is canonical_city's spelling, which also folds everyday aliases.
 """
 
 from fastapi import APIRouter, Depends, Query, Request
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
-from app.data.cities import ISRAEL_CITIES, STATIC_SPELLING_BY_KEY, city_key
+from app.data.cities import ISRAEL_CITIES, canonical_city, city_key
 from app.database import get_db
 from app.services.producer_listing import is_business  # MEH-2459
 from app.models import DeliveryArea, Producer
@@ -24,6 +26,18 @@ from app.rate_limit import limiter
 router = APIRouter(tags=["cities"])
 
 MAX_RESULTS = 20
+
+
+def _prefixes(clean: str) -> list[str]:
+    """MEH-2602: «קריית» and «קרית» are one spelling apart — the official list
+    uses one yod, owners and the static list two — so a typed prefix in either
+    form must reach names in both."""
+    forms = {clean, clean.replace("קריית", "קרית"), clean.replace("קרית", "קריית")}
+    return sorted(f for f in forms if f)
+
+
+def _ilike_any(column, clean: str):
+    return or_(*[column.ilike(f"{p}%") for p in _prefixes(clean)])
 
 
 def _live_business_cities(db: Session, clean: str) -> list[str]:
@@ -39,8 +53,8 @@ def _live_business_cities(db: Session, clean: str) -> list[str]:
     )
     deliv = db.query(DeliveryArea.city).filter(DeliveryArea.city.isnot(None))
     if clean:
-        prod = prod.filter(Producer.city.ilike(f"{clean}%"))
-        deliv = deliv.filter(DeliveryArea.city.ilike(f"{clean}%"))
+        prod = prod.filter(_ilike_any(Producer.city, clean))
+        deliv = deliv.filter(_ilike_any(DeliveryArea.city, clean))
     rows = (
         prod.distinct().limit(MAX_RESULTS).all()
         + deliv.distinct().limit(MAX_RESULTS).all()
@@ -66,7 +80,7 @@ def list_cities(
 
     base = db.query(City.name_he)
     if clean:
-        base = base.filter(City.name_he.ilike(f"{clean}%"))
+        base = base.filter(_ilike_any(City.name_he, clean))
     table_cities = [
         row[0] for row in base.order_by(City.name_he).limit(MAX_RESULTS).all()
     ]
@@ -87,15 +101,18 @@ def list_cities(
     # both, and a business that picked the table spelling under "אזורי משלוח"
     # was then missed by the exact-match delivery filter. Dedupe on city_key
     # and answer in the static spelling whenever one shares the key.
+    # MEH-2602: canonical_city extends that to everyday aliases («בנימינה» →
+    # «בנימינה-גבעת עדה», «מודיעין» → «מודיעין-מכבים-רעות»), «קרית»/«קריית»,
+    # and the data.gov names whose parentheses arrive flipped.
     seen: set[str] = set()
     merged = []
     for raw in table_cities + live_cities + static_cities:
-        name = raw.strip()
+        name = canonical_city(raw) or ""
         key = city_key(name)
         if not key or key in seen:
             continue
         seen.add(key)
-        merged.append(STATIC_SPELLING_BY_KEY.get(key, name))
+        merged.append(name)
     merged.sort()
     if clean in merged:
         merged.remove(clean)

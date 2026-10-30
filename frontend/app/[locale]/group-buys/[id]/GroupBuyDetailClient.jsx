@@ -20,6 +20,7 @@ import Input from "@/components/ui/Input";
 import DeliveryChecker from "@/components/DeliveryChecker";
 import api from "@/lib/api";
 import { GroupBuyProducerDeliverySchema } from "@/lib/api-schemas";
+import { SkeletonDetail } from "@/components/Skeleton";
 
 // MEH-975: schema bounds for GroupBuyCommitRequest.quantity
 // (backend/app/schemas/schemas.py:1602 — int, ge=1, le=100). Clamp the
@@ -296,9 +297,7 @@ export default function GroupBuyDetailClient({ id }) {
 
   if (loading || authLoading) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-20 text-center text-fg-muted">
-        {t("loading")}
-      </div>
+      <SkeletonDetail hero={false} width="max-w-6xl" label={t("loading")} />
     );
   }
 

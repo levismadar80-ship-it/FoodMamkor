@@ -26,7 +26,7 @@ import logging
 from uuid import UUID
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from sqlalchemy.orm import Session
 
 from app.auth import require_admin
@@ -195,13 +195,16 @@ def _search_place_candidates(name: str | None, city: str | None) -> list[dict] |
 def get_google_place_candidates(
     producer_id: UUID,
     request: Request,
+    # MEH-2602: the admin's own wording, when name + city found nothing (the
+    # business is listed on Google under another name). Replaces the query.
+    q: str | None = Query(None, max_length=120),
     admin: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
     """Admin-only: up to 3 Google Place candidates for a producer, or 204.
 
-    Builds the query from the producer's own name + city and runs Places Text
-    Search. 204 (fail-quiet) when: no server key, no results, or any Google API
+    Builds the query from the producer's own name + city — or from `q` when the
+    admin typed one — and runs Places Text Search. 204 (fail-quiet) when: no server key, no results, or any Google API
     error. 403 for non-admins (require_admin). 404 for an unknown producer.
     NO auto-select — the admin picks one in ProducerForm; the response is
     display-only and nothing here is stored (ToS §3.2.3(b)).
@@ -214,7 +217,12 @@ def get_google_place_candidates(
     if row is None:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
 
-    candidates = _search_place_candidates(row[0], row[1])
+    typed = (q or "").strip()
+    candidates = (
+        _search_place_candidates(typed, None)
+        if typed
+        else _search_place_candidates(row[0], row[1])
+    )
     if not candidates:
         return Response(status_code=204)
     return {"candidates": candidates}

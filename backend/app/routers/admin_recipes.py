@@ -6,6 +6,8 @@ Touches:  producer_recipes table (writes moderation_status, published,
           moderation_notes); favorite_alerts fan-out via fire_alerts
           (MEH-1361 — approve is the single code path that flips a
           recipe publicly visible, so the new_recipe alert fires here).
+          MEH-2602: each moderation outcome mails the owner
+          (services/content_notifications.py).
 Does NOT: handle producer-self CRUD — see producer_recipes.py. Does
           not run Claude pre-check — that fires on submit/update in
           producer_recipes.py. Does not notify the ADMIN — that is
@@ -29,8 +31,20 @@ from app.schemas.schemas import (
     ProducerRecipeModerationAction,
     ProducerRecipeOut,
 )
+from app.services.content_notifications import (
+    notify_recipe_approved,
+    notify_recipe_changes_requested,
+    notify_recipe_rejected,
+)
 
 router = APIRouter(prefix="/admin/recipes", tags=["admin-recipes"])
+
+
+def _owner_email(db: Session, producer_id) -> str | None:
+    """MEH-2602: the account that owns the business — the same lookup the
+    producer-approval mail uses (admin.py, `User.producer_id`)."""
+    owner = db.query(User).filter(User.producer_id == producer_id).first()
+    return owner.email if owner and owner.email else None
 
 
 # ---------- List ----------
@@ -150,6 +164,19 @@ def approve_recipe(
             ),
         )
 
+    # MEH-2602: tell the owner. Every moderation outcome mails, as experiences do.
+    owner_email = _owner_email(db, recipe.producer_id)
+    if owner_email:
+        producer = db.query(Producer).filter(Producer.id == recipe.producer_id).first()
+        path = (
+            f"/{producer.slug}/recipes/{recipe.id}"
+            if producer and producer.slug
+            else f"/producer/{recipe.producer_id}"
+        )
+        background_tasks.add_task(
+            notify_recipe_approved, owner_email, recipe.title, path
+        )
+
     recipe = _load_or_404(db, recipe.id)
     return _serialize(recipe)
 
@@ -164,6 +191,7 @@ def approve_recipe(
 def request_recipe_changes(
     recipe_id: UUID,
     action: ProducerRecipeModerationAction,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
@@ -178,6 +206,11 @@ def request_recipe_changes(
     recipe.published = False
     db.commit()
     db.refresh(recipe)
+    owner_email = _owner_email(db, recipe.producer_id)
+    if owner_email:
+        background_tasks.add_task(
+            notify_recipe_changes_requested, owner_email, recipe.title, action.feedback
+        )
     recipe = _load_or_404(db, recipe.id)
     return _serialize(recipe)
 
@@ -192,6 +225,7 @@ def request_recipe_changes(
 def reject_recipe(
     recipe_id: UUID,
     action: ProducerRecipeModerationAction,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
@@ -204,5 +238,10 @@ def reject_recipe(
     recipe.published = False
     db.commit()
     db.refresh(recipe)
+    owner_email = _owner_email(db, recipe.producer_id)
+    if owner_email:
+        background_tasks.add_task(
+            notify_recipe_rejected, owner_email, recipe.title, action.feedback
+        )
     recipe = _load_or_404(db, recipe.id)
     return _serialize(recipe)

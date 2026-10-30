@@ -626,9 +626,8 @@ function EditPageInner() {
   // the two counts are lifted — the header renders no labels, so it needs none.
   const questionsSummary = (() => {
     const { items, usesCustom, customCount } = resolveProducerQuestions(profile, {
-      deliveryQuestion: tChips("delivery_to_city", {
-        city: profile.city || tChips("my_area"),
-      }),
+      // MEH-2602: the visitor's area, never the business's own city.
+      deliveryQuestion: tChips("delivery_to_my_area"),
       orderingQuestion: tChips("ordering_q"),
       escalationQuestion: tChips("escalation"),
     });
@@ -1364,9 +1363,8 @@ function CustomQuestionsCard({
   // The list answers "what is on my page right now", so it must not move while
   // she types — it moves when she saves, which is also when the page moves.
   const live = resolveProducerQuestions(profile, {
-    deliveryQuestion: tChips("delivery_to_city", {
-      city: profile?.city || tChips("my_area"),
-    }),
+    // MEH-2602: the visitor's area, never the business's own city.
+    deliveryQuestion: tChips("delivery_to_my_area"),
     orderingQuestion: tChips("ordering_q"),
     escalationQuestion: tChips("escalation"),
   });

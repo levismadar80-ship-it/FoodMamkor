@@ -218,12 +218,16 @@ def list_experiences(
     request: Request,
     category: str | None = None,
     city: str | None = None,
+    # MEH-2602: the business page lists that business's own experiences.
+    producer_id: UUID | None = None,
     db: Session = Depends(get_db),
 ):
     """Only approved + upcoming (event_date >= today), and only from an
     approved business (MEH-1749). Past experiences drop out of the public
     feed automatically."""
     q = _public_listing_query(db)
+    if producer_id:
+        q = q.filter(Producer.id == producer_id)
     if category:
         q = q.filter(Experience.category == category)
     if city:

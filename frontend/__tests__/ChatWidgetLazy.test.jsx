@@ -67,7 +67,8 @@ describe("ChatWidgetLazy", () => {
   // MEH-2512: on phones the launcher sat over primary form buttons (login
   // submit, register preflight, password field, contact input). Form pages
   // ask the widget to skip mobile; desktop keeps it.
-  it.each(["/login", "/register", "/register/producer", "/forgot-password", "/reset-password", "/contact"])(
+  // MEH-2602: the owner dashboard too — the launcher covered the availability chips.
+  it.each(["/login", "/register", "/register/producer", "/forgot-password", "/reset-password", "/contact", "/producer/dashboard", "/producer/dashboard/edit"])(
     "asks the widget to hide on mobile on the form page %s",
     async (route) => {
       mockUsePathname.mockReturnValue(route);

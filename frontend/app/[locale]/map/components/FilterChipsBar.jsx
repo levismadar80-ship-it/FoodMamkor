@@ -141,11 +141,15 @@ export default function FilterChipsBar({
           moves down onto this line with them — it is passed as children rather
           than rebuilt inside ServiceChipRow so the `relative` anchor below stays
           the element FilterSheet's md+ panel positions against. */}
-      <ServiceChipRow chipState={chipState} onToggleChip={onToggleChipClick}>
-        {/* Anchor wrapper — FilterSheet's md+ panel positions off this
-            `relative` wrapper. `ms-auto` pushes it to the inline-END (left in
-            RTL), which is where it sat when it shared row 1. */}
-        <div className="relative shrink-0 ms-auto">
+      <ServiceChipRow chipState={chipState} onToggleChip={onToggleChipClick} chips={visibleToggleChips}>
+        {/* Anchor wrapper — FilterSheet's lg+ panel positions off this
+            wrapper (sticky is positioned, so it anchors like `relative`).
+            MEH-2598: it LEADS the row now (inline-start, the RIGHT in RTL), as
+            on home and /producers, and stays put while the rail scrolls under
+            it below lg. -start-3/-ms-3/ps-3 paint the gutter beside it so chips
+            pass under it; z-10 so no later chip paints over it; lg+ is plain
+            `relative` again so the anchored panel leaves no stacking context. */}
+        <div className="sticky z-10 -start-3 -ms-3 ps-3 shrink-0 bg-background lg:relative lg:z-auto lg:start-auto lg:ms-0 lg:ps-0">
           <button
             type="button"
             onClick={() => setSheetOpen((v) => !v)}
@@ -188,6 +192,9 @@ export default function FilterChipsBar({
             onToggleChip={onSheetToggleChip}
             resultCount={resultCount}
             onClearAll={clearSheetFilters}
+            // MEH-2598: the trigger now sits at the inline-START, as on home
+            // and /producers, so the anchored panel opens from that edge.
+            align="start"
           />
         </div>
       </ServiceChipRow>

@@ -45,6 +45,7 @@ import {
   parseDraft,
 } from "@/lib/register-draft";
 import { FARMER_DECLARATION_CATEGORIES } from "@/lib/farmer-declaration";
+import BrandLoader from "@/components/BrandLoader";
 
 // MEH-847 (S7 Chunk B): wizard step enum — single source for the 3→5 re-index.
 const STEP = { ACCOUNT: 1, DETAILS: 2, CATEGORY: 3, STORY: 4, CONFIRM: 5 };
@@ -264,6 +265,10 @@ function RegisterProducerPageBody() {
   const [showDraftBanner, setShowDraftBanner] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [stepError, setStepError] = useState("");
+  // MEH-2602: the empty-delivery-cities error waits for the first «הבא» that
+  // it blocks (Baymard: validate on submit/blur, never before the seller has
+  // had a chance). It used to render the moment delivery was ticked.
+  const [deliveryCitiesTried, setDeliveryCitiesTried] = useState(false);
   // MEH-1807: per-field messages for CROSS_STEP_REQUIRED, keyed by form field.
   // Only ever holds those three, which is what lets the STORY summary below
   // derive itself from this object instead of carrying its own state — an
@@ -814,7 +819,7 @@ function RegisterProducerPageBody() {
   // the existing loading text for every authLoading tick closes that flash;
   // guests are unaffected (they start at ACCOUNT, resolve immediately).
   if (authLoading) {
-    return <div className="max-w-2xl mx-auto px-4 py-12 text-center text-fg-muted">{t("auth.register.producer.loading")}</div>;
+    return <BrandLoader label={t("auth.register.producer.loading")} className="max-w-2xl mx-auto px-4 py-12" />;
   }
 
   // MEH-1489: early auth-state gate. A logged-in producer already owns a page
@@ -1579,7 +1584,7 @@ function RegisterProducerPageBody() {
                           showRegionChips
                         />
                       </div>
-                      {form.delivery_cities.length === 0 && (
+                      {deliveryCitiesTried && form.delivery_cities.length === 0 && (
                         <p
                           className="text-xs text-red-600 mt-1"
                           data-testid="register-delivery-cities-error"
@@ -1635,6 +1640,7 @@ function RegisterProducerPageBody() {
                     !form.delivery_nationwide &&
                     form.delivery_cities.length === 0
                   ) {
+                    setDeliveryCitiesTried(true);
                     setStepError(t("admin.producers.form.fields.delivery_cities_required"));
                     return;
                   }

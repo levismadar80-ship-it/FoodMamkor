@@ -274,6 +274,17 @@ describe("MEH-1838 chunk B — the client-side gate mirrors the server validator
     expect(api.post).not.toHaveBeenCalled();
   });
 
+  it("MEH-2602: ticking delivery shows no cities error until «הבא» is pressed", async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    fillDetailsFields();
+    fireEvent.click(screen.getByTestId("register-offers-delivery"));
+
+    expect(screen.queryByTestId("register-delivery-cities-error")).toBeNull();
+    fireEvent.click(nextBtn());
+    expect(screen.getByTestId("register-delivery-cities-error")).toBeInTheDocument();
+  });
+
   it("the happy default (physical-only) is NOT blocked — the gate discriminates", async () => {
     await renderWizard();
     await fillAccountToDetails();

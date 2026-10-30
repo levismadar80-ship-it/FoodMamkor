@@ -125,10 +125,19 @@ describe("SectionAnchorNav — data gating", () => {
     expect(getSectionNavItems(FULL, t).map((i) => i.id)).toEqual([
       "section-bio",
       "section-products",
-      "section-delivery",
       "reviews",
+      "section-delivery",
       "section-location",
     ]);
+  });
+
+  // MEH-2592: the pill order is read off the REAL render, so moving a section
+  // on one side only goes red here instead of leaving the nav out of order.
+  it("pill order matches the DOM order of the rendered sections", () => {
+    const { container } = renderSections(FULL);
+    const ids = getSectionNavItems(FULL, t).map((i) => i.id);
+    const domOrder = [...container.querySelectorAll(ids.map((id) => `#${id}`).join(","))].map((el) => el.id);
+    expect(domOrder).toEqual(ids);
   });
 
   it("renders a pill per shown section and NO pill for an absent one", () => {

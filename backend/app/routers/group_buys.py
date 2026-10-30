@@ -109,9 +109,13 @@ def list_group_buys(
     request: Request,
     city: str | None = Query(None),
     status: str = Query("open"),
+    # MEH-2602: the business page lists that business's own open group buys.
+    producer_id: UUID | None = Query(None),
     db: Session = Depends(get_db),
 ):
     q = _public_group_buys(db).filter(GroupBuy.status == status)  # MEH-2484
+    if producer_id:
+        q = q.filter(GroupBuy.producer_id == producer_id)
     if status == "open":
         # MEH-2540: nothing closes an open group buy past its deadline (see
         # OWNER_TRANSITIONS), so the «פתוחות» tab listed it next to a join

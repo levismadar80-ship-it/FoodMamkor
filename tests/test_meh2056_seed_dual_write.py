@@ -29,6 +29,7 @@ import pytest
 from sqlalchemy import text
 
 from app.config import settings
+from app.data.cities import canonical_city
 from app.models import Producer, ProducerLocation
 from seed_data import PRODUCERS, seed
 
@@ -124,7 +125,7 @@ def test_boot_seed_row_mirrors_each_geocoded_fixture(db, staging_env):
         assert (row.lat, row.lng, row.city) == (
             fixture["lat"],
             fixture["lng"],
-            fixture["city"],
+            canonical_city(fixture["city"]),  # MEH-2602: stored canonical
         )
         assert row.label is None
 

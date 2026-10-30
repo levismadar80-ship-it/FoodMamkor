@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { CaretDown, EyeSlash, Leaf, Star } from "@phosphor-icons/react";
+import { CaretDown, EyeSlash, Star } from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import api from "@/lib/api";
@@ -12,6 +12,7 @@ import { useAuth } from "@/lib/auth-context";
 import { showToast } from "@/lib/toast";
 import { formatEventDate } from "@/lib/format-date";
 import EmptyState from "@/components/ui/EmptyState";
+import { SkeletonList } from "@/components/Skeleton";
 
 // HOT-018 (MEH-782): numeric short date (e.g. 7.6.2026) — preserves the prior
 // `toLocaleDateString` default while routing through the Invalid-Date-guarded,
@@ -178,7 +179,9 @@ function ReviewReply({ review, isOwner, onSaved }) {
   return (
     <>
       {reply && (
-        <div className="mt-3 bg-green-50 rounded-[8px] p-3">
+        // MEH-2592: a side rule marks the business's voice — the green box
+        // read as a second review card.
+        <div className="mt-3 border-s-2 border-primary/40 ps-3" data-testid="review-reply">
           <p className="text-[13px] font-semibold text-primary-dark">{t("reply_heading")}</p>
           <p className="text-[14px] text-text/85 leading-relaxed whitespace-pre-line mt-0.5">
             {reply}
@@ -388,7 +391,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
   const anonymousFallback = t("anonymous_fallback");
 
   return (
-    <section ref={sectionRef} className="mt-12 pt-8 border-t border-border">
+    <section ref={sectionRef} className="mt-12">
       <h2 className="font-headline-md text-2xl font-bold text-text mb-6">
         {t("section_heading")}
         {total > 0 && (
@@ -397,21 +400,24 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
       </h2>
 
       {/* Rating summary block — only when ≥3 reviews */}
+      {/* MEH-2592: the summary is one line — number · stars · count, aligned to
+          the start (Airbnb / Google). The 150px centred box left the stars
+          pushed to one side: StarRow is a dir="ltr" flex row, so in a centred
+          block it hugged the left edge while the number sat in the middle. */}
       {showSummary && (
-        <div className="bg-green-50 rounded-lg p-6 text-center mb-6">
+        <div className="flex items-center gap-2.5 mb-6" data-testid="reviews-summary">
           <p
-            className="font-headline-display font-black leading-none text-text mb-2"
-            style={{ fontSize: 48 }}
+            className="font-headline-md text-2xl font-bold leading-none text-text"
             dir="ltr"
           >
             {Number(avgRating).toFixed(1)}
           </p>
           <StarRow
             value={Number(avgRating)}
-            size={20}
+            size={18}
             ariaLabel={t("star_aria", { value: Number(avgRating).toFixed(1) })}
           />
-          <p className="text-fg-muted text-sm mt-2">{t("summary_count", { count: total })}</p>
+          <p className="text-fg-muted text-sm">{t("summary_count", { count: total })}</p>
         </div>
       )}
 
@@ -479,28 +485,12 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
               </div>
             </form>
           )
-        ) : reviews.length > 0 ? (
-          // MEH-1139: standalone gate-instruction box only renders when reviews
-          // exist — the empty state below carries the gate hint itself, so the
-          // empty section shows ONE box instead of two. Gate logic (MEH-103)
-          // itself is untouched.
-          <div className="bg-green-50/50 rounded-[16px] p-5 border border-border mb-6 text-sm text-fg-muted text-center">
-            {t("wa_gate_message")}
-          </div>
         ) : null
-      ) : (
-        <div className="bg-green-50/50 rounded-[16px] p-5 border border-border mb-6 text-sm text-fg-muted text-center">
-          {t.rich("login_prompt", {
-            login: (chunks) => (
-              <Link href={loginHref} data-testid="reviews-login-link" className="text-primary hover:underline">{chunks}</Link>
-            ),
-          })}
-        </div>
-      )}
+      ) : null}
 
       {/* Reviews list */}
       {loading ? (
-        <p className="text-sm text-fg-muted">{t("loading")}</p>
+        <SkeletonList count={2} label={t("loading")} />
       ) : reviews.length === 0 ? (
         isOwner ? (
           <>
@@ -523,43 +513,52 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
             />
           </>
         ) : (
-          <div className="text-center py-8">
-            <Leaf size={48} className="text-primary/70 mx-auto mb-2" aria-hidden="true" />
-            <p className="text-fg-muted">
-              {t("empty_message")}
-              {/* MEH-1139: WhatsApp-gate hint shown only to viewers the gate
-                  actually applies to (logged in, not the owner, not yet gated). */}
-              {user && user.producer_id !== producerId && !hasClickedWa && !inviteToken && (
-                <> {t("empty_gate_hint")}</>
-              )}
-            </p>
-          </div>
+          // MEH-2592 (Sapir, 30/10): a reader sees NO empty state. The old
+          // 48px Leaf + «עדיין אין ביקורות כאן.» announced the absence, and
+          // before launch that was nearly every page. Google keeps only the
+          // write-a-review affordance at zero reviews, Airbnb a one-liner; here
+          // the section collapses to its heading and the write hint below
+          // (login line / WhatsApp-gate line), which already says what a
+          // reader can do. The owner's coaching state above is unchanged.
+          null
         )
       ) : (
         <>
           <div className="divide-y divide-border">
             {reviews.slice(0, visibleCount).map((review) => (
               <div key={review.id} className="bg-background py-6">
-                <div className="flex items-start justify-between gap-3 mb-3">
-                  <div>
+                {/* MEH-2592: initial circle · name + date, stars under the name —
+                    the stars used to sit at the far edge of the screen, away
+                    from the person who gave them. */}
+                <div className="flex items-start gap-3 mb-3">
+                  <span
+                    aria-hidden="true"
+                    data-testid="review-initial"
+                    className="w-10 h-10 shrink-0 rounded-full bg-green-50 text-primary flex items-center justify-center font-bold"
+                  >
+                    {Array.from(formatName(review.user_name, anonymousFallback))[0]}
+                  </span>
+                  <div className="min-w-0">
                     <p className="font-body-md font-semibold text-[15px] text-text leading-snug">
                       {formatName(review.user_name, anonymousFallback)}
+                      {formatEventDate(review.created_at, locale, REVIEW_DATE_OPTIONS) && (
+                        <span
+                          className="ms-2 text-[13px] font-normal text-fg-muted"
+                          dir="ltr"
+                          data-testid="review-date"
+                        >
+                          {formatEventDate(review.created_at, locale, REVIEW_DATE_OPTIONS)}
+                        </span>
+                      )}
                     </p>
-                    {formatEventDate(review.created_at, locale, REVIEW_DATE_OPTIONS) && (
-                      <p
-                        className="text-[13px] text-fg-muted mt-0.5"
-                        dir="ltr"
-                        data-testid="review-date"
-                      >
-                        {formatEventDate(review.created_at, locale, REVIEW_DATE_OPTIONS)}
-                      </p>
-                    )}
+                    <div className="mt-1 flex">
+                      <StarRow
+                        value={review.stars}
+                        size={14}
+                        ariaLabel={t("star_aria", { value: review.stars })}
+                      />
+                    </div>
                   </div>
-                  <StarRow
-                    value={review.stars}
-                    size={16}
-                    ariaLabel={t("star_aria", { value: review.stars })}
-                  />
                 </div>
                 {review.body && (
                   <p className="text-[15px] text-text/85 leading-relaxed whitespace-pre-line">
@@ -581,12 +580,13 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
             // Centered CTA — justify-center is the direction-neutral horizontal-
             // center idiom (no physical props). Replaces the MEH-877 carousel.
             // "הצג עוד" only — no "show less" (MEH-1387 anti-pattern).
-            <div className="flex justify-center mt-6">
+            // MEH-2592: a full-width button, like Airbnb's «הצגת כל הביקורות».
+            <div className="mt-4">
               <button
                 type="button"
                 onClick={handleShowMore}
                 disabled={loading}
-                className="min-h-[44px] inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline disabled:opacity-50"
+                className="w-full min-h-[44px] inline-flex items-center justify-center gap-1 rounded-xl border border-border bg-surface-card text-sm font-semibold text-text hover:bg-green-50 transition disabled:opacity-50"
               >
                 {t("show_more")}
                 <CaretDown size={16} aria-hidden="true" />
@@ -595,6 +595,25 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
           )}
         </>
       )}
+
+      {/* MEH-2592: who may write a review, as one quiet line UNDER the reviews
+          rather than a box above them. Same gates as before: the login line
+          for a visitor; the WhatsApp-gate line (MEH-1139) for a logged-in,
+          non-owner, not-yet-gated reader — at zero reviews too, since the
+          reader empty state is gone (it used to carry its own hint). */}
+      {!user ? (
+        <p className="mt-4 text-sm text-fg-muted" data-testid="reviews-write-hint">
+          {t.rich("login_prompt", {
+            login: (chunks) => (
+              <Link href={loginHref} data-testid="reviews-login-link" className="text-primary underline">{chunks}</Link>
+            ),
+          })}
+        </p>
+      ) : user.producer_id !== producerId && !hasClickedWa && !inviteToken ? (
+        <p className="mt-4 text-sm text-fg-muted" data-testid="reviews-write-hint">
+          {t("wa_gate_message")}
+        </p>
+      ) : null}
     </section>
   );
 }

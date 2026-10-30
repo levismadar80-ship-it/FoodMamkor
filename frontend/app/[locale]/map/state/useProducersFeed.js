@@ -19,7 +19,7 @@ import { ProducersResponseSchema } from "@/lib/schemas";
  * the geo bounds are degenerate. This is preserved verbatim from the
  * source (:423-426).
  */
-export function useProducersFeed() {
+export function useProducersFeed({ readInitialParams = null } = {}) {
   const t = useTranslations();
   const [allProducers, setAllProducers] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -46,7 +46,7 @@ export function useProducersFeed() {
     showToast.error(t("map.errors.load_failed"));
   };
 
-  const loadProducers = (params = {}, { snapshot = false } = {}) => {
+  const loadProducers = (params = {}, { snapshot = false, then = null } = {}) => {
     setLoading(true);
     api
       .get("/producers", { params })
@@ -56,23 +56,52 @@ export function useProducersFeed() {
         const parsed = ProducersResponseSchema.safeParse(r.data);
         if (!parsed.success) {
           handleLoadFailure(parsed.error.issues);
+          // MEH-2598: a failed snapshot must not swallow the filtered load.
+          then?.();
           return;
         }
-        setAllProducers(parsed.data);
         // MEH-2170: only the mount call asks for the snapshot; a failed or
         // malformed first load leaves it null (no gating), by design.
         if (snapshot) setCatalogSnapshot(parsed.data);
+        // MEH-2598: a deep link with filters (`then`) — the unfiltered snapshot
+        // still feeds the chip gates, but the LIST is the filtered fetch, run
+        // after it rather than beside it so a slower snapshot response can
+        // never overwrite the filtered one.
+        if (then) {
+          then();
+          return;
+        }
+        setAllProducers(parsed.data);
       })
-      .catch(handleLoadFailure)
+      .catch((reason) => {
+        handleLoadFailure(reason);
+        // MEH-2598: a failed snapshot must not swallow the filtered load.
+        then?.();
+      })
       // MEH-1054: every terminal path (data / malformed / network error)
       // clears loading — the failure states already render their own UX
       // (empty list + toast), the skeleton must not stick over them.
-      .finally(() => setLoading(false));
+      .finally(() => {
+        // MEH-2598: a chained filtered load owns the flag from here.
+        if (!then) setLoading(false);
+      });
   };
 
   useEffect(() => {
     api.get("/categories").then((r) => setCategories(r.data)).catch(() => {});
-    loadProducers({}, { snapshot: true });
+    // MEH-2598: /map?has_delivery=1… (from the list's «הצגה במפה») — the
+    // snapshot stays unfiltered; the filtered list follows it. Read from
+    // window.location on mount (client only), not from the server page's
+    // searchParams, so /map stays a static route.
+    const initialParams = readInitialParams ? readInitialParams() : null;
+    const hasInitial = initialParams && Object.keys(initialParams).length > 0;
+    loadProducers(
+      {},
+      {
+        snapshot: true,
+        then: hasInitial ? () => loadProducers(initialParams) : null,
+      },
+    );
   }, []);
 
   return {

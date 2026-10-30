@@ -250,7 +250,8 @@ export function useMapSync({
     //   - radius_km > 200 → backend Haversine full-table scan → 500
     // delivery_city excluded: geo-radius = "producers physically here",
     // delivery_city = "producers who deliver to my city" — different questions.
-    const { delivery_city: _excluded, ...chipParams } = buildParams();
+    // MEH-2602: near_city is a city answer too, so it is dropped the same way.
+    const { delivery_city: _excluded, near_city: _excludedNear, ...chipParams } = buildParams();
     const geoValidation = GeoSearchSchema.safeParse({
       lat: centerRadius?.lat,
       lng: centerRadius?.lng,

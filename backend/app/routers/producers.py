@@ -12,6 +12,7 @@ from app.auth import (
     get_current_user_optional,
     require_verified_email,
 )
+from app.data.cities import canonical_city
 from app.database import get_db
 from app.models import (
     Category,
@@ -135,6 +136,10 @@ def list_producers(
     # OR-ed with the delivery axes (a service group), never a rung on their
     # precedence ladder.
     pickup_points: bool | None = None,
+    # MEH-2598: "buy on site" — a physical store with stated opening hours. A
+    # third PEER of the service group (OR-ed with delivery and pickup), the
+    # filter twin of the map card's «קנייה במקום» tag.
+    on_site: bool | None = None,
     verified: bool | None = None,
     # MEH-1259: the public ?organic query param is removed — self-declared
     # organic is no longer a filter (חוק תוצרת אורגנית 2005). See producer_listing.py.
@@ -148,6 +153,10 @@ def list_producers(
     open_for_orders_now: bool | None = None,
     # Producer city filter (producer's own city, not delivery area).
     city: str | None = None,
+    # MEH-2602: the map's «סננו לפי עיר» — businesses located in the city
+    # (own city or any location row) OR delivering to it, located ones first.
+    # delivery_city keeps its strict "delivers to" meaning for the other callers.
+    near_city: str | None = None,
     # DEPRECATED (MEH-2271, MEH-1854 chunk 3a) — kept for one release as an
     # alias onto `availability_state`, not as a column filter. It no longer
     # reads producers.is_available_today at all: `true` selects
@@ -246,10 +255,12 @@ def list_producers(
         delivery_days=delivery_days,  # MEH-2036
         has_delivery=has_delivery,
         pickup_points=pickup_points,  # MEH-2046
+        on_site=on_site,  # MEH-2598
         verified=verified,
         kosher=kosher,
         open_for_orders_now=open_for_orders_now,  # MEH-1881
         city=city,
+        near_city=near_city,  # MEH-2602
         is_available_today=is_available_today,
         # MEH-291 — opt-in 4-value enum filter; default listing behavior
         # unchanged in Phase 2 (Q4b — default-hide-on_vacation ships in
@@ -327,10 +338,16 @@ def producers_cities(request: Request, db: Session = Depends(get_db)):
             func.trim(Producer.city) != "",
         )
         .group_by(Producer.city)
-        .order_by(func.count(Producer.id).desc(), Producer.city)
         .all()
     )
-    return [{"city": city, "count": count} for city, count in rows]
+    # MEH-2602: rows saved before writes were canonicalised may hold an alias
+    # («בנימינה»); fold them into the canonical name so one town is one chip.
+    totals: dict[str, int] = {}
+    for city, count in rows:
+        name = canonical_city(city) or city
+        totals[name] = totals.get(name, 0) + count
+    ordered = sorted(totals.items(), key=lambda kv: (-kv[1], kv[0]))
+    return [{"city": city, "count": count} for city, count in ordered]
 
 
 @router.get("/producers/random", response_model=ProducerRandomOut)

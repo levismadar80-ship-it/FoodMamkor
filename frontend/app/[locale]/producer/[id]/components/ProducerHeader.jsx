@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { Star, StarOfDavid } from "@phosphor-icons/react";
@@ -19,14 +19,51 @@ import { allBadges, isKashrutCurrent } from "@/lib/badges";
 import { getOrderWindowStatus } from "@/lib/orderWindow";
 import ReviewExcerpt from "./ReviewExcerpt";
 import { categoryListingHref, getVacationReturnDate } from "../lib/producer-format";
+import { resolveCategoryGlyph, styleForProducer } from "@/lib/category-registry";
 // MEH-1546: the meta-line status is the page's ONLY order-status element, so
 // order_window feeds THAT branch rather than adding a second line — see
 // lib/order-status.js for the precedence and the contradiction it avoids.
 // (Copy itself lives in messages/{he,en}.json; comments stay English per
 // docs/CLAUDE-REVIEW.md rule 5.)
-import { israelDayKey, israelTime, resolveHeaderStatus } from "../lib/order-status";
+import { israelDayKey, israelTime, resolveHeaderStatus, statusTagTone } from "../lib/order-status";
 import { humanTime } from "@/lib/time-format";
 import { isFullThisWeek } from "@/lib/availability";
+
+// MEH-2592: the kosher chip — outlined, on the card surface, 13px text-text so
+// it reads as a fact tag next to the tinted status tag, never as a second
+// status (no tint, no dot, no colour of its own).
+const KOSHER_CHIP =
+  "inline-flex min-h-[28px] items-center rounded-full border border-border bg-surface-card px-2.5 py-0.5 text-[13px] text-text";
+
+// The «·» between facts on the one line. aria-hidden: a screen reader gets the
+// facts as separate runs already.
+function FactsSeparator() {
+  return (
+    <span aria-hidden="true" className="opacity-60">
+      ·
+    </span>
+  );
+}
+
+// The category's own glyph + colour from lib/category-registry (the same pair
+// as its map pin), 16px, before the category name. An unknown or renamed
+// category resolves to the registry fallback → render nothing rather than a
+// green Leaf (CategorySelector's policy, MEH-2163). `styleForProducer`
+// validates the hex, so the inline colour is safe to interpolate.
+function CategoryGlyph({ category }) {
+  const { glyph: Glyph, isFallback } = resolveCategoryGlyph(category);
+  if (isFallback) return null;
+  const { color } = styleForProducer({ categories: [category] });
+  return (
+    <Glyph
+      size={16}
+      weight="regular"
+      style={{ color }}
+      aria-hidden="true"
+      data-testid="producer-header-category-glyph"
+    />
+  );
+}
 
 /**
  * Main-column header block for the producer detail page.
@@ -163,6 +200,65 @@ export default function ProducerHeader({
     .map((b) => b.key)
     .filter((k) => (hasImages ? k !== "verified" : true));
 
+  // The facts line, as an array so the «·» separators fall only BETWEEN
+  // present facts (0 / 1 / many — no leading or trailing dot in any cell).
+  // At zero reviews the rating slot is simply absent (Sapir, 30/10): Wolt,
+  // Booking and Airbnb show nothing in the rating's place until a review
+  // exists, and a line announcing the absence only underlined it. The
+  // MEH-1411 «אין ביקורות עדיין» pill (MEH-1746 wording) is retired with it;
+  // the jump bar still leads to the reviews section.
+  const facts = [];
+  if (producer.reviews_count > 0) {
+    facts.push(
+      <a
+        key="rating"
+        href="#reviews"
+        // MEH-1249 chunk 8: the rating anchor's twin — ReviewExcerpt's
+        // pull-quote — is ALSO an `a[href="#reviews"]` inside this header, so
+        // an href selector resolves to two elements; the id keeps them apart.
+        data-testid="trust-strip-rating"
+        className="inline-flex items-center gap-1.5 rounded text-text hover:text-primary focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/40 transition-colors"
+      >
+        <Star size={18} weight="fill" className="text-accent" aria-hidden="true" />
+        <span className="numeric font-headline-md text-lg font-bold" dir="ltr">
+          {Number(producer.avg_rating).toFixed(1)}
+        </span>
+        <span className="text-[13px] text-muted underline underline-offset-4">
+          {t("producer.detail.header.review_count", { count: producer.reviews_count })}
+        </span>
+        {/* MEH-1048 a11y: sr-only nav hint so AT users hear the link scrolls to reviews */}
+        <span className="sr-only">{t("producer.detail.header.review_excerpt_aria")}</span>
+      </a>,
+    );
+  }
+  if (primaryCategory) {
+    facts.push(
+      <Link
+        key="category"
+        href={categoryListingHref(primaryCategory.id)}
+        className="inline-flex min-h-[24px] items-center gap-1 font-medium text-text underline-offset-[3px] hover:underline hover:text-primary transition"
+        data-testid="producer-header-category-link"
+      >
+        <CategoryGlyph category={primaryCategory} />
+        {primaryCategory.name}
+      </Link>,
+    );
+  }
+  if (producer.city) facts.push(<span key="city">{producer.city}</span>);
+  // MEH-1541: quiet "מאז {שנה}" heritage fact — a veteran-business trust
+  // signal in the magazine voice, NOT a badge (no icon / gold / border; the
+  // single-green rule stays with the status tag). Year numerals dir="ltr".
+  if (producer.established_year) {
+    facts.push(
+      <span key="since" className="text-fg-muted" data-testid="established-year">
+        {t("producer.detail.header.since_prefix")}{" "}
+        <span dir="ltr" className="numeric">
+          {producer.established_year}
+        </span>
+      </span>,
+    );
+  }
+
   return (
     <div className="relative" data-testid="producer-header">
       {/* Group 1 — name + single ✓מאומתת seal (richer popover in BadgeRow).
@@ -184,150 +280,118 @@ export default function ProducerHeader({
           must clear the absolutely-pinned desktop actions row itself —
           adversarial-review fix (imageless-desktop overlap). */}
       {producer.short_description && (
-        <p className={`text-[15px] leading-relaxed text-text mt-2${hasImages ? "" : " lg:pe-72"}`}>
+        // MEH-2596: a muted 17px deck under the name, not body text.
+        <p className={`text-[17px] leading-relaxed text-fg-muted mt-2.5${hasImages ? "" : " lg:pe-72"}`}>
           {producer.short_description}
         </p>
       )}
 
-      {/* Group 3 — rating anchor (#reviews, MEH-1048) or the empty-reviews
-          fallback. It sits in the rating's slot (Airbnb pattern — a fallback,
-          not another badge). MEH-1746: the string is "אין ביקורות עדיין", NOT
-          "חדש" — that word is reserved for the tenure claim on the card badge
-          (badges.js), and using it here made a two-year-old business with no
-          reviews read as new. Rating decimal stays dir="ltr" + .numeric so RTL
-          can't flip "4.8" → "8.4" (MEH-763). */}
-      {producer.reviews_count > 0 ? (
-        <a
-          href="#reviews"
-          // MEH-1249 chunk 8: the rating anchor's twin — ReviewExcerpt's
-          // pull-quote — is ALSO an `a[href="#reviews"]` inside this header, so
-          // an href selector resolves to two elements. `new-mark` (the other
-          // arm of this ternary) already carries an id for the same test; this
-          // gives the rated arm one too.
-          data-testid="trust-strip-rating"
-          className="mt-3 inline-flex items-center gap-1.5 self-start rounded text-text hover:text-primary focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/40 transition-colors"
+      {/* Groups 3+4 — ONE facts line, the status line, then a tags row
+          (MEH-2592, 30/10/2026; replaces MEH-2403's "category · city" line —
+          see docs/DESIGN.md § Quiet Direction v3). The Google Maps / Airbnb /
+          Yelp shape: everything a reader scans before deciding sits on one
+          muted line — «★ 4.8 · 12 ביקורות · [glyph] קטגוריה · עיר · מאז 1998»
+          — the status keeps a line of its own, and the fact tags follow it.
+          The rating keeps its #reviews anchor (MEH-1048); at zero reviews the
+          slot is empty (see `facts` above). The category is the
+          line's one tappable fact (Yelp/TripAdvisor make categories links), so
+          it carries the registry glyph in the category's own colour
+          (lib/category-registry — the same glyph + colour as its map pin)
+          and darker text; an unknown category gets no glyph (same policy as
+          CategorySelector — never a green Leaf that mis-signals produce).
+          Rating decimal stays dir="ltr" + .numeric so RTL can't flip
+          "4.8" → "8.4" (MEH-763). */}
+      {facts.length > 0 && (
+        <p
+          className="flex items-center flex-wrap gap-x-2 gap-y-1 text-sm text-muted mt-3"
+          data-testid="producer-header-meta"
         >
-          <Star size={18} weight="fill" className="text-accent" aria-hidden="true" />
-          <span className="numeric font-headline-md text-lg font-bold" dir="ltr">
-            {Number(producer.avg_rating).toFixed(1)}
-          </span>
-          <span className="text-[13px] text-muted underline underline-offset-4">
-            {t("producer.detail.header.review_count", { count: producer.reviews_count })}
-          </span>
-          {/* MEH-1048 a11y: sr-only nav hint so AT users hear the link scrolls to reviews */}
-          <span className="sr-only">{t("producer.detail.header.review_excerpt_aria")}</span>
-        </a>
-      ) : (
-        // MEH-1411: "חדש" restyled from a bare 17px bold heading into a small
-        // NEUTRAL pill (bg-surface-card + border-border + text-fg-muted — the
-        // ProducerHeader/ProducerCard quiet-chip idiom, ProducerCard.jsx:271) so
-        // it reads as a quiet badge in the rating's slot, not a second headline.
-        // Deliberately NOT green: MEH-1334's "one green per page — open = primary"
-        // rule means the "פתוח להזמנות" status is the page's single green accent;
-        // a green pill here would double the green for a new+open producer.
-        // Smaller than the old 17px line → mobile top block does not grow.
-        // data-testid preserved for the trust-strip test.
-        <span
-          className="mt-3 inline-block self-start rounded-full bg-surface-card border border-border text-fg-muted px-2.5 py-0.5 text-xs font-medium"
-          data-testid="new-mark"
-        >
-          {t("producer.detail.header.new_mark")}
-        </span>
+          {facts.map((fact, i) => (
+            <Fragment key={fact.key}>
+              {i > 0 && <FactsSeparator />}
+              {fact}
+            </Fragment>
+          ))}
+        </p>
       )}
 
-      {/* Group 4 — meta block (MEH-2403): two lines. Line 1, muted:
-          "category · city", the primary category a locale-aware link to its
-          /producers?category=<id> listing (same target as the home category
-          cards, MEH-1080); absent when there is neither. Line 2: the status
-          alone, coloured text, no dot, no chip. Rationale: docs/DESIGN.md
-          § Quiet Direction v3. */}
-      <div className="flex flex-col gap-1 mt-2 mb-1">
-        {(producer.city || primaryCategory) && (
-          <p
-            className="flex items-center flex-wrap gap-x-1.5 gap-y-0.5 text-sm text-muted"
-            data-testid="producer-header-meta"
-          >
-            {primaryCategory && (
-              <Link
-                href={categoryListingHref(primaryCategory.id)}
-                className="inline-flex min-h-[24px] items-center underline-offset-2 hover:underline hover:text-text transition"
-                data-testid="producer-header-category-link"
-              >
-                {primaryCategory.name}
-              </Link>
-            )}
-            {producer.city && primaryCategory && <span aria-hidden="true" className="opacity-60">·</span>}
-            {producer.city && <span>{producer.city}</span>}
-          </p>
-        )}
-        {/* MEH-1546: ONE status element, five-branch precedence (see
-            resolveHeaderStatus). order_window feeds this line instead of
-            adding a second one — two order-status assertions on one page
-            would contradict each other. */}
-        <p className="text-sm" data-testid="producer-header-status-line">
-          <span className={`font-semibold ${status.tone}`} data-testid={status.testid}>
-            {statusLabel}
-          </span>
-        </p>
-
-        {/* MEH-1541: quiet "מאז {שנה}" heritage line — a veteran-business trust
-            signal in the magazine voice, NOT a badge. Plain body text (DM Sans),
-            fg-muted, no icon / emoji / gold / border (Emoji LOCK + Quiet
-            Direction v3 — the single-green rule stays with the status above).
-            The year numerals are wrapped dir="ltr". Null-safe: the whole line is
-            absent from the DOM when established_year is unset. */}
-        {producer.established_year ? (
-          <p className="text-sm text-fg-muted" data-testid="established-year">
-            {t("producer.detail.header.since_prefix")}{" "}
-            <span dir="ltr" className="numeric">{producer.established_year}</span>
-          </p>
-        ) : null}
-
-        {/* Kosher renders ONCE (MEH-1334): specific admin-assigned badges via
-            the quiet strip variant (owns the MEH-1260 expiry gate), else the
-            generic label — gated on admin-verified kashrut only, never the
-            free-text producer.kosher (MEH-986 ch3a, חוק איסור הונאה בכשרות). */}
-        {producer.kashrut_badges?.length > 0 ? (
-          <KashrutBadgeStrip
-            variant="quiet"
-            badges={producer.kashrut_badges}
-            verified_at={producer.kashrut_verified_at}
-            expires_at={producer.kashrut_expires_at}
-            /* MEH-1672: badge codes only — the certificate itself is fetched
-               through our proxy, so no Cloudinary URL reaches the client. */
-            certs={producer.kashrut_certs}
-            producerId={producer.id}
+      {/* Status line — the status ALONE (Sapir, 30/10: a separate line, so a
+          longer tags row never crowds it; this keeps MEH-2403's "status alone"
+          half). It is the page's ONLY order-status element (MEH-1546:
+          five-branch precedence in resolveHeaderStatus; order_window feeds it
+          instead of adding a second line) and the page's one green. MEH-2596
+          tag styling: dot + 10% tint of its own colour via color-mix on
+          currentColor. */}
+      <p className="mt-2.5 text-sm" data-testid="producer-header-status-line">
+        <span
+          className={`inline-flex items-start gap-1.5 rounded-xl px-2.5 py-0.5 font-semibold bg-[color-mix(in_srgb,currentColor_10%,transparent)] ${statusTagTone(status.tone)}`}
+          data-testid={status.testid}
+        >
+          <span
+            className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-current"
+            aria-hidden="true"
           />
-        ) : isKashrutCurrent(producer) ? (
-          /* MEH-2518: same expiry gate as the strip — this line used to check
-             kashrut_verified_at only, so a lapsed certificate still read «כשר». */
-          <p className="flex items-center gap-1.5 text-[12.5px] text-muted">
-            <StarOfDavid size={14} aria-hidden="true" />
-            {t("producer.detail.header.attr.kosher")}
-          </p>
-        ) : null}
+          {statusLabel}
+        </span>
+      </p>
 
-        {/* MEH-1508 ch2 Phase B — gluten production-facility line. Plain text,
-            no badge / icon / checkmark (MEH-1259 self-declaration pattern, NOT
-            the MEH-1087 verified pattern — a checkmark would imply a certificate).
-            Renders ONLY for shared / dedicated; 'unknown' shows nothing. §6.4. */}
-        {producer.gluten_free_facility === "shared" && (
-          <p
-            className="text-xs text-fg-muted leading-relaxed max-w-prose"
-            data-testid="gluten-facility-shared"
-          >
-            {t("producer.detail.header.gluten_facility.shared")}
-          </p>
-        )}
-        {producer.gluten_free_facility === "dedicated" && (
-          <p
-            className="text-xs text-fg-muted leading-relaxed max-w-prose"
-            data-testid="gluten-facility-dedicated"
-          >
-            {t("producer.detail.header.gluten_facility.dedicated")}
-          </p>
-        )}
-      </div>
+      {/* Tags row — the fact tags under the status: today the kosher chip,
+          tomorrow whatever else earns a tag. Kosher renders ONCE and as ONE
+          chip however many certificates it lists (up to 8 codes): a chip per
+          certificate would crowd the row, one chip wraps inside itself. Badge
+          codes via the quiet strip (owns the MEH-1260 expiry gate), else the
+          generic label — gated on admin-verified kashrut only, never the
+          free-text producer.kosher (MEH-986 ch3a, חוק איסור הונאה בכשרות).
+          Absent from the DOM when there is nothing to tag (no empty gap). */}
+      {(producer.kashrut_badges?.length > 0 || isKashrutCurrent(producer)) && (
+        <div
+          className="flex flex-wrap items-center gap-2 mt-2"
+          data-testid="producer-header-tags"
+        >
+          {producer.kashrut_badges?.length > 0 ? (
+            <KashrutBadgeStrip
+              variant="quiet"
+              className={KOSHER_CHIP}
+              badges={producer.kashrut_badges}
+              verified_at={producer.kashrut_verified_at}
+              expires_at={producer.kashrut_expires_at}
+              /* MEH-1672: badge codes only — the certificate itself is fetched
+               through our proxy, so no Cloudinary URL reaches the client. */
+              certs={producer.kashrut_certs}
+              producerId={producer.id}
+            />
+          ) : isKashrutCurrent(producer) ? (
+            /* MEH-2518: same expiry gate as the strip — this line used to check
+             kashrut_verified_at only, so a lapsed certificate still read «כשר». */
+            <p className={`flex items-center gap-1.5 ${KOSHER_CHIP}`}>
+              <StarOfDavid size={14} aria-hidden="true" />
+              {t("producer.detail.header.attr.kosher")}
+            </p>
+          ) : null}
+        </div>
+      )}
+
+      {/* MEH-1508 ch2 Phase B — gluten production-facility line. A sentence,
+          so it stays plain text under the tags, not a tag: no badge / icon /
+          checkmark (MEH-1259 self-declaration pattern, NOT the MEH-1087
+          verified pattern — a checkmark would imply a certificate). Renders
+          ONLY for shared / dedicated; 'unknown' shows nothing. §6.4. */}
+      {producer.gluten_free_facility === "shared" && (
+        <p
+          className="text-xs text-fg-muted leading-relaxed max-w-prose mt-2"
+          data-testid="gluten-facility-shared"
+        >
+          {t("producer.detail.header.gluten_facility.shared")}
+        </p>
+      )}
+      {producer.gluten_free_facility === "dedicated" && (
+        <p
+          className="text-xs text-fg-muted leading-relaxed max-w-prose mt-2"
+          data-testid="gluten-facility-dedicated"
+        >
+          {t("producer.detail.header.gluten_facility.dedicated")}
+        </p>
+      )}
 
       {/* MEH-1170: declared (tier 2) carries NO chip — ADR-022 gate 1 requires
           the badge absence to stay "affirmatively explained in consumer copy",

@@ -77,6 +77,8 @@ vi.mock("@phosphor-icons/react", () => ({
   Truck: (p) => <span {...p} />,
   // MEH-2046: chip-icons maps pickup_points -> Package.
   Package: (p) => <span {...p} />,
+  Storefront: () => null, // MEH-2598: chip-icons on_site
+  Check: (p) => <span {...p} />, // MEH-2598: lit promoted chip
   Certificate: (p) => <span {...p} />,
   GrainsSlash: (p) => <span {...p} />,
   Barn: (p) => <span {...p} />,
@@ -334,5 +336,54 @@ describe("MEH-2569 — one filter row on /producers", () => {
     // The city chip's ChipScrollRow root is `relative`; without a z-index the
     // later positioned sibling paints over the sticky trigger as it scrolls.
     expect(lead.className.split(/\s+/)).toContain("z-10");
+  });
+});
+
+describe("MEH-2598 — the shared promoted service trio (one row on all three surfaces)", () => {
+  const promoted = () =>
+    screen
+      .queryAllByTestId(/^producers-promoted-chip-/)
+      .map((el) => el.getAttribute("data-testid").replace("producers-promoted-chip-", ""));
+
+  it("renders משלוח · איסוף עצמי between «סינון» and the city chip; on_site gated off", () => {
+    render(<ProducersClient {...props(items(3))} />);
+    expect(promoted()).toEqual(["has_delivery", "pickup_points"]);
+    const order = [
+      TRIGGER(),
+      screen.getByTestId("producers-promoted-chip-has_delivery"),
+      screen.getByTestId("producers-promoted-chip-pickup_points"),
+      screen.getByTestId("row-chip-city"),
+    ];
+    for (let i = 1; i < order.length; i++) {
+      expect(order[i - 1].compareDocumentPosition(order[i]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    }
+  });
+
+  it("«קנייה במקום» joins the row once 5 businesses sell on site", () => {
+    const rows = items(5).map((p) => ({ ...p, sells_on_site: true }));
+    render(<ProducersClient {...props(rows)} />);
+    expect(promoted()).toEqual(["has_delivery", "pickup_points", "on_site"]);
+  });
+
+  it("a lit promoted chip is not counted on «סינון» nor repeated as a tag", () => {
+    render(<ProducersClient {...props(items(3))} />);
+    fireEvent.click(screen.getByTestId("producers-promoted-chip-has_delivery"));
+    expect(screen.getByTestId("producers-promoted-chip-has_delivery").getAttribute("aria-pressed")).toBe("true");
+    expect(TRIGGER().textContent).not.toMatch(/\d/);
+  });
+});
+
+describe("MEH-2598 — «הצגה במפה» carries the active filters", () => {
+  const mapLink = () => screen.getByText("producers.title.map_link").closest("a");
+
+  it("is a bare /map link when no filter is on", () => {
+    render(<ProducersClient {...props(items(3))} />);
+    expect(mapLink().getAttribute("href")).toBe("/map");
+  });
+
+  it("follows the chips as they toggle", () => {
+    render(<ProducersClient {...props(items(3))} />);
+    fireEvent.click(screen.getByTestId("producers-promoted-chip-has_delivery"));
+    expect(mapLink().getAttribute("href")).toBe("/map?has_delivery=1");
   });
 });

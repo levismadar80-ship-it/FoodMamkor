@@ -251,8 +251,8 @@ test.describe("/admin — «מה מחכה לטיפול»", () => {
   });
 
   // MT:MEH-2359:1 — the pending list IS the page: one row per preview entry, «בדוק» → the edit screen,
-  // «צפה בכל» → the pending filter, the count in the heading. And none of the 12g furniture.
-  test("the pending businesses list with «בדוק» + «צפה בכל», and no stat cards / charts / health panel", async ({ page }) => {
+  // «צפייה בכל» → the pending filter, the count in the heading. And none of the 12g furniture.
+  test("the pending businesses list with «בדוק» + «צפייה בכל», and no stat cards / charts / health panel", async ({ page }) => {
     await stubAdmin(page);
     await openDashboard(page);
     const panel = pendingPanel(page);
@@ -262,7 +262,7 @@ test.describe("/admin — «מה מחכה לטיפול»", () => {
     await expect(panel.getByRole("listitem").first()).toContainText("עסק ממתין");
     await expect(panel.getByRole("listitem").first()).toContainText("חיפה");
     await expect(panel.getByRole("link", { name: "בדוק" })).toHaveAttribute("href", /\/admin\/producers\/501\/edit$/);
-    await expect(panel.getByRole("link", { name: /^צפה בכל/ })).toHaveAttribute("href", /\/admin\/producers\?status=pending$/);
+    await expect(panel.getByRole("link", { name: /^צפייה בכל/ })).toHaveAttribute("href", /\/admin\/producers\?status=pending$/);
     await expect(page.getByRole("link", { name: /^סטטיסטיקה ואנליטיקס/ })).toHaveAttribute("href", /\/admin\/analytics$/);
     // The 12g furniture — pinned ABSENT, by the selectors 12g pinned it present with.
     await expect(page.locator("main span.text-3xl"), "no stat cards").toHaveCount(0);

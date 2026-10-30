@@ -29,6 +29,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import BackLink from "@/components/ui/BackLink";
 // MEH-1640: shared status colours across the four tools spokes.
 import { STATUS_CLASSES } from "@/lib/dashboard-status-classes";
+import { SkeletonList } from "@/components/Skeleton";
 
 const STATUS_STYLE = {
   approved: STATUS_CLASSES.success,
@@ -122,7 +123,7 @@ export default function ManageExperiencesPage() {
       </div>
 
       {items === null ? (
-        <div className="text-center py-16 text-fg-muted">{t("loading")}</div>
+        <SkeletonList count={4} label={t("loading")} className="py-4" />
       ) : items.length === 0 ? (
         <EmptyState
           icon={Sparkle}

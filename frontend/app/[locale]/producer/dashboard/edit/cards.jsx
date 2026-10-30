@@ -52,6 +52,7 @@ import CategoryRequestModal from "@/components/CategoryRequestModal";
 import Input from "@/components/ui/Input";
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";
 import { DELIVERY_DAYS } from "@/lib/delivery-days";
+import { SkeletonForm } from "@/components/Skeleton";
 
 // ============================================================
 // MEH-1306: "view on page" back-link — closes the edit↔public loop from the
@@ -2443,7 +2444,7 @@ export function BusinessNameCard({ profile }) {
     }
   };
 
-  if (loading) return <p className="text-sm text-fg-muted">{t("loading")}</p>;
+  if (loading) return <SkeletonForm fields={2} label={t("loading")} />;
 
   return (
     <div className="space-y-4" data-testid="name-change-card">

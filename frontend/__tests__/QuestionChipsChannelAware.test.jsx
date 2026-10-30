@@ -30,7 +30,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 vi.mock("next-intl", () => ({
   useTranslations: () => (key, vars) => {
     const map = {
-      my_area: "האזור שלי",
+      delivery_to_my_area: "אפשר משלוח לאזור שלי?",
       delivery_to_city: `אפשר משלוח ל${vars?.city ?? ""}?`,
       // Must resolve to the real string: the component filters the stock list
       // against it to avoid duplicating Q2. Left unmapped it would fall back to
@@ -157,12 +157,13 @@ describe("whatsapp-primary — byte-identical to the pre-MEH-2154 behaviour", ()
     expect(container.textContent).not.toContain("אילו לחמים יש השבוע?");
   });
 
-  it("escalates through WhatsApp on the greeting template", () => {
+  it("escalates through WhatsApp on the greeting alone — never the link label (MEH-2603)", () => {
     render(<WhatsAppQuestionChips producer={wa} />);
-    const href = screen.getByTestId("escalation-link").getAttribute("href");
-    expect(decodeURIComponent(href)).toBe(
-      `https://wa.me/${WA_DIGITS}?text=שלום חוות השקמה, שאלה אחרת? צרו איתנו קשר\n\nהגעתי דרך מהמקור`,
-    );
+    const href = decodeURIComponent(screen.getByTestId("escalation-link").getAttribute("href"));
+    // The label is what the customer taps; it must not become what the
+    // business receives. Asserted separately so a failure names the cause.
+    expect(href).not.toContain("שאלה אחרת");
+    expect(href).toBe(`https://wa.me/${WA_DIGITS}?text=שלום חוות השקמה,\n\nהגעתי דרך מהמקור`);
   });
 
   it("renders no recipe-idea row, even on WhatsApp (MEH-2385)", () => {

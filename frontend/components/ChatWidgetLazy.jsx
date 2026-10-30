@@ -18,7 +18,10 @@ const ChatWidget = dynamic(() => import("@/components/ChatWidget"), {
 
 // MEH-2512: form pages whose primary control sits under the mobile launcher.
 // Exact path or a subpath ("/register/producer"), never a shared prefix.
-const FORM_ROUTES = ["/login", "/register", "/forgot-password", "/reset-password", "/contact"];
+// MEH-2602: the owner dashboard joins — at 375 the launcher sat over the
+// availability chips on the overview and over fields on the edit pages
+// (staging sweep 29/10). Mobile only; desktop keeps it, as for every form.
+const FORM_ROUTES = ["/login", "/register", "/forgot-password", "/reset-password", "/contact", "/producer/dashboard"];
 
 // MEH-1168 P3: the global chat FAB is suppressed on the public producer detail
 // page (/producer/[id]) ONLY — that page already carries a primary contact CTA
@@ -26,7 +29,8 @@ const FORM_ROUTES = ["/login", "/register", "/forgot-password", "/reset-password
 // the contact card at 375px. The widget stays mounted everywhere else (this is
 // a conditional render by route, NOT a global removal). usePathname comes from
 // @/i18n/navigation, so it is locale-stripped ("/producer/123", not "/he/...").
-// The dashboard subtree (/producer/dashboard/...) keeps the FAB.
+// The dashboard subtree (/producer/dashboard/...) keeps the FAB on desktop
+// (MEH-2602: hidden on phones, via FORM_ROUTES).
 // MEH-1203: /favorites joins /map + /producer/[id] in the gate — the FAB
 // overlapped the first card of the canonical 2-col favorites grid.
 export default function ChatWidgetLazy() {

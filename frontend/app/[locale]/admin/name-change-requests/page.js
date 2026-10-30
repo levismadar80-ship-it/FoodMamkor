@@ -25,6 +25,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
+import { SkeletonList } from "@/components/Skeleton";
 
 export default function AdminNameChangeRequestsPage() {
   const t = useTranslations("admin.name_change_requests");
@@ -73,7 +74,7 @@ export default function AdminNameChangeRequestsPage() {
     }
   };
 
-  if (loading) return <div className="text-fg-muted">{tc("common.loading_f")}</div>;
+  if (loading) return <SkeletonList count={3} label={tc("common.loading_f")} />;
 
   return (
     <div className="space-y-6" dir="rtl">
