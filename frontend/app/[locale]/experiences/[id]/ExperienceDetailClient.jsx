@@ -33,6 +33,7 @@ import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import { downloadIcs } from "@/lib/event-ics";
 import { eventWhen, addressNavLinks } from "@/lib/event-when";
 import { AddressNavLinks } from "@/components/NavAppGlyphs";
+import { SkeletonDetail } from "@/components/Skeleton";
 
 // MEH-1404: reuse the producer-detail static map + Waze/Gmaps block on
 // experiences with coords. ssr:false — leaflet touches window at module eval.
@@ -91,9 +92,7 @@ export default function ExperienceDetailClient() {
 
   if (loading) {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-16 text-center text-fg-muted">
-        {t("loading")}
-      </div>
+      <SkeletonDetail width="max-w-[1100px]" label={t("loading")} />
     );
   }
 

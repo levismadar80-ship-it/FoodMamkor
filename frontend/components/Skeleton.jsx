@@ -237,3 +237,34 @@ export function SkeletonTiles({ count = 4, label, className = "", testId }) {
     </SkeletonStatus>
   );
 }
+
+/**
+ * MEH-2606 — a detail page (group buy, experience): optional hero band, then
+ * tag + title + meta row + content block, the geometry EventDetailClient's
+ * MEH-858 skeleton draws, so the page does not jump on hydrate. `width` is the
+ * loaded page's own container class (group buy max-w-6xl, experience
+ * max-w-[1100px]) so the placeholder column matches the content column.
+ */
+export function SkeletonDetail({ hero = true, width = "max-w-3xl", label, className = "", testId }) {
+  return (
+    <SkeletonStatus label={label} className={className} testId={testId}>
+      {/* Hero geometry = the experience cover with an image (ExperienceDetailClient,
+          MEH-2559): inside the page column, 210/300/380 px, rounded on lg. */}
+      {hero && (
+        <div className={`${width} mx-auto lg:px-4 lg:pt-6`} aria-hidden="true">
+          <div className="skeleton-box h-[210px] md:h-[300px] lg:h-[380px] lg:rounded-[18px]" data-skeleton="hero" />
+        </div>
+      )}
+      <div className={`${width} mx-auto px-4 py-12`} aria-hidden="true" data-skeleton="column">
+        <div className="skeleton-box rounded-full w-24 h-6 mb-3" />
+        <div className="skeleton-box rounded-lg w-3/4 h-10 mb-4" />
+        <div className="flex flex-wrap gap-4 mb-6">
+          <div className="skeleton-box rounded-lg w-40 h-4" />
+          <div className="skeleton-box rounded-lg w-28 h-4" />
+          <div className="skeleton-box rounded-lg w-20 h-4" />
+        </div>
+        <div className="skeleton-box rounded-[16px] w-full h-32" />
+      </div>
+    </SkeletonStatus>
+  );
+}
