@@ -19171,6 +19171,22 @@
           },
           {
             "in": "query",
+            "name": "near_city",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Near City"
+            }
+          },
+          {
+            "in": "query",
             "name": "is_available_today",
             "required": false,
             "schema": {
