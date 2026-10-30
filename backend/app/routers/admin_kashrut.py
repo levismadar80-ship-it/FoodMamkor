@@ -3,7 +3,7 @@
 from datetime import datetime, time, timedelta, timezone
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from sqlalchemy.orm import Session, joinedload
 
 from app.auth import require_admin
@@ -21,6 +21,10 @@ from app.schemas.schemas import (
     SetAmbassadorIn,
 )
 from app.sentry import capture_background_exception
+from app.services.content_notifications import (
+    notify_kashrut_approved,
+    notify_kashrut_rejected,
+)
 from app.services.whatsapp import send_template
 from app.services.whatsapp_templates import KashrutExpiryReminderV1
 from app.utils.pii import mask_phone
@@ -66,10 +70,11 @@ def _certificate_expiry(expires_on) -> datetime:
 
 @router.post("/kashrut/{request_id}/approve")
 @limiter.limit("60/minute")
-def approve_kashrut_request(
+def approve_kashrut_request(  # noqa: PLR0913 — all 6 args are FastAPI-injected (slowapi request, path id, body, BackgroundTasks, auth dep, db dep); MEH-2602 added the owner mail
     request: Request,
     request_id: UUID,
     body: KashrutApproveIn,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
@@ -113,6 +118,22 @@ def approve_kashrut_request(
     req.status = "approved"
     req.reviewed_by = user.id
     db.commit()
+
+    # MEH-2602: the owner learns her badge is live (and until when).
+    owner = db.query(User).filter(User.producer_id == producer.id).first()
+    if owner and owner.email:
+        path = f"/p/{producer.slug}" if producer.slug else f"/producer/{producer.id}"
+        background_tasks.add_task(
+            notify_kashrut_approved,
+            owner.email,
+            producer.name,
+            # The stored expiry (may be an earlier live badge's — MEH-2518),
+            # read back as the Israeli calendar day the public page shows.
+            producer.kashrut_expires_at.replace(tzinfo=timezone.utc)
+            .astimezone(ISRAEL_TZ)
+            .strftime("%d/%m/%Y"),
+            path,
+        )
     return {"detail": "badge אושר"}
 
 
@@ -120,6 +141,7 @@ def approve_kashrut_request(
 def reject_kashrut_request(
     request_id: UUID,
     body: KashrutRejectIn,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
@@ -137,6 +159,14 @@ def reject_kashrut_request(
     req.reviewed_by = user.id
     req.notes = body.notes
     db.commit()
+
+    # MEH-2602: the owner learns why, instead of finding out in the dashboard.
+    owner = db.query(User).filter(User.producer_id == req.producer_id).first()
+    producer = db.query(Producer).filter(Producer.id == req.producer_id).first()
+    if owner and owner.email and producer:
+        background_tasks.add_task(
+            notify_kashrut_rejected, owner.email, producer.name, body.notes
+        )
     return {"detail": "בקשה נדחתה"}
 
 
