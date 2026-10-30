@@ -52,6 +52,7 @@ describe.each(RUNTIMES)("replayPrehydrationInput — $name", ({ React, renderToS
         },
       }),
       h("input", { id: "free", type: "text", defaultValue: "" }),
+      h("button", { id: "reset", type: "button", onClick: () => setEmail("") }),
       h("input", { id: "city", type: "text", value: city, onChange: (event) => setCity(event.target.value) }),
       h("textarea", { id: "msg", value: msg, onChange: (event) => setMsg(event.target.value) }),
       h("input", { id: "agree", type: "checkbox", checked: agree, onChange: (event) => setAgree(event.target.checked) }),
@@ -156,6 +157,27 @@ describe.each(RUNTIMES)("replayPrehydrationInput — $name", ({ React, renderToS
     });
     expect(count).toBe(1);
     expect(seen.city).toBe("");
+    React.act(() => root.unmount());
+  });
+
+  it("does not replay text typed after hydration into a field the form then cleared", async () => {
+    const { container, root } = await hydrateAfterTyping({});
+    const el = container.querySelector("#email");
+    const setNative = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set;
+    await React.act(async () => {
+      setNative.call(el, "sent@example.com");
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await React.act(async () => {
+      container.querySelector("#reset").click(); // the form resets its state after submit — no input event
+    });
+    expect(seen.email).toBe("");
+    let count;
+    await React.act(async () => {
+      count = replayPrehydrationInput(container); // a late pass
+    });
+    expect(count).toBe(0);
+    expect(seen.email).toBe("");
     React.act(() => root.unmount());
   });
 });

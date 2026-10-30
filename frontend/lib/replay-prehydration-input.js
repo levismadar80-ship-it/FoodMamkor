@@ -29,7 +29,7 @@
  * own (flag-gated) enableHydrationChangeEvent does the same at hydration commit.
  */
 
-const TEXT_TYPES = new Set(["", "text", "email", "search", "tel", "url", "password", "number"]);
+const TEXT_TYPES = new Set(["", "text", "email", "search", "tel", "url", "password"]);
 
 function isTextField(el) {
   if (el instanceof HTMLTextAreaElement) return true;
@@ -43,8 +43,21 @@ function remember(el) {
   if (el && isTextField(el)) captured.set(el, el.value);
 }
 
+/**
+ * The props React rendered this field with, or null for a field React does not
+ * own (third-party widgets) or has not hydrated yet. `__reactProps$<random>` is
+ * how React DOM links a node to its props in 17, 18 and 19.
+ */
+function reactProps(el) {
+  const key = Object.keys(el).find((name) => name.startsWith("__reactProps$"));
+  return key ? el[key] : null;
+}
+
 function onEarlyInput(event) {
-  remember(event.target);
+  // A field React already owns hears this event itself — recording it would
+  // later "replay" stale or untransformed text over what its onChange did.
+  if (reactProps(event.target)) captured.delete(event.target);
+  else remember(event.target);
 }
 
 /** Starts recording pre-hydration values. Runs once at module evaluation. */
@@ -65,16 +78,6 @@ export function stopPrehydrationCapture() {
 }
 
 startPrehydrationCapture();
-
-/**
- * The props React rendered this field with, or null for a field React does not
- * own (third-party widgets) or has not hydrated yet. `__reactProps$<random>` is
- * how React DOM links a node to its props in 17, 18 and 19.
- */
-function reactProps(el) {
-  const key = Object.keys(el).find((name) => name.startsWith("__reactProps$"));
-  return key ? el[key] : null;
-}
 
 function keepCaret(el, write) {
   let range = null;
