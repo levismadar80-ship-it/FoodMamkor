@@ -297,7 +297,7 @@ export default function GroupBuyDetailClient({ id }) {
 
   if (loading || authLoading) {
     return (
-      <SkeletonDetail hero={false} label={t("loading")} />
+      <SkeletonDetail hero={false} width="max-w-6xl" label={t("loading")} />
     );
   }
 

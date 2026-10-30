@@ -241,13 +241,15 @@ export function SkeletonTiles({ count = 4, label, className = "", testId }) {
 /**
  * MEH-2606 — a detail page (group buy, experience): optional hero band, then
  * tag + title + meta row + content block, the geometry EventDetailClient's
- * MEH-858 skeleton draws, so the page does not jump on hydrate.
+ * MEH-858 skeleton draws, so the page does not jump on hydrate. `width` is the
+ * loaded page's own container class (group buy max-w-6xl, experience
+ * max-w-[1100px]) so the placeholder column matches the content column.
  */
-export function SkeletonDetail({ hero = true, label, className = "", testId }) {
+export function SkeletonDetail({ hero = true, width = "max-w-3xl", label, className = "", testId }) {
   return (
     <SkeletonStatus label={label} className={className} testId={testId}>
       {hero && <div className="skeleton-box h-[280px] md:h-[360px]" aria-hidden="true" data-skeleton="hero" />}
-      <div className="max-w-3xl mx-auto px-4 py-12" aria-hidden="true">
+      <div className={`${width} mx-auto px-4 py-12`} aria-hidden="true" data-skeleton="column">
         <div className="skeleton-box rounded-full w-24 h-6 mb-3" />
         <div className="skeleton-box rounded-lg w-3/4 h-10 mb-4" />
         <div className="flex flex-wrap gap-4 mb-6">

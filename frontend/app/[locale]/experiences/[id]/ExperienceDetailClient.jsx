@@ -92,7 +92,7 @@ export default function ExperienceDetailClient() {
 
   if (loading) {
     return (
-      <SkeletonDetail label={t("loading")} />
+      <SkeletonDetail width="max-w-[1100px]" label={t("loading")} />
     );
   }
 

@@ -20,4 +20,11 @@ describe("SkeletonDetail", () => {
     expect(container.querySelector('[data-skeleton="hero"]')).toBeNull();
     expect(container.querySelectorAll(".skeleton-box")).toHaveLength(6);
   });
+
+  it("width sets the content column to the loaded page's container", () => {
+    const { container } = render(<SkeletonDetail hero={false} width="max-w-6xl" label="טעינת הרכישה..." />);
+    const column = container.querySelector('[data-skeleton="column"]');
+    expect(column.className).toContain("max-w-6xl");
+    expect(column.className).not.toContain("max-w-3xl");
+  });
 });
