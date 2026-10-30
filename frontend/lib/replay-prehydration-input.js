@@ -9,10 +9,9 @@
  * re-render wipes the field. Browser autofill that runs before the bundle hits
  * the same gap.
  *
- * The fix replays the gap: any text-like field whose live value differs from
- * its server value (`defaultValue` mirrors the `value` attribute, which React
- * keeps in sync for controlled inputs) gets one synthetic `input` event, so its
- * own onChange runs and state catches up. React's value tracker swallows an
+ * The fix replays the gap: any controlled text field whose live value differs
+ * from the value React rendered gets one synthetic `input` event, so its own
+ * onChange runs and state catches up. React's value tracker swallows an
  * event whose value it believes unchanged, so the tracker is first moved off
  * the value through the instance setter, then the real value is written back
  * through the prototype setter — the same sequence Testing Library uses.
@@ -55,7 +54,8 @@ export function startPrehydrationCapture() {
   document.addEventListener("input", onEarlyInput, true);
 }
 
-function stopPrehydrationCapture() {
+/** Stops recording. The component calls it after its last replay pass. */
+export function stopPrehydrationCapture() {
   if (!capturing) return;
   capturing = false;
   document.removeEventListener("input", onEarlyInput, true);
@@ -64,24 +64,54 @@ function stopPrehydrationCapture() {
 startPrehydrationCapture();
 
 /**
+ * The props React rendered this field with, or null for a field React does not
+ * own (third-party widgets) or has not hydrated yet. `__reactProps$<random>` is
+ * how React DOM links a node to its props in 17, 18 and 19.
+ */
+function reactProps(el) {
+  const key = Object.keys(el).find((name) => name.startsWith("__reactProps$"));
+  return key ? el[key] : null;
+}
+
+function keepCaret(el, write) {
+  let range = null;
+  try {
+    if (el.ownerDocument.activeElement === el) range = [el.selectionStart, el.selectionEnd];
+  } catch {
+    // email/number inputs have no selection API — nothing to keep
+  }
+  write();
+  if (range && range[0] != null) el.setSelectionRange(range[0], range[1]);
+}
+
+/**
  * Replays pre-hydration edits inside `root`. Returns the number of fields
  * replayed (for tests; callers ignore it).
+ *
+ * Only a CONTROLLED field React already owns is touched, and only when the
+ * text the visitor typed differs from the value React rendered — so a field
+ * React heard her type into after hydration (state already matches) is never
+ * re-fired, uncontrolled fields keep their own DOM value untouched, and a field
+ * not yet hydrated is left for the next pass.
  */
 export function replayPrehydrationInput(root = typeof document !== "undefined" ? document : null) {
   if (!root) return 0;
-  stopPrehydrationCapture();
   let replayed = 0;
   for (const el of root.querySelectorAll("input, textarea")) {
     if (!isTextField(el) || el.disabled || el.readOnly) continue;
+    const props = reactProps(el);
+    if (props?.value == null || typeof props.onChange !== "function") continue;
     const typed = captured.has(el) ? captured.get(el) : el.value;
     captured.delete(el);
-    if (typed === "" || (typed === el.defaultValue && typed === el.value)) continue;
+    if (typed === "" || typed === String(props.value)) continue;
     const proto = el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
     const setNative = Object.getOwnPropertyDescriptor(proto, "value")?.set;
     if (!setNative) continue;
-    el.value = el.defaultValue; // instance setter: moves React's tracker off `typed`
-    setNative.call(el, typed); // prototype setter: DOM holds `typed`, tracker does not
-    el.dispatchEvent(new Event("input", { bubbles: true }));
+    keepCaret(el, () => {
+      el.value = String(props.value); // instance setter: React's tracker now holds the rendered value
+      setNative.call(el, typed); // prototype setter: DOM holds `typed`, tracker does not
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+    });
     replayed += 1;
   }
   return replayed;

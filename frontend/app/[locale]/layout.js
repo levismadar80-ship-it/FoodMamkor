@@ -269,7 +269,7 @@ export default async function LocaleLayout({ children, params }) {
                 <CustomCursor />
                 <ChatWidgetLazy />
                 <InstallPrompt />
-                {/* MEH-2602: last on purpose — replays text typed before hydration. */}
+                {/* MEH-2602: last on purpose — sibling effects run in tree order, so every field above has hydrated when this one runs. Replays text typed before hydration. */}
                 <PrehydrationInputReplay />
                 </MotionConfig>
               </SmoothScrollProvider>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { replayPrehydrationInput } from "@/lib/replay-prehydration-input";
+import { replayPrehydrationInput, stopPrehydrationCapture } from "@/lib/replay-prehydration-input";
 
 // Streamed Suspense boundaries hydrate after the shell; one later pass covers them.
 const LATE_PASS_MS = 1500;
@@ -15,8 +15,14 @@ const LATE_PASS_MS = 1500;
 export default function PrehydrationInputReplay() {
   useEffect(() => {
     replayPrehydrationInput();
-    const late = setTimeout(() => replayPrehydrationInput(), 1500);
-    return () => clearTimeout(late);
+    const late = setTimeout(() => {
+      replayPrehydrationInput();
+      stopPrehydrationCapture();
+    }, LATE_PASS_MS);
+    return () => {
+      clearTimeout(late);
+      stopPrehydrationCapture();
+    };
   }, []);
   return null;
 }

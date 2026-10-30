@@ -13,7 +13,7 @@ import { hydrateRoot as hydrate18 } from "react-dom/client";
 import * as React19 from "next/dist/compiled/react";
 import { renderToString as render19 } from "next/dist/compiled/react-dom/server.browser";
 import { hydrateRoot as hydrate19 } from "next/dist/compiled/react-dom/client";
-import { replayPrehydrationInput, startPrehydrationCapture } from "@/lib/replay-prehydration-input";
+import { replayPrehydrationInput, startPrehydrationCapture, stopPrehydrationCapture } from "@/lib/replay-prehydration-input";
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -25,6 +25,7 @@ const RUNTIMES = [
 describe.each(RUNTIMES)("replayPrehydrationInput — $name", ({ React, renderToString, hydrateRoot }) => {
   const h = React.createElement;
   let seen = {};
+  let emailChanges = 0;
   const report = (state) => {
     seen = state;
   };
@@ -37,7 +38,16 @@ describe.each(RUNTIMES)("replayPrehydrationInput — $name", ({ React, renderToS
     return h(
       "form",
       null,
-      h("input", { id: "email", type: "email", value: email, onChange: (event) => setEmail(event.target.value) }),
+      h("input", {
+        id: "email",
+        type: "email",
+        value: email,
+        onChange: (event) => {
+          emailChanges += 1;
+          setEmail(event.target.value);
+        },
+      }),
+      h("input", { id: "free", type: "text", defaultValue: "" }),
       h("textarea", { id: "msg", value: msg, onChange: (event) => setMsg(event.target.value) }),
       h("input", { id: "agree", type: "checkbox", checked: agree, onChange: (event) => setAgree(event.target.checked) }),
     );
@@ -47,6 +57,8 @@ describe.each(RUNTIMES)("replayPrehydrationInput — $name", ({ React, renderToS
     const container = document.createElement("div");
     container.innerHTML = renderToString(h(Form));
     document.body.append(container);
+    emailChanges = 0;
+    stopPrehydrationCapture();
     startPrehydrationCapture(); // the page-load capture, re-armed per test
     // Real typing: the DOM value changes and an input event fires that React,
     // not yet attached, never hears.
@@ -95,6 +107,39 @@ describe.each(RUNTIMES)("replayPrehydrationInput — $name", ({ React, renderToS
     expect(first).toBe(1);
     expect(second).toBe(0);
     expect(seen.email).toBe("");
+    React.act(() => root.unmount());
+  });
+
+  it("never re-fires onChange for a field React heard typed after hydration", async () => {
+    const { container, root } = await hydrateAfterTyping({});
+    await React.act(async () => {
+      replayPrehydrationInput(container); // first pass: nothing to do
+    });
+    const el = container.querySelector("#email");
+    const setNative = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set;
+    await React.act(async () => {
+      setNative.call(el, "late@example.com");
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    expect(seen.email).toBe("late@example.com");
+    expect(emailChanges).toBe(1);
+    let count;
+    await React.act(async () => {
+      count = replayPrehydrationInput(container); // the late pass
+    });
+    expect(count).toBe(0);
+    expect(emailChanges).toBe(1);
+    React.act(() => root.unmount());
+  });
+
+  it("leaves an uncontrolled field's DOM value alone", async () => {
+    const { container, root } = await hydrateAfterTyping({ free: "own text" });
+    let count;
+    await React.act(async () => {
+      count = replayPrehydrationInput(container);
+    });
+    expect(count).toBe(0);
+    expect(container.querySelector("#free").value).toBe("own text");
     React.act(() => root.unmount());
   });
 });
