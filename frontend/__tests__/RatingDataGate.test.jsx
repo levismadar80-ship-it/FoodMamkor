@@ -207,9 +207,9 @@ describe("/producers rating sort gate (MEH-1864)", () => {
     const { container } = render(
       <ProducersClient {...BASE_PROPS} ratingSortEnabled={false} />,
     );
-    expect(screen.queryByTestId("producers-sort")).not.toBeInTheDocument();
-    // The option's label must be absent from the whole subtree, not merely
-    // outside the (also absent) select.
+    // MEH-2616: the control itself stays (newest + distance); only the
+    // rating option is gated. Its label must be absent from the whole subtree.
+    expect(screen.queryByRole("option", { name: TOP_RATED_LABEL })).toBeNull();
     expect(container.textContent).not.toContain(TOP_RATED_LABEL);
   });
 
@@ -221,9 +221,9 @@ describe("/producers rating sort gate (MEH-1864)", () => {
     expect(container.textContent).toContain(TOP_RATED_LABEL);
   });
 
-  it("hides the control when the prop is omitted (fail-closed default)", () => {
-    render(<ProducersClient {...BASE_PROPS} />);
-    expect(screen.queryByTestId("producers-sort")).not.toBeInTheDocument();
+  it("omits the rating option when the prop is omitted (fail-closed default)", () => {
+    const { container } = render(<ProducersClient {...BASE_PROPS} />);
+    expect(container.textContent).not.toContain(TOP_RATED_LABEL);
   });
 
   it("degrades a hand-typed ?sort=rating to the default while gated", async () => {
@@ -244,6 +244,6 @@ describe("/producers rating sort gate (MEH-1864)", () => {
     // it was green regardless of the gate. Removed rather than kept as
     // decoration.)
     expect(sortCalls()).toHaveLength(0);
-    expect(screen.queryByTestId("producers-sort")).not.toBeInTheDocument();
+    expect(screen.getByTestId("producers-sort")).toHaveValue("newest");
   });
 });
