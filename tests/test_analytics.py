@@ -83,6 +83,17 @@ def _seed_whatsapp_click(db, producer_id, *, days_ago=0):
     return row
 
 
+def _seed_coverage_request(db, producer_id, *, city, days_ago=0):
+    """MEH-1676: a coverage-request click ("לא מגיעים ל{עיר}?") — the only
+    WhatsApp click that carries a city (MEH-1677). Seeded directly so the
+    30-day window and the per-city grouping can be asserted."""
+    ts = utc_now() - timedelta(days=days_ago)
+    row = ProducerWhatsAppClick(producer_id=producer_id, clicked_at=ts, city=city)
+    db.add(row)
+    db.commit()
+    return row
+
+
 def _seed_contact_click(db, producer_id, *, method="phone", days_ago=0):
     """MEH-2157: a non-WhatsApp contact click (phone/instagram/website/email).
 
@@ -486,6 +497,44 @@ class TestProducerAnalytics:
         assert cities[0]["count"] == 3
         assert cities[1]["city"] == "חיפה"
         assert cities[1]["count"] == 2
+
+    def test_analytics_coverage_requests_by_city_30d(self, client, db):
+        """MEH-1676: `coverage_requests` = coverage-request clicks grouped by
+        city, last 30 days, most-requested first. An ordinary WhatsApp click
+        (city NULL) is not a request and must not appear; a request older
+        than 30 days is out of the window."""
+        p = make_producer(db)
+        user = make_user(db, email="owner-coverage@test.com", role="producer")
+        user.producer_id = p.id
+        db.commit()
+
+        for _ in range(3):
+            _seed_coverage_request(db, p.id, city="תל אביב-יפו", days_ago=1)
+        _seed_coverage_request(db, p.id, city="חיפה", days_ago=10)
+        _seed_coverage_request(db, p.id, city="חיפה", days_ago=40)  # outside 30d
+        _seed_whatsapp_click(db, p.id, days_ago=2)  # ordinary click, no city
+
+        body = client.get(
+            "/producers/me/analytics", headers=auth_header(user)
+        ).json()
+        assert body["coverage_requests"] == [
+            {"city": "תל אביב-יפו", "count": 3},
+            {"city": "חיפה", "count": 1},
+        ]
+
+    def test_analytics_coverage_requests_empty_when_none(self, client, db):
+        """MEH-1676: zero requests → an empty list, not a missing key — the
+        dashboard renders the empty state off `[]`."""
+        p = make_producer(db)
+        user = make_user(db, email="owner-coverage0@test.com", role="producer")
+        user.producer_id = p.id
+        db.commit()
+        _seed_whatsapp_click(db, p.id, days_ago=1)
+
+        body = client.get(
+            "/producers/me/analytics", headers=auth_header(user)
+        ).json()
+        assert body["coverage_requests"] == []
 
     def test_analytics_views_by_day_has_30_entries(self, client, db):
         p = make_producer(db)

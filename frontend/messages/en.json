@@ -4343,7 +4343,14 @@
         "views_chart_aria": "Views over the last 30 days chart",
         "views_chart_empty": "No data yet",
         "top_cities_title": "Top cities",
-        "top_cities_empty": "No city data yet — customers who aren't signed in don't report a city."
+        "top_cities_empty": "No city data yet — customers who aren't signed in don't report a city.",
+        "coverage_requests": {
+          "title": "Demand from new areas",
+          "row_one": "One person asked for delivery to {city}",
+          "row_many": "{count} asked for delivery to {city}",
+          "empty": "No requests yet. When someone asks about a city that isn't on your list, it shows up here.",
+          "scope": "Counts taps on “You can ask the business” in the last 30 days. Conversations that continued on WhatsApp aren't counted."
+        }
       },
       "completeness": {
         "red_headline": "A few key details left before you're live",
