@@ -244,7 +244,7 @@ export const BADGE_CONFIG = {
     // already rejected once for the filter chip (attribute-labels.js:61,
     // Sapir-LOCKED per MEH-1087) without taking the badge in the same round.
     // This is now the FALLBACK only: BadgeRow resolves the actual certification
-    // name ("חלק", "בדצ״ה", …) from producer.kashrut_badges when there is
+    // name ("חלק", "בד״ץ", …) from producer.kashrut_badges when there is
     // exactly one code, and falls back to this string on zero or 2+ codes —
     // where naming a single certificate would itself be a misstatement.
     // Industry precedent: ACM/Booking.com 2024 — the objection was to the
