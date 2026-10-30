@@ -374,15 +374,14 @@ front matter for the normative token bindings.
 - **Producer detail — Quiet Direction v3 (MEH-1334, PR #1936 — ADOPTED; supersedes
   the stale sub-details in the surrounding pre-1334 blocks where they conflict):**
   the `/producer/[id]` editorial refresh. **Header = 4 groups:** [name + single
-  ✓מאומתת seal] · [one-liner] · [rating ★ gold + underlined count, or
-  **"אין ביקורות עדיין"** at zero reviews — a rating-slot fallback, not a badge.
-  The word "חדש" is reserved for the *tenure* claim on the card badge
-  (`badges.js`); it never appears in this slot (MEH-1746)] · [meta block —
+  ✓מאומתת seal] · [one-liner] · [meta block —
   **since MEH-2592 part ו (30/10/2026) one facts line + a status line + a tags
   row** (replaces MEH-2403's two-line block of 27/10): the facts line
   `producer-header-meta` is muted 14px «★ 4.8 · 12 ביקורות · [glyph] קטגוריה ·
-  עיר · מאז 1998» — the rating slot (anchor or the «אין ביקורות עדיין» pill)
-  opens it, the primary category is a `<Link>` to `/producers?category=<id>`
+  עיר · מאז 1998» — the rating anchor opens it **only when reviews exist**
+  (at zero reviews the slot is empty — the MEH-1411/1746 «אין ביקורות עדיין»
+  pill is retired, Sapir 30/10: Wolt / Booking / Airbnb show nothing there
+  until a review exists), the primary category is a `<Link>` to `/producers?category=<id>`
   in `text-text` with the category's own **registry glyph + colour** before it
   (`lib/category-registry`, the same pair as its map pin; an unknown category
   gets no glyph), city, then «מאז»; the **status** stays alone on the next line

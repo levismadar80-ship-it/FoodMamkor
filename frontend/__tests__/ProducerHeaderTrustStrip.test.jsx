@@ -183,7 +183,9 @@ describe("ProducerHeader status line + חדש fallback (MEH-1334)", () => {
     expect(screen.queryByTestId("status-open")).not.toBeInTheDocument();
   });
 
-  it("shows the 'חדש' fallback in the rating slot when there are zero reviews", () => {
+  it("zero reviews: NOTHING in the rating slot — the MEH-1411 pill is retired (MEH-2592, 30/10/2026)", () => {
+    // Wolt / Booking / Airbnb show nothing in the rating's place until a
+    // review exists; a line announcing the absence only underlined it.
     render(
       <ProducerHeader
         producer={{ ...baseProducer, reviews_count: 0 }}
@@ -191,7 +193,8 @@ describe("ProducerHeader status line + חדש fallback (MEH-1334)", () => {
         hasImages
       />,
     );
-    expect(screen.getByTestId("new-mark")).toBeInTheDocument();
+    expect(screen.queryByTestId("new-mark")).toBeNull();
+    expect(screen.queryByText("producer.detail.header.new_mark")).toBeNull();
   });
 });
 

@@ -6,8 +6,9 @@ import { render, screen, within } from "@testing-library/react";
 // status line (the status alone, `producer-header-status-line`), then a tags
 // row (`producer-header-tags`, the kosher chip; absent with nothing to tag).
 // Cells for the facts line: (category+city) · (category only) ·
-// (city only) · (neither → the line still carries the rating slot). The status
-// never sits inside the facts line.
+// (city only) · (neither, no reviews → the line is absent). At zero reviews
+// the rating slot is EMPTY — no «אין ביקורות עדיין» pill (Sapir, 30/10). The
+// status never sits inside the facts line.
 vi.mock("next-intl", () => ({
   useTranslations: () => (key, vars) => {
     if (key === "producer.detail.header.review_count") return `${vars?.count} ביקורות`;
@@ -75,11 +76,14 @@ describe("ProducerHeader facts line (MEH-2592)", () => {
     expect(within(meta).queryByTestId("status-open")).toBeNull();
   });
 
-  it("the rating slot opens the line: «אין ביקורות עדיין» at zero reviews, before the category", () => {
+  it("zero reviews: no pill, no anchor — the line opens with the category, one «·» before the city", () => {
     render(<ProducerHeader producer={baseProducer} primaryCategory={category} hasImages />);
     const meta = screen.getByTestId("producer-header-meta");
-    const mark = within(meta).getByTestId("new-mark");
-    expect(meta.textContent.indexOf(mark.textContent)).toBeLessThan(meta.textContent.indexOf("חלב וגבינות"));
+    expect(within(meta).queryByTestId("new-mark")).toBeNull();
+    expect(within(meta).queryByTestId("trust-strip-rating")).toBeNull();
+    expect(meta.textContent).not.toContain("producer.detail.header.new_mark");
+    expect(meta.textContent.trim().startsWith("חלב וגבינות")).toBe(true);
+    expect(meta.textContent.match(/·/g)).toHaveLength(1);
   });
 
   it("with reviews the #reviews anchor opens the line, separated from the category by one «·»", () => {
@@ -122,28 +126,38 @@ describe("ProducerHeader facts line (MEH-2592)", () => {
     expect(within(since).getByText("1998")).toHaveAttribute("dir", "ltr");
   });
 
-  it("category only: no stray separator between the category and nothing", () => {
+  it("category only (no reviews): the link alone, no separator", () => {
     render(<ProducerHeader producer={{ ...baseProducer, city: null }} primaryCategory={category} hasImages />);
     const meta = screen.getByTestId("producer-header-meta");
     expect(within(meta).getByRole("link", { name: "חלב וגבינות" })).toHaveAttribute("href", "/producers?category=12");
-    // new-mark · category → exactly one separator.
-    expect(meta.textContent.match(/·/g)).toHaveLength(1);
+    expect(meta.textContent).not.toContain("·");
+    expect(meta.textContent.trim()).toBe("חלב וגבינות");
   });
 
-  it("city only: just the city after the rating slot, no link", () => {
+  it("city only (no reviews): just the city, no link, no separator", () => {
     render(<ProducerHeader producer={baseProducer} primaryCategory={null} hasImages />);
     const meta = screen.getByTestId("producer-header-meta");
-    expect(meta).toHaveTextContent("יקנעם עילית");
+    expect(meta.textContent.trim()).toBe("יקנעם עילית");
     expect(within(meta).queryByRole("link")).toBeNull();
-    expect(meta.textContent.match(/·/g)).toHaveLength(1);
   });
 
-  it("neither city nor category: the line is only the rating slot, no separator at all", () => {
+  it("neither city nor category nor reviews: the line is absent from the DOM, the status stays", () => {
     render(<ProducerHeader producer={{ ...baseProducer, city: null }} primaryCategory={null} hasImages />);
-    const meta = screen.getByTestId("producer-header-meta");
-    expect(meta.textContent).not.toContain("·");
-    expect(within(meta).getByTestId("new-mark")).toBeInTheDocument();
+    expect(screen.queryByTestId("producer-header-meta")).toBeNull();
     expect(screen.getByTestId("status-open")).toBeInTheDocument();
+  });
+
+  it("reviews but neither city nor category: the line is the rating anchor alone, no separator", () => {
+    render(
+      <ProducerHeader
+        producer={{ ...baseProducer, city: null, avg_rating: 4.8, reviews_count: 12 }}
+        primaryCategory={null}
+        hasImages
+      />,
+    );
+    const meta = screen.getByTestId("producer-header-meta");
+    expect(within(meta).getByTestId("trust-strip-rating")).toBeInTheDocument();
+    expect(meta.textContent).not.toContain("·");
   });
 });
 

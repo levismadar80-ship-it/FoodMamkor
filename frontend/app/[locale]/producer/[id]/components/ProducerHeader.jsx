@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { Star, StarOfDavid } from "@phosphor-icons/react";
@@ -200,6 +200,65 @@ export default function ProducerHeader({
     .map((b) => b.key)
     .filter((k) => (hasImages ? k !== "verified" : true));
 
+  // The facts line, as an array so the «·» separators fall only BETWEEN
+  // present facts (0 / 1 / many — no leading or trailing dot in any cell).
+  // At zero reviews the rating slot is simply absent (Sapir, 30/10): Wolt,
+  // Booking and Airbnb show nothing in the rating's place until a review
+  // exists, and a line announcing the absence only underlined it. The
+  // MEH-1411 «אין ביקורות עדיין» pill (MEH-1746 wording) is retired with it;
+  // the jump bar still leads to the reviews section.
+  const facts = [];
+  if (producer.reviews_count > 0) {
+    facts.push(
+      <a
+        key="rating"
+        href="#reviews"
+        // MEH-1249 chunk 8: the rating anchor's twin — ReviewExcerpt's
+        // pull-quote — is ALSO an `a[href="#reviews"]` inside this header, so
+        // an href selector resolves to two elements; the id keeps them apart.
+        data-testid="trust-strip-rating"
+        className="inline-flex items-center gap-1.5 rounded text-text hover:text-primary focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/40 transition-colors"
+      >
+        <Star size={18} weight="fill" className="text-accent" aria-hidden="true" />
+        <span className="numeric font-headline-md text-lg font-bold" dir="ltr">
+          {Number(producer.avg_rating).toFixed(1)}
+        </span>
+        <span className="text-[13px] text-muted underline underline-offset-4">
+          {t("producer.detail.header.review_count", { count: producer.reviews_count })}
+        </span>
+        {/* MEH-1048 a11y: sr-only nav hint so AT users hear the link scrolls to reviews */}
+        <span className="sr-only">{t("producer.detail.header.review_excerpt_aria")}</span>
+      </a>,
+    );
+  }
+  if (primaryCategory) {
+    facts.push(
+      <Link
+        key="category"
+        href={categoryListingHref(primaryCategory.id)}
+        className="inline-flex min-h-[24px] items-center gap-1 font-medium text-text underline-offset-[3px] hover:underline hover:text-primary transition"
+        data-testid="producer-header-category-link"
+      >
+        <CategoryGlyph category={primaryCategory} />
+        {primaryCategory.name}
+      </Link>,
+    );
+  }
+  if (producer.city) facts.push(<span key="city">{producer.city}</span>);
+  // MEH-1541: quiet "מאז {שנה}" heritage fact — a veteran-business trust
+  // signal in the magazine voice, NOT a badge (no icon / gold / border; the
+  // single-green rule stays with the status tag). Year numerals dir="ltr".
+  if (producer.established_year) {
+    facts.push(
+      <span key="since" className="text-fg-muted" data-testid="established-year">
+        {t("producer.detail.header.since_prefix")}{" "}
+        <span dir="ltr" className="numeric">
+          {producer.established_year}
+        </span>
+      </span>,
+    );
+  }
+
   return (
     <div className="relative" data-testid="producer-header">
       {/* Group 1 — name + single ✓מאומתת seal (richer popover in BadgeRow).
@@ -233,8 +292,8 @@ export default function ProducerHeader({
           Yelp shape: everything a reader scans before deciding sits on one
           muted line — «★ 4.8 · 12 ביקורות · [glyph] קטגוריה · עיר · מאז 1998»
           — the status keeps a line of its own, and the fact tags follow it.
-          The rating keeps its #reviews anchor (MEH-1048) and the «אין ביקורות
-          עדיין» fallback keeps the rating's slot (MEH-1746). The category is the
+          The rating keeps its #reviews anchor (MEH-1048); at zero reviews the
+          slot is empty (see `facts` above). The category is the
           line's one tappable fact (Yelp/TripAdvisor make categories links), so
           it carries the registry glyph in the category's own colour
           (lib/category-registry — the same glyph + colour as its map pin)
@@ -242,84 +301,19 @@ export default function ProducerHeader({
           CategorySelector — never a green Leaf that mis-signals produce).
           Rating decimal stays dir="ltr" + .numeric so RTL can't flip
           "4.8" → "8.4" (MEH-763). */}
-      <p
-        className="flex items-center flex-wrap gap-x-2 gap-y-1 text-sm text-muted mt-3"
-        data-testid="producer-header-meta"
-      >
-        {producer.reviews_count > 0 ? (
-          <a
-            href="#reviews"
-            // MEH-1249 chunk 8: the rating anchor's twin — ReviewExcerpt's
-            // pull-quote — is ALSO an `a[href="#reviews"]` inside this header, so
-            // an href selector resolves to two elements. `new-mark` (the other
-            // arm of this ternary) already carries an id for the same test; this
-            // gives the rated arm one too.
-            data-testid="trust-strip-rating"
-            className="inline-flex items-center gap-1.5 rounded text-text hover:text-primary focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/40 transition-colors"
-          >
-            <Star
-              size={18}
-              weight="fill"
-              className="text-accent"
-              aria-hidden="true"
-            />
-            <span
-              className="numeric font-headline-md text-lg font-bold"
-              dir="ltr"
-            >
-              {Number(producer.avg_rating).toFixed(1)}
-            </span>
-            <span className="text-[13px] text-muted underline underline-offset-4">
-              {t("producer.detail.header.review_count", {
-                count: producer.reviews_count,
-              })}
-            </span>
-            {/* MEH-1048 a11y: sr-only nav hint so AT users hear the link scrolls to reviews */}
-            <span className="sr-only">
-              {t("producer.detail.header.review_excerpt_aria")}
-            </span>
-          </a>
-        ) : (
-          // MEH-1411: a small NEUTRAL pill (bg-surface-card + border-border +
-          // text-fg-muted — the quiet-chip idiom) in the rating's slot, not a
-          // second headline. Deliberately NOT green: the status tag below is the
-          // page's single green accent (one green per page, MEH-1334).
-          <span
-            className="inline-block rounded-full bg-surface-card border border-border text-fg-muted px-2.5 py-0.5 text-xs font-medium"
-            data-testid="new-mark"
-          >
-            {t("producer.detail.header.new_mark")}
-          </span>
-        )}
-        {primaryCategory && <FactsSeparator />}
-        {primaryCategory && (
-          <Link
-            href={categoryListingHref(primaryCategory.id)}
-            className="inline-flex min-h-[24px] items-center gap-1 font-medium text-text underline-offset-[3px] hover:underline hover:text-primary transition"
-            data-testid="producer-header-category-link"
-          >
-            <CategoryGlyph category={primaryCategory} />
-            {primaryCategory.name}
-          </Link>
-        )}
-        {producer.city && <FactsSeparator />}
-        {producer.city && <span>{producer.city}</span>}
-        {/* MEH-1541: quiet "מאז {שנה}" heritage line — a veteran-business trust
-            signal in the magazine voice, NOT a badge (no icon / gold / border;
-            the single-green rule stays with the status tag). Year numerals
-            dir="ltr". Absent from the DOM when established_year is unset. */}
-        {producer.established_year ? (
-          <>
-            <FactsSeparator />
-            <span className="text-fg-muted" data-testid="established-year">
-              {t("producer.detail.header.since_prefix")}{" "}
-              <span dir="ltr" className="numeric">
-                {producer.established_year}
-              </span>
-            </span>
-          </>
-        ) : null}
-      </p>
+      {facts.length > 0 && (
+        <p
+          className="flex items-center flex-wrap gap-x-2 gap-y-1 text-sm text-muted mt-3"
+          data-testid="producer-header-meta"
+        >
+          {facts.map((fact, i) => (
+            <Fragment key={fact.key}>
+              {i > 0 && <FactsSeparator />}
+              {fact}
+            </Fragment>
+          ))}
+        </p>
+      )}
 
       {/* Status line — the status ALONE (Sapir, 30/10: a separate line, so a
           longer tags row never crowds it; this keeps MEH-2403's "status alone"
