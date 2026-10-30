@@ -10,15 +10,14 @@ import api from "@/lib/api";
 import PasswordInput from "@/components/PasswordInput";
 import { firstFailureMessage } from "@/lib/passwordMessages";
 import { PASSWORD_MIN_LENGTH } from "@/lib/validators";
+import BrandLoader from "@/components/BrandLoader";
 
 export default function ResetPasswordClient() {
   const t = useTranslations();
   return (
     <Suspense
       fallback={
-        <div className="max-w-md mx-auto px-4 py-12 text-center text-fg-muted">
-          {t("auth.passwordRecovery.reset.loading")}
-        </div>
+        <BrandLoader label={t("auth.passwordRecovery.reset.loading")} className="max-w-md mx-auto px-4 py-12" />
       }
     >
       <ResetPasswordForm />

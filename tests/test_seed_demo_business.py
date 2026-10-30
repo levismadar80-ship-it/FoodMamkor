@@ -166,9 +166,7 @@ def test_refresh_sweeps_dietary_demos(db, seed_mod, bakery_category):
     seed_mod.seed_demo_business(db)
     seed_mod.seed_dietary_scope_demos(db)
     seed_mod.seed_demo_business(db, refresh=True)  # _delete_existing sweeps them
-    assert (
-        db.query(Producer).filter(Producer.slug.like("demo-diet-%")).count() == 0
-    )
+    assert db.query(Producer).filter(Producer.slug.like("demo-diet-%")).count() == 0
     assert seed_mod.seed_dietary_scope_demos(db) == 3
 
 
@@ -198,3 +196,16 @@ def test_production_guard(seed_mod, monkeypatch, db_url, railway_env, allowed):
     else:
         with pytest.raises(SystemExit):
             seed_mod._assert_not_production()
+
+
+def test_demo_kashrut_codes_are_real_badge_codes(seed_mod):
+    """MEH-2602: the seed carried «badatz_beit_yosef», a code the app does not
+    know — so the demo badge rendered as a raw string and a new request with
+    that code would be refused by POST /producers/me/kashrut-request. Every
+    code the seed writes must be one VALID_BADGE_CODES accepts."""
+    from app.services.trust_tier import VALID_BADGE_CODES
+
+    codes = set(seed_mod.DEMO_PRODUCER["kashrut_badges"])
+    codes.add(seed_mod.DEMO_KASHRUT_REQUEST["badge_code"])
+    assert codes, "the seed is expected to carry at least one kashrut badge"
+    assert codes <= VALID_BADGE_CODES, codes - VALID_BADGE_CODES

@@ -12,6 +12,7 @@ from app.auth import (
     get_current_user_optional,
     require_verified_email,
 )
+from app.data.cities import canonical_city
 from app.database import get_db
 from app.models import (
     Category,
@@ -337,10 +338,16 @@ def producers_cities(request: Request, db: Session = Depends(get_db)):
             func.trim(Producer.city) != "",
         )
         .group_by(Producer.city)
-        .order_by(func.count(Producer.id).desc(), Producer.city)
         .all()
     )
-    return [{"city": city, "count": count} for city, count in rows]
+    # MEH-2602: rows saved before writes were canonicalised may hold an alias
+    # («בנימינה»); fold them into the canonical name so one town is one chip.
+    totals: dict[str, int] = {}
+    for city, count in rows:
+        name = canonical_city(city) or city
+        totals[name] = totals.get(name, 0) + count
+    ordered = sorted(totals.items(), key=lambda kv: (-kv[1], kv[0]))
+    return [{"city": city, "count": count} for city, count in ordered]
 
 
 @router.get("/producers/random", response_model=ProducerRandomOut)

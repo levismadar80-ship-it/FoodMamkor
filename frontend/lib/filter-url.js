@@ -20,6 +20,8 @@ import { FILTER_AXES, homeParamFor } from "@/lib/filter-taxonomy";
  * keys, and a category is a separate dimension with its own exit («כל»).
  */
 
+// Read accepts "true" as well (the API's own spelling, in case a hand-typed
+// link uses it); write is always "1".
 const isOn = (v) => v === "1" || v === "true";
 
 /** `query` is a URLSearchParams or a plain `{ param: value }` record

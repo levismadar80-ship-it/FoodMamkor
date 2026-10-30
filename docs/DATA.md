@@ -1228,6 +1228,10 @@ POST /reports/producer-info    🌐 public, rate-limited 5/day/IP — visitor re
 GET  /stats                      public — { producers_count, categories_count, cities_count }
 POST /newsletter                 public — { email } → newsletter_subscribers
                                  rate-limited 5/hour per IP
+                                 + background mirror to Resend Contacts, segment
+                                   `newsletter` (MEH-2611; never clears an opt-out)
+POST /newsletter/unsubscribe     public — { token } → deletes the row
+                                 + deletes the Resend contact (MEH-2611); a Broadcast-footer opt-out stays sticky
 POST /contact                    public — { name, email, message, topic? } → contact_messages row
                                  + SMTP email to CONTACT_EMAIL (falls back to
                                  ADMIN_EMAIL). Fail-open: if SMTP is unconfigured
@@ -1357,7 +1361,8 @@ GET/HEAD /health                 public — backwards-compat alias, the path Rai
 | New review — not an edit (MEH-2602) | Email | Business owner | `content_notifications.py` |
 | Owner's first reply to a review — not an edit (MEH-2602) | Email | Reviewer | `content_notifications.py` |
 | Home product removed | Email | Seller | `admin.py` |
-| Newsletter signup | Email | Admin | `marketing.py` |
+| Newsletter signup (welcome) | Email | Subscriber | `marketing.py` |
+| Newsletter issues — sent from Resend Broadcasts to segment `newsletter` (MEH-2611). Resend is the send authority: a Broadcast-footer opt-out lives only in Resend (no webhook back), so `newsletter_subscribers` is the signup log, not the audience | Email | Subscribers | Resend dashboard |
 | Contact form | Email | Admin | `marketing.py` |
 | 24h after WhatsApp click | WhatsApp | Buyer (rating prompt) | `rating_dispatcher.py` |
 

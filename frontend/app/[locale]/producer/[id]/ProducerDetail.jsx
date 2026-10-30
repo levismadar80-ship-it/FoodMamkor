@@ -128,7 +128,8 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
   const primaryCategory = producer.categories?.[0];
 
   // MEH-2593: ImageGallery's phone hero bleeds out of this px-4 with a
-  // matching -mx-4 — change the two together.
+  // matching -mx-4 — change the two together. MEH-2592: so does the
+  // OtherBusinesses band.
   return (
     <div className="max-w-6xl mx-auto px-4 py-6" data-testid="producer-detail-root">
       {/* MEH-1209: owner-only edit entry — renders above the h1 (which lives in

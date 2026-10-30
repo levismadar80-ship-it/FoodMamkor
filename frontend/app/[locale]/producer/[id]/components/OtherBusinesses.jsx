@@ -9,9 +9,9 @@ import ProducerCard from "@/components/ProducerCard";
 // at least this many same-city businesses (excluding the current one) come
 // back — below it the section hides entirely so it never shows a thin 1-2 card
 // row. Documented const per the spec.
-export const MIN_NEARBY_BUSINESSES = 4;
+const MIN_NEARBY_BUSINESSES = 4;
 // MEH-102: the similar row needs at least three cards to read as a row.
-export const MIN_SIMILAR_BUSINESSES = 3;
+const MIN_SIMILAR_BUSINESSES = 3;
 
 /**
  * MEH-2592: the two rows of OTHER businesses — similar (MEH-102) and nearby
@@ -20,7 +20,8 @@ export const MIN_SIMILAR_BUSINESSES = 3;
  * order schedule / location, so a reader left the business and came back
  * twice. Now everything about the business ends with the fine print, and this
  * band follows it: darker cream, so the eye sees where the business stops.
- * Full bleed on phones (cancels the page's px-4), a rounded band spanning both
+ * Full bleed on phones: its -mx-4 cancels ProducerDetail's px-4 page padding
+ * (change the two together, same as the MEH-2593 hero), a rounded band spanning both
  * columns on desktop. Renders nothing when neither row clears its minimum —
  * an empty band would be a coloured gap.
  */
