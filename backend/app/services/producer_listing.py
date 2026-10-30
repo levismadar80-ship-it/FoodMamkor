@@ -491,6 +491,39 @@ def _pickup_condition(cities: list[str] | None = None):
     return Producer.locations.any(and_(*conds))
 
 
+def _on_site_condition():
+    """MEH-2598 — "buy on site": a physical store with opening hours stated.
+
+    Mirrors frontend/lib/hours.js resolveStoreHours exactly — the primary
+    location's hours, else the legacy business-level Producer.opening_hours —
+    gated on has_physical_location, which is the same input the map card's
+    «קנייה במקום» tag reads. Blank-only text does not count: `~ '\\S'` is
+    "has a non-whitespace character", the SQL twin of JS `.trim()` truthiness.
+
+    Unscoped by city on purpose: a store is where it is, and the city axis
+    (Producer.city) is AND-ed separately in _apply_scalar_filters.
+
+    Python mirror: producer_queries.attach_badge_fields `sells_on_site`, held
+    together by test_fulfillment_flags_match_filter_membership.
+    """
+
+    def has_text(col):
+        return and_(col.isnot(None), col.op("~")(r"\S"))
+
+    return and_(
+        Producer.has_physical_location.is_(True),
+        or_(
+            Producer.locations.any(
+                and_(
+                    ProducerLocation.is_primary.is_(True),
+                    has_text(ProducerLocation.opening_hours),
+                )
+            ),
+            has_text(Producer.opening_hours),
+        ),
+    )
+
+
 # MEH-2036: the OR-list cap for ?delivery_days=. Unlike _MAX_DELIVERY_CITIES
 # (40, headroom over the largest region) this bound is EXACT: the vocabulary is
 # closed at seven, so a longer list can only be duplicates or junk.
@@ -905,6 +938,7 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, P
     delivery_cities = filters.get("delivery_cities")
     has_delivery = filters.get("has_delivery")
     pickup_points = filters.get("pickup_points")  # MEH-2046
+    on_site = filters.get("on_site")  # MEH-2598
     # MEH-1645: single canonical day (router 422s anything else). When a city
     # is present the combined condition REPLACES _delivery_city_condition —
     # v1 deliberately drops the nationwide OR-branch (no explicit day row =
@@ -969,7 +1003,11 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, P
         # counts when it is in that city — same reading as a delivery city.
         scope_cities = [filters["near_city"].strip()]
     pickup_cond = _pickup_condition(scope_cities) if pickup_points else None
-    service_conds = [c for c in (delivery_scope_cond, pickup_cond) if c is not None]
+    # MEH-2598: a third peer of the service group, OR-ed like pickup.
+    on_site_cond = _on_site_condition() if on_site else None
+    service_conds = [
+        c for c in (delivery_scope_cond, pickup_cond, on_site_cond) if c is not None
+    ]
     if service_conds:
         # or_() over a single clause would render it unchanged, but the explicit
         # branch keeps "one filter sent → pre-2046 SQL" true by construction

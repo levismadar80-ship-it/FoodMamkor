@@ -32,6 +32,7 @@ import {
   DropSlash,
   Cube,
   Clock,
+  Storefront,
 } from "@phosphor-icons/react";
 
 // key → Phosphor icon component. Keys mirror the attribute chip keys in
@@ -41,6 +42,7 @@ const CHIP_ICON_COMPONENTS = {
   verified: SealCheck,
   has_delivery: Truck,
   pickup_points: Package,  // MEH-2046
+  on_site: Storefront,  // MEH-2598
   kosher: Certificate,
   vegan: Leaf,
   // MEH-2169: vegetarian + no_added_sugar had NO entry here, so both rendered
