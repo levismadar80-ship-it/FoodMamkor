@@ -15,7 +15,7 @@ vi.mock("next-intl", () => ({
     if (key === "checker.no") return `לצערנו לא מגיעים ל${city} כרגע`;
     const map = {
       "checker.label": "מגיעים אלייך?",
-      "checker.placeholder": "הקלידי עיר לבדיקה",
+      "checker.placeholder": "הקלידי עיר",
       "min_order": "מינימום",
       // search.city_search.* — consumed by the real CitySearch underneath.
       "placeholder": "עיר",
