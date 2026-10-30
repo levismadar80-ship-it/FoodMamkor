@@ -80,7 +80,8 @@ function chipSubtext(chip) {
 // the sheet's service group now mirrors the promoted row's pairing
 // (משלוח then איסוף עצמי) instead of splitting the two apart.
 const GROUP_CHIP_ORDER = {
-  service: ["verified", "has_delivery", "pickup_points"],
+  // MEH-2598: on_site completes the service trio, in the card-tag order.
+  service: ["verified", "has_delivery", "pickup_points", "on_site"],
 };
 // MEH-1862: the chip SET is now a parameter, so /producers can mount this sheet
 // with its own axes. `source` defaults to TOGGLE_CHIPS, which is what /map has
