@@ -121,8 +121,12 @@ describe("ContactCard degenerate states (MEH-1551)", () => {
     renderCard({ phone: "0501234567", instagram: "@shikma" });
     expect(screen.queryByTestId("contact-single-row")).not.toBeInTheDocument();
     const phone = screen.getByLabelText("התקשרו");
-    expect(phone.className).toContain("w-11");
-    expect(phone.className).toContain("rounded-full");
+    // MEH-2592 C: the 44px circle is the icon span; the name is visible under it.
+    const circle = phone.querySelector("span");
+    expect(circle.className).toContain("w-11");
+    expect(circle.className).toContain("rounded-full");
+    expect(phone).toHaveTextContent("התקשרו");
+    expect(phone.parentElement.className).toContain("grid-cols-4");
     expect(screen.getByLabelText("אינסטגרם")).toBeInTheDocument();
   });
 
@@ -205,7 +209,8 @@ describe("ContactCard degenerate states (MEH-1551)", () => {
       const revealed = screen.getByTestId("revealed-phone");
       // phone gone from the circle row; the survivors keep circle anatomy.
       expect(screen.queryByTestId("contact-channel-phone")).not.toBeInTheDocument();
-      expect(screen.getByTestId("contact-channel-instagram").className).toContain("rounded-full");
+      // MEH-2592 C: the circle is the icon span inside the labelled channel.
+      expect(screen.getByTestId("contact-channel-instagram").querySelector("span").className).toContain("rounded-full");
       // ...and the number is a row, not a pill wedged among the circles.
       for (const cls of ROW_GEOMETRY) expect(revealed.className).toContain(cls);
       expect(revealed.className).not.toContain("rounded-full");

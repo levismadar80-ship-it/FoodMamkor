@@ -9,7 +9,7 @@ import LocationModal from "@/components/LocationModal";
 import MapBottomSheet from "@/components/MapBottomSheet";
 import { haversineKm } from "@/lib/distance";
 import { defaultsForKeys } from "@/lib/filter-taxonomy";
-import { TOGGLE_CHIPS } from "@/lib/map-chips";
+import { TOGGLE_CHIPS, chipStateToParams } from "@/lib/map-chips";
 import { geocodeCity } from "@/lib/places";
 import { producerPoints, hiddenWhenSecondaryOff } from "@/lib/producerPoints";
 import { isRatingSortEnabled } from "@/lib/rating-gate";
@@ -76,7 +76,7 @@ const MOBILE_BANNER_RESERVE =
  * Full split rationale + cycle-break notes in
  * docs/REFACTOR_PLAN.md §File 1 ("Implementation note").
  */
-export default function MapPage() {
+export default function MapPage({ initialChips = {} }) {
   // MEH-473: i18n Wave 3.
   const t = useTranslations();
   // Self-contained hook (zero cross-hook inputs after 11a).
@@ -295,7 +295,10 @@ export default function MapPage() {
     return () => document.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  const feed = useProducersFeed();
+  // MEH-2598: filters carried in from the list (page.js reads the URL).
+  const feed = useProducersFeed({
+    initialParams: chipStateToParams({ categoryKeys: [], ...initialChips }, []),
+  });
   // MEH-1864: "לפי דירוג" is offered only once RATING_SORT_THRESHOLD businesses
   // carry >= 1 review. /map holds the whole feed client-side, so the count is
   // read straight off it — no extra request. An axis already selected when the
@@ -319,6 +322,7 @@ export default function MapPage() {
     // MEH-1670: the viewport filter derives points the same way the marker layer
     // does, so it needs the same layer-toggle state.
     showSecondaryLayer,
+    initialChips,
   });
   const sync = useMapSync({
     chipState: filters.chipState,
@@ -345,7 +349,9 @@ export default function MapPage() {
   const handleMapCitySelected = useCallback((city) => {
     userCityCtx.setCity(city);
     filters.setCityFilter(city);
-    feed.loadProducers({ delivery_city: city });
+    // MEH-2602: same city semantics as the city search (useMapFilters
+    // buildParams) — near_city, or delivery_city when the משלוח chip is on.
+    feed.loadProducers(filters.buildParams(undefined, {}, city));
     // NOTE: deliberately no flyTo here. The initial view must stay anchored at
     // the MEH-932 producer-band default ([32.4, 34.95] zoom 8, set in
     // MapComponent.jsx:297-305) — LocationModal only filters

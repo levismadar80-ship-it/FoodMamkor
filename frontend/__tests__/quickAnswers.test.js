@@ -186,7 +186,8 @@ describe("buildOrderingAnswer (MEH-1302)", () => {
 describe("WhatsAppQuestionChips (MEH-1302)", () => {
   it("renders the 'שאלות נפוצות' heading", () => {
     render(<WhatsAppQuestionChips producer={{ phone: PHONE, city: "חיפה" }} />);
-    expect(screen.getByText("שאלות נפוצות:")).toBeInTheDocument();
+    // MEH-2592 C: the heading lost its trailing colon (approved mock).
+    expect(screen.getByText("שאלות נפוצות")).toBeInTheDocument();
   });
 
   it("nationwide → delivery disclosure reveals the in-page answer", () => {
