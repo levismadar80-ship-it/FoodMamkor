@@ -231,3 +231,30 @@ def test_candidates_unknown_producer_returns_404(client, db):
         headers=_admin_headers(db),
     )
     assert r.status_code == 404
+
+
+def test_candidates_admin_query_replaces_name_and_city(client, db, monkeypatch):
+    """MEH-2602: when name + city found nothing, the admin types the name the
+    business uses on Google; that text is the whole query."""
+    p = make_producer(db)
+    seen = []
+    monkeypatch.setattr(
+        google_rating,
+        "_search_place_candidates",
+        lambda name, city: seen.append((name, city)) or _CANDIDATES,
+    )
+    r = client.get(
+        f"/admin/producers/{p.id}/google-place-candidates",
+        params={"q": "  מאפיית הכפר כפר סבא "},
+        headers=_admin_headers(db),
+    )
+    assert r.status_code == 200
+    assert seen == [("מאפיית הכפר כפר סבא", None)]
+
+    seen.clear()
+    client.get(
+        f"/admin/producers/{p.id}/google-place-candidates",
+        params={"q": "   "},
+        headers=_admin_headers(db),
+    )
+    assert seen == [(p.name, p.city)], "a blank q falls back to name + city"
