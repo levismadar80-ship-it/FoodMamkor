@@ -148,6 +148,10 @@ def list_producers(
     open_for_orders_now: bool | None = None,
     # Producer city filter (producer's own city, not delivery area).
     city: str | None = None,
+    # MEH-2602: the map's «סננו לפי עיר» — businesses located in the city
+    # (own city or any location row) OR delivering to it, located ones first.
+    # delivery_city keeps its strict "delivers to" meaning for the other callers.
+    near_city: str | None = None,
     # DEPRECATED (MEH-2271, MEH-1854 chunk 3a) — kept for one release as an
     # alias onto `availability_state`, not as a column filter. It no longer
     # reads producers.is_available_today at all: `true` selects
@@ -250,6 +254,7 @@ def list_producers(
         kosher=kosher,
         open_for_orders_now=open_for_orders_now,  # MEH-1881
         city=city,
+        near_city=near_city,  # MEH-2602
         is_available_today=is_available_today,
         # MEH-291 — opt-in 4-value enum filter; default listing behavior
         # unchanged in Phase 2 (Q4b — default-hide-on_vacation ships in

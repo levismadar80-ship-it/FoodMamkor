@@ -345,7 +345,9 @@ export default function MapPage() {
   const handleMapCitySelected = useCallback((city) => {
     userCityCtx.setCity(city);
     filters.setCityFilter(city);
-    feed.loadProducers({ delivery_city: city });
+    // MEH-2602: same city semantics as the city search (useMapFilters
+    // buildParams) — near_city, or delivery_city when the משלוח chip is on.
+    feed.loadProducers(filters.buildParams(undefined, {}, city));
     // NOTE: deliberately no flyTo here. The initial view must stay anchored at
     // the MEH-932 producer-band default ([32.4, 34.95] zoom 8, set in
     // MapComponent.jsx:297-305) — LocationModal only filters

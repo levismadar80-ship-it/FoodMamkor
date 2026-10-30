@@ -153,9 +153,15 @@ export function useMapFilters({
   // MEH-14: build the backend params from the current chip state +
   // optional city. `overrides` lets callers swap in the not-yet-committed
   // chip toggle without waiting for React state.
-  const buildParams = (overrideState = chipState, extras = {}) => {
+  const buildParams = (overrideState = chipState, extras = {}, city = cityFilter) => {
     const params = chipStateToParams(overrideState, categories);
-    if (cityFilter) params.delivery_city = cityFilter;
+    // MEH-2602: «סננו לפי עיר» asks "what is there for this city" — located
+    // in it OR delivering to it, located first (near_city). With the משלוח
+    // chip on the question is "who delivers here", so it keeps delivery_city.
+    if (city) {
+      if (overrideState.has_delivery) params.delivery_city = city;
+      else params.near_city = city;
+    }
     return { ...params, ...extras };
   };
 
