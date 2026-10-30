@@ -162,6 +162,13 @@ function CertModal({ src, expiryText, onClose, t }) {
  *   from producerId + badge_code and points at our proxy, never Cloudinary.
  * @param {string|number} [producerId] — required for the cert route; without
  *   it no badge becomes tappable and the strip renders exactly as before.
+ * @param {string} [className] — MEH-2592: the quiet line's own size + colour
+ *   classes, replacing the default `text-[12.5px] text-muted` (the header
+ *   renders the line as an outlined chip in its tags row). REPLACES rather than
+ *   appends: two Tailwind utilities of one property resolve by stylesheet
+ *   order, not by class-string order, so appending would not make the
+ *   caller's win. Layout classes (flex, wrap, gap) always stay. Ignored by
+ *   "chips".
  */
 export default function KashrutBadgeStrip({
   badges,
@@ -170,6 +177,7 @@ export default function KashrutBadgeStrip({
   variant = "chips",
   certs = [],
   producerId = null,
+  className = "",
 }) {
   const t = useTranslations("kashrut");
   const format = useFormatter();
@@ -213,7 +221,7 @@ export default function KashrutBadgeStrip({
       // before MEH-1672.
       <>
         <p
-          className="flex flex-wrap items-center gap-x-1.5 text-[12.5px] text-muted"
+          className={`flex flex-wrap items-center gap-x-1.5 ${className || "text-[12.5px] text-muted"}`}
           title={[...tooltips, expiryText].filter(Boolean).join(" · ")}
           data-testid="kashrut-quiet-line"
         >

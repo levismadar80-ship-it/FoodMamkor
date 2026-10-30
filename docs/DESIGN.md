@@ -374,15 +374,26 @@ front matter for the normative token bindings.
 - **Producer detail — Quiet Direction v3 (MEH-1334, PR #1936 — ADOPTED; supersedes
   the stale sub-details in the surrounding pre-1334 blocks where they conflict):**
   the `/producer/[id]` editorial refresh. **Header = 4 groups:** [name + single
-  ✓מאומתת seal] · [one-liner] · [rating ★ gold + underlined count, or
-  **"אין ביקורות עדיין"** at zero reviews — a rating-slot fallback, not a badge.
-  The word "חדש" is reserved for the *tenure* claim on the card badge
-  (`badges.js`); it never appears in this slot (MEH-1746)] · [meta block —
-  **two lines since MEH-2403 (27/10/2026):** line 1 muted "category · city",
-  the primary category a `<Link>` to `/producers?category=<id>` (the Google
-  Maps / Yelp pattern; absent when there is neither); line 2 the **status**
-  alone, in its own colour — one fact per line; since MEH-2596 (29/10/2026) a
-  small tag: dot + 10% tint of the status colour; text on its own tint measured 29/10: primary 5.01:1, gold-deep 4.90:1; the grey states use `fg-muted` in the tag (5.43:1) because `muted` drops to 4.33:1 on its tint — + one quiet kosher line]. The
+  ✓מאומתת seal] · [one-liner] · [meta block —
+  **since MEH-2592 part ו (30/10/2026) one facts line + a status line + a tags
+  row** (replaces MEH-2403's two-line block of 27/10): the facts line
+  `producer-header-meta` is muted 14px «★ 4.8 · 12 ביקורות · [glyph] קטגוריה ·
+  עיר · מאז 1998» — the rating anchor opens it **only when reviews exist**
+  (at zero reviews the slot is empty — the MEH-1411/1746 «אין ביקורות עדיין»
+  pill is retired, Sapir 30/10: Wolt / Booking / Airbnb show nothing there
+  until a review exists), the primary category is a `<Link>` to `/producers?category=<id>`
+  in `text-text` with the category's own **registry glyph + colour** before it
+  (`lib/category-registry`, the same pair as its map pin; an unknown category
+  gets no glyph), city, then «מאז»; the **status** stays alone on the next line
+  (`producer-header-status-line` — Sapir's call: a longer tags row must never
+  crowd it); then `producer-header-tags`, outlined 13px chips on
+  `surface-card` for the fact tags — today only kosher, rendered as ONE chip
+  however many certificates it lists (up to 8 codes wrap inside it), absent
+  when there is nothing to tag; the gluten sentence stays plain text under
+  all of it. Status tag since MEH-2596 (29/10/2026): dot + 10% tint of the
+  status colour; text on its own tint measured 29/10: primary 5.01:1,
+  gold-deep 4.90:1; the grey states use `fg-muted` in the tag (5.43:1)
+  because `muted` drops to 4.33:1 on its tint]. The
   page's ONLY order status is that coloured tag on the status line — open=`primary`,
   "לא מקבל הזמנות כרגע"=`muted`, "בחופשה · חוזרים ב־{תאריך}"=**`gold-deep`
   #7a5a10** (5.61:1 on cream, AA; the vacation banner was removed — the status
