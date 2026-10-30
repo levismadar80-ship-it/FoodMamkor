@@ -24,6 +24,7 @@ import { primaryPoint } from "@/lib/producerPoints";
 import OwnerSectionEditLink from "@/components/OwnerSectionEditLink";
 // MEH-1334 chunk 3: "מאחורי העסק" — data-gated owner card (Z4).
 import OwnerCard from "./OwnerCard";
+import ProducerActivities from "./ProducerActivities";
 // MEH-1875: the weekly order-window schedule as a headed Info block. Lives in
 // OrderWindowStrip.jsx beside OrderWindowCtaNote (ContactCard's consumer).
 import { OrderWindowScheduleBlock } from "./OrderWindowStrip";
@@ -592,6 +593,9 @@ export default function ProducerSections({
           )}
         </section>
       )}
+
+      {/* MEH-2602: the business's open group buys + upcoming experiences. */}
+      <ProducerActivities producerId={producer.id} />
 
       {/* MEH-1168 P3 (decision A): the editorial DeliveryBlock now serves ALL
           producers — the legacy delivery_areas table retired from this page. It

@@ -41,6 +41,7 @@ vi.mock("next-intl", () => ({
     // interpolating the sentinel here, not returning a pre-split literal.
     if (key === "group_buys.delivery.fee") return `משלוח: ${values.amount}`;
     if (key === "group_buys.delivery.fee_free") return "משלוח חינם";
+    if (key === "group_buys.delivery.fee_from") return `משלוח מ-${values.amount}`;
     return key;
   },
   // MEH-1301: ProducerCard reads useLocale() to pick the distance unit
@@ -641,6 +642,25 @@ describe("ProducerCard — delivery fee row (MEH-1678)", () => {
     const row = screen.getByTestId("card-delivery-fee");
     expect(row).toHaveTextContent("משלוח חינם");
     expect(row).not.toHaveTextContent("0₪");
+  });
+
+  // MEH-2602: per-area overrides reach the card, as they reach the page.
+  it("states the cheapest area fee as a 'from' price when areas differ", () => {
+    render(
+      <ProducerCard
+        producer={{
+          ...fullProducer,
+          delivery_fee: 25,
+          delivery_areas: [
+            { city: "חדרה", delivery_fee: 20 },
+            { city: "זכרון יעקב", delivery_fee: null },
+          ],
+        }}
+      />,
+    );
+    const row = screen.getByTestId("card-delivery-fee");
+    expect(row).toHaveTextContent("משלוח מ-20₪");
+    expect(row).not.toHaveTextContent("25");
   });
 
   it("renders no row at all when delivery_fee is null (not stated)", () => {

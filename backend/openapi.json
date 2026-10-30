@@ -17913,6 +17913,23 @@
               ],
               "title": "City"
             }
+          },
+          {
+            "in": "query",
+            "name": "producer_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Producer Id"
+            }
           }
         ],
         "responses": {
@@ -18262,6 +18279,23 @@
               "default": "open",
               "title": "Status",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "producer_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Producer Id"
             }
           }
         ],
