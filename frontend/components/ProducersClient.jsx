@@ -545,6 +545,17 @@ export default function ProducersClient({
     // MEH-2294: the filtered refetch now happens in the [effectiveSort] effect.
     trackEvent("producers_sort_change", { sort: next });
   };
+  // MEH-2616: the location answer can land seconds after the pick, while the
+  // chips/search stay usable. The callback calls the LATEST applySort through
+  // this ref, so it syncs the URL with the current filters, not the ones
+  // captured at pick time. `mountedRef` drops an answer that lands after unmount.
+  const applySortRef = useRef(applySort);
+  applySortRef.current = applySort;
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
 
   const requestDistanceSort = () => {
     if (geoSortPending) return;
@@ -555,6 +566,7 @@ export default function ProducersClient({
     setGeoSortPending(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
+        if (!mountedRef.current) return;
         setGeoSortPending(false);
         const { latitude: lat, longitude: lng } = pos.coords || {};
         if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
@@ -562,9 +574,10 @@ export default function ProducersClient({
           return;
         }
         setUserLocation(lat, lng);
-        applySort(SORT_DISTANCE);
+        applySortRef.current(SORT_DISTANCE);
       },
       (err) => {
+        if (!mountedRef.current) return;
         setGeoSortPending(false);
         // Never surface GeolocationPositionError.message (English-only,
         // developer-facing). These strings name no city picker — /producers

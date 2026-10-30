@@ -215,7 +215,6 @@ const distanceCalls = () =>
   apiGet.mock.calls.filter(([url, cfg]) => url === "/producers" && cfg?.params?.sort === "distance");
 
 describe("ProducersClient distance sort (MEH-2294)", () => {
-
   it("picking distance syncs ?sort=distance and fetches with lat+lng and no radius", async () => {
     setUserLocation(LAT, LNG);
     render(<ProducersClient {...PROPS} />);
@@ -327,6 +326,36 @@ describe("ProducersClient distance as a location trigger (MEH-2616)", () => {
     expect(toastInfo).toHaveBeenCalledWith("map.client.errors.permission_denied");
     expect(screen.getByTestId("producers-sort")).toHaveValue("newest");
     expect(sortCalls()).toHaveLength(0);
+  });
+
+  it.each([
+    [2, "map.client.errors.position_unavailable"],
+    [3, "map.client.errors.timeout"],
+    [99, "map.client.errors.gps_unknown"],
+  ])("error code %i: toast %s, order unchanged", (code, key) => {
+    getCurrentPosition.mockImplementation((_ok, fail) => fail({ code }));
+    render(<ProducersClient {...PROPS} />);
+    fireEvent.change(screen.getByTestId("producers-sort"), { target: { value: "distance" } });
+    expect(toastInfo).toHaveBeenCalledWith(key);
+    expect(screen.getByTestId("producers-sort")).toHaveValue("newest");
+  });
+
+  it("no geolocation API: error toast, no request", () => {
+    delete navigator.geolocation;
+    render(<ProducersClient {...PROPS} />);
+    fireEvent.change(screen.getByTestId("producers-sort"), { target: { value: "distance" } });
+    expect(toastError).toHaveBeenCalledWith("map.client.errors.no_gps");
+    expect(sortCalls()).toHaveLength(0);
+  });
+
+  it("an answer after unmount is dropped (no stored fix)", () => {
+    let answer;
+    getCurrentPosition.mockImplementation((ok) => { answer = ok; });
+    const { unmount } = render(<ProducersClient {...PROPS} />);
+    fireEvent.change(screen.getByTestId("producers-sort"), { target: { value: "distance" } });
+    unmount();
+    answer({ coords: { latitude: LAT, longitude: LNG } });
+    expect(localStorage.getItem("user_location")).toBeNull();
   });
 
   it("pending: the select is disabled while the browser answers", () => {
