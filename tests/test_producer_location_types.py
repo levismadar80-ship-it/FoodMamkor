@@ -33,7 +33,7 @@ class TestCitiesEndpoint:
         resp = client.get("/cities?q=תל")
         assert resp.status_code == 200
         cities = resp.json()
-        assert "תל אביב" in cities
+        assert "תל אביב-יפו" in cities  # MEH-2602: stored canonical (alias of «תל אביב»)
         assert "תל מונד" in cities
         assert "חיפה" not in cities
 
