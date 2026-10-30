@@ -17,6 +17,7 @@ import { useAuth } from "@/lib/auth-context";
 
 import ContactCard from "./components/ContactCard";
 import ContactSidebar from "./components/ContactSidebar";
+import OtherBusinesses from "./components/OtherBusinesses";
 import OwnerEditBar from "./components/OwnerEditBar";
 import ProducerHeader from "./components/ProducerHeader";
 import ProducerSections from "./components/ProducerSections";
@@ -264,8 +265,6 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
           <ProducerSections
             producer={producer}
             events={events}
-            similarProducers={similarProducers}
-            nearbyProducers={nearbyProducers}
             sectionRefs={sectionRefs}
             reviewsContainerRef={reviewsContainerRef}
             reviewsVisible={reviewsVisible}
@@ -276,6 +275,15 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
         {/* ================= Sticky contact sidebar ================= */}
         <ContactSidebar producer={producer} isVacation={isVacation} />
       </div>
+
+      {/* MEH-2592: similar + nearby businesses — after the business's own fine
+          print, full width below both columns, so the page finishes with the
+          business before it points elsewhere. */}
+      <OtherBusinesses
+        producer={producer}
+        similarProducers={similarProducers}
+        nearbyProducers={nearbyProducers}
+      />
 
       {/* StickyContactBar — mobile only, IO-driven, always mounted. */}
       <StickyContactBar
