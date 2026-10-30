@@ -2484,7 +2484,7 @@ Test each form on real mobile + desktop. The spinner should be visible for the n
 - [ ] Footer — rate-limit error (429, after 6 quick signups) → button recovers to "הצטרפי"
 - [ ] MEH-2611 — הרשמה עם מייל בדיקה — Resend → Contacts — הכתובת מופיעה ב-segment `newsletter`, לא מסומנת unsubscribed
 - [ ] MEH-2611 — קישור «לבטל הרשמה» ממייל הפתיחה — Resend → Contacts — אותה כתובת מסומנת unsubscribed
-- [ ] MEH-2611 — מייל הפתיחה — אין «פעם בשבוע» ואין «יום שני»; מופיע «לא יותר מפעם בחודש»
+- [ ] MEH-2611 — מייל הפתיחה — אין התחייבות לתדירות (לא «פעם בשבוע», לא «יום שני»); מופיע «בלי ספאם, ואפשר לבטל בכל רגע»
 
 ### Cross-cutting accessibility checks
 
