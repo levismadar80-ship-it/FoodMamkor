@@ -13,6 +13,7 @@ import {
 // useState below for the three-way drift that made a hand-written copy a bad
 // idea, and for why `categoryKeys` stays out of it.
 import { defaultsForKeys, homeParamFor } from "@/lib/filter-taxonomy";
+import { chipsFromQuery } from "@/lib/filter-url";
 import { haversineKm } from "@/lib/distance";
 import { producerInBounds, producerPoints } from "@/lib/producerPoints";
 
@@ -106,9 +107,6 @@ export function useMapFilters({
   // MEH-2170: the one-time mount catalog from useProducersFeed. null = not
   // loaded yet, and then no toggle is hidden.
   catalogSnapshot = null,
-  // MEH-2598: `{ key: true }` read from the URL by the page (lib/filter-url),
-  // so a filter set on the list arrives switched on.
-  initialChips = {},
 }) {
   const [cityFilter, setCityFilter] = useState("");
   const [committedBounds, setCommittedBounds] = useState(null);
@@ -151,16 +149,32 @@ export function useMapFilters({
   const [chipState, setChipState] = useState(() => ({
     categoryKeys: [],
     ...defaultsForKeys(TOGGLE_CHIPS.map((c) => c.key)),
-    ...initialChips,
   }));
+  const urlHydrated = useRef(false);
 
   // MEH-2598: mirror the attribute chips into the URL so a refresh, the back
   // button, a shared link and the «הצגה ברשימה»-style hops all keep them. The
   // shallow History API, not router.replace — the MEH-1293 reason (a router
   // navigation re-runs the server page and its SSR fetch on every toggle).
   // Other params on the URL (utm_*, …) are kept; only axis params are rewritten.
+  //
+  // First run: READ instead of write — a filter set on the list
+  // (lib/filter-url) arrives switched on. Done after mount rather than in the
+  // initial state so the server render and hydration agree and /map stays a
+  // static route; useProducersFeed reads the same URL for its first fetch.
   useEffect(() => {
     if (typeof window === "undefined") return;
+    if (!urlHydrated.current) {
+      urlHydrated.current = true;
+      const found = chipsFromQuery(
+        new URLSearchParams(window.location.search),
+        TOGGLE_CHIPS.map((c) => c.key),
+      );
+      if (Object.keys(found).length > 0) {
+        setChipState((prev) => ({ ...prev, ...found }));
+        return;
+      }
+    }
     const url = new URL(window.location.href);
     // homeParamFor: home's `?delivery=1` alias is read on arrival, then
     // rewritten to the one spelling so the URL never says it twice.
