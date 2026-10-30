@@ -345,3 +345,15 @@ describe("MEH-2173 — the state behind it (useHomePage)", () => {
     expect(result.current.chips.vegan).toBe(true);
   });
 });
+
+describe("MEH-2598 — home «הצגה במפה» carries the active filters", () => {
+  it("is a bare /map link when no filter is on", () => {
+    render(<HomeProducersGrid {...props()} />);
+    expect(screen.getByTestId("home-map-link").getAttribute("href")).toBe("/map");
+  });
+
+  it("carries the active chips in the /map vocabulary (has_delivery, not home's ?delivery)", () => {
+    render(<HomeProducersGrid {...props({ chips: { has_delivery: true, vegan: true } })} />);
+    expect(screen.getByTestId("home-map-link").getAttribute("href")).toBe("/map?has_delivery=1&vegan=1");
+  });
+});
