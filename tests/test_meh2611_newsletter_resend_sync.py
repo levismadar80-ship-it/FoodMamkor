@@ -99,7 +99,7 @@ def _fake_resend(
             err = get_fail or (None if existing else _NotFound("not found"))
             if err:
                 raise err
-            return {"email": email}
+            return {"email": email, "unsubscribed": existing == "opted_out"}
 
         @staticmethod
         def remove(email):
@@ -183,9 +183,17 @@ class TestSyncService:
     def test_site_unsubscribe_deletes_contact(self, fake):
         # Mirrors the row delete, so a later genuine site signup starts clean
         # (create path) instead of staying silently unsubscribed in Resend.
-        log, reported = fake()
+        log, reported = fake(existing=True)
         newsletter_sync.sync_unsubscribe("bye@gmail.com")
-        assert log == [("contacts.remove", "bye@gmail.com")]
+        assert ("contacts.remove", "bye@gmail.com") in log
+
+    def test_footer_opt_out_survives_site_unsubscribe(self, fake):
+        # Deleting a flagged contact would erase the footer opt-out and let an
+        # anonymous signup re-create it as subscribed.
+        log, reported = fake(existing="opted_out")
+        newsletter_sync.sync_unsubscribe("bye@gmail.com")
+        assert not any(c[0] == "contacts.remove" for c in log)
+        assert reported == []
         assert reported == []
 
     def test_unsubscribe_of_unknown_contact_is_quiet(self, fake):
@@ -194,7 +202,7 @@ class TestSyncService:
         assert reported == []
 
     def test_failure_is_reported_never_raised(self, fake):
-        _, reported = fake(fail=RuntimeError("restricted_api_key"))
+        _, reported = fake(existing=True, fail=RuntimeError("restricted_api_key"))
         newsletter_sync.sync_unsubscribe("x@gmail.com")
         assert len(reported) == 1
 

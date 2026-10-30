@@ -130,13 +130,19 @@ def sync_unsubscribe(email: str) -> None:
     Deleted rather than flagged `unsubscribed`: the site forgets the address
     entirely, and a later genuine signup on the site then starts clean. An
     opt-out made from a Broadcast footer is different: it stays as a flag in
-    Resend and `sync_subscribe` never clears it.
+    Resend and `sync_subscribe` never clears it, so a contact already flagged
+    is left in place rather than deleted (deleting would erase that opt-out
+    and let an anonymous signup re-create the address as subscribed).
     """
     if _skip(email):
         return
     try:
         resend = _resend()
         if resend is None:
+            return
+        contact = resend.Contacts.get(email=email) or {}
+        if contact.get("unsubscribed"):
+            logger.info("[NEWSLETTER] %s already opted out in Resend", _mask(email))
             return
         resend.Contacts.remove(email=email)
         logger.info("[NEWSLETTER] Removed %s from Resend", _mask(email))
