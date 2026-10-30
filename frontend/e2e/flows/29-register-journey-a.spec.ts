@@ -289,48 +289,55 @@ test.describe("MEH-215 journey A — consumer registration (email + password)", 
     await expect(email).not.toHaveAttribute("aria-invalid", "true");
   });
 
-  test("A3 — submit stays disabled until every rule passes, one rule at a time", async ({
+  test("A3 — submit is always enabled; each click names the first failing rule and sends nothing", async ({
     page,
   }) => {
     mark(
       "superseded",
       'A3 "אימייל כבר קיים → המייל כבר רשום": removed by MEH-328 anti-enumeration; already struck through on the card',
     );
+    // MEH-2623: the button used to stay disabled until every rule passed — a
+    // grey button with no reason, and Chrome autofill lost the first tap. Now
+    // it is always enabled; a click with a failing rule shows that rule's
+    // message, moves focus to the field, and never reaches the backend.
 
     await stubPasswordCheck(page); // types a 12+ char password — see the header note
+    let registerPosts = 0;
+    page.on("request", (r) => {
+      if (r.method() === "POST" && /\/auth\/register(?:\?|$)/.test(r.url())) registerPosts += 1;
+    });
     await page.goto("/register");
 
     const submit = page.getByTestId("register-submit");
+    const formError = page.getByTestId("register-error");
+    const clickExpect = async (message: string, focusedTestId: string) => {
+      await expect(submit).toBeEnabled();
+      await submit.click();
+      await expect(formError).toHaveText(message);
+      await expect(page.getByTestId(focusedTestId)).toBeFocused();
+    };
 
-    // Empty form.
-    await expect(submit).toBeDisabled();
-
-    // Name only.
-    await page.getByTestId("register-name").fill("שמדר לוי");
-    await expect(submit).toBeDisabled();
+    // Empty form → the name rule fires first.
+    await clickExpect("שם מלא הוא שדה חובה", "register-name");
 
     // …+ a malformed email.
+    await page.getByTestId("register-name").fill("שמדר לוי");
     await page.getByTestId("register-email").fill("not-an-email");
-    await expect(submit).toBeDisabled();
+    await clickExpect(EMAIL_INVALID, "register-email");
 
-    // …+ a well-formed email, still no password.
+    // …+ a password one character under the policy floor.
     await page.getByTestId("register-email").fill("journey-a@example.com");
-    await expect(submit).toBeDisabled();
-
-    // …+ a password one character under the policy floor. The live checklist
-    // appears (2 tiles: length, breach) and submit is still refused.
     await page.getByTestId("register-password").fill("a".repeat(PASSWORD_MIN_LENGTH - 1));
     await expect(page.getByTestId("register-form").locator("ul[aria-live] li")).toHaveCount(2);
-    await expect(submit).toBeDisabled();
+    await clickExpect(`סיסמתך חייבת להכיל לפחות ${PASSWORD_MIN_LENGTH} תווים`, "register-password");
 
     // …+ a long-enough password, but the terms box unchecked.
     await page.getByTestId("register-password").fill(VALID_PASSWORD);
     await expect(page.getByTestId("register-terms")).not.toBeChecked();
-    await expect(submit).toBeDisabled();
+    await clickExpect("יש לאשר את תנאי השימוש לפני ההצטרפות", "register-terms");
 
-    // …+ terms accepted → and only now does it enable.
-    await page.getByTestId("register-terms").check();
-    await expect(submit).toBeEnabled();
+    // None of the refused clicks reached the backend.
+    expect(registerPosts).toBe(0);
   });
 
   test("A4 — submit shows the in-flight state, then the inbox screen (no redirect)", async ({

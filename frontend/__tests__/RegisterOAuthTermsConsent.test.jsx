@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import RegisterClient from "@/app/[locale]/register/RegisterClient";
 
 /**
@@ -31,8 +31,9 @@ vi.mock("next-intl", () => ({
     return t;
   },
 }));
+const registerMock = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/auth-context", () => ({
-  useAuth: () => ({ register: vi.fn().mockResolvedValue({}) }),
+  useAuth: () => ({ register: registerMock }),
 }));
 
 // OAuth must render → a Google client id has to be present.
@@ -62,7 +63,9 @@ vi.mock("@phosphor-icons/react", () => ({
 }));
 vi.mock("@/components/ButtonSpinner", () => ({ default: () => null }));
 vi.mock("@/lib/api", () => ({ default: { post: vi.fn().mockResolvedValue({}) } }));
-vi.mock("@/lib/passwordMessages", () => ({ firstFailureMessage: () => "" }));
+vi.mock("@/lib/passwordMessages", () => ({
+  firstFailureMessage: (failures) => `policy:${failures[0]}`,
+}));
 vi.mock("@/lib/validators", () => ({
   validateEmail: (value) =>
     typeof value === "string" && value.includes("@") && value.includes("."),
@@ -165,15 +168,46 @@ describe("MEH-2577 — /register opens with Google/Apple, under a consent line",
     expect(line.compareDocumentPosition(form) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it("the checkbox still gates the email form's submit", () => {
+  it("the checkbox still gates the email form's submit", async () => {
+    // MEH-2623: the gate moved from a disabled button to the click. Everything
+    // valid but the box → the click is refused with the terms message and
+    // register() is never called; ticking the box lets the same click through.
+    registerMock.mockReset();
+    registerMock.mockResolvedValue({});
     render(<RegisterClient />);
     fireEvent.change(screen.getByTestId("register-name"), { target: { value: "דנה" } });
     fireEvent.change(screen.getByTestId("register-email"), { target: { value: "dana@example.org" } });
     fireEvent.change(screen.getByTestId("pw"), { target: { value: "a-long-enough-pw" } });
     const submit = screen.getByTestId("register-submit");
-    expect(submit.disabled).toBe(true); // everything valid but the box
-    fireEvent.click(screen.getByTestId("register-terms"));
     expect(submit.disabled).toBe(false);
+    fireEvent.click(submit);
+    expect(screen.getByTestId("register-error")).toHaveTextContent(
+      "auth.register.producer.validation.terms_required",
+    );
+    expect(registerMock).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByTestId("register-terms"));
+    fireEvent.click(submit);
+    await waitFor(() => expect(registerMock).toHaveBeenCalledTimes(1));
+  });
+
+  it("a breached password is refused by the server and explained, not swallowed", async () => {
+    // MEH-2623: the button no longer waits on the client-side breach check, so
+    // a leaked password reaches register(). The backend answers 422 {failures};
+    // the form must show the mapped message in the alert, not a generic one.
+    registerMock.mockReset();
+    registerMock.mockRejectedValue({
+      response: { status: 422, data: { detail: { failures: ["too_common"] } } },
+    });
+    render(<RegisterClient />);
+    fireEvent.change(screen.getByTestId("register-name"), { target: { value: "דנה" } });
+    fireEvent.change(screen.getByTestId("register-email"), { target: { value: "dana@example.org" } });
+    fireEvent.change(screen.getByTestId("pw"), { target: { value: "password123456" } });
+    fireEvent.click(screen.getByTestId("register-terms"));
+    fireEvent.click(screen.getByTestId("register-submit"));
+    await waitFor(() =>
+      expect(screen.getByTestId("register-error")).toHaveTextContent("policy:too_common"),
+    );
+    expect(screen.getByTestId("register-error").getAttribute("role")).toBe("alert");
   });
 
   it("no provider configured: no buttons, no consent line, no divider — the form alone", () => {
