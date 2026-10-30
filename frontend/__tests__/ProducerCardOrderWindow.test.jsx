@@ -79,6 +79,7 @@ vi.mock("@phosphor-icons/react", () => ({
   // MEH-2584: BadgeRow now imports lib/chip-icons.js (badge glyphs).
   SealCheck: () => null,
   Package: () => null,
+  Storefront: () => null, // MEH-2598: chip-icons on_site
   Certificate: () => null,
   Carrot: () => null,
   GrainsSlash: () => null,

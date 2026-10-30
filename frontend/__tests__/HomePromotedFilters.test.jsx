@@ -189,7 +189,8 @@ describe("MEH-2173 — the sheet", () => {
     // Every axis the flat row used to offer is still reachable — the card's
     // "no removal of any filter capability" line, asserted rather than assumed.
     for (const chip of CHIPS_CONFIG) {
-      if (chip.key === "open_for_orders_now" || chip.key === "no_added_sugar") continue;
+      // Gated axes (zero-data catalog in this fixture) are hidden by design.
+      if (["open_for_orders_now", "no_added_sugar", "on_site"].includes(chip.key)) continue;
       expect(screen.getByTestId(`chip-${chip.key}`)).toBeTruthy();
     }
   });
