@@ -323,6 +323,7 @@ export default function MapPage() {
     allProducers: feed.allProducers,
     // MEH-2170: one-time mount catalog for diet-chip gating (see map-chips.js).
     catalogSnapshot: feed.catalogSnapshot,
+    snapshotPending: feed.snapshotPending,
     categories: feed.categories,
     loadProducers: feed.loadProducers,
     userCity: userCityCtx.city,
@@ -787,13 +788,27 @@ export default function MapPage() {
             <div className="flex items-start justify-between mb-3">
               {/* MEH-826: locked count copy + "near you · {region}" subhead under it */}
               <div>
-                <p className="text-xs text-fg-muted" data-testid="map-list-count">
-                  {/* MEH-2425: zero under active filters names the filters as
-                      the cause, same as the mobile sheet's peek row. */}
-                  {filters.visibleProducers.length === 0 && filters.hasActiveFilters
-                    ? t("map.bottom_sheet.count_filtered_zero")
-                    : t("map.client.business_count", { count: filters.visibleProducers.length })}
-                </p>
+                {/* MEH-2624: while a list load is in flight (the first one, or a
+                    chip reload), a pulse bar holds the count's slot — the same
+                    guard and the same flag the mobile sheet has used since
+                    MEH-1054. Without it the desktop list read
+                    «אין בתי עסק מקומיים באזור» over its own skeleton cards. */}
+                {feed.loading ? (
+                  <span
+                    data-testid="map-list-count-skeleton"
+                    className="skeleton-box rounded-lg inline-block"
+                    style={{ width: "120px", height: "12px" }}
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <p className="text-xs text-fg-muted" data-testid="map-list-count">
+                    {/* MEH-2425: zero under active filters names the filters as
+                        the cause, same as the mobile sheet's peek row. */}
+                    {filters.visibleProducers.length === 0 && filters.hasActiveFilters
+                      ? t("map.bottom_sheet.count_filtered_zero")
+                      : t("map.client.business_count", { count: filters.visibleProducers.length })}
+                  </p>
+                )}
                 {mapRegion && (
                   <p className="text-[11px] text-fg-muted mt-0.5" data-testid="map-list-subhead">{t("map.client.subhead", { region: mapRegion })}</p>
                 )}

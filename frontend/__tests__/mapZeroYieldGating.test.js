@@ -47,6 +47,20 @@ describe("MEH-2170 — visibleMapToggleChips", () => {
     expect(keys(visibleMapToggleChips({ catalogSnapshot: undefined }))).toEqual(keys(TOGGLE_CHIPS));
   });
 
+  it("snapshot still loading → gated chips held back, so none renders then vanishes (map flash, 30/10)", () => {
+    const visible = keys(visibleMapToggleChips({ catalogSnapshot: null, snapshotPending: true }));
+    for (const k of DIET_GATED_KEYS) expect(visible).not.toContain(k);
+    expect(visible).toEqual(nonDiet);
+  });
+
+  it("snapshot still loading → an ACTIVE gated chip (deep link) is kept", () => {
+    const visible = keys(
+      visibleMapToggleChips({ catalogSnapshot: null, snapshotPending: true, chipState: { on_site: true } }),
+    );
+    expect(visible).toContain("on_site");
+    expect(visible).not.toContain("vegan");
+  });
+
   it("an empty catalog hides all five diet chips and keeps every other chip", () => {
     const visible = keys(visibleMapToggleChips({ catalogSnapshot: [] }));
     for (const k of DIET_GATED_KEYS) expect(visible).not.toContain(k);

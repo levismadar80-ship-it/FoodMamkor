@@ -68,6 +68,7 @@ vi.mock("@phosphor-icons/react", () => ({
 // Lazy-load gate: fire the IntersectionObserver callback immediately.
 beforeEach(() => {
   authState.user = null;
+  authState.loading = false;
   apiMock.get.mockReset();
   apiMock.put.mockReset();
   global.IntersectionObserver = class {
@@ -199,6 +200,18 @@ describe("ReviewsSection — zero reviews, reader view: no empty state, only the
     expect(within(hint).getByTestId("reviews-login-link")).toBeInTheDocument();
     expect(screen.queryByTestId("icon-leaf")).toBeNull();
     expect(screen.queryByText(/empty_message/)).toBeNull();
+  });
+
+  // MEH-2624: a signed-in reader saw the login line until /auth/me answered.
+  it("auth still loading: no write hint at all — neither the login line nor the gate line", async () => {
+    authState.loading = true;
+    mockReviews([]);
+    render(<ReviewsSection producerId="p-1" isOwner={false} />);
+    // Same moment the guest case asserts at: the reviews fetch has answered.
+    await waitFor(() => expect(apiMock.get).toHaveBeenCalled());
+    await new Promise((r) => setTimeout(r, 0));
+    expect(screen.queryByTestId("reviews-write-hint")).toBeNull();
+    expect(screen.queryByTestId("reviews-login-link")).toBeNull();
   });
 
   it("empty + owner: the coaching state still renders (owner-only), with no reader hint", async () => {

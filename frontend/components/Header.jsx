@@ -110,7 +110,7 @@ function orderedForSurface(surface, state, order) {
  * chrome is now logo + search only. Desktop nav is untouched.
  */
 export default function Header() {
-  const { user, logout } = useAuth();
+  const { user, logout, loading: authLoading } = useAuth();
   const t = useTranslations();
   // MEH-884: the trust-strip copy lives only in he.json this chunk (en → MEH-472),
   // and request.js loads each locale's own messages with no he-fallback — so the
@@ -493,12 +493,15 @@ export default function Header() {
               // the header CTA pill on purpose to leave search as the single
               // bold action, and that decision stands — this restores
               // reachability without re-opening the real estate it freed.
-              <>
+              // While /auth/me is still answering, the links keep their space
+              // but are not painted: a signed-in visitor otherwise saw
+              // «התחברות · הרשמה» for a second and then the avatar (30/10).
+              <span className={`contents ${authLoading ? "[&>*]:invisible" : ""}`}>
                 {!isLoginPage && <LoginAccount label={t("nav.login")} />}
                 {!isRegisterPage && (
                   <RegisterAccount label={t("nav.register")} />
                 )}
-              </>
+              </span>
             )}
 
             {/* MEH-907: add-business CTA pill removed from the Header. The
