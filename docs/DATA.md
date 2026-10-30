@@ -877,7 +877,10 @@ GET    /producers/me/analytics                    producer  — feature/producer
                                                               favorites, the canonical interest record — decision A);
                                                               average_rating + total_reviews;
                                                               home_products_count; views_by_day (30-entry zero-filled
-                                                              series); top_cities (top 5, excludes NULL city)
+                                                              series); top_cities (top 5, excludes NULL city);
+                                                              coverage_requests (MEH-1676: [{city, count}], top 5,
+                                                              last 30 days, from producer_whatsapp_clicks rows whose
+                                                              city IS NOT NULL — i.e. «לא מגיעים ל{עיר}?» clicks only)
 
 # Producer detail — public (tracked, anonymous)
 GET    /producers/{id}?from=search|map|...        public    — GET that also logs a producer_page_views row

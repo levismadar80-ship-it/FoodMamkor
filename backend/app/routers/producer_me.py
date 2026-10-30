@@ -1408,6 +1408,34 @@ def producer_analytics(
     )
     top_cities = [{"city": row.city, "count": int(row.count)} for row in top_city_rows]
 
+    # MEH-1676 ── coverage_requests: "לא מגיעים ל{עיר}?" clicks grouped by
+    # the city they asked about, last 30 days, most-requested first. The city
+    # has been captured since MEH-1677 (`producer_whatsapp_clicks.city`) and
+    # no screen read it until now. `city IS NOT NULL` is the whole filter: an
+    # ordinary WhatsApp click stores NULL there by construction (only
+    # CoverageRequestCta sends a body), so NULL means "not a coverage click"
+    # and the two kinds cannot be confused. Counted raw, like the WhatsApp KPI
+    # above — the table carries no viewer hash — so one visitor tapping twice
+    # is two requests; the dashboard copy says "פניות", not "אנשים".
+    coverage_rows = (
+        db.query(
+            ProducerWhatsAppClick.city,
+            func.count(ProducerWhatsAppClick.id).label("count"),
+        )
+        .filter(
+            ProducerWhatsAppClick.producer_id == pid,
+            ProducerWhatsAppClick.city.isnot(None),
+            ProducerWhatsAppClick.clicked_at >= utc_now() - timedelta(days=30),
+        )
+        .group_by(ProducerWhatsAppClick.city)
+        .order_by(func.count(ProducerWhatsAppClick.id).desc(), ProducerWhatsAppClick.city)
+        .limit(5)
+        .all()
+    )
+    coverage_requests = [
+        {"city": row.city, "count": int(row.count)} for row in coverage_rows
+    ]
+
     # MEH-57 ── conversion_rate: contact actions / profile views × 100 (30d).
     #
     # MEH-2157: the numerator is EVERY logged contact action — the WhatsApp CTA
@@ -1485,6 +1513,7 @@ def producer_analytics(
         "home_products_count": int(home_products_count),
         "views_by_day": views_by_day,
         "top_cities": top_cities,
+        "coverage_requests": coverage_requests,
         # MEH-2529: `rank_in_city` (a per-request city ranking query) and
         # `profile_strength` (a second completeness score beside the
         # dashboard's own, MEH-1002) were computed here and read by no screen.
