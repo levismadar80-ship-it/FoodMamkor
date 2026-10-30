@@ -63,7 +63,9 @@ vi.mock("@phosphor-icons/react", () => ({
 }));
 vi.mock("@/components/ButtonSpinner", () => ({ default: () => null }));
 vi.mock("@/lib/api", () => ({ default: { post: vi.fn().mockResolvedValue({}) } }));
-vi.mock("@/lib/passwordMessages", () => ({ firstFailureMessage: () => "" }));
+vi.mock("@/lib/passwordMessages", () => ({
+  firstFailureMessage: (failures) => `policy:${failures[0]}`,
+}));
 vi.mock("@/lib/validators", () => ({
   validateEmail: (value) =>
     typeof value === "string" && value.includes("@") && value.includes("."),
@@ -186,6 +188,26 @@ describe("MEH-2577 — /register opens with Google/Apple, under a consent line",
     fireEvent.click(screen.getByTestId("register-terms"));
     fireEvent.click(submit);
     await waitFor(() => expect(registerMock).toHaveBeenCalledTimes(1));
+  });
+
+  it("a breached password is refused by the server and explained, not swallowed", async () => {
+    // MEH-2623: the button no longer waits on the client-side breach check, so
+    // a leaked password reaches register(). The backend answers 422 {failures};
+    // the form must show the mapped message in the alert, not a generic one.
+    registerMock.mockReset();
+    registerMock.mockRejectedValue({
+      response: { status: 422, data: { detail: { failures: ["too_common"] } } },
+    });
+    render(<RegisterClient />);
+    fireEvent.change(screen.getByTestId("register-name"), { target: { value: "דנה" } });
+    fireEvent.change(screen.getByTestId("register-email"), { target: { value: "dana@example.org" } });
+    fireEvent.change(screen.getByTestId("pw"), { target: { value: "password123456" } });
+    fireEvent.click(screen.getByTestId("register-terms"));
+    fireEvent.click(screen.getByTestId("register-submit"));
+    await waitFor(() =>
+      expect(screen.getByTestId("register-error")).toHaveTextContent("policy:too_common"),
+    );
+    expect(screen.getByTestId("register-error").getAttribute("role")).toBe("alert");
   });
 
   it("no provider configured: no buttons, no consent line, no divider — the form alone", () => {
