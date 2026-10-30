@@ -78,7 +78,11 @@ export const OPEN_NOW_CHIP_MIN = 5;
 // exposed on more surfaces — not a new axis awaiting data. Retro-gating it here
 // would hide a filter that already works on /map.
 export const DIET_CHIP_MIN = 5;
-export const GATED_DIET_KEYS = ["no_added_sugar"];
+// MEH-2598: `on_site` is a NEW axis (not a diet one — the list keeps its name
+// because three call sites import it), so it starts gated like any new axis:
+// few businesses state opening hours yet, and a «קנייה במקום» chip that
+// returns nothing looks broken. Counted on the server's `sells_on_site`.
+export const GATED_DIET_KEYS = ["no_added_sugar", "on_site"];
 
 /**
  * MEH-2131 — should the "פתוחים להזמנות עכשיו" chip render at all?
@@ -174,6 +178,7 @@ export function openNowChipVisible({
 export function visibleGatedDietKeys(producers = [], chips = {}) {
   const field = {
     no_added_sugar: "has_no_added_sugar_products",
+    on_site: "sells_on_site", // MEH-2598
   };
   return GATED_DIET_KEYS.filter((key) => {
     if (chips[key]) return true;

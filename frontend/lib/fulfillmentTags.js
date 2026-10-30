@@ -1,4 +1,4 @@
-import { Truck, Package } from "@phosphor-icons/react";
+import { Truck, Package, Storefront } from "@phosphor-icons/react";
 
 // MEH-2561: moved here verbatim from MapProducerCard.jsx so the owner dashboard
 // (DeliveryCard's "בכרטיס במפה יופיע" preview) renders the SAME tag the /map
@@ -41,29 +41,38 @@ export const FULFILLMENT_ICON_PX = 13;
  * here, so a future fallback to a legacy operand cannot be added without
  * widening the signature first.
  *
- * MEH-2438 follow-up widened it once, deliberately: `storeWithHours` splits the
- * "neither" cell only (a shop with fixed hours reads «קנייה במקום» instead of
- * the arranged tag). It never decides whether delivery or pickup is shown.
+ * MEH-2438 follow-up widened it once, deliberately: `storeWithHours` (a shop
+ * with fixed hours) reads «קנייה במקום».
+ *
+ * MEH-2598 made «קנייה במקום» a FILTER (`?on_site=true`), so it is now a
+ * service tag like the other two: green with a glyph, and shown ALONGSIDE
+ * delivery / pickup rather than only in the "neither" cell. Otherwise a store
+ * that also delivers would be returned by the on-site filter while its card
+ * said only «משלוח» — the exact tag/filter disagreement MEH-1836 closed. On
+ * /map the input is the server's `sells_on_site` (the predicate's own answer);
+ * the owner dashboard preview passes its live-form equivalent.
+ *
+ * Keys: with ONE service the delivery / pickup keys keep their `_only` names
+ * (MEH-2046 test ids); with two or more each tag uses its bare key.
+ * «בתיאום מראש» remains the only neutral tag — the one cell no filter returns.
  */
 export function fulfillmentTags({ delivers, offersPickup, storeWithHours }, t) {
-  if (delivers && offersPickup) {
-    return [
-      { key: "delivery", label: t("fulfillment.delivery"), Icon: Truck },
-      { key: "pickup", label: t("fulfillment.pickup"), Icon: Package },
-    ];
+  const count = [delivers, offersPickup, storeWithHours].filter(Boolean).length;
+  if (count === 0) {
+    return [{ key: "arranged", label: t("fulfillment.arranged"), Icon: null, neutral: true }];
   }
+  const solo = count === 1;
+  const tags = [];
   if (delivers) {
-    return [{ key: "delivery_only", label: t("fulfillment.delivery_only"), Icon: Truck }];
+    const key = solo ? "delivery_only" : "delivery";
+    tags.push({ key, label: t(`fulfillment.${key}`), Icon: Truck });
   }
   if (offersPickup) {
-    return [{ key: "pickup_only", label: t("fulfillment.pickup_only"), Icon: Package }];
+    const key = solo ? "pickup_only" : "pickup";
+    tags.push({ key, label: t(`fulfillment.${key}`), Icon: Package });
   }
-  // MEH-2438 follow-up: no declared service axis. A shop with fixed hours is
-  // not "by arrangement" — you walk in — so it gets its own neutral tag. Both
-  // tags sit in the set the /map service filter excludes, so the tag and the
-  // filter still cannot disagree; `storeWithHours` only splits that cell.
   if (storeWithHours) {
-    return [{ key: "on_site", label: t("fulfillment.on_site"), Icon: null, neutral: true }];
+    tags.push({ key: "on_site", label: t("fulfillment.on_site"), Icon: Storefront });
   }
-  return [{ key: "arranged", label: t("fulfillment.arranged"), Icon: null, neutral: true }];
+  return tags;
 }

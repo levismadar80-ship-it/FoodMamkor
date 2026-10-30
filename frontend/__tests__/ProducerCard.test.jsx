@@ -144,6 +144,7 @@ vi.mock("@phosphor-icons/react", () => ({
   Truck: (props) => <span data-testid="icon-truck" {...props} />,
   // MEH-2584: BadgeRow now imports lib/chip-icons.js (badge glyphs).
   Package: () => null,
+  Storefront: () => null, // MEH-2598: chip-icons on_site
   Certificate: () => null,
   Carrot: () => null,
   GrainsSlash: () => null,

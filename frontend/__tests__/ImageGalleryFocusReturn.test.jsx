@@ -52,6 +52,7 @@ vi.mock("@phosphor-icons/react", () => ({
   SealCheck: () => null,
   Truck: () => null,
   Package: () => null,
+  Storefront: () => null, // MEH-2598: chip-icons on_site
   Certificate: () => null,
   Leaf: () => null,
   Carrot: () => null,

@@ -41,7 +41,8 @@ const withFlag = (key, n) => {
 
 describe("MEH-1934 — diet chip data gate", () => {
   it("gates exactly the new axis, and never the four that already have data", () => {
-    expect(GATED_DIET_KEYS).toEqual(["no_added_sugar"]);
+    // MEH-2598: on_site is the second new axis, gated on sells_on_site.
+    expect(GATED_DIET_KEYS).toEqual(["no_added_sugar", "on_site"]);
     // MEH-2047: and the withdrawn axis is not gated either — it is GONE. A
     // stale entry here would keep a chip key alive that no config defines.
     expect(GATED_DIET_KEYS).not.toContain("low_carb");

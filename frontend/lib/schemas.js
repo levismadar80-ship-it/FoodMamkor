@@ -245,6 +245,7 @@ export const ProducerListSchema = z.object({
   // and stripping a field the payload carries is how this list rots.
   delivers: z.boolean().nullable().optional(),               // → delivery badge + card fulfillment tag
   offers_pickup: z.boolean().nullable().optional(),          // → card fulfillment tag (PR-3)
+  sells_on_site: z.boolean().nullable().optional(),          // → card «קנייה במקום» tag (MEH-2598)
   products_count: z.number().nullable().optional(),          // → products
   // MEH-1719: the SEVENTH recurrence, and the first one that is not about
   // badges at all. MEH-1704 declared what `badges.js::earnsBadge` reads and

@@ -92,6 +92,7 @@ describe("FilterSheet (MEH-1075)", () => {
       "מאומת",
       "משלוח",
       "איסוף עצמי",
+      "קנייה במקום", // MEH-2598
       "פתוחים להזמנות עכשיו",
     ];
     for (const label of LABELS) {

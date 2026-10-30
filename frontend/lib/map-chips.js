@@ -109,6 +109,9 @@ export const DIET_GATED_KEYS = [
   "gluten_free",
   "lactose_free",
   "no_added_sugar",
+  // MEH-2598: not a diet axis, but gated by the same snapshot count — a new
+  // axis starts gated (producer-filters.js GATED_DIET_KEYS note).
+  "on_site",
 ];
 
 // ProducerListOut boolean per axis (lib/schemas.js:215-222) — the same
@@ -119,6 +122,7 @@ const DIET_FIELD = {
   gluten_free: "has_gluten_free_products",
   lactose_free: "has_lactose_free_products",
   no_added_sugar: "has_no_added_sugar_products",
+  on_site: "sells_on_site", // MEH-2598
 };
 
 /**
