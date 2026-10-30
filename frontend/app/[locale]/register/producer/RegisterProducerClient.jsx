@@ -264,6 +264,10 @@ function RegisterProducerPageBody() {
   const [showDraftBanner, setShowDraftBanner] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [stepError, setStepError] = useState("");
+  // MEH-2602: the empty-delivery-cities error waits for the first «הבא» that
+  // it blocks (Baymard: validate on submit/blur, never before the seller has
+  // had a chance). It used to render the moment delivery was ticked.
+  const [deliveryCitiesTried, setDeliveryCitiesTried] = useState(false);
   // MEH-1807: per-field messages for CROSS_STEP_REQUIRED, keyed by form field.
   // Only ever holds those three, which is what lets the STORY summary below
   // derive itself from this object instead of carrying its own state — an
@@ -1579,7 +1583,7 @@ function RegisterProducerPageBody() {
                           showRegionChips
                         />
                       </div>
-                      {form.delivery_cities.length === 0 && (
+                      {deliveryCitiesTried && form.delivery_cities.length === 0 && (
                         <p
                           className="text-xs text-red-600 mt-1"
                           data-testid="register-delivery-cities-error"
@@ -1635,6 +1639,7 @@ function RegisterProducerPageBody() {
                     !form.delivery_nationwide &&
                     form.delivery_cities.length === 0
                   ) {
+                    setDeliveryCitiesTried(true);
                     setStepError(t("admin.producers.form.fields.delivery_cities_required"));
                     return;
                   }

@@ -132,7 +132,7 @@ DEMO_PRODUCER = {
     },
     # MEH-1706 §2 item 4 — the badge array. The verified/expiry timestamps are
     # relative and therefore set on the Producer(...) call, not here.
-    "kashrut_badges": ["badatz_beit_yosef"],
+    "kashrut_badges": ["badatz"],
     "opening_hours": "א'-ה' 07:00-14:00, ו' 06:30-13:00",
     "kosher": "כשר",
     "producer_license_number": "10-000001",  # fictional — admin-only surface
@@ -323,7 +323,7 @@ DEMO_GROUP_BUY_COMMIT_QUANTITIES = [2, 3]
 # image. MEH-1672 shipped "tap the badge to see the certificate" with ZERO
 # cert_url anywhere in the seed, so the feature merged invisible (§2.1).
 DEMO_KASHRUT_REQUEST = {
-    "badge_code": "badatz_beit_yosef",
+    "badge_code": "badatz",
     "cert_url": (
         "https://res.cloudinary.com/dfzpscjks/image/upload/mehamakor/demo/ruach-hasadeh-kashrut-cert"
     ),

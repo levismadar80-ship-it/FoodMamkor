@@ -146,10 +146,12 @@ test.describe("MEH-2107 — registration delivery axis", () => {
     await page.getByTestId("register-has-physical-location").uncheck();
     await page.getByTestId("register-offers-delivery").check();
     // Sub-block open, nationwide off by default → the cities block is open and
-    // EMPTY, which the inline error says is not enough.
+    // EMPTY. MEH-2602: no error yet — it waits for the «הבא» it blocks.
     await expect(page.getByTestId("register-delivery-nationwide")).not.toBeChecked();
     const cities = page.getByTestId("register-delivery-cities");
     await expect(cities).toBeVisible();
+    await expect(page.getByTestId("register-delivery-cities-error")).toHaveCount(0);
+    await page.getByTestId("register-details-next").click();
     await expect(page.getByTestId("register-delivery-cities-error")).toBeVisible();
 
     // Region quick-add (MEH-1256): one click adds the region's whole city list

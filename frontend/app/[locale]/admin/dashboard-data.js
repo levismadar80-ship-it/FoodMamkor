@@ -10,7 +10,9 @@ import api from "@/lib/api";
  *           page («מה מחכה לטיפול») read the same response; before this each
  *           fetched it, so landing on /admin cost two identical requests.
  *           The provider fetches once per admin navigation (`refreshKey` =
- *           pathname, so a count changed on one page is fresh on the next).
+ *           pathname, so a count changed on one page is fresh on the next)
+ *           and again after any successful admin write (MEH-2602: approving
+ *           a business left the sidebar badge at its old count until reload).
  * Shape:    { data, loadError, errorDetail }
  *           data        — the response body, or null (not loaded / failed)
  *           loadError   — true when the last fetch failed. MEH-2096: unknown
@@ -20,10 +22,40 @@ import api from "@/lib/api";
  */
 const AdminDashboardContext = createContext(null);
 
+/** True for a request URL under /admin/ (relative or absolute). */
+export function isAdminWrite(url) {
+  if (!url) return false;
+  const path = url.replace(/^https?:\/\/[^/]+/, "").replace(/^\/api(?=\/)/, "");
+  return path.startsWith("/admin/");
+}
+
 export function AdminDashboardProvider({ enabled = true, refreshKey, children }) {
   const [data, setData] = useState(null);
   const [loadError, setLoadError] = useState(false);
   const [errorDetail, setErrorDetail] = useState(null);
+  // MEH-2602: bumped after a successful POST/PUT/PATCH/DELETE to /admin/*,
+  // so the badges follow an approve/reject on the same page. One interceptor
+  // instead of a call in every queue page; writes in a burst coalesce.
+  const [writeTick, setWriteTick] = useState(0);
+
+  useEffect(() => {
+    // A stubbed client (unit tests) has no interceptors; the badges then
+    // simply refresh per navigation, as before.
+    if (!enabled || !api.interceptors?.response) return undefined;
+    let timer = null;
+    const id = api.interceptors.response.use((res) => {
+      const method = (res?.config?.method || "get").toLowerCase();
+      if (method !== "get" && isAdminWrite(res?.config?.url)) {
+        clearTimeout(timer);
+        timer = setTimeout(() => setWriteTick((n) => n + 1), 300);
+      }
+      return res;
+    });
+    return () => {
+      clearTimeout(timer);
+      api.interceptors.response.eject(id);
+    };
+  }, [enabled]);
 
   useEffect(() => {
     if (!enabled) {
@@ -59,7 +91,7 @@ export function AdminDashboardProvider({ enabled = true, refreshKey, children })
     return () => {
       cancelled = true;
     };
-  }, [enabled, refreshKey]);
+  }, [enabled, refreshKey, writeTick]);
 
   return (
     <AdminDashboardContext.Provider value={{ data, loadError, errorDetail }}>

@@ -1949,8 +1949,8 @@ export const CreateClaimLinkAdminProducersProducerIdClaimLinkPostResponse = /*#_
 /**
  * Admin-only: up to 3 Google Place candidates for a producer, or 204.
  *
- * Builds the query from the producer's own name + city and runs Places Text
- * Search. 204 (fail-quiet) when: no server key, no results, or any Google API
+ * Builds the query from the producer's own name + city — or from `q` when the
+ * admin typed one — and runs Places Text Search. 204 (fail-quiet) when: no server key, no results, or any Google API
  * error. 403 for non-admins (require_admin). 404 for an unknown producer.
  * NO auto-select — the admin picks one in ProducerForm; the response is
  * display-only and nothing here is stored (ToS §3.2.3(b)).

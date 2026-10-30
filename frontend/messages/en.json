@@ -124,7 +124,7 @@
       "loading_title": "Verifying...",
       "loading_subtitle": "Please wait",
       "fallback_loading": "Loading...",
-      "success_title": "Email verified ✓",
+      "success_title": "Email verified",
       "success_subtitle": "Redirecting you to the site...",
       "success_cta": "Continue to the site",
       "success_login_subtitle": "Now log in with your email and password and pick up where you left off.",
