@@ -125,6 +125,19 @@ class TestSortRating:
         assert _names(resp) == ["ManyReviews", "FewNew", "FewOld"]
 
 
+    def test_tiebreak_on_a_non_prior_average(self, client, db):
+        # MEH-2617: at avg 4.0 the weighted key equals the prior for every n,
+        # so the test above ties trivially. Here two identical (4.5, 6) pairs
+        # tie on the weighted key itself and created_at DESC must decide.
+        new = make_producer(db, name="SameNew")
+        old = make_producer(db, name="SameOld")
+        _set(db, new, avg_rating=4.5, reviews_count=6, created_at=BASE)
+        _set(db, old, avg_rating=4.5, reviews_count=6, created_at=BASE - timedelta(days=4))
+
+        resp = client.get("/producers", params={"sort": "rating"})
+        assert _names(resp) == ["SameNew", "SameOld"]
+
+
 class TestNullsLastAtServiceLayer:
     def test_null_rating_sorts_after_zero_and_positive(self, db):
         rated = make_producer(db, name="Rated")

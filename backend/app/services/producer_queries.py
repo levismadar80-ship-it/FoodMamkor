@@ -69,9 +69,7 @@ def weighted_rating_expr():
     """
     n = func.coalesce(Producer.reviews_count, 0)
     total = func.coalesce(Producer.avg_rating, 0.0) * n
-    return (total + RATING_PRIOR_MEAN * RATING_PRIOR_WEIGHT) / (
-        n + float(RATING_PRIOR_WEIGHT)
-    )
+    return (total + RATING_PRIOR_MEAN * RATING_PRIOR_WEIGHT) / (n + RATING_PRIOR_WEIGHT)
 
 
 def haversine_min_km(lat: float, lng: float):

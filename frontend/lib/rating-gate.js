@@ -43,7 +43,8 @@ export function countRatedProducers(list) {
  * (reviews.py:110-124), so a reviewed business has `avg_rating >= 1` while an
  * unreviewed one has 0.0 — and `?sort=rating` puts every unreviewed / NULL
  * row last on its FIRST order key (producer_listing.py, rating branch; the
- * Bayesian key below it only orders the reviewed rows — MEH-2617). Every reviewed business therefore
+ * Bayesian key below it only orders the reviewed rows — MEH-2617). Every
+ * reviewed business therefore
  * sorts strictly above every unreviewed one, so a top-N window holding fewer
  * than N reviewed rows means fewer than N exist catalog-wide.
  *
@@ -62,8 +63,10 @@ export function isRatingSortEnabled(list) {
 // RATING_PRIOR_MEAN / RATING_PRIOR_WEIGHT in
 // backend/app/services/producer_queries.py — /producers sorts server-side,
 // /map sorts the same feed client-side, and the two orders must agree.
-export const RATING_PRIOR_MEAN = 4.0;
-export const RATING_PRIOR_WEIGHT = 5;
+// Not exported: weightedRating is the only consumer. RatingPriorParity.test.js
+// reads both files' literals and fails if they drift.
+const RATING_PRIOR_MEAN = 4.0;
+const RATING_PRIOR_WEIGHT = 5;
 
 /**
  * MEH-2617: the score the rating sort orders by — (avg × n + M × C) / (n + C).
