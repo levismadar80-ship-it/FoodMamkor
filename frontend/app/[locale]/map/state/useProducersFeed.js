@@ -19,7 +19,7 @@ import { ProducersResponseSchema } from "@/lib/schemas";
  * the geo bounds are degenerate. This is preserved verbatim from the
  * source (:423-426).
  */
-export function useProducersFeed() {
+export function useProducersFeed({ initialParams = null } = {}) {
   const t = useTranslations();
   const [allProducers, setAllProducers] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -46,7 +46,7 @@ export function useProducersFeed() {
     showToast.error(t("map.errors.load_failed"));
   };
 
-  const loadProducers = (params = {}, { snapshot = false } = {}) => {
+  const loadProducers = (params = {}, { snapshot = false, then = null } = {}) => {
     setLoading(true);
     api
       .get("/producers", { params })
@@ -58,10 +58,18 @@ export function useProducersFeed() {
           handleLoadFailure(parsed.error.issues);
           return;
         }
-        setAllProducers(parsed.data);
         // MEH-2170: only the mount call asks for the snapshot; a failed or
         // malformed first load leaves it null (no gating), by design.
         if (snapshot) setCatalogSnapshot(parsed.data);
+        // MEH-2598: a deep link with filters (`then`) — the unfiltered snapshot
+        // still feeds the chip gates, but the LIST is the filtered fetch, run
+        // after it rather than beside it so a slower snapshot response can
+        // never overwrite the filtered one.
+        if (then) {
+          then();
+          return;
+        }
+        setAllProducers(parsed.data);
       })
       .catch(handleLoadFailure)
       // MEH-1054: every terminal path (data / malformed / network error)
@@ -72,7 +80,16 @@ export function useProducersFeed() {
 
   useEffect(() => {
     api.get("/categories").then((r) => setCategories(r.data)).catch(() => {});
-    loadProducers({}, { snapshot: true });
+    // MEH-2598: /map?has_delivery=1… (from the list's «הצגה במפה») — the
+    // snapshot stays unfiltered; the filtered list follows it.
+    const hasInitial = initialParams && Object.keys(initialParams).length > 0;
+    loadProducers(
+      {},
+      {
+        snapshot: true,
+        then: hasInitial ? () => loadProducers(initialParams) : null,
+      },
+    );
   }, []);
 
   return {
