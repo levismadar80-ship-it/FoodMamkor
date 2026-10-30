@@ -99,3 +99,15 @@ def test_control_delivery_city_keeps_its_strict_meaning(client, db):
     _seed(db)
     resp = client.get("/producers", params={"delivery_city": CITY})
     assert _names(resp) == ["מחלבה שמשלחת"]
+
+
+def test_a_deliverer_with_no_city_sorts_with_the_other_deliverers(client, db):
+    """A NULL Producer.city made the located-first key NULL (not FALSE), and
+    Postgres sorts NULL last — so a newer city-less deliverer fell behind an
+    older one instead of following the chosen sort inside its group."""
+    local, deliverer = _seed(db)
+    nocity = make_producer(db, name="משלוחים בלבד", city=None, delivery_cities=[CITY])
+    nocity.created_at = datetime.now(timezone.utc)
+    db.commit()
+    resp = client.get("/producers", params={"near_city": CITY})
+    assert _names(resp) == ["מאפייה בעיר", "משלוחים בלבד", "מחלבה שמשלחת"]
