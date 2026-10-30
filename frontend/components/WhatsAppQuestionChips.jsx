@@ -251,7 +251,7 @@ export default function WhatsAppQuestionChips({ producer }) {
     digits
       ? getWhatsAppHref(
           digits,
-          `${t("greeting_template", { name, q })}\n\n${t("source_line")}`,
+          `${t("greeting_template", { name, q }).trim()}\n\n${t("source_line")}`,
         )
       : null;
 
@@ -268,8 +268,12 @@ export default function WhatsAppQuestionChips({ producer }) {
   // and changing it would put this subject on a button outside this ticket.
   const escalationMethod = getPrimaryMethod(producer);
   const primaryHref = waEnabled ? null : getPrimaryContactHref(producer);
+  // MEH-2603: the WhatsApp escalation opens the chat on the greeting alone
+  // ("שלום {name},") + the locked source line, so the customer types her own
+  // question. It used to pass t("escalation") as `q`, which put the LINK LABEL
+  // itself ("שאלה אחרת? צרו איתנו קשר") into the message the business received.
   const escalationHref = waEnabled
-    ? waHref(t("escalation"))
+    ? waHref("")
     : primaryHref && escalationMethod === "email"
       ? `${primaryHref}?subject=${encodeURIComponent(t("escalation_email_subject"))}`
       : primaryHref;
