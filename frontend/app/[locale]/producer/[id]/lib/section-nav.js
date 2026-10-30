@@ -5,8 +5,8 @@ import { parseHasLocation } from "../components/ProducerSections";
 /**
  * The producer page's section anchor-nav items, in page order (the order
  * ProducerSections renders them — about → products → reviews → delivery →
- * location; MEH-2592 moved reviews ahead of delivery). Each `show` mirrors its section's render gate in
- * ProducerSections.jsx; a pill whose section never renders would be a dead
+ * location; MEH-2592 moved reviews ahead of delivery). Each `show` mirrors
+ * its section's render gate in ProducerSections.jsx; a pill whose section never renders would be a dead
  * jump. `SectionAnchorNav.test.jsx` asserts every gate here against the REAL
  * ProducerSections render (pill shown ⇔ `#id` in the DOM), so a gate changed
  * on one side only goes red instead of drifting silently.
