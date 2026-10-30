@@ -10,6 +10,9 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import api from "@/lib/api";
 import EventDetailClient from "@/app/[locale]/events/[id]/EventDetailClient";
 
+// MEH-2559: the heart needs AuthProvider; its behaviour is SaveButton.test.jsx's.
+vi.mock("@/components/SaveButton", () => ({ default: () => null }));
+
 vi.mock("next/navigation", () => ({ useParams: () => ({ id: "ev-1" }) }));
 vi.mock("next/dynamic", () => ({ default: () => () => null }));
 vi.mock("@/i18n/navigation", () => ({
@@ -27,7 +30,7 @@ vi.mock("next-intl", () => ({
 vi.mock("@phosphor-icons/react", () => {
   const Stub = () => null;
   const Caret = () => <svg data-testid="owner-chevron" />;
-  return { Calendar: Stub, CalendarPlus: Stub, CaretLeft: Caret, Coins: Stub, Leaf: Stub, MapPin: Stub, UsersThree: Stub };
+  return { Basket: Stub, CalendarBlank: Stub, CookingPot: Stub, Drop: Stub, MapTrifold: Stub, Path: Stub, Plant: Stub, Storefront: Stub, Calendar: Stub, CalendarPlus: Stub, CaretLeft: Caret, Coins: Stub, Leaf: Stub, MapPin: Stub, UsersThree: Stub };
 });
 // MEH-2468: the page now mounts ShareButton; its own suite covers it.
 vi.mock("@/components/ShareButton", () => ({

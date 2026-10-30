@@ -12,7 +12,7 @@ import {
 // MEH-2131: the chip-state default is derived from the taxonomy — see the
 // useState below for the three-way drift that made a hand-written copy a bad
 // idea, and for why `categoryKeys` stays out of it.
-import { defaultsForKeys } from "@/lib/filter-taxonomy";
+import { defaultsForKeys, homeParamFor } from "@/lib/filter-taxonomy";
 import { haversineKm } from "@/lib/distance";
 import { producerInBounds, producerPoints } from "@/lib/producerPoints";
 
@@ -106,6 +106,9 @@ export function useMapFilters({
   // MEH-2170: the one-time mount catalog from useProducersFeed. null = not
   // loaded yet, and then no toggle is hidden.
   catalogSnapshot = null,
+  // MEH-2598: `{ key: true }` read from the URL by the page (lib/filter-url),
+  // so a filter set on the list arrives switched on.
+  initialChips = {},
 }) {
   const [cityFilter, setCityFilter] = useState("");
   const [committedBounds, setCommittedBounds] = useState(null);
@@ -145,17 +148,44 @@ export function useMapFilters({
   // unchanged for the two missing keys (`undefined` and `false` are both falsy
   // to `chipStateToParams`) and for the dead one (nothing reads `organic`).
   // `categoryKeys` stays explicit — it is not an attribute axis.
-  const [chipState, setChipState] = useState({
+  const [chipState, setChipState] = useState(() => ({
     categoryKeys: [],
     ...defaultsForKeys(TOGGLE_CHIPS.map((c) => c.key)),
-  });
+    ...initialChips,
+  }));
+
+  // MEH-2598: mirror the attribute chips into the URL so a refresh, the back
+  // button, a shared link and the «הצגה ברשימה»-style hops all keep them. The
+  // shallow History API, not router.replace — the MEH-1293 reason (a router
+  // navigation re-runs the server page and its SSR fetch on every toggle).
+  // Other params on the URL (utm_*, …) are kept; only axis params are rewritten.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    // homeParamFor: home's `?delivery=1` alias is read on arrival, then
+    // rewritten to the one spelling so the URL never says it twice.
+    for (const c of TOGGLE_CHIPS) {
+      url.searchParams.delete(c.key);
+      url.searchParams.delete(homeParamFor(c.key));
+    }
+    for (const c of TOGGLE_CHIPS) if (chipState[c.key]) url.searchParams.set(c.key, "1");
+    const next = `${url.pathname}${url.search}${url.hash}`;
+    const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    if (next !== current) window.history.replaceState(window.history.state, "", next);
+  }, [chipState]);
 
   // MEH-14: build the backend params from the current chip state +
   // optional city. `overrides` lets callers swap in the not-yet-committed
   // chip toggle without waiting for React state.
-  const buildParams = (overrideState = chipState, extras = {}) => {
+  const buildParams = (overrideState = chipState, extras = {}, city = cityFilter) => {
     const params = chipStateToParams(overrideState, categories);
-    if (cityFilter) params.delivery_city = cityFilter;
+    // MEH-2602: «סננו לפי עיר» asks "what is there for this city" — located
+    // in it OR delivering to it, located first (near_city). With the משלוח
+    // chip on the question is "who delivers here", so it keeps delivery_city.
+    if (city) {
+      if (overrideState.has_delivery) params.delivery_city = city;
+      else params.near_city = city;
+    }
     return { ...params, ...extras };
   };
 

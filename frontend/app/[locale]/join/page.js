@@ -2,6 +2,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import Link from "next/link";
 import { ArrowLeft, ChatCircleDots, ListChecks, Quotes } from "@phosphor-icons/react/ssr";
 import BusinessCtaLink from "@/components/BusinessCtaLink";
+import EditorialPhoto from "@/components/EditorialPhoto";
 import { BRAND_NAME } from "@/lib/constants";
 import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
 
@@ -46,14 +47,14 @@ export async function generateMetadata({ params }) {
   };
 }
 
-// MEH-995: Cormorant numerals — dir="ltr" isolates the Latin glyphs inside RTL
-// flow; leading-none per the FINAL's no-bleed note (verified at 320px).
+// MEH-995 drew these as 5xl gold Cormorant "01–04", louder than the step
+// titles. MEH-2564 keeps the numbers (this IS an ordered process) but as a
+// small green timeline badge in the body font, below the title in weight.
 function StepNumeral({ children }) {
   return (
     <div
-      dir="ltr"
       data-testid="join-step-numeral"
-      className="font-english text-5xl text-accent leading-none mb-3"
+      className="numeric inline-flex items-center justify-center w-9 h-9 rounded-full bg-primary/10 text-primary font-bold text-base leading-none mb-3"
     >
       {children}
     </div>
@@ -66,7 +67,7 @@ export default async function JoinPage({ params }) {
   const t = await getTranslations({ locale, namespace: "join" });
 
   const steps = ["1", "2", "3", "4"].map((n) => ({
-    numeral: `0${n}`,
+    numeral: n,
     title: t(`how.step${n}_title`),
     text: t(`how.step${n}_text`),
   }));
@@ -76,7 +77,7 @@ export default async function JoinPage({ params }) {
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
         {/* ── Hero — single CTA of the page (positioning-FINAL order:
                eyebrow → H1 → subhead → CTA → trust hint) ── */}
-        <header className="text-center mb-14 sm:mb-20" data-testid="join-hero">
+        <header className="text-center mb-8 sm:mb-10" data-testid="join-hero">
           <p className="text-sm font-medium text-accent mb-3">{t("eyebrow")}</p>
           <h1 className="font-headline-lg font-black text-primary-dark leading-[1.15] mb-5 text-[clamp(32px,7vw,52px)]">
             {t("h1")}
@@ -93,6 +94,15 @@ export default async function JoinPage({ params }) {
           </BusinessCtaLink>
           <p className="text-sm text-fg-muted mt-3">{t("trust_hint")}</p>
         </header>
+
+        {/* MEH-2597: a person at work, under the CTA so the CTA stays in the
+            first screen at 375. The hero's bottom margin is the gap above the
+            photo; the photo carries the section gap below. Swap for a Wave 1 business photo when one lands. */}
+        <EditorialPhoto
+          src="https://res.cloudinary.com/dfzpscjks/image/upload/login/hero-produce-crate.jpg"
+          testId="join-photo"
+          className="mb-14 sm:mb-20"
+        />
 
         {/* ── How it works — 4 numbered spreads ── */}
         <section className="mb-14 sm:mb-20" data-testid="join-how">

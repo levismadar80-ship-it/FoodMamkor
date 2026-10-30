@@ -7,6 +7,7 @@ import { Link as LocaleLink } from "@/i18n/navigation";
 import { allBadges, topBadges } from "@/lib/badges";
 import { CODE_TO_KEY } from "@/components/KashrutBadgeStrip";
 import Popover from "@/components/ui/Popover";
+import { badgeIcon } from "@/lib/chip-icons";
 
 /**
  * BadgeRow — horizontal row of pill badges for a producer (MEH-18).
@@ -315,6 +316,11 @@ function VerifiedTierBadge({ producer, surface, t, avoidRef = null }) {
 
 function Badge({ badge, surface = "hero", avoidRef = null }) {
   const colorClass = COLOR_CLASSES[badge.color] || COLOR_CLASSES.muted;
+  // MEH-2584: the card pill is tighter (12px glyph, 2px gap, px-2) so
+  // "חדש" + an iconed badge + the +N still fit one line in a 166px mobile card
+  // (measured at 375); the name plate's pb-12 only clears one line.
+  const compact = surface === "card";
+  const icon = badgeIcon(badge.key, compact ? 12 : 14);
 
   // MEH-1492: on the HERO surface (producer detail), a badge with an aboutHref
   // (recommended → /about#editors-pick) turns its popover body into a link — the
@@ -360,7 +366,10 @@ function Badge({ badge, surface = "hero", avoidRef = null }) {
             data-badge={badge.key}
             className="group inline-flex items-center justify-center min-h-[24px] min-w-[24px] focus:outline-none"
           >
-            <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium group-focus-visible:ring-2 group-focus-visible:ring-primary/40 transition ${colorClass}`}>
+            <span className={`inline-flex items-center ${compact ? "gap-0.5 px-2" : "gap-1 px-2.5"} text-xs py-0.5 rounded-full font-medium group-focus-visible:ring-2 group-focus-visible:ring-primary/40 transition ${colorClass}`}>
+              {/* MEH-2584: same glyph as the filter chip (lib/chip-icons.js),
+                  aria-hidden — the label stays the accessible name. */}
+              {icon && <span aria-hidden="true" className="inline-flex">{icon}</span>}
               {badge.label}
             </span>
           </button>

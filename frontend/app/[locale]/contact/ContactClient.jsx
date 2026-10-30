@@ -51,17 +51,15 @@ export default function ContactClient() {
   return (
     <section className="min-h-screen">
       <div className="max-w-2xl mx-auto px-4 py-16">
-        <div className="bg-white rounded-[16px] p-8 border border-border shadow-[0_2px_12px_rgba(46,104,83,0.04)]">
+        {/* MEH-2565: card from md up only — on a phone the form uses the full width. */}
+        <div className="md:bg-white md:rounded-[16px] md:p-8 md:border md:border-border md:shadow-[0_2px_12px_rgba(46,104,83,0.04)]">
           <h1 className="font-headline-display text-5xl font-bold text-text mb-2 text-center">
             {t("title")}
           </h1>
-          <p className="text-fg-muted text-center mb-2">
+          {/* MEH-2571: the "3 business days" line that sat here repeated the
+              response_sla row in the box below — said once now, in the box. */}
+          <p className="text-fg-muted text-center mb-8">
             {t("subtitle")}
-          </p>
-          <p className="text-sm text-fg-muted text-center mb-8">
-            {t.rich("response_time_inline", {
-              strong: (chunks) => <strong>{chunks}</strong>,
-            })}
           </p>
 
           <div className="bg-green-50/60 border border-border rounded-[12px] p-4 mb-6 text-sm">

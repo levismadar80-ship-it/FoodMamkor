@@ -110,6 +110,8 @@
 
 > **MEH-1823 (2026-08-02):** typed expiring offers — `producer_offers` (migration `b6e1d94a3f27`, EXPECTED_TABLES 38 → 39). **Why a table:** an offer is a bounded, dated object with its own lifecycle, not a property of the business. **Why threshold_value + threshold_unit:** the evidence that opened the ticket ("בהזמנה של 10 ליטרים ומעלה – המשלוח חינם") had nowhere to live — `producers.free_delivery_above` is INTEGER *shekels*. The pair is both-or-neither (CHECK), and is optional for **every** `offer_type` — deliberately not gated by type. **Public read:** `ProducerListOut.active_offer` (so `ProducerDetailOut` inherits it — the MEH-1577 `delivery_fee` precedent) emits `{id, offer_type, threshold_value, threshold_unit, headline, starts_at, expires_at}`. **Filtered SERVER-side, never client-side:** `Producer.active_offer` (models.py) is the single place the window rule is applied — `is_active AND (starts_at IS NULL OR starts_at <= israel_today()) AND expires_at >= israel_today()` — so an expired or not-yet-started offer cannot leave the API through any read path; `selectinload(Producer.offers)` at all four query sites keeps it O(1). Both boundaries are inclusive: an offer starting today is live today, one expiring today is live today. **Owner write:** `PUT /producers/me` carries `active_offer`, three-valued — omitted = no change, explicit `null` = deactivate, an object = replace (deactivate the current row, insert a new one; the superseded row stays as history). The omitted-vs-null distinction needs `model_fields_set`, not `exclude_unset`, or an unrelated dashboard save would silently wipe the offer. A concurrent double-save collides on the unique partial index and returns **409**, not 500. **Validation** (`ProducerOfferCreate`): closed vocabularies, `threshold_value > 0`, `expires_at` must be future by `israel_today()`, `headline` ≤ 60 chars and Emoji-LOCK rejected. **UI:** `OfferBadge` above the delivery block on the business page + a short chip on `ProducerCard`; a business with no offer renders nothing at all.
 >
+> **MEH-2598 (2026-10-29) — «קנייה במקום» filter:** `GET /producers?on_site=true` (`producer_listing._on_site_condition`) = `has_physical_location` AND non-blank opening hours on the primary location, else the legacy `producers.opening_hours` (the same resolver as `frontend/lib/hours.js` `resolveStoreHours`). A third peer of the service group: OR-ed with the delivery axes and `pickup_points`, never AND-ed. No migration. `ProducerListOut.sells_on_site` (computed in `attach_badge_fields`) mirrors the predicate; `tests/test_meh2598_on_site_filter.py` asserts flag = filter membership. The map card's «קנייה במקום» tag reads `sells_on_site` and now shows beside «משלוח» / «איסוף עצמי» instead of only when neither is declared. The chip is data-gated (≥ 5 businesses) like every new axis.
+
 > **MEH-1645 (2026-07-27):** consumer delivery-day filter. `GET /producers?delivery_day=` accepts ONE canonical Hebrew day (`schemas.DELIVERY_DAYS` — the MEH-1644 vocabulary; anything else 422 `יום משלוח לא מוכר`). **v1 semantics:** only EXPLICIT `delivery_areas` rows with a matching day count — nationwide producers and day-less rows ("בתיאום מראש") are excluded from day filtering (integrity of "משלוח ביום X" over recall). With `delivery_city` the city+day must match on the SAME row — a single EXISTS (`producer_listing._delivery_day_condition`), which REPLACES the `_delivery_city_condition` (its nationwide OR-branch is deliberately dropped when a day is present; the MEH-1487 shared helper is untouched). Home UI: progressive-disclosure day-pill row beside the ActiveFilterChip (renders only while a city filter is active — never a primary chip), chip label "משלוח ל{city} · יום {day}", `?day=` deep-link (city-guarded: a day-only URL drops the day — invisible-filter guard), and a zero-result "הסרת סינון היום" suggestion above the region fallback.
 
 > **MEH-2459 (2026-10-28) — `producers.kind` (ADR-036):** `VARCHAR(20) NOT NULL DEFAULT 'producer'`, CHECK `producer_kind_values` (`producer`\|`organizer`), migration `f1a2b3c4d5e6`. An **organizer** (markets / events, sells nothing) is a `producers` row, not a new entity — `events.producer_id` is NOT NULL. One predicate, `producer_listing.is_business()` = `status='approved' AND kind='producer'`, is composed by every business surface: `GET /producers` (list, `?q=`, geo), `/producers/count` · `/cities` · `/random` · `/by-slug/{slug}` (organizer → 404) · `/producers/{id}` (public 404; owner/admin 200), `GET /search`, `GET /stats`, `cities.py`, public experiences/recipes joins, the dashboard city rank, admin stats/analytics/map pins. **Not** applied to `GET /events` / `/events/upcoming` (organizer events are the point) or the admin queue (`ProducerAdminOut.kind`, «מארגן» chip). `POST /admin/producers/{id}/grant-verified` → **409** for an organizer (never «מאומת»). Serialized as `ProducerListOut.kind`; `EventOut` gains `owner_kind` (`producer`\|`organizer`) + `owner_slug` for the event card's owner link (chunk 3).
@@ -555,9 +557,14 @@ admin_settings         (key text PK, value text)
 static_pages           (slug text PK, title, body, updated_at)
 retired_slugs          (slug varchar(100) PK, producer_id uuid FK→producers SET NULL nullable,
                         reason 'deleted'|'renamed', retired_at)  -- MEH-2528
+saved_items            (id uuid PK, user_id uuid FK→users CASCADE,
+                        item_type 'recipe'|'event'|'experience' (CHECK), item_id uuid (no FK),
+                        created_at, UNIQUE(user_id,item_type,item_id))  -- MEH-2556
 ```
 
 > **MEH-2528 — `retired_slugs` (28/10/2026):** tombstones for public business URLs. A business delete is a hard delete, so its UNIQUE `producers.slug` used to be free at once and the next business with the same name inherited every `/p/<slug>` link. Now admin delete, owner account delete and an admin slug change/clear write a row (`services/retired_slugs.py`, the only writer), and `_ensure_unique_slug` (`routers/admin.py`) treats a retired slug as taken (`-2`…). A business may take back a slug it retired itself (the row is then removed). Drafts are not retired — never public. `producer_id` = owner of a renamed slug (for a future redirect), NULL for a deleted business. Migration `c3d8e2f1a9b4`; **`EXPECTED_TABLES` 41 → 42**. A deleted business's URL answers **410** and renders the «בית העסק הזה כבר לא במהמקור» page (MEH-2534). Not yet: a 301 from a renamed slug.
+
+> **MEH-2556 — `saved_items` (29/10/2026):** the recipes, events and experiences a user saved to «המועדפים שלי» (parent MEH-2555). Businesses keep `favorites` (FavoriteAlert hangs off it). `item_id` has no FK — it points at a different table per `item_type`; the read path serves only items that still exist and are public, so a deleted/hidden item drops out on its own. One save per item (UNIQUE), three types only (DB CHECK, mirrored by `SAVED_ITEM_TYPES` in models.py — `tests/test_meh2556_saved_items_table.py` fails if the two disagree), account delete cascades. Migration `9c534d477f2b`; **`EXPECTED_TABLES` 42 → 43**. API (MEH-2557): `GET /users/me/saved` → `{recipes, events, experiences}`, newest save first, public items only (recipe published+approved by a live business; event owner approved, past/cancelled kept and labelled by the page; experience `_publicly_visible_query`) · `GET /users/me/saved/ids` → `[{item_type, item_id}]` for the hearts' cache · `POST /users/me/saved/{type}/{id}` → 201, idempotent, **404 unless public** · `DELETE` → 200, own rows only, works after the item was hidden. All 🔑 (401 for a guest).
 
 ---
 
@@ -737,7 +744,9 @@ DELETE /admin/producers/{id}/products/{product_id}  admin — 60/hour. Same 409 
 
 ```
 GET    /producers                                 public — filters: lat+lng+radius_km, require_physical, category, delivery_city,
-                                               has_delivery, verified, kosher, city (producer city), is_available_today, grass_fed
+                                               has_delivery, verified, kosher, city (producer city), is_available_today, grass_fed,
+                                               near_city (MEH-2602 — the map's city filter: own city OR a location row in it OR
+                                               delivers there; located ones ordered first, non-geo mode only)
                                                sort: newest (default) | rating (MEH-1483). "newest"/absent → created_at DESC
                                                (byte-identical default). "rating" → avg_rating DESC, NULLs last, tiebreak
                                                reviews_count DESC, then created_at DESC. Any other value → 422 "ערך מיון לא חוקי".
@@ -773,11 +782,18 @@ GET    /producers/{producer_id}/google-rating     public — MEH-1490: live Goog
                                                google_maps_uri } only when a place_id is mapped AND count ≥ 20;
                                                204 (fail-quiet) on no place_id / count<20 / API error / no
                                                GOOGLE_PLACES_API_KEY; 404 only for an unknown producer. 60/min.
+PUT    /admin/producers/{producer_id}/google-place-id  admin — MEH-2582: body { google_place_id: str|null }
+                                               (blank/null clears; bare place_id only, a Maps URL → 422).
+                                               Writes ONLY that column; skips the full admin PUT's
+                                               effective-state gates (licence, delivery) on purpose — the
+                                               approval row maps pending businesses that still fail them.
+                                               404 for unknown id or an organizer. 30/min.
 GET    /producers/by-slug/{slug}                  public
                                                MEH-2534: miss on a slug whose business was DELETED (ownerless
                                                retired_slugs row) → 410 «בית העסק כבר לא במהמקור»; never-existed
-                                               or renamed-away slug → 404. Middleware rewrites the page to a real HTTP 410;
-                                               the page renders ProducerGone (noindex).
+                                               or renamed-away slug → 404. Middleware rewrites (no status — a 410 rewrite shows Vercel's
+                                               own GONE page) to /[locale]/business-gone → ProducerGone, 200 + noindex.
+                                               Not via [slug]: its Data Cache keeps the last 200 after a delete (MEH-2576).
 GET    /producers/cities                          public — MEH-970: per-city APPROVED-producer counts for /map.
                                                GROUP BY city over approved producers; NULL/blank city omitted;
                                                ordered count desc, then city. Counts live from DB (MEH-519 over-claim guard).
@@ -1090,6 +1106,7 @@ DELETE /admin/home-products/{id}               admin
 GET    /admin/users                            admin — search
 PUT    /admin/users/{id}/role                  admin
 POST   /admin/users/{id}/block                 admin
+DELETE /admin/users/{id}                       admin — hard delete + same cascade as DELETE /auth/me, no email; 403 on admins/super-admin, 400 on self (MEH-2585)
 GET    /admin/users/{id}/favorites             admin
 
 # Content
@@ -1335,6 +1352,10 @@ GET/HEAD /health                 public — backwards-compat alias, the path Rai
 | Experience approved | Email | Host | `experience_notifications.py` |
 | Experience changes-requested | Email | Host (feedback verbatim) | `experience_notifications.py` |
 | Experience rejected | Email | Host (reason verbatim) | `experience_notifications.py` |
+| Recipe approved / changes-requested / rejected (MEH-2602) | Email | Business owner | `content_notifications.py` |
+| Kashrut certificate approved (with expiry) / rejected (MEH-2602) | Email | Business owner | `content_notifications.py` |
+| New review — not an edit (MEH-2602) | Email | Business owner | `content_notifications.py` |
+| Owner's first reply to a review — not an edit (MEH-2602) | Email | Reviewer | `content_notifications.py` |
 | Home product removed | Email | Seller | `admin.py` |
 | Newsletter signup | Email | Admin | `marketing.py` |
 | Contact form | Email | Admin | `marketing.py` |

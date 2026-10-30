@@ -23,6 +23,7 @@ graph LR
     App --> ProducerClaim[producer_claim.router<br/>/admin/producers/:id/claim-link · /producer-claim/preview · /producer-claim<br/>MEH-2322 owner-claim link: 14-day HS256 scope=producer_claim, draft + ownerless only,<br/>claim stamps her declaration + terms, status stays draft]
     App --> NameRequests[producer_name_requests.router<br/>/producers/me/name-change-requests<br/>/admin/name-change-requests]
     App --> Favorites[favorites.router<br/>/users/me/favorites/*]
+    App --> Saved[saved_items.router<br/>/users/me/saved/* MEH-2557]
     App --> HomeProducts[home_products.router<br/>/home-products/*]
     App --> Events[events.router<br/>/events/*]
     App --> Experiences[experiences.router<br/>/experiences/*<br/>MEH-2476: host carries her public business]
@@ -55,6 +56,7 @@ graph TD
 
     ProducerClick[Click producer card] --> GProducer[GET /producers/{id}<br/>🌐 + ?from=search/map/home<br/>logs producer_page_views best-effort]
     GProducer --> GGoogleRating[GET /producers/{id}/google-rating<br/>🌐 MEH-1490 live Places proxy, 60/min<br/>204 fail-quiet; never persists rating ToS §3.2.3b<br/>404 for an organizer MEH-2465]
+    GGoogleRating -.needs.-> PGooglePlaceId[PUT /admin/producers/{id}/google-place-id<br/>🔒 admin · MEH-2582 one-field write from the approval row<br/>skips licence/delivery gates on purpose, 30/min]
     ProducerClick --> GSlug[GET /producers/by-slug/{slug}<br/>🌐 same but by slug<br/>410 if the business was deleted · MEH-2534]
     GProducer --> WhatsApp[POST /producers/{id}/whatsapp-click<br/>🌐 rate-limited 10/min<br/>logs producer_whatsapp_clicks<br/>MEH-1677: OPTIONAL body {city} — sent only by the coverage CTA;<br/>must stay optional, sendBeacon cannot set application/json]
 
@@ -82,6 +84,10 @@ graph TD
     Favorites[/favorites page] --> ListFavs[GET /users/me/favorites<br/>🔑 skips not-live businesses MEH-2513]
     Favorites --> AddFav[POST /users/me/favorites/{id}<br/>🔑 404 for an organizer MEH-2465<br/>or a not-live business MEH-2513]
     Favorites --> DelFav[DELETE /users/me/favorites/{id}<br/>🔑]
+    Favorites --> ListSaved[GET /users/me/saved<br/>🔑 recipes/events/experiences, public only MEH-2557]
+    Favorites --> SavedIds[GET /users/me/saved/ids<br/>🔑 hearts cache]
+    Favorites --> AddSaved[POST /users/me/saved/{type}/{id}<br/>🔑 404 unless public]
+    Favorites --> DelSaved[DELETE /users/me/saved/{type}/{id}<br/>🔑 own rows only]
 ```
 
 ## 4. Producer self-management (role=producer)
@@ -139,6 +145,7 @@ graph TD
     Users[/admin/users page] --> AdminUsers[GET /admin/users<br/>🛡️ search + role filter]
     Users --> Role[PUT /admin/users/{id}/role<br/>🛡️]
     Users --> Block[POST /admin/users/{id}/block<br/>🛡️]
+    Users --> DelUser[DELETE /admin/users/{id}<br/>🛡️ not admins, MEH-2585]
 
     Content[/admin/content page] --> AdminCats[GET/POST/PUT/DELETE /admin/categories<br/>🛡️ CRUD]
     Content --> AdminPages[GET/PUT /admin/pages/{slug}<br/>🛡️ about/terms editor]

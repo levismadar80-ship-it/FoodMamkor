@@ -26,7 +26,7 @@ import { getVerifiedPopoverBody } from "./BadgeRow";
 // to match this component's existing prop style (producerId / producerName /
 // verified are all scalars). Absent → getVerifiedPopoverBody falls back to the
 // generic dateless sentence, which is still true, just less specific.
-export default function ImageGallery({ images = [], producerId = null, producerName = "", verified = false, verificationDocType = null, verifiedAt = null, shareUrl = "", onFavorited }) {
+export default function ImageGallery({ images = [], producerId = null, producerName = "", verified = false, verificationDocType = null, verifiedAt = null, shareUrl = "", onFavorited, updatesButton = null }) {
   const t = useTranslations("gallery");
   // MEH-1168 P2: the verified "מאומת" seal anchors to the name. For imageless
   // producers the name lives here in the Tinted Masthead (ProducerHeader omits
@@ -221,6 +221,7 @@ export default function ImageGallery({ images = [], producerId = null, producerN
               variant="gallery"
               onFavorited={onFavorited}
             />
+            {updatesButton}
           </div>
         )}
       </div>
@@ -237,7 +238,10 @@ export default function ImageGallery({ images = [], producerId = null, producerN
     {/* MEH-1047: shared relative wrapper so a single FavoriteButton overlays
         the top-start corner of whichever layout is visible (desktop grid hero
         or mobile carousel) — one mount, one /users/me/favorites fetch. */}
-    <div className="relative">
+    {/* MEH-2593: edge to edge on phones — the -mx-4 cancels the page's px-4
+        so the photo meets the screen edges (Airbnb / Wolt place pages). The
+        overlay circles live in this wrapper, so they move with it. */}
+    <div className="relative -mx-4 md:mx-0">
     {/* MEH-1047: desktop editorial grid (Direction B) — hero at inline-start
         + tall stacked secondary column (≤2 cells). The bottom cell of a
         stacked pair carries the single view_all (N) overlay pill (gallery.view_all). */}
@@ -312,7 +316,9 @@ export default function ImageGallery({ images = [], producerId = null, producerN
       </div>
     )}
     <div
-      className={`relative h-52 rounded-md overflow-hidden bg-gray-100${single ? "" : " md:hidden"}`}
+      // MEH-2593: ~4:3 on phones (was a 208px band), square corners at the
+      // screen edge; a single image on md+ stands 380px instead of a strip.
+      className={`relative h-[min(78vw,340px)] md:h-[380px] md:rounded-xl overflow-hidden bg-gray-100${single ? "" : " md:hidden"}`}
       data-testid="gallery-carousel"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
@@ -381,6 +387,7 @@ export default function ImageGallery({ images = [], producerId = null, producerN
           variant="gallery"
           onFavorited={onFavorited}
         />
+        {updatesButton}
       </div>
     )}
     </div>

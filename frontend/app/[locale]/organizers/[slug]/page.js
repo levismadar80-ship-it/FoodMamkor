@@ -22,6 +22,7 @@ import { API_URL } from "@/lib/env";
 import { serverFetch } from "@/lib/server-fetch";
 import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 import { isSlugShaped } from "@/lib/slug";
+import { BRAND_NAME } from "@/lib/constants";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { toEventEntry } from "@/lib/event-entry";
 import EventEntryRow from "@/components/EventEntryRow";
@@ -89,10 +90,15 @@ export async function generateMetadata(props) {
     title: { absolute: buildEntityTitle(organizer.name, locale) },
     description,
     openGraph: {
+      // MEH-2594: url/type/siteName, as on the event and business pages.
+      type: "website",
       title: organizer.name,
       description,
+      url: alternates.canonical,
+      siteName: BRAND_NAME,
       locale: OG_LOCALE[locale],
-      images: organizer.images?.[0] ? [{ url: organizer.images[0] }] : undefined,
+      // MEH-2590: site image when none (an omitted key is not inherited).
+      images: organizer.images?.[0] ? [{ url: organizer.images[0] }] : ["/og-image.png"],
     },
     alternates,
   };
@@ -186,7 +192,7 @@ export default async function OrganizerPage(props) {
             // eslint-disable-next-line @next/next/no-img-element -- Cloudinary URL, sized by the helper
             <img
               src={optimizeCloudinary(image, { aspectRatio: "16:9", width: 1100 })}
-              alt={organizer.name}
+              alt="" // decorative: the h1 below names the organizer (review #3812)
               data-testid="organizer-cover"
               className="w-full h-[170px] md:h-[320px] object-cover md:rounded-[18px] bg-border"
             />

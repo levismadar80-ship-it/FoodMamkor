@@ -110,6 +110,19 @@ export const FILTER_AXES = {
     group: "service",
     surfaces: ["home", "producers", "map"],
   },
+  // MEH-2598: the third service axis, the filter twin of the map card's
+  // «קנייה במקום» tag (lib/fulfillmentTags.js). Backend `?on_site=true` →
+  // producer_listing._on_site_condition: a physical store with stated opening
+  // hours. The subtext names that, because "קנייה במקום" alone does not say
+  // the hours are what qualify a business.
+  on_site: {
+    label: "קנייה במקום",
+    scope: "business",
+    evidence: "self-declared",
+    subtext: "חנות פיזית עם שעות פתיחה קבועות",
+    group: "service",
+    surfaces: ["home", "producers", "map"],
+  },
   // MEH-1418 named WHAT was verified — a license or exemption document checked
   // by an admin against the Ministry of Health registry (ADR-022) — and the
   // longer phrasing carried that.
@@ -268,6 +281,7 @@ export const FILTER_AXES = {
 export const MAP_CHIP_ORDER = [
   "has_delivery",
   "pickup_points",
+  "on_site", // MEH-2598
   "verified",
   "kosher",
   "grass_fed",
@@ -300,6 +314,7 @@ export const LISTING_CHIP_ORDER = [
   "no_added_sugar",
   "has_delivery",
   "pickup_points",
+  "on_site", // MEH-2598: completes the service trio
   "verified",
   // MEH-1881: last in the row on purpose — the only axis whose answer changes
   // by the hour, so it reads as a refinement of the durable attributes above

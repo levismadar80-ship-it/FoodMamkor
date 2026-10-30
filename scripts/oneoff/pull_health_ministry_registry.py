@@ -113,9 +113,11 @@ WAVE1_TOWNS = [
     "אביאל",
     "עמיקם",
     "מעיין צבי",
+    "מעין צבי",  # the dataset's spelling (29/10 live run)
     "מעגן מיכאל",
     "עין שמר",
     "גן שומרון",
+    "גן השומרון",  # the dataset's spelling (29/10 live run)
     "תלמי אלעזר",
     "כפר גליקסון",
     "עתלית",
@@ -128,17 +130,50 @@ WAVE1_TOWNS = [
 # Filter B — EXCLUDE non-production categories by STEM. Anything not matching
 # an exclusion stem is kept (see LIMITS: exclusion, not whitelist).
 # ---------------------------------------------------------------------------
-EXCLUDE_STEMS = ("הובל", "אחסנ", "אחסון", "שיווק בלבד", "הפצה")
+# MEH-2135: `מחסן` added on top of PR #3834. The other stems were written
+# against a guessed vocabulary (`אחסנה`), but the registry's own word for a
+# warehouse is `מחסן`, which contains none of them — neither does `חדר קירור`.
+EXCLUDE_STEMS = ("הובל", "אחסנ", "אחסון", "מחסן", "שיווק בלבד", "הפצה")
 
 # ---------------------------------------------------------------------------
 # Column resolution — candidates per logical field, first match wins, choice
 # is printed. Extend from the printed live schema, never by guessing.
 # ---------------------------------------------------------------------------
+# Live schema (29/10/2026 run, 5,041 rows): _id, license, title, expire_date,
+# gmp_expire_date, ProductActivityFoodType, accountType, gmpstatuscode,
+# health_district_desc, city_number, city, Addr. No phone or email column.
 FIELD_CANDIDATES: dict[str, list[str]] = {
-    "name": ["שם עסק", "שם העסק", "שם_עסק", "business_name", "name"],
+    "name": ["שם עסק", "שם העסק", "שם_עסק", "business_name", "name", "title"],
     "city": ["יישוב", "ישוב", "עיר", "שם יישוב", "שם_ישוב", "city", "settlement"],
-    "address": ["כתובת", "רחוב", "address"],
+    "address": ["כתובת", "רחוב", "address", "addr"],
     "category": [
+        # MEH-2135: `accountType` leads, ahead of `ProductActivityFoodType`
+        # (which PR #3834 put first). Filter B stem-matches whatever resolves
+        # here, and only `accountType` is a closed vocabulary — 19 values
+        # across the whole dataset, one of which is literally
+        # `מחסן מזון בטמפ מבוקרת`. `ProductActivityFoodType` is free prose
+        # written per business: the same warehouse appears there as
+        # `מחסן יבש`, `מחסן יבואן מזון`, `מחסן למוצרים מזון יבשים` or
+        # `חדר קירור`, and a stem list cannot keep up with prose. Measured on
+        # the 29/10 rows: filtering on the free-text field leaves 4 warehouse
+        # businesses in the leads file (6 rows), one of them a pharmaceuticals
+        # and medical-equipment importer. Filtering on `accountType` drops all
+        # of them and nothing else — 75 rows becomes 69.
+        # The free-text field is the better human DESCRIPTION and the worse
+        # FILTER INPUT — so it is NOT a candidate here at all. It used to be
+        # the fallback (PR #3834 had it first), and the CI reviewer caught why
+        # that is unsafe even behind `accountType`: a stem meeting prose drops
+        # producers whose description merely MENTIONS storage. Measured on the
+        # 29/10 rows — **49 rows** are producers by `accountType` whose free
+        # text matches a stem, e.g. a bakery reading
+        # `ייצור מוצרי מאפה קפואים~אחסנת מזון בטמפטורה מבוקרת`, and a CO2 plant
+        # reading `יצור, אחסון והפצה של גז Co2`. Removing it means filter B can
+        # only ever read a closed vocabulary. If `accountType` is missing from
+        # a future schema, `category` resolves to None, filter B is SKIPPED
+        # with a printed warning, and every geo row is kept — which is the
+        # direction this script is documented to fail in (see LIMITS:
+        # exclusion fails toward extra rows you can see and trim).
+        "accountType",
         "קטגוריה",
         "סוג רישיון",
         "סוג_רישיון",
@@ -153,7 +188,16 @@ FIELD_CANDIDATES: dict[str, list[str]] = {
         "תאריך תוקף",
         "valid_until",
         "expiry",
+        "expire_date",
     ],
+    # MEH-2135: the free-text activity description, carried as its own output
+    # column rather than being folded into `category`. It is the single most
+    # useful field for outreach — it says what the business actually makes
+    # (`ייצור מוצרי חלב`, `לחם קווקזי`, `עוגיות יבשות`) where `accountType`
+    # only says `מפעל מזון/יצור מזון` for 51 of the 69 leads. Deliberately NOT
+    # a filter input: see the note on `category` above. `accountType` is not a
+    # candidate here, so the two columns cannot collapse onto one field.
+    "activity": ["ProductActivityFoodType", "תחום פעילות", "activity"],
     "phone": ["טלפון", "phone", "tel"],
     "email": ["אימייל", 'דוא"ל', "email"],
 }
@@ -162,6 +206,7 @@ OUTPUT_COLUMNS = [
     "יישוב",
     "כתובת",
     "קטגוריה/סוג רישיון",
+    "סוג פעילות/מוצרים",  # MEH-2135: the free-text activity description
     "תוקף רישיון",
     "טלפון",
     "אימייל",
@@ -275,6 +320,17 @@ def run_filters(fields: list[str], rows: list[dict], *, out_dir: Path) -> int:
         )
         return 2
 
+    # MEH-2135 (29/10): the first live run resolved only `city`, wrote a CSV of
+    # town names and skipped the type filter with a one-line note. Without a
+    # name or a category the output is not a lead list, so stop instead.
+    missing = [k for k in ("name", "category") if not cols[k]]
+    if missing:
+        print(
+            f"[columns] no {', '.join(missing)} column recognised — extend FIELD_CANDIDATES from the schema above.",
+            file=sys.stderr,
+        )
+        return 6
+
     cat_col = cols["category"]
     if cat_col:
         counts: dict[str, int] = {}
@@ -329,6 +385,7 @@ def run_filters(fields: list[str], rows: list[dict], *, out_dir: Path) -> int:
                     _norm(r.get(cols["city"])),
                     _norm(r.get(cols["address"])) if cols["address"] else "",
                     _norm(r.get(cat_col)) if cat_col else "",
+                    _norm(r.get(cols["activity"])) if cols["activity"] else "",
                     _norm(r.get(cols["license_valid_until"]))
                     if cols["license_valid_until"]
                     else "",
@@ -420,28 +477,105 @@ def self_test() -> int:
         cols2["name"] == "Business_Name" and cols2["city"] == "CITY",
     )
     check("cols/no-city", resolve_columns(["שם", "כתובת"])["city"] is None)
+    live = resolve_columns(
+        [
+            "_id",
+            "license",
+            "title",
+            "expire_date",
+            "gmp_expire_date",
+            "ProductActivityFoodType",
+            "accountType",
+            "gmpstatuscode",
+            "health_district_desc",
+            "city_number",
+            "city",
+            "Addr",
+        ]
+    )
+    check("cols/live-name", live["name"] == "title")
+    check("cols/live-address", live["address"] == "Addr")
+    # MEH-2135: this assertion read `== "ProductActivityFoodType"` in PR #3834
+    # and is deliberately inverted. Filter B reads this field, and it has to be
+    # the closed vocabulary — see the comment on FIELD_CANDIDATES["category"].
+    check("cols/live-category", live["category"] == "accountType")
+    # MEH-2135: the two must resolve to DIFFERENT live columns. Asserting both
+    # separately is what makes a future candidate-list edit that collapses them
+    # onto one field fail here instead of silently duplicating a column.
+    check("cols/live-activity", live["activity"] == "ProductActivityFoodType")
+    check("cols/live-category-activity-distinct", live["category"] != live["activity"])
+    # MEH-2135 (CI reviewer on PR #3840): filter B must never stem-match prose.
+    # With `accountType` gone from the schema, `category` must come back None —
+    # NOT fall through to the free-text field — so filter B skips and keeps
+    # every geo row. 49 rows in the 29/10 dataset are producers whose activity
+    # text matches a stem, and this is what stops them being dropped.
+    no_acct = resolve_columns(["title", "city", "Addr", "ProductActivityFoodType"])
+    check("cols/no-accounttype-category-is-none", no_acct["category"] is None)
+    check(
+        "cols/no-accounttype-activity-still-resolves",
+        no_acct["activity"] == "ProductActivityFoodType",
+    )
+    check("cols/live-valid", live["license_valid_until"] == "expire_date")
+    check("geo/live-maayan-zvi", in_wave1("מעין צבי"))
+    check("geo/live-gan-hashomron", in_wave1("גן השומרון"))
+    check("type/live-cold-storage", is_excluded_type("אחסנה בטמפרטורה מבוקרת"))
+    # MEH-2135: the four accountType values that reach filter B as warehouses.
+    # Each of these is a real value from the 29/10 rows, and before `מחסן` was
+    # a stem every one of them passed as a producer lead.
+    check("type/live-warehouse-controlled", is_excluded_type("מחסן מזון בטמפ מבוקרת"))
+    check(
+        "type/live-warehouse-uncontrolled",
+        is_excluded_type("מחסן מזון שאיננו בטמפ מבוקרת"),
+    )
+    check("type/live-warehouse-bare", is_excluded_type("מחסן מזון"))
+    check("type/live-haulage-controlled", is_excluded_type("הובלת מזון בטמפ מבוקרת"))
+    # The production values that must survive — exclusion, not whitelist, so
+    # אריזה and הסעדה stay in: better to see and trim than to lose.
+    check("type/live-factory-kept", not is_excluded_type("מפעל מזון/יצור מזון"))
+    check("type/live-bakery-kept", not is_excluded_type("מאפיה"))
+    check("type/live-patisserie-kept", not is_excluded_type("קונדיטוריה"))
+    check("type/live-butcher-kept", not is_excluded_type("אטליז בשר"))
+    check("type/live-meat-plant-kept", not is_excluded_type("מפעל בשר"))
+    check("type/live-packing-kept", not is_excluded_type("אריזת מזון"))
+    check("type/live-catering-kept", not is_excluded_type("הסעדה/קייטרינג"))
     # End-to-end on synthetic rows, in a temp dir (no network).
 
     with tempfile.TemporaryDirectory() as td:
-        fields = ["שם עסק", "יישוב", "כתובת", "קטגוריה"]
+        # MEH-2135: the fixture carries BOTH `accountType` and
+        # `ProductActivityFoodType`, as the live schema does, instead of the
+        # synthetic `קטגוריה`. Adding only the activity field exposed why that
+        # matters: with no `accountType` present, `category` falls back to
+        # `ProductActivityFoodType`, so `הובלות דן` — which had no activity
+        # value — lost its exclusion string and survived the filter. The
+        # fixture now resolves the two fields to two columns, like a real run.
+        fields = [
+            "שם עסק",
+            "יישוב",
+            "כתובת",
+            "accountType",
+            "ProductActivityFoodType",
+        ]
         rows = [
             {
                 "שם עסק": "מאפיית הכפר",
                 "יישוב": "בנימינה",
                 "כתובת": "",
-                "קטגוריה": "ייצור מזון",
+                "accountType": "מאפיה",
+                "ProductActivityFoodType": "ייצור לחם קווקזי",
             },
             {
                 "שם עסק": "הובלות דן",
                 "יישוב": "בנימינה",
                 "כתובת": "",
-                "קטגוריה": "הובלת מזון",
+                "accountType": "הובלת מזון בטמפ מבוקרת",
+                "ProductActivityFoodType": "הובלה",
             },
             {
                 "שם עסק": "מחלבת רמות",
                 "יישוב": "תל אביב",
                 "כתובת": "",
-                "קטגוריה": "מחלבה",
+                "accountType": "מפעל מזון/יצור מזון",
+                "ProductActivityFoodType": "מחלבה",
             },
         ]
         rc = run_filters(fields, rows, out_dir=Path(td))
@@ -454,9 +588,35 @@ def self_test() -> int:
         check("e2e/header", out[0].split(",")[0] == "שם עסק")
         check("e2e/one-row", len(out) == 2)
         check("e2e/kept-bakery", "מאפיית הכפר" in out[1])
+        # MEH-2135: the COUNT, not the presence of a name — a count is what the
+        # column change can falsify, and it catches a cell added to the writer
+        # without a header (or the reverse), which a presence check cannot.
+        check("e2e/column-count", len(out[0].split(",")) == 8)
+        check("e2e/header-has-activity", "סוג פעילות/מוצרים" in out[0])
+        # Read the cell by its COLUMN INDEX, not as a substring of the row. A
+        # substring check passes when the value lands in the wrong column —
+        # measured: against the pre-column code it resolved into
+        # `קטגוריה/סוג רישיון` and `"…" in out[1]` was green either way.
+        parsed = list(
+            csv.reader(
+                (Path(td) / "wave1_moh_producers.csv")
+                .read_text(encoding="utf-8-sig")
+                .splitlines()
+            )
+        )
+        act_idx = parsed[0].index("סוג פעילות/מוצרים")
+        check("e2e/activity-in-its-own-column", parsed[1][act_idx] == "ייצור לחם קווקזי")
+        check(
+            "e2e/category-column-is-not-activity",
+            parsed[0].index("קטגוריה/סוג רישיון") != act_idx,
+        )
         check(
             "e2e/no-city-exit-2",
             run_filters(["שם", "כתובת"], rows, out_dir=Path(td)) == 2,
+        )
+        check(
+            "e2e/no-name-exit-6",
+            run_filters(["יישוב", "קטגוריה"], rows, out_dir=Path(td)) == 6,
         )
         far = [dict(r, **{"יישוב": "תל אביב"}) for r in rows]
         check("e2e/zero-geo-exit-3", run_filters(fields, far, out_dir=Path(td)) == 3)
@@ -488,16 +648,30 @@ def main(argv: list[str] | None = None) -> int:
         help="output directory (default ./moh-registry)",
     )
     p.add_argument(
+        "--from-json",
+        default=None,
+        help="re-run the filters on a saved moh_raw_rows.json; no network",
+    )
+    p.add_argument(
         "--resource-id",
         default=None,
         help="skip discovery and use this datastore resource id",
     )
     a = p.parse_args(argv)
+    # Windows consoles default to cp1252 and the reports print Hebrew.
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except (AttributeError, ValueError):
+            pass
 
     if a.dry_run:
         return dry_run()
     if a.self_test:
         return self_test()
+    if a.from_json:
+        saved = json.loads(Path(a.from_json).read_text(encoding="utf-8"))
+        return run_filters(saved["fields"], saved["rows"], out_dir=Path(a.out))
     if not a.confirm:
         print(
             "refusing to fetch: pass --confirm to hit data.gov.il (or --dry-run / --self-test for offline modes).",

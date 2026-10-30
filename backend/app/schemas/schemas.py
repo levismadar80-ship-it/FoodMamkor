@@ -1997,6 +1997,26 @@ def state_to_legacy(state: str | None) -> tuple[bool, str]:
     return _STATE_TO_LEGACY.get(state or "", _STATE_TO_LEGACY["accepting_orders"])
 
 
+# MEH-1490: normalize the Google Place ID. Blank → None (admin clears the
+# mapping). URL-safe charset only ([A-Za-z0-9_-]) — a place_id is exactly that,
+# so a pasted Maps URL (contains "/", ":", ".") is rejected with a clear Hebrew
+# error instead of being stored and silently 204-ing forever. MEH-2582: one
+# function for both writers (ProducerUpdate and GooglePlaceIdIn).
+def normalize_google_place_id(v: str | None) -> str | None:
+    if v is None:
+        return None
+    v = v.strip()
+    if not v:
+        return None
+    if len(v) > 300:
+        raise ValueError("מזהה Google Place ארוך מדי")
+    if not re.fullmatch(r"[A-Za-z0-9_-]+", v):
+        raise ValueError(
+            "מזהה Google Place לא תקין — הדביקי את ה-place_id בלבד (לא כתובת URL)"
+        )
+    return v
+
+
 class ProducerUpdate(BaseModel):
     name: SanitizedBusinessNameField | None = None
     # MEH-1626 chunk 3: surfaced by the family-based guard, NOT by the
@@ -2206,25 +2226,11 @@ class ProducerUpdate(BaseModel):
     def _sanitize_address(cls, v):
         return sanitize_text(v, max_length=255)
 
-    # MEH-1490: normalize the Google Place ID. Blank → None (admin clears the
-    # mapping). URL-safe charset only ([A-Za-z0-9_-]) — a place_id is exactly
-    # that, so a pasted Maps URL (contains "/", ":", ".") is rejected with a
-    # clear Hebrew error instead of being stored and silently 204-ing forever.
+    # MEH-1490: see normalize_google_place_id above.
     @field_validator("google_place_id")
     @classmethod
     def _validate_google_place_id(cls, v):
-        if v is None:
-            return None
-        v = v.strip()
-        if not v:
-            return None
-        if len(v) > 300:
-            raise ValueError("מזהה Google Place ארוך מדי")
-        if not re.fullmatch(r"[A-Za-z0-9_-]+", v):
-            raise ValueError(
-                "מזהה Google Place לא תקין — הדביקי את ה-place_id בלבד (לא כתובת URL)"
-            )
-        return v
+        return normalize_google_place_id(v)
 
     # MEH-1335: owner bio — strip HTML + cap at 300 (spec: "כמה מילים עלייך",
     # dashboard textarea counter matches this server-side cap).
@@ -2558,6 +2564,9 @@ class ProducerListOut(BaseModel):
     # what a card claims about itself.
     delivers: bool = False
     offers_pickup: bool = False
+    # MEH-2598: third fulfillment boolean, same mechanism as the two above —
+    # computed by attach_badge_fields, mirrors producer_listing._on_site_condition.
+    sells_on_site: bool = False
     # MEH-986 ch3b (P0 legal — Kashrut Fraud Prohibition Law): free-text `kosher` is NO
     # LONGER on the public output — an unverified kosher string must never
     # serialize to consumers. Re-declared on ProducerAdminOut / ProducerOwnerOut
@@ -2899,6 +2908,21 @@ class ProducerDetailOut(ProducerListOut):
 # the client — NEVER persisted (Google Maps Platform ToS §3.2.3(b) No Caching).
 # The endpoint returns 204 (no body) whenever the line must not render, so this
 # shape is only ever produced for an eligible producer (place_id + ≥20 reviews).
+# MEH-2582: body of PUT /admin/producers/{id}/google-place-id — the approval
+# row's one-field write. Same normalisation as ProducerUpdate.google_place_id.
+class GooglePlaceIdIn(BaseModel):
+    google_place_id: str | None = None
+
+    @field_validator("google_place_id")
+    @classmethod
+    def _validate_google_place_id(cls, v):
+        return normalize_google_place_id(v)
+
+
+class GooglePlaceIdOut(BaseModel):
+    google_place_id: str | None = None
+
+
 class GoogleRatingOut(BaseModel):
     rating: float  # Google's average star rating, e.g. 4.7
     user_rating_count: int  # total Google reviews (guaranteed ≥ MIN_REVIEWS)
@@ -3640,11 +3664,49 @@ class RatingSubmit(BaseModel):
 
 
 # --- Experiences (community-submitted workshops) ---
+# MEH-2602: the wire values the forms send (frontend/lib/event-categories.js
+# EXPERIENCE_CATEGORIES) — the same Hebrew-enum shape as events.py
+# VALID_CATEGORIES. Unchecked, the API stored «workshop» verbatim and the
+# experience page printed that raw word (staging sweep 29/10).
+EXPERIENCE_CATEGORIES = frozenset(
+    {"בישול", "תזונה", "סיור אוכל", "חקלאות", "טעימות", "סדנה", "אחר"}
+)
+
+
+# The English filter keys (messages events.experience_categories) a client
+# may still send, and that rows saved before this check may hold — mapped, so
+# an owner re-saving such a row is not refused for a value she never chose.
+_EXPERIENCE_CATEGORY_KEYS = {
+    "cooking": "בישול",
+    "nutrition": "תזונה",
+    "food_tour": "סיור אוכל",
+    "agriculture": "חקלאות",
+    "tasting": "טעימות",
+    "workshop": "סדנה",
+    "other": "אחר",
+}
+
+
+def _experience_category(value: str | None) -> str | None:
+    if value is None:
+        return None
+    value = _EXPERIENCE_CATEGORY_KEYS.get(value, value)
+    if value not in EXPERIENCE_CATEGORIES:
+        raise ValueError("קטגוריה לא תקינה")
+    return value
+
+
 class ExperienceCreate(BaseModel):
     title: str = Field(..., min_length=4, max_length=300)
     description: str = Field(..., min_length=20)
     image_url: str | None = None
     category: str | None = None
+
+    @field_validator("category")
+    @classmethod
+    def _check_category(cls, v):
+        return _experience_category(v)
+
     event_date: date
     event_time: time | None = None
     duration_minutes: int | None = Field(None, ge=15, le=1440)
@@ -3717,6 +3779,12 @@ class ExperienceUpdate(BaseModel):
     description: str | None = Field(None, min_length=20)
     image_url: str | None = None
     category: str | None = None
+
+    @field_validator("category")
+    @classmethod
+    def _check_category(cls, v):
+        return _experience_category(v)
+
     event_date: date | None = None
     event_time: time | None = None
     duration_minutes: int | None = Field(None, ge=15, le=1440)
@@ -5037,3 +5105,49 @@ class OutboundMessageAdminOut(BaseModel):
     updated_at: datetime | None = None
 
     model_config = {"from_attributes": True}
+
+
+# MEH-2557: saved recipes / events / experiences (table saved_items, MEH-2556).
+SavedItemType = Literal["recipe", "event", "experience"]
+
+
+class SavedItemRefOut(BaseModel):
+    """One saved item, ids only — hydrates the hearts' cache in one call."""
+
+    item_type: SavedItemType
+    item_id: UUID
+
+
+class SavedRecipeOut(BaseModel):
+    """Card fields only. Deliberately NOT ProducerRecipeOut: that shape carries
+    moderation_notes, which is owner/admin context, not public."""
+
+    id: UUID
+    title: str
+    description: str | None = None
+    image_url: str | None = None
+    prep_time_min: int | None = None
+    cook_time_min: int | None = None
+    producer_name: str
+    producer_slug: str | None = None
+    saved_at: datetime
+
+
+class SavedEventOut(EventOut):
+    saved_at: datetime
+
+
+class SavedExperienceOut(ExperienceListOut):
+    # Not on ExperienceListOut: the public feed lists active ones only. A saved
+    # one may since have been cancelled by its host — the page labels it.
+    is_active: bool = True
+    saved_at: datetime
+
+
+class SavedItemsOut(BaseModel):
+    """GET /users/me/saved — newest save first within each type. Only items
+    that are still public are listed; a deleted or hidden one drops out."""
+
+    recipes: list[SavedRecipeOut]
+    events: list[SavedEventOut]
+    experiences: list[SavedExperienceOut]

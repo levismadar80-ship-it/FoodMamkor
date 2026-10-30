@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { Star, StarOfDavid } from "@phosphor-icons/react";
@@ -24,7 +24,7 @@ import { categoryListingHref, getVacationReturnDate } from "../lib/producer-form
 // lib/order-status.js for the precedence and the contradiction it avoids.
 // (Copy itself lives in messages/{he,en}.json; comments stay English per
 // docs/CLAUDE-REVIEW.md rule 5.)
-import { israelDayKey, israelTime, resolveHeaderStatus } from "../lib/order-status";
+import { israelDayKey, israelTime, resolveHeaderStatus, statusTagTone } from "../lib/order-status";
 import { humanTime } from "@/lib/time-format";
 import { isFullThisWeek } from "@/lib/availability";
 
@@ -57,6 +57,9 @@ export default function ProducerHeader({
   alertsOpen = false,
   onOpenAlerts,
   onCloseAlerts,
+  panelKey = 0,
+  onUpdatesChanged,
+  updatesSignal,
 }) {
   const t = useTranslations();
   const locale = useLocale();
@@ -104,12 +107,6 @@ export default function ProducerHeader({
   }, [favorited, onCloseAlerts]);
 
   const showAlerts = Boolean(favorited && user);
-
-  // MEH-2526: the panel reads prefs once, on mount. A write from the updates
-  // button while it is open would leave it showing (and on Save, re-sending)
-  // the pre-write values — bumping its key re-mounts it so it re-reads.
-  const [panelKey, setPanelKey] = useState(0);
-  const remountPanel = useCallback(() => setPanelKey((k) => k + 1), []);
 
   // MEH-1334: 3-state status. Anything not closed/vacation reads as open —
   // matches the old ContactCard OPEN_STATES default-open behavior.
@@ -170,9 +167,10 @@ export default function ProducerHeader({
     <div className="relative" data-testid="producer-header">
       {/* Group 1 — name + single ✓מאומתת seal (richer popover in BadgeRow).
           MEH-815: imageless profiles carry the h1 in the Tinted Masthead, so
-          it is omitted here to keep the name singular. lg:pe-56 reserves the
-          title row's inline-end for the absolutely-pinned actions row. */}
-      <div className="flex items-center flex-wrap gap-2 lg:pe-56">
+          it is omitted here to keep the name singular. lg:pe-72 reserves the
+          title row's inline-end for the absolutely-pinned actions row (pe-56
+          until MEH-2562 added the third action, «קבלת עדכונים»). */}
+      <div className="flex items-center flex-wrap gap-2 lg:pe-72">
         {hasImages && (
           <h1 className="font-headline-lg text-4xl font-black text-text me-3">
             {producer.name}
@@ -186,7 +184,8 @@ export default function ProducerHeader({
           must clear the absolutely-pinned desktop actions row itself —
           adversarial-review fix (imageless-desktop overlap). */}
       {producer.short_description && (
-        <p className={`text-[15px] leading-relaxed text-text mt-2${hasImages ? "" : " lg:pe-56"}`}>
+        // MEH-2596: a muted 17px deck under the name, not body text.
+        <p className={`text-[17px] leading-relaxed text-fg-muted mt-2.5${hasImages ? "" : " lg:pe-72"}`}>
           {producer.short_description}
         </p>
       )}
@@ -241,7 +240,7 @@ export default function ProducerHeader({
           "category · city", the primary category a locale-aware link to its
           /producers?category=<id> listing (same target as the home category
           cards, MEH-1080); absent when there is neither. Line 2: the status
-          alone, coloured text, no dot, no chip. Rationale: docs/DESIGN.md
+          alone, a small tinted tag with a dot (MEH-2596). Rationale: docs/DESIGN.md
           § Quiet Direction v3. */}
       <div className="flex flex-col gap-1 mt-2 mb-1">
         {(producer.city || primaryCategory) && (
@@ -266,8 +265,16 @@ export default function ProducerHeader({
             resolveHeaderStatus). order_window feeds this line instead of
             adding a second one — two order-status assertions on one page
             would contradict each other. */}
+        {/* MEH-2596: the status reads as a small tag — a dot and a 10% tint
+            of its own colour (color-mix on currentColor, so one rule serves
+            open / closed / vacation), like «פתוח עכשיו» on Google and Wolt.
+            Still alone on its line and still the page's one status. */}
         <p className="text-sm" data-testid="producer-header-status-line">
-          <span className={`font-semibold ${status.tone}`} data-testid={status.testid}>
+          <span
+            className={`inline-flex items-start gap-1.5 rounded-xl px-2.5 py-0.5 font-semibold bg-[color-mix(in_srgb,currentColor_10%,transparent)] ${statusTagTone(status.tone)}`}
+            data-testid={status.testid}
+          >
+            <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-current" aria-hidden="true" />
             {statusLabel}
           </span>
         </p>
@@ -371,19 +378,15 @@ export default function ProducerHeader({
           city={producer.city}
           category={primaryCategory?.name}
         />
-      </div>
-
-      {/* MEH-2526: the permanent updates toggle — the owner could not find
-          the alerts switch, so it no longer appears only after a save. Every
-          viewport (unlike the desktop-only actions row above), in normal flow
-          directly above the panel it opens, so the panel lands under it. It
-          is the re-entry control the MEH-1693 trade-off note below asks for. */}
-      <div className="mt-3">
+        {/* MEH-2526 permanent updates toggle; MEH-2562 moved it into this row
+            (desktop) and onto the hero circles (mobile, ImageGallery) — as a
+            lone pill under the header it read as an orphan. */}
         <ProducerUpdatesButton
+          variant="quiet"
           producerId={producer.id}
           onOpenAlerts={onOpenAlerts}
-          onChanged={remountPanel}
-          refreshSignal={alertsOpen}
+          onChanged={onUpdatesChanged}
+          refreshSignal={updatesSignal ?? alertsOpen}
         />
       </div>
 

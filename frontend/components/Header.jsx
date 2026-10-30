@@ -1,9 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { usePathname } from "@/i18n/navigation";
+// MEH-2578: Link and useRouter from here too — next/link and next/navigation's
+// router dropped the /en prefix (the search button pushed /en readers to the
+// Hebrew /producers).
+import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslations, useLocale } from "next-intl";

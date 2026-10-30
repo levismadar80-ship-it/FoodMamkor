@@ -3,16 +3,20 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { MagnifyingGlass, Plant, Leaf, CaretDown, Faders } from "@phosphor-icons/react";
+import { MagnifyingGlass, Plant, Leaf, CaretDown, Faders, MapPin } from "@phosphor-icons/react";
+import { chipsToQuery } from "@/lib/filter-url";
 import { useTranslations } from "next-intl";
 import Breadcrumb from "@/components/Breadcrumb";
 import ProducerCard from "@/components/ProducerCard";
 import ChipScrollRow from "@/components/ChipScrollRow";
+import PromotedServiceChips from "@/components/PromotedServiceChips";
+import { SERVICE_CHIP_KEYS } from "@/lib/map-chips";
 import { CATEGORY_STYLES, resolveCategoryGlyph } from "@/lib/category-registry";
 import LocationModal from "@/components/LocationModal";
 // MEH-1825: day axis on the canonical listing surface — same component home
 // mounts, and the same whitelist the backend validates delivery_day against.
 import { DeliveryDayRow } from "@/components/DeliveryDayRow";
+import { keepFocusedChipClear } from "@/lib/keepFocusedChipClear";
 import { DELIVERY_DAYS } from "@/lib/delivery-days";
 import BackToTop from "@/components/BackToTop";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
@@ -183,6 +187,9 @@ export default function ProducersClient({
   const [baseItems, setBaseItems] = useState(initialItems);
   const [loading, setLoading] = useState(false);
   const [locationModalOpen, setLocationModalOpen] = useState(false);
+  // MEH-2569: the day panel portals here, under the one filter row — a state
+  // ref, so the chip re-renders with the node once it exists (as on home).
+  const [dayPanelHost, setDayPanelHost] = useState(null);
   // MEH-1862: the attribute sheet's open state. Per-instance, like /map's.
   const [sheetOpen, setSheetOpen] = useState(false);
   // Stable identity on purpose (PR #1565 review, carried over from /map): an
@@ -238,7 +245,12 @@ export default function ProducersClient({
   const displayItems = hasActiveChips
     ? (filteredItems ?? [])
     : [...baseItems, ...appendItems];
-  const activeChipDefs = CHIPS_CONFIG.filter((c) => chips[c.key]);
+  // MEH-2598: the promoted service trio shows its own on/off state in the row,
+  // so it is not repeated as a removable tag nor counted on «סינון» — the
+  // same split home (tagChips) and /map (activeFilterTags) make.
+  const activeChipDefs = CHIPS_CONFIG.filter(
+    (c) => chips[c.key] && !SERVICE_CHIP_KEYS.includes(c.key),
+  );
 
   const syncUrl = useCallback(
     // MEH-1081: category rides the same URL sync as chips/city/q.
@@ -761,16 +773,30 @@ export default function ProducersClient({
         ]}
         className="mb-4"
       />
-      <h1 className="font-headline-lg text-3xl font-bold text-text mb-6">
-        {searchQ ? (
-          <>
-            {t("title.search_results")}{" "}
-            <span className="text-primary">&ldquo;{searchQ}&rdquo;</span>
-          </>
-        ) : (
-          t("title.all")
-        )}
-      </h1>
+      {/* MEH-2598: «הצגה במפה» as on home — the list and the map are two views
+          of one search, so the active attribute chips ride along
+          (lib/filter-url). Search text and category stay behind: /map has no
+          free-text search and keys categories differently. */}
+      <div className="flex items-center justify-between gap-3 mb-6">
+        <h1 className="font-headline-lg text-3xl font-bold text-text">
+          {searchQ ? (
+            <>
+              {t("title.search_results")}{" "}
+              <span className="text-primary">&ldquo;{searchQ}&rdquo;</span>
+            </>
+          ) : (
+            t("title.all")
+          )}
+        </h1>
+        <Link
+          href={`/map${chipsToQuery(chips)}`}
+          data-testid="producers-map-link"
+          className="shrink-0 text-primary hover:underline flex items-center gap-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+        >
+          <MapPin size={14} className="text-current" aria-hidden="true" />
+          {t("title.map_link")}
+        </Link>
+      </div>
 
       {/* MEH-820: free-text search — drives the existing ?q= filter */}
       <form
@@ -836,17 +862,29 @@ export default function ProducersClient({
 
           The MEH-1186 micro-label is retired here: it read "סינון" above the
           row, and the button it now sits beside says "סינון" too. */}
-      <div className="mb-3 flex items-center gap-2 min-w-0">
-        <ChipScrollRow
-          variant="toggle"
-          chips={cityRowChips}
-          activeKeys={activeKeys}
-          onChipClick={handleChipClick}
-          className="flex-1"
-        />
-        {/* Anchor wrapper — the sheet's lg+ panel positions off this `relative`
-            parent, exactly as on /map. */}
-        <div className="relative shrink-0">
+      {/* MEH-2569: ONE row, home's (HomeProducersGrid.jsx, MEH-2537) — «סינון»
+          leads (inline-start, sticky below lg), then the city chip, then the
+          day chip that used to sit alone on the row below (MEH-1825/MEH-2186:
+          with no city a tap opens the LocationModal, with a city it opens the
+          day panel, portalled into the host under the row; `onClearDays` is
+          its ✕ and leaves the city standing). Same rail geometry as home: a
+          sideways scroller bled to the glass below lg (-mx-4/px-4 against the
+          page's px-4), py-1/-mt-1 keep focus rings inside the scrollport,
+          overscroll-x-none so iOS does not rubber-band the rail (MEH-2574),
+          visible overflow at lg+ so the sheet's anchored panel is not clipped. */}
+      <div
+        className="-mx-4 -mt-1 mb-3 flex items-center gap-2 min-w-0 overflow-x-auto overscroll-x-none px-4 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:-mx-1 lg:px-1 lg:overflow-visible"
+        data-testid="producers-filter-row"
+        onFocus={keepFocusedChipClear}
+      >
+        {/* Anchor wrapper — the sheet's lg+ panel positions off it (sticky is
+            positioned, so it anchors like `relative`); -start-4/-ms-4/ps-4
+            paint the gutter beside it so chips pass under it, as on home.
+            z-10 because, unlike home's chips, ChipScrollRow's root is
+            `relative`: a later positioned sibling would paint OVER the sticky
+            trigger while the rail scrolls. lg:z-auto keeps the lg+ anchored sheet
+            panel out of a z-10 stacking context, as it was before. */}
+        <div className="sticky z-10 -start-4 -ms-4 ps-4 shrink-0 bg-background lg:relative lg:z-auto lg:start-auto lg:ms-0 lg:ps-0">
           <button
             type="button"
             onClick={() => setSheetOpen((v) => !v)}
@@ -871,21 +909,41 @@ export default function ProducersClient({
             onToggleChip={toggleChip}
             resultCount={displayItems.length}
             onClearAll={clearAttributeChips}
+            align="start"
           />
         </div>
+        {/* MEH-2598 (Sapir 29/10, «אחיד»): the same promoted service trio as
+            home and /map, between «סינון» and the city chip. `visibleChipDefs`
+            is the gated list, so on_site appears only once the catalog
+            carries it. */}
+        <PromotedServiceChips
+          chips={visibleChipDefs}
+          chipState={chips}
+          onToggle={toggleChip}
+          testIdPrefix="producers-promoted-chip"
+        />
+        {/* The city chip keeps ChipScrollRow (roving tab stop, toolbar
+            semantics, toggle visuals); one chip never overflows its own
+            scroller, so the rail is what scrolls. -mb-1 cancels that
+            scroller's pb-1, which would otherwise centre the chip 2px above
+            its neighbours. */}
+        <ChipScrollRow
+          variant="toggle"
+          chips={cityRowChips}
+          activeKeys={activeKeys}
+          onChipClick={handleChipClick}
+          className="shrink-0 -mb-1"
+        />
+        <DeliveryDayRow
+          cityActive={cityFilter}
+          daysActive={dayFilters}
+          onSelectDay={handleDaySelected}
+          onClearDays={handleClearDays}
+          inRow
+          panelHost={dayPanelHost}
+        />
       </div>
-
-      {/* MEH-1825: day refinement on the canonical listing surface. Same
-          component home mounts. MEH-2186: it is ONE dropdown chip now — with
-          no city a tap opens the LocationModal below, with a city it opens an
-          inline day panel; `onClearDays` is the chip's ✕ and drops the day set
-          without disturbing the city. */}
-      <DeliveryDayRow
-        cityActive={cityFilter}
-        daysActive={dayFilters}
-        onSelectDay={handleDaySelected}
-        onClearDays={handleClearDays}
-      />
+      <div ref={setDayPanelHost} className="mb-3 empty:hidden" data-testid="producers-day-panel-host" />
 
       {/* Results counter + active filters — MEH-1186: one control line.
           The removable chips (toggle ×, search ×) and

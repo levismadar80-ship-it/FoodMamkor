@@ -13,6 +13,7 @@ import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import { highlightMatch } from "@/lib/highlightMatch";
 import { getOrderWindowStatus } from "@/lib/orderWindow";
 import { formatPrice } from "@/lib/utils";
+import { resolveDeliveryFee } from "@/lib/deliveryFee";
 // MEH-1880: imported from the producer PAGE's lib on purpose. `israelTime` is
 // the canonical Israel-local "HH:MM" formatter and the card interpolates it
 // into the very same `orders_open` string the page renders — a second copy here
@@ -24,6 +25,7 @@ import { useUserLocation } from "@/lib/user-location";
 import { haversineKm, formatDistance } from "@/lib/distance";
 import { producerPoints } from "@/lib/producerPoints";
 import { allBadges, badgeCount } from "@/lib/badges";
+import { badgeIcon } from "@/lib/chip-icons";
 import { deriveAvailability, isAvailableToday } from "@/lib/availability";
 import Popover from "@/components/ui/Popover";
 import { useAuth } from "@/lib/auth-context";
@@ -184,6 +186,7 @@ function CardHeart({ producer, onCountChange }) {
 
 export default function ProducerCard({ producer, active, onClick, referrer, fridayMode = false, highlightQuery = null }) {
   const t = useTranslations();
+  const cardFee = resolveDeliveryFee(producer.delivery_fee, producer.delivery_areas);
   // Same namespace BadgeRow.jsx and KashrutBadgeStrip.jsx:115 use, so the
   // overflow rows read the identical `kashrut.badges.*.label` strings the
   // visible pills and the detail page read.
@@ -193,6 +196,23 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
   // MEH-1592: collision boundary handed to the +N Popover — see the badge strip
   // below. The panel must clear the whole strip, not just the +N chip.
   const badgeStripRef = useRef(null);
+  // MEH-2584: the no-photo name plate's pb-12 clears ONE line of badges. When
+  // the strip wraps (narrow cards, long labels, iconed pills) the plate grows
+  // its bottom padding to the strip's real height so the name never sits under
+  // a badge. Single-line strips keep the class padding (stripLift stays 0).
+  const STRIP_ONE_LINE_MAX = 32; // px — one pill row is ~25px
+  const PLATE_CLEARANCE = 24; // px — strip's bottom-3 offset + breathing room
+  const [stripLift, setStripLift] = useState(0);
+  useEffect(() => {
+    const el = badgeStripRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return undefined;
+    const ro = new ResizeObserver(() => {
+      const h = el.getBoundingClientRect().height;
+      setStripLift(h > STRIP_ONE_LINE_MAX ? Math.ceil(h) + PLATE_CLEARANCE : 0);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   useEffect(() => {
     setLocalFavCount(producer.favorites_count ?? 0);
   }, [producer.favorites_count]);
@@ -360,6 +380,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
               // a single token wider than the tile, which keep-all can't break.
               <div
                 className="absolute inset-0 flex flex-col justify-end bg-background-alt p-4 pb-12 sm:p-5 sm:pb-14"
+                style={stripLift ? { paddingBottom: stripLift } : undefined}
                 role="img"
                 aria-label={t("producer.card.aria.image_missing", { name: producer.name })}
               >
@@ -394,7 +415,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
             which is the overlap Sapir's QA screenshot caught). */}
         <div
           ref={badgeStripRef}
-          className="absolute bottom-3 start-3 flex flex-wrap items-center gap-1.5"
+          className="absolute bottom-3 start-3 flex flex-wrap items-center gap-1"
         >
           <BadgeRow producer={producer} limit={2} surface="card" avoidRef={badgeStripRef} />
           {badgeCount(producer) > 2 && (
@@ -494,9 +515,13 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
               <span className="flex flex-col gap-2" role="list">
                 {allBadges(producer)
                   .slice(2)
-                  .map((b) => (
+                  .map((b) => {
+                    const icon = badgeIcon(b.key);
+                    return (
                     <span key={b.key} role="listitem" className="block">
-                      <span className="block">
+                      {/* MEH-2584: same leading glyph as the visible pills. */}
+                      <span className="flex items-center gap-1">
+                        {icon && <span aria-hidden="true" className="inline-flex">{icon}</span>}
                         {resolveBadgeLabel(b, producer, tKashrut)}
                       </span>
                       {b.tooltip && (
@@ -505,7 +530,8 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
                         </span>
                       )}
                     </span>
-                  ))}
+                    );
+                  })}
               </span>
             </Popover>
           )}
@@ -680,20 +706,24 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
             not an absence (same distinction DeliveryBlock.jsx's AreaRow and
             MEH-1942 already pin for the per-area field). Renders nothing
             when delivery_fee is null/undefined — no "no delivery" row. */}
-        {producer.delivery_fee != null && (
+        {/* MEH-2602: the same resolver as DeliveryBlock's top line — per-area
+            overrides included — so card and page state one price. */}
+        {cardFee.fee != null && (
           <p className="flex items-center gap-1 text-[12px] text-fg-muted" data-testid="card-delivery-fee">
             <Truck size={14} className="shrink-0" aria-hidden="true" />
-            {producer.delivery_fee === 0 ? (
+            {cardFee.fee === 0 && !cardFee.from ? (
               t("group_buys.delivery.fee_free")
             ) : (
               (() => {
                 const { before, after } = splitAroundAmount(
-                  t("group_buys.delivery.fee", { amount: AMOUNT_SENTINEL }),
+                  t(cardFee.from ? "group_buys.delivery.fee_from" : "group_buys.delivery.fee", {
+                    amount: AMOUNT_SENTINEL,
+                  }),
                 );
                 return (
                   <>
                     {before}
-                    <bdi>{formatPrice(producer.delivery_fee)}</bdi>
+                    <bdi>{formatPrice(cardFee.fee)}</bdi>
                     {after}
                   </>
                 );

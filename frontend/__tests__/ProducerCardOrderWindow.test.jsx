@@ -76,6 +76,17 @@ vi.mock("@phosphor-icons/react", () => ({
   HeartStraight: ({ weight, ...p }) => <span data-testid="icon-heart" {...p} />,
   Star: (p) => <span data-testid="icon-star" {...p} />,
   Truck: (p) => <span data-testid="icon-truck" {...p} />,
+  // MEH-2584: BadgeRow now imports lib/chip-icons.js (badge glyphs).
+  SealCheck: () => null,
+  Package: () => null,
+  Storefront: () => null, // MEH-2598: chip-icons on_site
+  Certificate: () => null,
+  Carrot: () => null,
+  GrainsSlash: () => null,
+  Barn: () => null,
+  DropSlash: () => null,
+  Cube: () => null,
+  Clock: () => null,
 }));
 
 const base = {

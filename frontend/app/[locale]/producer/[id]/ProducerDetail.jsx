@@ -9,6 +9,7 @@ import { MAP_REFERRER } from "@/lib/map-view-state";
 
 import Breadcrumb from "@/components/Breadcrumb";
 import ImageGallery from "@/components/ImageGallery";
+import ProducerUpdatesButton from "@/components/ProducerUpdatesButton";
 // MEH-1306: owner-only per-section pencil (self-gating, 0 DOM non-owner).
 import OwnerSectionEditLink from "@/components/OwnerSectionEditLink";
 import SectionAnchorNav from "@/components/SectionAnchorNav";
@@ -73,6 +74,14 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
   const [alertsOpen, setAlertsOpen] = useState(false);
   const openAlerts = useCallback(() => setAlertsOpen(true), []);
   const closeAlerts = useCallback(() => setAlertsOpen(false), []);
+  // MEH-2526 → MEH-2562: the panel reads prefs once, on mount; a write from an
+  // updates bell bumps its key so it re-reads. Lifted here from ProducerHeader
+  // because the bell now has two mounts (hero circle on mobile, quiet row on
+  // desktop). `updatesSignal` also re-reads the OTHER mount after a write, so
+  // the two never disagree after a resize.
+  const [panelKey, setPanelKey] = useState(0);
+  const remountPanel = useCallback(() => setPanelKey((k) => k + 1), []);
+  const updatesSignal = `${alertsOpen}:${panelKey}`;
 
   // MEH-1306: deep-link landing for the edit tab's "view on page" links. The
   // sections mount only after the client fetch resolves, so the browser's
@@ -117,6 +126,8 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
   const hasImages = images.length > 0;
   const primaryCategory = producer.categories?.[0];
 
+  // MEH-2593: ImageGallery's phone hero bleeds out of this px-4 with a
+  // matching -mx-4 — change the two together.
   return (
     <div className="max-w-6xl mx-auto px-4 py-6" data-testid="producer-detail-root">
       {/* MEH-1209: owner-only edit entry — renders above the h1 (which lives in
@@ -173,6 +184,15 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
           verifiedAt={producer.verified_at}
           shareUrl={shareUrl}
           onFavorited={openAlerts}
+          updatesButton={
+            <ProducerUpdatesButton
+              variant="gallery"
+              producerId={producer.id}
+              onOpenAlerts={openAlerts}
+              onChanged={remountPanel}
+              refreshSignal={updatesSignal}
+            />
+          }
         />
         <div className="flex justify-end">
           <OwnerSectionEditLink producerId={producer.id} anchor="images" sectionKey="images" />
@@ -208,6 +228,9 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             alertsOpen={alertsOpen}
             onOpenAlerts={openAlerts}
             onCloseAlerts={closeAlerts}
+            panelKey={panelKey}
+            onUpdatesChanged={remountPanel}
+            updatesSignal={updatesSignal}
           />
           {/* MEH-1691: the weekly order-acceptance strip that used to render
               here was removed — the order window is stated exactly once, as the

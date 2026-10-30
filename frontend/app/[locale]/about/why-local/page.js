@@ -14,8 +14,12 @@
  */
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
+import EditorialPhoto from "@/components/EditorialPhoto";
 import { BRAND_NAME } from "@/lib/constants";
 import { buildAlternates, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
+
+// MEH-2597: the mid-article photo sits under this (0-based) section.
+const PHOTO_AFTER_SECTION = 1;
 
 // MEH-1289: external evidence link (body) + the two bottom "sources" links.
 const NEF_URL = "https://www.sustainweb.org/blogs/jul25-what-is-local-food/";
@@ -84,7 +88,7 @@ export default async function WhyLocalPage({ params }) {
         </header>
 
         <div>
-          {SECTIONS.map((s) => (
+          {SECTIONS.map((s, i) => (
             <section key={s.heading}>
               <h2 className="font-headline-md mt-10 mb-3 sm:mt-12 text-primary text-[22px] font-bold">
                 {t(s.heading)}
@@ -105,6 +109,14 @@ export default async function WhyLocalPage({ params }) {
                     })
                   : t(s.body)}
               </p>
+              {/* MEH-2597: one photo mid-article, after the second reason. */}
+              {i === PHOTO_AFTER_SECTION && (
+                <EditorialPhoto
+                  src="https://res.cloudinary.com/dfzpscjks/image/upload/v1782159035/events/hero-market.jpg"
+                  testId="why-local-photo"
+                  className="mt-8"
+                />
+              )}
             </section>
           ))}
 

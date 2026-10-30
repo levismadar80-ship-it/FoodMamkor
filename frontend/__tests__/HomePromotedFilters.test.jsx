@@ -64,7 +64,9 @@ vi.mock("next/navigation", () => ({ useRouter: () => router }));
 /** The pair the card promotes. Asserted against the component's rendered
  *  output, never imported from it — a test that imports the constant it is
  *  checking passes for any value of that constant. */
-const PROMOTED = ["verified", "has_delivery"];
+// MEH-2598: the shared service trio (lib/map-chips SERVICE_CHIP_KEYS). on_site
+// is data-gated and this fixture's catalog carries none, so two render.
+const PROMOTED = ["has_delivery", "pickup_points"];
 
 const producers = Array.from({ length: 12 }, (_, i) => ({ id: i + 1 }));
 
@@ -101,7 +103,7 @@ const promotedChips = () => screen.queryAllByTestId(/^home-promoted-chip-/);
 const tags = () => screen.queryAllByTestId(/^home-active-filter-/);
 
 describe("MEH-2173 — the promoted row", () => {
-  it("renders EXACTLY the two promoted chips, and no other attribute chip", () => {
+  it("renders EXACTLY the promoted service chips (on_site gated off), and no other attribute chip", () => {
     render(<HomeProducersGrid {...props()} />);
     const keys = promotedChips().map((el) =>
       el.getAttribute("data-testid").replace("home-promoted-chip-", ""),
@@ -124,17 +126,17 @@ describe("MEH-2173 — the promoted row", () => {
   it("a promoted chip toggles IN PLACE — it does not navigate", () => {
     const p = props();
     render(<HomeProducersGrid {...p} />);
-    fireEvent.click(screen.getByTestId("home-promoted-chip-verified"));
+    fireEvent.click(screen.getByTestId("home-promoted-chip-has_delivery"));
     // MEH-2537: the row tags its taps ("row") so analytics can tell them from
     // the sheet's switches, which call the same handler with the key alone.
-    expect(p.onToggleChip).toHaveBeenCalledWith("verified", "row");
+    expect(p.onToggleChip).toHaveBeenCalledWith("has_delivery", "row");
     expect(router.push).not.toHaveBeenCalled();
   });
 
   it("shows a promoted chip's active state on the chip itself", () => {
-    render(<HomeProducersGrid {...props({ chips: { verified: true } })} />);
-    expect(screen.getByTestId("home-promoted-chip-verified").getAttribute("aria-pressed")).toBe("true");
-    expect(screen.getByTestId("home-promoted-chip-has_delivery").getAttribute("aria-pressed")).toBe("false");
+    render(<HomeProducersGrid {...props({ chips: { has_delivery: true } })} />);
+    expect(screen.getByTestId("home-promoted-chip-has_delivery").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("home-promoted-chip-pickup_points").getAttribute("aria-pressed")).toBe("false");
   });
 
   // MEH-2500: selection is not colour-only — a lit promoted chip swaps its
@@ -146,23 +148,23 @@ describe("MEH-2173 — the promoted row", () => {
       unmount();
       return html;
     })();
-    render(<HomeProducersGrid {...props({ chips: { verified: true } })} />);
+    render(<HomeProducersGrid {...props({ chips: { has_delivery: true } })} />);
     const svgOf = (key) => screen.getByTestId(`home-promoted-chip-${key}`).querySelectorAll("svg");
-    expect(svgOf("verified")).toHaveLength(1);
-    expect(svgOf("verified")[0].innerHTML).toBe(check);
     expect(svgOf("has_delivery")).toHaveLength(1);
-    expect(svgOf("has_delivery")[0].innerHTML).not.toBe(check);
+    expect(svgOf("has_delivery")[0].innerHTML).toBe(check);
+    expect(svgOf("pickup_points")).toHaveLength(1);
+    expect(svgOf("pickup_points")[0].innerHTML).not.toBe(check);
   });
 
   // MEH-2500 reversed "promoted included": a lit promoted chip sits beside the
   // trigger, so counting it read as one more filter hidden in the sheet.
   it("counts only the active axes NOT on screen — a lit promoted chip is not in « · N»", () => {
-    render(<HomeProducersGrid {...props({ chips: { verified: true, vegan: true } })} />);
+    render(<HomeProducersGrid {...props({ chips: { has_delivery: true, vegan: true } })} />);
     expect(screen.getByTestId("home-filters-button").textContent).toMatch(/· 1$/);
   });
 
   it("a promoted chip alone → no count on the trigger", () => {
-    render(<HomeProducersGrid {...props({ chips: { verified: true } })} />);
+    render(<HomeProducersGrid {...props({ chips: { has_delivery: true } })} />);
     expect(screen.getByTestId("home-filters-button").textContent).not.toMatch(/\d/);
   });
 
@@ -189,7 +191,8 @@ describe("MEH-2173 — the sheet", () => {
     // Every axis the flat row used to offer is still reachable — the card's
     // "no removal of any filter capability" line, asserted rather than assumed.
     for (const chip of CHIPS_CONFIG) {
-      if (chip.key === "open_for_orders_now" || chip.key === "no_added_sugar") continue;
+      // Gated axes (zero-data catalog in this fixture) are hidden by design.
+      if (["open_for_orders_now", "no_added_sugar", "on_site"].includes(chip.key)) continue;
       expect(screen.getByTestId(`chip-${chip.key}`)).toBeTruthy();
     }
   });
@@ -201,13 +204,13 @@ describe("MEH-2173 — the sheet", () => {
     expect(p.onToggleChip).toHaveBeenCalledWith("vegan");
     // And the promoted axis inside the sheet reaches the identical handler —
     // one state, so the surface chip and its twin switch cannot disagree.
-    fireEvent.click(screen.getByTestId("chip-verified"));
-    expect(p.onToggleChip).toHaveBeenCalledWith("verified");
+    fireEvent.click(screen.getByTestId("chip-has_delivery"));
+    expect(p.onToggleChip).toHaveBeenCalledWith("has_delivery");
   });
 
   it("reflects active state inside the sheet for a promoted axis", () => {
-    render(<HomeProducersGrid {...props({ filterSheetOpen: true, chips: { verified: true } })} />);
-    expect(screen.getByTestId("chip-verified").getAttribute("aria-checked")).toBe("true");
+    render(<HomeProducersGrid {...props({ filterSheetOpen: true, chips: { has_delivery: true } })} />);
+    expect(screen.getByTestId("chip-has_delivery").getAttribute("aria-checked")).toBe("true");
   });
 });
 
@@ -222,18 +225,18 @@ describe("MEH-2173 — the applied-filter strip", () => {
   });
 
   it("does NOT tag a promoted axis — its state shows on its own chip", () => {
-    render(<HomeProducersGrid {...props({ chips: { verified: true } })} />);
-    expect(screen.queryByTestId("home-active-filter-verified")).toBeNull();
+    render(<HomeProducersGrid {...props({ chips: { has_delivery: true } })} />);
+    expect(screen.queryByTestId("home-active-filter-has_delivery")).toBeNull();
     // ...and the state is still visible somewhere, which is the half that makes
     // the line above a de-duplication rather than a disappearance.
-    expect(screen.getByTestId("home-promoted-chip-verified").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("home-promoted-chip-has_delivery").getAttribute("aria-pressed")).toBe("true");
   });
 
   it("5-state (0 items): a promoted-only filter leaves NO orphan 'מסנן לפי:' row", () => {
     // The row's old condition was "any chip is active", which with only a
     // promoted axis on would print the label with an empty list after it — a
     // heading for a set with nothing in it.
-    render(<HomeProducersGrid {...props({ chips: { verified: true } })} />);
+    render(<HomeProducersGrid {...props({ chips: { has_delivery: true } })} />);
     expect(tags()).toHaveLength(0);
     expect(screen.queryByText("home.producers.filter_prefix")).toBeNull();
   });
@@ -247,7 +250,7 @@ describe("MEH-2173 — the applied-filter strip", () => {
   it("5-state (many): promoted + two non-promoted → the row carries the TWO", () => {
     render(
       <HomeProducersGrid
-        {...props({ chips: { verified: true, vegan: true, gluten_free: true } })}
+        {...props({ chips: { has_delivery: true, vegan: true, gluten_free: true } })}
       />,
     );
     const keys = tags().map((el) =>
@@ -340,5 +343,17 @@ describe("MEH-2173 — the state behind it (useHomePage)", () => {
     window.history.replaceState(null, "", "/?vegan=1");
     const { result } = renderHook(() => useHomePage());
     expect(result.current.chips.vegan).toBe(true);
+  });
+});
+
+describe("MEH-2598 — home «הצגה במפה» carries the active filters", () => {
+  it("is a bare /map link when no filter is on", () => {
+    render(<HomeProducersGrid {...props()} />);
+    expect(screen.getByTestId("home-map-link").getAttribute("href")).toBe("/map");
+  });
+
+  it("carries the active chips in the /map vocabulary (has_delivery, not home's ?delivery)", () => {
+    render(<HomeProducersGrid {...props({ chips: { has_delivery: true, vegan: true } })} />);
+    expect(screen.getByTestId("home-map-link").getAttribute("href")).toBe("/map?has_delivery=1&vegan=1");
   });
 });

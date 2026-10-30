@@ -308,7 +308,10 @@ export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onAppro
   const busy = isBusy || (() => false);
   const isPending = p.status === "pending";
   return (
-    <div className="flex gap-3 flex-wrap">
+    // MEH-2587: below md the actions are plain 16px-tall text links in a narrow
+    // column — hard to hit with a thumb. Give each a 40px-tall row there (same
+    // target height `.table-stack` gives the other admin tables' actions).
+    <div className="flex gap-3 flex-wrap max-md:gap-y-0 max-md:*:min-h-10 max-md:*:inline-flex max-md:*:items-center">
       {/* MEH-745 surfaced approve for two waiting states, `pending` and
           `pending_whatsapp`; the second was removed in MEH-2124, leaving one.
           MEH-1011 Chunk 2: pass the full producer so the approve-422 handler
@@ -553,6 +556,7 @@ function AdminProducersRow({ producer, isStoryOpen, handlers, checklist }) {
               /* MEH-1399 chunk 4: the evidence dossier reads this row's own
                  ProducerAdminOut fields — no extra fetch. */
               producer={p}
+              onGooglePlaceLinked={(placeId) => handlers.onGooglePlaceLinked?.(p.id, placeId)}
             />
           </td>
         </tr>
@@ -625,14 +629,14 @@ function EmptyRow({ incompleteOnly }) {
 export default function AdminProducersTable({
   rows, incompleteOnly, storyCardOpenId, onSetStoryCardOpenId, loadError, onRetryLoad,
   onQuickApprove, onApproveWithoutLicense, onRequestChanges, onReject, onToggleStatus, onDeleteProducer,
-  onUploadStoryCard, isBusy, checklist,
+  onUploadStoryCard, onGooglePlaceLinked, isBusy, checklist,
   page, totalPages, perPage, onPageChange, onPerPageChange, visibleCount,
 }) {
   const onToggleStoryCard = (id) =>
     onSetStoryCardOpenId((prev) => (prev === id ? null : id));
   const handlers = {
     onQuickApprove, onApproveWithoutLicense, onRequestChanges, onReject, onToggleStatus, onDeleteProducer,
-    onUploadStoryCard, onToggleStoryCard, isBusy,
+    onUploadStoryCard, onToggleStoryCard, onGooglePlaceLinked, isBusy,
     // MEH-2495: a claim-link 409 means the row is stale — reload the list.
     onReload: onRetryLoad,
   };

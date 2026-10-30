@@ -159,6 +159,8 @@
       "no_account": "Don't have an account?",
       "register_cta": "Join →",
       "email_placeholder": "name@example.com",
+      "oauth_terms_google": "By continuing with Google, you confirm you are over 18 and agree to the <tos>Terms of Use</tos> and the <privacy>Privacy Policy</privacy>.",
+      "oauth_terms_apple": "By continuing with Apple, you confirm you are over 18 and agree to the <tos>Terms of Use</tos> and the <privacy>Privacy Policy</privacy>.",
       "oauth_terms": "By continuing with Google or Apple, you confirm you are over 18 and agree to the <tos>Terms of Use</tos> and the <privacy>Privacy Policy</privacy>."
     },
     "oauth": {
@@ -791,6 +793,13 @@
         },
         "recipes": {
           "cta": "Our recipes"
+        },
+        "group_buys": {
+          "heading": "Open group buys"
+        },
+        "experiences": {
+          "heading": "Upcoming experiences",
+          "free": "Free"
         }
       },
       "header": {
@@ -1771,7 +1780,8 @@
         "protected_title": "Cannot remove permissions from the primary admin",
         "menu_aria": "More actions",
         "unblock": "Unblock",
-        "block": "Block"
+        "block": "Block",
+        "delete": "Delete"
       },
       "favorites": {
         "of": "Favorites of {name}:",
@@ -1781,7 +1791,8 @@
         "promote": "Are you sure you want to grant admin permissions to {name}?",
         "demote": "Are you sure you want to remove admin permissions from {name}?",
         "submitting": "...",
-        "confirm": "Confirm"
+        "confirm": "Confirm",
+        "delete": "Delete \"{name}\" ({email})? Their business, favourites and reviews will be deleted too. This cannot be undone."
       },
       "pagination": {
         "page_size": "Rows per page",
@@ -1915,7 +1926,6 @@
       },
       "filters": {
         "city_placeholder": "Filter by city...",
-        "all_statuses": "All statuses",
         "new_lead": "+ New lead"
       },
       "columns": {
@@ -2286,146 +2296,196 @@
       "map_count": "{count} businesses with map location"
     },
     "help": {
-      "title": "Admin help",
-      "intro": "This guide summarises the admin panel tools, key approval processes, and incident responses. Maintained manually — if something here is wrong, open a PR with a fix rather than leaving the next direction in the dark.",
-      "toc_label": "Contents",
-      "toc": {
-        "dashboard": "Dashboard overview",
-        "producers": "Approving and rejecting businesses",
-        "users": "Managing users",
-        "reviews": "Reviews",
-        "reports": "Reports",
-        "experiences": "Experiences",
-        "outreach": "Business outreach",
-        "group_buys": "Group buys",
-        "recipes": "Recipes",
-        "kashrut": "Kashrut requests",
-        "category_requests": "Category requests",
-        "whatsapp_failures": "Undelivered messages",
-        "analytics": "Analytics",
-        "emergency": "Emergencies",
-        "urls": "Important URLs"
-      },
-      "sections": {
-        "dashboard": {
-          "title": "Dashboard overview",
-          "p1": "<strong>/admin</strong> — the main page. Four top metrics (users, businesses, events, open reports) + a weekly delta row beneath them.",
-          "li1": "<strong>Yellow pill on \"Dashboard\" in the sidebar</strong> — number of items awaiting approval (businesses + reports + flagged products + experiences). Refreshes on every internal navigation.",
-          "li2": "<strong>DAU 30-day chart</strong> — based on <code>users.last_active_at</code> which updates on every authenticated request (5-min throttle).",
-          "li3": "<strong>Top cities</strong> — aggregated from <code>producer_page_views</code> (rows without city are not counted).",
-          "li4": "<strong>Server health</strong> — average response time + requests per minute over the last hour. Per-process only (resets on every deploy)."
+      "intro": "Short answers to “how do I…”, in menu order.",
+      "search_label": "Search help",
+      "search_placeholder": "Search: approve, kashrut, report…",
+      "no_results": "No matching topic. Try another word.",
+      "open_screen": "Open screen →",
+      "topics": {
+        "daily": {
+          "q": "Where do I start each day?",
+          "steps": [
+            "Open “What needs attention”. It lists only what waits for your decision.",
+            "First, businesses waiting for approval, oldest first.",
+            "Then every queue listed below. An empty queue is not shown.",
+            "A food-safety report (allergens, expiry) comes before everything else."
+          ]
         },
-        "producers": {
-          "title": "Approving and rejecting businesses",
-          "p1": "<strong>/admin/producers</strong> — table + search + Excel import.",
-          "li1": "Filter by status <strong>pending</strong>.",
-          "li2": "Click the business name → full details page, including licensing declarations, photos, and description.",
-          "li3": "<strong>To approve:</strong> click <em>\"Quick approve\"</em>. The business moves to <code>approved</code>, appears on the homepage, and shows on the map.",
-          "li4": "<strong>To reject:</strong> <em>\"Reject\"</em> + a short reason that will be emailed to the business owner.",
-          "li5": "<strong>Edit (pencil):</strong> goes to <code>/admin/producers/[id]/edit</code> — all fields including \"verified\" / \"recommended\" / \"availability status\" / \"primary contact method\".",
-          "footnote": "A business does not need to be verified to be <em>approved</em> — <strong>verified</strong> adds a blue tag after you've checked licensing and identity, usually in a monthly audit."
+        "approve": {
+          "q": "How do I approve a business?",
+          "steps": [
+            "On “Businesses”, filter by “Pending”.",
+            "Open the pre-approval checklist on the business row and tick what you checked. Ticks are saved and never block approval.",
+            "Check the business's Google profile from the checklist.",
+            "Click “✓ Approve”. The business goes live at once.",
+            "Missing a photo or a required licence number? Approval fails and a completion request opens with the missing item."
+          ]
         },
-        "users": {
-          "title": "Managing users",
-          "p1": "<strong>/admin/users</strong> — search by email/name, filter by role.",
-          "li1": "<strong>role:</strong> consumer / producer / admin — applied immediately, with no further confirmation.",
-          "li2": "<strong>Block:</strong> a blocked login returns 403. The user doesn't know immediately, they only see a message on their next login attempt.",
-          "li3": "<strong>Favorites:</strong> click the count next to a user to see the businesses they saved — useful for tracking suspicious activity.",
-          "footnote": "Reminder: blocking is reversible, a role change affects the next JWT immediately. <strong>Do not promote a user to admin</strong> without verifying identity outside the system."
+        "request_changes": {
+          "q": "How do I ask the owner to complete details?",
+          "steps": [
+            "On the business row, click “Request completion”.",
+            "Choose what is missing and add details if needed.",
+            "Send. The business stays in the queue and the owner gets an email listing what is missing."
+          ]
         },
-        "reviews": {
-          "title": "Reviews",
-          "p1": "<strong>/admin/reviews</strong> — all reviews in a single list (newest first).",
-          "li1": "Filter by rating (1–5) or free-text search across business/user/title/body.",
-          "li2": "Deletion requires confirmation (window.confirm). After deletion the business's <code>avg_rating</code> and review count update automatically.",
-          "li3": "Deletion is the correct pattern for: defamatory language, personal information, spam, a review about a different business."
+        "reject": {
+          "q": "How do I reject a business?",
+          "steps": [
+            "Open the ⋮ menu on the business row and choose “Reject”.",
+            "Choose a reason. “Other” requires details.",
+            "“Reject and send email”. The business will not appear on the site. If only a detail is missing, prefer a completion request."
+          ]
+        },
+        "approve_without_license": {
+          "q": "How do I approve a business without a licence number?",
+          "steps": [
+            "Only possible when the business shows the “Licence pending” tag.",
+            "In the ⋮ menu choose “Approve without licence”.",
+            "The business goes live without a licence badge."
+          ]
+        },
+        "row_tags": {
+          "q": "What do the tags on a business row mean?",
+          "steps": [
+            "“Waiting N business days”: how long the request has waited.",
+            "“Resubmission #N”: the owner fixed and resubmitted.",
+            "“Duplicate?”: same name or city as another business. Check before approving.",
+            "“Licence pending”: a licence-required category with no number.",
+            "“Organizer”: a markets and events organizer, not a business.",
+            "“Low / medium / high risk”: an automatic estimate. The decision is yours."
+          ]
+        },
+        "draft_invite": {
+          "q": "How do I prepare a page for a business that has not signed up?",
+          "steps": [
+            "On “Businesses”, click “+ New business”.",
+            "Tick “Draft the owner receives by invite link”, fill in and save.",
+            "On the draft row, click “Copy message with link” and send it to her on WhatsApp.",
+            "The link is valid for 14 days. Once she submits for review, the page reaches the approvals queue."
+          ]
+        },
+        "approved_actions": {
+          "q": "What else can I do with an approved business?",
+          "steps": [
+            "“Edit”: every field, including “Verified” and “Recommended”.",
+            "⋮ → “Suspend”: takes it off the site for now. “Activate” brings it back.",
+            "⋮ → “Story”: a ready Instagram card.",
+            "⋮ → “Delete”: deletes it for good. Cannot be undone."
+          ]
         },
         "reports": {
-          "title": "Reports",
-          "p1": "<strong>/admin/reports</strong> — sorted by urgency (new + multiple-reports first).",
-          "li1": "<strong>Resolve</strong> — close the report, optionally with a follow-up action (block / delete).",
-          "li2": "<strong>Hold</strong> — keeps it open but moves it to the bottom of the list. Use when more information is needed.",
-          "li3": "<strong>Ignore</strong> — close with no action, for reports that don't substantiate an issue.",
-          "footnote": "Rule of thumb: <strong>respond within 24 hours</strong>. Product-safety reports (allergens, expiration dates) — immediately."
-        },
-        "experiences": {
-          "title": "Experiences",
-          "p1": "<strong>/admin/experiences</strong> — 5 tabs: pending / changes required / approved / rejected / all.",
-          "li1": "On click: approve / reject / request changes. The host receives an email.",
-          "li2": "Haiku pre-check runs before an experience reaches the \"pending\" tab — the \"changes required\" tab is when the AI flagged a warning but did not block."
-        },
-        "outreach": {
-          "title": "Business outreach",
-          "p1": "<strong>/admin/outreach</strong> — centralizes leads for potential businesses: contacting, status tracking, and conversion into a registered business.",
-          "li1": "Track each lead's status — contacted / pending / converted / rejected.",
-          "li2": "Clicking a lead opens its contact details and lets you mark progress."
-        },
-        "group_buys": {
-          "title": "Group buys",
-          "p1": "<strong>/admin/group-buys</strong> — manage users' group buys. The feature is not active right now; the screen is ready for future activation.",
-          "li1": "Once active, open groups and the number of members each has will appear here.",
-          "li2": "Until activation the screen is view-only with no actions."
-        },
-        "recipes": {
-          "title": "Recipes",
-          "p1": "<strong>/admin/recipes</strong> — the approval queue for recipes uploaded by users and businesses. Approve, reject, or edit before publishing.",
-          "li1": "A pending recipe shows its title, author, and image — check community fit before approving.",
-          "li2": "Rejecting removes the recipe from the queue; you can leave a note with the reason."
+          "q": "How do I handle a user report?",
+          "steps": [
+            "Each card is a business with its reports. A business with 3 or more reports is marked red.",
+            "Read the reports.",
+            "A real problem: “Suspend business”. Unfounded: “Ignore”, which closes all its reports."
+          ]
         },
         "kashrut": {
-          "title": "Kashrut requests",
-          "p1": "<strong>/admin/kashrut</strong> — businesses submit requests for a kashrut tag. Approve only after verifying the attached certificate.",
-          "li1": "A pill on \"Kashrut\" in the sidebar indicates kashrut requests awaiting handling.",
-          "li2": "Approval adds the kashrut tag to the business's public profile."
+          "q": "How do I approve a kashrut badge?",
+          "steps": [
+            "“View certificate” and check it is valid and belongs to this business.",
+            "“Approve” and enter the expiry printed on the certificate. After that date the badge drops off by itself.",
+            "Certificate revoked? “Revoke badge” with a reason. The owner sees it on her dashboard.",
+            "Expiry reminders: “Preview”, then “Send now”. Nothing is sent before that."
+          ]
         },
         "category_requests": {
-          "title": "Category requests",
-          "p1": "<strong>/admin/category-requests</strong> — businesses request new categories that don't exist yet. Approve to add them to the list, or reject.",
-          "li1": "Approval creates a new category available to all businesses.",
-          "li2": "Check for duplicates against existing categories before approving."
+          "q": "How do I handle a request for a new category?",
+          "steps": [
+            "Requests are grouped by the name businesses asked for.",
+            "A good fit? Add it under “Content” → categories, then “Approve” here. Approval alone does not create a category.",
+            "A similar category already exists? “Merge”.",
+            "Not a fit: “Reject”."
+          ]
+        },
+        "name_change_requests": {
+          "q": "How do I approve a business name change?",
+          "steps": [
+            "Each request shows the current name, the requested name and the reason.",
+            "“Approve” updates the name on the site at once. “Reject” keeps the current name."
+          ]
         },
         "whatsapp_failures": {
-          "title": "Undelivered messages",
-          "p1": "<strong>/admin/whatsapp-failures</strong> — a list of outbound WhatsApp messages that failed to deliver: notifications that never reached businesses.",
-          "li1": "Check the failure reason (wrong number / block) and reach the business through another channel.",
-          "li2": "The screen is read-only — no automatic resend from here."
+          "q": "Why was a WhatsApp message not delivered?",
+          "steps": [
+            "The list shows Mehamakor WhatsApp messages that did not reach customers in the last 7 days.",
+            "“24-hour window closed”: the customer has not written in the last 24 hours, so WhatsApp does not allow a free-form message.",
+            "“Failed”: an error on WhatsApp's side. Details are in the error column.",
+            "There is no resend here. Reach the customer another way."
+          ]
+        },
+        "experiences": {
+          "q": "How do I approve an experience?",
+          "steps": [
+            "In the “Pending” tab. The Claude column is an automatic pre-check: “Needs fixing” means Claude found an issue. The decision is yours.",
+            "“Approve”, “Changes” with a note, or “Reject” with a reason. The host gets an email for each."
+          ]
+        },
+        "recipes": {
+          "q": "How do I approve a recipe?",
+          "steps": [
+            "In the “Pending” tab, open the recipe and check ingredients and instructions.",
+            "“Approve” publishes it at once.",
+            "“Changes” or “Reject” with a note. The owner sees it on her dashboard."
+          ]
+        },
+        "users": {
+          "q": "How do I grant or remove admin access?",
+          "steps": [
+            "On “Users”, search by email or name.",
+            "In the ⋮ menu, “Make admin” or “Remove access”. Only after verifying identity outside the site.",
+            "“Block” prevents login. “Unblock” reverses it.",
+            "“Delete” removes the user and her business. Cannot be undone."
+          ]
+        },
+        "reviews": {
+          "q": "How do I hide or delete a review?",
+          "steps": [
+            "“Flagged only” shows what the AI flagged.",
+            "“Hide” takes it off the site and “Restore” brings it back. “Delete” is final.",
+            "When: offensive language, personal details, spam, or a review of another business."
+          ]
+        },
+        "content": {
+          "q": "How do I edit categories, the vision page and the terms?",
+          "steps": [
+            "On “Content”, “Categories” tab: add, rename and delete. A system category cannot be renamed or deleted.",
+            "“Vision page” and “Terms” tabs: edit and save."
+          ]
+        },
+        "outreach": {
+          "q": "How do I manage business leads?",
+          "steps": [
+            "“+ New lead” for each business you want to contact.",
+            "Before calling: “Call script”.",
+            "After each step update the status: new → contacted → replied → registered or declined.",
+            "“WhatsApp” prepares a message with a profile link. Send only after she agreed on the phone."
+          ]
+        },
+        "settings": {
+          "q": "How do I turn on the holiday window, Friday market or vacation mode?",
+          "steps": [
+            "“Holiday window”: a site banner that some businesses take no orders. Turn on before a holiday, off after.",
+            "“Friday market mode” runs by itself from Wednesday 18:00 to Friday 14:00. The switch here is for testing only, in your browser only.",
+            "“Vacation mode”: Mehamakor's WhatsApp sends an automatic vacation reply until the date you chose.",
+            "The same screen edits the items of the pre-approval checklist."
+          ]
         },
         "analytics": {
-          "title": "Analytics",
-          "p1": "<strong>/admin/analytics</strong> — aggregate usage data: active users, top cities, and a breakdown by category.",
-          "li1": "Use the charts to track growth trends over time.",
-          "li2": "Data updates automatically; no manual action needed."
+          "q": "Where do I see numbers about the site?",
+          "steps": [
+            "On “Analytics”: monthly growth, popular categories, top cities, most-favourited businesses and a map."
+          ]
         },
-        "emergency": {
-          "title": "Emergencies",
-          "site_down_title": "Site is down",
-          "site_down_body": "Check <code>mehamakor.co.il/health</code>. If it's not 200 OK, check Railway → healthcheck + logs. See CLAUDE.md §\"Railway runtime port = 8080\" before any debugging — this is the most common source of 502.",
-          "migration_title": "Migration failed after deploy",
-          "migration_body": "Symptom: the container starts but endpoints return 500 with <code>UndefinedColumn</code>. Fix: verify that <code>_migrate_columns</code> in main.py lists the new column. If not, add it and push a hotfix commit.",
-          "login_broken_title": "Login is broken for everyone",
-          "login_broken_body": "Verify that <code>JWT_SECRET_KEY</code> exists in Railway Variables. If it was changed by mistake — old JWTs are invalidated and every user has to log in again. Do not rotate the key without alerting the team.",
-          "spam_title": "Spam storm / fake registrations",
-          "spam_body": "/register/producer is already rate-limited to 3/hour (slowapi). If that isn't enough, tighten to 1/hour temporarily in <code>auth.py</code> + hotfix push. Block suspicious IPs at Railway edge if traffic is unusual.",
-          "ai_silent_title": "AI features return silent errors",
-          "ai_silent_body": "Check <code>ANTHROPIC_API_KEY</code>. Fail-open is not infinite — if the key expired, moderation approves everything (APPROVED default). CLAUDE.md §\"Anthropic client init\" describes the httpx 0.28+ bug that may return TypeError via the green button."
-        },
-        "urls": {
-          "title": "Important URLs",
-          "intro": "The specific addresses (project IDs, tokens) are not here — they are in the team password manager. The list here points you where to look, it does not provide credentials.",
-          "prod_label": "Production site",
-          "staging_label": "Staging site",
-          "railway_label": "Railway",
-          "railway_text": "<placeholder>fill in</placeholder> — project: <code>believable-tenderness</code>, service: backend",
-          "vercel_label": "Vercel",
-          "vercel_text": "<placeholder>fill in</placeholder> — project: <code>food-mamkor</code>",
-          "cloudinary_label": "Cloudinary",
-          "cloudinary_text": "<placeholder>fill in</placeholder> — cloud: <code>dvtcojtye</code> (approx.)",
-          "anthropic_label": "Anthropic Console",
-          "anthropic_text": "<placeholder>fill in</placeholder> — workspace: mehamakor"
+        "group_buys": {
+          "q": "How do I change a group buy's status?",
+          "steps": [
+            "The screen is not in the menu, only via the link here. There you set the status: open, funded, fulfilled or cancelled."
+          ]
         }
-      },
-      "footer": "Daily/weekly/monthly checklist + emergency contacts — see <code>docs/ADMIN.md</code> (\"Handover checklist\" section).",
-      "footer_back": "← Back to dashboard"
+      }
     },
     "name_change_requests": {
       "title": "Name-change requests",
@@ -2510,7 +2570,13 @@
       "breadcrumb_home": "Home",
       "breadcrumb_events": "Events",
       "organizer_line": "Organizer: {name}",
-      "add_to_calendar": "Add to calendar"
+      "add_to_calendar": "Add to calendar",
+      "more_from": "More events from {name}",
+      "when_today": "Today",
+      "when_tomorrow": "Tomorrow",
+      "when_this_week": "This week",
+      "past_notice": "This event has already taken place.",
+      "past_next": "{name}'s next event:"
     },
     "calendar": {
       "previous_month": "Previous month",
@@ -3039,7 +3105,8 @@
     },
     "title": {
       "all": "All businesses",
-      "search_results": "Results for:"
+      "search_results": "Results for:",
+      "map_link": "View on map"
     },
     "search_input": {
       "label": "Search businesses",
@@ -3149,7 +3216,6 @@
   "contact": {
     "title": "Talk to us",
     "subtitle": "Questions, ideas, or just hi — we'd love to hear",
-    "response_time_inline": "We'll get back to you within <strong>3 business days</strong>.",
     "email_label": "Email address:",
     "response_sla": "Response time: up to 3 business days",
     "success_title": "Thanks! We got your message.",
@@ -3221,6 +3287,17 @@
     "empty_subtitle": "Tap the heart on a business card to save it here for quick access.",
     "empty_cta": "Discover businesses",
     "list_alerts_hint": "Tap the <icon></icon> on any card to get alerts about new events and products",
+    "filter_all": "All",
+    "filter_businesses": "Businesses",
+    "filter_recipes": "Recipes",
+    "filter_events": "Events",
+    "filter_experiences": "Experiences",
+    "past_heading": "Past",
+    "empty_all_title": "Nothing saved yet",
+    "empty_all_subtitle": "Tap the heart on a business, recipe or event to save it here.",
+    "empty_recipes": "No saved recipes yet",
+    "empty_events": "No saved events yet",
+    "empty_experiences": "No saved experiences yet",
     "updates_button": {
       "label": "Get updates"
     },
@@ -3232,7 +3309,8 @@
       "remove_aria": "Remove from favorites",
       "inline_label": "Save",
       "quiet_label": "Save",
-      "login_prompt_message": "To save businesses you love — sign in"
+      "login_prompt_message": "To save businesses you love — sign in",
+      "login_prompt_message_saved_item": "To save to your favorites — sign in"
     }
   },
   "report": {
@@ -3250,6 +3328,8 @@
     "trigger": "Share",
     "modal_title": "Share a link to the business",
     "modal_title_event": "Share this event",
+    "modal_title_experience": "Share this experience",
+    "modal_title_recipe": "Share this recipe",
     "copy_link": "Copy link",
     "wa_message_with_meta": "I found {title} on Mehamakor 🌿",
     "wa_message_business_fallback": "a business",
@@ -3291,7 +3371,7 @@
       "share_to_friend": "Share with friends"
     },
     "question_chips": {
-      "my_area": "My area",
+      "delivery_to_my_area": "Delivery to my area?",
       "city_placeholder": "[city]",
       "ask_us": "Ask us",
       "common_questions": "Common questions",
@@ -3335,7 +3415,7 @@
   },
   "story": {
     "canvas": {
-      "footer_url": "Discover more businesses at mehamakor.co.il",
+      "kicker": "A new local business on Mehamakor",
       "upload_error": "Cloudinary upload error",
       "default_country": "Israel",
       "caption_prefix": "🌿 A new business on Mehamakor!",
@@ -4223,7 +4303,6 @@
         "zero_state": "New clicks and views will appear here — we will update you as soon as customers engage"
       },
       "analytics": {
-        "stats_window_label": "7 days / in the last 30 days / total",
         "kpi": {
           "whatsapp_leads": "WhatsApp clicks",
           "contact_clicks": "Clicks on phone, website and more",
@@ -4477,6 +4556,8 @@
         "heading": "Delivery & pickup",
         "subtitle": "How customers get your products — physical store, delivery, or both.",
         "scope_helper": "Your business address is set in the location card — here you only pick where deliveries go. The list is shown to customers on your page.",
+        "map_preview_label": "Your map card will show:",
+        "map_preview_arranged_hint": "To show \"Delivery\", \"Pickup\" or \"Buy on site\" instead, add delivery areas, a pickup point or opening hours.",
         "has_physical_location": "Physical store (welcomes customers)",
         "offers_delivery": "Delivery",
         "type_validation": "Must select at least one of the two",
@@ -4760,6 +4841,12 @@
         "saving": "Saving...",
         "saved": "City updated",
         "error": "Couldn't save — try again"
+      },
+      "insights_period": {
+        "label": "Period",
+        "last_7d": "7 days",
+        "last_30d": "30 days",
+        "total": "All time"
       }
     }
   },

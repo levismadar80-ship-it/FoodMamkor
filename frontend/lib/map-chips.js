@@ -84,7 +84,9 @@ export const TOGGLE_CHIPS = chipsForKeys(axisKeysFor("map", MAP_CHIP_ORDER));
 // in RTL reading order. MEH-2425: shared so the active-filter tag row can skip
 // them — a chip that already shows its own on/off state is not repeated as a
 // removable tag under it.
-export const SERVICE_CHIP_KEYS = ["has_delivery", "pickup_points"];
+// MEH-2598: + on_site, and now shared by all three surfaces through
+// components/PromotedServiceChips.jsx (Sapir 29/10: one row everywhere).
+export const SERVICE_CHIP_KEYS = ["has_delivery", "pickup_points", "on_site"];
 
 // MEH-2170 (option ב׳, Sapir 25/08): the five diet axes are gated on /map the
 // way /producers already gates them (DIET_CHIP_MIN, MEH-1934) — a toggle that
@@ -109,6 +111,9 @@ export const DIET_GATED_KEYS = [
   "gluten_free",
   "lactose_free",
   "no_added_sugar",
+  // MEH-2598: not a diet axis, but gated by the same snapshot count — a new
+  // axis starts gated (producer-filters.js GATED_DIET_KEYS note).
+  "on_site",
 ];
 
 // ProducerListOut boolean per axis (lib/schemas.js:215-222) — the same
@@ -119,6 +124,7 @@ const DIET_FIELD = {
   gluten_free: "has_gluten_free_products",
   lactose_free: "has_lactose_free_products",
   no_added_sugar: "has_no_added_sugar_products",
+  on_site: "sells_on_site", // MEH-2598
 };
 
 /**
