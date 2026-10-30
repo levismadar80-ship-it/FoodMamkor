@@ -284,6 +284,10 @@ export default function Popover({
   const triggerEl = cloneElement(trigger, {
     ref: triggerRef,
     id: triggerId,
+    // MEH-2622: a long press on the trigger pill must not start an iOS text
+    // selection (or its callout menu). On the trigger only — the anchored
+    // panel's text stays selectable on desktop.
+    className: `${trigger.props?.className ?? ""} select-none [-webkit-touch-callout:none]`.trim(),
     onClick: (e) => {
       // Built-in card-Link safety (S12 §03 "first tap shows, never
       // navigates"): the trigger is interactive in its own right — never
@@ -316,9 +320,10 @@ export default function Popover({
       aria-labelledby={triggerId}
       tabIndex={sheetActive ? -1 : undefined}
       data-testid={contentTestId}
-      // MEH-2622: a portalled panel is no longer a DOM descendant of the card,
-      // but React still bubbles its clicks up the component tree — straight
-      // into ProducerCard's handleRootClick, which navigates. Stop them here.
+      // MEH-2622: a portalled panel (sheet AND overlay — both deliberately) is
+      // no longer a DOM descendant of the card, but React still bubbles its
+      // clicks up the component tree — straight into ProducerCard's
+      // handleRootClick, which navigates. Stop them here.
       onClick={portalled ? (e) => e.stopPropagation() : undefined}
       // MEH-1592: overlay coordinates are measured viewport values, so they are
       // applied inline rather than as classes. `insetInlineStart` keeps the
@@ -352,9 +357,9 @@ export default function Popover({
   );
 
   // MEH-2622: the sheet's backdrop. Portalled with the panel (see below).
+  // z per the app ledger: sheet family above the global header (1050),
+  // below Toaster (2000) — matches FilterSheet.
   const backdrop = open && sheetActive && (
-    // z per the app ledger: sheet family above the global header (1050),
-    // below Toaster (2000) — matches FilterSheet.
     <span
       ref={backdropRef}
       aria-hidden="true"
@@ -368,9 +373,7 @@ export default function Popover({
   );
 
   return (
-    // MEH-2622: select-none on the wrapper keeps a long press on the trigger
-    // pill from starting an iOS text selection (and its callout menu).
-    <span ref={wrapRef} className="relative inline-block select-none [-webkit-touch-callout:none]">
+    <span ref={wrapRef} className="relative inline-block">
       {triggerEl}
       {/* MEH-1592: overlay mode portals the panel to <body> so no ancestor's
           `overflow-hidden` can clip it and no ancestor stacking context can

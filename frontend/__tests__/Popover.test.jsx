@@ -249,7 +249,7 @@ describe("ui/Popover", () => {
         for (const el of [
           screen.getByTestId("pop-content"),
           screen.getByTestId("pop-content-backdrop"),
-          btn.parentElement,
+          btn,
         ]) {
           expect(el.className).toContain("select-none");
           expect(el.className).toContain("[-webkit-touch-callout:none]");
@@ -258,6 +258,34 @@ describe("ui/Popover", () => {
         restore();
       }
     });
+  });
+
+  // MEH-2622: overlay panels are portalled too, so their clicks must not
+  // bubble (React tree) into a card's navigate handler either.
+  it("overlay panel clicks never reach the card's click handler", () => {
+    const onCardClick = vi.fn();
+    render(
+      <div onClick={onCardClick}>
+        <Popover
+          trigger={<button type="button">פתחי</button>}
+          contentTestId="pop-content"
+          overlay
+        >
+          תוכן עשיר
+        </Popover>
+      </div>,
+    );
+    fireEvent.click(screen.getByText("פתחי"));
+    fireEvent.click(screen.getByTestId("pop-content"));
+    expect(onCardClick).not.toHaveBeenCalled();
+  });
+
+  it("the anchored panel's text stays selectable (select-none is trigger-only)", () => {
+    renderPopover();
+    fireEvent.click(screen.getByText("פתחי"));
+    const panel = screen.getByTestId("pop-content");
+    expect(panel.className).not.toContain("select-none");
+    expect(panel.parentElement.className).not.toContain("select-none");
   });
 
   // MEH-1871: an open overlay panel is portalled to <body> and `position:
