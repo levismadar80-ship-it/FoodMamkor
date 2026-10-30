@@ -6,7 +6,7 @@ about page contact form). All endpoints are anonymous — no auth required.
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from joserfc import jwt as jose_jwt
 from joserfc.errors import JoseError
 from joserfc.jwk import OctKey
@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.services.email import send_email
+from app.services.newsletter_sync import sync_subscribe, sync_unsubscribe
 from app.services.producer_listing import (
     catalog_default_availability_condition,
     is_business,  # MEH-2459
@@ -120,9 +121,16 @@ def get_stats(request: Request, db: Session = Depends(get_db)):
 @router.post("/newsletter", status_code=201)
 @limiter.limit("5/hour")  # SECURITY FIX #2: prevent mailbombing
 def subscribe_newsletter(
-    request: Request, data: NewsletterIn, db: Session = Depends(get_db)
+    request: Request,
+    data: NewsletterIn,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
 ):
     email = data.email.lower().strip()
+    # MEH-2611: Resend Contacts is where the list is managed and sent from.
+    # Runs on BOTH paths so a row that predates the sync still reaches Resend;
+    # it never clears an existing opt-out (see newsletter_sync.sync_subscribe).
+    background_tasks.add_task(sync_subscribe, email)
     existing = (
         db.query(NewsletterSubscriber)
         .filter(NewsletterSubscriber.email == email)
@@ -162,14 +170,10 @@ def _send_newsletter_welcome(email: str) -> None:
               <p style="font-size:13px;color:#2e6853;margin:0 0 8px;font-weight:bold;">מהמקור 🌿</p>
               <h1 style="font-size:20px;color:#1C1A17;margin:0 0 16px;">ברוכה הבאה למהמקור</h1>
               <p style="color:#3a3a3a;font-size:15px;line-height:1.8;margin:0 0 20px;">תודה שהצטרפת.</p>
-              <p style="color:#3a3a3a;font-size:15px;line-height:1.8;margin:0 0 8px;font-weight:bold;">מה תקבלי?</p>
-              <ul style="color:#3a3a3a;font-size:15px;line-height:2;margin:0 0 24px;padding-right:20px;">
-                <li>פעם בשבוע — סיפור על בית עסק חדש</li>
-                <li>מתי ואיפה אפשר לפגוש (פעם בחודש)</li>
-                <li>בלי הצעות, בלי spam, בלי ניסיון למכור לך משהו</li>
-              </ul>
               <p style="color:#3a3a3a;font-size:15px;line-height:1.8;margin:0 0 24px;">
-                הסיפור הראשון יגיע ביום שני. עד אז —<br>
+                נכתוב לך כשיש משהו ששווה לספר: בית עסק חדש, אירוע קרוב או מתכון של העונה. בלי ספאם, ואפשר לבטל בכל רגע.
+              </p>
+              <p style="color:#3a3a3a;font-size:15px;line-height:1.8;margin:0 0 24px;">
                 <span style="font-weight:bold;">ספיר ✨</span>
               </p>
               <hr style="border:none;border-top:1px solid #e5e0d8;margin:0 0 20px;">
@@ -188,11 +192,8 @@ def _send_newsletter_welcome(email: str) -> None:
     plain = (
         "ברוכה הבאה למהמקור!\n\n"
         "תודה שהצטרפת.\n\n"
-        "מה תקבלי?\n"
-        "• פעם בשבוע — סיפור על בית עסק חדש\n"
-        "• מתי ואיפה אפשר לפגוש (פעם בחודש)\n"
-        "• בלי הצעות, בלי spam, בלי ניסיון למכור לך משהו\n\n"
-        "הסיפור הראשון יגיע ביום שני. עד אז —\n"
+        "נכתוב לך כשיש משהו ששווה לספר: בית עסק חדש, אירוע קרוב או מתכון של העונה. "
+        "בלי ספאם, ואפשר לבטל בכל רגע.\n\n"
         "ספיר ✨\n\n"
         f"לבטל הרשמה: {unsubscribe_url}\n"
         "מהמקור — בתי עסק מקומיים, כולם במקום אחד."
@@ -203,7 +204,10 @@ def _send_newsletter_welcome(email: str) -> None:
 @router.post("/newsletter/unsubscribe", status_code=200)
 @limiter.limit("20/hour")
 def unsubscribe_newsletter(
-    request: Request, data: NewsletterUnsubscribeIn, db: Session = Depends(get_db)
+    request: Request,
+    data: NewsletterUnsubscribeIn,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
 ):
     """One-click newsletter unsubscribe via the signed token in the email link.
 
@@ -221,6 +225,7 @@ def unsubscribe_newsletter(
         .delete(synchronize_session=False)
     )
     db.commit()
+    background_tasks.add_task(sync_unsubscribe, email.lower().strip())
     return {"detail": "הוסרת מרשימת התפוצה. 🌿"}
 
 
