@@ -167,14 +167,14 @@ describe("pickup_points wiring (MEH-2046)", () => {
     expect(CHIPS_CONFIG.some((c) => c.key === "pickup_points")).toBe(true);
     expect(TOGGLE_CHIPS.some((c) => c.key === "pickup_points")).toBe(true);
 
-    // ...and the /map row still promotes exactly TWO chips. This is the part
-    // that would go quietly wrong if the taxonomy widened the wrong axis: a
-    // third key acquiring `group: "service"` must not silently join the
-    // promoted row, because SERVICE_KEYS in ServiceChipRow is a fixed pair.
+    // ...and the /map row promotes exactly the SERVICE_CHIP_KEYS trio
+    // (MEH-2598 added on_site). A further key acquiring `group: "service"`
+    // must not silently join the promoted row — the list is fixed, not derived.
     render(<ServiceChipRow chipState={{}} onToggleChip={() => {}} />);
     expect(screen.getAllByRole("button").map((b) => b.textContent.trim())).toEqual([
       "משלוח",
       "איסוף עצמי",
+      "קנייה במקום",
     ]);
   });
 

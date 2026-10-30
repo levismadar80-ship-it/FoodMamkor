@@ -1,10 +1,8 @@
 "use client";
 
-import { useMemo } from "react";
-import { Check } from "@phosphor-icons/react";
-
-import { chipIcon } from "@/lib/chip-icons";
-import { SERVICE_CHIP_KEYS as SERVICE_KEYS, TOGGLE_CHIPS } from "@/lib/map-chips";
+import PromotedServiceChips from "@/components/PromotedServiceChips";
+import { keepFocusedChipClear } from "@/lib/keepFocusedChipClear";
+import { TOGGLE_CHIPS } from "@/lib/map-chips";
 
 /**
  * Module:   ServiceChipRow
@@ -40,53 +38,37 @@ import { SERVICE_CHIP_KEYS as SERVICE_KEYS, TOGGLE_CHIPS } from "@/lib/map-chips
 // TOGGLE_CHIPS, so labels + scope/evidence come from ATTRIBUTE_LABELS and
 // cannot drift from FilterSheet's copy of them.
 
-export default function ServiceChipRow({ chipState, onToggleChip, children }) {
-  // REUSES: FilterChipsBar.jsx — glyphs attached at the render site so
-  // map-chips.js stays React-free for its pure-logic tests.
-  const chips = useMemo(
-    () =>
-      SERVICE_KEYS.map((key) => {
-        const chip = TOGGLE_CHIPS.find((c) => c.key === key);
-        return chip ? { ...chip, icon: chipIcon(key) } : null;
-      }).filter(Boolean),
-    [],
-  );
-
+export default function ServiceChipRow({ chipState, onToggleChip, chips = TOGGLE_CHIPS, children }) {
   return (
-    // MEH-2514: below 375px the row tightens (gap-1.5, chips px-3) so the
-    // three buttons fit a 320 phone; 375 and up are unchanged.
-    <div dir="rtl" data-testid="map-service-row" className="mt-2 flex items-center gap-2 max-[374px]:gap-1.5 min-w-0">
-      {chips.map((chip) => {
-        const active = !!chipState[chip.key];
-        return (
-          <button
-            key={chip.key}
-            type="button"
-            onClick={() => onToggleChip(chip.key)}
-            aria-pressed={active}
-            // REUSES: ChipScrollRow.jsx:307 — identical chip geometry and the
-            // MEH-764 rounded-md, minus the scroll-only `snap-start`. Active is
-            // the Direction A wash+ring (MEH-1181-A), matching a selected
-            // category chip rather than the solid toggle fill, because these
-            // two sit in their own row and read as a pair.
-            className={`inline-flex items-center gap-1.5 whitespace-nowrap px-4 max-[374px]:px-3 py-2.5 rounded-md text-sm font-medium border transition shrink-0 ${
-              active
-                ? "bg-green-50 text-primary border-primary ring-1 ring-primary"
-                : "bg-white text-text border-border hover:border-primary hover:text-primary"
-            }`}
-          >
-            {/* MEH-2500: on = ✓ in place of the glyph, same cue as a selected
-                category chip (ChipScrollRow) — the wash alone was too quiet. */}
-            <span aria-hidden="true">{active ? <Check size={16} weight="bold" /> : chip.icon}</span>
-            {chip.label}
-          </button>
-        );
-      })}
+    // MEH-2598 (Sapir 29/10, «אחיד»): the row now matches home and /producers
+    // (MEH-2537 / MEH-2569) — «סינון» LEADS (children, sticky below lg), then
+    // the promoted service trio. With three chips the row no longer fits a
+    // phone, so below md it is the same sideways rail as the other two
+    // surfaces, bled to the panel edge (-mx-3/px-3 against the bar's px-3);
+    // py-1/-mt-1 keep focus rings inside the scrollport; overscroll-x-none per
+    // MEH-2574. lg+ is the desktop side panel (MapClient `hidden lg:grid`, the
+    // same lg FilterSheet switches at): overflow is visible so the anchored
+    // panel is not clipped, and the row WRAPS rather than scrolls, because the
+    // 25/75 split narrows the panel below the row's width.
+    <div
+      dir="rtl"
+      data-testid="map-service-row"
+      className="-mx-3 mt-1 flex items-center gap-2 min-w-0 overflow-x-auto overscroll-x-none px-3 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:mx-0 lg:px-0 lg:overflow-visible lg:flex-wrap"
+      onFocus={keepFocusedChipClear}
+    >
       {/* The "סינון" trigger and its FilterSheet anchor are passed in rather
-          than built here — FilterSheet's md+ panel positions off the parent's
-          `relative` wrapper, so moving that wrapper into this component would
-          have relocated the panel too. */}
+          than built here — FilterSheet's lg+ panel positions off the parent's
+          wrapper, so moving that wrapper into this component would have
+          relocated the panel too. */}
       {children}
+      {/* `chips` is the GATED list (visibleMapToggleChips), so on_site only
+          appears once the catalog carries it — same gate as the sheet. */}
+      <PromotedServiceChips
+        chips={chips}
+        chipState={chipState}
+        onToggle={onToggleChip}
+        testIdPrefix="map-service-chip"
+      />
     </div>
   );
 }
