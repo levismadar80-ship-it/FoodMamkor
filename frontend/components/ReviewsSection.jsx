@@ -228,7 +228,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
   // MEH-848: shared generic error copy (collapsed from reviews.error_generic).
   const tError = useTranslations("error");
   const locale = useLocale();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [reviews, setReviews] = useState([]);
   const [total, setTotal] = useState(reviewCount);
   const [pages, setPages] = useState(1);
@@ -601,7 +601,9 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
           for a visitor; the WhatsApp-gate line (MEH-1139) for a logged-in,
           non-owner, not-yet-gated reader — at zero reviews too, since the
           reader empty state is gone (it used to carry its own hint). */}
-      {!user ? (
+      {/* Nothing until /auth/me answers — a signed-in reader otherwise saw
+          the login line for a second before it swapped (30/10). */}
+      {authLoading ? null : !user ? (
         <p className="mt-4 text-sm text-fg-muted" data-testid="reviews-write-hint">
           {t.rich("login_prompt", {
             login: (chunks) => (
