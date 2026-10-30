@@ -25,6 +25,7 @@ import BackLink from "@/components/ui/BackLink";
 // MEH-1640: shared status colours across the four tools spokes.
 import { STATUS_CLASSES } from "@/lib/dashboard-status-classes";
 import { israelToday } from "@/lib/israel-date";
+import { SkeletonList } from "@/components/Skeleton";
 
 export default function ManageEventsPage() {
   const t = useTranslations("dashboard.producer.manage_events");
@@ -108,7 +109,7 @@ export default function ManageEventsPage() {
       </div>
 
       {items === null ? (
-        <div className="text-center py-16 text-fg-muted">{t("loading")}</div>
+        <SkeletonList count={4} label={t("loading")} className="py-4" />
       ) : items.length === 0 ? (
         <EmptyState
           icon={CalendarPlus}

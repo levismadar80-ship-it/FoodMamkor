@@ -10,6 +10,7 @@ import ProducerForm from "@/components/admin/ProducerForm";
 import DraftProductsPanel from "@/components/admin/DraftProductsPanel";
 import AdminLoadError from "@/components/admin/AdminLoadError";
 import ClaimLinkPanel from "@/components/admin/ClaimLinkPanel";
+import { SkeletonForm } from "@/components/Skeleton";
 
 export default function EditProducerPage() {
   const { user, loading } = useAuth();
@@ -52,9 +53,7 @@ export default function EditProducerPage() {
 
   if (loading || !user || fetching) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-12 text-center text-muted">
-        {t("common.loading")}
-      </div>
+      <SkeletonForm fields={6} label={t("common.loading")} className="max-w-4xl mx-auto px-4 py-12" />
     );
   }
 

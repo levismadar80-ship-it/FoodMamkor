@@ -9,6 +9,7 @@ import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 import InfoTooltip from "@/components/InfoTooltip";
+import { SkeletonTable } from "@/components/Skeleton";
 
 // Tab values map to admin.experiences.tabs.* keys; labels resolved in render
 const TAB_VALUES = ["pending", "changes_requested", "approved", "rejected", "all"];
@@ -144,7 +145,7 @@ export default function AdminExperiencesPage() {
       )}
 
       {loading ? (
-        <p className="text-fg-muted">{t("common.loading_f")}</p>
+        <SkeletonTable rows={5} cols={5} label={t("common.loading_f")} />
       ) : rows.length === 0 ? (
         <div className="bg-white border border-border rounded-[16px] p-8 text-center text-fg-muted">
           {t("experiences.empty")}
