@@ -1,13 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import { Truck, Package, CaretDown, CaretUp, NavigationArrow, Phone } from "@phosphor-icons/react";
+import { Truck, CaretDown, CaretUp, Phone } from "@phosphor-icons/react";
+import { WazeGlyph, GoogleMapsGlyph } from "@/components/NavAppGlyphs";
 import { useTranslations } from "next-intl";
 import { formatPrice } from "@/lib/utils";
 import { groupDeliveryAreas } from "@/lib/deliveryGroups";
+import { resolveDeliveryFee } from "@/lib/deliveryFee";
 import { getSingleOrderCutoff } from "@/lib/orderWindow";
 import DeliveryChecker from "@/components/DeliveryChecker";
 import HoursText from "@/components/HoursText";
+
+// MEH-2592 C: every row list in the block (areas and pickup) sits in one soft
+// card instead of between hairlines, and rows carry their own side padding.
+const LIST_CARD =
+  "divide-y divide-border rounded-2xl border border-border bg-surface-card overflow-hidden";
+// MEH-2592 C: the 44px logo circles (Waze, Google Maps) on each pickup stop.
+const NAV_CIRCLE =
+  "inline-flex items-center justify-center w-11 h-11 rounded-full border border-border bg-white transition hover:bg-green-50 focus-visible:ring-2 focus-visible:ring-primary/40";
 
 // Index-aligned with lib/orderWindow.js ORDER_DAY_KEYS — resolves a cutoff
 // dayIndex to the opening_hours.weekdays.* label ("יום רביעי" / "Wednesday").
@@ -68,7 +78,7 @@ function AreaRow({ da, t, fee = null }) {
   const feeLabel =
     fee === 0 ? null : splitAroundAmount(t("fee", { amount: AMOUNT_SENTINEL }));
   return (
-    <li className="flex items-center justify-between gap-3 py-2.5 text-sm">
+    <li className="flex items-center justify-between gap-3 px-3.5 py-3 text-sm">
       <span className="font-medium text-text">{da.city}</span>
       <span className="flex items-center gap-2">
         {fee != null ? (
@@ -172,11 +182,9 @@ function capSections(sections, limit) {
 function AreaGroup({ label, rows, t, feeOf = () => null }) {
   return (
     <div>
-      <p className="flex items-center gap-1.5 text-sm font-medium text-text mb-1">
-        <Truck size={16} className="text-primary" aria-hidden="true" />
-        {label}
-      </p>
-      <ul className="divide-y divide-border border-y border-border">
+      {/* MEH-2592 C: the day reads as a small gold heading — no truck per day. */}
+      <p className="text-[13px] font-bold text-gold-deep mb-1.5">{label}</p>
+      <ul className={LIST_CARD}>
         {rows.map((da) => (
           <AreaRow key={da.id ?? da.city} da={da} t={t} fee={feeOf(da)} />
         ))}
@@ -239,11 +247,15 @@ function PickupRow({ loc, t, tMap }) {
   const hasCoords =
     loc.lat != null && loc.lng != null && !isNaN(Number(loc.lat)) && !isNaN(Number(loc.lng));
   const wazeUrl = hasCoords ? `https://waze.com/ul?ll=${loc.lat},${loc.lng}&navigate=yes` : null;
+  // MEH-2592 C: Google Maps beside Waze, same destination URL as MiniMap.jsx.
+  const gmapsUrl = hasCoords
+    ? `https://www.google.com/maps/dir/?api=1&destination=${loc.lat},${loc.lng}`
+    : null;
   const heading = loc.label || loc.city;
   const phone = (loc.phone || "").trim();
   const telHref = phone ? `tel:${phone.replace(/[^\d+]/g, "")}` : null;
   return (
-    <li className="flex items-start justify-between gap-3 py-2.5 text-sm">
+    <li className="flex items-center justify-between gap-3 px-3.5 py-3 text-sm">
       <div className="min-w-0">
         <p className="font-medium text-text">{heading}</p>
         {/* city as a subline only when a distinct label already owns the top line */}
@@ -269,20 +281,34 @@ function PickupRow({ loc, t, tMap }) {
           </a>
         )}
       </div>
-      <div className="flex-shrink-0 flex items-center gap-3">
-        {/* MEH-1646 (b): pickup is free — stated at the same hierarchy as the
-            delivery rows' min_order cost info (muted end-of-row text). */}
-        <span className="text-fg-muted">{t("free")}</span>
+      <div className="flex-shrink-0 flex items-center gap-2">
+        {/* MEH-2592 C: two 44px logo circles, Waze and Google Maps. Both
+            fit on one 375px row beside the stop's name; the logos name the
+            apps, and the aria-labels carry the full "open in …" purpose. */}
         {wazeUrl && (
           <a
             href={wazeUrl}
             target="_blank"
             rel="noopener noreferrer"
             aria-label={tMap("open_in_waze_aria")}
-            className="inline-flex items-center gap-1 min-h-[44px] text-sm font-medium text-primary transition hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+            title={tMap("open_in_waze")}
+            data-testid="pickup-nav-waze"
+            className={NAV_CIRCLE}
           >
-            <NavigationArrow size={16} aria-hidden="true" />
-            {tMap("open_in_waze")}
+            <WazeGlyph />
+          </a>
+        )}
+        {gmapsUrl && (
+          <a
+            href={gmapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={tMap("open_in_google_aria")}
+            title={tMap("open_in_google")}
+            data-testid="pickup-nav-google"
+            className={NAV_CIRCLE}
+          >
+            <GoogleMapsGlyph />
           </a>
         )}
       </div>
@@ -314,11 +340,15 @@ function PickupRows({ locations, t, tMap }) {
   const hiddenCount = sorted.length - PICKUP_PREVIEW_LIMIT;
   return (
     <div className="mb-4">
-      <p className="flex items-center gap-2 text-sm font-medium text-text mb-1">
-        <Package size={18} className="text-primary" aria-hidden="true" />
+      {/* MEH-2592 C: «חינם» once, as a tag beside the heading, instead of on
+          every row (MEH-1646 (b) still holds: every pickup shape says it). */}
+      <p className="flex items-center gap-2 text-[15px] font-bold text-text mb-2">
         {t("pickup")}
+        <span className="rounded-full bg-green-50 px-2 py-0.5 text-xs font-bold text-primary">
+          {t("free")}
+        </span>
       </p>
-      <ul className="divide-y divide-border border-y border-border">
+      <ul className={LIST_CARD}>
         {visible.map((loc, i) => (
           <PickupRow key={`${loc.city ?? ""}-${loc.label ?? ""}-${i}`} loc={loc} t={t} tMap={tMap} />
         ))}
@@ -457,10 +487,6 @@ export default function DeliveryBlock({
     .map((da) => da.delivery_fee ?? producerFee)
     .filter((f) => f != null);
   const feeVaries = new Set(effectiveFees).size > 1;
-  // Only meaningful under variance; Math.min of an empty list is Infinity, so
-  // the feeVaries guard (which requires 2+ distinct values) also guarantees a
-  // non-empty list here.
-  const minAreaFee = feeVaries ? Math.min(...effectiveFees) : null;
   // Resolved from the ORIGINAL `areas`, keyed the same way the rows are keyed
   // — NOT from the row object handed back by groupDeliveryAreas.
   //
@@ -478,12 +504,14 @@ export default function DeliveryBlock({
   // `?? null` (not `||`) so a resolved 0 survives as "משלוח חינם".
   const feeOf = (da) => (feeVaries ? (feeByKey.get(da.id ?? da.city) ?? null) : null);
   // MEH-1577: null when the owner stated neither value → no line renders.
-  const feeSegments = buildFeeSegments(
-    feeVaries ? minAreaFee : producer?.delivery_fee,
-    producer?.free_delivery_above,
-    t,
-    { from: feeVaries },
-  );
+  // MEH-2602: the top line reads the shared resolver, so the card and this
+  // block can never state two different prices. (It also fixes the uniform
+  // case: every area overriding to the same 20₪ used to print the producer's
+  // 25₪ here.)
+  const topFee = resolveDeliveryFee(producerFee, areas);
+  const feeSegments = buildFeeSegments(topFee.fee, producer?.free_delivery_above, t, {
+    from: topFee.from,
+  });
   // MEH-1512 (MEH-1509 chunk 2): real pickup / market_stand rows from
   // locations[]. Branch-kind is out of scope (sibling ticket) → filtered out.
   const pickupLocations = (producer?.locations || []).filter(
@@ -553,8 +581,8 @@ export default function DeliveryBlock({
   const hasExclusions = nationwide && excluded.length > 0;
   return (
     <section className="mt-12">
-      <h2 className="font-headline-md text-2xl font-bold text-text mb-4 flex items-center gap-2">
-        <Truck size={22} className="text-primary" aria-hidden="true" />
+      {/* MEH-2592 C: no icon — no other section heading on the page has one. */}
+      <h2 className="font-headline-md text-2xl font-bold text-text mb-4">
         {t("heading")}
       </h2>
 
@@ -627,7 +655,7 @@ export default function DeliveryBlock({
                   : t("dispatch_days", { day: grouped.day })}
               </p>
               {/* MEH-1903: first AREA_PREVIEW_LIMIT rows until expanded. */}
-              <ul className="divide-y divide-border border-y border-border">
+              <ul className={LIST_CARD}>
                 {visibleAreaRows.map((da) => (
                   <AreaRow key={da.id ?? da.city} da={da} t={t} fee={feeOf(da)} />
                 ))}
@@ -638,7 +666,7 @@ export default function DeliveryBlock({
 
           {grouped.mode === "flat" && (
             <>
-              <ul className="divide-y divide-border border-y border-border">
+              <ul className={LIST_CARD}>
                 {visibleAreaRows.map((da) => (
                   <AreaRow key={da.id ?? da.city} da={da} t={t} fee={feeOf(da)} />
                 ))}
@@ -686,12 +714,13 @@ export default function DeliveryBlock({
         <PickupRows locations={pickupLocations} t={t} tMap={tMap} />
       ) : (
         pickup && (
-          <p className="flex items-center gap-2 text-sm text-text mb-4">
-            <Package size={18} className="text-primary" aria-hidden="true" />
+          <p className="flex items-center gap-2 text-[15px] font-bold text-text mb-4">
             {t("pickup")}
             {/* MEH-1646 (b): the generic fallback line carries the same tag
                 as the location rows — no producer shape misses it. */}
-            <span className="text-fg-muted">{t("free")}</span>
+            <span className="rounded-full bg-green-50 px-2 py-0.5 text-xs font-bold text-primary">
+              {t("free")}
+            </span>
           </p>
         )
       )}

@@ -124,7 +124,7 @@
       "loading_title": "Verifying...",
       "loading_subtitle": "Please wait",
       "fallback_loading": "Loading...",
-      "success_title": "Email verified ✓",
+      "success_title": "Email verified",
       "success_subtitle": "Redirecting you to the site...",
       "success_cta": "Continue to the site",
       "success_login_subtitle": "Now log in with your email and password and pick up where you left off.",
@@ -793,6 +793,13 @@
         },
         "recipes": {
           "cta": "Our recipes"
+        },
+        "group_buys": {
+          "heading": "Open group buys"
+        },
+        "experiences": {
+          "heading": "Upcoming experiences",
+          "free": "Free"
         }
       },
       "header": {
@@ -3098,7 +3105,8 @@
     },
     "title": {
       "all": "All businesses",
-      "search_results": "Results for:"
+      "search_results": "Results for:",
+      "map_link": "View on map"
     },
     "search_input": {
       "label": "Search businesses",
@@ -3363,7 +3371,7 @@
       "share_to_friend": "Share with friends"
     },
     "question_chips": {
-      "my_area": "My area",
+      "delivery_to_my_area": "Delivery to my area?",
       "city_placeholder": "[city]",
       "ask_us": "Ask us",
       "common_questions": "Common questions",

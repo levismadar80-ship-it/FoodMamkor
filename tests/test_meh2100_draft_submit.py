@@ -376,7 +376,7 @@ def test_submit_pings_the_admin_with_the_business_identity(client, db, monkeypat
     resp = client.post("/producers/me/submit-for-review", headers=auth_header(user))
 
     assert resp.status_code == 200, resp.text
-    assert calls == [("חוות הניסוי", "תל אביב")], (
+    assert calls == [("חוות הניסוי", "תל אביב-יפו")], (  # MEH-2602: stored canonical
         "the admin must be told WHICH business is waiting, not merely pinged"
     )
     db.refresh(producer)
