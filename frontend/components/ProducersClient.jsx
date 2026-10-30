@@ -564,8 +564,16 @@ export default function ProducersClient({
       return;
     }
     setGeoSortPending(true);
+    // Some browsers call NEITHER callback when the permission prompt is
+    // dismissed (the 8 s timeout only starts after permission resolves), which
+    // would leave the select disabled for good. Release it after 15 s; a late
+    // answer still applies normally.
+    const release = setTimeout(() => {
+      if (mountedRef.current) setGeoSortPending(false);
+    }, 15000);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
+        clearTimeout(release);
         if (!mountedRef.current) return;
         setGeoSortPending(false);
         const { latitude: lat, longitude: lng } = pos.coords || {};
@@ -577,6 +585,7 @@ export default function ProducersClient({
         applySortRef.current(SORT_DISTANCE);
       },
       (err) => {
+        clearTimeout(release);
         if (!mountedRef.current) return;
         setGeoSortPending(false);
         // Never surface GeolocationPositionError.message (English-only,

@@ -382,6 +382,20 @@ describe("ProducersClient distance as a location trigger (MEH-2616)", () => {
     expect(screen.getByTestId("producers-sort")).toBeDisabled();
   });
 
+  it("prompt dismissed with no callback: the select is released after 15 s", () => {
+    vi.useFakeTimers();
+    try {
+      render(<ProducersClient {...PROPS} />); // getCurrentPosition never calls back
+      fireEvent.change(screen.getByTestId("producers-sort"), { target: { value: "distance" } });
+      expect(screen.getByTestId("producers-sort")).toBeDisabled();
+      act(() => vi.advanceTimersByTime(15000));
+      expect(screen.getByTestId("producers-sort")).not.toBeDisabled();
+      expect(screen.getByTestId("producers-sort")).toHaveValue("newest");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("with a stored fix: sorts at once, no browser prompt", async () => {
     setUserLocation(LAT, LNG);
     render(<ProducersClient {...PROPS} />);
