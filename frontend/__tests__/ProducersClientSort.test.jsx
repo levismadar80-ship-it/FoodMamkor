@@ -154,18 +154,26 @@ beforeEach(() => {
   apiGet.mockImplementation(() => Promise.resolve({ data: [], headers: { "x-total-count": "1" } }));
 });
 
+// MEH-2616: picking "מרחק" without a fix shows a toast on failure.
+const toastInfo = vi.fn();
+const toastError = vi.fn();
+vi.mock("@/lib/toast", () => ({
+  showToast: { info: (...a) => toastInfo(...a), error: (...a) => toastError(...a) },
+}));
+
 // The vitest config reuses one jsdom environment across files, so a fix left
 // in localStorage would leak into e.g. RatingDataGate.test.jsx's hidden-control case.
 afterEach(() => clearUserLocation());
 
 describe("ProducersClient sort select (MEH-1483)", () => {
-  it("renders the sort select defaulting to newest — distance present but disabled without a fix", () => {
+  it("renders the sort select defaulting to newest — distance enabled even without a fix", () => {
     render(<ProducersClient {...PROPS} />);
     const select = screen.getByTestId("producers-sort");
     expect(select).toHaveValue("newest");
-    // MEH-2294: newest · rating · distance (disabled until a location fix).
+    // MEH-2294: newest · rating · distance. MEH-2616: distance is a trigger,
+    // never a grey option (the /map decision, MEH-2014).
     expect(select.querySelectorAll("option")).toHaveLength(3);
-    expect(screen.getByTestId("producers-sort-distance")).toBeDisabled();
+    expect(screen.getByTestId("producers-sort-distance")).not.toBeDisabled();
   });
 
   it("default (newest) mount never sends a sort param to /producers", () => {
@@ -198,9 +206,8 @@ describe("ProducersClient sort select (MEH-1483)", () => {
   });
 });
 
-// MEH-2294: the distance axis. GPS-gated like /map: the option is disabled
-// until useUserLocation() returns a fix, enables live on the user-location
-// event, and once chosen sends sort=distance + lat/lng on the sorted page 1,
+// MEH-2294: the distance axis. Once a fix exists (useUserLocation) and it is
+// chosen, it sends sort=distance + lat/lng on the sorted page 1,
 // every infinite-scroll page and the filtered fetch — never a radius.
 const LAT = 32.08;
 const LNG = 34.78;
@@ -208,12 +215,6 @@ const distanceCalls = () =>
   apiGet.mock.calls.filter(([url, cfg]) => url === "/producers" && cfg?.params?.sort === "distance");
 
 describe("ProducersClient distance sort (MEH-2294)", () => {
-  it("the distance option enables live when a location fix arrives (no reload)", () => {
-    render(<ProducersClient {...PROPS} />);
-    expect(screen.getByTestId("producers-sort-distance")).toBeDisabled();
-    act(() => setUserLocation(LAT, LNG));
-    expect(screen.getByTestId("producers-sort-distance")).not.toBeDisabled();
-  });
 
   it("picking distance syncs ?sort=distance and fetches with lat+lng and no radius", async () => {
     setUserLocation(LAT, LNG);
@@ -267,15 +268,78 @@ describe("ProducersClient distance sort (MEH-2294)", () => {
     expect(screen.getByTestId("producers-sort")).toHaveValue("distance");
   });
 
-  it("below the rating threshold: no control without a fix (unchanged), newest + distance with one", () => {
+  it("below the rating threshold the control stays: newest + distance, with or without a fix", () => {
     const { unmount } = render(<ProducersClient {...PROPS} ratingSortEnabled={false} />);
-    expect(screen.queryByTestId("producers-sort")).toBeNull();
+    const opts = () => [...screen.getByTestId("producers-sort").querySelectorAll("option")].map((o) => o.value);
+    expect(opts()).toEqual(["newest", "distance"]);
     unmount();
     setUserLocation(LAT, LNG);
     render(<ProducersClient {...PROPS} ratingSortEnabled={false} />);
-    const values = [...screen.getByTestId("producers-sort").querySelectorAll("option")].map((o) => o.value);
-    expect(values).toEqual(["newest", "distance"]);
+    expect(opts()).toEqual(["newest", "distance"]);
     // Default stays byte-identical: no sort param on mount even with a fix.
     expect(sortCalls()).toHaveLength(0);
+  });
+});
+
+// MEH-2616: "מרחק" without a fix asks the browser for one, in context.
+describe("ProducersClient distance as a location trigger (MEH-2616)", () => {
+  let getCurrentPosition;
+  beforeEach(() => {
+    toastInfo.mockClear();
+    toastError.mockClear();
+    getCurrentPosition = vi.fn();
+    Object.defineProperty(navigator, "geolocation", {
+      configurable: true,
+      value: { getCurrentPosition },
+    });
+  });
+  afterEach(() => {
+    delete navigator.geolocation;
+  });
+
+  it("never asks for a location on mount", () => {
+    render(<ProducersClient {...PROPS} />);
+    expect(getCurrentPosition).not.toHaveBeenCalled();
+  });
+
+  it("granted: stores the fix and sorts by distance from it", async () => {
+    getCurrentPosition.mockImplementation((ok) =>
+      ok({ coords: { latitude: LAT, longitude: LNG } }),
+    );
+    // A row on the sorted page 1 — an empty page with a non-zero total renders
+    // the page-overflow state, which has no sort control to read.
+    apiGet.mockImplementation(() =>
+      Promise.resolve({ data: [{ id: "d1", categories: [] }], headers: { "x-total-count": "1" } }),
+    );
+    render(<ProducersClient {...PROPS} />);
+    fireEvent.change(screen.getByTestId("producers-sort"), { target: { value: "distance" } });
+    expect(getCurrentPosition).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(distanceCalls().length).toBeGreaterThan(0));
+    expect(distanceCalls()[0][1].params).toMatchObject({ sort: "distance", lat: LAT, lng: LNG });
+    expect(screen.getByTestId("producers-sort")).toHaveValue("distance");
+    expect(window.location.search).toContain("sort=distance");
+  });
+
+  it("denied: a toast says why and the order stays as it was", async () => {
+    getCurrentPosition.mockImplementation((_ok, fail) => fail({ code: 1 }));
+    render(<ProducersClient {...PROPS} />);
+    fireEvent.change(screen.getByTestId("producers-sort"), { target: { value: "distance" } });
+    expect(toastInfo).toHaveBeenCalledWith("map.client.errors.permission_denied");
+    expect(screen.getByTestId("producers-sort")).toHaveValue("newest");
+    expect(sortCalls()).toHaveLength(0);
+  });
+
+  it("pending: the select is disabled while the browser answers", () => {
+    render(<ProducersClient {...PROPS} />); // getCurrentPosition never calls back
+    fireEvent.change(screen.getByTestId("producers-sort"), { target: { value: "distance" } });
+    expect(screen.getByTestId("producers-sort")).toBeDisabled();
+  });
+
+  it("with a stored fix: sorts at once, no browser prompt", async () => {
+    setUserLocation(LAT, LNG);
+    render(<ProducersClient {...PROPS} />);
+    fireEvent.change(screen.getByTestId("producers-sort"), { target: { value: "distance" } });
+    expect(getCurrentPosition).not.toHaveBeenCalled();
+    await waitFor(() => expect(distanceCalls().length).toBeGreaterThan(0));
   });
 });

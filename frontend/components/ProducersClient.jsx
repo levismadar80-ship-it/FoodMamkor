@@ -40,7 +40,8 @@ import {
 import FilterSheet from "@/components/FilterSheet";
 import { withChipIcons } from "@/lib/chip-icons";
 import { useUserCity } from "@/lib/use-user-city";
-import { useUserLocation } from "@/lib/user-location";
+import { useUserLocation, setUserLocation } from "@/lib/user-location";
+import { showToast } from "@/lib/toast";
 import { trackEvent } from "@/lib/analytics";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
@@ -119,6 +120,8 @@ export default function ProducersClient({
   ratingSortEnabled = false,
 }) {
   const t = useTranslations("producers");
+  // MEH-2616: the location-error strings shared with /map's GPS button.
+  const tGeo = useTranslations("map.client.errors");
   const searchParams = useSearchParams();
 
   // MEH-990: city chip is text-only like the rest of CHIPS_CONFIG (Emoji LOCK,
@@ -174,6 +177,9 @@ export default function ProducersClient({
   // enables the distance option without a reload. `locRef` mirrors it for the
   // useCallback([]) fetchers, exactly like sortOrderRef.
   const userLoc = useUserLocation();
+  // MEH-2616: true while a "מרחק" pick waits on the browser's location answer.
+  // Disables the select (as on /map) so a second pick cannot race the first.
+  const [geoSortPending, setGeoSortPending] = useState(false);
   const locRef = useRef(userLoc);
   useEffect(() => { locRef.current = userLoc; }, [userLoc]);
   // The order actually requested: a distance choice with no fix (deep-link
@@ -512,16 +518,67 @@ export default function ProducersClient({
   // it), flip state (fires the [sortOrder] effect → re-establishes the
   // unfiltered base), and refetch the filtered list in place when filters are
   // active so the visible results re-order immediately.
+  //
+  // MEH-2616: "מרחק" is a trigger, not a disabled option — the /map decision
+  // (MEH-2014, MapClient.jsx handleSortChange). This page has no other way to
+  // give a location, so a grey option here could never become usable. Picking
+  // it without a fix asks the browser once; success stores the fix and applies
+  // the sort, failure leaves the order as it was and says why. The request is
+  // in-context only, never on page load.
   const handleSortChange = (e) => {
-    const next = sortValuesFor(ratingSortEnabled, !!userLoc).includes(e.target.value)
-      ? e.target.value
-      : SORT_DEFAULT;
-    if (next === sortOrder) return;
+    const value = e.target.value;
+    if (value === SORT_DISTANCE && !userLoc) {
+      requestDistanceSort();
+      return;
+    }
+    applySort(value);
+  };
+
+  const applySort = (value) => {
+    // hasLocation=true: applySort is only reached for distance once a fix
+    // exists (or is being stored this tick by requestDistanceSort).
+    const next = sortValuesFor(ratingSortEnabled, true).includes(value) ? value : SORT_DEFAULT;
+    if (next === sortOrderRef.current) return;
     sortOrderRef.current = next;
     setSortOrder(next);
     syncUrl(chips, cityFilter, searchQ, categoryFilter);
     // MEH-2294: the filtered refetch now happens in the [effectiveSort] effect.
     trackEvent("producers_sort_change", { sort: next });
+  };
+
+  const requestDistanceSort = () => {
+    if (geoSortPending) return;
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      showToast.error(tGeo("no_gps"));
+      return;
+    }
+    setGeoSortPending(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setGeoSortPending(false);
+        const { latitude: lat, longitude: lng } = pos.coords || {};
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+          showToast.error(tGeo("gps_unknown"));
+          return;
+        }
+        setUserLocation(lat, lng);
+        applySort(SORT_DISTANCE);
+      },
+      (err) => {
+        setGeoSortPending(false);
+        // Never surface GeolocationPositionError.message (English-only,
+        // developer-facing). These strings name no city picker — /producers
+        // has none that sets a sort origin, unlike /map's sort.geo_* copy.
+        const msgs = {
+          1: tGeo("permission_denied"),
+          2: tGeo("position_unavailable"),
+          3: tGeo("timeout"),
+        };
+        showToast.info(msgs[err?.code] ?? tGeo("gps_unknown"));
+        // sortOrder is untouched, so the controlled <select> snaps back.
+      },
+      { timeout: 8000, enableHighAccuracy: true },
+    );
   };
 
   const handleChipClick = (key) => {
@@ -1007,29 +1064,28 @@ export default function ProducersClient({
               it re-syncs ?sort=, resets pagination, and refetches (both the
               filtered fetch and infinite-scroll pages). Mirrors the /map sort
               control shape (MapClient.jsx).
-              MEH-1864: this axis has exactly two values, so gating "rating" off
-              would leave a select whose only option is the value already
-              applied — a dead affordance. The whole control goes with it; it
-              returns intact the moment the catalog crosses the threshold.
-              (/map keeps its control below the threshold: it still has
-              nearest + newest to switch between.) */}
-          {/* MEH-2294: rendered whenever it holds ≥2 real choices — the rating
-              gate above, OR a location fix (newest + distance, the /map shape).
-              Below the rating threshold with no fix: no control, as before. */}
-          {(ratingSortEnabled || !!userLoc) && (
+              MEH-1864: "rating" is offered only above the rating-data
+              threshold. Below it the control used to disappear entirely; since
+              MEH-2616 it stays with newest + distance (see below). */}
+          {/* MEH-2616: always rendered — "מרחק" is a trigger now, so even below
+              the rating threshold there are two real choices (newest +
+              distance), the same shape /map keeps. */}
           <div className="relative inline-flex items-center shrink-0 ms-auto">
             <span className="text-fg-muted" aria-hidden="true">{t("sort.label")}</span>
             <select
               value={effectiveSort}
               onChange={handleSortChange}
+              disabled={geoSortPending}
+              aria-busy={geoSortPending || undefined}
               aria-label={t("sort.aria_label")}
               data-testid="producers-sort"
-              className="appearance-none bg-transparent border-0 font-medium text-primary min-h-[44px] ps-1 pe-6 cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
+              className="appearance-none bg-transparent border-0 font-medium text-primary min-h-[44px] ps-1 pe-6 cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 disabled:opacity-60"
             >
               <option value="newest">{t("sort.newest")}</option>
               {ratingSortEnabled && <option value="rating">{t("sort.top_rated")}</option>}
-              {/* MEH-2294: disabled until a location fix exists; enables live. */}
-              <option value={SORT_DISTANCE} disabled={!userLoc} data-testid="producers-sort-distance">
+              {/* MEH-2616: never disabled — picking it without a fix asks for
+                  one (requestDistanceSort). */}
+              <option value={SORT_DISTANCE} data-testid="producers-sort-distance">
                 {t("sort.distance")}
               </option>
             </select>
@@ -1040,7 +1096,6 @@ export default function ProducersClient({
               className="pointer-events-none absolute end-1 text-primary"
             />
           </div>
-          )}
         </div>
       )}
 
