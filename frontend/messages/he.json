@@ -3098,7 +3098,8 @@
     },
     "title": {
       "all": "כל בתי העסק",
-      "search_results": "תוצאות עבור:"
+      "search_results": "תוצאות עבור:",
+      "map_link": "הצגה במפה"
     },
     "search_input": {
       "label": "חיפוש בתי עסק",
