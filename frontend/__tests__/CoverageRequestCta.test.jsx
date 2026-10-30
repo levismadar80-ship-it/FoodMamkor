@@ -24,7 +24,7 @@ vi.mock("next-intl", () => ({
       return `היי! אני מ${city} — אשמח לדעת אם יש אפשרות למשלוח לאזור`;
     const map = {
       "checker.label": "מגיעים אלייך?",
-      "checker.placeholder": "הקלידי עיר לבדיקה",
+      "checker.placeholder": "הקלידי עיר",
       min_order: "מינימום",
       placeholder: "עיר",
       clear_aria: "ניקוי",
