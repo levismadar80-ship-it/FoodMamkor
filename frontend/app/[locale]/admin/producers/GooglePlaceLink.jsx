@@ -19,6 +19,10 @@
  * review count is display-only (Google ToS, see routers/google_rating.py).
  *
  * Copy approved by Sapir 29/10/2026; search/result strings match ProducerForm.
+ *
+ * MEH-2602: after a search that found nothing (or failed) the admin gets one
+ * field: the name the business uses on Google (sent as `q`), or a pasted
+ * place_id, which is saved directly — the same paste ProducerForm accepts.
  */
 
 import { useState } from "react";
@@ -26,6 +30,9 @@ import api from "@/lib/api";
 
 // Mirrors routers/google_rating.py MIN_REVIEWS and ProducerForm.jsx.
 const GOOGLE_MIN_REVIEWS = 20;
+// A Google place_id: "ChI…" plus base64url characters (normalize_google_place_id
+// on the server is the real gate; this only decides search vs. save).
+const PLACE_ID_RE = /^ChI[A-Za-z0-9_-]{10,}$/;
 
 export default function GooglePlaceLink({ producerId, placeId, onLinked }) {
   const [linkedId, setLinkedId] = useState(placeId || null);
@@ -35,15 +42,17 @@ export default function GooglePlaceLink({ producerId, placeId, onLinked }) {
   const [searchState, setSearchState] = useState(null); // null | "empty" | "error"
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(false);
+  const [manual, setManual] = useState("");
 
-  const search = async () => {
+  const search = async (q) => {
     if (searching) return;
     setSearching(true);
     setCandidates(null);
     setSearchState(null);
     setSaveError(false);
     try {
-      const r = await api.get(`/admin/producers/${producerId}/google-place-candidates`);
+      const url = `/admin/producers/${producerId}/google-place-candidates`;
+      const r = q ? await api.get(url, { params: { q } }) : await api.get(url);
       const found = r.data?.candidates;
       if (r.status === 204 || !found?.length) setSearchState("empty");
       else setCandidates(found);
@@ -73,6 +82,14 @@ export default function GooglePlaceLink({ producerId, placeId, onLinked }) {
 
   const showSearch = !linkedId || replacing;
 
+  const submitManual = (e) => {
+    e.preventDefault();
+    const value = manual.trim();
+    if (!value) return;
+    if (PLACE_ID_RE.test(value)) pick(value);
+    else search(value);
+  };
+
   return (
     <div className="mt-3 max-w-xl text-xs">
       <p className="font-medium text-text">פרופיל Google</p>
@@ -100,7 +117,7 @@ export default function GooglePlaceLink({ producerId, placeId, onLinked }) {
         <div className="mt-2">
           <button
             type="button"
-            onClick={search}
+            onClick={() => search()}
             disabled={searching}
             className="rounded-lg border border-border px-3 py-1.5 text-text hover:bg-background-alt disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
@@ -116,6 +133,29 @@ export default function GooglePlaceLink({ producerId, placeId, onLinked }) {
             <p className="mt-2 text-error" role="alert">
               החיפוש נכשל, נסי שוב
             </p>
+          )}
+
+          {searchState && (
+            <form onSubmit={submitManual} className="mt-2 flex gap-2" data-testid="google-place-manual">
+              <label className="sr-only" htmlFor={`gpl-manual-${producerId}`}>
+                השם בגוגל או place_id
+              </label>
+              <input
+                id={`gpl-manual-${producerId}`}
+                value={manual}
+                onChange={(e) => setManual(e.target.value)}
+                placeholder="השם בגוגל או place_id"
+                dir="auto"
+                className="min-w-0 flex-1 rounded-lg border border-border px-2.5 py-1.5 text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              />
+              <button
+                type="submit"
+                disabled={searching || saving || !manual.trim()}
+                className="rounded-lg border border-border px-3 py-1.5 text-text hover:bg-background-alt disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                חיפוש
+              </button>
+            </form>
           )}
 
           {candidates?.length > 0 && (

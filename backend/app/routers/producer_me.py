@@ -67,6 +67,7 @@ from app.services.auth_notifications import (
     notify_admin_producer_sensitive_edit,
 )
 from app.services.submission_confirmation import send_submission_confirmation
+from app.services.producer_risk import score_producer  # MEH-2602
 from app.services.submission_gate import (
     attach_upcoming_events_count,
     submission_missing_items,
@@ -2032,6 +2033,7 @@ def submit_for_review(
     # bug fix.
     p_name = producer.name
     p_city = producer.city
+    p_id = producer.id  # MEH-2602: captured pre-commit, like p_name/p_city
     # MEH-2112: the owner's confirmation needs her address and the stamp that
     # was just written. Snapshotted here with the two above, for the same
     # reason — post-commit these attributes are expired and lazily reloaded,
@@ -2053,6 +2055,11 @@ def submit_for_review(
     # into an error, and post-commit placement mirrors _maybe_fire_review_ready
     # so the admin is never pinged about a transition that failed to persist.
     background_tasks.add_task(notify_admin_new_producer, p_name, p_city)
+    # MEH-2602: re-score now. The only score was taken at registration, before
+    # the owner filled contact_email / description, so the admin reviewing the
+    # finished profile read «אין מייל» about a profile that had one (staging
+    # sweep 29/10). Fail-open, same background-task contract as at signup.
+    background_tasks.add_task(score_producer, p_id)
     # MEH-2112: the owner-facing half of the same moment. Post-commit and
     # fail-open on the identical grounds as the admin ping above — she has
     # already been told on screen that the profile was sent, and a Resend
