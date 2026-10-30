@@ -107,8 +107,10 @@ def test_copy_and_palette_untouched():
     html = _render()
     for fragment in (
         "ברוכה הבאה למהמקור",
-        "פעם בשבוע — סיפור על בית עסק חדש",
-        "בלי הצעות, בלי spam, בלי ניסיון למכור לך משהו",
+        # MEH-2611 replaced the weekly/Monday promise (nothing sends weekly)
+        # with copy Sapir approved 30/10; this pins the new line instead.
+        "נכתוב לך כשיש משהו ששווה לספר: בית עסק חדש, אירוע קרוב או מתכון של העונה.",
+        "בלי ספאם, ואפשר לבטל בכל רגע.",
         "לבטל הרשמה",
         "#F5F0E8",
         "#2e6853",
