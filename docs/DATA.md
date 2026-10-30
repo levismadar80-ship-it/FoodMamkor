@@ -1362,7 +1362,7 @@ GET/HEAD /health                 public — backwards-compat alias, the path Rai
 | Owner's first reply to a review — not an edit (MEH-2602) | Email | Reviewer | `content_notifications.py` |
 | Home product removed | Email | Seller | `admin.py` |
 | Newsletter signup (welcome) | Email | Subscriber | `marketing.py` |
-| Newsletter issues — sent from Resend Broadcasts to segment `newsletter` (MEH-2611) | Email | Subscribers | Resend dashboard |
+| Newsletter issues — sent from Resend Broadcasts to segment `newsletter` (MEH-2611). Resend is the send authority: a Broadcast-footer opt-out lives only in Resend (no webhook back), so `newsletter_subscribers` is the signup log, not the audience | Email | Subscribers | Resend dashboard |
 | Contact form | Email | Admin | `marketing.py` |
 | 24h after WhatsApp click | WhatsApp | Buyer (rating prompt) | `rating_dispatcher.py` |
 
