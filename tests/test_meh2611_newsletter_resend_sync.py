@@ -4,14 +4,16 @@ Two layers:
   * the router hands every subscribe / unsubscribe to the sync service
     (patched here, so no network), including a REPEAT signup;
   * the sync service itself, driven against a fake `resend` module, creates
-    a global contact in the `newsletter` segment, falls back to update +
-    segment-add when the contact exists, and never raises.
+    a global contact in the `newsletter` segment only after a 404 lookup,
+    only adds an existing contact to the segment (status untouched), and
+    never raises.
 """
 
 import sys
 import types
 
 import pytest
+from resend.exceptions import ResendError
 
 from app.config import settings
 from app.models import NewsletterSubscriber
@@ -58,8 +60,15 @@ class TestRouterHandsOffToSync:
         assert calls == []
 
 
-class _NotFound(Exception):
-    code = 404
+def _NotFound(message):
+    # The REAL SDK class with the code the SDK passes for an HTTP 404
+    # (resend/request.py hands the response status to raise_for_code_and_type,
+    # and 404 has no specific subclass) — so a change in the SDK's error shape
+    # breaks these tests instead of only production. Imported at module top:
+    # the fake below shadows `resend` in sys.modules.
+    return ResendError(
+        code=404, error_type="not_found", message=message, suggested_action=""
+    )
 
 
 def _fake_resend(
@@ -194,10 +203,10 @@ class TestSyncService:
         newsletter_sync.sync_unsubscribe("bye@gmail.com")
         assert not any(c[0] == "contacts.remove" for c in log)
         assert reported == []
-        assert reported == []
 
     def test_unsubscribe_of_unknown_contact_is_quiet(self, fake):
-        _, reported = fake(fail=_NotFound("not found"))
+        # 404 from `remove` (contact vanished between lookup and delete).
+        _, reported = fake(existing=True, fail=_NotFound("not found"))
         newsletter_sync.sync_unsubscribe("ghost@gmail.com")
         assert reported == []
 
