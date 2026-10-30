@@ -2142,7 +2142,7 @@ CC רץ אחרי Tier 1 — לכל מה ש-Tier 1 לא יכול אבל אינו 
 - [ ] ProducerCard: tier 1/2 producer shows no badge — עסק עם phone_verified=false, is_verified=false → אין badge
 - [ ] ProducerCard: ambassador=true לא מציג שום תג ולא משנה trust_tier (MEH-2509)
 - [ ] ProducerDetail: TrustBadge shows next to name in header badge row
-- [ ] ProducerDetail: KashrutBadgeStrip shows below highlights strip when kashrut_badges non-empty — הוסיפי `kashrut_badges=["badatz"]` בDB → strip עם "בדצ׳ה" מופיע
+- [ ] ProducerDetail: KashrutBadgeStrip shows below highlights strip when kashrut_badges non-empty — הוסיפי `kashrut_badges=["badatz"]` בDB → strip עם "בד״ץ" מופיע
 - [ ] KashrutBadgeStrip: expiry warning pill shows when kashrut_expires_at within 30 days — שיני expires_at ל-7 ימים קדימה → "⚠️ תעודה פגה בקרוב"
 - [ ] KashrutBadgeStrip: no strip rendered when kashrut_badges empty (no regression to kosher text)
 - [ ] /register/producer: phone verification step 4 appears after submit if producer has phone
