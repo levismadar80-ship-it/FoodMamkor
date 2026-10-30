@@ -45,7 +45,7 @@ export default function OwnerCard({ producer, heading }) {
   const avatarSize = bio ? 88 : 56;
 
   return (
-    <section className="mt-8 border-t border-border pt-8" data-testid="owner-card">
+    <section className="mt-12" data-testid="owner-card">
       <h2 className="font-headline-md text-2xl font-bold text-text mb-4">{heading || t("heading")}</h2>
       <div className="bg-white border border-border rounded-lg p-5 flex flex-col gap-3">
         {/* Avatar at the inline-start on ALL viewports (mockup lock). */}

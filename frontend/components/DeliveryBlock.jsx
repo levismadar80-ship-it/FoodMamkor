@@ -575,7 +575,7 @@ export default function DeliveryBlock({
   // MEH-1255: nationwide delivery with an exclusion list.
   const hasExclusions = nationwide && excluded.length > 0;
   return (
-    <section className="mt-8 border-t border-border pt-6">
+    <section className="mt-12">
       {/* MEH-2592 C: no icon — no other section heading on the page has one. */}
       <h2 className="font-headline-md text-2xl font-bold text-text mb-4">
         {t("heading")}
