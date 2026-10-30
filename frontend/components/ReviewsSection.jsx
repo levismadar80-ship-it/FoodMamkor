@@ -388,7 +388,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
   const anonymousFallback = t("anonymous_fallback");
 
   return (
-    <section ref={sectionRef} className="mt-12 pt-8 border-t border-border">
+    <section ref={sectionRef} className="mt-12">
       <h2 className="font-headline-md text-2xl font-bold text-text mb-6">
         {t("section_heading")}
         {total > 0 && (
