@@ -4158,6 +4158,10 @@ class GroupBuyOut(BaseModel):
     deadline: datetime
     city: str | None = None
     fulfillment_note: str | None = None
+    # MEH-2621: pickup and delivery as two answers. Rows created before this
+    # carry only fulfillment_note; new rows carry one or both of these.
+    pickup_note: str | None = None
+    delivery_note: str | None = None
     status: str
     commits_count: int = 0
     created_at: datetime
@@ -4190,11 +4194,16 @@ class GroupBuyCreate(BaseModel):
     deadline: datetime
     city: str | None = Field(None, max_length=100)
     # MEH-1457: free-text "מתי ואיך מקבלים" (OFN "Ready for").
-    # MEH-2453: required. A participant from another city reads it before she
-    # joins; without it she cannot tell whether the product reaches her.
-    # Existing rows keep NULL (the column stays nullable); only new creates
-    # must carry it.
-    fulfillment_note: str = Field(..., max_length=1000)
+    # MEH-2453: a participant from another city reads it before she joins;
+    # without it she cannot tell whether the product reaches her.
+    # MEH-2621: split into two answers, pickup and delivery (Shopify / Local
+    # Line ask the seller about each separately). At least ONE of the three
+    # is required (_require_pickup_or_delivery). fulfillment_note stays
+    # accepted so the pre-split dashboard form keeps working until it moves
+    # to the two fields (Expand-Contract, ADR-007).
+    fulfillment_note: str | None = Field(None, max_length=1000)
+    pickup_note: str | None = Field(None, max_length=1000)
+    delivery_note: str | None = Field(None, max_length=1000)
 
     # MEH-1626 chunk 1: description gets the same bleach every other
     # description field in this module has (EventCreate:2528, HomeProductCreate,
@@ -4206,15 +4215,29 @@ class GroupBuyCreate(BaseModel):
     def _sanitize_description(cls, v):
         return sanitize_text(v, max_length=2000)
 
-    @field_validator("fulfillment_note")
+    @field_validator("fulfillment_note", "pickup_note", "delivery_note")
     @classmethod
-    def _require_fulfillment_note(cls, v: str) -> str:
-        # Blank, or no real words ("." / "כן"): the MEH-555 letter floor, with
-        # the field's own message rather than the generic one.
+    def _clean_fulfillment_text(cls, v: str | None, info) -> str | None:
+        # Blank means "not given" — the model validator below decides whether
+        # that is allowed. Given but with no real words ("." / "כן"): the
+        # MEH-555 letter floor, with the field's own message.
+        if v is None:
+            return None
         v = v.strip()
+        if not v:
+            return None
         if len(_LETTER_REGEX.sub("", v)) < 3:
-            raise ValueError("יש לכתוב מתי ואיך מקבלים את המוצרים")
+            if info.field_name == "fulfillment_note":
+                raise ValueError("יש לכתוב מתי ואיך מקבלים את המוצרים")
+            raise ValueError("יש למלא איסוף או משלוח")
         return v
+
+    @model_validator(mode="after")
+    def _require_pickup_or_delivery(self):
+        # MEH-2621: copy approved by Sapir 30/10.
+        if not (self.pickup_note or self.delivery_note or self.fulfillment_note):
+            raise ValueError("יש למלא איסוף או משלוח")
+        return self
 
     @field_validator("deadline")
     @classmethod

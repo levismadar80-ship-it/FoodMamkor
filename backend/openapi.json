@@ -2796,6 +2796,18 @@
             "title": "Deadline",
             "type": "string"
           },
+          "delivery_note": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Note"
+          },
           "description": {
             "anyOf": [
               {
@@ -2808,9 +2820,16 @@
             "title": "Description"
           },
           "fulfillment_note": {
-            "maxLength": 1000,
-            "title": "Fulfillment Note",
-            "type": "string"
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fulfillment Note"
           },
           "max_participants": {
             "anyOf": [
@@ -2828,6 +2847,18 @@
             "minimum": 2.0,
             "title": "Min Participants",
             "type": "integer"
+          },
+          "pickup_note": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Note"
           },
           "price_per_unit_group": {
             "anyOf": [
@@ -2884,8 +2915,7 @@
           "price_per_unit_regular",
           "price_per_unit_group",
           "min_participants",
-          "deadline",
-          "fulfillment_note"
+          "deadline"
         ],
         "title": "GroupBuyCreate",
         "type": "object"
@@ -2918,6 +2948,17 @@
             "format": "date-time",
             "title": "Deadline",
             "type": "string"
+          },
+          "delivery_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Note"
           },
           "description": {
             "anyOf": [
@@ -2960,6 +3001,17 @@
           "min_participants": {
             "title": "Min Participants",
             "type": "integer"
+          },
+          "pickup_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Note"
           },
           "price_per_unit_group": {
             "title": "Price Per Unit Group",
@@ -3078,6 +3130,17 @@
             "title": "Deadline",
             "type": "string"
           },
+          "delivery_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Note"
+          },
           "description": {
             "anyOf": [
               {
@@ -3119,6 +3182,17 @@
           "min_participants": {
             "title": "Min Participants",
             "type": "integer"
+          },
+          "pickup_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Note"
           },
           "price_per_unit_group": {
             "title": "Price Per Unit Group",

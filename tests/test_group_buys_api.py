@@ -6,6 +6,7 @@ min_participants, revert-to-open on cancel, duplicate/closed/full/deadline
 error paths). Uses the shared conftest fixtures + a producer-user helper
 mirroring test_producer_recipes.py.
 """
+import pytest
 import re
 from datetime import datetime, timedelta, timezone
 from unittest import mock
@@ -451,6 +452,8 @@ class TestCreate:
         )
 
     def test_blank_fulfillment_note_error_is_hebrew(self, client, db):
+        # MEH-2621: blank is now "not given", and with neither pickup nor
+        # delivery the refusal names the two fields the form now shows.
         _, user = _producer_user(db)
         resp = client.post(
             "/group-buys",
@@ -458,7 +461,84 @@ class TestCreate:
             headers=auth_header(user),
         )
         assert resp.status_code == 422
+        assert "יש למלא איסוף או משלוח" in resp.text
+
+    def test_wordless_fulfillment_note_keeps_its_own_message(self, client, db):
+        _, user = _producer_user(db)
+        resp = client.post(
+            "/group-buys",
+            json=_valid_create_payload(fulfillment_note=". - ?"),
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 422
         assert "יש לכתוב מתי ואיך מקבלים את המוצרים" in resp.text
+
+    # ---- MEH-2621: pickup_note / delivery_note ----
+    @staticmethod
+    def _split_payload(**over):
+        body = _valid_create_payload(**over)
+        if "fulfillment_note" not in over:
+            del body["fulfillment_note"]
+        return body
+
+    @pytest.mark.parametrize(
+        "fields",
+        [
+            {"pickup_note": "  מהמשק ביום שישי בין 8 ל-12 "},
+            {"delivery_note": "לזכרון יעקב ובנימינה ביום ראשון, 20 ש״ח"},
+            {
+                "pickup_note": "מהמשק ביום שישי",
+                "delivery_note": "לזכרון יעקב ביום ראשון",
+            },
+        ],
+        ids=["pickup-only", "delivery-only", "both"],
+    )
+    def test_split_fields_alone_are_enough_and_round_trip(self, client, db, fields):
+        _, user = _producer_user(db)
+        resp = client.post(
+            "/group-buys", json=self._split_payload(**fields), headers=auth_header(user)
+        )
+        assert resp.status_code == 201, resp.text
+        detail = client.get(f"/group-buys/{resp.json()['id']}").json()
+        for key in ("pickup_note", "delivery_note"):
+            expected = fields.get(key)
+            assert detail[key] == (expected.strip() if expected else None), key
+        assert detail["fulfillment_note"] is None
+
+    @pytest.mark.parametrize(
+        "fields",
+        [
+            {},
+            {"pickup_note": "", "delivery_note": "   "},
+            {"pickup_note": None, "delivery_note": None},
+        ],
+        ids=["none", "blank", "null"],
+    )
+    def test_neither_pickup_nor_delivery_is_422_and_creates_nothing(
+        self, client, db, fields
+    ):
+        producer, user = _producer_user(db)
+        resp = client.post(
+            "/group-buys", json=self._split_payload(**fields), headers=auth_header(user)
+        )
+        assert resp.status_code == 422, resp.text
+        assert "יש למלא איסוף או משלוח" in resp.text
+        assert (
+            db.query(GroupBuy).filter(GroupBuy.producer_id == producer.id).count()
+            == 0
+        )
+
+    def test_wordless_pickup_is_refused_even_with_a_delivery(self, client, db):
+        _, user = _producer_user(db)
+        resp = client.post(
+            "/group-buys",
+            json=self._split_payload(pickup_note="כן", delivery_note="לחדרה ביום שני"),
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 422, resp.text
+        # The refusal is the pickup field's, not some other 422 (review #3905).
+        locs = [err["loc"] for err in resp.json()["detail"]]
+        assert ["body", "pickup_note"] in locs, locs
 
     def test_three_letter_note_is_accepted(self, client, db):
         # The floor's edge, so a stricter floor shows up here.
