@@ -16,6 +16,7 @@ vi.mock("@/components/OwnerSectionEditLink", () => ({ default: () => null }));
 vi.mock("@/components/SectionAnchorNav", () => ({ default: () => null }));
 vi.mock("@/app/[locale]/producer/[id]/components/ContactCard", () => ({ default: () => null }));
 vi.mock("@/app/[locale]/producer/[id]/components/ContactSidebar", () => ({ default: () => null }));
+vi.mock("@/app/[locale]/producer/[id]/components/OtherBusinesses", () => ({ default: () => null }));
 vi.mock("@/app/[locale]/producer/[id]/components/OwnerEditBar", () => ({ default: () => null }));
 vi.mock("@/app/[locale]/producer/[id]/components/ProducerHeader", () => ({ default: () => null }));
 vi.mock("@/app/[locale]/producer/[id]/components/ProducerSections", () => ({ default: () => null }));

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Truck, CaretDown, CaretUp, Phone } from "@phosphor-icons/react";
+import { Truck, Package, CaretDown, CaretUp, Phone } from "@phosphor-icons/react";
 import { WazeGlyph, GoogleMapsGlyph } from "@/components/NavAppGlyphs";
 import { useTranslations } from "next-intl";
 import { formatPrice } from "@/lib/utils";
@@ -182,8 +182,13 @@ function capSections(sections, limit) {
 function AreaGroup({ label, rows, t, feeOf = () => null }) {
   return (
     <div>
-      {/* MEH-2592 C: the day reads as a small gold heading — no truck per day. */}
-      <p className="text-[13px] font-bold text-gold-deep mb-1.5">{label}</p>
+      {/* MEH-2592 C: the day reads as a small gold heading. Its truck came
+          back at Sapir's ask (30/10) — the icon is how the eye finds the
+          delivery rows. */}
+      <p className="flex items-center gap-1.5 text-[13px] font-bold text-gold-deep mb-1.5">
+        <Truck size={16} className="text-primary" aria-hidden="true" data-testid="area-group-icon" />
+        {label}
+      </p>
       <ul className={LIST_CARD}>
         {rows.map((da) => (
           <AreaRow key={da.id ?? da.city} da={da} t={t} fee={feeOf(da)} />
@@ -343,6 +348,7 @@ function PickupRows({ locations, t, tMap }) {
       {/* MEH-2592 C: «חינם» once, as a tag beside the heading, instead of on
           every row (MEH-1646 (b) still holds: every pickup shape says it). */}
       <p className="flex items-center gap-2 text-[15px] font-bold text-text mb-2">
+        <Package size={18} className="text-primary" aria-hidden="true" data-testid="pickup-heading-icon" />
         {t("pickup")}
         <span className="rounded-full bg-green-50 px-2 py-0.5 text-xs font-bold text-primary">
           {t("free")}
@@ -581,8 +587,9 @@ export default function DeliveryBlock({
   const hasExclusions = nationwide && excluded.length > 0;
   return (
     <section className="mt-12">
-      {/* MEH-2592 C: no icon — no other section heading on the page has one. */}
-      <h2 className="font-headline-md text-2xl font-bold text-text mb-4">
+      {/* MEH-2592: part C dropped this truck; Sapir asked for it back (30/10). */}
+      <h2 className="font-headline-md text-2xl font-bold text-text mb-4 flex items-center gap-2">
+        <Truck size={22} className="text-primary" aria-hidden="true" data-testid="delivery-heading-icon" />
         {t("heading")}
       </h2>
 
@@ -715,6 +722,7 @@ export default function DeliveryBlock({
       ) : (
         pickup && (
           <p className="flex items-center gap-2 text-[15px] font-bold text-text mb-4">
+            <Package size={18} className="text-primary" aria-hidden="true" data-testid="pickup-heading-icon" />
             {t("pickup")}
             {/* MEH-1646 (b): the generic fallback line carries the same tag
                 as the location rows — no producer shape misses it. */}
