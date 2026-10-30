@@ -40,6 +40,8 @@ const RESERVED = new Set([
   "organizers",
   // MEH-2576: where the middleware rewrites a deleted business's URL.
   "business-gone",
+  // MEH-2618: the delivery-waitlist unsubscribe page.
+  "delivery-waitlist",
 ]);
 
 // Real slugs are produced by backend _slugify
