@@ -5045,6 +5045,9 @@ class WhatsAppClickIn(BaseModel):
         return trimmed[:COVERAGE_CITY_MAX_LENGTH]
 
 
+_CITY_URLISH_REGEX = re.compile(r"[./:@\\]|https?|www", re.IGNORECASE)
+
+
 class DeliveryWaitlistIn(BaseModel):
     """MEH-2618: body of POST /producers/{id}/delivery-waitlist.
 
@@ -5070,6 +5073,13 @@ class DeliveryWaitlistIn(BaseModel):
         trimmed = v.strip()
         if not _LETTER_REGEX.sub("", trimmed):
             raise ValueError("עיר חייבת להכיל אותיות")
+        # The value is echoed verbatim into the email we send to this address
+        # (subject + body). A URL-shaped "city" would put attacker text and a
+        # link into mail sent under the platform's name. No Israeli locality
+        # carries any of these characters; hyphens and parentheses do occur
+        # («בנימינה-גבעת עדה», «יקנעם (מושבה)») and stay allowed.
+        if _CITY_URLISH_REGEX.search(trimmed):
+            raise ValueError("עיר לא יכולה להכיל קישור")
         return trimmed
 
 

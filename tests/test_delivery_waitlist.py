@@ -98,6 +98,25 @@ class TestSignup:
         )
         assert _entries(db, p.id) == []
 
+    def test_url_like_city_422(self, client, db):
+        # Reviewer #3 on #3908: `city` is echoed into the email subject/body,
+        # so a URL-shaped value would put attacker text + a link into mail
+        # sent under the platform's name to a third party's address.
+        p = make_producer(db)
+        for city in ["evil.example/x", "http://evil", "חיפה@x", "www.evil"]:
+            r = client.post(
+                f"/producers/{p.id}/delivery-waitlist",
+                json={"email": "a@b.co", "city": city},
+            )
+            assert r.status_code == 422, city
+        # Real city spellings with punctuation still pass.
+        r = client.post(
+            f"/producers/{p.id}/delivery-waitlist",
+            json={"email": "a@b.co", "city": "יקנעם (מושבה)"},
+        )
+        assert r.status_code == 201
+        assert len(_entries(db, p.id)) == 1
+
     def test_unknown_or_unapproved_business_404(self, client, db):
         pending = make_producer(db, status="pending")
         r = client.post(
@@ -212,6 +231,20 @@ class TestUnsubscribe:
             ).status_code
             == 200
         )
+
+    def test_other_scope_token_rejected(self, client, db):
+        # A newsletter unsubscribe token is signed with the same key; only
+        # the scope claim keeps it from deleting a waitlist row.
+        from app.routers.marketing import create_unsubscribe_token as newsletter_token
+
+        p = make_producer(db)
+        entry = svc.add_entry(db, p, email="x@example.com", city="חיפה", user=None)
+        db.commit()
+        token = newsletter_token(str(entry.id))
+        assert svc.decode_unsubscribe_token(token) is None
+        r = client.post("/delivery-waitlist/unsubscribe", json={"token": token})
+        assert r.status_code == 400
+        assert len(_entries(db, p.id)) == 1
 
     def test_bad_token_400(self, client, db):
         r = client.post("/delivery-waitlist/unsubscribe", json={"token": "nope"})
