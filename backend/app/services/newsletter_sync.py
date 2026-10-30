@@ -63,10 +63,12 @@ def _skip(email: str) -> bool:
 
 
 def sync_subscribe(email: str) -> None:
-    """Add (or re-subscribe) `email` in Resend and in the newsletter segment.
+    """Add `email` to Resend and to the newsletter segment.
 
-    A repeat signup is an explicit opt-in, so it clears an earlier Resend-side
-    unsubscribe (e.g. one made from a Broadcast footer).
+    An EXISTING contact keeps its subscription status: POST /newsletter is
+    anonymous single opt-in, so a third party could otherwise submit someone
+    else's address and undo their opt-out (anti-spam §30A). Re-opting in after
+    an unsubscribe is done in the Resend dashboard.
     """
     if _skip(email):
         return
@@ -84,7 +86,6 @@ def sync_subscribe(email: str) -> None:
                 }
             )
         except Exception:  # noqa: BLE001 — most likely "contact already exists"
-            resend.Contacts.update({"email": email, "unsubscribed": False})
             resend.Contacts.Segments.add(
                 {"email": email, "segment_id": segment_id}
             )

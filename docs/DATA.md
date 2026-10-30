@@ -1229,7 +1229,7 @@ GET  /stats                      public — { producers_count, categories_count,
 POST /newsletter                 public — { email } → newsletter_subscribers
                                  rate-limited 5/hour per IP
                                  + background mirror to Resend Contacts, segment
-                                   `newsletter` (MEH-2611; repeat signup re-opts-in)
+                                   `newsletter` (MEH-2611; never clears an opt-out)
 POST /newsletter/unsubscribe     public — { token } → deletes the row
                                  + marks the Resend contact unsubscribed (MEH-2611)
 POST /contact                    public — { name, email, message, topic? } → contact_messages row

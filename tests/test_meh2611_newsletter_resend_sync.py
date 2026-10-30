@@ -138,10 +138,11 @@ class TestSyncService:
         newsletter_sync.sync_subscribe("a@gmail.com")
         assert not any(c[0] == "segments.create" for c in log)
 
-    def test_existing_contact_is_resubscribed_and_added(self, fake):
+    def test_existing_contact_keeps_opt_out_but_joins_segment(self, fake):
+        # Anonymous signup must not undo someone's unsubscribe (security review).
         log, reported = fake(existing=True, segments=[{"id": "s1", "name": "newsletter"}])
         newsletter_sync.sync_subscribe("back@gmail.com")
-        assert ("contacts.update", {"email": "back@gmail.com", "unsubscribed": False}) in log
+        assert not any(c[0] == "contacts.update" for c in log)
         assert ("contact.segment.add", "back@gmail.com", "s1") in log
         assert reported == []
 

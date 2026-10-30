@@ -128,8 +128,8 @@ def subscribe_newsletter(
 ):
     email = data.email.lower().strip()
     # MEH-2611: Resend Contacts is where the list is managed and sent from.
-    # Runs on BOTH paths: a repeat signup re-opts-in an address that may have
-    # unsubscribed from a Broadcast footer (which never touches this table).
+    # Runs on BOTH paths so a row that predates the sync still reaches Resend;
+    # it never clears an existing opt-out (see newsletter_sync.sync_subscribe).
     background_tasks.add_task(sync_subscribe, email)
     existing = (
         db.query(NewsletterSubscriber)
