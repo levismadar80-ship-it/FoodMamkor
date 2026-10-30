@@ -231,6 +231,20 @@ describe("the pickup and delivery section", () => {
     expect(screen.getByTestId("group-buy-fulfillment-note").textContent).toBe(GB.fulfillment_note);
   });
 
+  // Review #3900: no note and a hidden checker must not leave an empty
+  // 2rem-tall section (the gap the old empty wrapper never had).
+  it("without a note and with the checker hidden: the section adds no gap", async () => {
+    fixture.gb = { fulfillment_note: null };
+    fixture.producer = producer({ offers_delivery: false, delivery_areas: [] });
+    await renderPage();
+    await waitFor(() => expect(get).toHaveBeenCalledWith("/producers/p-1"));
+    await act(async () => {});
+    const section = screen.getByTestId("group-buy-fulfillment");
+    expect(section.textContent).toBe("");
+    expect(section.className).not.toMatch(/\bmt-/);
+    expect(section.querySelector(".mt-8")).toBeNull();
+  });
+
   it("without a note: no heading over the checker alone", async () => {
     fixture.gb = { fulfillment_note: null };
     await renderPage();

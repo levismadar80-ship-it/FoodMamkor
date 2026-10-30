@@ -540,10 +540,13 @@ export default function GroupBuyDetailClient({ id }) {
                 be an orphan. Without a note the checker stands alone, as
                 before. */}
             {(gb.fulfillment_note || producer) && (
-              <section className="mt-8" data-testid="group-buy-fulfillment">
+              // Spacing lives on the children, not the section: when there is
+              // no note and the checker hides itself, the section collapses to
+              // nothing instead of leaving an empty 2rem gap (review #3900).
+              <section data-testid="group-buy-fulfillment">
                 {gb.fulfillment_note && (
                   <>
-                    <h2 className="font-headline-md text-lg font-bold text-text mb-3">{t("fulfillment_title")}</h2>
+                    <h2 className="mt-8 font-headline-md text-lg font-bold text-text mb-3">{t("fulfillment_title")}</h2>
                     <p className="flex gap-3 text-base text-text whitespace-pre-line" data-testid="group-buy-fulfillment-note">
                       <MapPin size={22} className="text-primary shrink-0 mt-0.5" aria-hidden="true" />
                       <span>{gb.fulfillment_note}</span>
@@ -555,7 +558,7 @@ export default function GroupBuyDetailClient({ id }) {
                     for a business that does not deliver, or whose answer is the
                     same for every city (DeliveryChecker gates 1–3). */}
                 {producer && (
-                  <div className={gb.fulfillment_note ? "mt-4" : undefined}>
+                  <div className={gb.fulfillment_note ? "mt-4" : "mt-6"}>
                     <DeliveryChecker
                       offersDelivery={producer.offers_delivery}
                       nationwide={producer.delivery_nationwide}
