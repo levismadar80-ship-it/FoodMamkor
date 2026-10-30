@@ -10,6 +10,7 @@ The endpoint is a read-only proxy to Google Places API (New). It must:
 Google is never actually called: _fetch_place_details is monkeypatched so the
 suite is deterministic and offline (mirrors test_api.py's Anthropic mocks).
 """
+
 from conftest import auth_header, make_producer, make_user
 
 from app.models import Producer
@@ -218,9 +219,7 @@ def test_candidates_non_admin_returns_403(client, db, monkeypatch):
 
     monkeypatch.setattr(google_rating, "_search_place_candidates", _boom)
     headers = auth_header(make_user(db, role="consumer"))
-    r = client.get(
-        f"/admin/producers/{p.id}/google-place-candidates", headers=headers
-    )
+    r = client.get(f"/admin/producers/{p.id}/google-place-candidates", headers=headers)
     assert r.status_code == 403
 
 
