@@ -1428,7 +1428,9 @@ def producer_analytics(
             ProducerWhatsAppClick.clicked_at >= utc_now() - timedelta(days=30),
         )
         .group_by(ProducerWhatsAppClick.city)
-        .order_by(func.count(ProducerWhatsAppClick.id).desc(), ProducerWhatsAppClick.city)
+        .order_by(
+            func.count(ProducerWhatsAppClick.id).desc(), ProducerWhatsAppClick.city
+        )
         .limit(5)
         .all()
     )
