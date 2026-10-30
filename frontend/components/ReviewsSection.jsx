@@ -12,6 +12,7 @@ import { useAuth } from "@/lib/auth-context";
 import { showToast } from "@/lib/toast";
 import { formatEventDate } from "@/lib/format-date";
 import EmptyState from "@/components/ui/EmptyState";
+import { SkeletonList } from "@/components/Skeleton";
 
 // HOT-018 (MEH-782): numeric short date (e.g. 7.6.2026) — preserves the prior
 // `toLocaleDateString` default while routing through the Invalid-Date-guarded,
@@ -489,7 +490,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
 
       {/* Reviews list */}
       {loading ? (
-        <p className="text-sm text-fg-muted">{t("loading")}</p>
+        <SkeletonList count={2} label={t("loading")} />
       ) : reviews.length === 0 ? (
         isOwner ? (
           <>
