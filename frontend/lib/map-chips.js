@@ -84,7 +84,9 @@ export const TOGGLE_CHIPS = chipsForKeys(axisKeysFor("map", MAP_CHIP_ORDER));
 // in RTL reading order. MEH-2425: shared so the active-filter tag row can skip
 // them — a chip that already shows its own on/off state is not repeated as a
 // removable tag under it.
-export const SERVICE_CHIP_KEYS = ["has_delivery", "pickup_points"];
+// MEH-2598: + on_site, and now shared by all three surfaces through
+// components/PromotedServiceChips.jsx (Sapir 29/10: one row everywhere).
+export const SERVICE_CHIP_KEYS = ["has_delivery", "pickup_points", "on_site"];
 
 // MEH-2170 (option ב׳, Sapir 25/08): the five diet axes are gated on /map the
 // way /producers already gates them (DIET_CHIP_MIN, MEH-1934) — a toggle that

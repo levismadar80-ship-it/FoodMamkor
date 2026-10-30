@@ -88,8 +88,10 @@ describe("MEH-2537 — one row", () => {
     render(<HomeProducersGrid {...props()} />);
     const order = [
       "home-filters-button",
-      "home-promoted-chip-verified",
+      // MEH-2598: the shared service trio (on_site is data-gated, and this
+      // fixture's catalog carries none, so two of the three render).
       "home-promoted-chip-has_delivery",
+      "home-promoted-chip-pickup_points",
       "delivery-day-chip",
     ].map((id) => screen.getByTestId(id));
     for (const el of order) expect(row().contains(el)).toBe(true);
@@ -214,7 +216,7 @@ describe("MEH-2537 — a focused chip is not left under the sticky «סינון�
   it("scrolls a focused chip out from under the lead (RTL: positive scrollBy)", () => {
     render(<HomeProducersGrid {...props()} />);
     const lead = row().firstElementChild;
-    const chip = screen.getByTestId("home-promoted-chip-verified");
+    const chip = screen.getByTestId("home-promoted-chip-has_delivery");
     rects.set(lead, { left: 276, right: 375 });
     rects.set(chip, { left: 200, right: 290 }); // 14px under the lead
     fireEvent.focus(chip);
@@ -225,7 +227,7 @@ describe("MEH-2537 — a focused chip is not left under the sticky «סינון�
     gcs.mockImplementation(() => ({ position: "sticky", direction: "ltr" }));
     render(<HomeProducersGrid {...props()} />);
     const lead = row().firstElementChild;
-    const chip = screen.getByTestId("home-promoted-chip-verified");
+    const chip = screen.getByTestId("home-promoted-chip-has_delivery");
     rects.set(lead, { left: 0, right: 99 });
     rects.set(chip, { left: 120, right: 210 }); // clear of the lead
     fireEvent.focus(chip);
@@ -238,7 +240,7 @@ describe("MEH-2537 — a focused chip is not left under the sticky «סינון�
   it("leaves a chip that is already clear alone", () => {
     render(<HomeProducersGrid {...props()} />);
     const lead = row().firstElementChild;
-    const chip = screen.getByTestId("home-promoted-chip-verified");
+    const chip = screen.getByTestId("home-promoted-chip-has_delivery");
     rects.set(lead, { left: 276, right: 375 });
     rects.set(chip, { left: 172, right: 268 });
     fireEvent.focus(chip);
@@ -260,7 +262,7 @@ describe("MEH-2537 — a focused chip is not left under the sticky «סינון�
     gcs.mockImplementation(() => ({ position: "relative", direction: "rtl" }));
     render(<HomeProducersGrid {...props()} />);
     const lead = row().firstElementChild;
-    const chip = screen.getByTestId("home-promoted-chip-verified");
+    const chip = screen.getByTestId("home-promoted-chip-has_delivery");
     rects.set(lead, { left: 276, right: 375 });
     rects.set(chip, { left: 200, right: 290 });
     fireEvent.focus(chip);
