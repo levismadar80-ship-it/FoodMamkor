@@ -45,17 +45,20 @@ vi.mock("@/components/FavoriteButton", () => ({
 vi.mock("@/components/ShareButton", () => ({
   default: () => <button data-testid="share-quiet" />,
 }));
-// Bell is deliberately NOT in this map — if a future edit re-imports it, the
-// component throws here rather than silently rendering a second entry point.
+// Bell is deliberately NOT exported by this mock — if a future edit re-imports
+// it, the component throws here rather than silently rendering a second entry
+// point. MEH-2592: the mock now spreads the real module (the header renders
+// the category's registry glyph, which needs the whole Phosphor family), so
+// the guard is kept by overriding `Bell` to undefined explicitly — a bare
+// spread would have let the real Bell through and voided the check.
 vi.mock("@phosphor-icons/react", async (importOriginal) => ({
-  // MEH-2592: the header renders the category's registry glyph (whole Phosphor
-  // family via lib/category-registry) — keep the real module, override the stubs.
   ...(await importOriginal()),
   MapPin: () => <span />,
   Heart: () => <span />,
   Star: () => <span />,
   Truck: () => <span />,
   StarOfDavid: () => <span />,
+  Bell: undefined,
 }));
 
 // MEH-2526: the permanent updates button (its own suite:

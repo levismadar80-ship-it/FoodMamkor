@@ -325,9 +325,10 @@ test.describe("manual › /producer/[id] — header and breadcrumb", () => {
     await expect(identity).toHaveText(target.name);
 
     // Facts line — exactly one, and BELOW the identity row. Since MEH-2592
-    // (30/10/2026) it opens with the rating slot and then carries
-    // «category · city (· מאז)», so it is always present; the status has a
-    // line of its own under it.
+    // (30/10/2026) it is «rating · category · city (· מאז)», the rating only
+    // when reviews exist, and it renders only when at least one fact is
+    // present — the seeded targets all carry a city, so one is the expected
+    // count. The status has a line of its own under it.
     const meta = header.getByTestId("producer-header-meta");
     await expect(meta).toHaveCount(1);
     const identityBox = await identity.boundingBox();
