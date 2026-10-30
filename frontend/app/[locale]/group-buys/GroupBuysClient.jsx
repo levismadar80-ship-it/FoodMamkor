@@ -190,7 +190,7 @@ export default function GroupBuysClient() {
 
       <div className="max-w-5xl mx-auto px-4 py-6 md:py-10">
         {/* Filters */}
-        <div className="flex flex-wrap gap-3 mb-6 items-end">
+        <div className="flex flex-wrap gap-3 mb-3 items-end">
           <div className="w-56 max-w-full">
             <CitySearch
               id="group-buys-city"
@@ -221,6 +221,14 @@ export default function GroupBuysClient() {
             ))}
           </div>
         </div>
+
+        {/* MEH-2620: one line under the chips says what the selected tab
+            holds. «הגיעו ליעד» alone does not tell a first-timer that those
+            groups can no longer be joined (commit 400s once funded,
+            group_buys.py:247) — copy approved by Sapir 30/10. */}
+        <p className="text-sm text-fg-muted mb-6" aria-live="polite" data-testid="group-buys-status-hint">
+          {t(`status_hint_${statusFilter}`)}
+        </p>
 
         {loading ? (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
