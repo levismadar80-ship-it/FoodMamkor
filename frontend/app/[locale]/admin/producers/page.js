@@ -9,10 +9,11 @@ import ProducerDecisionModal from "./ProducerDecisionModal";
 import { useAdminProducers } from "./use-admin-producers";
 import { useReviewChecklist } from "./use-review-checklist";
 import { ADMIN_REVIEW_APPROVE_CONFIRM } from "@/lib/admin-review-checklist";
+import { SkeletonTable } from "@/components/Skeleton";
 
 function SuspenseFallback() {
   const t = useTranslations("admin");
-  return <div className="text-muted">{t("common.loading")}</div>;
+  return <SkeletonTable rows={6} cols={5} label={t("common.loading")} />;
 }
 
 export default function ProducersPageWrapper() {

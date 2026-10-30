@@ -19,6 +19,7 @@ import { useAuth } from "@/lib/auth-context";
 import ExperienceForm from "@/components/ExperienceForm";
 // MEH-999: shared back link — one owner for target + arrow direction.
 import BackLink from "@/components/ui/BackLink";
+import { SkeletonForm } from "@/components/Skeleton";
 
 const LIST_HREF = "/producer/dashboard/experiences";
 
@@ -62,7 +63,7 @@ export default function EditExperiencePage() {
       ) : experience ? (
         <ExperienceForm mode="edit" initial={experience} onSuccess={handleSuccess} cancelHref={LIST_HREF} />
       ) : (
-        <div className="text-center py-16 text-fg-muted">{t("loading")}</div>
+        <SkeletonForm fields={5} label={t("loading")} className="py-4" />
       )}
     </div>
   );

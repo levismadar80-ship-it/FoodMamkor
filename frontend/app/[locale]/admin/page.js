@@ -6,6 +6,7 @@ import { CheckCircle, HourglassSimple } from "@phosphor-icons/react";
 import { detailToMessage } from "@/lib/errors";
 import { QUEUES, queueCount } from "./queues";
 import { useAdminDashboard } from "./dashboard-data";
+import { SkeletonTiles } from "@/components/Skeleton";
 
 /**
  * /admin — «מה מחכה לטיפול» (MEH-2359).
@@ -39,7 +40,7 @@ export default function AdminHome() {
     return <div className="bg-red-50 border border-red-200 text-red-700 rounded-[12px] p-4">{error}</div>;
   }
   if (!data) {
-    return <div className="text-muted">{t("common.loading")}</div>;
+    return <SkeletonTiles count={4} label={t("common.loading")} />;
   }
 
   const stats = data.stats || {};

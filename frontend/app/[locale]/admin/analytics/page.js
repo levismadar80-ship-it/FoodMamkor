@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Heart } from "@phosphor-icons/react";
 import api from "@/lib/api";
+import { SkeletonTiles } from "@/components/Skeleton";
 
 export default function AdminAnalyticsPage() {
   const t = useTranslations("admin");
@@ -19,7 +20,7 @@ export default function AdminAnalyticsPage() {
   }, []);
 
   if (loadError) return <div className="text-muted">{t("common.error_loading")}</div>;
-  if (!data) return <div className="text-muted">{t("common.loading")}</div>;
+  if (!data) return <SkeletonTiles count={4} label={t("common.loading")} />;
 
   // Two stacked line series for monthly chart
   const months = data.monthly || [];

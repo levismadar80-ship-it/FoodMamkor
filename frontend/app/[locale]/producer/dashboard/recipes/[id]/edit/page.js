@@ -15,6 +15,7 @@ import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import RecipeForm from "@/components/RecipeForm";
+import { SkeletonForm } from "@/components/Skeleton";
 
 export default function EditRecipePage() {
   const t = useTranslations("recipes.edit");
@@ -73,7 +74,7 @@ export default function EditRecipePage() {
           onCancel={() => router.push("/producer/dashboard/recipes")}
         />
       ) : (
-        <div className="text-center py-16 text-fg-muted">{t("loading")}</div>
+        <SkeletonForm fields={5} label={t("loading")} className="py-4" />
       )}
     </div>
   );

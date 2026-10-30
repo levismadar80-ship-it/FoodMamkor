@@ -28,6 +28,7 @@ import RecipeStatusBadge from "@/components/RecipeStatusBadge";
 import BackLink from "@/components/ui/BackLink";
 // MEH-1640: shared status colours across the four tools spokes.
 import { STATUS_CLASSES } from "@/lib/dashboard-status-classes";
+import { SkeletonList } from "@/components/Skeleton";
 
 export default function ProducerRecipesPage() {
   const t = useTranslations("recipes.dashboard");
@@ -110,7 +111,7 @@ export default function ProducerRecipesPage() {
       )}
 
       {items === null ? (
-        <div className="text-center py-16 text-fg-muted">{t("loading")}</div>
+        <SkeletonList count={4} label={t("loading")} className="py-4" />
       ) : items.length === 0 ? (
         // MEH-996: empty state and the open create form are mutually
         // exclusive — never mounted together (settings/page.jsx precedent).

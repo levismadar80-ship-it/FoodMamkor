@@ -5,6 +5,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
+import { SkeletonTable } from "@/components/Skeleton";
 
 export default function AdminCategoryRequestsPage() {
   const t = useTranslations("admin");
@@ -56,7 +57,7 @@ export default function AdminCategoryRequestsPage() {
     }
   };
 
-  if (loading) return <div className="text-fg-muted">{t("common.loading_f")}</div>;
+  if (loading) return <SkeletonTable rows={4} cols={4} label={t("common.loading_f")} />;
 
   return (
     <div className="space-y-6" dir="rtl">
