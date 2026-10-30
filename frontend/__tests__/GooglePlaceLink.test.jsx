@@ -36,6 +36,49 @@ beforeEach(() => {
 });
 
 describe("GooglePlaceLink (MEH-2582)", () => {
+  // MEH-2602: an empty (or failed) search leaves the admin a way forward.
+  describe("manual fallback after 0 results (MEH-2602)", () => {
+    async function toEmpty() {
+      mockSearch(null);
+      render(<GooglePlaceLink producerId="p1" placeId={null} />);
+      expect(screen.queryByTestId("google-place-manual")).toBeNull();
+      fireEvent.click(screen.getByRole("button", { name: "חפשי בגוגל" }));
+      return screen.findByTestId("google-place-manual");
+    }
+
+    it("a typed name searches again with it as q", async () => {
+      await toEmpty();
+      mockSearch(CANDIDATES.slice(0, 1));
+      fireEvent.change(screen.getByPlaceholderText("השם בגוגל או place_id"), {
+        target: { value: "מאפיית הכפר בנימינה" },
+      });
+      fireEvent.click(screen.getByRole("button", { name: "חיפוש" }));
+      expect(await screen.findByText("מאפיית הכפר")).toBeInTheDocument();
+      expect(api.get).toHaveBeenLastCalledWith(
+        "/admin/producers/p1/google-place-candidates",
+        { params: { q: "מאפיית הכפר בנימינה" } },
+      );
+      expect(api.put).not.toHaveBeenCalled();
+    });
+
+    it("a pasted place_id is saved directly, without a search", async () => {
+      await toEmpty();
+      api.put.mockResolvedValue({ data: { google_place_id: "ChIJN1t_tDeuEmsRUsoyG83frY4" } });
+      api.get.mockClear();
+      fireEvent.change(screen.getByPlaceholderText("השם בגוגל או place_id"), {
+        target: { value: " ChIJN1t_tDeuEmsRUsoyG83frY4 " },
+      });
+      fireEvent.click(screen.getByRole("button", { name: "חיפוש" }));
+      await waitFor(() =>
+        expect(api.put).toHaveBeenCalledWith("/admin/producers/p1/google-place-id", {
+          google_place_id: "ChIJN1t_tDeuEmsRUsoyG83frY4",
+        }),
+      );
+      expect(api.get).not.toHaveBeenCalled();
+      expect(await screen.findByText("מקושר ✓")).toBeInTheDocument();
+    });
+  });
+
   it("not linked: says why it matters and offers the search", () => {
     render(<GooglePlaceLink producerId="p1" placeId={null} />);
     expect(screen.getByText("פרופיל Google")).toBeInTheDocument();

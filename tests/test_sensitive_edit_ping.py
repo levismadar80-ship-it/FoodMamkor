@@ -237,7 +237,7 @@ def test_city_is_no_longer_sensitive_and_no_longer_writable(client, db):
     """
     assert "city" not in SENSITIVE_FIELDS
     user, producer = _owner(db)
-    assert producer.city == "תל אביב"
+    assert producer.city == "תל אביב-יפו"  # MEH-2602: stored canonical
 
     with patch(PATCH_TARGET) as ping:
         resp = _put(client, user, {"city": "רעננה"})
@@ -245,7 +245,7 @@ def test_city_is_no_longer_sensitive_and_no_longer_writable(client, db):
     assert resp.status_code == 200, resp.text
     ping.assert_not_called()
     db.refresh(producer)
-    assert producer.city == "תל אביב", "city must be ignored on the owner PUT"
+    assert producer.city == "תל אביב-יפו", "city must be ignored on the owner PUT"
 
 
 # ===========================================================================
@@ -268,7 +268,7 @@ def test_city_is_no_longer_sensitive_and_no_longer_writable(client, db):
 # 1 — so "approved only" and "one ping per request" cannot drift apart between
 # the two call sites.
 
-SEED_CITY = "תל אביב"
+SEED_CITY = "תל אביב-יפו"  # MEH-2602: make_producer's «תל אביב», stored canonical
 
 
 def _location(**overrides):

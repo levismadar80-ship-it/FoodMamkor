@@ -24,6 +24,7 @@ import { primaryPoint } from "@/lib/producerPoints";
 import OwnerSectionEditLink from "@/components/OwnerSectionEditLink";
 // MEH-1334 chunk 3: "מאחורי העסק" — data-gated owner card (Z4).
 import OwnerCard from "./OwnerCard";
+import ProducerActivities from "./ProducerActivities";
 // MEH-1875: the weekly order-window schedule as a headed Info block. Lives in
 // OrderWindowStrip.jsx beside OrderWindowCtaNote (ContactCard's consumer).
 import { OrderWindowScheduleBlock } from "./OrderWindowStrip";
@@ -88,8 +89,10 @@ export function parseHasLocation(producer, pin) {
 // an inert <div> otherwise. Same classes either way — the card looks identical;
 // only its interactivity is conditional, which is the honest rendering of
 // "signatureProduct may be null" (see the MEH-1233 B4 note on the derivation).
+// MEH-2592 C: a medium feature card — a 112px photo (144px on md+), a soft gold
+// border, rounder corners. Sapir rejected a full-width photo as too big (30/10).
 const SIGNATURE_SHELL_CLASS =
-  "mb-4 flex items-center gap-3 bg-surface-card border border-border rounded-md p-3";
+  "mb-5 flex items-center gap-4 bg-surface-card border border-accent/40 rounded-2xl p-3.5 shadow-sm";
 
 function SignatureShell({ product, onOpen, ariaLabel, children }) {
   if (!product) {
@@ -212,7 +215,7 @@ export default function ProducerSections({
           ) || null
         : null;
   const signatureImg = signatureProduct?.image_url
-    ? optimizeCloudinary(signatureProduct.image_url, { aspectRatio: "1:1", width: 160 })
+    ? optimizeCloudinary(signatureProduct.image_url, { aspectRatio: "1:1", width: 320 })
     : null;
   const gridProducts = signatureProduct
     ? (producer.products || []).filter((p) => p.id !== signatureProduct.id)
@@ -325,42 +328,43 @@ export default function ProducerSections({
                 name: producer.top_product_name || "",
               })}
             >
-              <div className="relative w-16 h-16 flex-shrink-0 rounded-md overflow-hidden bg-background">
+              <div className="relative w-28 h-28 md:w-36 md:h-36 flex-shrink-0 rounded-xl overflow-hidden bg-background">
                 {signatureImg ? (
                   <Image
                     src={signatureImg}
                     alt={producer.top_product_name || ""}
                     fill
                     className="object-cover"
-                    sizes="64px"
+                    sizes="(min-width: 768px) 144px, 112px"
                   />
                 ) : (
                   <div className="w-full h-full bg-background flex items-center justify-center" aria-hidden="true">
-                    <Leaf size={28} weight="light" className="text-primary/[0.32]" />
+                    <Leaf size={40} weight="light" className="text-primary/[0.32]" />
                   </div>
                 )}
               </div>
               <div className="min-w-0">
                 {/* MEH-1463: accent eyebrow so the card reads as "the signature
                     product", not just a bigger unlabeled row. */}
-                <p className="text-accent text-xs font-medium">
+                <p className="inline-flex items-center gap-1.5 rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-bold text-gold-deep">
+                  <span className="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true" />
                   {t("producer.detail.sections.products.signature_label")}
                 </p>
                 {producer.top_product_name && (
-                  <p className="font-medium text-text">{producer.top_product_name}</p>
+                  <p className="mt-1.5 font-headline-md text-lg font-bold leading-snug text-text">{producer.top_product_name}</p>
                 )}
                 {/* MEH-1463: description fallback from the deduped grid product. */}
                 {signatureProduct?.description && (
                   <p className="text-sm text-fg-muted mt-0.5 line-clamp-2">{signatureProduct.description}</p>
                 )}
                 {producer.price_range ? (
-                  <p className="text-accent font-semibold mt-0.5">
+                  <p className="text-gold-deep font-bold mt-1">
                     {producer.price_range}
                   </p>
                 ) : signatureNumericPrice ? (
-                  <p className="text-accent font-semibold mt-0.5"><span dir="ltr">{signatureNumericPrice}</span></p>
+                  <p className="text-gold-deep font-bold mt-1"><span dir="ltr">{signatureNumericPrice}</span></p>
                 ) : signatureFreeTextPrice ? (
-                  <p className="text-accent font-semibold mt-0.5">{signatureFreeTextPrice}</p>
+                  <p className="text-gold-deep font-bold mt-1">{signatureFreeTextPrice}</p>
                 ) : null}
               </div>
               {/* Forward chevron points LEFT in RTL — same convention as
@@ -592,6 +596,9 @@ export default function ProducerSections({
           )}
         </section>
       )}
+
+      {/* MEH-2602: the business's open group buys + upcoming experiences. */}
+      <ProducerActivities producerId={producer.id} />
 
       {/* MEH-1168 P3 (decision A): the editorial DeliveryBlock now serves ALL
           producers — the legacy delivery_areas table retired from this page. It

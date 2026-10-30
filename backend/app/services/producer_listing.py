@@ -23,7 +23,8 @@ from typing import Any
 
 import structlog
 from sqlalchemy import and_, case, cast, func, or_
-from sqlalchemy.dialects.postgresql import JSONPATH
+from sqlalchemy import Text
+from sqlalchemy.dialects.postgresql import ARRAY, JSONPATH
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.models import (
@@ -35,6 +36,7 @@ from app.models import (
     Product,
     SearchQuery,
 )
+from app.data.cities import canonical_city, city_variants
 from app.schemas.schemas import DELIVERY_DAYS
 from app.services.availability_validation import ON_VACATION
 from app.services.producer_queries import (
@@ -184,15 +186,20 @@ _SCOPE_ALL_FILTERS: list[tuple[str, str]] = [
 ]
 
 
-def _build_base_queries(
+def _build_base_queries(  # noqa: PLR0913 — keyword-only query axes; MEH-2602 added near_city
     db: Session,
     *,
     geo: tuple[float, float, float] | None,
     sort: str | None,
     require_physical: bool = False,
     sort_origin: tuple[float, float] | None = None,
+    near_city: str | None = None,
 ):
     """Initial q + count_q.
+
+    `near_city` (MEH-2602, non-geo mode only) prepends one order key: the
+    businesses located in that city come before those that only deliver
+    there. The chosen sort orders each of the two groups.
 
     `geo=(lat, lng, radius_km)` activates the geo search path (Haversine
     distance, ORDER BY distance ASC); `geo=None` is the standard listing
@@ -316,6 +323,13 @@ def _build_base_queries(
         )
     else:
         order = (Producer.created_at.desc(),)
+    if near_city:
+        # FALSE < TRUE, so "not located" sorts after "located" — the same
+        # boolean-key idiom as the rating and distance branches above.
+        # coalesce: a NULL Producer.city makes the condition NULL, not FALSE,
+        # and Postgres sorts NULL last — which split the deliverers' group.
+        located = func.coalesce(_located_in_city_condition(near_city), False)
+        order = (~located, *order)
     # MEH-1829: the distance sort selects the distance alongside the row (the
     # same two-entity shape as the geo path) so `_finalize_results` can attach
     # `distance_km` to each producer. Every other sort keeps the single-entity
@@ -354,6 +368,14 @@ def _build_base_queries(
 _MAX_DELIVERY_CITIES = 40
 
 
+def _city_matches(column, city: str):
+    """MEH-2602: `lower(column)` is one of the spellings of `city` (alias,
+    «קרית»/«קריית», hyphen spacing — app.data.cities.city_variants). Rows
+    written before writes were canonicalised keep their old spelling, and
+    this is what lets a filter for the official name still find them."""
+    return func.lower(column).in_(city_variants(city))
+
+
 def _delivery_city_condition(city: str):
     """A producer 'delivers to <city>' iff it has a delivery_areas row for
     that city OR delivers nationwide and hasn't excluded it (MEH-1255).
@@ -370,12 +392,15 @@ def _delivery_city_condition(city: str):
     was offered to a consumer as a delivering business. The flag is now a
     conjunct on BOTH delivery predicates.
     """
-    area_match = Producer.delivery_areas.any(
-        func.lower(DeliveryArea.city) == city.lower()
-    )
+    area_match = Producer.delivery_areas.any(_city_matches(DeliveryArea.city, city))
     nationwide_match = and_(
         Producer.delivery_nationwide.is_(True),
-        ~Producer.delivery_excluded_cities.any(city),
+        # MEH-2602: any spelling of the city on the exclusion list counts.
+        ~Producer.delivery_excluded_cities.overlap(
+            cast(
+                sorted({city, canonical_city(city), *city_variants(city)}), ARRAY(Text)
+            )
+        ),
     )
     # `.is_(True)` and not a bare truthiness check: the column is NOT NULL today
     # (models.py:234) so the two agree, but `.is_(True)` keeps a future NULL
@@ -384,6 +409,24 @@ def _delivery_city_condition(city: str):
         Producer.offers_delivery.is_(True),
         or_(area_match, nationwide_match),
     )
+
+
+def _located_in_city_condition(city: str):
+    """MEH-2602 — the business IS in <city>: its own city, or any of its
+    location rows (store, pickup point, market stand). Case-folded on both
+    sides like _delivery_city_condition. A location row with a NULL city
+    never matches (see _pickup_condition for why that is the right reading).
+    """
+    return or_(
+        _city_matches(Producer.city, city),
+        Producer.locations.any(_city_matches(ProducerLocation.city, city)),
+    )
+
+
+def _near_city_condition(city: str):
+    """MEH-2602 — the map's city filter: located in the city OR delivers to
+    it. Ordering puts the located ones first (_build_base_queries)."""
+    return or_(_located_in_city_condition(city), _delivery_city_condition(city))
 
 
 def _has_delivery_condition():
@@ -456,7 +499,7 @@ def _pickup_condition(cities: list[str] | None = None):
     if cities:
         # `.lower()` on both sides mirrors _delivery_city_condition:274 so the
         # two city axes match case-identically.
-        conds.append(func.lower(ProducerLocation.city).in_([c.lower() for c in cities]))
+        conds.append(or_(*[_city_matches(ProducerLocation.city, c) for c in cities]))
     return Producer.locations.any(and_(*conds))
 
 
@@ -543,7 +586,7 @@ def _delivery_day_condition(days: list[str], city: str | None = None):
     # REUSES: the category block below — Category.id.in_ inside an EXISTS.
     conds = [DeliveryArea.delivery_day.in_(days)]
     if city:
-        conds.append(func.lower(DeliveryArea.city) == city.lower())
+        conds.append(_city_matches(DeliveryArea.city, city))
     # MEH-2242: `offers_delivery` is conjoined here exactly as MEH-1848 did on
     # _delivery_city_condition (:305). A day row is delivery SCOPE, not a
     # delivery promise — a business that switched delivery off while its
@@ -967,6 +1010,10 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, P
         # list is not consulted on this axis.
         delivery_scope_cond = _has_delivery_condition()
 
+    if scope_cities is None and (filters.get("near_city") or "").strip():
+        # MEH-2602: with only the map's city filter active, a pickup point
+        # counts when it is in that city — same reading as a delivery city.
+        scope_cities = [filters["near_city"].strip()]
     pickup_cond = _pickup_condition(scope_cities) if pickup_points else None
     # MEH-2598: a third peer of the service group, OR-ed like pickup.
     on_site_cond = _on_site_condition() if on_site else None
@@ -985,8 +1032,16 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, P
 
     city = filters.get("city")
     if city:
-        q = q.filter(func.lower(Producer.city) == city.lower())
-        count_q = count_q.filter(func.lower(Producer.city) == city.lower())
+        q = q.filter(_city_matches(Producer.city, city))
+        count_q = count_q.filter(_city_matches(Producer.city, city))
+
+    near_city = (filters.get("near_city") or "").strip()
+    if near_city:
+        # MEH-2602: AND-ed like `city`, so it narrows whatever the service
+        # ladder above produced (a delivery_city sent alongside still applies).
+        near_cond = _near_city_condition(near_city)
+        q = q.filter(near_cond)
+        count_q = count_q.filter(near_cond)
 
     return q, count_q
 
@@ -1190,7 +1245,7 @@ def build_producers_query(db: Session, **filters: Any) -> tuple[list[Producer], 
     category, delivery_city, delivery_cities, delivery_day (MEH-1645 — one
     canonical Hebrew day; explicit-row matching only), delivery_days (MEH-2036 —
     OR-list of the same vocabulary; WINS over delivery_day when both are
-    present), has_delivery, verified, kosher, city,
+    present), has_delivery, verified, kosher, city, near_city (MEH-2602),
     is_available_today (MEH-2271 — DEPRECATED alias onto availability_state,
     removed by MEH-2272; it no longer reads the column), grass_fed,
     gluten_free, vegan, vegetarian, lactose_free,
@@ -1223,6 +1278,7 @@ def build_producers_query(db: Session, **filters: Any) -> tuple[list[Producer], 
         sort=sort,
         require_physical=require_physical,
         sort_origin=sort_origin,
+        near_city=(filters.get("near_city") or "").strip() or None,
     )
     q, count_q = _apply_scalar_filters(q, count_q, **filters)
     q, count_q = _apply_search_filter(db, q, count_q, search_q, geo_search=geo_search)

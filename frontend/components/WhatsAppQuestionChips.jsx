@@ -13,6 +13,7 @@ import {
   isWhatsAppPrimary,
 } from "@/lib/contact-method";
 import { markWhatsAppClickedLocal, pingWhatsAppBeacon } from "@/lib/contact-tracking";
+import { useUserCity } from "@/lib/use-user-city";
 
 /**
  * Quick Answers under the primary CTA in the producer contact card.
@@ -85,17 +86,23 @@ import { markWhatsAppClickedLocal, pingWhatsAppBeacon } from "@/lib/contact-trac
  * separate from.
  */
 
+// MEH-2592 C: ready-made questions are pills (like WhatsApp Business quick
+// replies) rather than accordion rows, so they read as tappable at a glance.
+const QUESTION_PILL =
+  "inline-flex items-center gap-1.5 min-h-[44px] px-3.5 rounded-full border font-body-md text-sm transition focus-visible:ring-2 focus-visible:ring-primary/40";
+
 /** Collapsible answer row: button + aria-expanded + CaretDown (rotates open). */
 function Disclosure({ question, children }) {
   const [open, setOpen] = useState(false);
   return (
-    <li>
+    // MEH-2592 C: an open question takes the whole row so its answer has room.
+    <li className={open ? "basis-full" : ""}>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         data-testid="quick-answer-toggle"
-        className="flex w-full items-center gap-2 min-h-[44px] text-start font-body-md text-sm text-primary transition rounded focus-visible:ring-2 focus-visible:ring-primary/40"
+        className={`${QUESTION_PILL} text-start border-primary/15 bg-green-50 text-primary-dark hover:bg-primary/10`}
       >
         <CaretDown
           size={16}
@@ -108,7 +115,7 @@ function Disclosure({ question, children }) {
       {open && (
         <div
           data-testid="quick-answer-content"
-          className="ps-6 pb-2 font-body-md text-sm text-text"
+          className="px-3.5 pt-2 pb-1 font-body-md text-sm text-text"
         >
           {children}
         </div>
@@ -127,7 +134,7 @@ function WaItem({ href, question, onTrack }) {
         rel="noopener noreferrer"
         onClick={onTrack}
         data-testid="question-link"
-        className="flex items-center gap-2 min-h-[44px] font-body-md text-sm text-primary transition hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+        className={`${QUESTION_PILL} border-primary/15 bg-green-50 text-primary-dark hover:bg-primary/10`}
       >
         <ChatCircle size={16} weight="regular" className="flex-shrink-0" aria-hidden="true" />
         {question}
@@ -208,6 +215,7 @@ function OrderingContent({ answer, t }) {
 
 export default function WhatsAppQuestionChips({ producer }) {
   const t = useTranslations("whatsapp.question_chips");
+  const { city: visitorCity } = useUserCity();
   const digits = normalizePhone(producer?.phone);
   // MEH-2154: the single gate for every WhatsApp-prefill row. Both halves are
   // required — the declared channel AND a number to send to.
@@ -229,10 +237,15 @@ export default function WhatsAppQuestionChips({ producer }) {
     pingWhatsAppBeacon(producer.id);
     markWhatsAppClickedLocal(producer.id);
   };
-  const city = producer?.city || t("my_area");
+  // MEH-2602: the question is the VISITOR's — «can you deliver to me?». It
+  // used to name the business's own city («אפשר משלוח לבנימינה?» on a
+  // Binyamina bakery's page). The city the visitor picked on the site (map /
+  // home «איפה אתם?») when there is one, else «אפשר משלוח לאזור שלי?».
   const name = producer?.name || "";
 
-  const deliveryQ = t("delivery_to_city", { city });
+  const deliveryQ = visitorCity
+    ? t("delivery_to_city", { city: visitorCity })
+    : t("delivery_to_my_area");
   const orderingQ = t("ordering_q");
   const delivery = buildDeliveryAnswer(producer);
   const ordering = buildOrderingAnswer(producer);
@@ -276,7 +289,9 @@ export default function WhatsAppQuestionChips({ producer }) {
   // the category stock set no longer renders. One derivation, shared with the
   // dashboard preview (lib/resolvedQuestions.js), so the two cannot drift.
   const waQuestions = ownerQuestionLabels(producer, {
-    city,
+    // An owner's own «[עיר]» placeholder keeps its pre-2602 reading (the
+    // business city) unless the visitor has told us hers.
+    city: visitorCity || producer?.city || "",
     deliveryQuestion: deliveryQ,
     orderingQuestion: orderingQ,
   });
@@ -326,10 +341,11 @@ export default function WhatsAppQuestionChips({ producer }) {
   // ride a non-WhatsApp channel, ask the real question instead of the proxy.)
   if (items.length === 0 && !escalationHref) return null;
 
-  // MEH-2385: the hairline exists to separate this block from the primary CTA
-  // above it. PrimaryContactButton returns null when no channel resolves
-  // (getPrimaryContactHref → null), and then a rule with nothing above it is
-  // the "empty white card" Sapir photographed on demo-delivery-pickup.
+  // MEH-2385: the top spacing exists to separate this block from the primary
+  // CTA above it (MEH-2592 C replaced the hairline with space). When
+  // PrimaryContactButton returns null (getPrimaryContactHref → null) there is
+  // nothing above to separate from — the "empty white card" Sapir photographed
+  // on demo-delivery-pickup.
   const underCta = !!getPrimaryContactHref(producer);
 
   return (
@@ -370,10 +386,11 @@ function QuestionList({
   return (
     <div
       data-testid="question-chips"
-      className={underCta ? "mb-4 border-t border-border pt-3" : "mb-4"}
+      data-under-cta={underCta ? "true" : "false"}
+      className={underCta ? "mb-4 mt-4" : "mb-4"}
     >
-      <p className="text-xs mb-1.5 font-body-md text-fg-muted">{t("common_questions")}:</p>
-      <ul className="flex flex-col">{visible}</ul>
+      <p className="text-[13px] mb-2 font-body-md text-fg-muted">{t("common_questions")}</p>
+      <ul className="flex flex-wrap gap-2">{visible}</ul>
 
       {/* "עוד שאלות" — reveals the remaining ready-made questions in place.
           ≥44px hit-area via min-h + transparent padding (revision-2 #5). */}
@@ -383,7 +400,7 @@ function QuestionList({
           onClick={() => setExpanded(true)}
           data-testid="more-questions"
           aria-expanded={false}
-          className="flex items-center gap-2 min-h-[44px] font-body-md text-sm font-medium text-primary transition hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+          className={`${QUESTION_PILL} mt-2 border-primary/15 font-medium text-primary hover:bg-primary/[0.06]`}
         >
           <CaretDown size={16} weight="bold" className="flex-shrink-0" aria-hidden="true" />
           {t("more_questions")}
@@ -403,7 +420,7 @@ function QuestionList({
             : {})}
           onClick={escalationOnTrack ?? undefined}
           data-testid="escalation-link"
-          className="flex items-center gap-2 min-h-[44px] font-body-md text-sm text-fg-muted transition hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+          className={`${QUESTION_PILL} mt-2 border-border text-fg-muted hover:bg-background`}
         >
           <ChatCircle size={16} weight="regular" className="flex-shrink-0" aria-hidden="true" />
           {t("escalation")}

@@ -15,7 +15,7 @@ import { render, screen } from "@testing-library/react";
 vi.mock("next-intl", () => ({
   useTranslations: () => (key, vars) => {
     const map = {
-      my_area: "האזור שלי",
+      delivery_to_my_area: "אפשר משלוח לאזור שלי?",
       delivery_to_city: `אפשר משלוח ל${vars?.city ?? ""}?`,
       ordering_q: "איך מזמינים?",
       delivery_nationwide: "כן! משלוחים לכל הארץ",
@@ -52,7 +52,10 @@ describe("MEH-2385 — hairline only under a primary CTA", () => {
       />,
     );
     const block = screen.getByTestId("question-chips");
-    expect(block.className).toContain("border-t");
+    // MEH-2592 C: the separator is now space (mt-4), not a hairline.
+    expect(block.dataset.underCta).toBe("true");
+    expect(block.className).toContain("mt-4");
+    expect(block.className).not.toContain("border-t");
     // Control: this cell really has the channel the rule is keyed on.
     expect(screen.getByTestId("escalation-link")).toBeInTheDocument();
   });
@@ -60,7 +63,8 @@ describe("MEH-2385 — hairline only under a primary CTA", () => {
   it("draws no rule when no channel resolves (no CTA above the block)", () => {
     render(<WhatsAppQuestionChips producer={{ ...answersOnly, primary_contact_method: "email" }} />);
     const block = screen.getByTestId("question-chips");
-    expect(block.className).not.toContain("border-t");
+    expect(block.dataset.underCta).toBe("false");
+    expect(block.className).not.toContain("mt-4");
     // Control: the block rendered its answer, so this is a styled block and
     // not a missing one; and there is genuinely no channel row to separate from.
     expect(screen.getAllByTestId("quick-answer-toggle").length).toBeGreaterThan(0);

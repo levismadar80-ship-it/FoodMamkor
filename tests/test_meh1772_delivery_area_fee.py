@@ -99,7 +99,7 @@ def test_owner_put_rows_persist_per_area_fee(client, db):
     assert resp.status_code == 200, resp.text
     db.refresh(producer)
     rows = {da.city: da for da in producer.delivery_areas}
-    assert rows["תל אביב"].delivery_fee == 20
+    assert rows["תל אביב-יפו"].delivery_fee == 20  # MEH-2602: stored canonical
     assert rows["חיפה"].delivery_fee == 40
     assert rows["עכו"].delivery_fee is None
 
