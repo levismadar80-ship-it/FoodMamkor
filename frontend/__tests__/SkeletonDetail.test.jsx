@@ -27,4 +27,11 @@ describe("SkeletonDetail", () => {
     expect(column.className).toContain("max-w-6xl");
     expect(column.className).not.toContain("max-w-3xl");
   });
+
+  it("the hero band sits in the page column, like the loaded experience cover", () => {
+    const { container } = render(<SkeletonDetail width="max-w-[1100px]" label="טעינת החוויה..." />);
+    const hero = container.querySelector('[data-skeleton="hero"]');
+    expect(hero.parentElement.className).toContain("max-w-[1100px]");
+    expect(hero.className).toContain("lg:h-[380px]");
+  });
 });

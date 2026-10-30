@@ -248,7 +248,13 @@ export function SkeletonTiles({ count = 4, label, className = "", testId }) {
 export function SkeletonDetail({ hero = true, width = "max-w-3xl", label, className = "", testId }) {
   return (
     <SkeletonStatus label={label} className={className} testId={testId}>
-      {hero && <div className="skeleton-box h-[280px] md:h-[360px]" aria-hidden="true" data-skeleton="hero" />}
+      {/* Hero geometry = the experience cover with an image (ExperienceDetailClient,
+          MEH-2559): inside the page column, 210/300/380 px, rounded on lg. */}
+      {hero && (
+        <div className={`${width} mx-auto lg:px-4 lg:pt-6`} aria-hidden="true">
+          <div className="skeleton-box h-[210px] md:h-[300px] lg:h-[380px] lg:rounded-[18px]" data-skeleton="hero" />
+        </div>
+      )}
       <div className={`${width} mx-auto px-4 py-12`} aria-hidden="true" data-skeleton="column">
         <div className="skeleton-box rounded-full w-24 h-6 mb-3" />
         <div className="skeleton-box rounded-lg w-3/4 h-10 mb-4" />
