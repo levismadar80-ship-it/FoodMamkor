@@ -20,12 +20,13 @@ from sqlalchemy import (
     text,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSON, JSONB, UUID
-from sqlalchemy.orm import backref, relationship
+from sqlalchemy.orm import backref, relationship, validates
 
 # MEH-2139: imported under its own name so the column definition below reads as
 # a declaration rather than a call into a service.
 from app.services.category_slug import _column_default as _category_slug_default
 
+from app.data.cities import canonical_city
 from app.database import Base
 
 # MEH-1823: Producer.active_offer applies the expiry rule in Israel time, the
@@ -609,6 +610,17 @@ class Producer(Base):
         "ProducerOffer", back_populates="producer", cascade="all, delete-orphan"
     )
 
+    # MEH-2602: one stored spelling per city, whatever the write path (owner
+    # form, admin, import, seed). «בנימינה» and «בנימינה-גבעת עדה» were two
+    # entries in the city list and two answers to the city filter.
+    @validates("city")
+    def _canonical_city(self, _key, value):
+        return canonical_city(value)
+
+    @validates("delivery_excluded_cities")
+    def _canonical_excluded_cities(self, _key, value):
+        return [canonical_city(c) for c in value] if value else value
+
     @property
     def active_offer(self):
         """MEH-1823 chunk 2: the one offer that is live RIGHT NOW, or None.
@@ -1107,6 +1119,11 @@ class DeliveryArea(Base):
 
     producer = relationship("Producer", back_populates="delivery_areas")
 
+    @validates("city")
+    def _canonical_city(self, _key, value):
+        # MEH-2602 — same one-spelling rule as Producer.city.
+        return canonical_city(value)
+
 
 class ProducerLocation(Base):
     """MEH-1395 (MEH-1388 chunk 1): a physical presence point of a producer —
@@ -1178,6 +1195,11 @@ class ProducerLocation(Base):
     )
 
     producer = relationship("Producer", back_populates="locations")
+
+    @validates("city")
+    def _canonical_city(self, _key, value):
+        # MEH-2602 — same one-spelling rule as Producer.city.
+        return canonical_city(value)
 
     __table_args__ = (
         CheckConstraint(
