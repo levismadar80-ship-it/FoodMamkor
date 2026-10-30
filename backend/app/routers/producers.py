@@ -5,6 +5,7 @@ import httpx
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.auth import (
@@ -696,7 +697,15 @@ def join_delivery_waitlist(
     delivery_waitlist.add_entry(
         db, producer, email=data.email, city=data.city, user=current_user
     )
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        # Two identical POSTs in flight (double-tap): both passed find_entry,
+        # the second trips uq_delivery_waitlist_city_email. That is the same
+        # calm "exists" as the sequential duplicate, not a 500.
+        db.rollback()
+        response.status_code = 200
+        return DeliveryWaitlistOut(status="exists")
     return DeliveryWaitlistOut(status="added")
 
 

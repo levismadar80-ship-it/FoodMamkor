@@ -62,6 +62,23 @@ class TestSignup:
         assert r.json()["status"] == "exists"
         assert len(_entries(db, p.id)) == 1
 
+    def test_concurrent_duplicate_is_exists_not_500(self, client, db, monkeypatch):
+        # The check-then-insert race: find_entry sees nothing, the UNIQUE
+        # constraint fires on commit. Simulated by making find_entry blind.
+        p = make_producer(db)
+        body = {"email": "dana@example.com", "city": "חיפה"}
+        assert (
+            client.post(f"/producers/{p.id}/delivery-waitlist", json=body).status_code
+            == 201
+        )
+        monkeypatch.setattr(
+            "app.services.delivery_waitlist.find_entry", lambda *a, **k: None
+        )
+        r = client.post(f"/producers/{p.id}/delivery-waitlist", json=body)
+        assert r.status_code == 200
+        assert r.json()["status"] == "exists"
+        assert len(_entries(db, p.id)) == 1
+
     def test_invalid_email_and_city_422(self, client, db):
         p = make_producer(db)
         assert (
