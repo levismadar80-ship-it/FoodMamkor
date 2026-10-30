@@ -16,6 +16,8 @@
 erDiagram
     users ||--o{ favorites : "saves"
     users ||--o{ saved_items : "saves (MEH-2556)"
+    producers ||--o{ delivery_waitlist : "waited_for_by (MEH-2618)"
+    users |o--o{ delivery_waitlist : "left_while_signed_in (SET NULL)"
     users ||--o| producers : "owns (1:1 via users.producer_id)"
     producers ||--o{ producer_categories : "tagged_with"
     producers ||--o{ products : "sells"
@@ -409,6 +411,17 @@ erDiagram
         string item_type "recipe|event|experience (CHECK)"
         uuid item_id "no FK — per-type table"
         timestamp created_at
+    }
+
+    delivery_waitlist {
+        uuid id PK "MEH-2618"
+        uuid producer_id FK "CASCADE"
+        string city "visitor's own spelling — used in her email"
+        string city_key "app.data.cities.city_key — the trigger matches on it"
+        string email "trimmed + lower-cased; UNIQUE(producer_id,city_key,email)"
+        uuid user_id FK "SET NULL — set when signed in"
+        timestamp created_at
+        timestamp notified_at "once-only guard; NULL = still waiting"
     }
 
     inbound_messages {

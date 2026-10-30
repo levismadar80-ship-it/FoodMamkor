@@ -59,6 +59,9 @@ graph TD
     GGoogleRating -.needs.-> PGooglePlaceId[PUT /admin/producers/{id}/google-place-id<br/>🔒 admin · MEH-2582 one-field write from the approval row<br/>skips licence/delivery gates on purpose, 30/min]
     ProducerClick --> GSlug[GET /producers/by-slug/{slug}<br/>🌐 same but by slug<br/>410 if the business was deleted · MEH-2534]
     GProducer --> WhatsApp[POST /producers/{id}/whatsapp-click<br/>🌐 rate-limited 10/min<br/>logs producer_whatsapp_clicks<br/>MEH-1677: OPTIONAL body {city} — sent only by the coverage CTA;<br/>must stay optional, sendBeacon cannot set application/json]
+    GProducer --> Waitlist[POST /producers/{id}/delivery-waitlist<br/>🌐 rate-limited 10/min · MEH-2618<br/>{email, city} → delivery_waitlist row<br/>201 added · 200 exists · 404 non-live<br/>JWT optional: sets user_id, fills empty users.city]
+    Waitlist -.->|PUT /producers/me adds the city → BackgroundTask<br/>notify_cities: one email per entry, notified_at stamped| WaitlistMail[Resend email<br/>«{business} מגיעים עכשיו גם ל{city}»<br/>fail-open per recipient]
+    WaitlistMail -.->|link in the email| WaitlistUnsub[POST /delivery-waitlist/unsubscribe<br/>🌐 signed token → deletes the entry<br/>idempotent 200 · 400 bad token]
 
     GProducer --> GReviews[GET /producers/{id}/reviews<br/>🌐 paginated]
     GProducer --> Reports_post[POST /producers/{id}/report<br/>🔑 rate-limited]

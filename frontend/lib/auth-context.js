@@ -257,3 +257,10 @@ export function useAuth() {
   if (!ctx) throw new Error("useAuth must be used within AuthProvider");
   return ctx;
 }
+
+// MEH-2618: for components that render for guests AND inside unit tests that
+// mount them without the provider (DeliveryChecker's tree). `null` means "no
+// provider" and is read exactly like "signed out" — never a throw.
+export function useOptionalAuth() {
+  return useContext(AuthContext);
+}

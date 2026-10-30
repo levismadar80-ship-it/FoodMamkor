@@ -16,6 +16,7 @@ from app.data.cities import canonical_city
 from app.database import get_db
 from app.models import (
     Category,
+    DeliveryWaitlistEntry,
     KashrutBadgeRequest,
     Producer,
     Report,
@@ -29,6 +30,9 @@ from app.schemas.schemas import (
     CategoryOut,
     ContactClickIn,
     DELIVERY_DAYS,
+    DeliveryWaitlistIn,
+    DeliveryWaitlistOut,
+    DeliveryWaitlistUnsubscribeIn,
     KashrutCertRef,
     ProducerCityOut,
     ProducerCreate,
@@ -39,6 +43,7 @@ from app.schemas.schemas import (
     WhatsAppClickIn,
 )
 from app.services import retired_slugs  # MEH-2534
+from app.services import delivery_waitlist  # MEH-2618
 from app.services.analytics import (
     EventContext,
     is_internal_viewer,
@@ -650,6 +655,73 @@ def record_contact_click(
         producer_id=producer_id,
         ctx=EventContext(request=request, viewer=current_user, method=data.method),
     )
+
+
+@router.post(
+    "/producers/{producer_id}/delivery-waitlist",
+    response_model=DeliveryWaitlistOut,
+    status_code=201,
+)
+@limiter.limit("10/minute")  # anonymous write — same cap as whatsapp-click
+def join_delivery_waitlist(
+    request: Request,
+    response: Response,
+    producer_id: UUID,
+    data: DeliveryWaitlistIn,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user_lenient),
+):
+    """«תודיעו לי כשתגיעו ל{עיר}» — join a business's per-city delivery waitlist.
+
+    No account needed: email + city. Returns 201 `added`, or 200 `exists`
+    when this email already waits for this business and city. 404 for an
+    unknown or not-yet-live business. When the business later adds the
+    city to its delivery areas, one email goes out (see
+    services/delivery_waitlist). Rate-limited 10/minute per IP.
+    """
+    # MEH-2618: the public listing filter, not a bare existence check — a
+    # pending/rejected business has no public page to send her to, and its
+    # trigger would never fire (notify_cities applies the same filter).
+    producer = (
+        db.query(Producer)
+        .filter(Producer.id == producer_id, is_business())
+        .first()
+    )
+    if producer is None:
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    existing = delivery_waitlist.find_entry(
+        db, producer.id, city=data.city, email=data.email
+    )
+    if existing is not None:
+        response.status_code = 200
+        return DeliveryWaitlistOut(status="exists")
+    delivery_waitlist.add_entry(
+        db, producer, email=data.email, city=data.city, user=current_user
+    )
+    db.commit()
+    return DeliveryWaitlistOut(status="added")
+
+
+@router.post("/delivery-waitlist/unsubscribe", status_code=200)
+@limiter.limit("10/minute")
+def unsubscribe_delivery_waitlist(
+    request: Request,
+    data: DeliveryWaitlistUnsubscribeIn,
+    db: Session = Depends(get_db),
+):
+    """Remove one delivery-waitlist entry via the signed token from its email.
+
+    Idempotent: an already-removed entry is still 200. 400 on a token that
+    does not verify.
+    """
+    entry_id = delivery_waitlist.decode_unsubscribe_token(data.token)
+    if entry_id is None:
+        raise HTTPException(status_code=400, detail="קישור ביטול לא תקין")
+    entry = db.get(DeliveryWaitlistEntry, entry_id)
+    if entry is not None:
+        db.delete(entry)
+        db.commit()
+    return {"detail": "הוסרת מרשימת ההמתנה"}
 
 
 @router.post("/producers", response_model=ProducerDetailOut, status_code=201)

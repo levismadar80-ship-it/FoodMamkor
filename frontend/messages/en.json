@@ -1229,6 +1229,16 @@
       "coverage_cta": {
         "known_city": "Not delivering to {city}? You can ask the business",
         "prefill": "Hi! I'm from {city} — I'd love to know if delivery to my area is possible"
+      },
+      "waitlist": {
+        "cta": "Tell me when you deliver to {city}",
+        "email_label": "Your email",
+        "email_placeholder": "name@example.com",
+        "submit": "Notify me",
+        "sending": "Sending…",
+        "done": "We'll let you know when they deliver to {city}",
+        "error": "Something went wrong, please try again",
+        "whatsapp_hint": "Want it on WhatsApp too? Save the business to your favorites and turn on the “delivery to my area” alert."
       }
     },
     "friday_delivery": {
@@ -3206,6 +3216,15 @@
     "loading": "Unsubscribing…",
     "success_title": "You've been unsubscribed",
     "success_body": "You won't receive the newsletter anymore. You're always welcome back.",
+    "error_title": "This link isn't valid",
+    "error_body": "The link may have expired or opened only partway. Try again from the email, or get in touch.",
+    "cta_home": "Back to home"
+  },
+  "delivery_waitlist_unsubscribe": {
+    "meta_title": "Stop delivery updates · Mehamakor",
+    "loading": "Removing you…",
+    "success_title": "You've been removed from the waitlist",
+    "success_body": "You won't get an update about these deliveries. You can always ask again from the business page.",
     "error_title": "This link isn't valid",
     "error_body": "The link may have expired or opened only partway. Try again from the email, or get in touch.",
     "cta_home": "Back to home"

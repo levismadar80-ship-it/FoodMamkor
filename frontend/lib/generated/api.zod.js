@@ -2759,6 +2759,16 @@ export const SubmitContactContactPostResponse = /*#__PURE__*/ zod.unknown()
 
 
 /**
+ * Remove one delivery-waitlist entry via the signed token from its email.
+ *
+ * Idempotent: an already-removed entry is still 200. 400 on a token that
+ * does not verify.
+ * @summary Unsubscribe Delivery Waitlist
+ */
+export const UnsubscribeDeliveryWaitlistDeliveryWaitlistUnsubscribePostResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
  * @summary List Events
  */
 export const listEventsEventsGetResponseOwnerKindDefault = `producer`;
@@ -5309,6 +5319,21 @@ export const GetProducerProducersProducerIdGetResponse = /*#__PURE__*/ zod.objec
  * @summary Record Contact Click
  */
 export const RecordContactClickProducersProducerIdContactClickPostResponse = /*#__PURE__*/ zod.void()
+
+
+/**
+ * «תודיעו לי כשתגיעו ל{עיר}» — join a business's per-city delivery waitlist.
+ *
+ * No account needed: email + city. Returns 201 `added`, or 200 `exists`
+ * when this email already waits for this business and city. 404 for an
+ * unknown or not-yet-live business. When the business later adds the
+ * city to its delivery areas, one email goes out (see
+ * services/delivery_waitlist). Rate-limited 10/minute per IP.
+ * @summary Join Delivery Waitlist
+ */
+export const JoinDeliveryWaitlistProducersProducerIdDeliveryWaitlistPostResponse = /*#__PURE__*/ zod.object({
+  "status": /*#__PURE__*/ zod.enum(['added', 'exists'])
+}).check(/*#__PURE__*/ zod.describe('MEH-2618: `added` (201) on a new row, `exists` (200) when the same\nemail already waits for the same business + city — the form shows the\nsame calm confirmation for both.'))
 
 
 /**

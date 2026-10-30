@@ -1471,6 +1471,54 @@ class FavoriteAlert(Base):
     producer = relationship("Producer")
 
 
+class DeliveryWaitlistEntry(Base):
+    """MEH-2618: «תודיעו לי כשתגיעו ל{עיר}» — one row per (business, city, email).
+
+    The Oddbox / Hungry Harvest pattern: a visitor whose city the business does
+    not deliver to leaves an email and the city, with NO account, and is mailed
+    once when the business adds that city to its delivery areas
+    (services/delivery_waitlist.notify_cities, fired from PUT /producers/me).
+
+    `city` keeps the visitor's own spelling for the email she receives;
+    `city_key` is `app.data.cities.city_key(city)` — the same comparison form
+    `GET /cities` and the favorite-alert geo filter use — so "תל אביב - יפו"
+    typed by the business matches "תל אביב-יפו" typed by her. The UNIQUE is on
+    the key, not the display spelling, so one person cannot occupy two rows
+    with two spellings.
+
+    `user_id` is set when she was signed in (ON DELETE SET NULL: deleting the
+    account keeps the email's own consent intact; the unsubscribe link in
+    every email removes the row). `notified_at` is the once-only guard.
+    """
+
+    __tablename__ = "delivery_waitlist"
+    __table_args__ = (
+        UniqueConstraint(
+            "producer_id", "city_key", "email", name="uq_delivery_waitlist_city_email"
+        ),
+        Index("ix_delivery_waitlist_producer_city", "producer_id", "city_key"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    producer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("producers.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    city = Column(String(60), nullable=False)
+    city_key = Column(String(60), nullable=False)
+    email = Column(String(200), nullable=False)
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    created_at = Column(DateTime, default=utc_now, nullable=False)
+    notified_at = Column(DateTime, nullable=True)
+
+    producer = relationship("Producer")
+
+
 class AlertLog(Base):
     """MEH-1338: append-only ledger of delivered favorite-alerts, per channel —
     the frequency-cap backing store for `fire_alerts`.
