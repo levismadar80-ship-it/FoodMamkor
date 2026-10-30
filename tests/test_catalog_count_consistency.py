@@ -121,7 +121,7 @@ def test_cities_omits_a_city_whose_only_producer_is_on_vacation(client, db):
     cities = _cities(client)
 
     assert "קצרין" not in cities
-    assert cities.get("תל אביב") == 1
+    assert cities.get("תל אביב-יפו") == 1  # MEH-2602: stored canonical
     # The claim the chip makes must survive being clicked.
     assert _catalog_names(client, city="קצרין") == set()
 

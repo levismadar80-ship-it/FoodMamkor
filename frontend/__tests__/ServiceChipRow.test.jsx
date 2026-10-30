@@ -32,7 +32,7 @@
  * renders unconditionally or if pickup leaks into the cross-surface taxonomy.
  */
 
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, renderHook, act } from "@testing-library/react";
 
 import ServiceChipRow from "@/app/[locale]/map/components/ServiceChipRow";
@@ -48,6 +48,10 @@ const EMPTY = {
   pickup_points: false,
   verified: false,
 };
+
+// MEH-2598: useMapFilters mirrors its chips into the URL and reads them back
+// on mount — reset it so one test's chips do not seed the next renderHook.
+beforeEach(() => window.history.replaceState(null, "", "/"));
 
 describe("ServiceChipRow — the promoted /map service pair (MEH-2046)", () => {
   it("renders both service chips, always", () => {

@@ -120,12 +120,12 @@ def test_city_is_closed_by_ruling_a_02_09(client, db):
     assert "city" not in whitelist
 
     user, producer = _owner(db)
-    assert producer.city == "תל אביב"
+    assert producer.city == "תל אביב-יפו"  # MEH-2602: stored canonical
     resp = client.put("/producers/me", json={"city": "חיפה"}, headers=auth_header(user))
 
     assert resp.status_code == 200, resp.text
     db.refresh(producer)
-    assert producer.city == "תל אביב", "city must be ignored, not written"
+    assert producer.city == "תל אביב-יפו", "city must be ignored, not written"
     assert db.query(ProducerLocation).filter_by(producer_id=producer.id).count() == 0
 
 

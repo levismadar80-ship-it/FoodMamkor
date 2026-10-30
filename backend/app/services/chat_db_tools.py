@@ -27,6 +27,7 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.engine import Connection
 
+from app.data.cities import city_variants
 from app.database import engine
 from app.utils.clock import israel_today
 
@@ -166,10 +167,12 @@ _IS_BUSINESS = "p.status = 'approved' AND p.kind = 'producer'"
 # business from Lotem with a market stand in Tel Aviv is found for "תל אביב"
 # (MEH-586 decision 3). Exact match on the trimmed value; the router passes
 # the city as the user wrote it.
+# MEH-2602: any spelling of the city (app.data.cities.city_variants) — the
+# chat asks in the user's words («תל אביב»), rows hold the canonical name.
 _IN_CITY = """
-    (p.city = :city OR EXISTS (
+    (lower(p.city) = ANY(:cities) OR EXISTS (
         SELECT 1 FROM producer_locations pl
-        WHERE pl.producer_id = p.id AND pl.city = :city
+        WHERE pl.producer_id = p.id AND lower(pl.city) = ANY(:cities)
     ))
 """
 
@@ -186,7 +189,7 @@ def count_producers_in_city(city: str) -> dict[str, Any]:
                 WHERE {_IS_BUSINESS} AND {_IN_CITY}
                 """
             ),
-            {"city": city_value},
+            {"cities": city_variants(city_value)},
         ).scalar_one()
     return {"city": city_value, "count": int(count)}
 
@@ -202,7 +205,7 @@ def list_producers_by_category(
     city_clause = f"AND {_IN_CITY}" if city_value else ""
     params: dict[str, Any] = {"slug": slug, "limit": rows_limit}
     if city_value:
-        params["city"] = city_value
+        params["cities"] = city_variants(city_value)
     with reader_transaction() as conn:
         rows = (
             conn.execute(
@@ -291,10 +294,10 @@ def list_upcoming_events(
     # producer + event_date >= israel_today() (MEH-1883 Israel calendar).
     city_value = _clean(city)
     rows_limit = _clamp_limit(limit)
-    city_clause = "AND e.city = :city" if city_value else ""
+    city_clause = "AND lower(e.city) = ANY(:cities)" if city_value else ""
     params: dict[str, Any] = {"today": israel_today(), "limit": rows_limit}
     if city_value:
-        params["city"] = city_value
+        params["cities"] = city_variants(city_value)
     with reader_transaction() as conn:
         rows = (
             conn.execute(
