@@ -24,7 +24,9 @@ from app.services import newsletter_sync
 def calls(monkeypatch):
     seen = []
     monkeypatch.setattr(marketing, "sync_subscribe", lambda e: seen.append(("sub", e)))
-    monkeypatch.setattr(marketing, "sync_unsubscribe", lambda e: seen.append(("unsub", e)))
+    monkeypatch.setattr(
+        marketing, "sync_unsubscribe", lambda e: seen.append(("unsub", e))
+    )
     monkeypatch.setattr(marketing, "send_email", lambda *a, **k: None)
     return seen
 
@@ -60,7 +62,7 @@ class _NotFound(Exception):
     code = 404
 
 
-def _fake_resend(*, existing=False, segments=None, fail=None):
+def _fake_resend(*, existing=False, segments=None, fail=None, create_fail=None):
     log = []
     mod = types.ModuleType("resend")
 
@@ -86,8 +88,16 @@ def _fake_resend(*, existing=False, segments=None, fail=None):
         @staticmethod
         def create(params):
             log.append(("contacts.create", params))
-            if existing:
-                raise RuntimeError("Contact already exists")
+            err = RuntimeError("Contact already exists") if existing else create_fail
+            if err:
+                raise err
+
+        @staticmethod
+        def get(email):
+            log.append(("contacts.get", email))
+            if not existing:
+                raise _NotFound("not found")
+            return {"email": email}
 
         @staticmethod
         def update(params):
@@ -106,7 +116,8 @@ def fake(monkeypatch):
     monkeypatch.setattr(newsletter_sync, "_segment_id", None)
     reported = []
     monkeypatch.setattr(
-        newsletter_sync, "capture_background_exception",
+        newsletter_sync,
+        "capture_background_exception",
         lambda exc, task: reported.append(exc),
     )
 
@@ -140,16 +151,31 @@ class TestSyncService:
 
     def test_existing_contact_keeps_opt_out_but_joins_segment(self, fake):
         # Anonymous signup must not undo someone's unsubscribe (security review).
-        log, reported = fake(existing=True, segments=[{"id": "s1", "name": "newsletter"}])
+        log, reported = fake(
+            existing=True, segments=[{"id": "s1", "name": "newsletter"}]
+        )
         newsletter_sync.sync_subscribe("back@gmail.com")
         assert not any(c[0] == "contacts.update" for c in log)
         assert ("contact.segment.add", "back@gmail.com", "s1") in log
         assert reported == []
 
+    def test_non_duplicate_create_error_is_reported_not_masked(self, fake):
+        # A 429 / restricted key on create must surface as itself, not as a
+        # segment-add failure.
+        boom = RuntimeError("rate_limit_exceeded")
+        log, reported = fake(
+            create_fail=boom, segments=[{"id": "s1", "name": "newsletter"}]
+        )
+        newsletter_sync.sync_subscribe("a@gmail.com")
+        assert reported == [boom]
+        assert not any(c[0] == "contact.segment.add" for c in log)
+
     def test_unsubscribe_marks_contact(self, fake):
         log, reported = fake()
         newsletter_sync.sync_unsubscribe("bye@gmail.com")
-        assert log == [("contacts.update", {"email": "bye@gmail.com", "unsubscribed": True})]
+        assert log == [
+            ("contacts.update", {"email": "bye@gmail.com", "unsubscribed": True})
+        ]
         assert reported == []
 
     def test_unsubscribe_of_unknown_contact_is_quiet(self, fake):

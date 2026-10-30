@@ -20,6 +20,7 @@ here as a Sentry event, not as a broken signup.
 from __future__ import annotations
 
 import logging
+import threading
 
 from app.config import settings
 from app.sentry import capture_background_exception
@@ -32,6 +33,9 @@ _SENTRY_TASK = "newsletter_sync"
 
 # Per-process cache of the segment id; segment ids never change once created.
 _segment_id: str | None = None
+# Background tasks run in a thread pool: without the lock two first-ever
+# signups could both miss the lookup and create two "newsletter" segments.
+_segment_lock = threading.Lock()
 
 
 def _resend():
@@ -48,14 +52,17 @@ def _get_segment_id(resend) -> str:
     global _segment_id
     if _segment_id:
         return _segment_id
-    listed = resend.Segments.list() or {}
-    for seg in listed.get("data") or []:
-        if seg.get("name") == NEWSLETTER_SEGMENT_NAME:
-            _segment_id = seg["id"]
+    with _segment_lock:
+        if _segment_id:
             return _segment_id
-    created = resend.Segments.create({"name": NEWSLETTER_SEGMENT_NAME})
-    _segment_id = created["id"]
-    return _segment_id
+        listed = resend.Segments.list() or {}
+        for seg in listed.get("data") or []:
+            if seg.get("name") == NEWSLETTER_SEGMENT_NAME:
+                _segment_id = seg["id"]
+                return _segment_id
+        created = resend.Segments.create({"name": NEWSLETTER_SEGMENT_NAME})
+        _segment_id = created["id"]
+        return _segment_id
 
 
 def _skip(email: str) -> bool:
@@ -85,7 +92,15 @@ def sync_subscribe(email: str) -> None:
                     "segments": [{"id": segment_id}],
                 }
             )
-        except Exception:  # noqa: BLE001 — most likely "contact already exists"
+        except Exception as create_exc:  # noqa: BLE001
+            # Only an EXISTING contact takes the segment-add path. Anything
+            # else (429, 5xx, restricted key) is re-raised so Sentry names
+            # the call that actually failed. Existence is checked directly
+            # rather than by parsing the SDK's error shape.
+            try:
+                resend.Contacts.get(email=email)
+            except Exception:  # noqa: BLE001
+                raise create_exc from None
             resend.Contacts.Segments.add({"email": email, "segment_id": segment_id})
         logger.info("[NEWSLETTER] Synced %s to Resend", _mask(email))
     except Exception as exc:  # noqa: BLE001 — fail-open by design
