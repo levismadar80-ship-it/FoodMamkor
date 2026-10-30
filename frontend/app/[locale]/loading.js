@@ -1,30 +1,13 @@
 import { getTranslations } from "next-intl/server";
+import BrandLoader from "@/components/BrandLoader";
 
+// The ONE route-level loading boundary of the site: it streams on every
+// navigation without a nearer loading.js, so it cannot know the coming page's
+// shape — hence the brand mark (MEH-2599), not a grid. Lists that know their
+// shape keep their own Skeleton. Keep the file here: the recipe route and the
+// MEH-1045 notFound() path rely on this boundary flushing the shell.
 export default async function Loading() {
-  // MEH-876: announce the loading state to assistive tech (the skeleton is
-  // otherwise silent decorative markup).
+  // MEH-876: announce the loading state to assistive tech.
   const t = await getTranslations("a11y");
-  return (
-    <div
-      className="max-w-7xl mx-auto px-4 py-8"
-      role="status"
-      aria-busy="true"
-    >
-      <span className="sr-only">{t("loading")}</span>
-      <div className="h-8 w-48 bg-border rounded-[12px] animate-pulse mb-8" />
-      {[0, 1].map((row) => (
-        <div key={row} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-          {[0, 1, 2, 3].map((col) => (
-            <div key={col} className="rounded-[12px] overflow-hidden bg-white">
-              <div className="h-[200px] bg-border animate-pulse" />
-              <div className="p-4 space-y-2">
-                <div className="h-4 bg-border rounded-lg animate-pulse w-3/4" />
-                <div className="h-3 bg-border rounded-lg animate-pulse w-1/2" />
-              </div>
-            </div>
-          ))}
-        </div>
-      ))}
-    </div>
-  );
+  return <BrandLoader label={t("loading")} className="max-w-7xl mx-auto px-4 py-8" />;
 }

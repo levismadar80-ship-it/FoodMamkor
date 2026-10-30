@@ -14,6 +14,7 @@ import { requiresFarmerDeclaration } from "@/lib/farmer-declaration";
 import { clearClaimToken, readClaimToken, stashClaimToken } from "@/lib/claim-token";
 import GoogleAuthButton from "@/components/GoogleAuthButton";
 import StatusPage from "@/components/StatusPage";
+import BrandLoader from "@/components/BrandLoader";
 
 /**
  * Module:   ClaimClient
@@ -174,9 +175,7 @@ export default function ClaimClient({ tokenFromPath = null }) {
   if (view === VIEW.LOADING || (view === VIEW.READY && authLoading)) {
     return (
       <Shell>
-        <p className="text-center text-fg-muted" role="status" data-testid="claim-loading">
-          {t("loading")}
-        </p>
+        <BrandLoader label={t("loading")} testId="claim-loading" className="min-h-0 py-8" />
       </Shell>
     );
   }

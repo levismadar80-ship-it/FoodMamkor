@@ -45,6 +45,7 @@ import {
   parseDraft,
 } from "@/lib/register-draft";
 import { FARMER_DECLARATION_CATEGORIES } from "@/lib/farmer-declaration";
+import BrandLoader from "@/components/BrandLoader";
 
 // MEH-847 (S7 Chunk B): wizard step enum — single source for the 3→5 re-index.
 const STEP = { ACCOUNT: 1, DETAILS: 2, CATEGORY: 3, STORY: 4, CONFIRM: 5 };
@@ -818,7 +819,7 @@ function RegisterProducerPageBody() {
   // the existing loading text for every authLoading tick closes that flash;
   // guests are unaffected (they start at ACCOUNT, resolve immediately).
   if (authLoading) {
-    return <div className="max-w-2xl mx-auto px-4 py-12 text-center text-fg-muted">{t("auth.register.producer.loading")}</div>;
+    return <BrandLoader label={t("auth.register.producer.loading")} className="max-w-2xl mx-auto px-4 py-12" />;
   }
 
   // MEH-1489: early auth-state gate. A logged-in producer already owns a page

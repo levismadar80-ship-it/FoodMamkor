@@ -28,6 +28,7 @@ import { useAuth } from "@/lib/auth-context";
 import EmptyState from "@/components/ui/EmptyState";
 import { AdminDashboardProvider, useAdminDashboard } from "./dashboard-data";
 import { QUEUES, queueCount, visibleQueues } from "./queues";
+import BrandLoader from "@/components/BrandLoader";
 
 /**
  * Admin layout (docs/archive/ALL_PAGES_DESIGN.md עמוד 6).
@@ -164,11 +165,8 @@ function AdminShell({ children }) {
   }
 
   if (loading || !user) {
-    return (
-      <div className="max-w-7xl mx-auto px-4 py-12 text-fg-muted">
-        {t("common.loading_f")}
-      </div>
-    );
+    // MEH-2599: brand mark instead of the bare «בטעינה...» line; same copy, sr-only.
+    return <BrandLoader label={t("common.loading_f")} className="max-w-7xl mx-auto px-4 py-12" />;
   }
 
   const isActive = (href) => {
