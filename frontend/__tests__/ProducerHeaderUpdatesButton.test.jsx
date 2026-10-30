@@ -37,7 +37,10 @@ vi.mock("@/components/AlertPrefsPanel", async () => {
     },
   };
 });
-vi.mock("@phosphor-icons/react", () => ({
+vi.mock("@phosphor-icons/react", async (importOriginal) => ({
+  // MEH-2592: the header renders the category's registry glyph (whole Phosphor
+  // family via lib/category-registry) — keep the real module, override the stubs.
+  ...(await importOriginal()),
   Star: () => <span />,
   StarOfDavid: () => <span />,
 }));

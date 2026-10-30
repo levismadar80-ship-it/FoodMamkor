@@ -15,6 +15,7 @@ import InfoTooltip from "@/components/InfoTooltip";
 // against `kashrut.badges.*` on consumer surfaces — same axis, different
 // message namespaces, which is a separate question (MEH-1852 chunk B).
 import { CODE_TO_KEY } from "@/components/KashrutBadgeStrip";
+import { SkeletonTable } from "@/components/Skeleton";
 
 function formatDate(iso, locale) {
   if (!iso) return "—";
@@ -242,7 +243,7 @@ export default function AdminKashrutPage() {
       </div>
 
       {loading ? (
-        <p className="text-fg-muted">{t("common.loading_f")}</p>
+        <SkeletonTable rows={5} cols={5} label={t("common.loading_f")} />
       ) : rows.length === 0 ? (
         <p className="text-fg-muted">{t("kashrut.no_requests")}</p>
       ) : (

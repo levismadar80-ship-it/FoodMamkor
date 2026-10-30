@@ -25,6 +25,7 @@ import { STATUS_CLASSES } from "@/lib/dashboard-status-classes";
 // MEH-2491: focus trap + return for the confirm dialog (shared with ProductsSection).
 import useDialogFocus from "@/hooks/useDialogFocus";
 import { GroupBuyStatusResultSchema, OwnerGroupBuySchema } from "@/lib/api-schemas";
+import { SkeletonList } from "@/components/Skeleton";
 
 const STATUS_CLS = {
   open: STATUS_CLASSES.info,
@@ -593,7 +594,7 @@ export default function ProducerGroupBuysPage() {
       )}
 
       {items === null ? (
-        <div className="text-center py-16 text-fg-muted">{t("loading")}</div>
+        <SkeletonList count={4} label={t("loading")} className="py-4" />
       ) : items.length === 0 ? (
         // MEH-996: empty state and the open create form are mutually
         // exclusive — never mounted together (settings/page.jsx precedent).
