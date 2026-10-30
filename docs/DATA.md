@@ -744,7 +744,9 @@ DELETE /admin/producers/{id}/products/{product_id}  admin — 60/hour. Same 409 
 
 ```
 GET    /producers                                 public — filters: lat+lng+radius_km, require_physical, category, delivery_city,
-                                               has_delivery, verified, kosher, city (producer city), is_available_today, grass_fed
+                                               has_delivery, verified, kosher, city (producer city), is_available_today, grass_fed,
+                                               near_city (MEH-2602 — the map's city filter: own city OR a location row in it OR
+                                               delivers there; located ones ordered first, non-geo mode only)
                                                sort: newest (default) | rating (MEH-1483). "newest"/absent → created_at DESC
                                                (byte-identical default). "rating" → avg_rating DESC, NULLs last, tiebreak
                                                reviews_count DESC, then created_at DESC. Any other value → 422 "ערך מיון לא חוקי".
