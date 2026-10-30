@@ -180,6 +180,84 @@ describe("ui/Popover", () => {
       expect(panel.className).toContain("absolute");
       expect(screen.queryByTestId("pop-content-backdrop")).not.toBeInTheDocument();
     });
+
+    // MEH-2622: rendered in place, the sheet resolved `position: fixed` against
+    // ProducerCard's pressed `scale(0.98)` and opened inside the card on iOS.
+    it("portals the sheet AND its backdrop out of a transformed ancestor", () => {
+      const restore = mobileMatchMedia();
+      try {
+        render(
+          <div data-testid="card" style={{ transform: "scale(0.98)" }}>
+            <Popover
+              trigger={<button type="button">פתחי</button>}
+              contentTestId="pop-content"
+              sheetOnMobile
+            >
+              תוכן עשיר
+            </Popover>
+          </div>,
+        );
+        fireEvent.click(screen.getByText("פתחי"));
+        const card = screen.getByTestId("card");
+        const panel = screen.getByTestId("pop-content");
+        const backdrop = screen.getByTestId("pop-content-backdrop");
+        expect(card.contains(panel)).toBe(false);
+        expect(card.contains(backdrop)).toBe(false);
+        expect(panel.parentElement).toBe(document.body);
+        expect(backdrop.parentElement).toBe(document.body);
+      } finally {
+        restore();
+      }
+    });
+
+    it("taps on the portalled sheet/backdrop never reach the card's click handler", () => {
+      const restore = mobileMatchMedia();
+      const onCardClick = vi.fn();
+      try {
+        render(
+          <div onClick={onCardClick}>
+            <Popover
+              trigger={<button type="button">פתחי</button>}
+              contentTestId="pop-content"
+              sheetOnMobile
+            >
+              תוכן עשיר
+            </Popover>
+          </div>,
+        );
+        fireEvent.click(screen.getByText("פתחי"));
+        fireEvent.click(screen.getByTestId("pop-content"));
+        expect(screen.getByTestId("pop-content")).toBeInTheDocument();
+        // The backdrop's own mousedown must not close it (else the click would
+        // fall through to whatever is underneath).
+        fireEvent.mouseDown(screen.getByTestId("pop-content-backdrop"));
+        expect(screen.getByTestId("pop-content-backdrop")).toBeInTheDocument();
+        fireEvent.click(screen.getByTestId("pop-content-backdrop"));
+        expect(screen.queryByTestId("pop-content")).not.toBeInTheDocument();
+        expect(onCardClick).not.toHaveBeenCalled();
+      } finally {
+        restore();
+      }
+    });
+
+    it("sheet, backdrop and trigger are not text-selectable (iOS long press)", () => {
+      const restore = mobileMatchMedia();
+      try {
+        renderPopover({ sheetOnMobile: true });
+        const btn = screen.getByText("פתחי");
+        fireEvent.click(btn);
+        for (const el of [
+          screen.getByTestId("pop-content"),
+          screen.getByTestId("pop-content-backdrop"),
+          btn.parentElement,
+        ]) {
+          expect(el.className).toContain("select-none");
+          expect(el.className).toContain("[-webkit-touch-callout:none]");
+        }
+      } finally {
+        restore();
+      }
+    });
   });
 
   // MEH-1871: an open overlay panel is portalled to <body> and `position:

@@ -41,6 +41,9 @@ import { clamp } from "@/lib/panel-position";
  *           MEH-1871 (overlay dismisses on scroll/resize instead of
  *           repositioning — the clamped reposition pinned the panel to the
  *           viewport once its anchor scrolled away).
+ *           MEH-2622 (the mobile sheet is portalled to <body> too, and is
+ *           not selectable — on iOS it opened inside a pressed card and a
+ *           long press tinted the page in the selection colour).
  */
 
 // MEH-1592: overlay-mode geometry. GAP = distance between the panel and the
@@ -76,7 +79,8 @@ const PLACEMENT_CLASSES = {
  * @param {"top"|"bottom"} [props.placement="bottom"]
  * @param {"tooltip"|"dialog"} [props.role="tooltip"] — per content kind.
  * @param {boolean} [props.sheetOnMobile=false] — below lg, present as a fixed
- *   bottom sheet with backdrop + focus trap (MEH-1334). Desktop unchanged.
+ *   bottom sheet with backdrop + focus trap (MEH-1334), portalled to
+ *   document.body (MEH-2622). Desktop unchanged.
  * @param {string} [props.contentClassName] — width/extras on the ANCHORED
  *   panel only (widths like w-64 would fight the sheet's inset-x-0 stretch).
  * @param {string} [props.sheetContentClassName] — layout extras for the sheet
@@ -112,6 +116,7 @@ export default function Popover({
   const wrapRef = useRef(null);
   const triggerRef = useRef(null);
   const panelRef = useRef(null);
+  const backdropRef = useRef(null);
   const autoId = useId();
   const triggerId = trigger.props?.id ?? `${autoId}-trigger`;
 
@@ -119,6 +124,7 @@ export default function Popover({
   // paints at 0,0 for a frame before it is positioned (it renders hidden).
   const [pos, setPos] = useState(null);
   const overlayActive = open && overlay && !sheetActive;
+  const portalled = overlayActive || (open && sheetActive);
 
   const reposition = useCallback(() => {
     const triggerEl = triggerRef.current;
@@ -227,6 +233,11 @@ export default function Popover({
       // the disclosed content would read as "outside" and close the panel.
       if (wrapRef.current?.contains(e.target)) return;
       if (panelRef.current?.contains(e.target)) return;
+      // MEH-2622: the sheet backdrop is portalled too. A mousedown on it must
+      // not close the sheet here — that would unmount the backdrop before its
+      // click lands, and the click would fall through onto whatever card sits
+      // underneath. The backdrop closes via its own onClick.
+      if (backdropRef.current?.contains(e.target)) return;
       setOpen(false);
     };
     const handleKey = (e) => {
@@ -305,6 +316,10 @@ export default function Popover({
       aria-labelledby={triggerId}
       tabIndex={sheetActive ? -1 : undefined}
       data-testid={contentTestId}
+      // MEH-2622: a portalled panel is no longer a DOM descendant of the card,
+      // but React still bubbles its clicks up the component tree — straight
+      // into ProducerCard's handleRootClick, which navigates. Stop them here.
+      onClick={portalled ? (e) => e.stopPropagation() : undefined}
       // MEH-1592: overlay coordinates are measured viewport values, so they are
       // applied inline rather than as classes. `insetInlineStart` keeps the
       // horizontal axis logical (RTL-correct) — no physical left/right.
@@ -319,7 +334,10 @@ export default function Popover({
       }
       className={
         sheetActive
-          ? `fixed inset-x-0 bottom-0 z-[1210] block rounded-t-2xl border-t border-border bg-white p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] shadow-2xl text-sm text-text leading-relaxed text-start ${sheetContentClassName}`
+          ? // MEH-2622: select-none + no touch-callout — on iOS a long press
+            // on the sheet selected it and the page behind it, painting the
+            // whole screen in the blue selection tint (Sapir's screenshots).
+            `fixed inset-x-0 bottom-0 z-[1210] block select-none [-webkit-touch-callout:none] rounded-t-2xl border-t border-border bg-white p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] shadow-2xl text-sm text-text leading-relaxed text-start ${sheetContentClassName}`
           : overlayActive
             ? // Same visual as the anchored panel; `fixed` + measured offsets
               // replace `absolute` + the placement classes. z unchanged at 800
@@ -333,27 +351,47 @@ export default function Popover({
     </span>
   );
 
+  // MEH-2622: the sheet's backdrop. Portalled with the panel (see below).
+  const backdrop = open && sheetActive && (
+    // z per the app ledger: sheet family above the global header (1050),
+    // below Toaster (2000) — matches FilterSheet.
+    <span
+      ref={backdropRef}
+      aria-hidden="true"
+      data-testid={contentTestId ? `${contentTestId}-backdrop` : undefined}
+      onClick={(e) => {
+        e.stopPropagation();
+        setOpen(false);
+      }}
+      className="fixed inset-0 z-[1200] bg-black/40 select-none [-webkit-touch-callout:none] [-webkit-tap-highlight-color:transparent]"
+    />
+  );
+
   return (
-    <span ref={wrapRef} className="relative inline-block">
+    // MEH-2622: select-none on the wrapper keeps a long press on the trigger
+    // pill from starting an iOS text selection (and its callout menu).
+    <span ref={wrapRef} className="relative inline-block select-none [-webkit-touch-callout:none]">
       {triggerEl}
-      {open && sheetActive && (
-        // Backdrop — rendered INSIDE wrapRef, so the outside-click document
-        // listener treats it as "inside" and won't fire; it closes via its
-        // own onClick instead. z per the app ledger: sheet family above the
-        // global header (1050), below Toaster (2000) — matches FilterSheet.
-        <span
-          aria-hidden="true"
-          data-testid={contentTestId ? `${contentTestId}-backdrop` : undefined}
-          onClick={() => setOpen(false)}
-          className="fixed inset-0 z-[1200] bg-black/40"
-        />
-      )}
       {/* MEH-1592: overlay mode portals the panel to <body> so no ancestor's
           `overflow-hidden` can clip it and no ancestor stacking context can
-          trap it. Every other mode keeps the panel in place — unchanged. */}
-      {overlayActive && typeof document !== "undefined"
-        ? createPortal(panel, document.body)
-        : panel}
+          trap it.
+          MEH-2622: the mobile sheet (panel + backdrop) is portalled for the
+          same reason. Rendered in place, `position: fixed` resolves against
+          the nearest ancestor with a transform — ProducerCard's
+          `active:scale-[0.98]`, which iOS holds during a long press — so the
+          sheet opened INSIDE the 160px card instead of at the screen bottom.
+          The default anchored mode keeps the panel in place — unchanged. */}
+      {portalled && typeof document !== "undefined" ? (
+        createPortal(
+          <>
+            {backdrop}
+            {panel}
+          </>,
+          document.body,
+        )
+      ) : (
+        panel
+      )}
     </span>
   );
 }
