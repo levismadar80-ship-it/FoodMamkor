@@ -3,24 +3,28 @@
 import { useEffect } from "react";
 import { replayPrehydrationInput, stopPrehydrationCapture } from "@/lib/replay-prehydration-input";
 
-// Streamed Suspense boundaries hydrate after the shell; one later pass covers them.
-const LATE_PASS_MS = 1500;
+// Streamed Suspense boundaries hydrate after the shell, later on a slow
+// connection; these extra passes cover them. A pass touches only fields React
+// owns and is behind on, so an extra pass is a no-op, never a duplicate.
+const LATE_PASSES_MS = [1500, 5000, 12000];
 
 /**
  * MEH-2602: renders nothing. Mounted last in the root layout so its effect runs
- * after every field above it has hydrated, then once more after the streamed
- * Suspense boundaries have had time to hydrate. See
+ * after the fields above it have hydrated, then again as late (streamed or
+ * lazy) boundaries hydrate. See
  * lib/replay-prehydration-input.js for why and how.
  */
 export default function PrehydrationInputReplay() {
   useEffect(() => {
     replayPrehydrationInput();
-    const late = setTimeout(() => {
-      replayPrehydrationInput();
-      stopPrehydrationCapture();
-    }, LATE_PASS_MS);
+    const timers = LATE_PASSES_MS.map((ms, i) =>
+      setTimeout(() => {
+        replayPrehydrationInput();
+        if (i === LATE_PASSES_MS.length - 1) stopPrehydrationCapture();
+      }, ms),
+    );
     return () => {
-      clearTimeout(late);
+      timers.forEach(clearTimeout);
       stopPrehydrationCapture();
     };
   }, []);

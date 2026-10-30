@@ -18,9 +18,12 @@
  *
  * A textarea is worse: React 18 rewrites its value during hydration, so the
  * typed text is gone from the DOM by the time any effect runs. That case is
- * covered by capturing values when this module is evaluated — the client
- * bundle loads before hydrateRoot runs — and from input events until the first
- * replay pass, then replaying the captured value.
+ * covered by capturing values when this module is evaluated and from input
+ * events until the last replay pass, then replaying the captured value. The
+ * capture assumes this module evaluates before hydration reaches the field —
+ * true for a chunk the root layout imports, unverified for every bundling
+ * order. The App Router runs React 19, which leaves the DOM value alone, so
+ * there the capture is a backstop and the DOM value alone is enough.
  *
  * Industry precedent: kurtextrem.de/posts/replay-input-after-hydration; React's
  * own (flag-gated) enableHydrationChangeEvent does the same at hydration commit.
@@ -103,7 +106,7 @@ export function replayPrehydrationInput(root = typeof document !== "undefined" ?
     if (props?.value == null || typeof props.onChange !== "function") continue;
     const typed = captured.has(el) ? captured.get(el) : el.value;
     captured.delete(el);
-    if (typed === "" || typed === String(props.value)) continue;
+    if (typed === String(props.value)) continue; // includes a prefilled field she cleared: "" ≠ "x" replays
     const proto = el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
     const setNative = Object.getOwnPropertyDescriptor(proto, "value")?.set;
     if (!setNative) continue;

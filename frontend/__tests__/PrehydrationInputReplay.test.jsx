@@ -5,6 +5,9 @@
  * App Router renders with Next's vendored React 19 canary, while the installed
  * react@18 is what the rest of the suite uses, and the two lose the text
  * differently (18 also wipes a textarea's DOM value during hydration).
+ * `next/dist/compiled/react*` are Next-internal paths, verified on next@16.3.3
+ * (React 19.3 canary) — if an upgrade moves them, the import fails here, which
+ * is a test-setup break, not a product regression.
  */
 import { describe, it, expect } from "vitest";
 import * as React18 from "react";
@@ -33,8 +36,9 @@ describe.each(RUNTIMES)("replayPrehydrationInput — $name", ({ React, renderToS
   function Form() {
     const [email, setEmail] = React.useState("");
     const [msg, setMsg] = React.useState("");
+    const [city, setCity] = React.useState("חיפה");
     const [agree, setAgree] = React.useState(false);
-    React.useEffect(() => report({ email, msg, agree }));
+    React.useEffect(() => report({ email, msg, agree, city }));
     return h(
       "form",
       null,
@@ -48,6 +52,7 @@ describe.each(RUNTIMES)("replayPrehydrationInput — $name", ({ React, renderToS
         },
       }),
       h("input", { id: "free", type: "text", defaultValue: "" }),
+      h("input", { id: "city", type: "text", value: city, onChange: (event) => setCity(event.target.value) }),
       h("textarea", { id: "msg", value: msg, onChange: (event) => setMsg(event.target.value) }),
       h("input", { id: "agree", type: "checkbox", checked: agree, onChange: (event) => setAgree(event.target.checked) }),
     );
@@ -88,7 +93,7 @@ describe.each(RUNTIMES)("replayPrehydrationInput — $name", ({ React, renderToS
       count = replayPrehydrationInput(container);
     });
     expect(count).toBe(2);
-    expect(seen).toEqual({ email: "early@example.com", msg: "שלום", agree: false });
+    expect(seen).toEqual({ email: "early@example.com", msg: "שלום", agree: false, city: "חיפה" });
     expect(container.querySelector("#email").value).toBe("early@example.com");
     expect(container.querySelector("#msg").value).toBe("שלום");
     React.act(() => root.unmount());
@@ -140,6 +145,17 @@ describe.each(RUNTIMES)("replayPrehydrationInput — $name", ({ React, renderToS
     });
     expect(count).toBe(0);
     expect(container.querySelector("#free").value).toBe("own text");
+    React.act(() => root.unmount());
+  });
+
+  it("replays a prefilled field the visitor cleared before hydration", async () => {
+    const { container, root } = await hydrateAfterTyping({ city: "" });
+    let count;
+    await React.act(async () => {
+      count = replayPrehydrationInput(container);
+    });
+    expect(count).toBe(1);
+    expect(seen.city).toBe("");
     React.act(() => root.unmount());
   });
 });
