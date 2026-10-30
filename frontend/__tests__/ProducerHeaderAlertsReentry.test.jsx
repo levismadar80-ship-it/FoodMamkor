@@ -47,7 +47,10 @@ vi.mock("@/components/ShareButton", () => ({
 }));
 // Bell is deliberately NOT in this map — if a future edit re-imports it, the
 // component throws here rather than silently rendering a second entry point.
-vi.mock("@phosphor-icons/react", () => ({
+vi.mock("@phosphor-icons/react", async (importOriginal) => ({
+  // MEH-2592: the header renders the category's registry glyph (whole Phosphor
+  // family via lib/category-registry) — keep the real module, override the stubs.
+  ...(await importOriginal()),
   MapPin: () => <span />,
   Heart: () => <span />,
   Star: () => <span />,

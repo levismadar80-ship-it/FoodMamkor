@@ -26,13 +26,16 @@ vi.mock("@/components/BadgeRow", () => ({ default: () => <div data-testid="badge
 vi.mock("@/components/CategoryTag", () => ({ default: () => <span data-testid="cat" /> }));
 vi.mock("@/components/KashrutBadgeStrip", () => ({ default: () => <div data-testid="kashrut" /> }));
 vi.mock("@/components/TrustBadge", () => ({ default: () => <div data-testid="trust" /> }));
-vi.mock("@phosphor-icons/react", () => ({
+vi.mock("@phosphor-icons/react", async (importOriginal) => ({
+  // MEH-2592: the header now renders the category's registry glyph, which
+  // pulls the whole Phosphor family through lib/category-registry — keep the
+  // real module and override only the stubs this file always stubbed.
+  ...(await importOriginal()),
   MapPin: () => <span />,
   Heart: () => <span />,
   Star: () => <span data-testid="star" />,
   Truck: () => <span />,
   StarOfDavid: () => <span />,
-  // MEH-1609: the alerts re-entry control's glyph.
   Bell: () => <span />,
 }));
 // MEH-1609: the header now reads auth + the favorites-cache to decide whether

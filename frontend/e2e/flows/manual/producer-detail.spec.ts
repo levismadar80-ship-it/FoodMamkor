@@ -324,9 +324,10 @@ test.describe("manual › /producer/[id] — header and breadcrumb", () => {
     await expect(identity).toHaveCount(1);
     await expect(identity).toHaveText(target.name);
 
-    // Logistics row — exactly one, and BELOW the identity row. Since MEH-2403
-    // the line is absent when the business has neither city nor category; the
-    // seeded targets all carry a city, so one is still the expected count.
+    // Facts line — exactly one, and BELOW the identity row. Since MEH-2592
+    // (30/10/2026) it opens with the rating slot and then carries
+    // «category · city (· מאז)», so it is always present; the status has a
+    // line of its own under it.
     const meta = header.getByTestId("producer-header-meta");
     await expect(meta).toHaveCount(1);
     const identityBox = await identity.boundingBox();
