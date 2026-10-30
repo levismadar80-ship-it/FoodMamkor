@@ -683,9 +683,7 @@ def join_delivery_waitlist(
     # pending/rejected business has no public page to send her to, and its
     # trigger would never fire (notify_cities applies the same filter).
     producer = (
-        db.query(Producer)
-        .filter(Producer.id == producer_id, is_business())
-        .first()
+        db.query(Producer).filter(Producer.id == producer_id, is_business()).first()
     )
     if producer is None:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
