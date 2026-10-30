@@ -62,7 +62,9 @@ class _NotFound(Exception):
     code = 404
 
 
-def _fake_resend(*, existing=False, segments=None, fail=None, create_fail=None):
+def _fake_resend(
+    *, existing=False, segments=None, fail=None, create_fail=None, get_fail=None
+):
     log = []
     mod = types.ModuleType("resend")
 
@@ -88,15 +90,15 @@ def _fake_resend(*, existing=False, segments=None, fail=None, create_fail=None):
         @staticmethod
         def create(params):
             log.append(("contacts.create", params))
-            err = RuntimeError("Contact already exists") if existing else create_fail
-            if err:
-                raise err
+            if create_fail:
+                raise create_fail
 
         @staticmethod
         def get(email):
             log.append(("contacts.get", email))
-            if not existing:
-                raise _NotFound("not found")
+            err = get_fail or (None if existing else _NotFound("not found"))
+            if err:
+                raise err
             return {"email": email}
 
         @staticmethod
@@ -151,11 +153,13 @@ class TestSyncService:
 
     def test_existing_contact_keeps_opt_out_but_joins_segment(self, fake):
         # Anonymous signup must not undo someone's unsubscribe (security review).
+        # `create` is never called for an existing address, so it does not
+        # matter whether Resend's create would upsert.
         log, reported = fake(
             existing=True, segments=[{"id": "s1", "name": "newsletter"}]
         )
         newsletter_sync.sync_subscribe("back@gmail.com")
-        assert not any(c[0] == "contacts.update" for c in log)
+        assert not any(c[0] in ("contacts.update", "contacts.create") for c in log)
         assert ("contact.segment.add", "back@gmail.com", "s1") in log
         assert reported == []
 
@@ -169,6 +173,12 @@ class TestSyncService:
         newsletter_sync.sync_subscribe("a@gmail.com")
         assert reported == [boom]
         assert not any(c[0] == "contact.segment.add" for c in log)
+
+    def test_lookup_error_other_than_404_is_reported(self, fake):
+        log, reported = fake(get_fail=RuntimeError("restricted_api_key"))
+        newsletter_sync.sync_subscribe("a@gmail.com")
+        assert len(reported) == 1
+        assert not any(c[0] == "contacts.create" for c in log)
 
     def test_unsubscribe_marks_contact(self, fake):
         log, reported = fake()

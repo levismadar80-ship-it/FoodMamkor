@@ -65,6 +65,21 @@ def _get_segment_id(resend) -> str:
         return _segment_id
 
 
+def _is_not_found(exc: BaseException) -> bool:
+    return str(getattr(exc, "code", "")) == "404"
+
+
+def _contact_exists(resend, email: str) -> bool:
+    """True if Resend has a contact for `email`; any non-404 error propagates."""
+    try:
+        resend.Contacts.get(email=email)
+    except Exception as exc:  # noqa: BLE001
+        if _is_not_found(exc):
+            return False
+        raise
+    return True
+
+
 def _skip(email: str) -> bool:
     return not email or _is_reserved_domain(email)
 
@@ -84,7 +99,13 @@ def sync_subscribe(email: str) -> None:
         if resend is None:
             return
         segment_id = _get_segment_id(resend)
-        try:
+        # Look up FIRST, never create-then-recover: if `create` upserted an
+        # existing address, `"unsubscribed": False` would silently undo an
+        # opt-out. An existing contact only joins the segment; its status is
+        # never touched. A 404 is the only answer that leads to `create`.
+        if _contact_exists(resend, email):
+            resend.Contacts.Segments.add({"email": email, "segment_id": segment_id})
+        else:
             resend.Contacts.create(
                 {
                     "email": email,
@@ -92,16 +113,6 @@ def sync_subscribe(email: str) -> None:
                     "segments": [{"id": segment_id}],
                 }
             )
-        except Exception as create_exc:  # noqa: BLE001
-            # Only an EXISTING contact takes the segment-add path. Anything
-            # else (429, 5xx, restricted key) is re-raised so Sentry names
-            # the call that actually failed. Existence is checked directly
-            # rather than by parsing the SDK's error shape.
-            try:
-                resend.Contacts.get(email=email)
-            except Exception:  # noqa: BLE001
-                raise create_exc from None
-            resend.Contacts.Segments.add({"email": email, "segment_id": segment_id})
         logger.info("[NEWSLETTER] Synced %s to Resend", _mask(email))
     except Exception as exc:  # noqa: BLE001 — fail-open by design
         capture_background_exception(exc, task=_SENTRY_TASK)
@@ -126,7 +137,7 @@ def sync_unsubscribe(email: str) -> None:
     except Exception as exc:  # noqa: BLE001 — fail-open by design
         # A second click on the same link, or an address that never reached
         # Resend: the end-state (not subscribed there) already holds.
-        if str(getattr(exc, "code", "")) == "404":
+        if _is_not_found(exc):
             logger.info(
                 "[NEWSLETTER] %s not in Resend — nothing to unsubscribe", _mask(email)
             )
