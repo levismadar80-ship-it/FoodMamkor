@@ -3,8 +3,8 @@ MEH-1483 — GET /producers ?sort= axis.
 
 Locks the backend contract the new /producers sort select drives:
 
-  * ?sort=rating  → avg_rating DESC, NULLs LAST, tiebreak reviews_count DESC,
-                    then created_at DESC.
+  * ?sort=rating  → Bayesian-weighted rating DESC (MEH-2617), unreviewed /
+                    NULL LAST, tiebreak reviews_count DESC, then created_at DESC.
   * no sort / ?sort=newest → created_at DESC (default, unchanged).
   * an unknown ?sort value → 422 (the router's manual-422 pattern), never a
     silent fallback.
@@ -75,7 +75,7 @@ class TestSortRating:
         top = make_producer(db, name="Top")
         mid = make_producer(db, name="Mid")
         unrated = make_producer(db, name="Unrated")
-        _set(db, top, avg_rating=5.0, reviews_count=1, created_at=BASE)
+        _set(db, top, avg_rating=5.0, reviews_count=40, created_at=BASE)
         _set(db, mid, avg_rating=4.5, reviews_count=100, created_at=BASE)
         # rating 0 is the real "unrated" state (column default) — sorts LAST
         # under DESC despite the highest review count.
@@ -84,6 +84,29 @@ class TestSortRating:
         resp = client.get("/producers", params={"sort": "rating"})
         assert resp.status_code == 200
         assert _names(resp) == ["Top", "Mid", "Unrated"]
+
+    def test_few_perfect_reviews_do_not_outrank_many_good_ones(self, client, db):
+        # MEH-2617: the staging case from 30/10 — 5.0 from ONE review was ranked
+        # above 4.8 from twelve. Bayesian average: (5+20)/6=4.17 < (57.6+20)/17=4.56.
+        one = make_producer(db, name="OneFive")
+        many = make_producer(db, name="TwelveFourEight")
+        _set(db, one, avg_rating=5.0, reviews_count=1, created_at=BASE)
+        _set(db, many, avg_rating=4.8, reviews_count=12, created_at=BASE - timedelta(days=3))
+
+        resp = client.get("/producers", params={"sort": "rating"})
+        assert resp.status_code == 200
+        assert _names(resp) == ["TwelveFourEight", "OneFive"]
+
+    def test_unreviewed_sorts_after_low_rated(self, client, db):
+        # MEH-2617: an unreviewed business would score exactly the prior (4.0)
+        # on the weighted key alone — above a real 2.0. It must stay LAST.
+        low = make_producer(db, name="LowRated")
+        none = make_producer(db, name="NoReviews")
+        _set(db, low, avg_rating=2.0, reviews_count=3, created_at=BASE - timedelta(days=5))
+        _set(db, none, avg_rating=0.0, reviews_count=0, created_at=BASE)
+
+        resp = client.get("/producers", params={"sort": "rating"})
+        assert _names(resp) == ["LowRated", "NoReviews"]
 
     def test_tiebreak_reviews_then_created_at(self, client, db):
         # All three share avg_rating 4.0 → the tiebreaks decide the order:
@@ -100,6 +123,19 @@ class TestSortRating:
         # ManyReviews (reviews 50) first; then the reviews=5 pair broken by
         # created_at DESC → FewNew before FewOld.
         assert _names(resp) == ["ManyReviews", "FewNew", "FewOld"]
+
+
+    def test_tiebreak_on_a_non_prior_average(self, client, db):
+        # MEH-2617: at avg 4.0 the weighted key equals the prior for every n,
+        # so the test above ties trivially. Here two identical (4.5, 6) pairs
+        # tie on the weighted key itself and created_at DESC must decide.
+        new = make_producer(db, name="SameNew")
+        old = make_producer(db, name="SameOld")
+        _set(db, new, avg_rating=4.5, reviews_count=6, created_at=BASE)
+        _set(db, old, avg_rating=4.5, reviews_count=6, created_at=BASE - timedelta(days=4))
+
+        resp = client.get("/producers", params={"sort": "rating"})
+        assert _names(resp) == ["SameNew", "SameOld"]
 
 
 class TestNullsLastAtServiceLayer:

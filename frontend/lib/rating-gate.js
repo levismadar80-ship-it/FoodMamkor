@@ -41,8 +41,10 @@ export function countRatedProducers(list) {
  * source for this question, not a pagination guess: review stars are
  * `ge=1, le=5` (schemas.py:2391) and `_recompute` writes the pair together
  * (reviews.py:110-124), so a reviewed business has `avg_rating >= 1` while an
- * unreviewed one has 0.0 — and `?sort=rating` orders `avg_rating` DESC with
- * NULLs last (producer_listing.py:164-172). Every reviewed business therefore
+ * unreviewed one has 0.0 — and `?sort=rating` puts every unreviewed / NULL
+ * row last on its FIRST order key (producer_listing.py, rating branch; the
+ * Bayesian key below it only orders the reviewed rows — MEH-2617). Every
+ * reviewed business therefore
  * sorts strictly above every unreviewed one, so a top-N window holding fewer
  * than N reviewed rows means fewer than N exist catalog-wide.
  *
@@ -55,4 +57,25 @@ export function countRatedProducers(list) {
  */
 export function isRatingSortEnabled(list) {
   return countRatedProducers(list) >= RATING_SORT_THRESHOLD;
+}
+
+// MEH-2617: Bayesian-average constants for the rating sort. Mirrors
+// RATING_PRIOR_MEAN / RATING_PRIOR_WEIGHT in
+// backend/app/services/producer_queries.py — /producers sorts server-side,
+// /map sorts the same feed client-side, and the two orders must agree.
+// Not exported: weightedRating is the only consumer. RatingPriorParity.test.js
+// reads both files' literals and fails if they drift.
+const RATING_PRIOR_MEAN = 4.0;
+const RATING_PRIOR_WEIGHT = 5;
+
+/**
+ * MEH-2617: the score the rating sort orders by — (avg × n + M × C) / (n + C).
+ * One 5.0 review scores 4.17; a 4.8 from twelve scores 4.56. Ordering only:
+ * the displayed rating is still `avg_rating`. Callers sort unreviewed rows
+ * last on their own key first (they would score exactly M here).
+ */
+export function weightedRating(producer) {
+  const n = Number(producer?.reviews_count) || 0;
+  const avg = Number(producer?.avg_rating) || 0;
+  return (avg * n + RATING_PRIOR_MEAN * RATING_PRIOR_WEIGHT) / (n + RATING_PRIOR_WEIGHT);
 }

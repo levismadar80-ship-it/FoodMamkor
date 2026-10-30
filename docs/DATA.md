@@ -748,7 +748,8 @@ GET    /producers                                 public — filters: lat+lng+ra
                                                near_city (MEH-2602 — the map's city filter: own city OR a location row in it OR
                                                delivers there; located ones ordered first, non-geo mode only)
                                                sort: newest (default) | rating (MEH-1483). "newest"/absent → created_at DESC
-                                               (byte-identical default). "rating" → avg_rating DESC, NULLs last, tiebreak
+                                               (byte-identical default). "rating" → unreviewed (NULL avg or reviews_count<1) LAST, then
+                                               MEH-2617 Bayesian score (avg*n + 4.0*5)/(n + 5) DESC, tiebreak
                                                reviews_count DESC, then created_at DESC. Any other value → 422 "ערך מיון לא חוקי".
                                                Non-geo only (geo results always order by distance). Drives the /producers sort select.
                                                MEH-1829: sort=distance (needs lat+lng, NO radius_km) → ORDER BY the MEH-1402
