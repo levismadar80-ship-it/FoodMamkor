@@ -1060,9 +1060,12 @@
       "hero_subtitle": "Buy together and save — local products at a group price",
       "filter_city_label": "Filter by city",
       "filter_city_placeholder": "All cities",
-      "status_open": "Open",
-      "status_funded": "Funded",
+      "status_open": "Open to join",
+      "status_funded": "Reached the goal",
       "status_fulfilled": "Fulfilled",
+      "status_hint_open": "Join now without paying. Once the minimum is reached, the group price unlocks.",
+      "status_hint_funded": "These groups reached the minimum. Joining is closed and the business is in touch with the participants.",
+      "status_hint_fulfilled": "The orders were delivered to the participants.",
       "empty_title": "No active group-buys yet",
       "empty_subtitle": "When businesses open group-buys, you'll find them here"
     },
@@ -1120,7 +1123,7 @@
     "dashboard": {
       "status": {
         "open": "Open",
-        "funded": "Funded",
+        "funded": "Reached the goal",
         "cancelled": "Cancelled",
         "fulfilled": "Completed"
       },
@@ -2268,7 +2271,7 @@
       "title": "Group buys",
       "status": {
         "open": "Open",
-        "funded": "Funded",
+        "funded": "Reached the goal",
         "cancelled": "Cancelled",
         "fulfilled": "Fulfilled"
       },
