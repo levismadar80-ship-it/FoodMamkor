@@ -168,36 +168,20 @@ describe("MEH-1942 — the nested delivery_fee survives the parse", () => {
   });
 });
 
-describe("MEH-1942 — the gap this ticket does NOT close", () => {
-  it("shows the producer rate when a lone area overrides it (documented, not fixed)", () => {
-    // Recorded because the ticket's own DoD proposed exactly this payload as
-    // its discriminating case — one area at 0 against a producer rate of 25,
-    // expecting "חינם" — and the prescribed one-line schema fix does NOT
-    // produce that. It was measured, not assumed.
-    //
-    // Why: the component only consults per-area fees when they VARY
-    // (`:430` `new Set(effectiveFees).size > 1`). With a single area the set
-    // has one member, `feeVaries` is false, and the top line is built from
-    // `producer.delivery_fee` (`:453`) while the row renders no fee at all.
-    // The schema is no longer the thing withholding the value — the component
-    // is choosing not to read it.
-    //
-    // Left as-is deliberately: changing that selection rule is a behaviour
-    // change to a shared surface, outside this card's stated scope
-    // ("frontend/lib/schemas.js — one declared line + a test"). Reported on
-    // the card instead of quietly widened. This case PINS the current
-    // behaviour so the follow-up has a starting point that is measured rather
-    // than remembered — and so nobody reads the ticket and assumes it shipped.
+describe("MEH-1942 gap — closed by MEH-2602", () => {
+  it("a lone area that overrides the producer rate wins: 0 against 25 reads «חינם»", () => {
+    // MEH-1942 pinned the opposite (the component consulted per-area fees only
+    // when they VARIED, so one area at 0 still showed the producer's 25).
+    // MEH-2602 moved the card and DeliveryBlock onto lib/deliveryFee.js, where
+    // areas that all agree state the fee — the case the MEH-1942 DoD asked for.
     const p = parseProducer({
       delivery_fee: 25,
       delivery_areas: [{ id: "a1", city: "חיפה", delivery_fee: 0, delivery_day: "ראשון" }],
     });
-    // The value IS there after the fix — that part works.
     expect(p.delivery_areas[0].delivery_fee).toBe(0);
 
     render(<DeliveryBlock producer={p} areas={p.delivery_areas} />);
-    // …and the surface still states the producer rate, because nothing reads it.
-    expect(screen.queryAllByTestId("area-fee")).toHaveLength(0);
-    expect(document.body.textContent).toContain("25");
+    expect(document.body.textContent).toContain("משלוח חינם");
+    expect(document.body.textContent).not.toContain("25");
   });
 });
