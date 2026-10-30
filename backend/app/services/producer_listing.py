@@ -326,7 +326,10 @@ def _build_base_queries(  # noqa: PLR0913 — keyword-only query axes; MEH-2602 
     if near_city:
         # FALSE < TRUE, so "not located" sorts after "located" — the same
         # boolean-key idiom as the rating and distance branches above.
-        order = (~_located_in_city_condition(near_city), *order)
+        # coalesce: a NULL Producer.city makes the condition NULL, not FALSE,
+        # and Postgres sorts NULL last — which split the deliverers' group.
+        located = func.coalesce(_located_in_city_condition(near_city), False)
+        order = (~located, *order)
     # MEH-1829: the distance sort selects the distance alongside the row (the
     # same two-entity shape as the geo path) so `_finalize_results` can attach
     # `distance_km` to each producer. Every other sort keeps the single-entity
