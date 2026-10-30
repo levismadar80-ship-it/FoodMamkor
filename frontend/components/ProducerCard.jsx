@@ -13,6 +13,7 @@ import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import { highlightMatch } from "@/lib/highlightMatch";
 import { getOrderWindowStatus } from "@/lib/orderWindow";
 import { formatPrice } from "@/lib/utils";
+import { resolveDeliveryFee } from "@/lib/deliveryFee";
 // MEH-1880: imported from the producer PAGE's lib on purpose. `israelTime` is
 // the canonical Israel-local "HH:MM" formatter and the card interpolates it
 // into the very same `orders_open` string the page renders — a second copy here
@@ -185,6 +186,7 @@ function CardHeart({ producer, onCountChange }) {
 
 export default function ProducerCard({ producer, active, onClick, referrer, fridayMode = false, highlightQuery = null }) {
   const t = useTranslations();
+  const cardFee = resolveDeliveryFee(producer.delivery_fee, producer.delivery_areas);
   // Same namespace BadgeRow.jsx and KashrutBadgeStrip.jsx:115 use, so the
   // overflow rows read the identical `kashrut.badges.*.label` strings the
   // visible pills and the detail page read.
@@ -704,20 +706,24 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
             not an absence (same distinction DeliveryBlock.jsx's AreaRow and
             MEH-1942 already pin for the per-area field). Renders nothing
             when delivery_fee is null/undefined — no "no delivery" row. */}
-        {producer.delivery_fee != null && (
+        {/* MEH-2602: the same resolver as DeliveryBlock's top line — per-area
+            overrides included — so card and page state one price. */}
+        {cardFee.fee != null && (
           <p className="flex items-center gap-1 text-[12px] text-fg-muted" data-testid="card-delivery-fee">
             <Truck size={14} className="shrink-0" aria-hidden="true" />
-            {producer.delivery_fee === 0 ? (
+            {cardFee.fee === 0 && !cardFee.from ? (
               t("group_buys.delivery.fee_free")
             ) : (
               (() => {
                 const { before, after } = splitAroundAmount(
-                  t("group_buys.delivery.fee", { amount: AMOUNT_SENTINEL }),
+                  t(cardFee.from ? "group_buys.delivery.fee_from" : "group_buys.delivery.fee", {
+                    amount: AMOUNT_SENTINEL,
+                  }),
                 );
                 return (
                   <>
                     {before}
-                    <bdi>{formatPrice(producer.delivery_fee)}</bdi>
+                    <bdi>{formatPrice(cardFee.fee)}</bdi>
                     {after}
                   </>
                 );

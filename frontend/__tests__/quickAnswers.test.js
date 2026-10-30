@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import he from "../messages/he.json";
 import { buildDeliveryAnswer, buildOrderingAnswer } from "@/lib/quickAnswers";
 
@@ -28,6 +28,18 @@ import WhatsAppQuestionChips from "@/components/WhatsAppQuestionChips";
 const PHONE = "0501234567";
 
 // ─────────────────────────────────────────────────────────────────────────────
+describe("visitor city in the delivery question (MEH-2602)", () => {
+  afterEach(() => localStorage.clear());
+
+  it("names the city the visitor picked, not the business's", async () => {
+    localStorage.setItem("user_city", "חדרה");
+    render(<WhatsAppQuestionChips producer={{ phone: PHONE, city: "רעננה" }} />);
+    const links = await screen.findAllByTestId("question-link");
+    await waitFor(() => expect(links[0]).toHaveTextContent("חדרה"));
+    expect(links[0]).not.toHaveTextContent("רעננה");
+  });
+});
+
 describe("buildDeliveryAnswer (MEH-1302)", () => {
   it("nationwide, no exclusions → { kind: nationwide }", () => {
     expect(buildDeliveryAnswer({ delivery_nationwide: true })).toEqual({ kind: "nationwide" });
@@ -181,7 +193,7 @@ describe("WhatsAppQuestionChips (MEH-1302)", () => {
     render(
       <WhatsAppQuestionChips producer={{ phone: PHONE, city: "תל אביב", delivery_nationwide: true }} />,
     );
-    const toggle = screen.getByRole("button", { name: /אפשר משלוח לתל אביב/ });
+    const toggle = screen.getByRole("button", { name: /אפשר משלוח ל/ });
     expect(toggle).toHaveAttribute("aria-expanded", "false");
     fireEvent.click(toggle);
     expect(toggle).toHaveAttribute("aria-expanded", "true");
@@ -230,7 +242,8 @@ describe("WhatsAppQuestionChips (MEH-1302)", () => {
   it("no delivery data → Q1 falls back to a WhatsApp link", () => {
     render(<WhatsAppQuestionChips producer={{ phone: PHONE, city: "רעננה" }} />);
     const links = screen.getAllByTestId("question-link");
-    expect(links[0]).toHaveTextContent("אפשר משלוח לרעננה?");
+    // MEH-2602: no visitor city stored → the generic «my area», never «רעננה».
+    expect(links[0]).not.toHaveTextContent("רעננה");
     expect(links[0].getAttribute("href")).toContain("wa.me");
   });
 
