@@ -43,3 +43,16 @@ def test_control_unfiltered_lists_still_return_everyone(client, db):
     _make_group_buy(db, make_producer(db, name="א"))
     _make_group_buy(db, make_producer(db, name="ב"))
     assert len(client.get("/group-buys").json()) == 2
+
+
+def test_a_suspended_business_lists_nothing_by_id(client, db):
+    """The filter narrows the public listing; it never widens it. A suspended
+    business's id returns [] (CI reviewer, #3881)."""
+    mine = make_producer(db, name="מושהה")
+    _make_group_buy(db, mine)
+    mine.status = "suspended"
+    db.commit()
+
+    rows = client.get("/group-buys", params={"producer_id": str(mine.id)}).json()
+
+    assert rows == []

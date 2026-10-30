@@ -3673,9 +3673,24 @@ EXPERIENCE_CATEGORIES = frozenset(
 )
 
 
+# The English filter keys (messages events.experience_categories) a client
+# may still send, and that rows saved before this check may hold — mapped, so
+# an owner re-saving such a row is not refused for a value she never chose.
+_EXPERIENCE_CATEGORY_KEYS = {
+    "cooking": "בישול",
+    "nutrition": "תזונה",
+    "food_tour": "סיור אוכל",
+    "agriculture": "חקלאות",
+    "tasting": "טעימות",
+    "workshop": "סדנה",
+    "other": "אחר",
+}
+
+
 def _experience_category(value: str | None) -> str | None:
     if value is None:
         return None
+    value = _EXPERIENCE_CATEGORY_KEYS.get(value, value)
     if value not in EXPERIENCE_CATEGORIES:
         raise ValueError("קטגוריה לא תקינה")
     return value
