@@ -1092,7 +1092,7 @@
       "progress_label": "{commits} of {min} participants",
       "remaining_to_open": "{n} more participants to unlock the price",
       "deadline_prefix": "Deadline: {date}",
-      "fulfillment_prefix": "Pickup & delivery: ",
+      "fulfillment_title": "Pickup & delivery",
       "how_title": "How it works",
       "how_join": "Join now. You pay nothing through the site",
       "how_unlock": "Once {min} people join, the group price unlocks and the business gets in touch",
