@@ -150,7 +150,7 @@ def test_upgrade_fills_exactly_the_gap(db, rev, world):
     assert (row.lat, row.lng, row.city, row.address) == (
         32.0853,
         34.7818,
-        "תל אביב",
+        "תל אביב-יפו",  # MEH-2602: the producer's city is stored canonical
         "רחוב הדוגמה 1",
     )
     assert (row.opening_hours, row.phone) == ("א-ה 09:00-17:00", "0501234567")

@@ -23,7 +23,8 @@ from typing import Any
 
 import structlog
 from sqlalchemy import and_, case, cast, func, or_
-from sqlalchemy.dialects.postgresql import JSONPATH
+from sqlalchemy import Text
+from sqlalchemy.dialects.postgresql import ARRAY, JSONPATH
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.models import (
@@ -35,6 +36,7 @@ from app.models import (
     Product,
     SearchQuery,
 )
+from app.data.cities import canonical_city, city_variants
 from app.schemas.schemas import DELIVERY_DAYS
 from app.services.availability_validation import ON_VACATION
 from app.services.producer_queries import (
@@ -366,6 +368,14 @@ def _build_base_queries(  # noqa: PLR0913 — keyword-only query axes; MEH-2602 
 _MAX_DELIVERY_CITIES = 40
 
 
+def _city_matches(column, city: str):
+    """MEH-2602: `lower(column)` is one of the spellings of `city` (alias,
+    «קרית»/«קריית», hyphen spacing — app.data.cities.city_variants). Rows
+    written before writes were canonicalised keep their old spelling, and
+    this is what lets a filter for the official name still find them."""
+    return func.lower(column).in_(city_variants(city))
+
+
 def _delivery_city_condition(city: str):
     """A producer 'delivers to <city>' iff it has a delivery_areas row for
     that city OR delivers nationwide and hasn't excluded it (MEH-1255).
@@ -382,12 +392,15 @@ def _delivery_city_condition(city: str):
     was offered to a consumer as a delivering business. The flag is now a
     conjunct on BOTH delivery predicates.
     """
-    area_match = Producer.delivery_areas.any(
-        func.lower(DeliveryArea.city) == city.lower()
-    )
+    area_match = Producer.delivery_areas.any(_city_matches(DeliveryArea.city, city))
     nationwide_match = and_(
         Producer.delivery_nationwide.is_(True),
-        ~Producer.delivery_excluded_cities.any(city),
+        # MEH-2602: any spelling of the city on the exclusion list counts.
+        ~Producer.delivery_excluded_cities.overlap(
+            cast(
+                sorted({city, canonical_city(city), *city_variants(city)}), ARRAY(Text)
+            )
+        ),
     )
     # `.is_(True)` and not a bare truthiness check: the column is NOT NULL today
     # (models.py:234) so the two agree, but `.is_(True)` keeps a future NULL
@@ -404,10 +417,9 @@ def _located_in_city_condition(city: str):
     sides like _delivery_city_condition. A location row with a NULL city
     never matches (see _pickup_condition for why that is the right reading).
     """
-    c = city.lower()
     return or_(
-        func.lower(Producer.city) == c,
-        Producer.locations.any(func.lower(ProducerLocation.city) == c),
+        _city_matches(Producer.city, city),
+        Producer.locations.any(_city_matches(ProducerLocation.city, city)),
     )
 
 
@@ -487,7 +499,7 @@ def _pickup_condition(cities: list[str] | None = None):
     if cities:
         # `.lower()` on both sides mirrors _delivery_city_condition:274 so the
         # two city axes match case-identically.
-        conds.append(func.lower(ProducerLocation.city).in_([c.lower() for c in cities]))
+        conds.append(or_(*[_city_matches(ProducerLocation.city, c) for c in cities]))
     return Producer.locations.any(and_(*conds))
 
 
@@ -574,7 +586,7 @@ def _delivery_day_condition(days: list[str], city: str | None = None):
     # REUSES: the category block below — Category.id.in_ inside an EXISTS.
     conds = [DeliveryArea.delivery_day.in_(days)]
     if city:
-        conds.append(func.lower(DeliveryArea.city) == city.lower())
+        conds.append(_city_matches(DeliveryArea.city, city))
     # MEH-2242: `offers_delivery` is conjoined here exactly as MEH-1848 did on
     # _delivery_city_condition (:305). A day row is delivery SCOPE, not a
     # delivery promise — a business that switched delivery off while its
@@ -1020,8 +1032,8 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, P
 
     city = filters.get("city")
     if city:
-        q = q.filter(func.lower(Producer.city) == city.lower())
-        count_q = count_q.filter(func.lower(Producer.city) == city.lower())
+        q = q.filter(_city_matches(Producer.city, city))
+        count_q = count_q.filter(_city_matches(Producer.city, city))
 
     near_city = (filters.get("near_city") or "").strip()
     if near_city:

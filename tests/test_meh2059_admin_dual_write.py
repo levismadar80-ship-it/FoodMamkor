@@ -81,7 +81,7 @@ class TestAdminCreate:
         assert loc.kind == "branch"
         assert loc.is_primary is True
         assert loc.location_precision == "exact"
-        assert loc.city == "תל אביב"
+        assert loc.city == "תל אביב-יפו"  # MEH-2602: stored canonical
         assert loc.lat == 32.0853
         assert loc.lng == 34.7818
 

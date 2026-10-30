@@ -112,7 +112,9 @@ class TestCreate:
         )
 
         assert resp.status_code == 201, resp.text
-        assert _city_of(db, producer.id) == "תל אביב"
+        # MEH-2602: Producer.city is stored canonical, so the seeded «תל אביב»
+        # reads back as «תל אביב-יפו» — still not NULL, which is the claim here.
+        assert _city_of(db, producer.id) == "תל אביב-יפו"
 
 
 class TestUpdate:
