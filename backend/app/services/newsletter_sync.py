@@ -86,9 +86,7 @@ def sync_subscribe(email: str) -> None:
                 }
             )
         except Exception:  # noqa: BLE001 — most likely "contact already exists"
-            resend.Contacts.Segments.add(
-                {"email": email, "segment_id": segment_id}
-            )
+            resend.Contacts.Segments.add({"email": email, "segment_id": segment_id})
         logger.info("[NEWSLETTER] Synced %s to Resend", _mask(email))
     except Exception as exc:  # noqa: BLE001 — fail-open by design
         capture_background_exception(exc, task=_SENTRY_TASK)
@@ -114,7 +112,9 @@ def sync_unsubscribe(email: str) -> None:
         # A second click on the same link, or an address that never reached
         # Resend: the end-state (not subscribed there) already holds.
         if str(getattr(exc, "code", "")) == "404":
-            logger.info("[NEWSLETTER] %s not in Resend — nothing to unsubscribe", _mask(email))
+            logger.info(
+                "[NEWSLETTER] %s not in Resend — nothing to unsubscribe", _mask(email)
+            )
             return
         capture_background_exception(exc, task=_SENTRY_TASK)
         logger.error(
