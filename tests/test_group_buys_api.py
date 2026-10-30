@@ -536,6 +536,9 @@ class TestCreate:
             headers=auth_header(user),
         )
         assert resp.status_code == 422, resp.text
+        # The refusal is the pickup field's, not some other 422 (review #3905).
+        locs = [err["loc"] for err in resp.json()["detail"]]
+        assert ["body", "pickup_note"] in locs, locs
 
     def test_three_letter_note_is_accepted(self, client, db):
         # The floor's edge, so a stricter floor shows up here.
