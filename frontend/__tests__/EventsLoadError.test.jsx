@@ -54,7 +54,7 @@ vi.mock("@phosphor-icons/react", () => {
   return Object.fromEntries(
     [
       "ArrowCounterClockwise", "ArrowRight", "Basket", "CalendarBlank",
-      "CalendarX", "CookingPot", "Drop", "MapTrifold", "Path", "Plant",
+      "CalendarX", "CookingPot", "ForkKnife", "MapTrifold", "Path", "Plant",
       "Plus", "Rows", "Storefront",
     ].map((name) => [name, Stub]),
   );
