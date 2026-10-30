@@ -408,7 +408,7 @@ ARCHETYPE_BUSINESSES = [
             "אליכן באותו יום, עדיין חמימות."
         ),
         "kosher": "כשר",
-        "kashrut": "rabanut_mekomit",
+        "kashrut": "rabanut",
         "verified": True,
         "review_stars": [5, 5, 4, 5, 5, 4],
         "image": None,
@@ -503,7 +503,7 @@ ARCHETYPE_BUSINESSES = [
             "קר ואינו עובר סינון דק, ולכן הוא מתגבש בחורף. זה סימן טוב."
         ),
         "kosher": "כשר",
-        "kashrut": "rabanut_mekomit",
+        "kashrut": "rabanut",
         "verified": True,
         "review_stars": [5, 5, 5, 5, 4, 5],
         "image": None,
@@ -567,7 +567,7 @@ ARCHETYPE_BUSINESSES = [
             "ואנחנו חוזרות עם הצעה מותאמת. יש מנות לצמחוניות בכל תפריט."
         ),
         "kosher": "כשר",
-        "kashrut": "rabanut_mekomit",
+        "kashrut": "rabanut",
         "verified": True,
         "review_stars": [5, 5, 4, 5, 5, 5, 4],
         "image": None,
