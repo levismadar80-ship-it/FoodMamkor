@@ -56,8 +56,9 @@ describe("lib/filter-url", () => {
 describe("/map chip state ⇄ URL", () => {
   beforeEach(() => window.history.replaceState(null, "", "/map?utm_source=x"));
 
-  const setup = (initialChips) =>
-    renderHook(() =>
+  const setup = (search) => {
+    if (search !== undefined) window.history.replaceState(null, "", `/map${search}`);
+    return renderHook(() =>
       useMapFilters({
         allProducers: [],
         categories: [],
@@ -65,18 +66,18 @@ describe("/map chip state ⇄ URL", () => {
         userCity: "תל אביב",
         setUserCity: vi.fn(),
         setShowCityPicker: vi.fn(),
-        initialChips,
       }),
     ).result;
+  };
 
   it("starts with the chips the URL carried, pressed", () => {
-    const result = setup({ on_site: true });
+    const result = setup("?on_site=1");
     expect(result.current.chipState.on_site).toBe(true);
     expect(result.current.chipState.has_delivery).toBe(false);
   });
 
   it("mirrors a toggle into the URL and keeps unrelated params", () => {
-    const result = setup({});
+    const result = setup();
     act(() => result.current.onToggleChipClick("pickup_points"));
     const sp = new URLSearchParams(window.location.search);
     expect(sp.get("pickup_points")).toBe("1");
@@ -85,9 +86,15 @@ describe("/map chip state ⇄ URL", () => {
     expect(new URLSearchParams(window.location.search).has("pickup_points")).toBe(false);
   });
 
+  it("ignores off values and non-axis params, and leaves them alone", () => {
+    const result = setup("?on_site=0&foo=1");
+    expect(result.current.chipState.on_site).toBe(false);
+    expect(new URLSearchParams(window.location.search).get("foo")).toBe("1");
+  });
+
   it("rewrites home's ?delivery=1 alias to the one spelling", () => {
-    window.history.replaceState(null, "", "/map?delivery=1");
-    setup({ has_delivery: true });
+    const result = setup("?delivery=1");
+    expect(result.current.chipState.has_delivery).toBe(true);
     const sp = new URLSearchParams(window.location.search);
     expect(sp.get("has_delivery")).toBe("1");
     expect(sp.has("delivery")).toBe(false);
@@ -105,13 +112,27 @@ describe("/map feed with filters from the URL", () => {
       const data = params?.on_site ? [{ id: "f", name: "filtered" }] : [{ id: "a", name: "all" }, { id: "b", name: "b" }];
       return Promise.resolve({ data });
     });
-    const { result } = renderHook(() => useProducersFeed({ initialParams: { on_site: true } }));
+    const { result } = renderHook(() => useProducersFeed({ readInitialParams: () => ({ on_site: true }) }));
     await waitFor(() => expect(calls).toHaveLength(2));
     expect(calls[0]).toEqual({});
     expect(calls[1]).toEqual({ on_site: true });
     await waitFor(() => expect(result.current.allProducers.map((p) => p.id)).toEqual(["f"]));
     expect(result.current.catalogSnapshot.map((p) => p.id)).toEqual(["a", "b"]);
     expect(calls).toHaveLength(2);
+  });
+
+  it("still loads the filtered list when the unfiltered snapshot request fails", async () => {
+    const calls = [];
+    apiGet.mockImplementation((path, { params } = {}) => {
+      if (path === "/categories") return Promise.resolve({ data: [] });
+      calls.push(params);
+      if (path === "/producers" && !params?.on_site) return Promise.reject(new Error("snapshot down"));
+      return Promise.resolve({ data: [{ id: "f", name: "filtered" }] });
+    });
+    const { result } = renderHook(() => useProducersFeed({ readInitialParams: () => ({ on_site: true }) }));
+    await waitFor(() => expect(result.current.allProducers.map((p) => p.id)).toEqual(["f"]));
+    expect(calls).toHaveLength(2);
+    expect(result.current.catalogSnapshot).toBeNull();
   });
 
   it("control: without filters there is one unfiltered fetch and it is the list", async () => {
@@ -121,7 +142,7 @@ describe("/map feed with filters from the URL", () => {
       calls.push(params);
       return Promise.resolve({ data: [{ id: "a", name: "all" }] });
     });
-    const { result } = renderHook(() => useProducersFeed({ initialParams: {} }));
+    const { result } = renderHook(() => useProducersFeed({ readInitialParams: () => ({}) }));
     await waitFor(() => expect(result.current.allProducers.map((p) => p.id)).toEqual(["a"]));
     expect(calls).toHaveLength(1);
   });

@@ -19,7 +19,7 @@ import { ProducersResponseSchema } from "@/lib/schemas";
  * the geo bounds are degenerate. This is preserved verbatim from the
  * source (:423-426).
  */
-export function useProducersFeed({ initialParams = null } = {}) {
+export function useProducersFeed({ readInitialParams = null } = {}) {
   const t = useTranslations();
   const [allProducers, setAllProducers] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -56,6 +56,8 @@ export function useProducersFeed({ initialParams = null } = {}) {
         const parsed = ProducersResponseSchema.safeParse(r.data);
         if (!parsed.success) {
           handleLoadFailure(parsed.error.issues);
+          // MEH-2598: a failed snapshot must not swallow the filtered load.
+          then?.();
           return;
         }
         // MEH-2170: only the mount call asks for the snapshot; a failed or
@@ -71,17 +73,27 @@ export function useProducersFeed({ initialParams = null } = {}) {
         }
         setAllProducers(parsed.data);
       })
-      .catch(handleLoadFailure)
+      .catch((reason) => {
+        handleLoadFailure(reason);
+        // MEH-2598: a failed snapshot must not swallow the filtered load.
+        then?.();
+      })
       // MEH-1054: every terminal path (data / malformed / network error)
       // clears loading — the failure states already render their own UX
       // (empty list + toast), the skeleton must not stick over them.
-      .finally(() => setLoading(false));
+      .finally(() => {
+        // MEH-2598: a chained filtered load owns the flag from here.
+        if (!then) setLoading(false);
+      });
   };
 
   useEffect(() => {
     api.get("/categories").then((r) => setCategories(r.data)).catch(() => {});
     // MEH-2598: /map?has_delivery=1… (from the list's «הצגה במפה») — the
-    // snapshot stays unfiltered; the filtered list follows it.
+    // snapshot stays unfiltered; the filtered list follows it. Read from
+    // window.location on mount (client only), not from the server page's
+    // searchParams, so /map stays a static route.
+    const initialParams = readInitialParams ? readInitialParams() : null;
     const hasInitial = initialParams && Object.keys(initialParams).length > 0;
     loadProducers(
       {},
