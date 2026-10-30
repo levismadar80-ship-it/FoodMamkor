@@ -21,7 +21,7 @@ vi.mock("next-intl", () => ({
       "producer.detail.contact_card.aria.external_order": "טופס הזמנות",
       "producer.detail.contact_card.aria.whatsapp_group": "קבוצת וואטסאפ",
       "whatsapp.question_chips.ask_us": "שאלו אותנו",
-      "whatsapp.question_chips.my_area": "האזור שלי",
+      "whatsapp.question_chips.delivery_to_my_area": "אפשר משלוח לאזור שלי?",
       // MEH-1233 B2: ל attaches directly to the city, no maqaf ("לזכרון", not "ל-זכרון").
       "whatsapp.question_chips.delivery_to_city": `אפשר משלוח ל${vars?.city ?? ""}?`,
       "whatsapp.question_chips.greeting_template": `שלום ${vars?.name ?? ""}, ${vars?.q ?? ""}`,
@@ -103,7 +103,8 @@ describe("ContactCard (MEH-1146 chunk A · MEH-1334 chunk 1)", () => {
     const links = screen.getAllByTestId("question-link");
     expect(links.length).toBeGreaterThan(0);
     expect(links.length).toBeLessThanOrEqual(3);
-    expect(links[0]).toHaveTextContent("אפשר משלוח לזכרון יעקב?");
+    // MEH-2602: the visitor's area, never the business's own city.
+    expect(links[0]).toHaveTextContent("אפשר משלוח לאזור שלי?");
   });
 
   it("quiet icon row includes secondary channels but excludes the primary method", () => {

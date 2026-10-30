@@ -793,6 +793,13 @@
         },
         "recipes": {
           "cta": "המתכונים שלנו"
+        },
+        "group_buys": {
+          "heading": "רכישות קבוצתיות פתוחות"
+        },
+        "experiences": {
+          "heading": "חוויות קרובות",
+          "free": "חינם"
         }
       },
       "header": {
@@ -3359,7 +3366,7 @@
       "share_to_friend": "שיתוף עם חברים"
     },
     "question_chips": {
-      "my_area": "האזור שלי",
+      "delivery_to_my_area": "אפשר משלוח לאזור שלי?",
       "city_placeholder": "[עיר]",
       "ask_us": "שאלו אותנו",
       "common_questions": "שאלות נפוצות",
