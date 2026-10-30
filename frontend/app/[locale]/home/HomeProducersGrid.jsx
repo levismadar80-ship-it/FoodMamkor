@@ -30,31 +30,15 @@ import {
 } from "@/lib/producer-filters";
 import { LOAD_MORE_CAP } from "@/lib/use-home-page";
 
-// 🔒 MEH-2173 — the two axes the home row PROMOTES onto the surface. Every
-// other axis stays reachable, one tap away, inside the FilterSheet.
+// 🔒 The axes the home row PROMOTES onto the surface; every other axis stays
+// one tap away inside the FilterSheet. CHANGING THIS LIST IS A SAPIR DECISION,
+// not a refactor.
 //
-// CHANGING THIS PAIR IS A SAPIR DECISION, not a refactor: it is a product
-// ruling about which two filters are worth permanent screen space on the
-// entry surface, and it was made in the 25/08 "סינון ארוך מדי" conversation.
-//
-// It deliberately does NOT mirror /map. /map promotes the FULFILMENT pair
-// (`has_delivery` + `pickup_points`, ServiceChipRow.jsx:40, MEH-2046); home
-// promotes trust + delivery. The card's own text described this list as a
-// mirror of a `QUICK_CHIP_KEYS` 🔒 in lib/map-chips.js — that symbol does not
-// exist. It was deleted in MEH-1468, which also retired the MEH-1461 "quick row
-// capped at 2" lock along with it (map-chips.js:86-90). Both surfaces are
-// intentionally different rows; neither is derived from the other, and there is
-// no shared constant to keep them in step.
-//
-// Order is RTL reading order: the trust axis leads, matching the sheet's own
-// service group (FilterSheet.jsx GROUP_CHIP_ORDER — verified, then has_delivery).
-//
-// MEH-2598 (Sapir 29/10, decision card «אחיד, מאומת בסינון»): the three
-// surfaces now promote the SAME service trio — «משלוח · איסוף עצמי · קנייה
-// במקום», SERVICE_CHIP_KEYS in lib/map-chips.js — rendered by one component
-// (components/PromotedServiceChips.jsx). «מאומת» leaves the row and stays in
-// the sheet. This reverses the MEH-2173 promotion on her own instruction; the
-// paragraph above describes the pre-2598 state and is kept as history.
+// MEH-2598 (Sapir 29/10, decision card «אחיד, מאומת בסינון»): home, /producers
+// and /map promote the SAME service trio — «משלוח · איסוף עצמי · קנייה במקום»,
+// SERVICE_CHIP_KEYS in lib/map-chips.js — rendered by one component
+// (components/PromotedServiceChips.jsx). It replaced MEH-2173's «מאומת» +
+// «משלוח» pair; «מאומת» stays in the sheet.
 const PROMOTED_KEYS = SERVICE_CHIP_KEYS;
 
 /**
