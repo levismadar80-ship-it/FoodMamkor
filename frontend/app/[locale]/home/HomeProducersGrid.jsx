@@ -13,6 +13,7 @@ import { ActiveFilterChip } from "@/app/[locale]/home/ActiveFilterChip";
 import FilterSheet from "@/components/FilterSheet";
 import PromotedServiceChips from "@/components/PromotedServiceChips";
 import { SERVICE_CHIP_KEYS } from "@/lib/map-chips";
+import { chipsToQuery } from "@/lib/filter-url";
 // MEH-1825: the day row is shared with /producers — one definition in components/.
 import { DeliveryDayRow } from "@/components/DeliveryDayRow";
 import { keepFocusedChipClear } from "@/lib/keepFocusedChipClear";
@@ -250,7 +251,9 @@ export function HomeProducersGrid({
             ? t("home.producers.heading_category", { name: activeCategory.name })
             : t("home.producers.heading")}
         </h2>
-        <Link href="/map" className="text-primary hover:underline flex items-center gap-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
+        {/* MEH-2598: the active chips ride along (lib/filter-url), so the map
+            opens on the same search the grid is showing. */}
+        <Link href={`/map${chipsToQuery(chips)}`} data-testid="home-map-link" className="text-primary hover:underline flex items-center gap-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
           <MapPin size={14} className="text-current" />
           {t("home.producers.map_link")}
         </Link>

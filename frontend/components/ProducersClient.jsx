@@ -3,7 +3,8 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { MagnifyingGlass, Plant, Leaf, CaretDown, Faders } from "@phosphor-icons/react";
+import { MagnifyingGlass, Plant, Leaf, CaretDown, Faders, MapPin } from "@phosphor-icons/react";
+import { chipsToQuery } from "@/lib/filter-url";
 import { useTranslations } from "next-intl";
 import Breadcrumb from "@/components/Breadcrumb";
 import ProducerCard from "@/components/ProducerCard";
@@ -772,16 +773,30 @@ export default function ProducersClient({
         ]}
         className="mb-4"
       />
-      <h1 className="font-headline-lg text-3xl font-bold text-text mb-6">
-        {searchQ ? (
-          <>
-            {t("title.search_results")}{" "}
-            <span className="text-primary">&ldquo;{searchQ}&rdquo;</span>
-          </>
-        ) : (
-          t("title.all")
-        )}
-      </h1>
+      {/* MEH-2598: «הצגה במפה» as on home — the list and the map are two views
+          of one search, so the active attribute chips ride along
+          (lib/filter-url). Search text and category stay behind: /map has no
+          free-text search and keys categories differently. */}
+      <div className="flex items-center justify-between gap-3 mb-6">
+        <h1 className="font-headline-lg text-3xl font-bold text-text">
+          {searchQ ? (
+            <>
+              {t("title.search_results")}{" "}
+              <span className="text-primary">&ldquo;{searchQ}&rdquo;</span>
+            </>
+          ) : (
+            t("title.all")
+          )}
+        </h1>
+        <Link
+          href={`/map${chipsToQuery(chips)}`}
+          data-testid="producers-map-link"
+          className="shrink-0 text-primary hover:underline flex items-center gap-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+        >
+          <MapPin size={14} className="text-current" aria-hidden="true" />
+          {t("title.map_link")}
+        </Link>
+      </div>
 
       {/* MEH-820: free-text search — drives the existing ?q= filter */}
       <form
