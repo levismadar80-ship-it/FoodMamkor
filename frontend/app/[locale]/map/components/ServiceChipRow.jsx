@@ -2,7 +2,6 @@
 
 import PromotedServiceChips from "@/components/PromotedServiceChips";
 import { keepFocusedChipClear } from "@/lib/keepFocusedChipClear";
-import { TOGGLE_CHIPS } from "@/lib/map-chips";
 
 /**
  * Module:   ServiceChipRow
@@ -33,12 +32,14 @@ import { TOGGLE_CHIPS } from "@/lib/map-chips";
  * shared `chipState` is what stops the two surfaces drifting.
  */
 
-// MEH-2046: the two axes this row promotes (SERVICE_CHIP_KEYS, lib/map-chips —
-// MEH-2425 moved it there so the tag row can skip them). Both live in
-// TOGGLE_CHIPS, so labels + scope/evidence come from ATTRIBUTE_LABELS and
-// cannot drift from FilterSheet's copy of them.
+// MEH-2046: the axes this row promotes are SERVICE_CHIP_KEYS (lib/map-chips —
+// MEH-2425 moved it there so the tag row can skip them). Labels come from
+// TOGGLE_CHIPS / ATTRIBUTE_LABELS and cannot drift from FilterSheet's copy.
+// MEH-2598: `chips` is REQUIRED-in-practice and defaults to none — it must be
+// the caller's already-gated list (FilterChipsBar's visibleToggleChips), so a
+// caller that forgets it renders no chip rather than an ungated on_site.
 
-export default function ServiceChipRow({ chipState, onToggleChip, chips = TOGGLE_CHIPS, children }) {
+export default function ServiceChipRow({ chipState, onToggleChip, chips = [], children }) {
   return (
     // MEH-2598 (Sapir 29/10, «אחיד»): the row now matches home and /producers
     // (MEH-2537 / MEH-2569) — «סינון» LEADS (children, sticky below lg), then

@@ -51,7 +51,7 @@ const EMPTY = {
 
 describe("ServiceChipRow — the promoted /map service pair (MEH-2046)", () => {
   it("renders both service chips, always", () => {
-    render(<ServiceChipRow chipState={EMPTY} onToggleChip={() => {}} />);
+    render(<ServiceChipRow chips={TOGGLE_CHIPS} chipState={EMPTY} onToggleChip={() => {}} />);
 
     expect(screen.getByRole("button", { name: "משלוח" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "איסוף עצמי" })).toBeInTheDocument();
@@ -60,6 +60,7 @@ describe("ServiceChipRow — the promoted /map service pair (MEH-2046)", () => {
   it("reports pressed state per chip, independently", () => {
     render(
       <ServiceChipRow
+        chips={TOGGLE_CHIPS}
         chipState={{ ...EMPTY, pickup_points: true }}
         onToggleChip={() => {}}
       />,
@@ -81,7 +82,7 @@ describe("ServiceChipRow — the promoted /map service pair (MEH-2046)", () => {
     const { container: ref } = render(<Check size={16} weight="bold" />);
     const checkSvg = ref.querySelector("svg").innerHTML;
     render(
-      <ServiceChipRow chipState={{ ...EMPTY, pickup_points: true }} onToggleChip={() => {}} />,
+      <ServiceChipRow chips={TOGGLE_CHIPS} chipState={{ ...EMPTY, pickup_points: true }} onToggleChip={() => {}} />,
     );
     const glyph = (name) =>
       screen.getByRole("button", { name }).querySelector('span[aria-hidden="true"] svg').innerHTML;
@@ -91,7 +92,7 @@ describe("ServiceChipRow — the promoted /map service pair (MEH-2046)", () => {
 
   it("toggles each chip by its own key", () => {
     const onToggleChip = vi.fn();
-    render(<ServiceChipRow chipState={EMPTY} onToggleChip={onToggleChip} />);
+    render(<ServiceChipRow chips={TOGGLE_CHIPS} chipState={EMPTY} onToggleChip={onToggleChip} />);
 
     fireEvent.click(screen.getByRole("button", { name: "משלוח" }));
     expect(onToggleChip).toHaveBeenCalledWith("has_delivery");
@@ -102,7 +103,7 @@ describe("ServiceChipRow — the promoted /map service pair (MEH-2046)", () => {
 
   it("renders the children slot (the סינון trigger lives there)", () => {
     render(
-      <ServiceChipRow chipState={EMPTY} onToggleChip={() => {}}>
+      <ServiceChipRow chips={TOGGLE_CHIPS} chipState={EMPTY} onToggleChip={() => {}}>
         <button type="button">סינון</button>
       </ServiceChipRow>,
     );
@@ -114,7 +115,7 @@ describe("ServiceChipRow — the promoted /map service pair (MEH-2046)", () => {
     // The row is a sibling of ChipScrollRow, not a variant, so the shared
     // visual language is a duplication that can silently drift. This pins the
     // one property DESIGN §Shapes actually locks.
-    render(<ServiceChipRow chipState={EMPTY} onToggleChip={() => {}} />);
+    render(<ServiceChipRow chips={TOGGLE_CHIPS} chipState={EMPTY} onToggleChip={() => {}} />);
 
     for (const name of ["משלוח", "איסוף עצמי"]) {
       expect(screen.getByRole("button", { name })).toHaveClass("rounded-md");
@@ -170,7 +171,7 @@ describe("pickup_points wiring (MEH-2046)", () => {
     // ...and the /map row promotes exactly the SERVICE_CHIP_KEYS trio
     // (MEH-2598 added on_site). A further key acquiring `group: "service"`
     // must not silently join the promoted row — the list is fixed, not derived.
-    render(<ServiceChipRow chipState={{}} onToggleChip={() => {}} />);
+    render(<ServiceChipRow chips={TOGGLE_CHIPS} chipState={{}} onToggleChip={() => {}} />);
     expect(screen.getAllByRole("button").map((b) => b.textContent.trim())).toEqual([
       "משלוח",
       "איסוף עצמי",
