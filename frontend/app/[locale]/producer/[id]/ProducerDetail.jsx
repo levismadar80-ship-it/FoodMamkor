@@ -17,6 +17,7 @@ import { useAuth } from "@/lib/auth-context";
 
 import ContactCard from "./components/ContactCard";
 import ContactSidebar from "./components/ContactSidebar";
+import OtherBusinesses from "./components/OtherBusinesses";
 import OwnerEditBar from "./components/OwnerEditBar";
 import ProducerHeader from "./components/ProducerHeader";
 import ProducerSections from "./components/ProducerSections";
@@ -127,7 +128,8 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
   const primaryCategory = producer.categories?.[0];
 
   // MEH-2593: ImageGallery's phone hero bleeds out of this px-4 with a
-  // matching -mx-4 — change the two together.
+  // matching -mx-4 — change the two together. MEH-2592: so does the
+  // OtherBusinesses band.
   return (
     <div className="max-w-6xl mx-auto px-4 py-6" data-testid="producer-detail-root">
       {/* MEH-1209: owner-only edit entry — renders above the h1 (which lives in
@@ -264,8 +266,6 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
           <ProducerSections
             producer={producer}
             events={events}
-            similarProducers={similarProducers}
-            nearbyProducers={nearbyProducers}
             sectionRefs={sectionRefs}
             reviewsContainerRef={reviewsContainerRef}
             reviewsVisible={reviewsVisible}
@@ -276,6 +276,15 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
         {/* ================= Sticky contact sidebar ================= */}
         <ContactSidebar producer={producer} isVacation={isVacation} />
       </div>
+
+      {/* MEH-2592: similar + nearby businesses — after the business's own fine
+          print, full width below both columns, so the page finishes with the
+          business before it points elsewhere. */}
+      <OtherBusinesses
+        producer={producer}
+        similarProducers={similarProducers}
+        nearbyProducers={nearbyProducers}
+      />
 
       {/* StickyContactBar — mobile only, IO-driven, always mounted. */}
       <StickyContactBar
