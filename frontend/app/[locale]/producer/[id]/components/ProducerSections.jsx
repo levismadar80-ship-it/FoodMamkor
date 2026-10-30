@@ -283,15 +283,17 @@ export default function ProducerSections({
           <p className="text-text/85 leading-relaxed whitespace-pre-line">
             {producer.description}
           </p>
+          {/* MEH-2592: «מאחורי העסק» lives inside «אודות» — who the business
+              is and who is behind it, read as one story. */}
+          <OwnerCard producer={producer} nested />
         </FadeInSection>
       )}
 
-      {/* MEH-2592: the owner card sits directly under «אודות» — who is behind
-          the business belongs with what the business is (the Yelp "About the
-          business" pattern), ahead of products and reviews. Self-gates: null
-          only when there is no contact_name, owner_bio or owner_photo_url
-          (MEH-2471). */}
-      <OwnerCard producer={producer} />
+      {/* MEH-2592: with a description the owner card is nested inside
+          «אודות» above; without one there is no «אודות» to sit in, so it keeps
+          its own section here, in the same place. Self-gates: null only when
+          there is no contact_name, owner_bio or owner_photo_url (MEH-2471). */}
+      {!producer.description && <OwnerCard producer={producer} />}
 
       {/* Products (premium only) + the signature product at the top.
           MEH-1146 chunk B: the section also renders when only the signature

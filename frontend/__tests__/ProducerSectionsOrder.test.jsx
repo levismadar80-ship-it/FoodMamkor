@@ -209,6 +209,35 @@ describe("ProducerSections order (MEH-1146 chunk B, MEH-2592)", () => {
 // MEH-1291 — the "עודכן לאחרונה" freshness line renders only after a real edit
 // stamps producer.updated_at (nullable, no backfill). The next-intl mock returns
 // the key literal, so we assert on the key string.
+// MEH-2592 E: «מאחורי העסק» sits INSIDE «אודות» when there is a description,
+// and keeps its own section when there is none.
+describe("ProducerSections — owner card placement (MEH-2592)", () => {
+  const props = (producer) => ({
+    producer: { id: 7, name: "חוות", products: [], contact_name: "יעל", ...producer },
+    events: [],
+    sectionRefs: { current: {} },
+    reviewsContainerRef: { current: null },
+    reviewsVisible: false,
+  });
+
+  it("with a description: the owner card is nested inside #section-bio", () => {
+    const { container } = render(<ProducerSections {...props({ description: "תיאור" })} />);
+    const bio = container.querySelector("#section-bio");
+    const cards = screen.getAllByTestId("owner-card");
+    expect(cards).toHaveLength(1);
+    expect(bio).toContainElement(cards[0]);
+    expect(cards[0].dataset.nested).toBe("true");
+  });
+
+  it("without a description: one standalone owner card, no #section-bio", () => {
+    const { container } = render(<ProducerSections {...props({ description: "" })} />);
+    expect(container.querySelector("#section-bio")).toBeNull();
+    const cards = screen.getAllByTestId("owner-card");
+    expect(cards).toHaveLength(1);
+    expect(cards[0].dataset.nested).toBeUndefined();
+  });
+});
+
 describe("ProducerSections last-updated line (MEH-1291)", () => {
   const freshnessProps = (overrides) => ({
     producer: { id: 7, name: "חוות", products: [], ...overrides },
