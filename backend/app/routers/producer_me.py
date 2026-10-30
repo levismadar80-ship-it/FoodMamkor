@@ -2033,6 +2033,7 @@ def submit_for_review(
     # bug fix.
     p_name = producer.name
     p_city = producer.city
+    p_id = producer.id  # MEH-2602: captured pre-commit, like p_name/p_city
     # MEH-2112: the owner's confirmation needs her address and the stamp that
     # was just written. Snapshotted here with the two above, for the same
     # reason — post-commit these attributes are expired and lazily reloaded,
@@ -2058,7 +2059,7 @@ def submit_for_review(
     # the owner filled contact_email / description, so the admin reviewing the
     # finished profile read «אין מייל» about a profile that had one (staging
     # sweep 29/10). Fail-open, same background-task contract as at signup.
-    background_tasks.add_task(score_producer, producer.id)
+    background_tasks.add_task(score_producer, p_id)
     # MEH-2112: the owner-facing half of the same moment. Post-commit and
     # fail-open on the identical grounds as the admin ping above — she has
     # already been told on screen that the profile was sent, and a Resend
