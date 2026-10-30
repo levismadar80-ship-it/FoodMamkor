@@ -7,6 +7,7 @@ import { formatPrice } from "@/lib/utils";
 import { groupDeliveryAreas } from "@/lib/deliveryGroups";
 import { getSingleOrderCutoff } from "@/lib/orderWindow";
 import DeliveryChecker from "@/components/DeliveryChecker";
+import HoursText from "@/components/HoursText";
 
 // Index-aligned with lib/orderWindow.js ORDER_DAY_KEYS — resolves a cutoff
 // dayIndex to the opening_hours.weekdays.* label ("יום רביעי" / "Wednesday").
@@ -247,7 +248,12 @@ function PickupRow({ loc, t, tMap }) {
         <p className="font-medium text-text">{heading}</p>
         {/* city as a subline only when a distinct label already owns the top line */}
         {loc.city && loc.label && <p className="text-[13px] text-fg-muted">{loc.city}</p>}
-        {loc.opening_hours && <p className="text-[13px] text-fg-muted">{loc.opening_hours}</p>}
+        {/* MEH-2604: time ranges isolated LTR — raw «16:00–19:00» read «19:00–16:00» here. */}
+        {loc.opening_hours && (
+          <p className="text-[13px] text-fg-muted">
+            <HoursText text={loc.opening_hours} />
+          </p>
+        )}
         {/* MEH-2477: the stand's own number (LocationsEditor), tap-to-call —
             the click-to-call MEH-1509 served the field for. The number is its
             own label (as on a Google Maps place card); dir=ltr keeps
