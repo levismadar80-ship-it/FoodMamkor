@@ -614,12 +614,17 @@ class Producer(Base):
     # form, admin, import, seed). «בנימינה» and «בנימינה-גבעת עדה» were two
     # entries in the city list and two answers to the city filter.
     @validates("city")
-    def _canonical_city(self, _key, value):
+    def _canonical_city(self, _key: str, value: str | None) -> str | None:
         return canonical_city(value)
 
     @validates("delivery_excluded_cities")
-    def _canonical_excluded_cities(self, _key, value):
-        return [canonical_city(c) for c in value] if value else value
+    def _canonical_excluded_cities(
+        self, _key: str, value: list[str] | None
+    ) -> list[str] | None:
+        if not value:
+            return value
+        # A blank entry canonicalises to None and has no meaning in the list.
+        return [cc for c in value if (cc := canonical_city(c))]
 
     @property
     def active_offer(self):
@@ -1120,7 +1125,7 @@ class DeliveryArea(Base):
     producer = relationship("Producer", back_populates="delivery_areas")
 
     @validates("city")
-    def _canonical_city(self, _key, value):
+    def _canonical_city(self, _key: str, value: str | None) -> str | None:
         # MEH-2602 — same one-spelling rule as Producer.city.
         return canonical_city(value)
 
@@ -1197,7 +1202,7 @@ class ProducerLocation(Base):
     producer = relationship("Producer", back_populates="locations")
 
     @validates("city")
-    def _canonical_city(self, _key, value):
+    def _canonical_city(self, _key: str, value: str | None) -> str | None:
         # MEH-2602 — same one-spelling rule as Producer.city.
         return canonical_city(value)
 
