@@ -204,6 +204,26 @@ def attach_badge_fields(producer):
             exc_info=True,
         )
         producer.offers_pickup = False
+    # MEH-2598: `sells_on_site` ↔ producer_listing._on_site_condition(). A
+    # physical store whose primary location (else the legacy business-level
+    # field) states opening hours — frontend/lib/hours.js resolveStoreHours.
+    # `.strip()` is the Python twin of the SQL `~ '\S'` test.
+    try:
+        primary_hours = any(
+            bool(getattr(loc, "is_primary", False))
+            and bool((getattr(loc, "opening_hours", None) or "").strip())
+            for loc in (producer.locations or [])
+        )
+        producer.sells_on_site = producer.has_physical_location is True and (
+            primary_hours or bool((producer.opening_hours or "").strip())
+        )
+    except Exception:
+        logger.debug(
+            "[producers] sells_on_site computation failed, defaulting to False",
+            producer_id=str(producer.id),
+            exc_info=True,
+        )
+        producer.sells_on_site = False
     # MEH-2060: `pickup_points` was an independent Boolean column — the exact
     # write-your-own-truth duplication MEH-1856 already closed the owner path
     # for ("duplicates ProducerLocation.kind='pickup'"). It now mirrors

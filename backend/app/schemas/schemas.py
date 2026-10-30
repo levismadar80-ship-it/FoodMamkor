@@ -2564,6 +2564,9 @@ class ProducerListOut(BaseModel):
     # what a card claims about itself.
     delivers: bool = False
     offers_pickup: bool = False
+    # MEH-2598: third fulfillment boolean, same mechanism as the two above —
+    # computed by attach_badge_fields, mirrors producer_listing._on_site_condition.
+    sells_on_site: bool = False
     # MEH-986 ch3b (P0 legal — Kashrut Fraud Prohibition Law): free-text `kosher` is NO
     # LONGER on the public output — an unverified kosher string must never
     # serialize to consumers. Re-declared on ProducerAdminOut / ProducerOwnerOut

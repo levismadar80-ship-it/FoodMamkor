@@ -296,7 +296,7 @@ export default function ProducerSections({
           product exists (no product entries) so the moved-out header
           signature never vanishes. */}
       {(producer.products?.length > 0 || hasSignature) && (
-        <section id="section-products" className="mt-8 scroll-mt-[calc(var(--chrome-top,82px)_+_var(--section-nav-h,68px))] md:scroll-mt-24" ref={(el) => { sectionRefs.current.products = el; }}>
+        <section id="section-products" className="mt-12 scroll-mt-[calc(var(--chrome-top,82px)_+_var(--section-nav-h,68px))] md:scroll-mt-24" ref={(el) => { sectionRefs.current.products = el; }}>
           {/* MEH-1306: owner pencil beside the heading → #products card. */}
           <div className="flex items-center gap-2 mb-4">
             <h2 className="font-headline-md text-2xl font-bold text-text">{t("producer.detail.sections.products.heading")}</h2>
@@ -492,7 +492,7 @@ export default function ProducerSections({
           is silent per spec. Anchor id matches the breadcrumb in
           RecipeDetail.jsx ("חזרה לדף בית העסק > מתכונים"). */}
       {producer.slug && recipes.length > 0 && (
-        <section className="mt-8" id="recipes">
+        <section className="mt-12" id="recipes">
           <h2 className="font-headline-md text-2xl font-bold text-text mb-4">
             {t("producer.detail.sections.recipes.cta")}
           </h2>
@@ -506,7 +506,7 @@ export default function ProducerSections({
 
       {/* Events section */}
       {events.length > 0 && (
-        <section className="mt-8" ref={(el) => { sectionRefs.current.events = el; }}>
+        <section className="mt-12" ref={(el) => { sectionRefs.current.events = el; }}>
           <h2 className="font-headline-md text-2xl font-bold text-text mb-4">{t("producer.detail.sections.events.heading")}</h2>
           <div className="space-y-3">
             {(showAllEvents ? events : events.slice(0, 3)).map((ev) => {
@@ -684,9 +684,10 @@ export default function ProducerSections({
         <GoogleRatingLine key={producer.id} producerId={producer.id} producerName={producer.name} />
       )}
 
-      {/* MEH-102: Similar producers — MEH-788: scroll-reveal (below fold). */}
+      {/* MEH-102: Similar producers — MEH-788: scroll-reveal (below fold).
+          MEH-2596: sections are separated by space (mt-12), not hairlines. */}
       {similarProducers.length >= 3 && (
-        <FadeInSection as="section" {...REVEAL_PRESET} className="mt-8 border-t border-border pt-8">
+        <FadeInSection as="section" {...REVEAL_PRESET} className="mt-12">
           <h2 className="font-headline-md text-2xl font-bold text-text mb-1">{t("producer.detail.sections.similar.heading")}</h2>
           {producer.categories?.[0]?.name && (
             <p className="text-sm text-fg-muted mb-4">
@@ -734,7 +735,7 @@ export default function ProducerSections({
       {(hasLocation || storeHours) && (
         <section
           id="section-location"
-          className="mt-8 border-t border-border pt-8 scroll-mt-[calc(var(--chrome-top,82px)_+_var(--section-nav-h,68px))] md:scroll-mt-24"
+          className="mt-12 scroll-mt-[calc(var(--chrome-top,82px)_+_var(--section-nav-h,68px))] md:scroll-mt-24"
         >
           <div className="flex items-center gap-2 mb-3">
             <h2 className="font-headline-md text-2xl font-bold text-text">
@@ -787,7 +788,7 @@ export default function ProducerSections({
           useProducerData). Hidden entirely below MIN_NEARBY_BUSINESSES so a
           thin 1-2 card row never shows; the report link stays below it. */}
       {nearbyProducers.length >= MIN_NEARBY_BUSINESSES && (
-        <FadeInSection as="section" {...REVEAL_PRESET} className="mt-8 border-t border-border pt-8">
+        <FadeInSection as="section" {...REVEAL_PRESET} className="mt-12">
           <h2 className="font-headline-md text-2xl font-bold text-text mb-4">
             {t("producer.detail.sections.nearby.heading")}
           </h2>

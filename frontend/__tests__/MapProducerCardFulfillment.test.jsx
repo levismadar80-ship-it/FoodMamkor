@@ -116,54 +116,51 @@ describe("MapProducerCard — fulfillment tags, all four cells (MEH-2046)", () =
   });
 });
 
-describe("MapProducerCard — the 'neither' cell splits on a store with hours (MEH-2438 follow-up)", () => {
-  // The «בתיאום אישי» research (27/10): the business address is not "pickup",
-  // so a shop with fixed opening hours fell into the "arranged" cell. A store
-  // with hours now reads «קנייה במקום»; everything else in the cell keeps the
-  // arranged tag. The cell still renders exactly one tag either way (🔒 §5).
-  const store = { delivers: false, offers_pickup: false, has_physical_location: true };
+describe("MapProducerCard — «קנייה במקום» reads the server's sells_on_site (MEH-2598)", () => {
+  // MEH-2438 follow-up split the "neither" cell on a store with hours, computed
+  // client-side. MEH-2598 made it a filter (?on_site=true), so the card now
+  // reads the server's answer — the predicate's own result — exactly as it
+  // does for delivers / offers_pickup, and shows it ALONGSIDE them.
   const primaryWithHours = [{ id: 1, is_primary: true, opening_hours: "Sun-Thu 09:00-18:00" }];
 
-  it("a store whose primary location has hours → on_site, not arranged", () => {
-    renderCard({ ...store, locations: primaryWithHours });
+  it("sells_on_site alone → on_site, not arranged", () => {
+    renderCard({ delivers: false, offers_pickup: false, sells_on_site: true });
 
     expect(screen.getByTestId("map-fulfillment-on_site")).toBeInTheDocument();
     expect(screen.queryByTestId("map-fulfillment-arranged")).toBeNull();
     expect(screen.getByTestId("map-fulfillment").children).toHaveLength(1);
   });
 
-  it("legacy business-level hours count too (same resolver as the detail page)", () => {
-    renderCard({ ...store, locations: [], opening_hours: "Fri 08:00-13:00" });
+  it("client-side hours WITHOUT the server flag stay arranged (no second derivation)", () => {
+    // Discriminates the switch: the pre-2598 card derived the tag from these
+    // exact fields and showed on_site here.
+    renderCard({
+      delivers: false,
+      offers_pickup: false,
+      has_physical_location: true,
+      locations: primaryWithHours,
+      opening_hours: "Fri 08:00-13:00",
+    });
 
+    expect(screen.getByTestId("map-fulfillment-arranged")).toBeInTheDocument();
+    expect(screen.queryByTestId("map-fulfillment-on_site")).toBeNull();
+  });
+
+  it("on_site sits beside a declared service instead of being hidden by it", () => {
+    // Pre-2598 the hours tag only filled the "neither" cell, so a store that
+    // also delivers showed «משלוח» alone while the on-site filter returned it.
+    renderCard({ delivers: true, offers_pickup: false, sells_on_site: true });
+
+    expect(screen.getByTestId("map-fulfillment-delivery")).toBeInTheDocument();
     expect(screen.getByTestId("map-fulfillment-on_site")).toBeInTheDocument();
+    expect(screen.getByTestId("map-fulfillment").children).toHaveLength(2);
   });
 
-  it("a store with no hours stays arranged", () => {
-    renderCard({ ...store, locations: [{ id: 1, is_primary: true, opening_hours: "  " }] });
+  it("all three services → three tags, in card order", () => {
+    renderCard({ delivers: true, offers_pickup: true, sells_on_site: true });
 
-    expect(screen.getByTestId("map-fulfillment-arranged")).toBeInTheDocument();
-    expect(screen.queryByTestId("map-fulfillment-on_site")).toBeNull();
-  });
-
-  it("hours without a physical location stay arranged", () => {
-    renderCard({ ...store, has_physical_location: false, opening_hours: "Fri 08:00-13:00" });
-
-    expect(screen.getByTestId("map-fulfillment-arranged")).toBeInTheDocument();
-  });
-
-  it("hours with the location flag absent stay arranged (a missing flag is false here)", () => {
-    // The API always sends has_physical_location; a payload without it must
-    // not claim a walk-in shop the detail page would show no location for.
-    renderCard({ delivers: false, offers_pickup: false, opening_hours: "Fri 08:00-13:00" });
-
-    expect(screen.getByTestId("map-fulfillment-arranged")).toBeInTheDocument();
-  });
-
-  it("hours never replace a declared service tag", () => {
-    renderCard({ delivers: true, offers_pickup: false, has_physical_location: true, locations: primaryWithHours });
-
-    expect(screen.getByTestId("map-fulfillment-delivery_only")).toBeInTheDocument();
-    expect(screen.queryByTestId("map-fulfillment-on_site")).toBeNull();
+    const keys = [...screen.getByTestId("map-fulfillment").children].map((el) => el.dataset.testid);
+    expect(keys).toEqual(["map-fulfillment-delivery", "map-fulfillment-pickup", "map-fulfillment-on_site"]);
   });
 });
 

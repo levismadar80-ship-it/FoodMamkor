@@ -5441,6 +5441,11 @@
             ],
             "title": "Risk Score"
           },
+          "sells_on_site": {
+            "default": false,
+            "title": "Sells On Site",
+            "type": "boolean"
+          },
           "short_description": {
             "anyOf": [
               {
@@ -7172,6 +7177,11 @@
             "title": "Reviews Count",
             "type": "integer"
           },
+          "sells_on_site": {
+            "default": false,
+            "title": "Sells On Site",
+            "type": "boolean"
+          },
           "short_description": {
             "anyOf": [
               {
@@ -7865,6 +7875,11 @@
             "default": 0,
             "title": "Reviews Count",
             "type": "integer"
+          },
+          "sells_on_site": {
+            "default": false,
+            "title": "Sells On Site",
+            "type": "boolean"
           },
           "short_description": {
             "anyOf": [
@@ -9397,6 +9412,11 @@
             "default": 0,
             "title": "Reviews Count",
             "type": "integer"
+          },
+          "sells_on_site": {
+            "default": false,
+            "title": "Sells On Site",
+            "type": "boolean"
           },
           "short_description": {
             "anyOf": [
@@ -19137,6 +19157,22 @@
                 }
               ],
               "title": "Pickup Points"
+            }
+          },
+          {
+            "in": "query",
+            "name": "on_site",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "On Site"
             }
           },
           {
