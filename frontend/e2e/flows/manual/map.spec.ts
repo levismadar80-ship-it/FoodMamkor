@@ -1170,7 +1170,8 @@ test.describe("manual › filter chips two-row layout — scroll + geo fallback"
   });
 
   // MT:two-row:geo2 — a city picked in the modal closes it and filters the list
-  //   by that city (the page re-queries with `delivery_city`; no geocode-driven
+  //   by that city (the page re-queries with `near_city` — MEH-2602: located in
+  //   the city or delivering to it; no geocode-driven
   //   zoom — Nominatim is stubbed to `[]` and the filter must still apply).
   test("picking a city in the denial modal closes it and filters by that city", async ({ page }, info) => {
     await installGeo(page, 1);
@@ -1181,7 +1182,7 @@ test.describe("manual › filter chips two-row layout — scroll + geo fallback"
     const before = catalog.seen.length;
     await modal.getByRole("button", { name: LOC.popular_cities.haifa, exact: true }).click();
     await expect(locationModal(page)).toHaveCount(0);
-    await expect.poll(() => catalog.seen.slice(before).some((u) => u.searchParams.get("delivery_city") === "חיפה")).toBe(true);
+    await expect.poll(() => catalog.seen.slice(before).some((u) => u.searchParams.get("near_city") === "חיפה")).toBe(true);
     await expect(citySearchInput(page, info)).toHaveValue("חיפה");
   });
 
