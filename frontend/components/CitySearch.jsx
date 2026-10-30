@@ -92,6 +92,9 @@ export default function CitySearch({
   onKnownChange,
   useBackend = true,
   className = "",
+  // MEH-2592 C: a round field (the business page's delivery checker). Default
+  // stays the rounded-md field every form uses.
+  pill = false,
   // MEH-2015: same marker mechanism as ui/Input — aria-required on the input,
   // visual asterisk only when this component's own label is the visible one
   // (labelVisible; when sr-only, the OUTER label carries the marker).
@@ -270,7 +273,7 @@ export default function CitySearch({
       )}
       {/* MEH-1127: wrapper py-2 removed (input min-h-[44px] alone sets the ~44px
           field height, aligning with sibling register inputs); rounded-md matches. */}
-      <div className="flex items-center gap-2 bg-white border border-border rounded-md px-3 min-w-0 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30 transition">
+      <div className={`flex items-center gap-2 bg-white border min-w-0 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30 transition ${pill ? "rounded-full px-4 border-primary/15" : "rounded-md px-3 border-border"}`}>
         <svg className="w-4 h-4 text-fg-muted shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1 1 0 01-1.414 0l-4.243-4.243a8 8 0 1111.314 0z" />
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />

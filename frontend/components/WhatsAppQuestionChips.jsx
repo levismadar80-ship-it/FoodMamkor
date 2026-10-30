@@ -86,17 +86,23 @@ import { useUserCity } from "@/lib/use-user-city";
  * separate from.
  */
 
+// MEH-2592 C: ready-made questions are pills (like WhatsApp Business quick
+// replies) rather than accordion rows, so they read as tappable at a glance.
+const QUESTION_PILL =
+  "inline-flex items-center gap-1.5 min-h-[44px] px-3.5 rounded-full border font-body-md text-sm transition focus-visible:ring-2 focus-visible:ring-primary/40";
+
 /** Collapsible answer row: button + aria-expanded + CaretDown (rotates open). */
 function Disclosure({ question, children }) {
   const [open, setOpen] = useState(false);
   return (
-    <li>
+    // MEH-2592 C: an open question takes the whole row so its answer has room.
+    <li className={open ? "basis-full" : ""}>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         data-testid="quick-answer-toggle"
-        className="flex w-full items-center gap-2 min-h-[44px] text-start font-body-md text-sm text-primary transition rounded focus-visible:ring-2 focus-visible:ring-primary/40"
+        className={`${QUESTION_PILL} text-start border-primary/15 bg-green-50 text-primary-dark hover:bg-primary/10`}
       >
         <CaretDown
           size={16}
@@ -109,7 +115,7 @@ function Disclosure({ question, children }) {
       {open && (
         <div
           data-testid="quick-answer-content"
-          className="ps-6 pb-2 font-body-md text-sm text-text"
+          className="px-3.5 pt-2 pb-1 font-body-md text-sm text-text"
         >
           {children}
         </div>
@@ -128,7 +134,7 @@ function WaItem({ href, question, onTrack }) {
         rel="noopener noreferrer"
         onClick={onTrack}
         data-testid="question-link"
-        className="flex items-center gap-2 min-h-[44px] font-body-md text-sm text-primary transition hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+        className={`${QUESTION_PILL} border-primary/15 bg-green-50 text-primary-dark hover:bg-primary/10`}
       >
         <ChatCircle size={16} weight="regular" className="flex-shrink-0" aria-hidden="true" />
         {question}
@@ -335,10 +341,11 @@ export default function WhatsAppQuestionChips({ producer }) {
   // ride a non-WhatsApp channel, ask the real question instead of the proxy.)
   if (items.length === 0 && !escalationHref) return null;
 
-  // MEH-2385: the hairline exists to separate this block from the primary CTA
-  // above it. PrimaryContactButton returns null when no channel resolves
-  // (getPrimaryContactHref → null), and then a rule with nothing above it is
-  // the "empty white card" Sapir photographed on demo-delivery-pickup.
+  // MEH-2385: the top spacing exists to separate this block from the primary
+  // CTA above it (MEH-2592 C replaced the hairline with space). When
+  // PrimaryContactButton returns null (getPrimaryContactHref → null) there is
+  // nothing above to separate from — the "empty white card" Sapir photographed
+  // on demo-delivery-pickup.
   const underCta = !!getPrimaryContactHref(producer);
 
   return (
@@ -379,10 +386,11 @@ function QuestionList({
   return (
     <div
       data-testid="question-chips"
-      className={underCta ? "mb-4 border-t border-border pt-3" : "mb-4"}
+      data-under-cta={underCta ? "true" : "false"}
+      className={underCta ? "mb-4 mt-4" : "mb-4"}
     >
-      <p className="text-xs mb-1.5 font-body-md text-fg-muted">{t("common_questions")}:</p>
-      <ul className="flex flex-col">{visible}</ul>
+      <p className="text-[13px] mb-2 font-body-md text-fg-muted">{t("common_questions")}</p>
+      <ul className="flex flex-wrap gap-2">{visible}</ul>
 
       {/* "עוד שאלות" — reveals the remaining ready-made questions in place.
           ≥44px hit-area via min-h + transparent padding (revision-2 #5). */}
@@ -392,7 +400,7 @@ function QuestionList({
           onClick={() => setExpanded(true)}
           data-testid="more-questions"
           aria-expanded={false}
-          className="flex items-center gap-2 min-h-[44px] font-body-md text-sm font-medium text-primary transition hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+          className={`${QUESTION_PILL} mt-2 border-primary/15 font-medium text-primary hover:bg-primary/[0.06]`}
         >
           <CaretDown size={16} weight="bold" className="flex-shrink-0" aria-hidden="true" />
           {t("more_questions")}
@@ -412,7 +420,7 @@ function QuestionList({
             : {})}
           onClick={escalationOnTrack ?? undefined}
           data-testid="escalation-link"
-          className="flex items-center gap-2 min-h-[44px] font-body-md text-sm text-fg-muted transition hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+          className={`${QUESTION_PILL} mt-2 border-border text-fg-muted hover:bg-background`}
         >
           <ChatCircle size={16} weight="regular" className="flex-shrink-0" aria-hidden="true" />
           {t("escalation")}
