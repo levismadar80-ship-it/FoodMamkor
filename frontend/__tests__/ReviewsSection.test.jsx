@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import ReviewsSection from "@/components/ReviewsSection";
 // MEH-1426: mocked so the form-open re-ping is observable without a real beacon.
 import { pingWhatsAppBeacon } from "@/lib/contact-tracking";
@@ -166,28 +166,50 @@ describe("ReviewsSection — owner-only eyebrow (MEH-1114)", () => {
     expect(screen.getByTestId("empty-state")).toBeInTheDocument();
   });
 
-  it("does NOT show the owner eyebrow on the consumer empty state", async () => {
+  it("does NOT show the owner eyebrow (or any empty state) to a reader", async () => {
     mockReviews([]);
     render(<ReviewsSection producerId="p-1" isOwner={false} />);
-    // consumer path renders the Leaf empty message, never the owner eyebrow
-    await waitFor(() => expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument());
+    // The reader path renders no empty state at all since MEH-2592.
+    await waitFor(() => expect(screen.queryByText("loading")).not.toBeInTheDocument());
+    expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
     expect(screen.queryByText("מוצג רק לך")).not.toBeInTheDocument();
   });
 });
 
-describe("ReviewsSection — single empty-state box with merged gate hint (MEH-1139)", () => {
-  // Unmapped keys fall through the next-intl mock as raw key strings, so
-  // assertions below target key names (wa_gate_message / empty_message / …).
-  it("empty + logged-in non-gated viewer: ONE box — gate box gone, hint merged into empty state", async () => {
+describe("ReviewsSection — zero reviews, reader view: no empty state, only the write hint (MEH-2592, 30/10/2026)", () => {
+  // Replaces the MEH-1139 "single empty-state box" cells: the reader empty
+  // state (Leaf + «עדיין אין ביקורות כאן.» + empty_gate_hint) is retired —
+  // Sapir's call, the Google / Airbnb pattern. Unmapped keys fall through the
+  // next-intl mock as raw key strings, so assertions target key names.
+  it("empty + logged-in non-gated viewer: no leaf, no empty message, the WhatsApp-gate line alone", async () => {
     authState.user = { id: "u-9", producer_id: null };
     mockReviews([]);
     render(<ReviewsSection producerId="p-1" isOwner={false} />);
-    expect(await screen.findByText(/empty_message/)).toBeInTheDocument();
-    expect(screen.getByText(/empty_gate_hint/)).toBeInTheDocument();
-    expect(screen.queryByText("wa_gate_message")).not.toBeInTheDocument();
+    const hint = await screen.findByTestId("reviews-write-hint");
+    expect(hint).toHaveTextContent("wa_gate_message");
+    expect(screen.queryByTestId("icon-leaf")).toBeNull();
+    expect(screen.queryByText(/empty_message/)).toBeNull();
+    expect(screen.queryByText(/empty_gate_hint/)).toBeNull();
   });
 
-  it("reviews exist + logged-in non-gated viewer: standalone gate box still renders", async () => {
+  it("empty + guest: no leaf, no empty message, the login line alone", async () => {
+    mockReviews([]);
+    render(<ReviewsSection producerId="p-1" isOwner={false} />);
+    const hint = await screen.findByTestId("reviews-write-hint");
+    expect(within(hint).getByTestId("reviews-login-link")).toBeInTheDocument();
+    expect(screen.queryByTestId("icon-leaf")).toBeNull();
+    expect(screen.queryByText(/empty_message/)).toBeNull();
+  });
+
+  it("empty + owner: the coaching state still renders (owner-only), with no reader hint", async () => {
+    authState.user = { id: "u-1", producer_id: "p-1" };
+    mockReviews([]);
+    render(<ReviewsSection producerId="p-1" isOwner={true} />);
+    expect(await screen.findByTestId("empty-state")).toBeInTheDocument();
+    expect(screen.queryByTestId("reviews-write-hint")).toBeNull();
+  });
+
+  it("reviews exist + logged-in non-gated viewer: the WhatsApp-gate line, as before", async () => {
     authState.user = { id: "u-9", producer_id: null };
     mockReviews([
       {
@@ -197,14 +219,20 @@ describe("ReviewsSection — single empty-state box with merged gate hint (MEH-1
     ]);
     render(<ReviewsSection producerId="p-1" isOwner={false} />);
     expect(await screen.findByText("wa_gate_message")).toBeInTheDocument();
-    expect(screen.queryByText(/empty_gate_hint/)).not.toBeInTheDocument();
   });
 
-  it("empty + guest: empty message only, no gate hint", async () => {
-    mockReviews([]);
+  it("a name opening with an emoji keeps the whole glyph in the initial circle (no split surrogate)", async () => {
+    mockReviews([
+      {
+        id: "rev-e", user_id: "u-3", user_name: "🧑‍🍳 דנה", stars: 5, body: "מעולה",
+        created_at: "2026-07-01T11:00:00", reply: null, reply_at: null,
+      },
+    ]);
     render(<ReviewsSection producerId="p-1" isOwner={false} />);
-    expect(await screen.findByText(/empty_message/)).toBeInTheDocument();
-    expect(screen.queryByText(/empty_gate_hint/)).not.toBeInTheDocument();
+    const initial = await screen.findByTestId("review-initial");
+    // Array.from(...)[0] is the first code point: a whole 🧑 (2 UTF-16 units),
+    // not its lone high surrogate.
+    expect(initial.textContent).toBe("🧑");
   });
 });
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { CaretDown, EyeSlash, Leaf, Star } from "@phosphor-icons/react";
+import { CaretDown, EyeSlash, Star } from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import api from "@/lib/api";
@@ -512,17 +512,14 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
             />
           </>
         ) : (
-          <div className="text-center py-8">
-            <Leaf size={48} className="text-primary/70 mx-auto mb-2" aria-hidden="true" />
-            <p className="text-fg-muted">
-              {t("empty_message")}
-              {/* MEH-1139: WhatsApp-gate hint shown only to viewers the gate
-                  actually applies to (logged in, not the owner, not yet gated). */}
-              {user && user.producer_id !== producerId && !hasClickedWa && !inviteToken && (
-                <> {t("empty_gate_hint")}</>
-              )}
-            </p>
-          </div>
+          // MEH-2592 (Sapir, 30/10): a reader sees NO empty state. The old
+          // 48px Leaf + «עדיין אין ביקורות כאן.» announced the absence, and
+          // before launch that was nearly every page. Google keeps only the
+          // write-a-review affordance at zero reviews, Airbnb a one-liner; here
+          // the section collapses to its heading and the write hint below
+          // (login line / WhatsApp-gate line), which already says what a
+          // reader can do. The owner's coaching state above is unchanged.
+          null
         )
       ) : (
         <>
@@ -538,7 +535,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
                     data-testid="review-initial"
                     className="w-10 h-10 shrink-0 rounded-full bg-green-50 text-primary flex items-center justify-center font-bold"
                   >
-                    {formatName(review.user_name, anonymousFallback).charAt(0)}
+                    {Array.from(formatName(review.user_name, anonymousFallback))[0]}
                   </span>
                   <div className="min-w-0">
                     <p className="font-body-md font-semibold text-[15px] text-text leading-snug">
@@ -601,8 +598,8 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
       {/* MEH-2592: who may write a review, as one quiet line UNDER the reviews
           rather than a box above them. Same gates as before: the login line
           for a visitor; the WhatsApp-gate line (MEH-1139) for a logged-in,
-          non-owner, not-yet-gated reader, only when reviews exist (the empty
-          state carries its own hint). */}
+          non-owner, not-yet-gated reader — at zero reviews too, since the
+          reader empty state is gone (it used to carry its own hint). */}
       {!user ? (
         <p className="mt-4 text-sm text-fg-muted" data-testid="reviews-write-hint">
           {t.rich("login_prompt", {
@@ -611,7 +608,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
             ),
           })}
         </p>
-      ) : user.producer_id !== producerId && !hasClickedWa && !inviteToken && reviews.length > 0 ? (
+      ) : user.producer_id !== producerId && !hasClickedWa && !inviteToken ? (
         <p className="mt-4 text-sm text-fg-muted" data-testid="reviews-write-hint">
           {t("wa_gate_message")}
         </p>

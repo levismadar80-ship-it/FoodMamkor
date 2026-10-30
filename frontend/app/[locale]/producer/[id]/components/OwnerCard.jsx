@@ -45,7 +45,9 @@ export default function OwnerCard({ producer, heading, nested = false }) {
   if (!name && !bio && !photo) return null;
 
   // Single-letter initials always — never two letters in Hebrew (revision-2 #12).
-  const initial = name ? name[0] : null;
+  // Array.from: the first CODE POINT, so a name opening with an emoji or any
+  // astral character does not split its surrogate pair (CI review, MEH-2592).
+  const initial = name ? Array.from(name)[0] : null;
   const avatarSize = nested ? 48 : bio ? 88 : 56;
 
   if (nested) {

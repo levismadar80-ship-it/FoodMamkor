@@ -3197,8 +3197,6 @@
     "owner_empty_title": "First reviews come from happy customers",
     "owner_empty_description": "Customers who reached out to you on WhatsApp can leave a verified review. Share the link to your profile — it's the fastest way to a first review.",
     "owner_empty_cta": "Share your profile",
-    "empty_message": "No reviews here yet.",
-    "empty_gate_hint": "Reached out on WhatsApp? We would love to hear — reviews open after clicking the WhatsApp button.",
     "pagination": {
       "prev_aria": "Previous page",
       "next_aria": "Next page"
