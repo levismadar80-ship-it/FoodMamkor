@@ -3170,8 +3170,8 @@
     "anonymous_fallback": "לקוחה",
     "star_aria": "{value, plural, one {כוכב אחד} two {{value} כוכבים} other {{value} כוכבים}}",
     "summary_based_on": "{total, plural, one {מבוסס על ביקורת אחת} two {מבוסס על {total} ביקורות} other {מבוסס על {total} ביקורות}}",
-    "summary_count": "{count, plural, one {חוות דעת אחת} two {{count} חוות דעת} other {{count} חוות דעת}}",
-    "show_more": "הצג עוד חוות דעת",
+    "summary_count": "{count, plural, one {ביקורת אחת} two {{count} ביקורות} other {{count} ביקורות}}",
+    "show_more": "הצג עוד ביקורות",
     "write_cta": "כתבו ביקורת",
     "form_heading": "כתבו ביקורת",
     "rating_label": "דירוג",
@@ -3593,7 +3593,7 @@
         },
         "reviews": {
           "title": "ביקורות ותגובה שלך",
-          "desc": "חוות דעת אמיתיות — ותגובה חמה שלך שמראה שיש כתובת."
+          "desc": "ביקורות אמיתיות — ותגובה חמה שלך שמראה שיש כתובת."
         }
       },
       "nudge": "אחרי ההרשמה, מד השלמת הפרופיל בדשבורד מראה בדיוק מה עוד חסר בדרך ל-100%."
