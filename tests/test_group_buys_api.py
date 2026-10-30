@@ -1,4 +1,3 @@
-import pytest
 """Integration tests for the group-buys router (app/routers/group_buys.py).
 
 Exercises the public list/detail endpoints, the producer create flow with
@@ -7,6 +6,7 @@ min_participants, revert-to-open on cancel, duplicate/closed/full/deadline
 error paths). Uses the shared conftest fixtures + a producer-user helper
 mirroring test_producer_recipes.py.
 """
+import pytest
 import re
 from datetime import datetime, timedelta, timezone
 from unittest import mock
