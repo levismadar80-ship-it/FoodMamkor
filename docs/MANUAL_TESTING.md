@@ -2598,19 +2598,19 @@ Two tightly coupled tasks shipped in one PR. Task 7 = show/hide password button.
 
 ### Inline validation — /login (task 8)
 
-- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:8) — submit is disabled on load — `/login` — load page — submit button is **disabled** (form is empty)
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:8) — **MEH-2623: submit is ENABLED on load** — `/login` — load page, tap «כניסה» on the empty form — `"האימייל לא תקין"` below the email, focus moves there, nothing is sent (was: button disabled)
 - ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:9) — touched-but-empty email is neutral — Email field — tap then tap away without typing → no error (touched but empty is neutral)
 - ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:10) — a malformed email blurs to «האימייל לא תקין» + aria-invalid — Email — type `foo` → tap away → red border + error `"האימייל לא תקין"` below the field
 - ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:11) — fixing it clears the error and shows «✓ תקין» — Email — fix to `foo@bar.com` → red border gone, now green border + `"✓ תקין"` below
 - ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:12) — password touched-empty blurs to «הזינו סיסמה» + aria-invalid — Password — tap then tap away empty → red border + error `"הזינו סיסמה"` below the field, `aria-invalid="true"` **(MEH-2256, 05/09: the row used to say «→ no error» — that was the observable of an unreachable predicate, not a design choice; option 1 revived the branch)**
 - [ ] Password — type `abc` → tap away → red border + error `"סיסמא חייבת להכיל לפחות 8 תווים"`
 - [ ] Password — fix to `abcdefgh` (8 chars) → green border + `"✓ תקין"`
-- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:15) — the gate — but the floor is ONE character, not eight: MEH-835 removed the minimum on /login on purpose — Submit button — disabled until BOTH email is valid AND password is ≥8 chars — then enabled
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:15) — the gate — the floor is ONE character (MEH-835) and since MEH-2623 it is enforced on click, not by a disabled button — valid email + empty password → tap «כניסה» → `"הזינו סיסמה"`, focus on the password, nothing sent
 - [ ] Server error path — submit with right-format-but-wrong-credentials → banner-level error appears → button re-enables
 
 ### Inline validation — /register (task 8)
 
-- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:17) — /register submit is disabled on load — `/register` — load page — submit button is **disabled** (form is empty + terms not agreed)
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:17) — **MEH-2623: /register submit is ENABLED on load** — each tap names the first failing rule (name → email → password → terms) in the form error, focuses that field, and sends nothing; terms unticked → `"יש לאשר את תנאי השימוש לפני ההצטרפות"`
 - ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:18) — an empty name blurs to «שם מלא הוא שדה חובה» — Name field — tap then tap away empty → red border + `"שם מלא הוא שדה חובה"`
 - [ ] Name — type `שרה` → green border + `"✓ תקין"`
 - ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:20) — the email error behaves as it does on /login — Email — same pattern as /login (`"האימייל לא תקין"` error)

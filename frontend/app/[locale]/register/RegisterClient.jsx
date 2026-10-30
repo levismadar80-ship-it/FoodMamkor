@@ -97,7 +97,6 @@ function RegisterPageBody() {
   // feedback now lives in <PasswordInput> (MEH-306 sub-B).
   const [nameTouched, setNameTouched] = useState(false);
   const [emailTouched, setEmailTouched] = useState(false);
-  const [passwordOk, setPasswordOk] = useState(false);
   // MEH-328 Chunk D: emailSent toggles the inbox-check success screen.
   // emailExpected state removed — backend no longer carries email_sent,
   // and the OWASP ack copy is unconditional ("if the email is free, …").
@@ -108,21 +107,36 @@ function RegisterPageBody() {
     setError("");
     setOauthError(""); // a stale Google/Apple failure must not sit over a new attempt
 
-    // Client-side validation. The inline onBlur rules below already
-    // disable the submit button when any field fails, so this is a
-    // belt-and-suspenders server-round-trip guard.
+    // MEH-2623: the submit button is never disabled for invalid input (a
+    // grey button gives no reason). This is THE client-side gate: mark the
+    // fields touched so their inline messages show, name the first failure,
+    // and move focus to it. Nothing is sent until every rule passes.
+    setNameTouched(true);
+    setEmailTouched(true);
+    const fail = (message, selector) => {
+      setError(message);
+      document.querySelector(selector)?.focus();
+    };
     if (!form.name.trim()) {
-      setError(t("auth.register.consumer.validation.name_required"));
+      fail(t("auth.register.consumer.validation.name_required"), "#register-name");
       return;
     }
     if (!validateEmail(form.email)) {
-      setError(t("auth.register.consumer.validation.email_invalid"));
+      fail(t("auth.register.consumer.validation.email_invalid"), "#register-email");
       return;
     }
     if (form.password.length < PASSWORD_MIN_LENGTH) {
-      // PasswordInput already shows the inline checklist; this is the
-      // belt-and-suspenders submit guard with the same Hebrew copy.
-      setError(t("auth.register.consumer.validation.password_min", { min: PASSWORD_MIN_LENGTH }));
+      // PasswordInput already shows the inline checklist; same Hebrew copy.
+      fail(
+        t("auth.register.consumer.validation.password_min", { min: PASSWORD_MIN_LENGTH }),
+        '[data-testid="register-password"]',
+      );
+      return;
+    }
+    if (!agreedToTerms) {
+      // The existing producer-signup string (auth.register.producer) — same
+      // consent, same wording; no new copy (MEH-2623).
+      fail(t("auth.register.producer.validation.terms_required"), '[data-testid="register-terms"]');
       return;
     }
     setLoading(true);
@@ -164,9 +178,8 @@ function RegisterPageBody() {
   // user moved focus away) AND the current value fails validation —
   // this way the form doesn't show a sea of red borders before the
   // user has interacted with anything. *Valid flags similarly gate on
-  // touched. `formIsValid` is used for the submit button disabled
-  // state and does NOT require touched — it's a pure "does the current
-  // input pass every required rule" check.
+  // touched. MEH-2623: there is no `formIsValid` gate on the button any
+  // more — handleSubmit validates and explains.
   const nameTrimmed = form.name.trim();
   const nameInvalid = nameTouched && !nameTrimmed;
   // MEH-1919: neither field carries a success affordance, so there is no
@@ -174,15 +187,10 @@ function RegisterPageBody() {
   // "you typed a non-empty name", "that parses as an address" is feedback
   // the user already has. They speak only when something is wrong.
   const emailInvalid = emailTouched && form.email.length > 0 && !validateEmail(form.email);
-  // MEH-306: passwordOk comes from <PasswordInput>'s onValidityChange and
-  // already covers length + (debounced) breach. Backend re-validates on
-  // submit including deny-list, so the submit guard above is redundant
-  // belt-and-suspenders not the only check.
-  const formIsValid =
-    !!nameTrimmed &&
-    validateEmail(form.email) &&
-    passwordOk &&
-    agreedToTerms;
+  // MEH-306 / MEH-2623: the breached-password check lives in <PasswordInput>
+  // (live, debounced) and in the backend, which re-validates on submit and
+  // answers 422 {failures}, mapped to Hebrew in handleSubmit. The client no
+  // longer gates the button on it: a pending debounce must not swallow a tap.
 
   const googleConfigured = !!env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
   const appleConfigured = !!env.NEXT_PUBLIC_APPLE_CLIENT_ID;
@@ -358,7 +366,9 @@ function RegisterPageBody() {
           </>
         )}
 
-        <form onSubmit={handleSubmit} data-testid="register-form" className="space-y-4">
+        {/* MEH-2623: noValidate — the inline Hebrew messages replace the
+            browser's bubble; `required` stays on the inputs for a11y. */}
+        <form onSubmit={handleSubmit} noValidate data-testid="register-form" className="space-y-4">
           {/* MEH-1128 D2: name + email adopt ui/Input. text-end on the ltr email
               = right (its own end), preserving the old physical text-right.
               MEH-1919: NEITHER field passes ui/Input's D1 success props. Per
@@ -414,7 +424,6 @@ function RegisterPageBody() {
               value={form.password}
               onChange={set("password")}
               ariaLabel={t("auth.register.consumer.fields.password_aria")}
-              onValidityChange={setPasswordOk}
             />
           </div>
           <label className="flex items-start gap-2 text-sm cursor-pointer">
@@ -446,7 +455,7 @@ function RegisterPageBody() {
           <button
             type="submit"
             data-testid="register-submit"
-            disabled={loading || !formIsValid}
+            disabled={loading}
             className="w-full min-h-[44px] flex items-center justify-center bg-primary text-white py-3 rounded-md font-bold hover:bg-primary-dark transition disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary/40"
           >
             {loading ? (
