@@ -788,6 +788,7 @@ export const listProducersAdminProducersGetResponseProductsCountDefault = 0;
 export const listProducersAdminProducersGetResponseReportCountDefault = 0;
 export const listProducersAdminProducersGetResponseResubmissionCountDefault = 0;
 export const listProducersAdminProducersGetResponseReviewsCountDefault = 0;
+export const listProducersAdminProducersGetResponseSellsOnSiteDefault = false;
 export const listProducersAdminProducersGetResponseStatusDefault = `pending`;
 export const listProducersAdminProducersGetResponseTrustTierDefault = 1;
 export const listProducersAdminProducersGetResponseVeganScopeDefault = `unknown`;
@@ -934,6 +935,7 @@ export const ListProducersAdminProducersGetResponseItem = /*#__PURE__*/ zod.obje
   "reviews_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listProducersAdminProducersGetResponseReviewsCountDefault),
   "risk_reasoning": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "risk_score": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "sells_on_site": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseSellsOnSiteDefault),
   "short_description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "special_hours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.unknown()),/*#__PURE__*/ zod.null()])),
@@ -1016,6 +1018,7 @@ export const adminCreateProducerAdminProducersPostResponseProductsCountDefault =
 export const adminCreateProducerAdminProducersPostResponseReportCountDefault = 0;
 export const adminCreateProducerAdminProducersPostResponseResubmissionCountDefault = 0;
 export const adminCreateProducerAdminProducersPostResponseReviewsCountDefault = 0;
+export const adminCreateProducerAdminProducersPostResponseSellsOnSiteDefault = false;
 export const adminCreateProducerAdminProducersPostResponseStatusDefault = `pending`;
 export const adminCreateProducerAdminProducersPostResponseTrustTierDefault = 1;
 export const adminCreateProducerAdminProducersPostResponseVeganScopeDefault = `unknown`;
@@ -1162,6 +1165,7 @@ export const AdminCreateProducerAdminProducersPostResponse = /*#__PURE__*/ zod.o
   "reviews_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminCreateProducerAdminProducersPostResponseReviewsCountDefault),
   "risk_reasoning": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "risk_score": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "sells_on_site": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseSellsOnSiteDefault),
   "short_description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "special_hours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.unknown()),/*#__PURE__*/ zod.null()])),
@@ -1241,6 +1245,7 @@ export const pendingProducersAdminProducersPendingGetResponseProductsCountDefaul
 export const pendingProducersAdminProducersPendingGetResponseReportCountDefault = 0;
 export const pendingProducersAdminProducersPendingGetResponseResubmissionCountDefault = 0;
 export const pendingProducersAdminProducersPendingGetResponseReviewsCountDefault = 0;
+export const pendingProducersAdminProducersPendingGetResponseSellsOnSiteDefault = false;
 export const pendingProducersAdminProducersPendingGetResponseStatusDefault = `pending`;
 export const pendingProducersAdminProducersPendingGetResponseTrustTierDefault = 1;
 export const pendingProducersAdminProducersPendingGetResponseVeganScopeDefault = `unknown`;
@@ -1387,6 +1392,7 @@ export const PendingProducersAdminProducersPendingGetResponseItem = /*#__PURE__*
   "reviews_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), pendingProducersAdminProducersPendingGetResponseReviewsCountDefault),
   "risk_reasoning": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "risk_score": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "sells_on_site": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseSellsOnSiteDefault),
   "short_description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "special_hours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.unknown()),/*#__PURE__*/ zod.null()])),
@@ -1529,6 +1535,7 @@ export const adminGetProducerAdminProducersProducerIdGetResponseProductsCountDef
 export const adminGetProducerAdminProducersProducerIdGetResponseReportCountDefault = 0;
 export const adminGetProducerAdminProducersProducerIdGetResponseResubmissionCountDefault = 0;
 export const adminGetProducerAdminProducersProducerIdGetResponseReviewsCountDefault = 0;
+export const adminGetProducerAdminProducersProducerIdGetResponseSellsOnSiteDefault = false;
 export const adminGetProducerAdminProducersProducerIdGetResponseStatusDefault = `pending`;
 export const adminGetProducerAdminProducersProducerIdGetResponseTrustTierDefault = 1;
 export const adminGetProducerAdminProducersProducerIdGetResponseVeganScopeDefault = `unknown`;
@@ -1675,6 +1682,7 @@ export const AdminGetProducerAdminProducersProducerIdGetResponse = /*#__PURE__*/
   "reviews_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminGetProducerAdminProducersProducerIdGetResponseReviewsCountDefault),
   "risk_reasoning": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "risk_score": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "sells_on_site": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseSellsOnSiteDefault),
   "short_description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "special_hours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.unknown()),/*#__PURE__*/ zod.null()])),
@@ -1754,6 +1762,7 @@ export const adminUpdateProducerAdminProducersProducerIdPutResponseProductsCount
 export const adminUpdateProducerAdminProducersProducerIdPutResponseReportCountDefault = 0;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseResubmissionCountDefault = 0;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseReviewsCountDefault = 0;
+export const adminUpdateProducerAdminProducersProducerIdPutResponseSellsOnSiteDefault = false;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseStatusDefault = `pending`;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseTrustTierDefault = 1;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseVeganScopeDefault = `unknown`;
@@ -1900,6 +1909,7 @@ export const AdminUpdateProducerAdminProducersProducerIdPutResponse = /*#__PURE_
   "reviews_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminUpdateProducerAdminProducersProducerIdPutResponseReviewsCountDefault),
   "risk_reasoning": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "risk_score": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "sells_on_site": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseSellsOnSiteDefault),
   "short_description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "special_hours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.unknown()),/*#__PURE__*/ zod.null()])),
@@ -1939,8 +1949,8 @@ export const CreateClaimLinkAdminProducersProducerIdClaimLinkPostResponse = /*#_
 /**
  * Admin-only: up to 3 Google Place candidates for a producer, or 204.
  *
- * Builds the query from the producer's own name + city and runs Places Text
- * Search. 204 (fail-quiet) when: no server key, no results, or any Google API
+ * Builds the query from the producer's own name + city — or from `q` when the
+ * admin typed one — and runs Places Text Search. 204 (fail-quiet) when: no server key, no results, or any Google API
  * error. 403 for non-admins (require_admin). 404 for an unknown producer.
  * NO auto-select — the admin picks one in ProducerForm; the response is
  * display-only and nothing here is stored (ToS §3.2.3(b)).
@@ -3548,6 +3558,7 @@ export const listProducersProducersGetResponsePlanDefault = `free`;
 export const listProducersProducersGetResponsePrimaryContactMethodDefault = `whatsapp`;
 export const listProducersProducersGetResponseProductsCountDefault = 0;
 export const listProducersProducersGetResponseReviewsCountDefault = 0;
+export const listProducersProducersGetResponseSellsOnSiteDefault = false;
 export const listProducersProducersGetResponseStatusDefault = `pending`;
 export const listProducersProducersGetResponseTrustTierDefault = 1;
 export const listProducersProducersGetResponseVeganScopeDefault = `unknown`;
@@ -3645,6 +3656,7 @@ export const ListProducersProducersGetResponseItem = /*#__PURE__*/ zod.object({
   "primary_contact_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listProducersProducersGetResponsePrimaryContactMethodDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listProducersProducersGetResponseProductsCountDefault),
   "reviews_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listProducersProducersGetResponseReviewsCountDefault),
+  "sells_on_site": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersProducersGetResponseSellsOnSiteDefault),
   "short_description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "special_hours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.unknown()),/*#__PURE__*/ zod.null()])),
@@ -3731,6 +3743,7 @@ export const createProducerProducersPostResponseProductsDefault = [];
 export const createProducerProducersPostResponseProductsCountDefault = 0;
 export const createProducerProducersPostResponseReportCountDefault = 0;
 export const createProducerProducersPostResponseReviewsCountDefault = 0;
+export const createProducerProducersPostResponseSellsOnSiteDefault = false;
 export const createProducerProducersPostResponseStatusDefault = `pending`;
 export const createProducerProducersPostResponseTrustTierDefault = 1;
 export const createProducerProducersPostResponseVeganScopeDefault = `unknown`;
@@ -3855,6 +3868,7 @@ export const CreateProducerProducersPostResponse = /*#__PURE__*/ zod.object({
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), createProducerProducersPostResponseProductsCountDefault),
   "report_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), createProducerProducersPostResponseReportCountDefault),
   "reviews_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), createProducerProducersPostResponseReviewsCountDefault),
+  "sells_on_site": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createProducerProducersPostResponseSellsOnSiteDefault),
   "short_description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "special_hours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.unknown()),/*#__PURE__*/ zod.null()])),
@@ -3930,6 +3944,7 @@ export const getProducerBySlugProducersBySlugSlugGetResponseProductsDefault = []
 export const getProducerBySlugProducersBySlugSlugGetResponseProductsCountDefault = 0;
 export const getProducerBySlugProducersBySlugSlugGetResponseReportCountDefault = 0;
 export const getProducerBySlugProducersBySlugSlugGetResponseReviewsCountDefault = 0;
+export const getProducerBySlugProducersBySlugSlugGetResponseSellsOnSiteDefault = false;
 export const getProducerBySlugProducersBySlugSlugGetResponseStatusDefault = `pending`;
 export const getProducerBySlugProducersBySlugSlugGetResponseTrustTierDefault = 1;
 export const getProducerBySlugProducersBySlugSlugGetResponseVeganScopeDefault = `unknown`;
@@ -4054,6 +4069,7 @@ export const GetProducerBySlugProducersBySlugSlugGetResponse = /*#__PURE__*/ zod
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getProducerBySlugProducersBySlugSlugGetResponseProductsCountDefault),
   "report_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getProducerBySlugProducersBySlugSlugGetResponseReportCountDefault),
   "reviews_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getProducerBySlugProducersBySlugSlugGetResponseReviewsCountDefault),
+  "sells_on_site": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerBySlugProducersBySlugSlugGetResponseSellsOnSiteDefault),
   "short_description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "special_hours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.unknown()),/*#__PURE__*/ zod.null()])),
@@ -4164,6 +4180,7 @@ export const getMyProducerProducersMeGetResponseProductsCountDefault = 0;
 export const getMyProducerProducersMeGetResponseReportCountDefault = 0;
 export const getMyProducerProducersMeGetResponseResubmissionCountDefault = 0;
 export const getMyProducerProducersMeGetResponseReviewsCountDefault = 0;
+export const getMyProducerProducersMeGetResponseSellsOnSiteDefault = false;
 export const getMyProducerProducersMeGetResponseStatusDefault = `pending`;
 export const getMyProducerProducersMeGetResponseTrustTierDefault = 1;
 export const getMyProducerProducersMeGetResponseUpcomingEventsCountDefault = 0;
@@ -4297,6 +4314,7 @@ export const GetMyProducerProducersMeGetResponse = /*#__PURE__*/ zod.object({
   "resubmission_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getMyProducerProducersMeGetResponseResubmissionCountDefault),
   "resubmitted_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "reviews_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getMyProducerProducersMeGetResponseReviewsCountDefault),
+  "sells_on_site": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMyProducerProducersMeGetResponseSellsOnSiteDefault),
   "short_description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "special_hours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.unknown()),/*#__PURE__*/ zod.null()])),
@@ -4374,6 +4392,7 @@ export const updateMyProducerProducersMePutResponseProductsCountDefault = 0;
 export const updateMyProducerProducersMePutResponseReportCountDefault = 0;
 export const updateMyProducerProducersMePutResponseResubmissionCountDefault = 0;
 export const updateMyProducerProducersMePutResponseReviewsCountDefault = 0;
+export const updateMyProducerProducersMePutResponseSellsOnSiteDefault = false;
 export const updateMyProducerProducersMePutResponseStatusDefault = `pending`;
 export const updateMyProducerProducersMePutResponseTrustTierDefault = 1;
 export const updateMyProducerProducersMePutResponseUpcomingEventsCountDefault = 0;
@@ -4507,6 +4526,7 @@ export const UpdateMyProducerProducersMePutResponse = /*#__PURE__*/ zod.object({
   "resubmission_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), updateMyProducerProducersMePutResponseResubmissionCountDefault),
   "resubmitted_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "reviews_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), updateMyProducerProducersMePutResponseReviewsCountDefault),
+  "sells_on_site": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateMyProducerProducersMePutResponseSellsOnSiteDefault),
   "short_description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "special_hours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.unknown()),/*#__PURE__*/ zod.null()])),
@@ -5133,6 +5153,7 @@ export const getProducerProducersProducerIdGetResponseProductsDefault = [];
 export const getProducerProducersProducerIdGetResponseProductsCountDefault = 0;
 export const getProducerProducersProducerIdGetResponseReportCountDefault = 0;
 export const getProducerProducersProducerIdGetResponseReviewsCountDefault = 0;
+export const getProducerProducersProducerIdGetResponseSellsOnSiteDefault = false;
 export const getProducerProducersProducerIdGetResponseStatusDefault = `pending`;
 export const getProducerProducersProducerIdGetResponseTrustTierDefault = 1;
 export const getProducerProducersProducerIdGetResponseVeganScopeDefault = `unknown`;
@@ -5257,6 +5278,7 @@ export const GetProducerProducersProducerIdGetResponse = /*#__PURE__*/ zod.objec
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getProducerProducersProducerIdGetResponseProductsCountDefault),
   "report_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getProducerProducersProducerIdGetResponseReportCountDefault),
   "reviews_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getProducerProducersProducerIdGetResponseReviewsCountDefault),
+  "sells_on_site": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerProducersProducerIdGetResponseSellsOnSiteDefault),
   "short_description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "special_hours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.unknown()),/*#__PURE__*/ zod.null()])),
@@ -5725,6 +5747,7 @@ export const getFavoritesUsersMeFavoritesGetResponseProducerPlanDefault = `free`
 export const getFavoritesUsersMeFavoritesGetResponseProducerPrimaryContactMethodDefault = `whatsapp`;
 export const getFavoritesUsersMeFavoritesGetResponseProducerProductsCountDefault = 0;
 export const getFavoritesUsersMeFavoritesGetResponseProducerReviewsCountDefault = 0;
+export const getFavoritesUsersMeFavoritesGetResponseProducerSellsOnSiteDefault = false;
 export const getFavoritesUsersMeFavoritesGetResponseProducerStatusDefault = `pending`;
 export const getFavoritesUsersMeFavoritesGetResponseProducerTrustTierDefault = 1;
 export const getFavoritesUsersMeFavoritesGetResponseProducerVeganScopeDefault = `unknown`;
@@ -5824,6 +5847,7 @@ export const GetFavoritesUsersMeFavoritesGetResponseItem = /*#__PURE__*/ zod.obj
   "primary_contact_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getFavoritesUsersMeFavoritesGetResponseProducerPrimaryContactMethodDefault),
   "products_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getFavoritesUsersMeFavoritesGetResponseProducerProductsCountDefault),
   "reviews_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getFavoritesUsersMeFavoritesGetResponseProducerReviewsCountDefault),
+  "sells_on_site": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getFavoritesUsersMeFavoritesGetResponseProducerSellsOnSiteDefault),
   "short_description": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "special_hours": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.record(/*#__PURE__*/ zod.string(), /*#__PURE__*/ zod.unknown()),/*#__PURE__*/ zod.null()])),

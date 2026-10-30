@@ -381,7 +381,7 @@ routine. התדירות היא הנחה, לא חוזה; תהיי רגישה לא
 | תוכן פוגעני שדורש החלטה | &lt;להזין&gt; | &lt;להזין&gt; |
 
 ### איפה ללמוד עוד
-- **פנים-אתר:** [`/admin/help`](/admin/help) — מדריך ויזואלי לכל דפי הניהול.
+- **פנים-אתר:** [`/admin/help`](/admin/help) — שאלות «איך עושים…» עם חיפוש, לפי סדר התפריט; `#<topic>` פותח נושא (MEH-2591). נושא חדש = שורה ב-`admin/help/topics.js` + `admin.help.topics.<id>` ב-he/en; `AdminHelp.test.jsx` נכשל כשמסך בתפריט בלי נושא.
 - **docs/SECURITY.md** — invariants שאסור לשבור.
 - **docs/DEPLOYMENT.md** — הסבר על בעיית port 8080 ב-Railway, GitHub Actions.
 - **CLAUDE.md** — רשימת "Known Bug Patterns" — נקודות שכבר נתקלו ב-production.

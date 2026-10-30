@@ -199,6 +199,19 @@ async function stubSignedIn(page: Page) {
       }),
     }),
   );
+  // MEH-2600: /favorites also loads saved recipes / events / experiences
+  // (MEH-2560) and the hearts load /users/me/saved/ids (MEH-2558). Both
+  // require auth, so stripped of the stub token above they answer 401 → the
+  // same `auth:expired` sign-out MEH-2531 describes, and /favorites lands on
+  // /login. Nothing here is under test, so answer them empty.
+  await page.route(/\/api\/users\/me\/saved(?:\/ids)?(?:\?|$)/, (route) => {
+    const isIds = new URL(route.request().url()).pathname.endsWith("/ids");
+    return route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(isIds ? [] : { recipes: [], events: [], experiences: [] }),
+    });
+  });
 }
 
 /**

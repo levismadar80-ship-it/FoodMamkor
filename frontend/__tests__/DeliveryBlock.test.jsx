@@ -66,7 +66,8 @@ vi.mock("@/lib/utils", async (importOriginal) => ({
 }));
 
 vi.mock("@phosphor-icons/react", () => {
-  const Stub = () => <span />;
+  // Forwards data-testid so a test can find a specific icon (MEH-2592).
+  const Stub = (props) => <span data-testid={props["data-testid"]} />;
   // MEH-1675 added ChatCircle to the icons this tree reaches: DeliveryChecker
   // renders CoverageRequestCta on a negative verdict. The stub list is
   // exhaustive, so a missing name throws rather than rendering nothing.
@@ -131,6 +132,9 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
     expect(screen.getByText("ימי שלישי")).toBeInTheDocument();
     expect(screen.getByText("חיפה")).toBeInTheDocument();
     expect(screen.getByText("עכו")).toBeInTheDocument();
+    // MEH-2592: the truck beside each day heading came back — one per group.
+    expect(screen.getAllByTestId("area-group-icon")).toHaveLength(2);
+    expect(screen.getAllByTestId("delivery-heading-icon")).toHaveLength(1);
   });
 
   it("shows the self-pickup line only when pickup_points is set", () => {
@@ -284,7 +288,10 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
     expect(screen.getByText("דוכן השוק")).toBeInTheDocument();
     expect(screen.getByText("יריד אורגני")).toBeInTheDocument();
     expect(screen.getByText("חיפה")).toBeInTheDocument(); // city subline (label present)
-    expect(screen.getByText("שישי 8-13")).toBeInTheDocument(); // opening_hours
+    // opening_hours — MEH-2604 wraps the range in an LTR span, so the text is
+    // split across nodes; match the row's whole text, then the isolated range.
+    const hoursRow = screen.getByText((_, el) => el?.tagName === "P" && el.textContent === "שישי 8-13");
+    expect(hoursRow.querySelector('[dir="ltr"]').textContent).toBe("8-13");
     expect(screen.queryByText("הסניף הראשי")).not.toBeInTheDocument(); // branch out of scope
     // Outbound Waze nav link built from lat/lng (no second in-page map).
     const nav = screen.getAllByRole("link", { name: "פתיחה ב-Waze" });
@@ -456,7 +463,8 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
     expect(screen.queryByText(/מקבלים הזמנות עד/)).not.toBeInTheDocument();
   });
 
-  // MEH-1646 (b) — pickup rows carry the "חינם" tag at the min_order hierarchy.
+  // MEH-1646 (b) — every pickup shape says "חינם". MEH-2592 C: the rows say it
+  // ONCE, as a tag beside the "איסוף עצמי" heading, not on every row.
   it("MEH-1646: pickup location rows and the generic fallback line both carry חינם", () => {
     const { rerender } = render(
       <DeliveryBlock
@@ -472,12 +480,20 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
         }}
       />,
     );
-    expect(screen.getAllByText("חינם")).toHaveLength(2); // one per pickup row
+    expect(screen.getAllByText("חינם")).toHaveLength(1); // once, for two rows
+    // MEH-2592: the box icon beside «איסוף עצמי» came back, once per heading.
+    expect(screen.getAllByTestId("pickup-heading-icon")).toHaveLength(1);
+    // MEH-2592 C: each stop with coordinates gets Waze AND Google Maps.
+    expect(screen.getAllByTestId("pickup-nav-waze")).toHaveLength(2);
+    const google = screen.getAllByTestId("pickup-nav-google");
+    expect(google).toHaveLength(2);
+    expect(google[0].getAttribute("href")).toContain("google.com/maps/dir/?api=1&destination=");
     rerender(
       <DeliveryBlock nationwide={false} areas={[]} pickup={true} producer={producer} />,
     );
     expect(screen.getByText("איסוף עצמי")).toBeInTheDocument();
     expect(screen.getAllByText("חינם")).toHaveLength(1); // fallback line
+    expect(screen.getAllByTestId("pickup-heading-icon")).toHaveLength(1);
   });
 
   // ---------- MEH-1577: structured delivery cost ----------

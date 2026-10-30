@@ -58,8 +58,8 @@ import ProducerSections from "@/app/[locale]/producer/[id]/components/ProducerSe
 const before = (a, b) =>
   !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
 
-describe("ProducerSections order (MEH-1146 chunk B)", () => {
-  it("renders about → products → delivery → reviews → location(minimap last)", () => {
+describe("ProducerSections order (MEH-1146 chunk B, MEH-2592)", () => {
+  it("renders about → owner → products → reviews → delivery → location → fine print", () => {
     render(
       <ProducerSections
         producer={{
@@ -76,6 +76,7 @@ describe("ProducerSections order (MEH-1146 chunk B)", () => {
           // MEH-1938 chunk 5a: the MiniMap gates on primaryPoint(), i.e. the row.
           locations: [{ kind: "branch", is_primary: true, lat: 32, lng: 34, precision: "exact", id: 1 }],
           categories: [{ id: 1, name: "ירקות" }],
+          contact_name: "יעל",
         }}
         events={[]}
         similarProducers={[]}
@@ -85,15 +86,22 @@ describe("ProducerSections order (MEH-1146 chunk B)", () => {
       />,
     );
     const about = screen.getByText("producer.detail.sections.about");
+    const owner = screen.getByText("יעל");
     const products = screen.getByText("producer.detail.sections.products.heading");
     const delivery = screen.getByTestId("delivery");
     const reviews = screen.getByTestId("reviews");
     const minimap = screen.getByTestId("minimap");
+    const disclaimer = screen.getByTestId("disclaimer");
+    const report = screen.getByTestId("report");
 
-    expect(before(about, products)).toBe(true);
-    expect(before(products, delivery)).toBe(true);
-    expect(before(delivery, reviews)).toBe(true);
-    expect(before(reviews, minimap)).toBe(true); // location is last
+    // Split per pair so a failure names the pair that moved.
+    expect(before(about, owner), "owner card directly under about").toBe(true);
+    expect(before(owner, products), "owner card before products").toBe(true);
+    expect(before(products, reviews), "products before reviews").toBe(true);
+    expect(before(reviews, delivery), "reviews before delivery (MEH-2592)").toBe(true);
+    expect(before(delivery, minimap), "delivery before location").toBe(true);
+    expect(before(minimap, disclaimer), "fine print after location").toBe(true);
+    expect(before(disclaimer, report), "disclaimer above the report link").toBe(true);
   });
 
   // MEH-1938 chunk 5a — the removal path, so the gate cannot quietly revert
@@ -157,27 +165,23 @@ describe("ProducerSections order (MEH-1146 chunk B)", () => {
     expect(screen.queryByTestId("delivery")).not.toBeInTheDocument();
   });
 
-  const nearbyProps = (n) => ({
-    producer: { id: 3, name: "חוות", city: "עיר", products: [] },
-    events: [],
-    similarProducers: [],
-    nearbyProducers: Array.from({ length: n }, (_, i) => ({ id: `n${i}`, name: `עסק ${i}` })),
-    sectionRefs: { current: {} },
-    reviewsContainerRef: { current: null },
-    reviewsVisible: false,
-  });
-
-  it("hides the discovery loop when fewer than MIN_NEARBY_BUSINESSES (4) nearby", () => {
-    render(<ProducerSections {...nearbyProps(3)} />);
+  // MEH-2592: the similar / nearby rows left ProducerSections for
+  // <OtherBusinesses> (ProducerDetail, full width below both columns). Even
+  // with a full nearby list, nothing of them renders in this column any more.
+  it("renders no other-businesses rows, whatever nearby/similar it is handed", () => {
+    render(
+      <ProducerSections
+        producer={{ id: 3, name: "חוות", city: "עיר", products: [] }}
+        events={[]}
+        similarProducers={Array.from({ length: 5 }, (_, i) => ({ id: `s${i}` }))}
+        nearbyProducers={Array.from({ length: 6 }, (_, i) => ({ id: `n${i}` }))}
+        sectionRefs={{ current: {} }}
+        reviewsContainerRef={{ current: null }}
+        reviewsVisible={false}
+      />,
+    );
     expect(screen.queryByText("producer.detail.sections.nearby.heading")).not.toBeInTheDocument();
-  });
-
-  it("shows the discovery loop at >= 4 nearby businesses, with the report below it", () => {
-    render(<ProducerSections {...nearbyProps(4)} />);
-    const loop = screen.getByText("producer.detail.sections.nearby.heading");
-    const report = screen.getByTestId("report");
-    expect(loop).toBeInTheDocument();
-    expect(before(loop, report)).toBe(true); // report stays at the page end, below the loop
+    expect(screen.queryByText("producer.detail.sections.similar.heading")).not.toBeInTheDocument();
   });
 
   it("shows the signature product at the top of the products section even with no product entries", () => {
@@ -205,6 +209,35 @@ describe("ProducerSections order (MEH-1146 chunk B)", () => {
 // MEH-1291 — the "עודכן לאחרונה" freshness line renders only after a real edit
 // stamps producer.updated_at (nullable, no backfill). The next-intl mock returns
 // the key literal, so we assert on the key string.
+// MEH-2592 E: «מאחורי העסק» sits INSIDE «אודות» when there is a description,
+// and keeps its own section when there is none.
+describe("ProducerSections — owner card placement (MEH-2592)", () => {
+  const props = (producer) => ({
+    producer: { id: 7, name: "חוות", products: [], contact_name: "יעל", ...producer },
+    events: [],
+    sectionRefs: { current: {} },
+    reviewsContainerRef: { current: null },
+    reviewsVisible: false,
+  });
+
+  it("with a description: the owner card is nested inside #section-bio", () => {
+    const { container } = render(<ProducerSections {...props({ description: "תיאור" })} />);
+    const bio = container.querySelector("#section-bio");
+    const cards = screen.getAllByTestId("owner-card");
+    expect(cards).toHaveLength(1);
+    expect(bio).toContainElement(cards[0]);
+    expect(cards[0].dataset.nested).toBe("true");
+  });
+
+  it("without a description: one standalone owner card, no #section-bio", () => {
+    const { container } = render(<ProducerSections {...props({ description: "" })} />);
+    expect(container.querySelector("#section-bio")).toBeNull();
+    const cards = screen.getAllByTestId("owner-card");
+    expect(cards).toHaveLength(1);
+    expect(cards[0].dataset.nested).toBeUndefined();
+  });
+});
+
 describe("ProducerSections last-updated line (MEH-1291)", () => {
   const freshnessProps = (overrides) => ({
     producer: { id: 7, name: "חוות", products: [], ...overrides },

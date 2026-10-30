@@ -22,7 +22,7 @@ import math
 from datetime import datetime
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, aliased, joinedload
@@ -49,6 +49,10 @@ from app.schemas.schemas import (
     ReviewOut,
     ReviewReplyUpdate,
     ReviewsPage,
+)
+from app.services.content_notifications import (
+    notify_owner_new_review,
+    notify_reviewer_reply,
 )
 from app.utils.clock import utc_now
 
@@ -369,10 +373,11 @@ def _apply_review_edit(
     status_code=201,
 )
 @limiter.limit("20/day")
-def create_review_nested(
+def create_review_nested(  # noqa: PLR0913 — all 6 args are FastAPI-injected (slowapi request, path id, body, BackgroundTasks, auth dep, db dep); MEH-2602 added the owner mail
     request: Request,
     producer_id: UUID,
     data: ReviewCreateNested,
+    background_tasks: BackgroundTasks,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -487,6 +492,7 @@ def create_review_nested(
     # Haiku moderation (fail-open). MEH-2349: the verdict is kept on the row.
     ai_status = _ai_status_for_write(data.body, existing_review)
 
+    is_new_review = existing_review is None
     if existing_review:
         _apply_review_edit(db, existing_review, data, ai_status)
         # MEH-2348: an edit never touches is_hidden. Only the admin hide
@@ -527,8 +533,10 @@ def create_review_nested(
                 raise
             _apply_review_edit(db, review, data, ai_status)
             db.commit()
+            is_new_review = False  # the racing request already announced it
 
     _recompute_producer_rating(producer_id, db)
+    _queue_new_review_mail(db, background_tasks, producer_id, data.stars, is_new_review)
     review = (
         db.query(ProducerReview)
         .options(joinedload(ProducerReview.user))
@@ -575,10 +583,32 @@ def delete_review(
 # ---------------------------------------------------------------------------
 
 
+def _producer_page_path(producer) -> str:
+    base = f"/p/{producer.slug}" if producer.slug else f"/producer/{producer.id}"
+    return f"{base}#reviews"
+
+
+def _queue_new_review_mail(db, background_tasks, producer_id, stars, is_new) -> None:
+    """MEH-2602: a new review mails the owner (an edit does not)."""
+    if not is_new:
+        return
+    producer = db.query(Producer).filter(Producer.id == producer_id).first()
+    owner = db.query(User).filter(User.producer_id == producer_id).first()
+    if producer and owner and owner.email:
+        background_tasks.add_task(
+            notify_owner_new_review,
+            owner.email,
+            producer.name,
+            stars,
+            _producer_page_path(producer),
+        )
+
+
 @router.put("/reviews/{review_id}/reply", response_model=ReviewOut)
 def set_review_reply(
     review_id: UUID,
     data: ReviewReplyUpdate,
+    background_tasks: BackgroundTasks,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -595,6 +625,7 @@ def set_review_reply(
     if user.producer_id is None or str(review.producer_id) != str(user.producer_id):
         raise HTTPException(status_code=404, detail="ביקורת לא נמצאה")
 
+    first_reply = bool(data.reply) and not review.reply
     if data.reply:
         review.reply = data.reply
         review.reply_at = utc_now()
@@ -602,6 +633,18 @@ def set_review_reply(
         review.reply = None  # empty/blank → clear
         review.reply_at = None
     db.commit()
+
+    # MEH-2602: the reviewer hears about the first answer, not each edit of it.
+    if first_reply:
+        reviewer = db.query(User).filter(User.id == review.user_id).first()
+        producer = db.query(Producer).filter(Producer.id == review.producer_id).first()
+        if reviewer and reviewer.email and producer:
+            background_tasks.add_task(
+                notify_reviewer_reply,
+                reviewer.email,
+                producer.name,
+                _producer_page_path(producer),
+            )
 
     review = (
         db.query(ProducerReview)

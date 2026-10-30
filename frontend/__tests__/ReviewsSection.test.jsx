@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import ReviewsSection from "@/components/ReviewsSection";
 // MEH-1426: mocked so the form-open re-ping is observable without a real beacon.
 import { pingWhatsAppBeacon } from "@/lib/contact-tracking";
@@ -60,6 +60,7 @@ vi.mock("@phosphor-icons/react", () => ({
   Star: (props) => <span data-testid="icon-star" {...props} />,
   Leaf: (props) => <span data-testid="icon-leaf" {...props} />,
   EyeSlash: (props) => <span data-testid="icon-eyeslash" {...props} />,
+  CaretDown: (props) => <span {...props} />,
   ArrowLeft: (props) => <span {...props} />,
   ArrowRight: (props) => <span {...props} />,
 }));
@@ -165,28 +166,50 @@ describe("ReviewsSection — owner-only eyebrow (MEH-1114)", () => {
     expect(screen.getByTestId("empty-state")).toBeInTheDocument();
   });
 
-  it("does NOT show the owner eyebrow on the consumer empty state", async () => {
+  it("does NOT show the owner eyebrow (or any empty state) to a reader", async () => {
     mockReviews([]);
     render(<ReviewsSection producerId="p-1" isOwner={false} />);
-    // consumer path renders the Leaf empty message, never the owner eyebrow
-    await waitFor(() => expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument());
+    // The reader path renders no empty state at all since MEH-2592.
+    await waitFor(() => expect(screen.queryByText("loading")).not.toBeInTheDocument());
+    expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument();
     expect(screen.queryByText("מוצג רק לך")).not.toBeInTheDocument();
   });
 });
 
-describe("ReviewsSection — single empty-state box with merged gate hint (MEH-1139)", () => {
-  // Unmapped keys fall through the next-intl mock as raw key strings, so
-  // assertions below target key names (wa_gate_message / empty_message / …).
-  it("empty + logged-in non-gated viewer: ONE box — gate box gone, hint merged into empty state", async () => {
+describe("ReviewsSection — zero reviews, reader view: no empty state, only the write hint (MEH-2592, 30/10/2026)", () => {
+  // Replaces the MEH-1139 "single empty-state box" cells: the reader empty
+  // state (Leaf + «עדיין אין ביקורות כאן.» + empty_gate_hint) is retired —
+  // Sapir's call, the Google / Airbnb pattern. Unmapped keys fall through the
+  // next-intl mock as raw key strings, so assertions target key names.
+  it("empty + logged-in non-gated viewer: no leaf, no empty message, the WhatsApp-gate line alone", async () => {
     authState.user = { id: "u-9", producer_id: null };
     mockReviews([]);
     render(<ReviewsSection producerId="p-1" isOwner={false} />);
-    expect(await screen.findByText(/empty_message/)).toBeInTheDocument();
-    expect(screen.getByText(/empty_gate_hint/)).toBeInTheDocument();
-    expect(screen.queryByText("wa_gate_message")).not.toBeInTheDocument();
+    const hint = await screen.findByTestId("reviews-write-hint");
+    expect(hint).toHaveTextContent("wa_gate_message");
+    expect(screen.queryByTestId("icon-leaf")).toBeNull();
+    expect(screen.queryByText(/empty_message/)).toBeNull();
+    expect(screen.queryByText(/empty_gate_hint/)).toBeNull();
   });
 
-  it("reviews exist + logged-in non-gated viewer: standalone gate box still renders", async () => {
+  it("empty + guest: no leaf, no empty message, the login line alone", async () => {
+    mockReviews([]);
+    render(<ReviewsSection producerId="p-1" isOwner={false} />);
+    const hint = await screen.findByTestId("reviews-write-hint");
+    expect(within(hint).getByTestId("reviews-login-link")).toBeInTheDocument();
+    expect(screen.queryByTestId("icon-leaf")).toBeNull();
+    expect(screen.queryByText(/empty_message/)).toBeNull();
+  });
+
+  it("empty + owner: the coaching state still renders (owner-only), with no reader hint", async () => {
+    authState.user = { id: "u-1", producer_id: "p-1" };
+    mockReviews([]);
+    render(<ReviewsSection producerId="p-1" isOwner={true} />);
+    expect(await screen.findByTestId("empty-state")).toBeInTheDocument();
+    expect(screen.queryByTestId("reviews-write-hint")).toBeNull();
+  });
+
+  it("reviews exist + logged-in non-gated viewer: the WhatsApp-gate line, as before", async () => {
     authState.user = { id: "u-9", producer_id: null };
     mockReviews([
       {
@@ -196,14 +219,20 @@ describe("ReviewsSection — single empty-state box with merged gate hint (MEH-1
     ]);
     render(<ReviewsSection producerId="p-1" isOwner={false} />);
     expect(await screen.findByText("wa_gate_message")).toBeInTheDocument();
-    expect(screen.queryByText(/empty_gate_hint/)).not.toBeInTheDocument();
   });
 
-  it("empty + guest: empty message only, no gate hint", async () => {
-    mockReviews([]);
+  it("a name opening with an emoji keeps the whole glyph in the initial circle (no split surrogate)", async () => {
+    mockReviews([
+      {
+        id: "rev-e", user_id: "u-3", user_name: "🧑‍🍳 דנה", stars: 5, body: "מעולה",
+        created_at: "2026-07-01T11:00:00", reply: null, reply_at: null,
+      },
+    ]);
     render(<ReviewsSection producerId="p-1" isOwner={false} />);
-    expect(await screen.findByText(/empty_message/)).toBeInTheDocument();
-    expect(screen.queryByText(/empty_gate_hint/)).not.toBeInTheDocument();
+    const initial = await screen.findByTestId("review-initial");
+    // Array.from(...)[0] is the first code point: a whole 🧑 (2 UTF-16 units),
+    // not its lone high surrogate.
+    expect(initial.textContent).toBe("🧑");
   });
 });
 
@@ -384,5 +413,96 @@ describe("ReviewsSection — review-invite token (MEH-1428 chunk 2)", () => {
     await waitFor(() => expect(apiMock.get).toHaveBeenCalled());
     expect(sessionStorage.getItem(`review_invite_${PID}`)).toBeNull();
     expect(screen.queryByText("write_cta")).not.toBeInTheDocument();
+  });
+});
+
+// MEH-2592 — the reviews look: one-line summary, initial + name + date with the
+// stars under the name, the business reply as a side rule, the write-a-review
+// gate as a quiet line UNDER the list, and a full-width "show more".
+describe("ReviewsSection — reviews look (MEH-2592)", () => {
+  const following = (a, b) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+
+  it("summary is one row (number · stars · count), not a centred box", async () => {
+    apiMock.get.mockResolvedValue({ data: { reviews: [], total: 3, page: 1, pages: 1 } });
+    render(<ReviewsSection producerId="p-1" avgRating={4.7} reviewCount={3} />);
+    const number = await screen.findByText("4.7");
+    const summary = screen.getByTestId("reviews-summary");
+    expect(summary).toContainElement(number);
+    expect(summary).toContainElement(screen.getByRole("img"));
+    expect(summary).toContainElement(screen.getByText("summary_count"));
+    expect(summary.className).toContain("flex");
+    expect(summary.className).not.toContain("text-center");
+  });
+
+  it("each review: initial circle, then name; its stars sit under the name", async () => {
+    mockReviews([noReply]);
+    render(<ReviewsSection producerId="p-1" />);
+    const name = await screen.findByText(/^לקוח/);
+    const initial = screen.getByTestId("review-initial");
+    expect(initial).toHaveTextContent("ל");
+    expect(following(initial, name)).toBe(true);
+    const stars = screen.getByRole("img");
+    expect(following(name, stars)).toBe(true);
+    // the stars share the name's column, not a far-edge sibling of it
+    expect(name.parentElement).toContainElement(stars);
+  });
+
+  it("business reply is a side rule, not a green box", async () => {
+    mockReviews([withReply]);
+    render(<ReviewsSection producerId="p-1" />);
+    await screen.findByText("תודה רבה על המילים החמות!");
+    const reply = screen.getByTestId("review-reply");
+    expect(reply.className).toContain("border-s-2");
+    expect(reply.className).not.toContain("bg-green-50");
+  });
+
+  it("guest: the login line sits UNDER the reviews, as plain text", async () => {
+    authState.user = null;
+    mockReviews([noReply]);
+    render(<ReviewsSection producerId="p-1" />);
+    const body = await screen.findByText("טעים");
+    const hint = screen.getByTestId("reviews-write-hint");
+    expect(hint).toContainElement(screen.getByTestId("reviews-login-link"));
+    expect(following(body, hint)).toBe(true);
+    expect(hint.className).not.toContain("border");
+  });
+
+  it("logged-in, not gated, reviews exist: the WhatsApp-gate line sits UNDER the reviews", async () => {
+    authState.user = { id: "u-9", producer_id: null };
+    mockReviews([noReply]);
+    render(<ReviewsSection producerId="p-1" />);
+    const body = await screen.findByText("טעים");
+    const hint = screen.getByTestId("reviews-write-hint");
+    expect(hint).toHaveTextContent("wa_gate_message");
+    expect(following(body, hint)).toBe(true);
+  });
+
+  it("owner: no write hint at all", async () => {
+    authState.user = { id: "u-o", producer_id: "p-1" };
+    mockReviews([noReply]);
+    render(<ReviewsSection producerId="p-1" isOwner />);
+    await screen.findByText("טעים");
+    expect(screen.queryByTestId("reviews-write-hint")).toBeNull();
+  });
+
+  it("show more is a full-width button", async () => {
+    const many = Array.from({ length: 4 }, (_, i) => ({ ...noReply, id: `r${i}`, user_id: `u${i}` }));
+    apiMock.get.mockResolvedValue({ data: { reviews: many, total: 4, page: 1, pages: 1 } });
+    render(<ReviewsSection producerId="p-1" />);
+    const more = await screen.findByRole("button", { name: /show_more/ });
+    expect(more.className).toContain("w-full");
+  });
+});
+
+describe("ReviewsSection — loading state (MEH-2606)", () => {
+  it("while the list loads: review-row skeleton under role=status, label sr-only, no visible text line", async () => {
+    apiMock.get.mockReturnValue(new Promise(() => {})); // never resolves
+    render(<ReviewsSection producerId="p-1" isOwner={false} />);
+    const status = await screen.findByRole("status");
+    expect(status).toHaveAttribute("aria-busy", "true");
+    expect(status.querySelector(".sr-only")).toHaveTextContent("loading");
+    expect(status.querySelectorAll('[aria-hidden="true"]')).toHaveLength(2);
+    // the old loading line was a visible <p>; nothing outside the sr-only span reads "loading"
+    expect(screen.getAllByText("loading").every((el) => el.classList.contains("sr-only"))).toBe(true);
   });
 });

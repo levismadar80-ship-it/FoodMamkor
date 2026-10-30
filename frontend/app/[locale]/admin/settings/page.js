@@ -8,6 +8,7 @@ import api from "@/lib/api";
 import InfoTooltip from "@/components/InfoTooltip";
 import Input from "@/components/ui/Input";
 import ChecklistSettings from "./ChecklistSettings";
+import { SkeletonForm } from "@/components/Skeleton";
 
 export default function AdminSettingsPage() {
   const t = useTranslations("admin");
@@ -64,7 +65,7 @@ export default function AdminSettingsPage() {
   }, []);
 
   if (loadError) return <div className="text-red-600 text-sm">{t("settings.load_error")}</div>;
-  if (!settings) return <div className="text-muted">{t("common.loading")}</div>;
+  if (!settings) return <SkeletonForm fields={6} label={t("common.loading")} className="max-w-2xl" />;
 
   const update = (key, value) => {
     setSettings({ ...settings, [key]: value });

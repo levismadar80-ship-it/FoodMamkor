@@ -2564,6 +2564,9 @@ class ProducerListOut(BaseModel):
     # what a card claims about itself.
     delivers: bool = False
     offers_pickup: bool = False
+    # MEH-2598: third fulfillment boolean, same mechanism as the two above —
+    # computed by attach_badge_fields, mirrors producer_listing._on_site_condition.
+    sells_on_site: bool = False
     # MEH-986 ch3b (P0 legal — Kashrut Fraud Prohibition Law): free-text `kosher` is NO
     # LONGER on the public output — an unverified kosher string must never
     # serialize to consumers. Re-declared on ProducerAdminOut / ProducerOwnerOut
@@ -3661,11 +3664,49 @@ class RatingSubmit(BaseModel):
 
 
 # --- Experiences (community-submitted workshops) ---
+# MEH-2602: the wire values the forms send (frontend/lib/event-categories.js
+# EXPERIENCE_CATEGORIES) — the same Hebrew-enum shape as events.py
+# VALID_CATEGORIES. Unchecked, the API stored «workshop» verbatim and the
+# experience page printed that raw word (staging sweep 29/10).
+EXPERIENCE_CATEGORIES = frozenset(
+    {"בישול", "תזונה", "סיור אוכל", "חקלאות", "טעימות", "סדנה", "אחר"}
+)
+
+
+# The English filter keys (messages events.experience_categories) a client
+# may still send, and that rows saved before this check may hold — mapped, so
+# an owner re-saving such a row is not refused for a value she never chose.
+_EXPERIENCE_CATEGORY_KEYS = {
+    "cooking": "בישול",
+    "nutrition": "תזונה",
+    "food_tour": "סיור אוכל",
+    "agriculture": "חקלאות",
+    "tasting": "טעימות",
+    "workshop": "סדנה",
+    "other": "אחר",
+}
+
+
+def _experience_category(value: str | None) -> str | None:
+    if value is None:
+        return None
+    value = _EXPERIENCE_CATEGORY_KEYS.get(value, value)
+    if value not in EXPERIENCE_CATEGORIES:
+        raise ValueError("קטגוריה לא תקינה")
+    return value
+
+
 class ExperienceCreate(BaseModel):
     title: str = Field(..., min_length=4, max_length=300)
     description: str = Field(..., min_length=20)
     image_url: str | None = None
     category: str | None = None
+
+    @field_validator("category")
+    @classmethod
+    def _check_category(cls, v):
+        return _experience_category(v)
+
     event_date: date
     event_time: time | None = None
     duration_minutes: int | None = Field(None, ge=15, le=1440)
@@ -3738,6 +3779,12 @@ class ExperienceUpdate(BaseModel):
     description: str | None = Field(None, min_length=20)
     image_url: str | None = None
     category: str | None = None
+
+    @field_validator("category")
+    @classmethod
+    def _check_category(cls, v):
+        return _experience_category(v)
+
     event_date: date | None = None
     event_time: time | None = None
     duration_minutes: int | None = Field(None, ge=15, le=1440)

@@ -3,11 +3,14 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { MagnifyingGlass, Plant, Leaf, CaretDown, Faders } from "@phosphor-icons/react";
+import { MagnifyingGlass, Plant, Leaf, CaretDown, Faders, MapPin } from "@phosphor-icons/react";
+import { chipsToQuery } from "@/lib/filter-url";
 import { useTranslations } from "next-intl";
 import Breadcrumb from "@/components/Breadcrumb";
 import ProducerCard from "@/components/ProducerCard";
 import ChipScrollRow from "@/components/ChipScrollRow";
+import PromotedServiceChips from "@/components/PromotedServiceChips";
+import { SERVICE_CHIP_KEYS } from "@/lib/map-chips";
 import { CATEGORY_STYLES, resolveCategoryGlyph } from "@/lib/category-registry";
 import LocationModal from "@/components/LocationModal";
 // MEH-1825: day axis on the canonical listing surface — same component home
@@ -242,7 +245,12 @@ export default function ProducersClient({
   const displayItems = hasActiveChips
     ? (filteredItems ?? [])
     : [...baseItems, ...appendItems];
-  const activeChipDefs = CHIPS_CONFIG.filter((c) => chips[c.key]);
+  // MEH-2598: the promoted service trio shows its own on/off state in the row,
+  // so it is not repeated as a removable tag nor counted on «סינון» — the
+  // same split home (tagChips) and /map (activeFilterTags) make.
+  const activeChipDefs = CHIPS_CONFIG.filter(
+    (c) => chips[c.key] && !SERVICE_CHIP_KEYS.includes(c.key),
+  );
 
   const syncUrl = useCallback(
     // MEH-1081: category rides the same URL sync as chips/city/q.
@@ -765,16 +773,30 @@ export default function ProducersClient({
         ]}
         className="mb-4"
       />
-      <h1 className="font-headline-lg text-3xl font-bold text-text mb-6">
-        {searchQ ? (
-          <>
-            {t("title.search_results")}{" "}
-            <span className="text-primary">&ldquo;{searchQ}&rdquo;</span>
-          </>
-        ) : (
-          t("title.all")
-        )}
-      </h1>
+      {/* MEH-2598: «הצגה במפה» as on home — the list and the map are two views
+          of one search, so the active attribute chips ride along
+          (lib/filter-url). Search text and category stay behind: /map has no
+          free-text search and keys categories differently. */}
+      <div className="flex items-center justify-between gap-3 mb-6">
+        <h1 className="font-headline-lg text-3xl font-bold text-text">
+          {searchQ ? (
+            <>
+              {t("title.search_results")}{" "}
+              <span className="text-primary">&ldquo;{searchQ}&rdquo;</span>
+            </>
+          ) : (
+            t("title.all")
+          )}
+        </h1>
+        <Link
+          href={`/map${chipsToQuery(chips)}`}
+          data-testid="producers-map-link"
+          className="shrink-0 text-primary hover:underline flex items-center gap-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+        >
+          <MapPin size={14} className="text-current" aria-hidden="true" />
+          {t("title.map_link")}
+        </Link>
+      </div>
 
       {/* MEH-820: free-text search — drives the existing ?q= filter */}
       <form
@@ -890,6 +912,16 @@ export default function ProducersClient({
             align="start"
           />
         </div>
+        {/* MEH-2598 (Sapir 29/10, «אחיד»): the same promoted service trio as
+            home and /map, between «סינון» and the city chip. `visibleChipDefs`
+            is the gated list, so on_site appears only once the catalog
+            carries it. */}
+        <PromotedServiceChips
+          chips={visibleChipDefs}
+          chipState={chips}
+          onToggle={toggleChip}
+          testIdPrefix="producers-promoted-chip"
+        />
         {/* The city chip keeps ChipScrollRow (roving tab stop, toolbar
             semantics, toggle visuals); one chip never overflows its own
             scroller, so the rail is what scrolls. -mb-1 cancels that

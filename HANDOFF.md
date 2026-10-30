@@ -4,6 +4,25 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-10-29 14:39 — רשימת הטיוטות באדמין: סטטוס בעלים, העתקת הודעה עם קישור, תאריך שליחה (#3751, #3791)
+
+**‏שורה אחת:** ‏בשורת כל טיוטה רואים אם בעלת העסק קלטה, מעתיקים בלחיצה הודעת וואטסאפ עם קישור חדש, ורואים מתי נשלח הקישור האחרון, עד מתי הוא בתוקף, ומי מחכה 7+ ימים.
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏כל נתיב שמחזיר `ProducerAdminOut` קורא ל-`_attach_has_owner` (`routers/admin.py`). ‏`TestFailsClosed` בונה את רשימת הנתיבים מה-OpenAPI ונכשל על נתיב שישי — צריך להוסיף אותו שם ולמלא את השדה.
+- ‏`CLAIM_LINK_TTL_DAYS` ב-`AdminDraftLinkAge.jsx` וה«14 יום» בהודעה צמודים ל-`auth.PRODUCER_CLAIM_TTL_DAYS` בטסטים. שינוי תוקף הטוקן מחייב לשנות את שלושתם (ואת הנוסח באישור).
+- ‏מיגרציה שממתינה ב-PR פתוח: לפני מיזוג, `alembic heads` על עץ ממוזג עם staging. ‏#3791 כמעט פיצל head כי #3781 נכנס בינתיים על אותו הורה.
+
+**‏לא עכשיו / מחכה לספיר:** נוסח לתיבת ההעתקה הידנית; אינדקס על `users.producer_id`; בדיקה בספארי באייפון.
+## 2026-10-29 23:15 — דף העזרה באדמין: שאלות «איך עושים…» (#3860)
+
+**‏שורה אחת:** ‏`/admin/help` הוא עכשיו 22 שאלות עם חיפוש, מקובצות כמו בתפריט, וכל אחת נפתחת לצעדים וכפתור «למסך ←».
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏מסך אדמין חדש = שורה ב-`admin/help/topics.js` + `admin.help.topics.<id>` ב-he/en. `AdminHelp.test.jsx` נכשל כשמסך בתפריט בלי נושא.
+- ‏`#<id>` בכתובת פותח נושא. המשך אפשרי: כפתור «?» בכל מסך אדמין שמקשר לנושא שלו, יחד עם ייצוא `NAV_SECTIONS` מ-`AdminLayoutClient.jsx`.
+- ‏«תקלות חירום» ו«כתובות חשובות» הוסרו מהדף. המקום שלהם הוא docs/ACCESS.md + docs/DEPLOYMENT.md.
+
 ## 2026-10-29 20:12 — ניהול האדמין מהנייד: תפריט ⋮ ופס הלשוניות (#3858)
 
 **‏שורה אחת:** ‏תפריט ⋮ בשורות האדמין ופס הלשוניות הירוק נשארים בתוך המסך בנייד.

@@ -97,3 +97,35 @@ describe("OwnerCard (MEH-1334 chunk 3)", () => {
   });
 });
 
+
+// MEH-2592 — nested inside «אודות»: small h3 heading, no white card, green-50
+// avatar. The standalone card (organizer page, business without description)
+// is unchanged.
+describe("OwnerCard nested (MEH-2592)", () => {
+  it("nested: h3 heading, no white card, avatar + name + city + bio", () => {
+    render(
+      <OwnerCard
+        nested
+        producer={{ contact_name: "נועה קרן", city: "קצרין", owner_bio: "גדלתי בין העיזים." }}
+      />,
+    );
+    const card = screen.getByTestId("owner-card");
+    expect(card.dataset.nested).toBe("true");
+    expect(screen.getByRole("heading", { level: 3, name: "מאחורי העסק" })).toBeInTheDocument();
+    expect(card.querySelector(".bg-white")).toBeNull();
+    expect(card.className).not.toContain("bg-white");
+    expect(screen.getByTestId("owner-initial").className).toContain("bg-green-50");
+    expect(screen.getByText("גדלתי בין העיזים.")).toBeInTheDocument();
+  });
+
+  it("standalone keeps its h2 + white card", () => {
+    render(<OwnerCard producer={{ contact_name: "נועה קרן", city: "קצרין" }} />);
+    expect(screen.getByRole("heading", { level: 2, name: "מאחורי העסק" })).toBeInTheDocument();
+    expect(screen.getByTestId("owner-card").querySelector(".bg-white")).not.toBeNull();
+  });
+
+  it("nested still hides when there is nothing to show", () => {
+    render(<OwnerCard nested producer={{ city: "קצרין" }} />);
+    expect(screen.queryByTestId("owner-card")).toBeNull();
+  });
+});

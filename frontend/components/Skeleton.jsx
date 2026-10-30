@@ -112,3 +112,159 @@ export function SkeletonProducerGrid({ count = 8 }) {
     </div>
   );
 }
+
+/* ── MEH-2601 — shape skeletons for dashboard + admin wait states ──────────
+   Where the coming content's SHAPE is known (a list, a table, a form, stat
+   tiles) draw it, instead of the bare «בטעינה...» line those screens showed.
+   Unknown shape → components/BrandLoader.jsx (MEH-2599), never these.
+   Each one mounts <SkeletonStyles/> itself, carries role="status" and keeps
+   the screen's existing loading copy sr-only, so specs that wait for that
+   copy to leave the DOM keep working and no new copy enters the UI. */
+
+function SkeletonStatus({ label, className, testId, children }) {
+  return (
+    <div className={className} role="status" aria-busy="true" data-testid={testId}>
+      {label ? <span className="sr-only">{label}</span> : null}
+      {children}
+      <SkeletonStyles />
+    </div>
+  );
+}
+
+/** Rows of thumbnail + title + meta line — recipe / event / follower lists. */
+export function SkeletonList({ count = 4, label, className = "", testId }) {
+  return (
+    <SkeletonStatus label={label} className={`space-y-3 ${className}`} testId={testId}>
+      {Array.from({ length: count }).map((_, i) => (
+        <div
+          key={i}
+          className="flex items-center gap-3 bg-surface-card border border-border rounded-[12px] p-3"
+          aria-hidden="true"
+        >
+          <div className="skeleton-box rounded-[9px] w-11 h-11 shrink-0" />
+          <div className="flex-1 min-w-0 flex flex-col gap-2">
+            <div className="skeleton-box rounded-lg h-[14px] w-[62%]" />
+            <div className="skeleton-box rounded-lg h-[10px] w-[38%]" />
+          </div>
+        </div>
+      ))}
+    </SkeletonStatus>
+  );
+}
+
+/**
+ * Admin data table. md and up: a header line + `rows` lines of `cols` cells.
+ * Below md: one card per row, three label/value lines — the same shape the
+ * `.table-stack` tables (MEH-2426) collapse to, so nothing scrolls sideways.
+ */
+export function SkeletonTable({ rows = 5, cols = 4, label, className = "", testId }) {
+  const widths = ["70%", "45%", "55%", "35%", "60%", "40%", "50%"];
+  return (
+    <SkeletonStatus label={label} className={className} testId={testId}>
+      <div
+        className="hidden md:block rounded-[12px] border border-border overflow-hidden bg-surface-card"
+        aria-hidden="true"
+        data-testid="skeleton-table-wide"
+      >
+        <div
+          className="grid gap-4 px-4 py-3 bg-background-alt/60"
+          style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+        >
+          {Array.from({ length: cols }).map((_, c) => (
+            <div key={c} className="skeleton-box rounded-lg h-[10px] w-[50%]" />
+          ))}
+        </div>
+        {Array.from({ length: rows }).map((_, r) => (
+          <div
+            key={r}
+            className="grid gap-4 px-4 py-4 border-t border-border"
+            style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+          >
+            {Array.from({ length: cols }).map((_, c) => (
+              <div
+                key={c}
+                className="skeleton-box rounded-lg h-[14px]"
+                style={{ width: widths[(r + c) % widths.length] }}
+              />
+            ))}
+          </div>
+        ))}
+      </div>
+      <div className="md:hidden space-y-3" aria-hidden="true" data-testid="skeleton-table-stack">
+        {Array.from({ length: Math.min(rows, 4) }).map((_, r) => (
+          <div key={r} className="bg-surface-card border border-border rounded-[12px] px-4 py-3 space-y-2">
+            {[0, 1, 2].map((l) => (
+              <div key={l} className="flex items-center gap-3">
+                <div className="skeleton-box rounded-lg h-[10px] w-16 shrink-0" />
+                <div className="skeleton-box rounded-lg h-[12px]" style={{ width: widths[(r + l) % widths.length] }} />
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    </SkeletonStatus>
+  );
+}
+
+/** Label + field pairs — the edit pages, settings, the dashboard edit cards. */
+export function SkeletonForm({ fields = 5, label, className = "", testId }) {
+  return (
+    <SkeletonStatus label={label} className={`space-y-5 ${className}`} testId={testId}>
+      {Array.from({ length: fields }).map((_, i) => (
+        <div key={i} className="space-y-2" aria-hidden="true">
+          <div className="skeleton-box rounded-lg h-[12px] w-28" />
+          <div className={`skeleton-box rounded-[12px] w-full ${i === fields - 1 ? "h-24" : "h-11"}`} />
+        </div>
+      ))}
+    </SkeletonStatus>
+  );
+}
+
+/** A row of stat tiles — the admin home and analytics. */
+export function SkeletonTiles({ count = 4, label, className = "", testId }) {
+  return (
+    <SkeletonStatus
+      label={label}
+      className={`grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 ${className}`}
+      testId={testId}
+    >
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="bg-surface-card border border-border rounded-[16px] p-4 space-y-3" aria-hidden="true">
+          <div className="skeleton-box rounded-lg h-[10px] w-[55%]" />
+          <div className="skeleton-box rounded-lg h-[28px] w-[40%]" />
+        </div>
+      ))}
+    </SkeletonStatus>
+  );
+}
+
+/**
+ * MEH-2606 — a detail page (group buy, experience): optional hero band, then
+ * tag + title + meta row + content block, the geometry EventDetailClient's
+ * MEH-858 skeleton draws, so the page does not jump on hydrate. `width` is the
+ * loaded page's own container class (group buy max-w-6xl, experience
+ * max-w-[1100px]) so the placeholder column matches the content column.
+ */
+export function SkeletonDetail({ hero = true, width = "max-w-3xl", label, className = "", testId }) {
+  return (
+    <SkeletonStatus label={label} className={className} testId={testId}>
+      {/* Hero geometry = the experience cover with an image (ExperienceDetailClient,
+          MEH-2559): inside the page column, 210/300/380 px, rounded on lg. */}
+      {hero && (
+        <div className={`${width} mx-auto lg:px-4 lg:pt-6`} aria-hidden="true">
+          <div className="skeleton-box h-[210px] md:h-[300px] lg:h-[380px] lg:rounded-[18px]" data-skeleton="hero" />
+        </div>
+      )}
+      <div className={`${width} mx-auto px-4 py-12`} aria-hidden="true" data-skeleton="column">
+        <div className="skeleton-box rounded-full w-24 h-6 mb-3" />
+        <div className="skeleton-box rounded-lg w-3/4 h-10 mb-4" />
+        <div className="flex flex-wrap gap-4 mb-6">
+          <div className="skeleton-box rounded-lg w-40 h-4" />
+          <div className="skeleton-box rounded-lg w-28 h-4" />
+          <div className="skeleton-box rounded-lg w-20 h-4" />
+        </div>
+        <div className="skeleton-box rounded-[16px] w-full h-32" />
+      </div>
+    </SkeletonStatus>
+  );
+}

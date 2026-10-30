@@ -26,12 +26,14 @@ import { BRAND_NAME } from "@/lib/constants";
 export default function DirectoryDisclaimer({ className = "" }) {
   const t = useTranslations("directory.disclaimer");
   return (
+    // MEH-2592: plain small grey text at the page end, no box — fine print
+    // reads as fine print. The words are untouched (legal copy, see above).
     <div
-      className={`bg-green-50/60 border border-border rounded-[12px] p-3 text-xs text-text/80 leading-relaxed ${className}`}
+      className={`text-xs text-fg-muted leading-relaxed ${className}`}
       role="note"
     >
-      <span className="font-semibold text-text">{BRAND_NAME}</span> {t("body")}{" "}
-      <Link href="/terms" className="underline text-primary inline-block max-w-full">
+      <span className="font-semibold">{BRAND_NAME}</span> {t("body")}{" "}
+      <Link href="/terms" className="underline hover:text-text inline-block max-w-full">
         {t("terms_link")}
       </Link>
     </div>

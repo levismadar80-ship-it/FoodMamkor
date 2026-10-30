@@ -5441,6 +5441,11 @@
             ],
             "title": "Risk Score"
           },
+          "sells_on_site": {
+            "default": false,
+            "title": "Sells On Site",
+            "type": "boolean"
+          },
           "short_description": {
             "anyOf": [
               {
@@ -7172,6 +7177,11 @@
             "title": "Reviews Count",
             "type": "integer"
           },
+          "sells_on_site": {
+            "default": false,
+            "title": "Sells On Site",
+            "type": "boolean"
+          },
           "short_description": {
             "anyOf": [
               {
@@ -7865,6 +7875,11 @@
             "default": 0,
             "title": "Reviews Count",
             "type": "integer"
+          },
+          "sells_on_site": {
+            "default": false,
+            "title": "Sells On Site",
+            "type": "boolean"
           },
           "short_description": {
             "anyOf": [
@@ -9397,6 +9412,11 @@
             "default": 0,
             "title": "Reviews Count",
             "type": "integer"
+          },
+          "sells_on_site": {
+            "default": false,
+            "title": "Sells On Site",
+            "type": "boolean"
           },
           "short_description": {
             "anyOf": [
@@ -14909,7 +14929,7 @@
     },
     "/admin/producers/{producer_id}/google-place-candidates": {
       "get": {
-        "description": "Admin-only: up to 3 Google Place candidates for a producer, or 204.\n\nBuilds the query from the producer's own name + city and runs Places Text\nSearch. 204 (fail-quiet) when: no server key, no results, or any Google API\nerror. 403 for non-admins (require_admin). 404 for an unknown producer.\nNO auto-select — the admin picks one in ProducerForm; the response is\ndisplay-only and nothing here is stored (ToS §3.2.3(b)).",
+        "description": "Admin-only: up to 3 Google Place candidates for a producer, or 204.\n\nBuilds the query from the producer's own name + city — or from `q` when the\nadmin typed one — and runs Places Text Search. 204 (fail-quiet) when: no server key, no results, or any Google API\nerror. 403 for non-admins (require_admin). 404 for an unknown producer.\nNO auto-select — the admin picks one in ProducerForm; the response is\ndisplay-only and nothing here is stored (ToS §3.2.3(b)).",
         "operationId": "get_google_place_candidates_admin_producers__producer_id__google_place_candidates_get",
         "parameters": [
           {
@@ -14920,6 +14940,23 @@
               "format": "uuid",
               "title": "Producer Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 120,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
             }
           }
         ],
@@ -17913,6 +17950,23 @@
               ],
               "title": "City"
             }
+          },
+          {
+            "in": "query",
+            "name": "producer_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Producer Id"
+            }
           }
         ],
         "responses": {
@@ -18262,6 +18316,23 @@
               "default": "open",
               "title": "Status",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "producer_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Producer Id"
             }
           }
         ],
@@ -19107,6 +19178,22 @@
           },
           {
             "in": "query",
+            "name": "on_site",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "On Site"
+            }
+          },
+          {
+            "in": "query",
             "name": "verified",
             "required": false,
             "schema": {
@@ -19167,6 +19254,22 @@
                 }
               ],
               "title": "City"
+            }
+          },
+          {
+            "in": "query",
+            "name": "near_city",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Near City"
             }
           },
           {

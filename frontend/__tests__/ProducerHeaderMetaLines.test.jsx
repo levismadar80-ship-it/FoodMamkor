@@ -1,10 +1,14 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 
-// MEH-2403: the header meta block is TWO lines — "category · city" (muted, the
-// category a link to its /producers listing) and the status alone underneath.
-// Cells: (category+city) · (category only) · (city only) · (neither → line 1 absent, status
-// present). The status never shares a <p> with the grey words.
+// MEH-2592 (30/10/2026, supersedes MEH-2403's two-line block): ONE facts line
+// «rating · [glyph] category · city · מאז» (`producer-header-meta`) and ONE
+// status line (the status alone, `producer-header-status-line`), then a tags
+// row (`producer-header-tags`, the kosher chip; absent with nothing to tag).
+// Cells for the facts line: (category+city) · (category only) ·
+// (city only) · (neither, no reviews → the line is absent). At zero reviews
+// the rating slot is EMPTY — no «אין ביקורות עדיין» pill (Sapir, 30/10). The
+// status never sits inside the facts line.
 vi.mock("next-intl", () => ({
   useTranslations: () => (key, vars) => {
     if (key === "producer.detail.header.review_count") return `${vars?.count} ביקורות`;
@@ -21,8 +25,13 @@ vi.mock("@/i18n/navigation", () => ({
 }));
 vi.mock("@/lib/api", () => ({ default: { get: () => Promise.resolve({ data: { reviews: [] } }) } }));
 vi.mock("@/components/BadgeRow", () => ({ default: () => <div data-testid="badge-row" /> }));
-vi.mock("@/components/KashrutBadgeStrip", () => ({ default: () => <div data-testid="kashrut" /> }));
-vi.mock("@phosphor-icons/react", () => ({
+vi.mock("@/components/KashrutBadgeStrip", () => ({
+  default: ({ className }) => <div data-testid="kashrut" className={className} />,
+}));
+vi.mock("@phosphor-icons/react", async (importOriginal) => ({
+  // The category glyph pulls the real Phosphor family through
+  // lib/category-registry — keep it and override only the long-standing stubs.
+  ...(await importOriginal()),
   MapPin: () => <span />,
   Heart: () => <span />,
   Star: () => <span data-testid="star" />,
@@ -56,28 +65,68 @@ const baseProducer = {
 };
 const category = { id: 12, name: "חלב וגבינות" };
 
-describe("ProducerHeader meta block — two lines (MEH-2403)", () => {
-  it("category + city: line 1 is 'category · city' with the category linking to its listing", () => {
+describe("ProducerHeader facts line (MEH-2592)", () => {
+  it("category + city: «category · city» with the category linking to its listing, the status outside", () => {
     render(<ProducerHeader producer={baseProducer} primaryCategory={category} hasImages />);
     const meta = screen.getByTestId("producer-header-meta");
     const link = within(meta).getByRole("link", { name: "חלב וגבינות" });
     expect(link).toHaveAttribute("href", "/producers?category=12");
     // Category first, city second — the Google/Yelp order, not the old city-first row.
     expect(meta.textContent.indexOf("חלב וגבינות")).toBeLessThan(meta.textContent.indexOf("יקנעם עילית"));
-    // The status is NOT inside the grey line.
     expect(within(meta).queryByTestId("status-open")).toBeNull();
   });
 
-  it("the status renders alone on its own line, keeping its MEH-1546 test id and tone", () => {
+  it("zero reviews: no pill, no anchor — the line opens with the category, one «·» before the city", () => {
     render(<ProducerHeader producer={baseProducer} primaryCategory={category} hasImages />);
-    const statusLine = screen.getByTestId("producer-header-status-line");
-    const status = within(statusLine).getByTestId("status-open");
-    expect(status.className).toMatch(/text-primary/);
-    // Nothing but the status in that line.
-    expect(statusLine.textContent).toBe(status.textContent);
+    const meta = screen.getByTestId("producer-header-meta");
+    expect(within(meta).queryByTestId("new-mark")).toBeNull();
+    expect(within(meta).queryByTestId("trust-strip-rating")).toBeNull();
+    expect(meta.textContent).not.toContain("producer.detail.header.new_mark");
+    expect(meta.textContent.trim().startsWith("חלב וגבינות")).toBe(true);
+    expect(meta.textContent.match(/·/g)).toHaveLength(1);
   });
 
-  it("category only: line 1 is the link alone, no stray separator", () => {
+  it("with reviews the #reviews anchor opens the line, separated from the category by one «·»", () => {
+    render(
+      <ProducerHeader
+        producer={{ ...baseProducer, avg_rating: 4.8, reviews_count: 12 }}
+        primaryCategory={category}
+        hasImages
+      />,
+    );
+    const meta = screen.getByTestId("producer-header-meta");
+    const anchor = within(meta).getByTestId("trust-strip-rating");
+    expect(anchor).toHaveAttribute("href", "#reviews");
+    // rating · category · city → exactly two separators.
+    expect(meta.textContent.match(/·/g)).toHaveLength(2);
+    expect(meta.textContent.indexOf("4.8")).toBeLessThan(meta.textContent.indexOf("חלב וגבינות"));
+  });
+
+  it("the category carries its registry glyph in the category's own colour", () => {
+    render(<ProducerHeader producer={baseProducer} primaryCategory={{ id: 3, name: "לחמים ואפייה" }} hasImages />);
+    const link = screen.getByTestId("producer-header-category-link");
+    const glyph = within(link).getByTestId("producer-header-category-glyph");
+    // CATEGORY_STYLES["לחמים ואפייה"].color — the same colour as its map pin.
+    expect(glyph.style.color).toBe("rgb(137, 103, 20)");
+    expect(glyph).toHaveAttribute("aria-hidden", "true");
+  });
+
+  it("an unknown category gets a link but no glyph (no fallback Leaf)", () => {
+    render(<ProducerHeader producer={baseProducer} primaryCategory={{ id: 99, name: "קטגוריה חדשה" }} hasImages />);
+    const link = screen.getByTestId("producer-header-category-link");
+    expect(link).toHaveTextContent("קטגוריה חדשה");
+    expect(within(link).queryByTestId("producer-header-category-glyph")).toBeNull();
+  });
+
+  it("«מאז {שנה}» closes the line, after the city, with the year dir=ltr", () => {
+    render(<ProducerHeader producer={{ ...baseProducer, established_year: 1998 }} primaryCategory={category} hasImages />);
+    const meta = screen.getByTestId("producer-header-meta");
+    const since = within(meta).getByTestId("established-year");
+    expect(meta.textContent.indexOf("יקנעם עילית")).toBeLessThan(meta.textContent.indexOf(since.textContent));
+    expect(within(since).getByText("1998")).toHaveAttribute("dir", "ltr");
+  });
+
+  it("category only (no reviews): the link alone, no separator", () => {
     render(<ProducerHeader producer={{ ...baseProducer, city: null }} primaryCategory={category} hasImages />);
     const meta = screen.getByTestId("producer-header-meta");
     expect(within(meta).getByRole("link", { name: "חלב וגבינות" })).toHaveAttribute("href", "/producers?category=12");
@@ -85,18 +134,87 @@ describe("ProducerHeader meta block — two lines (MEH-2403)", () => {
     expect(meta.textContent.trim()).toBe("חלב וגבינות");
   });
 
-  it("city only: line 1 is just the city, no link, no stray separator", () => {
+  it("city only (no reviews): just the city, no link, no separator", () => {
     render(<ProducerHeader producer={baseProducer} primaryCategory={null} hasImages />);
     const meta = screen.getByTestId("producer-header-meta");
-    expect(meta).toHaveTextContent("יקנעם עילית");
+    expect(meta.textContent.trim()).toBe("יקנעם עילית");
     expect(within(meta).queryByRole("link")).toBeNull();
-    expect(meta.textContent).not.toContain("·");
   });
 
-  it("neither city nor category: line 1 is absent from the DOM, the status line stays", () => {
+  it("neither city nor category nor reviews: the line is absent from the DOM, the status stays", () => {
     render(<ProducerHeader producer={{ ...baseProducer, city: null }} primaryCategory={null} hasImages />);
     expect(screen.queryByTestId("producer-header-meta")).toBeNull();
     expect(screen.getByTestId("status-open")).toBeInTheDocument();
+  });
+
+  it("reviews but neither city nor category: the line is the rating anchor alone, no separator", () => {
+    render(
+      <ProducerHeader
+        producer={{ ...baseProducer, city: null, avg_rating: 4.8, reviews_count: 12 }}
+        primaryCategory={null}
+        hasImages
+      />,
+    );
+    const meta = screen.getByTestId("producer-header-meta");
+    expect(within(meta).getByTestId("trust-strip-rating")).toBeInTheDocument();
+    expect(meta.textContent).not.toContain("·");
+  });
+});
+
+describe("ProducerHeader status line + tags row (MEH-2592)", () => {
+  it("the status renders alone on its own line, keeping its MEH-1546 id and tone", () => {
+    render(<ProducerHeader producer={baseProducer} primaryCategory={category} hasImages />);
+    const statusLine = screen.getByTestId("producer-header-status-line");
+    const status = within(statusLine).getByTestId("status-open");
+    expect(status.className).toMatch(/text-primary/);
+    expect(statusLine.textContent).toBe(status.textContent);
+  });
+
+  it("no kosher data: no tags row at all (no empty gap under the status)", () => {
+    render(<ProducerHeader producer={baseProducer} primaryCategory={category} hasImages />);
+    expect(screen.queryByTestId("producer-header-tags")).toBeNull();
+  });
+
+  it("with kashrut badges: ONE outlined kosher chip in the tags row, BELOW the status line", () => {
+    render(
+      <ProducerHeader
+        producer={{ ...baseProducer, kashrut_badges: ["badatz", "mehadrin"] }}
+        primaryCategory={category}
+        hasImages
+      />,
+    );
+    const row = screen.getByTestId("producer-header-tags");
+    const kosher = within(row).getByTestId("kashrut");
+    expect(row.children).toHaveLength(1);
+    expect(kosher.className).toMatch(/\bborder-border\b/);
+    expect(kosher.className).toMatch(/\brounded-full\b/);
+    const statusLine = screen.getByTestId("producer-header-status-line");
+    expect(statusLine.compareDocumentPosition(row) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(statusLine).queryByTestId("kashrut")).toBeNull();
+  });
+
+  it("the generic «כשר» fallback renders as the same chip in the tags row", () => {
+    render(
+      <ProducerHeader
+        producer={{ ...baseProducer, kashrut_badges: [], kashrut_verified_at: "2026-01-01T00:00:00", kashrut_expires_at: null }}
+        primaryCategory={category}
+        hasImages
+      />,
+    );
+    const row = screen.getByTestId("producer-header-tags");
+    const kosher = within(row).getByText("producer.detail.header.attr.kosher");
+    expect(row.children).toHaveLength(1);
+    expect(kosher.className).toMatch(/\brounded-full\b/);
+  });
+
+  it("the gluten sentence stays plain text BELOW the status, never a tag", () => {
+    render(
+      <ProducerHeader producer={{ ...baseProducer, gluten_free_facility: "shared" }} primaryCategory={category} hasImages />,
+    );
+    const statusLine = screen.getByTestId("producer-header-status-line");
+    const gluten = screen.getByTestId("gluten-facility-shared");
+    expect(screen.queryByTestId("producer-header-tags")).toBeNull();
+    expect(statusLine.compareDocumentPosition(gluten) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });
 
@@ -130,5 +248,36 @@ describe("ProducerHeader kosher fallback line — expiry gate (MEH-2518)", () =>
   it("legacy NULL expiry (MEH-1260): the line renders", () => {
     render(<ProducerHeader producer={{ ...verified, kashrut_expires_at: null }} primaryCategory={category} hasImages />);
     expect(screen.getByText(KOSHER)).toBeInTheDocument();
+  });
+});
+
+// MEH-2596: the status renders as a tinted tag, and the grey state uses the
+// darker fg-muted inside it (muted is 4.33:1 on its own 10% tint).
+describe("ProducerHeader status tag (MEH-2596)", () => {
+  it("open: a tinted tag in primary", () => {
+    render(<ProducerHeader producer={baseProducer} primaryCategory={category} hasImages />);
+    const tag = screen.getByTestId("status-open");
+    expect(tag.className).toContain("bg-[color-mix(in_srgb,currentColor_10%,transparent)]");
+    expect(tag.className).toMatch(/\btext-primary\b/);
+  });
+
+  it("full this week: the grey tag is fg-muted, not muted", () => {
+    render(
+      <ProducerHeader
+        producer={{ ...baseProducer, availability_state: "full_this_week" }}
+        primaryCategory={category}
+        hasImages
+      />,
+    );
+    const tag = screen.getByTestId("status-closed");
+    expect(tag.className).toMatch(/\btext-fg-muted\b/);
+    expect(tag.className).not.toMatch(/(^|\s)text-muted(\s|$)/);
+  });
+
+  it("vacation: the tag keeps gold-deep (4.90:1 on its tint)", () => {
+    render(<ProducerHeader producer={baseProducer} isVacation primaryCategory={category} hasImages />);
+    const tag = screen.getByTestId("status-vacation");
+    expect(tag.className).toContain("bg-[color-mix(in_srgb,currentColor_10%,transparent)]");
+    expect(tag.className).toMatch(/\btext-gold-deep\b/);
   });
 });

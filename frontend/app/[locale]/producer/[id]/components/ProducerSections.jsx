@@ -24,10 +24,10 @@ import { primaryPoint } from "@/lib/producerPoints";
 import OwnerSectionEditLink from "@/components/OwnerSectionEditLink";
 // MEH-1334 chunk 3: "מאחורי העסק" — data-gated owner card (Z4).
 import OwnerCard from "./OwnerCard";
+import ProducerActivities from "./ProducerActivities";
 // MEH-1875: the weekly order-window schedule as a headed Info block. Lives in
 // OrderWindowStrip.jsx beside OrderWindowCtaNote (ContactCard's consumer).
 import { OrderWindowScheduleBlock } from "./OrderWindowStrip";
-import ProducerCard from "@/components/ProducerCard";
 import RecipeCard from "@/components/public/RecipeCard";
 // MEH-1901: the full product detail (long description, per-product diet flags)
 // as an overlay — no route, no marketplace.
@@ -60,12 +60,6 @@ import GoogleRatingLine from "@/components/GoogleRatingLine";
 // fit it. See MEH-1853.
 const MiniMap = dynamic(() => import("@/components/MiniMap"), { ssr: false });
 
-// MEH-1146 chunk C: the discovery loop ("עוד בתי עסק באזור") renders only when
-// at least this many same-city businesses (excluding the current one) come
-// back — below it the section hides entirely so it never shows a thin 1-2 card
-// row. Documented const per the spec.
-const MIN_NEARBY_BUSINESSES = 4;
-
 // MEH-1334 chunk 3: single owner of "does this producer have a mappable
 // location" — gates both the merged location section and the MiniMap mount.
 // MEH-1938 chunk 5a: answered from the PRIMARY producer_locations row via
@@ -88,8 +82,10 @@ export function parseHasLocation(producer, pin) {
 // an inert <div> otherwise. Same classes either way — the card looks identical;
 // only its interactivity is conditional, which is the honest rendering of
 // "signatureProduct may be null" (see the MEH-1233 B4 note on the derivation).
+// MEH-2592 C: a medium feature card — a 112px photo (144px on md+), a soft gold
+// border, rounder corners. Sapir rejected a full-width photo as too big (30/10).
 const SIGNATURE_SHELL_CLASS =
-  "mb-4 flex items-center gap-3 bg-surface-card border border-border rounded-md p-3";
+  "mb-5 flex items-center gap-4 bg-surface-card border border-accent/40 rounded-2xl p-3.5 shadow-sm";
 
 function SignatureShell({ product, onOpen, ariaLabel, children }) {
   if (!product) {
@@ -109,10 +105,12 @@ function SignatureShell({ product, onOpen, ariaLabel, children }) {
 }
 
 /**
- * The middle of the main column. MEH-1146 chunk B reorders the sections to
- * the editorial IA: about → products → recipes → events → delivery →
- * reviews → similar → location (OpeningHours + MiniMap, LAST) → disclaimer →
- * report. The signature product (top_product_name / price_range)
+ * The middle of the main column. MEH-2592 reorders the sections so everything
+ * about this business comes first: about → owner → products → recipes →
+ * events → reviews → delivery → order window → location (OpeningHours +
+ * MiniMap) → fine print (disclaimer, report, last-updated). The similar /
+ * nearby rows moved out to <OtherBusinesses>, which ProducerDetail renders
+ * full width below both columns. The signature product (top_product_name / price_range)
  * moved OUT of ProducerHeader to the top of the products section here.
  *
  * Delivery (MEH-1168 P3, decision A): a single editorial <DeliveryBlock> serves
@@ -127,8 +125,6 @@ function SignatureShell({ product, onOpen, ariaLabel, children }) {
 export default function ProducerSections({
   producer,
   events,
-  similarProducers,
-  nearbyProducers = [],
   sectionRefs,
   reviewsContainerRef,
   reviewsVisible,
@@ -212,7 +208,7 @@ export default function ProducerSections({
           ) || null
         : null;
   const signatureImg = signatureProduct?.image_url
-    ? optimizeCloudinary(signatureProduct.image_url, { aspectRatio: "1:1", width: 160 })
+    ? optimizeCloudinary(signatureProduct.image_url, { aspectRatio: "1:1", width: 320 })
     : null;
   const gridProducts = signatureProduct
     ? (producer.products || []).filter((p) => p.id !== signatureProduct.id)
@@ -287,15 +283,24 @@ export default function ProducerSections({
           <p className="text-text/85 leading-relaxed whitespace-pre-line">
             {producer.description}
           </p>
+          {/* MEH-2592: «מאחורי העסק» lives inside «אודות» — who the business
+              is and who is behind it, read as one story. */}
+          <OwnerCard producer={producer} nested />
         </FadeInSection>
       )}
+
+      {/* MEH-2592: with a description the owner card is nested inside
+          «אודות» above; without one there is no «אודות» to sit in, so it keeps
+          its own section here, in the same place. Self-gates: null only when
+          there is no contact_name, owner_bio or owner_photo_url (MEH-2471). */}
+      {!producer.description && <OwnerCard producer={producer} />}
 
       {/* Products (premium only) + the signature product at the top.
           MEH-1146 chunk B: the section also renders when only the signature
           product exists (no product entries) so the moved-out header
           signature never vanishes. */}
       {(producer.products?.length > 0 || hasSignature) && (
-        <section id="section-products" className="mt-8 scroll-mt-[calc(var(--chrome-top,82px)_+_var(--section-nav-h,68px))] md:scroll-mt-24" ref={(el) => { sectionRefs.current.products = el; }}>
+        <section id="section-products" className="mt-12 scroll-mt-[calc(var(--chrome-top,82px)_+_var(--section-nav-h,68px))] md:scroll-mt-24" ref={(el) => { sectionRefs.current.products = el; }}>
           {/* MEH-1306: owner pencil beside the heading → #products card. */}
           <div className="flex items-center gap-2 mb-4">
             <h2 className="font-headline-md text-2xl font-bold text-text">{t("producer.detail.sections.products.heading")}</h2>
@@ -325,42 +330,43 @@ export default function ProducerSections({
                 name: producer.top_product_name || "",
               })}
             >
-              <div className="relative w-16 h-16 flex-shrink-0 rounded-md overflow-hidden bg-background">
+              <div className="relative w-28 h-28 md:w-36 md:h-36 flex-shrink-0 rounded-xl overflow-hidden bg-background">
                 {signatureImg ? (
                   <Image
                     src={signatureImg}
                     alt={producer.top_product_name || ""}
                     fill
                     className="object-cover"
-                    sizes="64px"
+                    sizes="(min-width: 768px) 144px, 112px"
                   />
                 ) : (
                   <div className="w-full h-full bg-background flex items-center justify-center" aria-hidden="true">
-                    <Leaf size={28} weight="light" className="text-primary/[0.32]" />
+                    <Leaf size={40} weight="light" className="text-primary/[0.32]" />
                   </div>
                 )}
               </div>
               <div className="min-w-0">
                 {/* MEH-1463: accent eyebrow so the card reads as "the signature
                     product", not just a bigger unlabeled row. */}
-                <p className="text-accent text-xs font-medium">
+                <p className="inline-flex items-center gap-1.5 rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-bold text-gold-deep">
+                  <span className="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true" />
                   {t("producer.detail.sections.products.signature_label")}
                 </p>
                 {producer.top_product_name && (
-                  <p className="font-medium text-text">{producer.top_product_name}</p>
+                  <p className="mt-1.5 font-headline-md text-lg font-bold leading-snug text-text">{producer.top_product_name}</p>
                 )}
                 {/* MEH-1463: description fallback from the deduped grid product. */}
                 {signatureProduct?.description && (
                   <p className="text-sm text-fg-muted mt-0.5 line-clamp-2">{signatureProduct.description}</p>
                 )}
                 {producer.price_range ? (
-                  <p className="text-accent font-semibold mt-0.5">
+                  <p className="text-gold-deep font-bold mt-1">
                     {producer.price_range}
                   </p>
                 ) : signatureNumericPrice ? (
-                  <p className="text-accent font-semibold mt-0.5"><span dir="ltr">{signatureNumericPrice}</span></p>
+                  <p className="text-gold-deep font-bold mt-1"><span dir="ltr">{signatureNumericPrice}</span></p>
                 ) : signatureFreeTextPrice ? (
-                  <p className="text-accent font-semibold mt-0.5">{signatureFreeTextPrice}</p>
+                  <p className="text-gold-deep font-bold mt-1">{signatureFreeTextPrice}</p>
                 ) : null}
               </div>
               {/* Forward chevron points LEFT in RTL — same convention as
@@ -491,7 +497,7 @@ export default function ProducerSections({
           is silent per spec. Anchor id matches the breadcrumb in
           RecipeDetail.jsx ("חזרה לדף בית העסק > מתכונים"). */}
       {producer.slug && recipes.length > 0 && (
-        <section className="mt-8" id="recipes">
+        <section className="mt-12" id="recipes">
           <h2 className="font-headline-md text-2xl font-bold text-text mb-4">
             {t("producer.detail.sections.recipes.cta")}
           </h2>
@@ -505,7 +511,7 @@ export default function ProducerSections({
 
       {/* Events section */}
       {events.length > 0 && (
-        <section className="mt-8" ref={(el) => { sectionRefs.current.events = el; }}>
+        <section className="mt-12" ref={(el) => { sectionRefs.current.events = el; }}>
           <h2 className="font-headline-md text-2xl font-bold text-text mb-4">{t("producer.detail.sections.events.heading")}</h2>
           <div className="space-y-3">
             {(showAllEvents ? events : events.slice(0, 3)).map((ev) => {
@@ -593,48 +599,8 @@ export default function ProducerSections({
         </section>
       )}
 
-      {/* MEH-1168 P3 (decision A): the editorial DeliveryBlock now serves ALL
-          producers — the legacy delivery_areas table retired from this page. It
-          is fed the full delivery_areas (city · min order · day) + pickup_points
-          and renders whenever the producer has any delivery/pickup signal
-          (offers_delivery, delivery_areas rows, or pickup_points). Its WhatsApp
-          order CTA stays tone="tertiary" so it never competes with the contact
-          card's single primary CTA. */}
-      {/* MEH-1823: the active offer sits ABOVE the delivery block, and outside
-          its gate on purpose — an offer is not a delivery fact, and a business
-          with an offer but no delivery (pickup_discount, first_order) would
-          otherwise never show it. Renders nothing when there is no offer. */}
-      {producer.active_offer && (
-        <div className="mt-8" data-testid="offer-badge-section">
-          <OfferBadge offer={producer.active_offer} variant="badge" />
-        </div>
-      )}
-
-      {(producer.offers_delivery ||
-        producer.delivery_areas?.length > 0 ||
-        producer.pickup_points) && (
-        // MEH-1207: stable id = the anchor-nav's delivery target; scroll-mt
-        // clears the sticky header + nav (same idiom as #reviews below).
-        <div
-          id="section-delivery"
-          className="scroll-mt-[calc(var(--chrome-top,82px)_+_var(--section-nav-h,68px))] md:scroll-mt-24"
-          ref={(el) => { sectionRefs.current.delivery = el; }}
-        >
-          <DeliveryBlock
-            nationwide={producer.delivery_nationwide}
-            excluded={producer.delivery_excluded_cities || []}
-            areas={producer.delivery_areas || []}
-            pickup={!!producer.pickup_points}
-            producer={producer}
-          />
-        </div>
-      )}
-
-      {/* MEH-1334 chunk 3: owner card — between delivery and reviews per the
-          approved mockup (a NEW section; the MEH-1146 order of existing
-          sections is untouched). Self-gates: null only when there is no contact_name, owner_bio
-          or owner_photo_url (MEH-2471). */}
-      <OwnerCard producer={producer} />
+      {/* MEH-2602: the business's open group buys + upcoming experiences. */}
+      <ProducerActivities producerId={producer.id} />
 
       {/* Reviews — IO-lazy: only mounts the fetch when the section
           scrolls within 300px of the viewport (saves ~300ms on 3G).
@@ -680,23 +646,41 @@ export default function ProducerSections({
         <GoogleRatingLine key={producer.id} producerId={producer.id} producerName={producer.name} />
       )}
 
-      {/* MEH-102: Similar producers — MEH-788: scroll-reveal (below fold). */}
-      {similarProducers.length >= 3 && (
-        <FadeInSection as="section" {...REVEAL_PRESET} className="mt-8 border-t border-border pt-8">
-          <h2 className="font-headline-md text-2xl font-bold text-text mb-1">{t("producer.detail.sections.similar.heading")}</h2>
-          {producer.categories?.[0]?.name && (
-            <p className="text-sm text-fg-muted mb-4">
-              {t("producer.detail.sections.similar.in_area", { category: producer.categories[0].name })}
-            </p>
-          )}
-          <div className="flex gap-4 overflow-x-auto pb-2 md:grid md:grid-cols-3 md:overflow-visible">
-            {similarProducers.map((p) => (
-              <div key={p.id} className="flex-shrink-0 w-72 md:w-auto">
-                <ProducerCard producer={p} referrer="similar" />
-              </div>
-            ))}
-          </div>
-        </FadeInSection>
+      {/* MEH-1168 P3 (decision A): the editorial DeliveryBlock now serves ALL
+          producers — the legacy delivery_areas table retired from this page. It
+          is fed the full delivery_areas (city · min order · day) + pickup_points
+          and renders whenever the producer has any delivery/pickup signal
+          (offers_delivery, delivery_areas rows, or pickup_points). Its WhatsApp
+          order CTA stays tone="tertiary" so it never competes with the contact
+          card's single primary CTA. */}
+      {/* MEH-1823: the active offer sits ABOVE the delivery block, and outside
+          its gate on purpose — an offer is not a delivery fact, and a business
+          with an offer but no delivery (pickup_discount, first_order) would
+          otherwise never show it. Renders nothing when there is no offer. */}
+      {producer.active_offer && (
+        <div className="mt-8" data-testid="offer-badge-section">
+          <OfferBadge offer={producer.active_offer} variant="badge" />
+        </div>
+      )}
+
+      {(producer.offers_delivery ||
+        producer.delivery_areas?.length > 0 ||
+        producer.pickup_points) && (
+        // MEH-1207: stable id = the anchor-nav's delivery target; scroll-mt
+        // clears the sticky header + nav (same idiom as #reviews below).
+        <div
+          id="section-delivery"
+          className="scroll-mt-[calc(var(--chrome-top,82px)_+_var(--section-nav-h,68px))] md:scroll-mt-24"
+          ref={(el) => { sectionRefs.current.delivery = el; }}
+        >
+          <DeliveryBlock
+            nationwide={producer.delivery_nationwide}
+            excluded={producer.delivery_excluded_cities || []}
+            areas={producer.delivery_areas || []}
+            pickup={!!producer.pickup_points}
+            producer={producer}
+          />
+        </div>
       )}
 
       {/* MEH-1875: the weekly order schedule, immediately BEFORE the location
@@ -730,7 +714,7 @@ export default function ProducerSections({
       {(hasLocation || storeHours) && (
         <section
           id="section-location"
-          className="mt-8 border-t border-border pt-8 scroll-mt-[calc(var(--chrome-top,82px)_+_var(--section-nav-h,68px))] md:scroll-mt-24"
+          className="mt-12 scroll-mt-[calc(var(--chrome-top,82px)_+_var(--section-nav-h,68px))] md:scroll-mt-24"
         >
           <div className="flex items-center gap-2 mb-3">
             <h2 className="font-headline-md text-2xl font-bold text-text">
@@ -773,43 +757,45 @@ export default function ProducerSections({
         </section>
       )}
 
-      {/* Directory-only disclaimer — required by Israeli consumer
-          protection law. The seller bears legal responsibility for
-          products and licensing; the platform is just a directory. */}
-      <DirectoryDisclaimer className="mt-8" />
-
-      {/* MEH-1146 chunk C: discovery loop — more businesses in the same area
-          (city). Frontend-only (reuses GET /producers with city+exclude via
-          useProducerData). Hidden entirely below MIN_NEARBY_BUSINESSES so a
-          thin 1-2 card row never shows; the report link stays below it. */}
-      {nearbyProducers.length >= MIN_NEARBY_BUSINESSES && (
-        <FadeInSection as="section" {...REVEAL_PRESET} className="mt-8 border-t border-border pt-8">
-          <h2 className="font-headline-md text-2xl font-bold text-text mb-4">
-            {t("producer.detail.sections.nearby.heading")}
-          </h2>
-          <div className="flex gap-4 overflow-x-auto pb-2 md:grid md:grid-cols-3 md:overflow-visible">
-            {nearbyProducers.slice(0, 6).map((p) => (
-              <div key={p.id} className="flex-shrink-0 w-72 md:w-auto">
-                <ProducerCard producer={p} referrer="nearby" />
-              </div>
-            ))}
-          </div>
-        </FadeInSection>
-      )}
-
-      {/* Report — stays at the page end, below the discovery loop. */}
-      <div className="mt-6 pt-6 border-t border-border">
-        <ReportButton producerId={producer.id} />
-        {/* MEH-1460: quiet "טעות בפרטים? עדכנו אותנו" correction link,
-            directly below ReportButton (opens the MEH-1443 email-only modal).
-            Relocated here from ContactCard — same quiet-link styling. */}
-        <button
-          type="button"
-          onClick={() => setReportOpen(true)}
-          className="mt-3 block text-xs text-fg-muted underline hover:text-text transition"
-        >
-          {t("producer.detail.contact_card.report_info_link")}
-        </button>
+      {/* MEH-2592: the page-end fine print — everything about THIS business
+          ends here, before the other-businesses band (rendered by
+          ProducerDetail, full width, below both columns). Plain small grey
+          text, no box: the disclaimer is legal copy and stays word for word
+          (MEH-1548), only its container changed. Order inside: disclaimer →
+          report → correction link → last-updated. */}
+      <div className="mt-12" data-testid="producer-fine-print">
+        {/* Directory-only disclaimer — required by Israeli consumer
+            protection law. The seller bears legal responsibility for
+            products and licensing; the platform is just a directory. */}
+        <DirectoryDisclaimer />
+        <div className="mt-4">
+          <ReportButton producerId={producer.id} />
+          {/* MEH-1460: quiet "טעות בפרטים? עדכנו אותנו" correction link,
+              directly below ReportButton (opens the MEH-1443 email-only modal).
+              Relocated here from ContactCard — same quiet-link styling. */}
+          <button
+            type="button"
+            onClick={() => setReportOpen(true)}
+            className="mt-3 block text-xs text-fg-muted underline hover:text-text transition"
+          >
+            {t("producer.detail.contact_card.report_info_link")}
+          </button>
+        </div>
+        {/* MEH-1291: last-updated freshness signal. Renders ONLY when a real
+            edit has stamped producer.updated_at (nullable, no backfill — Chunk A
+            migration a3f1c9d2e4b7), so untouched producers show nothing. Modest
+            month-year granularity via the shared format-date util (he→he-IL,
+            en→en-US). Page-end meta footnote — no section reorder. */}
+        {producer.updated_at && (
+          <p className="mt-4 text-xs text-fg-muted">
+            {t("producer.detail.last_updated", {
+              date: formatEventDate(producer.updated_at, locale, {
+                month: "long",
+                year: "numeric",
+              }),
+            })}
+          </p>
+        )}
       </div>
 
       <ReportInfoModal
@@ -817,22 +803,6 @@ export default function ProducerSections({
         onClose={() => setReportOpen(false)}
         producerSlug={producer.slug || producer.id}
       />
-
-      {/* MEH-1291: last-updated freshness signal. Renders ONLY when a real
-          edit has stamped producer.updated_at (nullable, no backfill — Chunk A
-          migration a3f1c9d2e4b7), so untouched producers show nothing. Modest
-          month-year granularity via the shared format-date util (he→he-IL,
-          en→en-US). Page-end meta footnote — no section reorder. */}
-      {producer.updated_at && (
-        <p className="mt-4 text-xs text-fg-muted">
-          {t("producer.detail.last_updated", {
-            date: formatEventDate(producer.updated_at, locale, {
-              month: "long",
-              year: "numeric",
-            }),
-          })}
-        </p>
-      )}
     </>
   );
 }

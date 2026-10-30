@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Check, Faders, Info, Leaf, MapPin, X } from "@phosphor-icons/react";
+import { Faders, Info, Leaf, MapPin, X } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import ProducerCard from "@/components/ProducerCard";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
@@ -11,6 +11,9 @@ import { ActiveFilterChip } from "@/app/[locale]/home/ActiveFilterChip";
 // MEH-2173: the same grouped sheet /map and /producers mount. Its chip SET is
 // a prop (MEH-1862), so no widening was needed for a third surface.
 import FilterSheet from "@/components/FilterSheet";
+import PromotedServiceChips from "@/components/PromotedServiceChips";
+import { SERVICE_CHIP_KEYS } from "@/lib/map-chips";
+import { chipsToQuery } from "@/lib/filter-url";
 // MEH-1825: the day row is shared with /producers — one definition in components/.
 import { DeliveryDayRow } from "@/components/DeliveryDayRow";
 import { keepFocusedChipClear } from "@/lib/keepFocusedChipClear";
@@ -26,28 +29,18 @@ import {
   visibleGatedDietKeys,
   withChipGroups,       // MEH-2173 — sheet group metadata
 } from "@/lib/producer-filters";
-import { chipIcon } from "@/lib/chip-icons";
 import { LOAD_MORE_CAP } from "@/lib/use-home-page";
 
-// 🔒 MEH-2173 — the two axes the home row PROMOTES onto the surface. Every
-// other axis stays reachable, one tap away, inside the FilterSheet.
+// 🔒 The axes the home row PROMOTES onto the surface; every other axis stays
+// one tap away inside the FilterSheet. CHANGING THIS LIST IS A SAPIR DECISION,
+// not a refactor.
 //
-// CHANGING THIS PAIR IS A SAPIR DECISION, not a refactor: it is a product
-// ruling about which two filters are worth permanent screen space on the
-// entry surface, and it was made in the 25/08 "סינון ארוך מדי" conversation.
-//
-// It deliberately does NOT mirror /map. /map promotes the FULFILMENT pair
-// (`has_delivery` + `pickup_points`, ServiceChipRow.jsx:40, MEH-2046); home
-// promotes trust + delivery. The card's own text described this list as a
-// mirror of a `QUICK_CHIP_KEYS` 🔒 in lib/map-chips.js — that symbol does not
-// exist. It was deleted in MEH-1468, which also retired the MEH-1461 "quick row
-// capped at 2" lock along with it (map-chips.js:86-90). Both surfaces are
-// intentionally different rows; neither is derived from the other, and there is
-// no shared constant to keep them in step.
-//
-// Order is RTL reading order: the trust axis leads, matching the sheet's own
-// service group (FilterSheet.jsx GROUP_CHIP_ORDER — verified, then has_delivery).
-const PROMOTED_KEYS = ["verified", "has_delivery"];
+// MEH-2598 (Sapir 29/10, decision card «אחיד, מאומת בסינון»): home, /producers
+// and /map promote the SAME service trio — «משלוח · איסוף עצמי · קנייה במקום»,
+// SERVICE_CHIP_KEYS in lib/map-chips.js — rendered by one component
+// (components/PromotedServiceChips.jsx). It replaced MEH-2173's «מאומת» +
+// «משלוח» pair; «מאומת» stays in the sheet.
+const PROMOTED_KEYS = SERVICE_CHIP_KEYS;
 
 /**
  * MEH-2198: the days a region-fallback producer delivers to the ACTIVE city,
@@ -158,7 +151,7 @@ export function HomeProducersGrid({
   // MEH-2173: the GATED axis list. Unchanged in what it computes — both
   // runtime gates below still decide what exists — but it now yields plain chip
   // defs instead of icon-attached ones, because its two consumers attach their
-  // own glyphs: the promoted row via `chipIcon`, and FilterSheet internally
+  // own glyphs: the promoted row via PromotedServiceChips, and FilterSheet internally
   // (FilterSheet.jsx calls chipIcon per row). This ticket changes WHERE an axis
   // renders, never WHETHER it is offered.
   const gatedChips = useMemo(() => {
@@ -206,14 +199,6 @@ export function HomeProducersGrid({
   // of which is promoted), and stated so the distinction survives a third gate.
   // A key absent from CHIPS_CONFIG yields nothing rather than an empty chip;
   // the count assertion in HomePromotedFilters.test.jsx is what would catch it.
-  const promotedChips = useMemo(
-    () =>
-      PROMOTED_KEYS.map((key) => {
-        const chip = CHIPS_CONFIG.find((c) => c.key === key);
-        return chip ? { ...chip, icon: chipIcon(key) } : null;
-      }).filter(Boolean),
-    [],
-  );
   // The sheet gets the gated list plus its group metadata (MEH-1862's seam).
   const sheetChips = useMemo(() => withChipGroups(gatedChips), [gatedChips]);
 
@@ -266,7 +251,9 @@ export function HomeProducersGrid({
             ? t("home.producers.heading_category", { name: activeCategory.name })
             : t("home.producers.heading")}
         </h2>
-        <Link href="/map" className="text-primary hover:underline flex items-center gap-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
+        {/* MEH-2598: the active chips ride along (lib/filter-url), so the map
+            opens on the same search the grid is showing. */}
+        <Link href={`/map${chipsToQuery(chips)}`} data-testid="home-map-link" className="text-primary hover:underline flex items-center gap-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
           <MapPin size={14} className="text-current" />
           {t("home.producers.map_link")}
         </Link>
@@ -367,31 +354,16 @@ export function HomeProducersGrid({
             align="start"
           />
         </div>
-        {promotedChips.map((chip) => {
-          const active = !!chips[chip.key];
-          return (
-            <button
-              key={chip.key}
-              type="button"
-              onClick={() => onToggleChip(chip.key, "row")}
-              aria-pressed={active}
-              data-testid={`home-promoted-chip-${chip.key}`}
-              // REUSES: frontend/app/[locale]/map/components/ServiceChipRow.jsx:69-73
-              // — identical promoted-chip geometry and the MEH-1181-A Direction A
-              // wash+ring for the active state, so a promoted chip reads the same
-              // on home as it does on /map even though the PAIR differs.
-              className={`inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 rounded-md text-sm font-medium border transition shrink-0 ${
-                active
-                  ? "bg-green-50 text-primary border-primary ring-1 ring-primary"
-                  : "bg-white text-text border-border hover:border-primary hover:text-primary"
-              }`}
-            >
-              {/* MEH-2500: on = ✓ in place of the glyph, as on /map. */}
-              <span aria-hidden="true">{active ? <Check size={16} weight="bold" /> : chip.icon}</span>
-              {chip.label}
-            </button>
-          );
-        })}
+        {/* MEH-2598: the shared promoted trio. `gatedChips`, not CHIPS_CONFIG:
+            on_site is data-gated (a new axis), and a promoted chip that
+            returns nothing would look broken. An active axis survives every
+            gate's carve-out, so a deep link is never stranded. */}
+        <PromotedServiceChips
+          chips={gatedChips}
+          chipState={chips}
+          onToggle={(key) => onToggleChip(key, "row")}
+          testIdPrefix="home-promoted-chip"
+        />
         {/* MEH-1645 day refinement, a permanent anchor since MEH-1771 and ONE
             value-carrying dropdown chip since MEH-2186: always rendered — with
             no city a tap routes into the LocationModal (handleDaySelected), with
