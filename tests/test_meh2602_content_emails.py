@@ -224,3 +224,20 @@ def test_first_owner_reply_mails_the_reviewer_once(client, db, sent):
     )
     assert r.status_code == 200, r.text
     assert len(sent) == 1
+
+
+def test_owner_written_names_never_break_the_subject_line(monkeypatch):
+    """A recipe title and a business name are owner-written; a line break in
+    either must not reach the subject (CI reviewer, #3878)."""
+    from app.services import content_notifications as cn
+
+    sent = []
+    monkeypatch.setattr(
+        cn, "send_email", lambda to, subject, body: sent.append(subject)
+    )
+    cn.notify_recipe_approved("o@sample.co.il", "עוגה\r\nBcc: x@evil.test", "/x")
+    cn.notify_owner_new_review("o@sample.co.il", "מאפייה\nשנייה", 5, "/p/x")
+    cn.notify_reviewer_reply("r@sample.co.il", "מאפייה\rשנייה", "/p/x")
+    assert len(sent) == 3
+    for subject in sent:
+        assert "\n" not in subject and "\r" not in subject, subject

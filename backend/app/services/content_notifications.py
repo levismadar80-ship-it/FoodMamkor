@@ -30,7 +30,7 @@ def _link(path: str) -> str:
 
 
 def notify_recipe_approved(to_email: str, title: str, path: str) -> None:
-    subject = f'מהמקור — המתכון "{title}" אושר ופורסם 🌿'
+    subject = f'מהמקור — המתכון "{_one_line(title)}" אושר ופורסם 🌿'
     body = (
         f"שלום,\n\n"
         f'המתכון "{title}" אושר ומופיע עכשיו בדף בית העסק שלך במהמקור.\n\n'
@@ -41,7 +41,7 @@ def notify_recipe_approved(to_email: str, title: str, path: str) -> None:
 
 
 def notify_recipe_changes_requested(to_email: str, title: str, feedback: str) -> None:
-    subject = f'מהמקור — נדרשים שינויים במתכון "{title}"'
+    subject = f'מהמקור — נדרשים שינויים במתכון "{_one_line(title)}"'
     body = (
         f"שלום,\n\n"
         f'עברנו על המתכון "{title}" ונשמח לכמה התאמות לפני שנפרסם אותו.\n\n'
@@ -54,7 +54,7 @@ def notify_recipe_changes_requested(to_email: str, title: str, feedback: str) ->
 
 
 def notify_recipe_rejected(to_email: str, title: str, reason: str | None) -> None:
-    subject = f'מהמקור — עדכון לגבי המתכון "{title}"'
+    subject = f'מהמקור — עדכון לגבי המתכון "{_one_line(title)}"'
     reason_line = f"\nסיבה: {_one_line(reason)}\n" if _one_line(reason) else ""
     body = (
         f"שלום,\n\n"
@@ -107,7 +107,7 @@ def notify_kashrut_rejected(
 def notify_owner_new_review(
     to_email: str, producer_name: str, stars: int, path: str
 ) -> None:
-    subject = f"מהמקור — ביקורת חדשה על {producer_name}"
+    subject = f"מהמקור — ביקורת חדשה על {_one_line(producer_name)}"
     body = (
         f"שלום,\n\n"
         f'לקוח השאיר ביקורת חדשה על "{producer_name}" ({stars} מתוך 5).\n'
@@ -119,7 +119,7 @@ def notify_owner_new_review(
 
 
 def notify_reviewer_reply(to_email: str, producer_name: str, path: str) -> None:
-    subject = f"מהמקור — {producer_name} הגיבו לביקורת שלך"
+    subject = f"מהמקור — {_one_line(producer_name)} הגיבו לביקורת שלך"
     body = (
         f"שלום,\n\n"
         f'"{producer_name}" הגיבו לביקורת שכתבת במהמקור.\n\n'
