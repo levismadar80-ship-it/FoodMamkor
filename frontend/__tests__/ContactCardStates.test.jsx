@@ -23,7 +23,7 @@ vi.mock("next-intl", () => ({
       "producer.detail.contact_card.single.instagram": "אינסטגרם",
       "producer.detail.contact_card.single.website": "לאתר העסק",
       "producer.detail.contact_card.single.email": "שלחו אימייל",
-      "whatsapp.question_chips.my_area": "האזור שלי",
+      "whatsapp.question_chips.delivery_to_my_area": "אפשר משלוח לאזור שלי?",
       "whatsapp.question_chips.delivery_to_city": `אפשר משלוח ל${vars?.city ?? ""}?`,
       "whatsapp.question_chips.greeting_template": `שלום ${vars?.name ?? ""}, ${vars?.q ?? ""}`,
     };
