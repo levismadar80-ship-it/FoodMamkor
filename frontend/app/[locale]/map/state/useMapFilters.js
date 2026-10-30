@@ -15,6 +15,7 @@ import {
 import { defaultsForKeys, homeParamFor } from "@/lib/filter-taxonomy";
 import { chipsFromQuery } from "@/lib/filter-url";
 import { haversineKm } from "@/lib/distance";
+import { weightedRating } from "@/lib/rating-gate";
 import { producerInBounds, producerPoints } from "@/lib/producerPoints";
 
 /**
@@ -25,8 +26,8 @@ import { producerInBounds, producerPoints } from "@/lib/producerPoints";
  *   - "nearest": haversine ASC to userLoc; producers without coords last.
  *     Callers must only offer this mode when userLoc exists (the option is
  *     disabled without GPS); with a null userLoc it degrades to feed order.
- *   - "rating":  avg_rating DESC, tiebreak reviews_count DESC; null-rating
- *     producers last (a null is "unrated", worse than any real 0-review 0.0).
+ *   - "rating":  weightedRating DESC (Bayesian, MEH-2617), tiebreak
+ *     reviews_count DESC; unreviewed / null-rating producers last.
  *   - "newest":  the feed's original index order. `created_at` is NOT in the
  *     serialized list payload (ProducerListOut, schemas/schemas.py:702) and
  *     the Zod ProducerSchema would strip it anyway — but GET /producers's
@@ -50,12 +51,16 @@ export function sortProducers(list, sortBy, userLoc) {
     return [...list].sort((a, b) => dist(a) - dist(b));
   }
   if (sortBy === "rating") {
+    // MEH-2617: same order as the backend's ?sort=rating — unreviewed (no
+    // average, or zero reviews) last, then the Bayesian score, then
+    // reviews_count. One 5.0 review no longer outranks a 4.8 from twelve.
+    const unrated = (p) => p.avg_rating == null || !(Number(p.reviews_count) >= 1);
     return [...list].sort((a, b) => {
-      const aNull = a.avg_rating == null;
-      const bNull = b.avg_rating == null;
+      const aNull = unrated(a);
+      const bNull = unrated(b);
       if (aNull !== bNull) return aNull ? 1 : -1;
       return (
-        (b.avg_rating ?? 0) - (a.avg_rating ?? 0) ||
+        weightedRating(b) - weightedRating(a) ||
         (b.reviews_count ?? 0) - (a.reviews_count ?? 0)
       );
     });

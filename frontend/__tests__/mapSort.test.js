@@ -42,8 +42,22 @@ describe("sortProducers — rating", () => {
     expect(out.map((p) => p.id)).toEqual(["jlm", "haifa", "tlv", "nc"]);
   });
 
+  it("MEH-2617: one 5.0 review does not outrank 4.8 from twelve; unreviewed stays last", () => {
+    const one = { id: "one", avg_rating: 5.0, reviews_count: 1 };
+    const many = { id: "many", avg_rating: 4.8, reviews_count: 12 };
+    const low = { id: "low", avg_rating: 2.0, reviews_count: 3 };
+    const none = { id: "none", avg_rating: 0, reviews_count: 0 };
+    expect(sortProducers([none, one, low, many], "rating", null).map((p) => p.id)).toEqual([
+      "many",
+      "one",
+      "low",
+      "none",
+    ]);
+  });
+
   it("does not crash on all-null rating fields", () => {
-    const nulls = [{ id: "a" }, { id: "b", avg_rating: null }, { id: "c", avg_rating: 2 }];
+    // MEH-2617: "rated" now also needs reviews_count >= 1 (as on the backend).
+    const nulls = [{ id: "a" }, { id: "b", avg_rating: null }, { id: "c", avg_rating: 2, reviews_count: 1 }];
     expect(sortProducers(nulls, "rating", null).map((p) => p.id)).toEqual(["c", "a", "b"]);
   });
 });

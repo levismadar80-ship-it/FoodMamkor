@@ -49,6 +49,31 @@ def _haversine_expr(lat: float, lng: float, target_lat, target_lng):
     return EARTH_RADIUS_KM * func.acos(func.least(1.0, cos_delta))
 
 
+# MEH-2617: Bayesian-average constants for the "הכי מדורגות" sort. The prior
+# pulls a business with few reviews toward RATING_PRIOR_MEAN; RATING_PRIOR_WEIGHT
+# is how many reviews the prior is worth. Mirrored in
+# frontend/lib/rating-gate.js (the /map list sorts client-side).
+RATING_PRIOR_MEAN = 4.0
+RATING_PRIOR_WEIGHT = 5
+
+
+def weighted_rating_expr():
+    """MEH-2617: SQL expression for the Bayesian average used to order by rating:
+
+        (avg_rating * reviews_count + M * C) / (reviews_count + C)
+
+    A raw mean lets one 5.0 review outrank a 4.8 from twelve; this does not.
+    Ordering only — the displayed rating is still `avg_rating`. Unreviewed
+    rows would score exactly M here, so callers sort them last on a separate
+    key first (producer_listing.py, the rating branch).
+    """
+    n = func.coalesce(Producer.reviews_count, 0)
+    total = func.coalesce(Producer.avg_rating, 0.0) * n
+    return (total + RATING_PRIOR_MEAN * RATING_PRIOR_WEIGHT) / (
+        n + float(RATING_PRIOR_WEIGHT)
+    )
+
+
 def haversine_min_km(lat: float, lng: float):
     """MEH-1402 (MEH-1388 chunk 2): NEAREST-point distance (km) from the
     caller's (lat, lng) to a producer, measured across ALL of that producer's
