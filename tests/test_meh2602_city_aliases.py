@@ -32,7 +32,10 @@ def _seed_official(db, names):
 
 def _store_raw_city(db, producer, city):
     """A row written before canonical_city existed — bypasses the ORM hook."""
-    db.execute(text("UPDATE producers SET city = :c WHERE id = :i"), {"c": city, "i": producer.id})
+    db.execute(
+        text("UPDATE producers SET city = :c WHERE id = :i"),
+        {"c": city, "i": producer.id},
+    )
     db.commit()
 
 

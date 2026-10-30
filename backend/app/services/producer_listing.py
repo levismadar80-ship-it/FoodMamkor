@@ -394,7 +394,9 @@ def _delivery_city_condition(city: str):
         Producer.delivery_nationwide.is_(True),
         # MEH-2602: any spelling of the city on the exclusion list counts.
         ~Producer.delivery_excluded_cities.overlap(
-            cast(sorted({city, canonical_city(city), *city_variants(city)}), ARRAY(Text))
+            cast(
+                sorted({city, canonical_city(city), *city_variants(city)}), ARRAY(Text)
+            )
         ),
     )
     # `.is_(True)` and not a bare truthiness check: the column is NOT NULL today

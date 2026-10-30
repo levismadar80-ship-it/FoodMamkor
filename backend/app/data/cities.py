@@ -159,7 +159,9 @@ def city_key(value: str | None) -> str:
     """Collapse a city string to a comparison form; "" when unusable."""
     if not value:
         return ""
-    text = _CITY_SEPARATORS.sub(" ", fix_reversed_parens(value).translate(_CITY_QUOTE_MAP))
+    text = _CITY_SEPARATORS.sub(
+        " ", fix_reversed_parens(value).translate(_CITY_QUOTE_MAP)
+    )
     text = _KIRYAT_DOUBLE_YOD.sub("קרית", text)
     return re.sub(r"\s+", " ", text).strip().casefold()
 
