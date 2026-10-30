@@ -780,3 +780,46 @@ body.sheet-open .cookie-banner {
     justify-content: center;
   }
 }
+
+/* ── MEH-2599 — BrandLoader: the logo mark as the whole-page wait indicator ──
+   The mark stands still; its five seeds light up in sequence (a 1.6 s round,
+   one seed every 0.16 s — the Google-dots rhythm, in the brand's own colours).
+   The big sites animate colour, not the logo itself, so the mark never
+   spins. The wrapper fades in after 400 ms so a fast load shows nothing at
+   all. Inside @layer components so a caller's utility (`min-h-0`, `py-8`)
+   wins. Reduced motion: the MEH-788 kill-switch cuts the seed animation to
+   one ~0 ms run, after which the base `opacity: 0.94` rule applies (lit);
+   the wrapper is pinned visible explicitly so the mark can never sit at
+   opacity 0 when animations are off. */
+@layer components {
+  .brand-loader {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40vh;
+    opacity: 0;
+    animation: brand-loader-reveal 0.3s ease-out 0.4s forwards;
+  }
+  .brand-loader-mark {
+    display: block;
+  }
+  .brand-loader-seed {
+    opacity: 0.94;
+    animation: brand-loader-seed 1.6s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .brand-loader {
+      opacity: 1;
+      animation: none;
+    }
+  }
+}
+@keyframes brand-loader-reveal {
+  to {
+    opacity: 1;
+  }
+}
+@keyframes brand-loader-seed {
+  0%, 100% { opacity: 0.22; }
+  35%, 65% { opacity: 0.94; }
+}
