@@ -5,6 +5,7 @@ import { Truck, Package, CaretDown, CaretUp, NavigationArrow, Phone } from "@pho
 import { useTranslations } from "next-intl";
 import { formatPrice } from "@/lib/utils";
 import { groupDeliveryAreas } from "@/lib/deliveryGroups";
+import { resolveDeliveryFee } from "@/lib/deliveryFee";
 import { getSingleOrderCutoff } from "@/lib/orderWindow";
 import DeliveryChecker from "@/components/DeliveryChecker";
 import HoursText from "@/components/HoursText";
@@ -457,10 +458,6 @@ export default function DeliveryBlock({
     .map((da) => da.delivery_fee ?? producerFee)
     .filter((f) => f != null);
   const feeVaries = new Set(effectiveFees).size > 1;
-  // Only meaningful under variance; Math.min of an empty list is Infinity, so
-  // the feeVaries guard (which requires 2+ distinct values) also guarantees a
-  // non-empty list here.
-  const minAreaFee = feeVaries ? Math.min(...effectiveFees) : null;
   // Resolved from the ORIGINAL `areas`, keyed the same way the rows are keyed
   // — NOT from the row object handed back by groupDeliveryAreas.
   //
@@ -478,12 +475,14 @@ export default function DeliveryBlock({
   // `?? null` (not `||`) so a resolved 0 survives as "משלוח חינם".
   const feeOf = (da) => (feeVaries ? (feeByKey.get(da.id ?? da.city) ?? null) : null);
   // MEH-1577: null when the owner stated neither value → no line renders.
-  const feeSegments = buildFeeSegments(
-    feeVaries ? minAreaFee : producer?.delivery_fee,
-    producer?.free_delivery_above,
-    t,
-    { from: feeVaries },
-  );
+  // MEH-2602: the top line reads the shared resolver, so the card and this
+  // block can never state two different prices. (It also fixes the uniform
+  // case: every area overriding to the same 20₪ used to print the producer's
+  // 25₪ here.)
+  const topFee = resolveDeliveryFee(producerFee, areas);
+  const feeSegments = buildFeeSegments(topFee.fee, producer?.free_delivery_above, t, {
+    from: topFee.from,
+  });
   // MEH-1512 (MEH-1509 chunk 2): real pickup / market_stand rows from
   // locations[]. Branch-kind is out of scope (sibling ticket) → filtered out.
   const pickupLocations = (producer?.locations || []).filter(

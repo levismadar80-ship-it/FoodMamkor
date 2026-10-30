@@ -21,7 +21,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 vi.mock("next-intl", () => ({
   useTranslations: () => (key, vars) => {
     const map = {
-      my_area: "האזור שלי",
+      delivery_to_my_area: "אפשר משלוח לאזור שלי?",
       delivery_to_city: `אפשר משלוח ל${vars?.city ?? ""}?`,
       greeting_template: `שלום ${vars?.name ?? ""}, ${vars?.q ?? ""}`,
       // These two MUST be mapped. `map[key] ?? key` falls back to the key

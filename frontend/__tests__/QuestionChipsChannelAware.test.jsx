@@ -30,7 +30,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 vi.mock("next-intl", () => ({
   useTranslations: () => (key, vars) => {
     const map = {
-      my_area: "האזור שלי",
+      delivery_to_my_area: "אפשר משלוח לאזור שלי?",
       delivery_to_city: `אפשר משלוח ל${vars?.city ?? ""}?`,
       // Must resolve to the real string: the component filters the stock list
       // against it to avoid duplicating Q2. Left unmapped it would fall back to

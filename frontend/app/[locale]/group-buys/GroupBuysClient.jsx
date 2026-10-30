@@ -26,7 +26,7 @@ const HERO_BG = optimizeCloudinary(
 // and the pickup line as trust cues. The whole card is the link. The photo is
 // the business's first image (producer_image_url) — a group buy has none of
 // its own; none, or one that fails to load → the cart on green-50.
-function GroupBuyCard({ gb }) {
+export function GroupBuyCard({ gb }) {
   const t = useTranslations("group_buys.card");
   const td = useTranslations("group_buys.detail");
   const funded = gb.status === "funded";

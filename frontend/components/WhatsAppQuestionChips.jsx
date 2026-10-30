@@ -13,6 +13,7 @@ import {
   isWhatsAppPrimary,
 } from "@/lib/contact-method";
 import { markWhatsAppClickedLocal, pingWhatsAppBeacon } from "@/lib/contact-tracking";
+import { useUserCity } from "@/lib/use-user-city";
 
 /**
  * Quick Answers under the primary CTA in the producer contact card.
@@ -208,6 +209,7 @@ function OrderingContent({ answer, t }) {
 
 export default function WhatsAppQuestionChips({ producer }) {
   const t = useTranslations("whatsapp.question_chips");
+  const { city: visitorCity } = useUserCity();
   const digits = normalizePhone(producer?.phone);
   // MEH-2154: the single gate for every WhatsApp-prefill row. Both halves are
   // required — the declared channel AND a number to send to.
@@ -229,10 +231,15 @@ export default function WhatsAppQuestionChips({ producer }) {
     pingWhatsAppBeacon(producer.id);
     markWhatsAppClickedLocal(producer.id);
   };
-  const city = producer?.city || t("my_area");
+  // MEH-2602: the question is the VISITOR's — «can you deliver to me?». It
+  // used to name the business's own city («אפשר משלוח לבנימינה?» on a
+  // Binyamina bakery's page). The city the visitor picked on the site (map /
+  // home «איפה אתם?») when there is one, else «אפשר משלוח לאזור שלי?».
   const name = producer?.name || "";
 
-  const deliveryQ = t("delivery_to_city", { city });
+  const deliveryQ = visitorCity
+    ? t("delivery_to_city", { city: visitorCity })
+    : t("delivery_to_my_area");
   const orderingQ = t("ordering_q");
   const delivery = buildDeliveryAnswer(producer);
   const ordering = buildOrderingAnswer(producer);
@@ -276,7 +283,9 @@ export default function WhatsAppQuestionChips({ producer }) {
   // the category stock set no longer renders. One derivation, shared with the
   // dashboard preview (lib/resolvedQuestions.js), so the two cannot drift.
   const waQuestions = ownerQuestionLabels(producer, {
-    city,
+    // An owner's own «[עיר]» placeholder keeps its pre-2602 reading (the
+    // business city) unless the visitor has told us hers.
+    city: visitorCity || producer?.city || "",
     deliveryQuestion: deliveryQ,
     orderingQuestion: orderingQ,
   });
