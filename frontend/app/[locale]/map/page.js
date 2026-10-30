@@ -2,8 +2,6 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
 import MapClient from "./MapClient";
-import { chipsFromQuery } from "@/lib/filter-url";
-import { TOGGLE_CHIPS } from "@/lib/map-chips";
 import { API_URL } from "@/lib/env";
 import { serverFetch } from "@/lib/server-fetch"; // MEH-977: timeout + transient-retry
 import { BRAND_NAME } from "@/lib/constants";
@@ -63,14 +61,7 @@ async function fetchProducersForSSR() {
   }
 }
 
-export default async function MapPage(props) {
-  // MEH-2598: filters carried in from the list (`?on_site=1` …). Read here, not
-  // with useSearchParams in MapClient, so the first render already has them —
-  // no Suspense boundary, no pressed-state hydration mismatch.
-  const initialChips = chipsFromQuery(
-    await props.searchParams,
-    TOGGLE_CHIPS.map((c) => c.key),
-  );
+export default async function MapPage() {
   // MEH-473: page-level metadata translation deferred to Wave 6 (SEO).
   // sr-only nav strings are functional UI, translated here.
   const t = await getTranslations();
@@ -78,7 +69,7 @@ export default async function MapPage(props) {
 
   return (
     <>
-      <MapClient initialChips={initialChips} />
+      <MapClient />
 
       {/*
         MEH-151 — SSR producer index for Googlebot.
