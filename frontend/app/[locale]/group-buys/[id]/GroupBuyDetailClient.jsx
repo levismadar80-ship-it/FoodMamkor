@@ -530,19 +530,50 @@ export default function GroupBuyDetailClient({ id }) {
               </section>
             )}
 
-            {/* MEH-1457: "מתי ואיך מקבלים" — shown only when the producer filled it. */}
-            {gb.fulfillment_note && (
-              <div className="mt-6 flex gap-3 rounded-[12px] border border-border bg-white p-4">
-                <MapPin size={22} className="text-primary shrink-0 mt-0.5" aria-hidden="true" />
-                <p className="text-base text-text whitespace-pre-line">
-                  <span className="font-medium">{t("fulfillment_prefix")}</span>
-                  {gb.fulfillment_note}
-                </p>
-              </div>
+            {/* MEH-2615: pickup and delivery as ONE titled section — the
+                business's own note («מתי ואיך מקבלים», MEH-1457) and «מגיעים
+                אלייך?» under it — instead of two unrelated boxes with the
+                business row wedged between them (Eventbrite / Groupon: each
+                kind of detail under its own heading, the organizer last).
+                The heading rides on the note: the checker can hide itself
+                (DeliveryChecker gates 1–3), and a heading over nothing would
+                be an orphan. Without a note the checker stands alone, as
+                before. */}
+            {(gb.fulfillment_note || producer) && (
+              // Spacing lives on the children, not the section: when there is
+              // no note and the checker hides itself, the section collapses to
+              // nothing instead of leaving an empty 2rem gap (review #3900).
+              <section data-testid="group-buy-fulfillment">
+                {gb.fulfillment_note && (
+                  <>
+                    <h2 className="mt-8 font-headline-md text-lg font-bold text-text mb-3">{t("fulfillment_title")}</h2>
+                    <p className="flex gap-3 text-base text-text whitespace-pre-line" data-testid="group-buy-fulfillment-note">
+                      <MapPin size={22} className="text-primary shrink-0 mt-0.5" aria-hidden="true" />
+                      <span>{gb.fulfillment_note}</span>
+                    </p>
+                  </>
+                )}
+                {/* MEH-2453: «מגיעים אלייך?» from the business's own delivery
+                    data, same component and copy as its page. It hides itself
+                    for a business that does not deliver, or whose answer is the
+                    same for every city (DeliveryChecker gates 1–3). */}
+                {producer && (
+                  <div className={gb.fulfillment_note ? "mt-4" : "mt-6"}>
+                    <DeliveryChecker
+                      offersDelivery={producer.offers_delivery}
+                      nationwide={producer.delivery_nationwide}
+                      excluded={producer.delivery_excluded_cities}
+                      areas={producer.delivery_areas}
+                      producer={producer}
+                    />
+                  </div>
+                )}
+              </section>
             )}
 
             {/* MEH-2472: the business, as a tappable row (MEH-2538 OwnerRow);
-                without a producer_id the row is plain text, never a dead link. */}
+                without a producer_id the row is plain text, never a dead link.
+                MEH-2615: last, as Eventbrite's «Organized by». */}
             {gb.producer_name && (
               <div className="mt-6 max-w-md">
                 <OwnerRow href={gb.producer_id ? `/producer/${gb.producer_id}` : undefined} name={gb.producer_name} testId="group-buy-producer-link">
@@ -550,23 +581,6 @@ export default function GroupBuyDetailClient({ id }) {
                 </OwnerRow>
               </div>
             )}
-
-            {/* MEH-2453: «מגיעים אלייך?» from the business's own delivery data,
-                same component and copy as its page. It hides itself for a
-                business that does not deliver, or whose answer is the same for
-                every city (DeliveryChecker gates 1–3). */}
-            <div className="mt-6">
-              {producer && (
-                <DeliveryChecker
-                  offersDelivery={producer.offers_delivery}
-                  nationwide={producer.delivery_nationwide}
-                  excluded={producer.delivery_excluded_cities}
-                  areas={producer.delivery_areas}
-                  producer={producer}
-                />
-              )}
-
-            </div>
           </div>
         </div>
       </div>
