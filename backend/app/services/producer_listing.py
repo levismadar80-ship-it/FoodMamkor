@@ -186,7 +186,7 @@ _SCOPE_ALL_FILTERS: list[tuple[str, str]] = [
 ]
 
 
-def _build_base_queries(
+def _build_base_queries(  # noqa: PLR0913 — keyword-only query axes; MEH-2602 added near_city
     db: Session,
     *,
     geo: tuple[float, float, float] | None,
