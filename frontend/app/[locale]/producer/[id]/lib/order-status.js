@@ -99,3 +99,13 @@ export function resolveHeaderStatus({ isVacation, isClosed, orderStatus }) {
   }
   return { branch: "open", tone: "text-primary", testid: "status-open" };
 }
+
+/**
+ * MEH-2596: text colour for the status TAG (dot + 10% tint of the text
+ * colour). `muted` (#6b6860) on its own tint measures 4.33:1 — under AA — so
+ * the tag uses the darker `fg-muted` for the grey states. primary (5.01:1)
+ * and gold-deep (4.90:1) pass on their tints and are kept.
+ */
+export function statusTagTone(tone) {
+  return tone === "text-muted" ? "text-fg-muted" : tone;
+}
