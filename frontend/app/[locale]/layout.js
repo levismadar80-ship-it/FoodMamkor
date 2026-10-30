@@ -16,6 +16,7 @@ import SmoothScrollProvider from "@/components/SmoothScrollProvider";
 import CustomCursor from "@/components/CustomCursor";
 import ChatWidgetLazy from "@/components/ChatWidgetLazy";
 import InstallPrompt from "@/components/InstallPrompt";
+import PrehydrationInputReplay from "@/components/PrehydrationInputReplay";
 import ClarityScript from "@/components/ClarityScript";
 import SpeedInsightsRedacted from "@/components/SpeedInsightsRedacted";
 import { env, SITE_URL } from "@/lib/env";
@@ -268,6 +269,8 @@ export default async function LocaleLayout({ children, params }) {
                 <CustomCursor />
                 <ChatWidgetLazy />
                 <InstallPrompt />
+                {/* MEH-2602: last on purpose — replays text typed before hydration. */}
+                <PrehydrationInputReplay />
                 </MotionConfig>
               </SmoothScrollProvider>
             </LanguageProvider>
