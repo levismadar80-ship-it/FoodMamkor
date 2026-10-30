@@ -3105,7 +3105,8 @@
     },
     "title": {
       "all": "All businesses",
-      "search_results": "Results for:"
+      "search_results": "Results for:",
+      "map_link": "View on map"
     },
     "search_input": {
       "label": "Search businesses",
