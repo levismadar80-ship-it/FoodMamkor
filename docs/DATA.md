@@ -1231,7 +1231,7 @@ POST /newsletter                 public — { email } → newsletter_subscribers
                                  + background mirror to Resend Contacts, segment
                                    `newsletter` (MEH-2611; never clears an opt-out)
 POST /newsletter/unsubscribe     public — { token } → deletes the row
-                                 + marks the Resend contact unsubscribed (MEH-2611)
+                                 + deletes the Resend contact (MEH-2611); a Broadcast-footer opt-out stays sticky
 POST /contact                    public — { name, email, message, topic? } → contact_messages row
                                  + SMTP email to CONTACT_EMAIL (falls back to
                                  ADMIN_EMAIL). Fail-open: if SMTP is unconfigured

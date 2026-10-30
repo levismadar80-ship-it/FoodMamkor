@@ -125,15 +125,21 @@ def sync_subscribe(email: str) -> None:
 
 
 def sync_unsubscribe(email: str) -> None:
-    """Mark `email` unsubscribed in Resend so no Broadcast reaches it."""
+    """Delete `email`'s Resend contact, mirroring the row delete in our table.
+
+    Deleted rather than flagged `unsubscribed`: the site forgets the address
+    entirely, and a later genuine signup on the site then starts clean. An
+    opt-out made from a Broadcast footer is different: it stays as a flag in
+    Resend and `sync_subscribe` never clears it.
+    """
     if _skip(email):
         return
     try:
         resend = _resend()
         if resend is None:
             return
-        resend.Contacts.update({"email": email, "unsubscribed": True})
-        logger.info("[NEWSLETTER] Unsubscribed %s in Resend", _mask(email))
+        resend.Contacts.remove(email=email)
+        logger.info("[NEWSLETTER] Removed %s from Resend", _mask(email))
     except Exception as exc:  # noqa: BLE001 — fail-open by design
         # A second click on the same link, or an address that never reached
         # Resend: the end-state (not subscribed there) already holds.

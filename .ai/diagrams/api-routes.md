@@ -187,7 +187,7 @@ graph TD
 graph LR
     Footer[Footer newsletter form] --> Newsletter[POST /newsletter<br/>🌐 5/hour per IP<br/>idempotent — returns 201 whether<br/>already subscribed or not]
     Newsletter -.->|background, fail-open| ResendContacts[Resend Contacts<br/>segment newsletter · MEH-2611<br/>sent from Resend Broadcasts]
-    Unsub[POST /newsletter/unsubscribe<br/>signed token] -.->|unsubscribed=true| ResendContacts
+    Unsub[POST /newsletter/unsubscribe<br/>signed token] -.->|delete contact| ResendContacts
 
     ContactForm[/contact page form] --> Contact[POST /contact<br/>🌐 5/hour per IP<br/>persists to contact_messages +<br/>SMTP email to CONTACT_EMAIL,<br/>fail-open on SMTP errors]
 

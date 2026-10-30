@@ -102,8 +102,8 @@ def _fake_resend(
             return {"email": email}
 
         @staticmethod
-        def update(params):
-            log.append(("contacts.update", params))
+        def remove(email):
+            log.append(("contacts.remove", email))
             if fail:
                 raise fail
 
@@ -180,12 +180,12 @@ class TestSyncService:
         assert len(reported) == 1
         assert not any(c[0] == "contacts.create" for c in log)
 
-    def test_unsubscribe_marks_contact(self, fake):
+    def test_site_unsubscribe_deletes_contact(self, fake):
+        # Mirrors the row delete, so a later genuine site signup starts clean
+        # (create path) instead of staying silently unsubscribed in Resend.
         log, reported = fake()
         newsletter_sync.sync_unsubscribe("bye@gmail.com")
-        assert log == [
-            ("contacts.update", {"email": "bye@gmail.com", "unsubscribed": True})
-        ]
+        assert log == [("contacts.remove", "bye@gmail.com")]
         assert reported == []
 
     def test_unsubscribe_of_unknown_contact_is_quiet(self, fake):
