@@ -358,6 +358,24 @@ describe("ProducersClient distance as a location trigger (MEH-2616)", () => {
     expect(localStorage.getItem("user_location")).toBeNull();
   });
 
+  it("a late answer keeps a search submitted while it was pending", () => {
+    let answer;
+    getCurrentPosition.mockImplementation((ok) => { answer = ok; });
+    apiGet.mockImplementation(() =>
+      Promise.resolve({ data: [{ id: "d1", categories: [] }], headers: { "x-total-count": "1" } }),
+    );
+    render(<ProducersClient {...PROPS} />);
+    fireEvent.change(screen.getByTestId("producers-sort"), { target: { value: "distance" } });
+    const box = screen.getByRole("searchbox");
+    fireEvent.change(box, { target: { value: "לחם" } });
+    fireEvent.submit(box.closest("form"));
+    act(() => answer({ coords: { latitude: LAT, longitude: LNG } }));
+    // The callback must sync the URL from the CURRENT filters: a closure
+    // captured at pick time would rewrite it without q=.
+    expect(window.location.search).toContain("sort=distance");
+    expect(window.location.search).toContain(`q=${encodeURIComponent("לחם")}`);
+  });
+
   it("pending: the select is disabled while the browser answers", () => {
     render(<ProducersClient {...PROPS} />); // getCurrentPosition never calls back
     fireEvent.change(screen.getByTestId("producers-sort"), { target: { value: "distance" } });
