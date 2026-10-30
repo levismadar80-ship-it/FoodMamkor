@@ -373,6 +373,7 @@ function QuestionList({
   return (
     <div
       data-testid="question-chips"
+      data-under-cta={underCta ? "true" : "false"}
       className={underCta ? "mb-4 mt-4" : "mb-4"}
     >
       <p className="text-[13px] mb-2 font-body-md text-fg-muted">{t("common_questions")}</p>

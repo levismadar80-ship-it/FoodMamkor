@@ -132,13 +132,12 @@ export default function DeliveryChecker({
   const day = result?.status === "yes" ? result.day : null;
 
   return (
-    // MEH-2592 C: a soft green band instead of a bordered card, a round field,
-    // and the label as the band's heading. CitySearch is shared, so its look is
-    // adjusted here through descendant variants, not by changing the component.
+    // MEH-2592 C: a soft green band instead of a bordered card, a round field
+    // (CitySearch's `pill`), and the label as the band's heading.
     <div className="mb-6 rounded-2xl bg-green-50 p-3.5" data-testid="delivery-checker">
       <div
         data-testid="delivery-checker-input"
-        className="[&_label]:text-[15px] [&_label]:font-bold [&_label]:mb-2 [&_.rounded-md]:rounded-full [&_.rounded-md]:px-4 [&_.rounded-md]:border-primary/15"
+        className="[&_label]:text-[15px] [&_label]:font-bold [&_label]:mb-2"
       >
         <CitySearch
           id="delivery-checker-city"
@@ -150,6 +149,7 @@ export default function DeliveryChecker({
           onSubmit={setChecked}
           label={t("checker.label")}
           labelVisible
+          pill
           placeholder={t("checker.placeholder")}
         />
       </div>
