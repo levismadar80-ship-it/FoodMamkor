@@ -190,6 +190,23 @@ describe("MEH-2577 — /register opens with Google/Apple, under a consent line",
     await waitFor(() => expect(registerMock).toHaveBeenCalledTimes(1));
   });
 
+  it("a password padded with spaces to 12 is refused on the client with password_min", () => {
+    // The backend strips before its 12-char floor, so "abcdefghij  " is 10 to
+    // the server and comes back as a Pydantic 422 the form can't map (generic
+    // error). The click must be refused here, with the length message.
+    registerMock.mockReset();
+    render(<RegisterClient />);
+    fireEvent.change(screen.getByTestId("register-name"), { target: { value: "דנה" } });
+    fireEvent.change(screen.getByTestId("register-email"), { target: { value: "dana@example.org" } });
+    fireEvent.change(screen.getByTestId("pw"), { target: { value: "abcdefghij  " } });
+    fireEvent.click(screen.getByTestId("register-terms"));
+    fireEvent.click(screen.getByTestId("register-submit"));
+    expect(screen.getByTestId("register-error")).toHaveTextContent(
+      "auth.register.consumer.validation.password_min",
+    );
+    expect(registerMock).not.toHaveBeenCalled();
+  });
+
   it("a breached password is refused by the server and explained, not swallowed", async () => {
     // MEH-2623: the button no longer waits on the client-side breach check, so
     // a leaked password reaches register(). The backend answers 422 {failures};

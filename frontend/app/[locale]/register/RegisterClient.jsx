@@ -125,7 +125,9 @@ function RegisterPageBody() {
       fail(t("auth.register.consumer.validation.email_invalid"), "#register-email");
       return;
     }
-    if (form.password.length < PASSWORD_MIN_LENGTH) {
+    // The backend strips whitespace before its 12-char floor; a padded paste
+    // must fail here with password_min, not as an unmapped Pydantic 422.
+    if (form.password.trim().length < PASSWORD_MIN_LENGTH) {
       // PasswordInput already shows the inline checklist; same Hebrew copy.
       fail(
         t("auth.register.consumer.validation.password_min", { min: PASSWORD_MIN_LENGTH }),
