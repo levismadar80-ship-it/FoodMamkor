@@ -130,8 +130,13 @@ const DIET_FIELD = {
 /**
  * The toggle chips FilterSheet should offer on /map, given the mount snapshot.
  *
- * - `catalogSnapshot` null/undefined (not loaded yet, or the load failed):
- *   NO gating — every chip renders. Hiding on an unknown would be the
+ * - `snapshotPending` (the mount fetch is still in flight): gated chips are
+ *   held back until it answers. Rendering them first and dropping them a
+ *   moment later is the «קנייה במקום» flash on a phone's first paint (Sapir
+ *   30/10) — a chip should arrive once, not arrive and vanish. Home and
+ *   /producers already behave this way (they gate over an empty list).
+ * - `catalogSnapshot` null/undefined once settled (the load failed): NO
+ *   gating — every chip renders. Hiding on an unknown would be the
  *   "probe never ran" green in the other direction.
  * - An axis already active (deep link ?vegan=1 post MEH-2049): kept, so the
  *   visitor is never stranded with a filter she can see and cannot switch
@@ -146,7 +151,11 @@ export function visibleMapToggleChips({
   catalogSnapshot,
   chipState = {},
   chips = TOGGLE_CHIPS,
+  snapshotPending = false,
 }) {
+  if (snapshotPending) {
+    return chips.filter((chip) => !DIET_GATED_KEYS.includes(chip.key) || chipState[chip.key]);
+  }
   if (!Array.isArray(catalogSnapshot)) return chips;
   return chips.filter((chip) => {
     if (!DIET_GATED_KEYS.includes(chip.key)) return true;
