@@ -14,6 +14,7 @@ Covers:
 All tests are written BEFORE the implementation (TDD, per workflow rule 5).
 They use the shared pytest fixtures in conftest.py.
 """
+
 import itertools
 from datetime import time, timedelta
 from decimal import Decimal
@@ -119,6 +120,7 @@ def _seed_contact_click(db, producer_id, *, method="phone", days_ago=0):
 # in TestViewBeaconEndpoint is what now pins the old behaviour's absence.
 # ============================================================
 
+
 class TestProducerViewTracking:
     def test_view_beacon_records_anonymous_view(self, client, db):
         p = make_producer(db)
@@ -127,7 +129,11 @@ class TestProducerViewTracking:
         assert r.status_code == 204
         after = db.query(ProducerPageView).count()
         assert after == before + 1
-        row = db.query(ProducerPageView).order_by(ProducerPageView.created_at.desc()).first()
+        row = (
+            db.query(ProducerPageView)
+            .order_by(ProducerPageView.created_at.desc())
+            .first()
+        )
         assert row.producer_id == p.id
         assert row.city is None  # no auth, no city
         assert row.referrer is None  # no ?from=... param
@@ -141,18 +147,24 @@ class TestProducerViewTracking:
         viewer = make_user(db, email="viewer@test.com")
         viewer.city = "חיפה"
         db.commit()
-        r = client.post(
-            f"/producers/{p.id}/view", json={}, headers=auth_header(viewer)
-        )
+        r = client.post(f"/producers/{p.id}/view", json={}, headers=auth_header(viewer))
         assert r.status_code == 204
-        row = db.query(ProducerPageView).order_by(ProducerPageView.created_at.desc()).first()
+        row = (
+            db.query(ProducerPageView)
+            .order_by(ProducerPageView.created_at.desc())
+            .first()
+        )
         assert row.city == "חיפה"
 
     def test_view_beacon_records_referrer_from_body(self, client, db):
         p = make_producer(db)
         r = client.post(f"/producers/{p.id}/view", json={"referrer": "search"})
         assert r.status_code == 204
-        row = db.query(ProducerPageView).order_by(ProducerPageView.created_at.desc()).first()
+        row = (
+            db.query(ProducerPageView)
+            .order_by(ProducerPageView.created_at.desc())
+            .first()
+        )
         assert row.referrer == "search"
 
     # MEH-1558: the referrer is caller-supplied, so the allowlist in
@@ -186,7 +198,11 @@ class TestProducerViewTracking:
         p = make_producer(db)
         r = client.post(f"/producers/{p.id}/view", json={"referrer": referrer})
         assert r.status_code == 204
-        row = db.query(ProducerPageView).order_by(ProducerPageView.created_at.desc()).first()
+        row = (
+            db.query(ProducerPageView)
+            .order_by(ProducerPageView.created_at.desc())
+            .first()
+        )
         assert row.referrer == referrer
 
     @pytest.mark.parametrize(
@@ -197,7 +213,11 @@ class TestProducerViewTracking:
         p = make_producer(db)
         r = client.post(f"/producers/{p.id}/view", json={"referrer": referrer})
         assert r.status_code == 204
-        row = db.query(ProducerPageView).order_by(ProducerPageView.created_at.desc()).first()
+        row = (
+            db.query(ProducerPageView)
+            .order_by(ProducerPageView.created_at.desc())
+            .first()
+        )
         assert row.producer_id == p.id
         assert row.referrer is None
 
@@ -218,9 +238,7 @@ class TestProducerViewTracking:
 
     def test_view_beacon_404_does_not_record_view(self, client, db):
         before = db.query(ProducerPageView).count()
-        r = client.post(
-            "/producers/00000000-0000-0000-0000-000000000000/view", json={}
-        )
+        r = client.post("/producers/00000000-0000-0000-0000-000000000000/view", json={})
         assert r.status_code == 404
         after = db.query(ProducerPageView).count()
         assert after == before
@@ -229,6 +247,7 @@ class TestProducerViewTracking:
 # ============================================================
 # POST /producers/{id}/whatsapp-click
 # ============================================================
+
 
 class TestWhatsAppClickEndpoint:
     def test_whatsapp_click_anonymous_inserts_row(self, client, db):
@@ -241,7 +260,9 @@ class TestWhatsAppClickEndpoint:
         assert row.producer_id == p.id
 
     def test_whatsapp_click_unknown_producer_404(self, client, db):
-        r = client.post("/producers/00000000-0000-0000-0000-000000000000/whatsapp-click")
+        r = client.post(
+            "/producers/00000000-0000-0000-0000-000000000000/whatsapp-click"
+        )
         assert r.status_code == 404
         assert db.query(ProducerWhatsAppClick).count() == 0
 
@@ -284,9 +305,7 @@ class TestInternalViewerNotTracked:
         p = make_producer(db)
         owner = _owner_of(db, p)
         before = db.query(ProducerPageView).count()
-        r = client.post(
-            f"/producers/{p.id}/view", json={}, headers=auth_header(owner)
-        )
+        r = client.post(f"/producers/{p.id}/view", json={}, headers=auth_header(owner))
         assert r.status_code == 204
         assert db.query(ProducerPageView).count() == before
 
@@ -306,9 +325,7 @@ class TestInternalViewerNotTracked:
         p = make_producer(db)
         admin = make_user(db, role="admin")
         before = db.query(ProducerPageView).count()
-        r = client.post(
-            f"/producers/{p.id}/view", json={}, headers=auth_header(admin)
-        )
+        r = client.post(f"/producers/{p.id}/view", json={}, headers=auth_header(admin))
         assert r.status_code == 204
         assert db.query(ProducerPageView).count() == before
 
@@ -336,9 +353,7 @@ class TestInternalViewerNotTracked:
         """The literal symptom from the ticket: `pending` + owner = 0, not 1."""
         p = make_producer(db, status="pending")
         owner = _owner_of(db, p)
-        r = client.post(
-            f"/producers/{p.id}/view", json={}, headers=auth_header(owner)
-        )
+        r = client.post(f"/producers/{p.id}/view", json={}, headers=auth_header(owner))
         assert r.status_code == 204
         assert db.query(ProducerPageView).count() == 0
 
@@ -415,6 +430,7 @@ class TestInternalViewerNotTracked:
 # GET /producers/me/analytics
 # ============================================================
 
+
 class TestProducerAnalytics:
     def test_analytics_requires_producer_role(self, client, db):
         # No auth → 401
@@ -443,10 +459,16 @@ class TestProducerAnalytics:
         body = r.json()
         # Top-level keys
         for key in (
-            "profile_views", "search_appearances", "whatsapp_clicks",
-            "follower_count", "new_followers_this_week",
-            "average_rating", "total_reviews", "home_products_count",
-            "views_by_day", "top_cities",
+            "profile_views",
+            "search_appearances",
+            "whatsapp_clicks",
+            "follower_count",
+            "new_followers_this_week",
+            "average_rating",
+            "total_reviews",
+            "home_products_count",
+            "views_by_day",
+            "top_cities",
         ):
             assert key in body, f"missing key: {key}"
         # 7d / 30d / total windows
@@ -468,9 +490,7 @@ class TestProducerAnalytics:
         _seed_view(db, p.id, days_ago=20)
         _seed_view(db, p.id, days_ago=60)
 
-        body = client.get(
-            "/producers/me/analytics", headers=auth_header(user)
-        ).json()
+        body = client.get("/producers/me/analytics", headers=auth_header(user)).json()
         assert body["profile_views"]["last_7d"] == 2
         assert body["profile_views"]["last_30d"] == 3
         assert body["profile_views"]["total"] == 4
@@ -488,9 +508,7 @@ class TestProducerAnalytics:
         _seed_view(db, p.id, city="ירושלים")
         _seed_view(db, p.id, city=None)  # anonymous; excluded from top_cities
 
-        body = client.get(
-            "/producers/me/analytics", headers=auth_header(user)
-        ).json()
+        body = client.get("/producers/me/analytics", headers=auth_header(user)).json()
         cities = body["top_cities"]
         assert len(cities) >= 2
         assert cities[0]["city"] == "תל אביב"
@@ -514,13 +532,28 @@ class TestProducerAnalytics:
         _seed_coverage_request(db, p.id, city="חיפה", days_ago=40)  # outside 30d
         _seed_whatsapp_click(db, p.id, days_ago=2)  # ordinary click, no city
 
-        body = client.get(
-            "/producers/me/analytics", headers=auth_header(user)
-        ).json()
+        body = client.get("/producers/me/analytics", headers=auth_header(user)).json()
         assert body["coverage_requests"] == [
             {"city": "תל אביב-יפו", "count": 3},
             {"city": "חיפה", "count": 1},
         ]
+
+    def test_analytics_coverage_requests_fold_case_and_spaces(self, client, db):
+        """The stored city is typed text: «Haifa», «haifa» and «HAIFA» are one
+        city with 3 requests, and «בת  ים» (double space) is «בת ים» — not five
+        one-request rows that push a real city off the top 5."""
+        p = make_producer(db)
+        user = make_user(db, email="owner-coverage-fold@test.com", role="producer")
+        user.producer_id = p.id
+        db.commit()
+        for city in ("Haifa", "haifa", "HAIFA", "בת ים", "בת  ים"):
+            _seed_coverage_request(db, p.id, city=city, days_ago=1)
+
+        body = client.get("/producers/me/analytics", headers=auth_header(user)).json()
+        rows = body["coverage_requests"]
+        assert [r["count"] for r in rows] == [3, 2], rows
+        assert rows[0]["city"].lower() == "haifa"
+        assert " ".join(rows[1]["city"].split()) == "בת ים"
 
     def test_analytics_coverage_requests_empty_when_none(self, client, db):
         """MEH-1676: zero requests → an empty list, not a missing key — the
@@ -531,9 +564,7 @@ class TestProducerAnalytics:
         db.commit()
         _seed_whatsapp_click(db, p.id, days_ago=1)
 
-        body = client.get(
-            "/producers/me/analytics", headers=auth_header(user)
-        ).json()
+        body = client.get("/producers/me/analytics", headers=auth_header(user)).json()
         assert body["coverage_requests"] == []
 
     def test_analytics_views_by_day_has_30_entries(self, client, db):
@@ -542,9 +573,7 @@ class TestProducerAnalytics:
         user.producer_id = p.id
         db.commit()
 
-        body = client.get(
-            "/producers/me/analytics", headers=auth_header(user)
-        ).json()
+        body = client.get("/producers/me/analytics", headers=auth_header(user)).json()
         # Exactly 30 entries, one per day, zero-filled if no views that day.
         assert len(body["views_by_day"]) == 30
         for entry in body["views_by_day"]:
@@ -562,9 +591,7 @@ class TestProducerAnalytics:
         _seed_view(db, p.id, referrer="map")
         _seed_view(db, p.id, referrer=None)
 
-        body = client.get(
-            "/producers/me/analytics", headers=auth_header(user)
-        ).json()
+        body = client.get("/producers/me/analytics", headers=auth_header(user)).json()
         assert body["search_appearances"]["total"] == 2
 
     def test_analytics_follower_counts(self, client, db):
@@ -579,16 +606,16 @@ class TestProducerAnalytics:
         ages_days = [20, 8, 6, 2]
         for i, age in enumerate(ages_days):
             fan = make_user(db, email=f"fav-{age}d-{i}@test.com")
-            db.add(Favorite(
-                producer_id=p.id,
-                user_id=fan.id,
-                created_at=utc_now() - timedelta(days=age),
-            ))
+            db.add(
+                Favorite(
+                    producer_id=p.id,
+                    user_id=fan.id,
+                    created_at=utc_now() - timedelta(days=age),
+                )
+            )
         db.commit()
 
-        body = client.get(
-            "/producers/me/analytics", headers=auth_header(user)
-        ).json()
+        body = client.get("/producers/me/analytics", headers=auth_header(user)).json()
         assert body["follower_count"] == 4
         assert body["new_followers_this_week"] == 2
 
@@ -599,26 +626,45 @@ class TestProducerAnalytics:
         db.commit()
 
         # Owner's own home product (should be counted)
-        db.add(HomeProduct(
-            user_id=user.id, title="שלי", description="x",
-            phone="0500000000", city="TLV", price=30, is_active=True,
-        ))
+        db.add(
+            HomeProduct(
+                user_id=user.id,
+                title="שלי",
+                description="x",
+                phone="0500000000",
+                city="TLV",
+                price=30,
+                is_active=True,
+            )
+        )
         # Inactive one (should NOT be counted)
-        db.add(HomeProduct(
-            user_id=user.id, title="לא פעיל", description="x",
-            phone="0500000000", city="TLV", price=30, is_active=False,
-        ))
+        db.add(
+            HomeProduct(
+                user_id=user.id,
+                title="לא פעיל",
+                description="x",
+                phone="0500000000",
+                city="TLV",
+                price=30,
+                is_active=False,
+            )
+        )
         # Other user's (should NOT be counted)
         other = make_user(db, email="other@test.com")
-        db.add(HomeProduct(
-            user_id=other.id, title="של אחרת", description="x",
-            phone="0500000000", city="TLV", price=30, is_active=True,
-        ))
+        db.add(
+            HomeProduct(
+                user_id=other.id,
+                title="של אחרת",
+                description="x",
+                phone="0500000000",
+                city="TLV",
+                price=30,
+                is_active=True,
+            )
+        )
         db.commit()
 
-        body = client.get(
-            "/producers/me/analytics", headers=auth_header(user)
-        ).json()
+        body = client.get("/producers/me/analytics", headers=auth_header(user)).json()
         assert body["home_products_count"] == 1
 
     def test_analytics_no_longer_returns_the_two_dead_fields(self, client, db):
@@ -631,17 +677,21 @@ class TestProducerAnalytics:
         user.producer_id = p.id
         db.commit()
 
-        body = client.get(
-            "/producers/me/analytics", headers=auth_header(user)
-        ).json()
+        body = client.get("/producers/me/analytics", headers=auth_header(user)).json()
         assert "profile_strength" not in body
         assert "rank_in_city" not in body
-        assert {"profile_views", "top_cities", "conversion_rate", "weekly_trend"} <= body.keys()
+        assert {
+            "profile_views",
+            "top_cities",
+            "conversion_rate",
+            "weekly_trend",
+        } <= body.keys()
 
 
 # ============================================================
 # MEH-2157 — conversion_rate counts every contact channel
 # ============================================================
+
 
 class TestConversionRateCountsEveryChannel:
     """The numerator is whatsapp_clicks + contact_clicks, both over 30d.
@@ -789,6 +839,7 @@ class TestConversionRateCountsEveryChannel:
 # Extended GET /admin/dashboard
 # ============================================================
 
+
 class TestAdminDashboardAnalytics:
     def test_admin_dashboard_has_new_stat_fields(self, client, db):
         admin = make_user(db, role="admin")
@@ -796,10 +847,13 @@ class TestAdminDashboardAnalytics:
         assert r.status_code == 200
         stats = r.json()["stats"]
         for key in (
-            "total_users", "new_users_this_week",
-            "total_producers", "new_producers_this_week",
+            "total_users",
+            "new_users_this_week",
+            "total_producers",
+            "new_producers_this_week",
             "total_home_products",
-            "total_events", "total_experiences",
+            "total_events",
+            "total_experiences",
             "pending_moderation_count",
         ):
             assert key in stats, f"missing: {key}"
@@ -817,7 +871,9 @@ class TestAdminDashboardAnalytics:
         )
 
         admin = make_user(db, role="admin")
-        before = client.get("/admin/dashboard", headers=auth_header(admin)).json()["stats"]
+        before = client.get("/admin/dashboard", headers=auth_header(admin)).json()[
+            "stats"
+        ]
         for key in (
             "pending_category_requests",
             "pending_name_change_requests",
@@ -877,13 +933,24 @@ class TestAdminDashboardAnalytics:
             msg.created_at = utc_now() - timedelta(days=age_days)
             db.add(msg)
         db.commit()
-        after = client.get("/admin/dashboard", headers=auth_header(admin)).json()["stats"]
-        assert after["pending_category_requests"] == before["pending_category_requests"] + 1
-        assert after["pending_name_change_requests"] == before["pending_name_change_requests"] + 1
+        after = client.get("/admin/dashboard", headers=auth_header(admin)).json()[
+            "stats"
+        ]
+        assert (
+            after["pending_category_requests"]
+            == before["pending_category_requests"] + 1
+        )
+        assert (
+            after["pending_name_change_requests"]
+            == before["pending_name_change_requests"] + 1
+        )
         assert after["undelivered_whatsapp_7d"] == before["undelivered_whatsapp_7d"] + 1
         assert after["recipes_awaiting_review"] == before["recipes_awaiting_review"] + 1
         assert after["pending_recipes"] == before["pending_recipes"] + 2
-        assert after["experiences_awaiting_review"] == before["experiences_awaiting_review"] + 1
+        assert (
+            after["experiences_awaiting_review"]
+            == before["experiences_awaiting_review"] + 1
+        )
         assert after["pending_experiences"] == before["pending_experiences"] + 2
 
     def test_admin_dashboard_includes_analytics_series(self, client, db):
@@ -921,17 +988,31 @@ class TestAdminDashboardAnalytics:
         p = make_producer(db, status="approved")
         db.add(Report(producer_id=p.id, reporter_id=admin.id, reason="test"))
         owner = make_user(db, email="po@test.com")
-        db.add(HomeProduct(
-            user_id=owner.id, title="flagged", description="x",
-            phone="0500000000", city="TLV", price=30,
-            is_active=True, moderation_status="FLAGGED",
-        ))
-        db.add(Experience(
-            host_user_id=owner.id, title="workshop", description="x",
-            city="TLV", status="pending",
-            event_date=(utc_now() + timedelta(days=5)).date(),
-            duration_minutes=60, price_per_person=50, max_participants=10,
-        ))
+        db.add(
+            HomeProduct(
+                user_id=owner.id,
+                title="flagged",
+                description="x",
+                phone="0500000000",
+                city="TLV",
+                price=30,
+                is_active=True,
+                moderation_status="FLAGGED",
+            )
+        )
+        db.add(
+            Experience(
+                host_user_id=owner.id,
+                title="workshop",
+                description="x",
+                city="TLV",
+                status="pending",
+                event_date=(utc_now() + timedelta(days=5)).date(),
+                duration_minutes=60,
+                price_per_person=50,
+                max_participants=10,
+            )
+        )
         db.commit()
 
         body = client.get("/admin/dashboard", headers=auth_header(admin)).json()
@@ -963,9 +1044,7 @@ class TestViewerIpHashUsesRealClientIp:
 
     @staticmethod
     def _hashes(db):
-        return [
-            v.viewer_ip_hash for v in db.query(ProducerPageView).all()
-        ]
+        return [v.viewer_ip_hash for v in db.query(ProducerPageView).all()]
 
     def test_two_real_ips_produce_two_hashes(self, client, db, monkeypatch):
         monkeypatch.setenv("TRUSTED_PROXY", "1")
@@ -1135,9 +1214,7 @@ class TestViewBeaconEndpoint:
         p = make_producer(db)
         owner = _owner_of(db, p)
         before = db.query(ProducerPageView).count()
-        r = client.post(
-            f"/producers/{p.id}/view", json={}, headers=auth_header(owner)
-        )
+        r = client.post(f"/producers/{p.id}/view", json={}, headers=auth_header(owner))
         assert r.status_code == 204
         assert db.query(ProducerPageView).count() == before
 
@@ -1274,18 +1351,14 @@ class TestViewBeaconEndpoint:
         MEH-2156, no row, because she is not her own audience)."""
         p = make_producer(db, status="pending")
         owner = _owner_of(db, p)
-        r = client.post(
-            f"/producers/{p.id}/view", json={}, headers=auth_header(owner)
-        )
+        r = client.post(f"/producers/{p.id}/view", json={}, headers=auth_header(owner))
         assert r.status_code == 204
         assert db.query(ProducerPageView).count() == 0
 
     def test_admin_can_still_reach_a_pending_profile(self, client, db):
         p = make_producer(db, status="pending")
         admin = make_user(db, email="gate-admin@example.com", role="admin")
-        r = client.post(
-            f"/producers/{p.id}/view", json={}, headers=auth_header(admin)
-        )
+        r = client.post(f"/producers/{p.id}/view", json={}, headers=auth_header(admin))
         assert r.status_code == 204
 
     def test_get_producer_rejects_the_removed_from_param(self, client, db):

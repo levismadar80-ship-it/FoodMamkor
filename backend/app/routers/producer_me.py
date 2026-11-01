@@ -1417,9 +1417,15 @@ def producer_analytics(
     # and the two kinds cannot be confused. Counted raw, like the WhatsApp KPI
     # above — the table carries no viewer hash — so one visitor tapping twice
     # is two requests; the dashboard copy says "פניות", not "אנשים".
+    # The city is the visitor's typed text (outer whitespace stripped only), so
+    # «Haifa» / «haifa» and a doubled inner space are one city: group on a
+    # case- and whitespace-folded key and show one spelling of it.
+    city_key = func.lower(
+        func.regexp_replace(func.trim(ProducerWhatsAppClick.city), r"\s+", " ", "g")
+    )
     coverage_rows = (
         db.query(
-            ProducerWhatsAppClick.city,
+            func.min(ProducerWhatsAppClick.city).label("city"),
             func.count(ProducerWhatsAppClick.id).label("count"),
         )
         .filter(
@@ -1427,10 +1433,8 @@ def producer_analytics(
             ProducerWhatsAppClick.city.isnot(None),
             ProducerWhatsAppClick.clicked_at >= utc_now() - timedelta(days=30),
         )
-        .group_by(ProducerWhatsAppClick.city)
-        .order_by(
-            func.count(ProducerWhatsAppClick.id).desc(), ProducerWhatsAppClick.city
-        )
+        .group_by(city_key)
+        .order_by(func.count(ProducerWhatsAppClick.id).desc(), city_key)
         .limit(5)
         .all()
     )
