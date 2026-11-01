@@ -25,7 +25,7 @@ vi.mock("next-intl", () => ({
 }));
 vi.mock("@phosphor-icons/react", () => {
   const Stub = () => null;
-  return { Basket: Stub, CalendarBlank: Stub, CookingPot: Stub, Drop: Stub, MapTrifold: Stub, Path: Stub, Plant: Stub, Storefront: Stub, Calendar: Stub, CalendarPlus: Stub, CaretLeft: Stub, Coins: Stub, Leaf: Stub, MapPin: Stub, UsersThree: Stub };
+  return { Basket: Stub, CalendarBlank: Stub, CookingPot: Stub, ForkKnife: Stub, MapTrifold: Stub, Path: Stub, Plant: Stub, Storefront: Stub, Calendar: Stub, CalendarPlus: Stub, CaretLeft: Stub, Coins: Stub, Leaf: Stub, MapPin: Stub, UsersThree: Stub };
 });
 vi.mock("@/components/ShareButton", () => ({ default: () => null }));
 vi.mock("@/lib/api", () => ({ default: { get: vi.fn() } }));

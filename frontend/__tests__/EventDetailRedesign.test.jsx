@@ -34,7 +34,7 @@ vi.mock("@phosphor-icons/react", () => {
   const Stub = () => null;
   return {
     Basket: Stub, Calendar: Stub, CalendarBlank: Stub, CalendarPlus: Stub, CaretLeft: Stub, Coins: Stub,
-    CookingPot: Stub, Drop: Stub, Leaf: Stub, MapPin: Stub, MapTrifold: Stub, Path: Stub, Plant: Stub,
+    CookingPot: Stub, ForkKnife: Stub, Leaf: Stub, MapPin: Stub, MapTrifold: Stub, Path: Stub, Plant: Stub,
     Storefront: Stub, UsersThree: Stub,
   };
 });
