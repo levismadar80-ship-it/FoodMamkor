@@ -56,17 +56,16 @@ test.describe.serial("Password policy wire-up (MEH-306 sub-B)", () => {
       page.getByText(/לפחות 12 תווים/),
     ).toBeVisible();
 
-    // Submit gate is disabled until length OK; force-submit should
-    // surface the form-level error or simply not progress.
+    // MEH-2623: submit is never disabled for invalid input — the click is
+    // refused and names the failure in the form-level error. Scope to that
+    // element: the inline checklist carries the same sentence, so a bare
+    // getByText matches two nodes (strict-mode violation).
     const submit = page.getByRole("button", { name: /הצטרפו/ });
-    if (await submit.isEnabled()) {
-      await submit.click();
-      await expect(
-        page.getByText(/סיסמתך חייבת להכיל לפחות 12 תווים/),
-      ).toBeVisible();
-    } else {
-      await expect(submit).toBeDisabled();
-    }
+    await expect(submit).toBeEnabled();
+    await submit.click();
+    await expect(page.getByTestId("register-error")).toHaveText(
+      /סיסמתך חייבת להכיל לפחות 12 תווים/,
+    );
   });
 
   test("Signup: deny-listed (HIBP-known equivalent) password is blocked", async ({
@@ -93,13 +92,15 @@ test.describe.serial("Password policy wire-up (MEH-306 sub-B)", () => {
     const tos = page.getByRole("checkbox");
     await tos.scrollIntoViewIfNeeded();
     await tos.check();
+    // MEH-2623: always enabled; the server's 422 failure is shown in the
+    // form-level error (the inline preview carries the same words).
     const submit = page.getByRole("button", { name: /הצטרפו/ });
-    if (await submit.isEnabled()) {
-      await submit.click();
-      await expect(
-        page.getByText(/הסיסמה הזו דלפה ברשת/),
-      ).toBeVisible();
-    }
+    await expect(submit).toBeEnabled();
+    await submit.click();
+    await expect(page.getByTestId("register-error")).toHaveText(
+      /הסיסמה הזו דלפה ברשת/,
+      { timeout: 20_000 },
+    );
   });
 
   test("Signup: valid 12-char unique password completes the flow", async ({
