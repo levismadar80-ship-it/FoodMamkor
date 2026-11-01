@@ -262,10 +262,11 @@ const P_ASH = producer(6, "עסק לדוגמה", null, [branch(31.67, 34.57, "א
 const PRODUCERS: Producer[] = [P_HAIFA, P_TLV, P_JLM, P_BSV, P_KSH, P_ASH];
 const MEAT = PRODUCERS.filter((p) => (p.categories as Array<{ name: string }>)[0]?.name === CAT_MEAT.name);
 const DAIRY = PRODUCERS.filter((p) => (p.categories as Array<{ name: string }>)[0]?.name === CAT_DAIRY.name);
-// avg_rating DESC, then reviews_count DESC, unrated last (mapSort.test.js:39 pins
-// the comparator; this is the fixture's answer under it, written out so a
-// reader can check it against the ratings above without running anything).
-const RATING_ORDER = [P_KSH, P_HAIFA, P_TLV, P_JLM, P_BSV, P_ASH].map((p) => p.name);
+// MEH-2617: weighted rating DESC — (avg·n + 4.0·5) / (n + 5), so one 4.9 review
+// no longer outranks twelve 4.8s — then reviews_count DESC, unrated last
+// (mapSort.test.js pins the comparator). Written out so a reader can check it:
+// HAIFA 4.56 · TLV 4.40 · JLM 4.19 · KSH 4.15 · BSV 3.98 · ASH unrated.
+const RATING_ORDER = [P_HAIFA, P_TLV, P_JLM, P_KSH, P_BSV, P_ASH].map((p) => p.name);
 const FEED_ORDER = PRODUCERS.map((p) => p.name);
 
 // A GPS fix 1 km south of P_HAIFA's branch — nearest by construction, and inside
