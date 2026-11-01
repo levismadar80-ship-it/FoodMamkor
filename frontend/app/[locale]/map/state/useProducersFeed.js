@@ -37,6 +37,9 @@ export function useProducersFeed({ readInitialParams = null } = {}) {
   // null until that first fetch resolves; consumers treat null as "unknown"
   // and gate nothing. See lib/map-chips.js visibleMapToggleChips.
   const [catalogSnapshot, setCatalogSnapshot] = useState(null);
+  // true until the mount fetch answers — success, malformed or network
+  // failure alike — so the chip gates can tell "not yet" from "failed".
+  const [snapshotPending, setSnapshotPending] = useState(true);
 
   // MEH-779: a malformed payload degrades to the same state as a network
   // failure — empty list + toast — so the map never crashes on bad data.
@@ -54,6 +57,7 @@ export function useProducersFeed({ readInitialParams = null } = {}) {
         // Rule-19 belt-and-braces on the response side: validate the shape
         // before it reaches marker creation / the feed list.
         const parsed = ProducersResponseSchema.safeParse(r.data);
+        if (snapshot) setSnapshotPending(false);
         if (!parsed.success) {
           handleLoadFailure(parsed.error.issues);
           // MEH-2598: a failed snapshot must not swallow the filtered load.
@@ -74,6 +78,7 @@ export function useProducersFeed({ readInitialParams = null } = {}) {
         setAllProducers(parsed.data);
       })
       .catch((reason) => {
+        if (snapshot) setSnapshotPending(false);
         handleLoadFailure(reason);
         // MEH-2598: a failed snapshot must not swallow the filtered load.
         then?.();
@@ -111,5 +116,6 @@ export function useProducersFeed({ readInitialParams = null } = {}) {
     loadProducers,
     loading,
     catalogSnapshot,
+    snapshotPending,
   };
 }
