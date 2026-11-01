@@ -43,6 +43,7 @@ from app.services.producer_queries import (
     attach_badge_fields,
     attach_favorites_counts,
     haversine_min_km,
+    weighted_rating_expr,
 )
 from app.services.verification_status import verified_current_condition
 from app.utils.clock import israel_now, israel_today, utc_now
@@ -295,14 +296,19 @@ def _build_base_queries(  # noqa: PLR0913 — keyword-only query axes; MEH-2602 
     # the distance too" switch below.
     distance_expr = None
     if sort == "rating":
-        # MEH-1483: avg_rating DESC, NULLs last, tiebreak reviews_count DESC,
-        # then created_at DESC. `avg_rating.is_(None)` is a boolean order key
-        # (FALSE < TRUE → non-null first, null last) — the portable nulls-last
-        # idiom this codebase already uses instead of .nullslast() (see
-        # search.py:85-87, which orders on `(Producer.name != q_clean)`).
-        order = (
+        # MEH-1483: rated first, NULL/unreviewed last, tiebreak reviews_count
+        # DESC, then created_at DESC. The `unrated` key is a boolean order key
+        # (FALSE < TRUE → rated first) — the portable nulls-last idiom this
+        # codebase already uses instead of .nullslast() (see search.py:85-87).
+        # MEH-2617: the primary key is the Bayesian average, not the raw mean,
+        # so one 5.0 review no longer outranks a 4.8 from twelve.
+        unrated = or_(
             Producer.avg_rating.is_(None),
-            Producer.avg_rating.desc(),
+            func.coalesce(Producer.reviews_count, 0) < 1,
+        )
+        order = (
+            unrated,
+            weighted_rating_expr().desc(),
             Producer.reviews_count.desc(),
             Producer.created_at.desc(),
         )
