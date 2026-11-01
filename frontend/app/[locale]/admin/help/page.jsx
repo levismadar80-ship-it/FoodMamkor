@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { CaretDown, Lifebuoy, MagnifyingGlass } from "@phosphor-icons/react";
 import { HELP_GROUPS, HELP_TOPICS, topicMatches } from "./topics";

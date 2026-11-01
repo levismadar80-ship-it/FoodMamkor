@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 // MEH-2245: the tab is the ROUTE (/events vs /experiences), so switching it is
 // a navigation. next-intl's router keeps the locale prefix (/en/experiences).
 import { useRouter } from "@/i18n/navigation";

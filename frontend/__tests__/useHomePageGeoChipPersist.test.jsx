@@ -26,7 +26,7 @@ const LAT = 32.0853;
 const LNG = 34.7818;
 
 vi.mock("next/navigation", () => ({ useRouter: () => router }));
-vi.mock("@/i18n/navigation", () => ({ useRouter: () => localeRouter }));
+vi.mock("@/i18n/navigation", () => ({ Link: ({ href, children, prefetch, ...p }) => <a href={typeof href === "string" ? href : href?.pathname} {...p}>{children}</a>,  useRouter: () => localeRouter }));
 vi.mock("@/lib/analytics", () => ({ trackEvent: vi.fn() }));
 vi.mock("next-intl", () => ({ useTranslations: () => (k) => k }));
 vi.mock("@/lib/i18n-key-map", () => ({ mapKey: (k) => k }));

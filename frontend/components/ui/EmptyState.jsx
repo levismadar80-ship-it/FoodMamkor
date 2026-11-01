@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 
 // MEH-1630 chunk 1 (decision 1): disc geometry per `size`. Class strings are
 // literals so Tailwind's scanner sees w-16/w-20/w-24 — never build them by

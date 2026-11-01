@@ -11,7 +11,7 @@
  * History: MEH-100 (founder portrait); MEH-135 (S8 Direction D port).
  */
 
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 // MEH-1840: locale-aware Link. next/link is NOT — with localePrefix "as-needed"
 // (i18n/routing.js) a plain <Link href="/about/process"> renders that href
 // verbatim, so an /en reader clicking it lands on the HEBREW page. Measured on
