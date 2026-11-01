@@ -5,8 +5,9 @@ import Header from "@/components/Header";
 const mockLogout = vi.fn();
 const mockPush = vi.fn();
 const userRef = { current: null };
+const authLoadingRef = { current: false };
 vi.mock("@/lib/auth-context", () => ({
-  useAuth: () => ({ user: userRef.current, logout: mockLogout }),
+  useAuth: () => ({ user: userRef.current, logout: mockLogout, loading: authLoadingRef.current }),
 }));
 
 // MEH-1176 F3: Header reads usePathname from "@/i18n/navigation" (locale-
@@ -127,6 +128,7 @@ const setScrollY = (y) =>
 describe("Header", () => {
   beforeEach(() => {
     userRef.current = null;
+    authLoadingRef.current = false;
     pathnameRef.current = "/about";
     mockLogout.mockClear();
     mockPush.mockClear();
@@ -193,6 +195,21 @@ describe("Header", () => {
   });
 
   describe("actions — logged out", () => {
+    // MEH-2624: a signed-in visitor saw «כניסה · הרשמה» until /auth/me
+    // answered. While auth is loading the links keep their box but are not
+    // painted; once it settles with no user they are painted.
+    it("keeps the guest links unpainted while auth is loading, painted once it settles", () => {
+      authLoadingRef.current = true;
+      const { unmount } = render(<Header />);
+      const loading = screen.getAllByRole("link", { name: "כניסה" })[0].parentElement;
+      expect(loading.className).toContain("[&>*]:invisible");
+      unmount();
+      authLoadingRef.current = false;
+      render(<Header />);
+      const settled = screen.getAllByRole("link", { name: "כניסה" })[0].parentElement;
+      expect(settled.className).not.toContain("invisible");
+    });
+
     it("shows the quiet כניסה account link", () => {
       render(<Header />);
       const login = screen.getAllByRole("link", { name: "כניסה" });
