@@ -107,6 +107,9 @@ export function useMapFilters({
   // MEH-2170: the one-time mount catalog from useProducersFeed. null = not
   // loaded yet, and then no toggle is hidden.
   catalogSnapshot = null,
+  // true while that mount fetch is in flight — gated chips wait for it
+  // rather than render and vanish (see map-chips.js).
+  snapshotPending = false,
 }) {
   const [cityFilter, setCityFilter] = useState("");
   const [committedBounds, setCommittedBounds] = useState(null);
@@ -475,8 +478,8 @@ export function useMapFilters({
   // with the chip params after every toggle (circular) and is replaced by a
   // viewport-bounded list after «חפשי באזור זה» (frame-dependent).
   const visibleToggleChips = useMemo(
-    () => visibleMapToggleChips({ catalogSnapshot, chipState }),
-    [catalogSnapshot, chipState],
+    () => visibleMapToggleChips({ catalogSnapshot, chipState, snapshotPending }),
+    [catalogSnapshot, chipState, snapshotPending],
   );
 
   return {
