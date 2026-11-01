@@ -167,7 +167,8 @@ required *CI gate*). It asserts every entry in `ATTRIBUTE_LABELS` / `CHIPS_CONFI
 validator actually rejects a missing/invalid field.
 
 Implemented as a vitest test (not a `.github/workflows/pr-checks.yml` step) because
-`.github/workflows/**` is CC-deny (MEH-671) and vitest already gates every PR — and
+`.github/workflows/**` is denied to CC's filesystem tools (security.md: deny =
+tool × path; MEH-671) and vitest already gates every PR — and
 because the pattern the MEH-1507 spec cites, the **MEH-1472 emoji guard**
 (`NoEmojiInComponents.test.js`), is itself a vitest test. Same mechanism, real gate.
 
@@ -213,7 +214,8 @@ disclosure answers *what is behind this*. Same review question, same file.
 ### The guard
 
 `frontend/__tests__/LabelScopeContract.test.js` carries the assertion (same file,
-same reasoning as above: `.github/workflows/**` is CC-deny, vitest already gates
+same reasoning as above: `.github/workflows/**` is denied to CC's filesystem tools
+(security.md: deny = tool × path), vitest already gates
 every PR). It renders `ProducerCard` with a producer earning 5 badges and asserts
 the `badge-overflow` element is interactive — a `<button>` (or `role="button"`)
 carrying `aria-haspopup`.
