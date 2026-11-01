@@ -522,12 +522,14 @@ def _last_six_months(now):
     request's time of day, so whatever was created on day 1 before that hour
     counted in the month before — on day 1 itself, everything created that day.
     """
-    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    buckets = []
-    for i in range(5, -1, -1):
-        ref = (month_start - timedelta(days=30 * i)).replace(day=1)
-        buckets.append((ref, (ref + timedelta(days=32)).replace(day=1)))
-    return buckets
+    # Step back one calendar month at a time: fixed 30-day steps skipped
+    # February and doubled a neighbour whenever it was in the window.
+    ref = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    starts = [ref]
+    for _ in range(5):
+        ref = (ref - timedelta(days=1)).replace(day=1)
+        starts.append(ref)
+    return [(s, (s + timedelta(days=32)).replace(day=1)) for s in reversed(starts)]
 
 
 def _counts_per_bucket(db, id_col, created_col, buckets, *filters):

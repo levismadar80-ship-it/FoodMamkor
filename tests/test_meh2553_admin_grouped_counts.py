@@ -173,3 +173,23 @@ def test_month_bucket_starts_at_midnight_not_at_the_current_hour(
     monthly = {m["month"]: m for m in r.json()["monthly"]}
     assert monthly["2026-11"]["producers"] == 1
     assert monthly["2026-10"]["producers"] == 0
+
+
+def test_six_month_window_is_six_consecutive_months_across_february():
+    """Fixed 30-day steps from 15/03/2027 gave 2026-12 twice and no 2027-02."""
+    from datetime import datetime, timezone
+
+    from app.routers.admin_extra import _last_six_months
+
+    for now in (
+        datetime(2027, 3, 15, tzinfo=timezone.utc),
+        datetime(2027, 4, 15, tzinfo=timezone.utc),
+        datetime(2028, 3, 1, tzinfo=timezone.utc),
+        datetime(2026, 1, 31, 23, 59, tzinfo=timezone.utc),
+    ):
+        buckets = _last_six_months(now)
+        months = [start.strftime("%Y-%m") for start, _ in buckets]
+        assert len(set(months)) == 6, (now, months)
+        for (_, end), (start, _) in zip(buckets, buckets[1:]):
+            assert end == start, (now, months)
+        assert buckets[-1][0] <= now < buckets[-1][1]
