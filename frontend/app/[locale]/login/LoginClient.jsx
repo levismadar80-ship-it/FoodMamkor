@@ -88,6 +88,9 @@ function LoginPageBody() {
   const [loading, setLoading] = useState(false);
   const [emailTouched, setEmailTouched] = useState(false);
   const [passwordTouched, setPasswordTouched] = useState(false);
+  // MEH-2623: true after the first submit attempt — an empty email then shows
+  // its inline message too (before that, an untouched empty field stays quiet).
+  const [submitAttempted, setSubmitAttempted] = useState(false);
   // Eye-icon toggle for password visibility
   const [showPassword, setShowPassword] = useState(false);
 
@@ -107,16 +110,35 @@ function LoginPageBody() {
     if (!authLoading && user) router.replace(landingFor(user));
   }, [authLoading, user, router, redirectTo]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // MEH-2623: the submit button is never disabled for invalid input — a grey
+  // button gives no reason, and Chrome hides autofilled values from JS until a
+  // user gesture, so the first tap on a disabled button was lost. Validation
+  // runs here instead: every field is marked touched (the inline messages
+  // below appear), focus moves to the first bad field, and nothing is sent.
+  // Values are read from the form too, so an autofill React has not seen yet
+  // still counts.
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    if (!validateEmail(email)) {
-      setError(t("email_invalid"));
+    const fd = new FormData(e.currentTarget);
+    const emailValue = email || String(fd.get("email") ?? "");
+    const passwordValue = password || String(fd.get("password") ?? "");
+    if (emailValue !== email) setEmail(emailValue);
+    if (passwordValue !== password) setPassword(passwordValue);
+    setSubmitAttempted(true);
+    setEmailTouched(true);
+    setPasswordTouched(true);
+    if (!validateEmail(emailValue)) {
+      document.getElementById("login-email")?.focus();
+      return;
+    }
+    if (passwordValue.length < 1) {
+      document.getElementById("login-password")?.focus();
       return;
     }
     setLoading(true);
     try {
-      const me = await login(email, password);
+      const me = await login(emailValue, passwordValue);
       router.push(landingFor(me));
     } catch (err) {
       setError(detailToMessage(err.response?.data?.detail) || tError("generic"));
@@ -141,15 +163,16 @@ function LoginPageBody() {
   // onBlur flips the `*Touched` state; error / valid states below only
   // activate after the user has interacted with the field, so the form
   // doesn't show a sea of red borders before the user types anything.
-  // Submit button is disabled whenever either required field fails —
-  // prevents a round-trip where the server returns a 4xx we already knew
-  // about.
-  const emailInvalid = emailTouched && email.length > 0 && !validateEmail(email);
+  // MEH-2623: the submit handler (not a disabled button) stops a round-trip
+  // the server would 4xx anyway.
+  const emailInvalid =
+    (emailTouched && email.length > 0 && !validateEmail(email)) ||
+    (submitAttempted && !validateEmail(email));
   const emailValid = emailTouched && validateEmail(email);
   // MEH-418: drop the 8-char floor (post-MEH-306 there is no specific
   // minimum on /login — login validates against the stored hash, which
   // may be any length for legacy accounts). Keep a >= 1 defensive gate
-  // so the submit button stays disabled on empty fields.
+  // so an empty password is stopped in handleSubmit (MEH-2623).
   // MEH-2256: the floor removal left `length > 0 && length < 1`, which no
   // integer satisfies — so «הזינו סיסמה» and the field's aria-invalid were
   // unreachable in every state a user can produce (measured in
@@ -158,7 +181,6 @@ function LoginPageBody() {
   // blurred empty password, mirroring the name field on /register.
   const passwordInvalid = passwordTouched && password.length === 0;
   const passwordValidLength = passwordTouched && password.length >= 1;
-  const formIsValid = validateEmail(email) && password.length >= 1;
 
   // MEH-1489 chunk C: gate the form render while auth resolves (or once a user
   // is present and the redirect above is in flight) so the login form never
@@ -269,7 +291,9 @@ function LoginPageBody() {
         )}
 
         {/* Email + password — labels above, 54px field rhythm */}
-        <form onSubmit={handleSubmit} className="grid gap-4">
+        {/* MEH-2623: noValidate — our inline Hebrew messages replace the
+            browser's own bubble; `required` stays on the inputs for a11y. */}
+        <form onSubmit={handleSubmit} noValidate className="grid gap-4">
           <div className="grid gap-2 text-start">
             <label htmlFor="login-email" className="text-[13.5px] font-semibold text-text">
               {t("email_label")}
@@ -285,6 +309,7 @@ function LoginPageBody() {
                 // MEH-1599: locators for the ?redirect= round-trip spec
                 // (25-role-reachability), per docs/E2E-LOCATORS.md.
                 data-testid="login-email"
+                name="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -335,6 +360,7 @@ function LoginPageBody() {
               <input
                 id="login-password"
                 data-testid="login-password"
+                name="password"
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -343,8 +369,8 @@ function LoginPageBody() {
                 autoComplete="current-password"
                 // MEH-835: DO NOT add a minLength floor — login validates the
                 // stored hash only (OWASP), so legacy <8-char accounts must be
-                // able to sign in. Empty-submit is still blocked via formIsValid
-                // (password.length >= 1). Regression of MEH-418.
+                // able to sign in. Empty-submit is still blocked in handleSubmit
+                // (MEH-2623). Regression of MEH-418.
                 aria-invalid={passwordInvalid || undefined}
                 className={`w-full min-h-[54px] rounded-[8px] ps-11 pe-12 py-3.5 bg-surface-card text-text outline-none transition focus-visible:ring-2 focus-visible:ring-primary/40 ${
                   passwordInvalid
@@ -392,7 +418,7 @@ function LoginPageBody() {
           <button
             type="submit"
             data-testid="login-submit"
-            disabled={loading || !formIsValid}
+            disabled={loading}
             className="w-full min-h-[54px] flex items-center justify-center bg-primary text-white rounded-full px-6 font-bold hover:bg-primary-dark transition disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary/40"
           >
             {loading ? (
