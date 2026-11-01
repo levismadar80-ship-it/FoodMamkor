@@ -241,7 +241,8 @@ test.describe("manual › /login inline validation and submit gating", () => {
     const invalid = page.getByText("האימייל לא תקין", { exact: true });
     const valid = page.getByText("✓ תקין", { exact: true });
 
-    await expect(submit).toBeDisabled();
+    // MEH-2623: the submit button is never disabled for invalid input.
+    await expect(submit).toBeEnabled();
 
     // touched-but-empty is deliberately neutral, not an error.
     await email.click();
@@ -260,10 +261,33 @@ test.describe("manual › /login inline validation and submit gating", () => {
     await expect(valid).toBeVisible();
     await expect(email).not.toHaveAttribute("aria-invalid", "true");
 
-    // Still disabled: the password half of the gate has not been satisfied.
-    await expect(submit).toBeDisabled();
-    await page.getByTestId("login-password").fill("x");
-    await expect(submit).toBeEnabled();
+    // MEH-2623: the password half is enforced on click, not by a grey button
+    // — an empty password shows «הזינו סיסמה», takes focus, and sends nothing.
+    let loginPosts = 0;
+    page.on("request", (r) => {
+      if (r.method() === "POST" && /\/auth\/login(?:\?|$)/.test(r.url())) loginPosts += 1;
+    });
+    await submit.click();
+    await expect(page.getByText("הזינו סיסמה", { exact: true })).toBeVisible();
+    await expect(page.getByTestId("login-password")).toBeFocused();
+    expect(loginPosts).toBe(0);
+  });
+
+  // MEH-2623: an empty form is refused on click with the email message and
+  // focus on the email — before, the button was grey and said nothing.
+  test("empty form: the click shows the email message, focuses it, and sends nothing", async ({
+    page,
+  }) => {
+    await page.goto(LOGIN);
+    let loginPosts = 0;
+    page.on("request", (r) => {
+      if (r.method() === "POST" && /\/auth\/login(?:\?|$)/.test(r.url())) loginPosts += 1;
+    });
+    await page.getByTestId("login-submit").click();
+    await expect(page.getByText("האימייל לא תקין", { exact: true })).toBeVisible();
+    await expect(page.getByTestId("login-email")).toBeFocused();
+    await expect(page.getByTestId("login-email")).toHaveAttribute("aria-invalid", "true");
+    expect(loginPosts).toBe(0);
   });
 
   // MT:eye-toggle:15 — and rows 13-14 are STALE rather than converted, which is
@@ -375,33 +399,30 @@ test.describe("manual › /register says nothing when a field is merely correct 
     await expect(emailError).toHaveCount(0);
   });
 
-  // MT:eye-toggle:17 + :28 — the register gate: row 17 is «disabled on load»,
-  // row 28 the four-condition rule. The test walks the last condition on its own
-  // so the assertion is falsifiable by dropping any single one rather than only
-  // by dropping the whole gate. Rows 19-27 in between are STALE or absent from
-  // the page (the success affordance, the strength bar, phone, city) and are
-  // reported in `docs/qa/conversion-progress.md`, not converted.
-  test("submit stays disabled until name, email, password AND the terms box are all satisfied", async ({
+  // MT:eye-toggle:17 + :28 — the register gate. MEH-2623 moved it from a
+  // disabled button to the click: the button is enabled on load, and a click
+  // with only the terms box missing names that rule and sends nothing. The
+  // terms case is the last condition on its own, so dropping it from the gate
+  // turns this red. (Each other rule is walked in 29-register-journey-a A3.)
+  test("submit is enabled on load; a click with the terms box unticked is refused with its message", async ({
     page,
   }) => {
     await stubBreachCheck(page);
+    let registerPosts = 0;
+    page.on("request", (r) => {
+      if (r.method() === "POST" && /\/auth\/register(?:\?|$)/.test(r.url())) registerPosts += 1;
+    });
     await page.goto(REGISTER);
     const submit = page.getByTestId("register-submit");
 
-    await expect(submit).toBeDisabled();
-    await page.getByTestId("register-name").fill("שרה");
-    await expect(submit).toBeDisabled();
-    await page.getByTestId("register-email").fill("sara@example.com");
-    await expect(submit).toBeDisabled();
-    await page.getByTestId("register-password").fill(VALID_PASSWORD);
-    await expect(submit).toBeDisabled(); // everything filled, terms still unticked
-
-    await page.getByTestId("register-terms").check();
     await expect(submit).toBeEnabled();
-
-    // …and untick again: the gate is a live predicate, not a one-way latch.
-    await page.getByTestId("register-terms").uncheck();
-    await expect(submit).toBeDisabled();
+    await page.getByTestId("register-name").fill("שרה");
+    await page.getByTestId("register-email").fill("sara@example.com");
+    await page.getByTestId("register-password").fill(VALID_PASSWORD);
+    await submit.click();
+    await expect(page.getByTestId("register-error")).toHaveText("יש לאשר את תנאי השימוש לפני ההצטרפות");
+    await expect(page.getByTestId("register-terms")).toBeFocused();
+    expect(registerPosts).toBe(0);
   });
 });
 
