@@ -35,7 +35,7 @@ vi.mock("framer-motion", () => ({
 }));
 vi.mock("@/components/ProducerCard", () => ({ default: () => <div /> }));
 vi.mock("@/components/Skeleton", () => ({ SkeletonProducerGrid: () => <div /> }));
-vi.mock("@/i18n/navigation", () => ({
+vi.mock("@/i18n/navigation", () => ({ Link: ({ href, children, prefetch, ...p }) => <a href={typeof href === "string" ? href : href?.pathname} {...p}>{children}</a>, 
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
 }));
 // MEH-2173: the axes moved off the flat row and into the FilterSheet, so the

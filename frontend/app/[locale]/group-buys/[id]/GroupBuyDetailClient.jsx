@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import * as Sentry from "@sentry/nextjs";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { MagnifyingGlass, MapPin, Clock, ShoppingCart } from "@phosphor-icons/react";
 import Image from "next/image";
 import OwnerRow from "@/components/OwnerRow";
