@@ -404,7 +404,7 @@ export default function StoryCardCanvas({ producer, onUploaded, onClose }) {
           canvas fell back to its intrinsic 1920px and showed stretched ×4 and
           clipped on iPhone. The wrapper keeps the ratio too, so the
           «מייצר...» overlay has a frame before the first draw. */}
-      <div className="relative bg-[#1f4a3a] rounded-[12px] overflow-hidden" style={{ aspectRatio: "9/16", maxWidth: 270 }}>
+      <div className="relative bg-[#1f4a3a] rounded-md overflow-hidden" style={{ aspectRatio: "9/16", maxWidth: 270 }}>
         <canvas
           ref={canvasRef}
           style={{ width: "100%", height: "auto", aspectRatio: "9/16", display: "block" }}

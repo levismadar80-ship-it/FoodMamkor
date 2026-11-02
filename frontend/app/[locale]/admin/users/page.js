@@ -143,24 +143,24 @@ export default function AdminUsersPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && searchUsers()}
-          className="flex-1 border border-border rounded-[12px] px-3 py-2"
+          className="flex-1 border border-border rounded-md px-3 py-2"
         />
         <select
           value={role}
           onChange={(e) => setRole(e.target.value)}
-          className="border border-border rounded-[12px] px-3 py-2 bg-white"
+          className="border border-border rounded-md px-3 py-2 bg-white"
         >
           <option value="all">{t("users.role_filter.all")}</option>
           <option value="consumer">{t("users.role_filter.consumer")}</option>
           <option value="producer">{t("users.role_filter.producer")}</option>
           <option value="admin">{t("users.role_filter.admin")}</option>
         </select>
-        <button onClick={searchUsers} className="bg-primary text-white px-4 py-2 rounded-[12px] text-sm">
+        <button onClick={searchUsers} className="bg-primary text-white px-4 py-2 rounded-md text-sm">
           {t("common.search")}
         </button>
       </div>
 
-      <div className="bg-white border border-border rounded-[12px] overflow-hidden">
+      <div className="bg-white border border-border rounded-md overflow-hidden">
         <div className="overflow-x-auto">
           {/* MEH-2426: one card per row below md (globals.css .table-stack). */}
           <table className="table-stack w-full text-sm">
@@ -327,7 +327,7 @@ export default function AdminUsersPage() {
             <select
               value={pageSize}
               onChange={(e) => changePageSize(Number(e.target.value))}
-              className="border border-border rounded-[12px] px-2 py-1 bg-white"
+              className="border border-border rounded-md px-2 py-1 bg-white"
             >
               <option value={25}>25</option>
               <option value={50}>50</option>
@@ -338,7 +338,7 @@ export default function AdminUsersPage() {
             <button
               onClick={() => setPage(currentPage - 1)}
               disabled={currentPage === 1}
-              className="px-3 py-1.5 rounded-[12px] border border-border disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition"
+              className="px-3 py-1.5 rounded-md border border-border disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition"
             >
               {t("users.pagination.prev")}
             </button>
@@ -348,7 +348,7 @@ export default function AdminUsersPage() {
             <button
               onClick={() => setPage(currentPage + 1)}
               disabled={currentPage === totalPages}
-              className="px-3 py-1.5 rounded-[12px] border border-border disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition"
+              className="px-3 py-1.5 rounded-md border border-border disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition"
             >
               {t("users.pagination.next")}
             </button>

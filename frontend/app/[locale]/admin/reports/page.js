@@ -73,7 +73,7 @@ export default function AdminReportsPage() {
         {loadError ? (
           <AdminLoadError onRetry={loadReports} testId="admin-reports-load-error" />
         ) : reports.length === 0 ? (
-          <p className="text-sm text-fg-muted bg-white border border-border rounded-[12px] p-5">
+          <p className="text-sm text-fg-muted bg-white border border-border rounded-md p-5">
             {t("reports.no_reports")}
           </p>
         ) : (
@@ -84,7 +84,7 @@ export default function AdminReportsPage() {
               .map((r) => (
                 <div
                   key={r.producer_id}
-                  className={`bg-white rounded-[12px] p-5 border ${
+                  className={`bg-white rounded-md p-5 border ${
                     r.auto_flagged ? "border-red-200" : "border-border"
                   }`}
                 >
@@ -106,13 +106,13 @@ export default function AdminReportsPage() {
                       <button
                         onClick={() => suspendProducer(r.producer_id)}
                         disabled={isBusy(`suspend:${r.producer_id}`)}
-                        className="bg-yellow-500 text-white px-3 py-1.5 rounded-[12px] text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="bg-yellow-500 text-white px-3 py-1.5 rounded-md text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {t("reports.actions.suspend")}
                       </button>
                       <button
                         onClick={() => setDismissTarget(r)}
-                        className="bg-white border border-border px-3 py-1.5 rounded-[12px] text-xs"
+                        className="bg-white border border-border px-3 py-1.5 rounded-md text-xs"
                       >
                         {t("reports.actions.ignore")}
                       </button>
