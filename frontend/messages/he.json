@@ -3422,7 +3422,14 @@
       "uploading": "בהעלאה...",
       "save_cloudinary": "שמרי ל-Cloudinary",
       "copy_caption": "העתקת caption",
-      "copied": "הועתק!"
+      "copied": "הועתק!",
+      "owner": {
+        "section_title": "ערכת שיתוף",
+        "section_subtitle": "פוסטים מוכנים לאינסטגרם ולסטטוס בוואטסאפ. מורידות, מעלות, וזהו.",
+        "download_story": "הורידי כרטיס סטורי",
+        "copy_caption": "העתיקי כיתוב",
+        "copied": "הכיתוב הועתק"
+      }
     }
   },
   "footer": {

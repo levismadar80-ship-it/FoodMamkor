@@ -3426,7 +3426,14 @@
       "uploading": "Uploading...",
       "save_cloudinary": "Save to Cloudinary",
       "copy_caption": "Copy caption",
-      "copied": "Copied!"
+      "copied": "Copied!",
+      "owner": {
+        "section_title": "Share kit",
+        "section_subtitle": "Ready-made posts for Instagram and WhatsApp status. Download, upload, done.",
+        "download_story": "Download story card",
+        "copy_caption": "Copy caption",
+        "copied": "Caption copied"
+      }
     }
   },
   "footer": {

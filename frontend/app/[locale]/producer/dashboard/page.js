@@ -16,6 +16,7 @@ import InfoTooltip from "@/components/InfoTooltip";
 import WhatsThis from "@/components/WhatsThis";
 import ProfileCompletenessCard from "@/components/ProfileCompletenessCard";
 import DraftSubmitBanner from "@/components/producer/DraftSubmitBanner";
+import StoryCardCanvas from "@/components/StoryCardCanvas";
 import ChangesRequestedBanner from "./ChangesRequestedBanner";
 import RejectedBanner from "./RejectedBanner";
 import { producerCompleteness } from "@/lib/producer-completeness";
@@ -62,6 +63,42 @@ function VanityLinkCard({ slug }) {
         </a>
       </div>
     </div>
+  );
+}
+
+/**
+ * MEH-1428 "ערכת שיתוף" — the owner's own share kit. One section, two
+ * ready-to-post 1080×1920 cards: her story card (StoryCardCanvas in `owner`
+ * mode — download + caption, no Cloudinary upload) and a review card
+ * (ReviewCardCanvas, chunk B).
+ *
+ * Data source is `profile` (GET /producers/me → ProducerOwnerOut), NOT
+ * `data.producer` (GET /producers/me/dashboard), which returns only
+ * id/name/status/plan/availability — no `images`, `categories` or `slug`
+ * (producer_me.py:1125-1148). The card needs all three.
+ *
+ * Gated on approved: the story card announces a live listing ("בית עסק חדש
+ * במהמקור") and the review endpoint has nothing to serve a business with no
+ * public page yet. Also off for an organizer (ADR-036) — reviews.py:247
+ * filters `Producer.kind == "producer"`, so an organizer's review list is
+ * always empty, and this card's copy is business-shaped.
+ */
+function ShareKitSection({ profile }) {
+  const t = useTranslations("story.canvas.owner");
+
+  return (
+    <section
+      data-testid="share-kit-section"
+      aria-label={t("section_title")}
+      className="bg-white border border-border rounded-[16px] p-5 mb-6"
+    >
+      <h2 className="font-headline-md text-lg font-bold text-text mb-1">
+        {t("section_title")}
+      </h2>
+      <p className="text-sm text-fg-muted">{t("section_subtitle")}</p>
+
+      <StoryCardCanvas producer={profile} mode="owner" />
+    </section>
   );
 }
 
@@ -655,6 +692,11 @@ export default function ProducerDashboardPage() {
           <p className="text-sm text-fg-muted">{t("states.share_locked")}</p>
         </div>
       ) : null}
+
+      {/* MEH-1428: "ערכת שיתוף" — sits with the other share surface (the vanity
+          link above), approved-only, business-only. `profile` is the data
+          source; see the ShareKitSection header for why not `data.producer`. */}
+      {isApproved && profile && !isOrganizer && <ShareKitSection profile={profile} />}
 
       {/* MEH-291 Phase 3 — unified availability card. Replaces the old
           "זמין היום" hero + "סטטוס זמינות" pill row. 4-value durable
