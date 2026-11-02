@@ -4,6 +4,17 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-02 22:30 — drain 02/11 ערב: E2E על staging מ-5 ל-1, החוזה הישן של הזמינות ירד עד הסוף, חוב עיצובי B · C0 · D (#3929–#3936)
+
+**‏שורה אחת:** ‏ה-E2E על staging ירד משלושה כשלים ושני פלאקים לפלאק אחד ידוע, השדות הישנים `is_available_today` / `availability_status` לא יוצאים יותר מאף תשובה, ושלוש חבילות של חוב עיצובי נכנסו בלי שינוי בפיקסלים (חוץ מהסרת הטשטוש בשני מודאלים).
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏ב-`manual/home.spec.ts`: טעינה בלי פרמטרים מציגה את הקטלוג של השרת ב-CI, לא את ה-fixture. כל טסט שסופר צ'יפים או כרטיסים צריך `gotoFixtureFeed`.
+- ‏`schemas.state_to_legacy` נמחק. העמודות עצמן עדיין ב-DB עד MEH-2273 (RED, ספיר).
+- ‏שלושה ratchets חדשים ב-vitest: `RadiusTokenCodemod` (אין `rounded-[12px]`), `HexTokenRatchet` (אין hex שזהה לטוקן), `ModalOverlayNoBlur` (אין blur על overlay של מודאל). מי שמוסיפה אחד מהם — האדום הוא בכוונה.
+- ‏הבנייה המקומית צריכה `NEXT_PUBLIC_API_URL` ו-`NEXT_PUBLIC_GOOGLE_CLIENT_ID`. בלעדיהם hook העצירה נכשל על «Invalid environment variables» — זו הסביבה, לא הקוד.
+
+**‏לא עכשיו / מחכה לספיר:** מיזוג #3911 ו-#3922 (docs) · #3920 (bcrypt 5 + joserfc) ו-#3921 · שני פלאקים על MEH-2323 (role-reachability:197, text-scale `/` במובייל) · בחבילה B, הצבעים שמשנים פיקסלים (‎`#8B6914`, ‏`text-red-500`, ‏PasswordStrength, צבעי החגים) צריכים baselines · אימוג'י החגים צריכים בחירת אייקון · הכרעה אם ה-scrim של LocationModal חלש מדי בלי blur.
 ## 2026-11-02 00:55 — drain 02/11: links keep /en, staging-E2E triage, legacy contract chunk 1 (#3912–#3919)
 
 **‏שורה אחת:** ‏קישורי האתר שומרים על /en, 11 מתוך 13 הכשלים הקבועים ב-E2E על staging טופלו (10 spec מיושן + רגרסיה אחת), והחוזה הישן של הזמינות ירד מה-API.
