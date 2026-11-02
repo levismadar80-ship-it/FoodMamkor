@@ -4,6 +4,18 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-03 00:45 — drain 03/11 לילה: שלושת ה-docs PRs מוזגו, כרטיסי post-launch שהוקדמו נבדקו (#3911, #3922, #3937)
+
+**‏שורה אחת:** ‏שלושת ה-docs PRs של 01/11–02/11 מוזגו לפי הסדר. מתוך שמונת הכרטיסים שהוקדמו, אחד נסגר בראיה וחמישה קיבלו מדידה או ממצא ב-description. אף כרטיס לא קיבל קוד חדש: בכל אחד מהם נשארה הכרעה, או שהעבודה כבר הייתה ממוזגת.
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏ה-flake של hero-search הוכח: `app/[locale]/loading.js` מזרים את העמוד ב-segment מוסתר, ו-React מרנדר עותק client-only לצידו. ה-id מה-CI זהה ל-id ב-SSR. התיקון הוא החלטה על ה-loading boundary (a/b/c ב-description של הכרטיס).
+- ‏ה-fuzz של schemathesis רץ רק עם `RUN_FUZZ=1`, ואף workflow לא מגדיר את זה. שדרוג ל-4.33.0 מוסיף 32 errors חדשים בהרצה מקומית, ולכן לא נשלח.
+- ‏/map כבר שומר ב-URL את כל צ'יפי התכונות (replaceState). חסרות רק קטגוריות ועיר.
+- ‏PR #3938 נפתח בסשן מקביל בלי LEASE (ערכת שיתוף). הדריין לא נגע בקבצים שלו.
+
+**‏לא עכשיו / מחכה לספיר:** VerifyBanner — לבחור כיוון (שריון גובה / תחתית / מדידה) · hero-search — לבחור a/b/c · פעילות בדשבורד — שלושת השדות הרכים, cap ו-k-anonymity · קודי שגיאה ב-backend — go לצ'אנק הראשון (חמשת אתרי ה-enum) · delivery_cities — chunk C (Alembic, RED).
+
 ## 2026-11-02 22:30 — drain 02/11 ערב: E2E על staging מ-5 ל-1, החוזה הישן של הזמינות ירד עד הסוף, חוב עיצובי B · C0 · D (#3929–#3936)
 
 **‏שורה אחת:** ‏ה-E2E על staging ירד משלושה כשלים ושני פלאקים לפלאק אחד ידוע, השדות הישנים `is_available_today` / `availability_status` לא יוצאים יותר מאף תשובה, ושלוש חבילות של חוב עיצובי נכנסו בלי שינוי בפיקסלים (חוץ מהסרת הטשטוש בשני מודאלים).
