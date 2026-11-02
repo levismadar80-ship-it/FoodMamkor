@@ -351,6 +351,7 @@ export async function drawCard(canvas, producer, strings) {
  */
 export default function StoryCardCanvas({ producer, mode = "admin", onUploaded, onClose }) {
   const t = useTranslations("story.canvas");
+  const tError = useTranslations("error");
   const isOwner = mode === "owner";
   // Owner-facing labels are feminine-singular and name the artefact
   // ("הורידי כרטיס סטורי"); the admin table keeps its terser existing copy.
@@ -413,10 +414,24 @@ export default function StoryCardCanvas({ producer, mode = "admin", onUploaded, 
   }\n${producer.short_description || producer.description?.slice(0, 100) || ""}\n👉 ${SITE_HOST}/p/${producer.slug || ""}`;
 
   const copyCaption = () => {
-    navigator.clipboard.writeText(caption).then(() => {
-      setCaptionCopied(true);
-      setTimeout(() => setCaptionCopied(false), 2500);
-    });
+    // MEH-1428: this had no rejection path at all — `navigator.clipboard` is
+    // absent in an insecure context and some in-app WebViews, and a denied
+    // write rejects, so the old form produced an unhandled rejection and a
+    // button that silently did nothing. Same class as the null-context crash
+    // fixed on the draw path above. REUSES:
+    // components/producer/RequestReviewCard.jsx:62-71.
+    const write = navigator.clipboard?.writeText
+      ? navigator.clipboard.writeText(caption)
+      : Promise.reject(new Error("clipboard unavailable"));
+    write
+      .then(() => {
+        setCaptionCopied(true);
+        setTimeout(() => setCaptionCopied(false), 2500);
+      })
+      .catch(() => {
+        setCaptionCopied(false);
+        showToast.error(tError("generic"));
+      });
   };
 
   return (

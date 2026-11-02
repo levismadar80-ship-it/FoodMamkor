@@ -39,6 +39,7 @@ import { useTranslations } from "next-intl";
 import * as Sentry from "@sentry/nextjs";
 import { Link as LocaleLink } from "@/i18n/navigation";
 import api from "@/lib/api";
+import { showToast } from "@/lib/toast";
 import { ReviewsPageSchema } from "@/lib/api-schemas";
 import { SITE_URL } from "@/lib/env";
 import {
@@ -161,11 +162,6 @@ function fitQuote(ctx, text, maxWidth, maxHeight) {
   return { size: QUOTE_MIN, lines };
 }
 
-/**
- * Draws the card. Returns false when there is no 2D context (lost context, or
- * a canvas the browser refuses to back), so the caller leaves the download
- * disabled instead of offering a blank JPEG — same contract as drawCard.
- */
 // Largest size from `max` down to `min` at which `text` fits `maxWidth` on ONE
 // line; at `min` the caller cuts it with «…». Without this the business name
 // was drawn at any length and a long one ran straight off the inline end of the
@@ -190,6 +186,11 @@ function cutToWidth(ctx, text, maxWidth) {
   return `${out.trimEnd()}…`;
 }
 
+/**
+ * Draws the card. Returns false when there is no 2D context (lost context, or
+ * a canvas the browser refuses to back), so the caller leaves the download
+ * disabled instead of offering a blank JPEG — same contract as drawCard.
+ */
 export async function drawReviewCard(canvas, producer, review, strings) {
   const ctx = canvas.getContext("2d");
   if (!ctx) return false;
@@ -289,26 +290,42 @@ export default function ReviewCardCanvas({ producer }) {
     if (!producerId) return undefined;
     let alive = true;
     const controller = new AbortController();
-    api
-      .get(`/producers/${producerId}/reviews`, {
-        params: { page: 1 },
-        signal: controller.signal,
-      })
-      .then((r) => {
-        if (!alive) return;
+
+    // SHAREABLE: only reviews that have text. A stars-only review makes a card
+    // that says nothing, and ReviewExcerpt.jsx:44 already skips them on the
+    // public page for the same reason.
+    const shareable = (rows) => rows.filter((rv) => rv.body && rv.body.trim());
+
+    // The filter runs client-side but the endpoint paginates at 10
+    // (reviews.py PAGE_SIZE), so page 1 alone cannot answer "do I have a review
+    // to share": a business whose ten newest reviews are all rating-only would
+    // be told it has none while page 2 holds text. Keep asking until something
+    // shareable turns up or the pages run out — capped, because the honest
+    // answer is not worth an unbounded walk of a long review history. A
+    // business that is past the cap with nothing shareable in 50 reviews is
+    // correctly on the empty state.
+    const MAX_PAGES = 5;
+    const collect = async () => {
+      const found = [];
+      for (let page = 1; page <= MAX_PAGES; page += 1) {
+        const r = await api.get(`/producers/${producerId}/reviews`, {
+          params: { page },
+          signal: controller.signal,
+        });
         // Rule 19: a malformed payload is an error state, never something a
         // canvas renders half of.
         const parsed = ReviewsPageSchema.safeParse(r.data);
-        if (!parsed.success) {
-          setFailed(true);
-          return;
-        }
-        // SHAREABLE: only reviews that have text. A stars-only review makes a
-        // card that says nothing, and ReviewExcerpt.jsx:44 already skips them
-        // on the public page for the same reason. All-rating-only therefore
-        // lands on the empty state, which is the honest answer to "do I have a
-        // review to share".
-        setReviews(parsed.data.reviews.filter((rv) => rv.body && rv.body.trim()));
+        if (!parsed.success) throw new Error("malformed reviews payload");
+        found.push(...shareable(parsed.data.reviews));
+        const pages = Number(r.data?.pages ?? 1);
+        if (found.length > 0 || page >= pages) break;
+      }
+      return found;
+    };
+
+    collect()
+      .then((found) => {
+        if (alive) setReviews(found);
       })
       .catch((err) => {
         // Only a genuine abort is silent (axios CanceledError on unmount).
@@ -325,15 +342,21 @@ export default function ReviewCardCanvas({ producer }) {
 
   const review = reviews?.[index] ?? null;
 
+  // Depends on the FIELD the card draws, not on the `producer` object: that
+  // object is the dashboard's `profile`, and any refetch mints a new identity,
+  // which would re-run the draw and blink `rendered` (and the download button)
+  // off for no reason.
+  const producerName = producer?.name;
+
   useEffect(() => {
     if (!canvasRef.current || !review) return;
     setRendered(false);
-    drawReviewCard(canvasRef.current, producer, review, {
+    drawReviewCard(canvasRef.current, { name: producerName }, review, {
       headline: t("owner.review_headline"),
     })
       .then((ok) => setRendered(ok !== false))
       .catch(() => setRendered(false));
-  }, [producer, review, t]);
+  }, [producerName, review, t]);
 
   useEffect(() => () => clearTimeout(copiedTimer.current), []);
 
@@ -369,8 +392,14 @@ export default function ReviewCardCanvas({ producer }) {
         clearTimeout(copiedTimer.current);
         copiedTimer.current = setTimeout(() => setCaptionCopied(false), COPIED_MS);
       })
-      .catch(() => setCaptionCopied(false));
-  }, [review, producer, t]);
+      // A denied clipboard, or none at all (insecure context, some in-app
+      // WebViews), must SAY so — silently doing nothing reads as a dead button.
+      // REUSES: components/producer/RequestReviewCard.jsx:71.
+      .catch(() => {
+        setCaptionCopied(false);
+        showToast.error(tError("generic"));
+      });
+  }, [review, producer, t, tError]);
 
   return (
     <div className="mt-6 border-t border-border pt-5" data-testid="review-card-block">
@@ -432,8 +461,13 @@ export default function ReviewCardCanvas({ producer }) {
                     {/* Option text is review DATA, not UI copy: the rating as
                         digits (the ★ glyph is missing from the brand faces) and
                         the opening words, so she can tell them apart. Still no
-                        reviewer name. */}
-                    {`${rv.stars}/${MAX_STARS} · ${(rv.body || "").trim().slice(0, 40)}`}
+                        reviewer name.
+                        The snippet is wrapped in U+2068 FSI … U+2069 PDI —
+                        invisible characters, NOT mojibake, do not strip them.
+                        Without the isolate a review opening in Latin reorders
+                        against the RTL option and can drag the "4/5 ·" prefix
+                        to the wrong end of the row. */}
+                    {`${rv.stars}/${MAX_STARS} · ⁨${(rv.body || "").trim().slice(0, 40)}⁩`}
                   </option>
                 ))}
               </select>

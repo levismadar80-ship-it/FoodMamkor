@@ -130,6 +130,34 @@ describe("ReviewCardCanvas — review counts and the reviewer-privacy gate (MEH-
     expect(screen.queryByTestId("review-card-pick")).not.toBeInTheDocument();
   });
 
+  // Regression (adversarial review on #3938). The endpoint paginates at 10 and
+  // the has-text filter runs client-side, so reading page 1 alone told a
+  // business whose ten newest reviews are all rating-only that it had NOTHING
+  // to share — while page 2 held a perfectly good text review.
+  it("keeps paging when page 1 is all rating-only and a later page has text", async () => {
+    apiMock.get.mockImplementation((_url, config) =>
+      Promise.resolve(
+        config.params.page === 1
+          ? { data: { reviews: [{ id: "r1", stars: 5, body: null }], total: 2, page: 1, pages: 2 } }
+          : { data: { reviews: [{ id: "r2", stars: 5, body: "הלחם מושלם" }], total: 2, page: 2, pages: 2 } },
+      ),
+    );
+    render(<ReviewCardCanvas producer={producer} />);
+    expect(await screen.findByTestId("review-card-canvas")).toBeInTheDocument();
+    expect(screen.queryByTestId("review-card-empty")).not.toBeInTheDocument();
+    // It actually asked for page 2 — derived from the calls, not assumed.
+    expect(apiMock.get.mock.calls.map(([, c]) => c.params.page)).toEqual([1, 2]);
+  });
+
+  it("stops at the last page rather than paging forever", async () => {
+    apiMock.get.mockResolvedValue(
+      { data: { reviews: [{ id: "r1", stars: 5, body: null }], total: 1, page: 1, pages: 1 } },
+    );
+    render(<ReviewCardCanvas producer={producer} />);
+    expect(await screen.findByTestId("review-card-empty")).toBeInTheDocument();
+    expect(apiMock.get).toHaveBeenCalledTimes(1);
+  });
+
   it("rating-only reviews count as nothing to share", async () => {
     apiMock.get.mockResolvedValue(
       reviewsPayload([
