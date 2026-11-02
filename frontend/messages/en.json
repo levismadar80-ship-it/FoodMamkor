@@ -837,6 +837,9 @@
       "contact_sidebar": {
         "join_whatsapp_group": "Join WhatsApp group"
       },
+      "whatsapp_updates": {
+        "full": "WhatsApp updates from the business"
+      },
       "contact_card": {
         "status_open": "Open for orders",
         "aria": {
@@ -846,7 +849,7 @@
           "email": "Email",
           "facebook": "Facebook",
           "external_order": "Order form",
-          "whatsapp_group": "WhatsApp group"
+          "whatsapp_group": "Updates"
         },
         "single": {
           "phone": "Call us",
@@ -855,7 +858,7 @@
           "email": "Send an email",
           "facebook": "Facebook",
           "external_order": "Order form",
-          "whatsapp_group": "WhatsApp group"
+          "whatsapp_group": "WhatsApp updates from the business"
         },
         "email_fallback_toast": "We couldn't open your email app — the address was copied",
         "email_copy_failed_toast": "We couldn't open your email app or copy — please try again",

@@ -837,6 +837,9 @@
       "contact_sidebar": {
         "join_whatsapp_group": "הצטרפו לקבוצת וואטסאפ"
       },
+      "whatsapp_updates": {
+        "full": "עדכונים מבית העסק בוואטסאפ"
+      },
       "contact_card": {
         "status_open": "פתוח להזמנות",
         "aria": {
@@ -846,7 +849,7 @@
           "email": "אימייל",
           "facebook": "פייסבוק",
           "external_order": "טופס הזמנות",
-          "whatsapp_group": "קבוצת וואטסאפ"
+          "whatsapp_group": "עדכונים"
         },
         "single": {
           "phone": "חייגו אלינו",
@@ -855,7 +858,7 @@
           "email": "שלחו אימייל",
           "facebook": "פייסבוק",
           "external_order": "טופס הזמנה",
-          "whatsapp_group": "קבוצת הוואטסאפ"
+          "whatsapp_group": "עדכונים מבית העסק בוואטסאפ"
         },
         "email_fallback_toast": "לא הצלחנו לפתוח אפליקציית מייל — הכתובת הועתקה",
         "email_copy_failed_toast": "לא הצלחנו לפתוח אפליקציית מייל ולא להעתיק — נסו שוב",

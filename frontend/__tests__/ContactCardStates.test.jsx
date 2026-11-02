@@ -52,6 +52,7 @@ vi.mock("@phosphor-icons/react", () => {
     Phone: Stub,
     Receipt: Stub,
     WhatsappLogo: Stub,
+    Bell: Stub, // MEH-2626: the «עדכונים» channel icon (module-scope in CHANNELS)
     ChatCircle: Stub,
     CaretDown: Stub,
   };
