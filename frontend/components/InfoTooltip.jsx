@@ -98,7 +98,7 @@ export default function InfoTooltip({
         <span
           id={tooltipId}
           role="tooltip"
-          className={`pointer-events-none absolute z-[9999] whitespace-normal w-56 bg-[#1C1A17] text-white text-[11px] leading-relaxed rounded-[8px] px-[10px] py-[6px] shadow-lg ${POSITION_CLASSES[position] ?? POSITION_CLASSES.top}`}
+          className={`pointer-events-none absolute z-[9999] whitespace-normal w-56 bg-text text-white text-[11px] leading-relaxed rounded-[8px] px-[10px] py-[6px] shadow-lg ${POSITION_CLASSES[position] ?? POSITION_CLASSES.top}`}
         >
           {content}
         </span>
