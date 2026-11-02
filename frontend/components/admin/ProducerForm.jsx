@@ -582,6 +582,8 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             value={form.whatsapp_group}
             onChange={(e) => update("whatsapp_group", e.target.value)}
             placeholder={t("producers.form.fields.whatsapp_group_placeholder")}
+            // MEH-2626: group OR channel; the hint recommends a channel.
+            helperText={t("producers.form.fields.whatsapp_group_hint")}
           />
           {/* MEH-17 — primary contact method + business email. */}
           <Field label={t("producers.form.fields.primary_contact")}>
