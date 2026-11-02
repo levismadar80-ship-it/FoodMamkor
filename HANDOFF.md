@@ -17,6 +17,19 @@
 - ‏ה-CI reviewer קורס בשגיאת הרצה על כל PR — review מקומי נרשם כתגובה ב-PR.
 
 **‏לא עכשיו / מחכה לספיר:** מיזוג #3920 (bcrypt 5, auth) ו-#3921 (עדכונים בוואטסאפ, HIGH-RISK) · `@dependabot unignore this major version` על #2943 אחרי #3920 · מיזוג #3905/#3908/#3910 (schema) · ESLint `no-restricted-imports` ל-next/link (lint config) · הכרעות MEH-1687 (רדיוס, 34px) · מגבלת ה-issues ב-Linear.
+## 2026-11-01 22:45 — drain לילה: 6 PRs מוזגו, 5 כרטיסים חנו (#3907, #3909, #3899, #3901, #3906, #3904)
+
+**‏שורה אחת:** ‏ששה PRs פתוחים נבדקו (red/green מקומי, צילומים נקראו, E2E מול baseline) ומוזגו; שלושה PRs של schema הוכנו ונשארו לספיר.
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏`E2E gate` אדום על staging עצמו — ~22 specs נכשלים בכל PR (גם על #3903 שמוזג). השוואה מול רשימת ה-baseline, לא מול «ירוק».
+- ‏ה-CI reviewer (`Adversarial review (calibration)`) נכשל ב-01/11 בשגיאת הרצה (`is_error:true`), לא בממצאים. review מקומי FINDER→ADVERSARY→REFEREE נרשם כתגובה בכל PR, וכל ממצא אמיתי תוקן באותו PR.
+- ‏`_last_six_months` (`routers/admin_extra.py`) — חודש מתחיל ב-00:00 ביום 1 ונספר חודש-חודש אחורה (#3901). לפני כן pytest היה אדום בכל PR backend ב-1 לחודש, ופברואר היה נעלם במרץ–מאי.
+- ‏**שלוש revisions על אותו הורה `9c534d477f2b`:** #3905 (`e4b7c1a9d2f6`), #3908 (`d4e7a1b2c3f5`), #3910 (`4b7e1d2c9a60`). כל אחת שממוזגת אחרי הראשונה צריכה `down_revision` מעודכן.
+- ‏#3908 לא יכול להיות ירוק בלי `EXPECTED_TABLES=44` ב-`.github/workflows/pr-checks.yml:468` (טבלה חדשה).
+- ‏Linear: מגבלת issues של הסביבה — אי אפשר לפתוח כרטיס חדש.
+
+**‏לא עכשיו / מחכה לספיר:** merge של #3905/#3908/#3910 (schema) · EXPECTED_TABLES 43→44 · toggle `coverage_cta_enabled` (קופי חדש) · flaky E2E (markers במובייל, C2) · chunk 3ב-2 של תוויות התזונה (אין PR, ממתין להכרעה) · הסרת השדות הישנים של הזמינות (מופה, לא נבנה).
 
 ## 2026-10-29 14:39 — רשימת הטיוטות באדמין: סטטוס בעלים, העתקת הודעה עם קישור, תאריך שליחה (#3751, #3791)
 

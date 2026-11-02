@@ -1224,7 +1224,7 @@ function FilterEmptyState({ onClear, searchQ }) {
         type="button"
         onClick={onClear}
         data-testid="producers-empty-clear"
-        className="bg-primary text-white px-6 py-3 rounded-[12px] font-medium hover:bg-primary-dark transition"
+        className="bg-primary text-white px-6 py-3 rounded-md font-medium hover:bg-primary-dark transition"
       >
         {t("empty.clear_all_show_all")}
       </button>
@@ -1257,7 +1257,7 @@ function CatalogEmptyState() {
         {!isAdmin && (
           <Link
             href="/register/producer"
-            className="bg-primary text-white px-6 py-3 rounded-[12px] font-medium hover:bg-primary-dark transition"
+            className="bg-primary text-white px-6 py-3 rounded-md font-medium hover:bg-primary-dark transition"
           >
             {t("add_cta")}
           </Link>
@@ -1270,7 +1270,7 @@ function CatalogEmptyState() {
             same-page jump rather than a cross-page hop. */}
         <Link
           href="#newsletter"
-          className="border border-primary text-primary px-6 py-3 rounded-[12px] font-medium hover:bg-green-50 transition"
+          className="border border-primary text-primary px-6 py-3 rounded-md font-medium hover:bg-green-50 transition"
         >
           {t("notify_cta")}
         </Link>
@@ -1286,7 +1286,7 @@ function PageOverflowState() {
       <p className="text-fg-muted mb-4">{t("message")}</p>
       <Link
         href="/producers"
-        className="inline-flex items-center bg-primary text-white px-5 py-2 rounded-[12px] hover:bg-primary-dark transition"
+        className="inline-flex items-center bg-primary text-white px-5 py-2 rounded-md hover:bg-primary-dark transition"
       >
         {t("back_cta")}
       </Link>
@@ -1309,12 +1309,12 @@ function ServerPageLinks({ page, totalPages }) {
       {prev ? (
         <Link
           href={prev}
-          className="border border-border bg-white text-text px-4 py-2 rounded-[12px] hover:bg-green-50 transition"
+          className="border border-border bg-white text-text px-4 py-2 rounded-md hover:bg-green-50 transition"
         >
           {t("prev")}
         </Link>
       ) : (
-        <span className="border border-border text-fg-muted px-4 py-2 rounded-[12px] opacity-50">
+        <span className="border border-border text-fg-muted px-4 py-2 rounded-md opacity-50">
           {t("prev")}
         </span>
       )}
@@ -1322,12 +1322,12 @@ function ServerPageLinks({ page, totalPages }) {
       {next ? (
         <Link
           href={next}
-          className="border border-border bg-white text-text px-4 py-2 rounded-[12px] hover:bg-green-50 transition"
+          className="border border-border bg-white text-text px-4 py-2 rounded-md hover:bg-green-50 transition"
         >
           {t("next")}
         </Link>
       ) : (
-        <span className="border border-border text-fg-muted px-4 py-2 rounded-[12px] opacity-50">
+        <span className="border border-border text-fg-muted px-4 py-2 rounded-md opacity-50">
           {t("next")}
         </span>
       )}

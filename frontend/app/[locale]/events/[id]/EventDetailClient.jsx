@@ -204,7 +204,7 @@ export default function EventDetailClient() {
         <div
           aria-hidden="true"
           data-testid="event-date-tile"
-          className="lg:hidden absolute start-4 -bottom-7 w-16 rounded-[12px] bg-white shadow-lg text-center overflow-hidden"
+          className="lg:hidden absolute start-4 -bottom-7 w-16 rounded-md bg-white shadow-lg text-center overflow-hidden"
         >
           <span className="block bg-primary text-white text-[11px] font-bold py-0.5">{month}</span>
           <span className="block font-headline-display font-black text-[28px] leading-tight pt-1 numeric">{day}</span>
@@ -254,7 +254,7 @@ export default function EventDetailClient() {
           {/* MEH-2548: an old link (a share, a search result) to a finished
               event points at the owner's next one instead of a dead end. */}
           {isPast && (
-            <div className={`mt-5 rounded-[12px] bg-surface-card overflow-hidden px-4 pt-3 ${nextEvent ? "" : "pb-3"}`} data-testid="event-past-notice">
+            <div className={`mt-5 rounded-md bg-surface-card overflow-hidden px-4 pt-3 ${nextEvent ? "" : "pb-3"}`} data-testid="event-past-notice">
               <p className="text-sm text-text">
                 {t("past_notice")}
                 {nextEvent && event.producer_name && <> {t("past_next", { name: event.producer_name })}</>}

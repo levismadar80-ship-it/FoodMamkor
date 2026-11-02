@@ -338,7 +338,7 @@ export default function ClaimClient({ tokenFromPath = null }) {
             type="submit"
             data-testid="claim-submit"
             disabled={submitting}
-            className="min-h-[44px] w-full bg-primary text-white rounded-[12px] px-6 py-2 font-medium hover:bg-primary-dark transition disabled:opacity-50"
+            className="min-h-[44px] w-full bg-primary text-white rounded-md px-6 py-2 font-medium hover:bg-primary-dark transition disabled:opacity-50"
           >
             {submitting ? t("eligible.submitting") : t("eligible.submit")}
           </button>
@@ -351,7 +351,7 @@ export default function ClaimClient({ tokenFromPath = null }) {
 function Shell({ children, testid }) {
   return (
     <div className="max-w-xl mx-auto px-4 py-10" data-testid={testid}>
-      <div className="bg-white rounded-[12px] border border-border p-6">{children}</div>
+      <div className="bg-white rounded-md border border-border p-6">{children}</div>
     </div>
   );
 }
@@ -374,7 +374,7 @@ function Preview({ preview, kicker }) {
     <div className="mb-4" data-testid="claim-preview">
       <p className="text-sm font-medium text-primary mb-2">{kicker}</p>
       {src && (
-        <div className="relative w-full aspect-video overflow-hidden rounded-[12px] bg-background mb-4">
+        <div className="relative w-full aspect-video overflow-hidden rounded-md bg-background mb-4">
           <Image src={src} alt={preview.name} fill sizes="(max-width: 640px) 100vw, 560px" className="object-cover" />
         </div>
       )}
@@ -392,7 +392,7 @@ function PrimaryLink({ href, children, testid }) {
     <Link
       href={href}
       data-testid={testid}
-      className="min-h-[44px] w-full sm:w-auto inline-flex items-center justify-center bg-primary text-white rounded-[12px] px-6 py-2 font-medium hover:bg-primary-dark transition"
+      className="min-h-[44px] w-full sm:w-auto inline-flex items-center justify-center bg-primary text-white rounded-md px-6 py-2 font-medium hover:bg-primary-dark transition"
     >
       {children}
     </Link>
@@ -405,7 +405,7 @@ function SwitchAccount({ onClick, children }) {
       type="button"
       onClick={onClick}
       data-testid="claim-switch-account"
-      className="min-h-[44px] w-full sm:w-auto bg-white border border-primary text-primary rounded-[12px] px-6 py-2 font-medium hover:bg-background transition"
+      className="min-h-[44px] w-full sm:w-auto bg-white border border-primary text-primary rounded-md px-6 py-2 font-medium hover:bg-background transition"
     >
       {children}
     </button>
