@@ -4,6 +4,20 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-02 00:55 — drain 02/11: links keep /en, staging-E2E triage, legacy contract chunk 1 (#3912–#3919)
+
+**‏שורה אחת:** ‏קישורי האתר שומרים על /en, 11 מתוך 13 הכשלים הקבועים ב-E2E על staging טופלו (10 spec מיושן + רגרסיה אחת), והחוזה הישן של הזמינות ירד מה-API.
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏כל `Link` ב-`app/` וב-`components/` בא מ-`@/i18n/navigation`. `ChromeLinksKeepLocale.test.js` נכשל על כל `next/link` חדש. ב-vitest יש stand-in גלובלי ל-`@/i18n/navigation` ב-`__tests__/setup.js`; mock מקומי חייב לכלול `Link`.
+- ‏`router.push` מ-`next/navigation` עדיין מפיל /en (ProducerCard, MapProducerCard, HomepageMiniMap, LoginClient, GroupBuyDetailClient).
+- ‏ה-E2E על staging: baseline לפני = 23 תוצאות כושלות. אחרי = לא נמדד — כל ריצות ה-E2E נתקעו בתור. טבלת הטריאז' בראש תיאור MEH-2323.
+- ‏`?is_available_today=` כבר לא מסנן (מחזיר את הרשימה המלאה). שני השדות הישנים ירדו מה-API הטיפוסי; צ'אנקים 2–4 על הכרטיס.
+- ‏ה-probe של עומק המחסנית רואה רק את ה-thread של ה-worker ב-handler סינכרוני (depth=10 קבוע). הוא לא יכול למדוד middleware.
+- ‏ה-CI reviewer קורס בשגיאת הרצה על כל PR — review מקומי נרשם כתגובה ב-PR.
+
+**‏לא עכשיו / מחכה לספיר:** מיזוג #3920 (bcrypt 5, auth) ו-#3921 (עדכונים בוואטסאפ, HIGH-RISK) · `@dependabot unignore this major version` על #2943 אחרי #3920 · מיזוג #3905/#3908/#3910 (schema) · ESLint `no-restricted-imports` ל-next/link (lint config) · הכרעות MEH-1687 (רדיוס, 34px) · מגבלת ה-issues ב-Linear.
+
 ## 2026-10-29 14:39 — רשימת הטיוטות באדמין: סטטוס בעלים, העתקת הודעה עם קישור, תאריך שליחה (#3751, #3791)
 
 **‏שורה אחת:** ‏בשורת כל טיוטה רואים אם בעלת העסק קלטה, מעתיקים בלחיצה הודעת וואטסאפ עם קישור חדש, ורואים מתי נשלח הקישור האחרון, עד מתי הוא בתוקף, ומי מחכה 7+ ימים.
