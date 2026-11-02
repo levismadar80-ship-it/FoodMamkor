@@ -108,15 +108,16 @@ def test_reset_leaves_the_legacy_columns_alone(db):
     )
 
 
-def test_the_derived_output_is_right_even_though_the_columns_are_stale(db):
+def test_the_serialized_output_ignores_the_stale_columns(db):
     """The other half of the claim above. Dead columns are only safe if the
     reader no longer consults them — otherwise this chunk trades a stale
     write for a stale read, which is the same bug wearing the other sign.
 
     Serializes the reset row through ProducerListOut with the contradictory
-    legacy values still on it, and requires the derived pair to follow the
-    STATE. Against a reader that still read the columns, this returns
-    ('vacation', True) and fails on both lines.
+    legacy values still on it. MEH-2272 removed the two legacy fields from the
+    schema, so the stale values must have NO key to surface through, and the
+    served state must be the reset one. A schema that re-declared either
+    field would let `from_attributes` load the stale column straight back.
     """
     from app.schemas.schemas import ProducerListOut
 
@@ -129,12 +130,11 @@ def test_the_derived_output_is_right_even_though_the_columns_are_stale(db):
     out = ProducerListOut.model_validate(p, from_attributes=True)
 
     assert out.availability_state == RESET_STATE
-    assert out.availability_status == "available", (
-        "derived from the state, not read off the stale column"
-    )
-    assert out.is_available_today is False, (
-        "derived from the state, not read off the stale column"
-    )
+    dumped = out.model_dump()
+    for legacy in ("availability_status", "is_available_today"):
+        assert legacy not in dumped, (
+            f"{legacy}: removed from the contract by MEH-2272, must not be served"
+        )
 
 
 def test_reset_touches_only_full_this_week(db):

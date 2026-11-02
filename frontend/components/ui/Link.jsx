@@ -1,4 +1,4 @@
-import NextLink from "next/link";
+import { Link as NextLink } from "@/i18n/navigation";
 
 /**
  * Link — styled Next.js link primitive (MEH-602).

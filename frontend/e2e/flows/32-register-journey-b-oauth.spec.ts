@@ -270,8 +270,13 @@ test.describe("MEH-215 journey B — consumer Google OAuth registration", () => 
       getter()({ credential: "not-a-real-google-jwt" });
     });
 
-    const error = page.getByTestId("register-error");
+    // MEH-2577 (#3843): Google/Apple moved above the email form, and their
+    // failures render in their own alert under the consent line
+    // (RegisterClient.jsx `register-oauth-error`), not in the email form's
+    // `register-error`, which must stay empty for an OAuth failure.
+    const error = page.getByTestId("register-oauth-error");
     await expect(error).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId("register-error")).toHaveCount(0);
     await expect(error).toHaveText(GOOGLE_TOKEN_INVALID);
     await expect(error).toHaveAttribute("role", "alert");
 

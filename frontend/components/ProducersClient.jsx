@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { MagnifyingGlass, Plant, Leaf, CaretDown, Faders, MapPin } from "@phosphor-icons/react";
 import { chipsToQuery } from "@/lib/filter-url";
 import { useTranslations } from "next-intl";
@@ -950,9 +950,12 @@ export default function ProducersClient({
           sideways scroller bled to the glass below lg (-mx-4/px-4 against the
           page's px-4), py-1/-mt-1 keep focus rings inside the scrollport,
           overscroll-x-none so iOS does not rubber-band the rail (MEH-2574),
-          visible overflow at lg+ so the sheet's anchored panel is not clipped. */}
+          visible overflow at lg+ so the sheet's anchored panel is not clipped;
+          lg:flex-wrap so the MEH-2598 service chips wrap instead of pushing
+          the row past the viewport at 200% text (WCAG 1.4.4, 44-text-scale;
+          same as /map ServiceChipRow). */}
       <div
-        className="-mx-4 -mt-1 mb-3 flex items-center gap-2 min-w-0 overflow-x-auto overscroll-x-none px-4 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:-mx-1 lg:px-1 lg:overflow-visible"
+        className="-mx-4 -mt-1 mb-3 flex items-center gap-2 min-w-0 overflow-x-auto overscroll-x-none px-4 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:-mx-1 lg:px-1 lg:overflow-visible lg:flex-wrap"
         data-testid="producers-filter-row"
         onFocus={keepFocusedChipClear}
       >
