@@ -24,7 +24,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { renderToStaticMarkup } from "react-dom/server";
 import { MapContainer, TileLayer, Marker, Tooltip, useMap } from "react-leaflet";
 import { ArrowRight, MapTrifold } from "@phosphor-icons/react";

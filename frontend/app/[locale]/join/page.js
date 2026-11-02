@@ -1,5 +1,5 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { ArrowLeft, ChatCircleDots, ListChecks, Quotes } from "@phosphor-icons/react/ssr";
 import BusinessCtaLink from "@/components/BusinessCtaLink";
 import EditorialPhoto from "@/components/EditorialPhoto";

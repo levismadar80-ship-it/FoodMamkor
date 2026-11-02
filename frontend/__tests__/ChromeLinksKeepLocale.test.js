@@ -37,3 +37,33 @@ describe("MEH-2578 chrome links keep the /en prefix", () => {
     });
   }
 });
+
+// MEH-2579 — the same drop happens on every page link, not only the chrome:
+// a card, a breadcrumb or a CTA built with next/link sends an /en reader to
+// the Hebrew page. No file under app/ or components/ may import next/link;
+// take Link from @/i18n/navigation. (Allowlist is empty on purpose — add a
+// path here only with a reason next to it.)
+describe("MEH-2579 no next/link anywhere in app/ or components/", () => {
+  const { readdirSync, statSync } = require("node:fs");
+  const ALLOW = new Set([]);
+  const root = join(__dirname, "..");
+  const walk = (dir) =>
+    readdirSync(dir).flatMap((name) => {
+      const p = join(dir, name);
+      if (statSync(p).isDirectory()) return walk(p);
+      return /\.(jsx?|tsx?)$/.test(name) ? [p] : [];
+    });
+  it("scans a real corpus (control: the six chrome files are in it)", () => {
+    const files = [...walk(join(root, "app")), ...walk(join(root, "components"))];
+    expect(files.length).toBeGreaterThan(200);
+    for (const rel of CHROME) expect(files).toContain(join(root, rel));
+  });
+  it("no file imports next/link", () => {
+    const files = [...walk(join(root, "app")), ...walk(join(root, "components"))];
+    const offenders = files
+      .filter((p) => !ALLOW.has(p.slice(root.length + 1)))
+      .filter((p) => NEXT_LINK.test(readFileSync(p, "utf8")))
+      .map((p) => p.slice(root.length + 1));
+    expect(offenders).toEqual([]);
+  });
+});

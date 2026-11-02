@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 // sidebar tab ever highlighted. useRouter stays on next/navigation —
 // only the path-comparison was buggy (router.push redirect unchanged).
 import { usePathname } from "@/i18n/navigation";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import {
   CaretDown,
   Gauge,

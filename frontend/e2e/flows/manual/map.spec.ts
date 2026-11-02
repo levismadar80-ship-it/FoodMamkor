@@ -1548,12 +1548,23 @@ test.describe("manual › /map service row fits narrow phones (MEH-2514)", () =>
   // MEH-2532: the upper edge of `max-[374px]`. The geometry above stays green
   // if the breakpoint drifts (375 has room for px-4), so the padding itself is
   // pinned on both sides of it.
-  for (const [width, pad] of [[374, 12], [375, 16]] as const) {
-    test(`${width}px: the service chips and «סינון» use ${pad}px inline padding`, async ({ page }, info) => {
+  // MEH-2598 (Sapir 29/10, «אחיד»): the service chips are now the shared
+  // PromotedServiceChips — one geometry on home, /producers and /map, `px-4`
+  // at every width — and the row became a sideways rail, so they no longer
+  // squeeze. The `max-[374px]` step survives on «סינון» alone
+  // (FilterChipsBar.jsx:167), which is what this pair now pins; the chips are
+  // pinned to the shared 16px on both sides so a per-surface fork shows here.
+  for (const [width, filtersPad] of [[374, 12], [375, 16]] as const) {
+    test(`${width}px: «סינון» uses ${filtersPad}px inline padding, the shared service chips 16px`, async ({ page }, info) => {
       mobileOnly(info, "the service row's phone geometry");
       await page.setViewportSize({ width, height: 700 });
       const { shell } = await gotoWithCatalog(page, info);
-      for (const [name, btn] of [["has_delivery", serviceChip(shell, "has_delivery")], ["pickup_points", serviceChip(shell, "pickup_points")], ["filters", filtersButton(shell)]] as const) {
+      const SHARED_CHIP_PAD = 16;
+      for (const [name, btn, pad] of [
+        ["has_delivery", serviceChip(shell, "has_delivery"), SHARED_CHIP_PAD],
+        ["pickup_points", serviceChip(shell, "pickup_points"), SHARED_CHIP_PAD],
+        ["filters", filtersButton(shell), filtersPad],
+      ] as const) {
         const padding = await btn.evaluate((el) => [getComputedStyle(el).paddingInlineStart, getComputedStyle(el).paddingInlineEnd]);
         expect(padding, `${name} inline padding at ${width}px`).toEqual([`${pad}px`, `${pad}px`]);
       }

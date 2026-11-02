@@ -26,7 +26,7 @@ vi.mock("next/navigation", () => ({
 // assertions below watch this one — a bare next/navigation push would drop an
 // /en session (localePrefix "as-needed").
 const localeRouter = { replace: vi.fn(), push: vi.fn() };
-vi.mock("@/i18n/navigation", () => ({
+vi.mock("@/i18n/navigation", () => ({ Link: ({ href, children, prefetch, ...p }) => <a href={typeof href === "string" ? href : href?.pathname} {...p}>{children}</a>, 
   useRouter: () => localeRouter,
 }));
 vi.mock("@/lib/analytics", () => ({ trackEvent: vi.fn() }));
