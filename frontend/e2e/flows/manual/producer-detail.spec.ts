@@ -915,8 +915,24 @@ test.describe("manual › /producer/[id] — main-column content", () => {
     const root = await openProducer(page, named.id);
     const card = root.getByTestId("producer-main-column").getByTestId("owner-card");
     await expect(card).toHaveCount(1, CLIENT_FETCH);
-    await expect(card.getByRole("heading", { level: 2 })).toHaveText(DETAIL_HE.owner_card.heading);
-    await expect(card.getByRole("heading", { level: 3 })).toHaveText(named.contact_name!.trim());
+    const name = named.contact_name!.trim();
+    if (named.description) {
+      // MEH-2592 (#3892): with a description the card is NESTED inside «אודות»
+      // (ProducerSections.jsx `<OwnerCard producer={producer} nested />`) — an
+      // h3 «מאחורי העסק» and the name as plain text, no own section.
+      await expect(
+        root.locator("#section-bio").getByTestId("owner-card"),
+        "the owner card sits inside the about section",
+      ).toHaveCount(1);
+      await expect(card).toHaveAttribute("data-nested", "true");
+      await expect(card.getByRole("heading", { level: 3 })).toHaveText(DETAIL_HE.owner_card.heading);
+      await expect(card.getByText(name, { exact: true })).toBeVisible();
+    } else {
+      // No «אודות» to sit in → the standalone section: h2 heading, name as h3.
+      await expect(card).not.toHaveAttribute("data-nested", "true");
+      await expect(card.getByRole("heading", { level: 2 })).toHaveText(DETAIL_HE.owner_card.heading);
+      await expect(card.getByRole("heading", { level: 3 })).toHaveText(name);
+    }
 
     // The other half of the mockup rule ("אין שם → הסקשן לא מרונדר כלל") is
     // NOT asserted here: it would need a second fixture the catalog may not
