@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, beforeAll } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import StoryCardCanvas from "@/components/StoryCardCanvas";
+import ReviewCardCanvas from "@/components/ReviewCardCanvas";
 
 // MEH-1428 "ערכת שיתוף" — the two gates this feature rests on, and the review
 // block's count states.
@@ -107,5 +108,101 @@ describe("StoryCardCanvas owner mode — the Cloudinary upload gate (MEH-1428 ch
   it("never POSTs to the admin story-card route from owner mode", () => {
     render(<StoryCardCanvas producer={producer} mode="owner" />);
     expect(apiMock.post).not.toHaveBeenCalled();
+  });
+});
+
+describe("ReviewCardCanvas — review counts and the reviewer-privacy gate (MEH-1428 chunk B)", () => {
+  beforeEach(() => {
+    apiMock.get.mockReset();
+    apiMock.post.mockClear();
+  });
+
+  it("0 reviews → empty state pointing at the existing request-review surface", async () => {
+    apiMock.get.mockResolvedValue(reviewsPayload([]));
+    render(<ReviewCardCanvas producer={producer} />);
+    const empty = await screen.findByTestId("review-card-empty");
+    expect(empty).toHaveTextContent("story.canvas.owner.reviews_empty");
+    expect(screen.getByTestId("review-card-empty-cta")).toHaveAttribute(
+      "href",
+      "/producer/dashboard/tools",
+    );
+    expect(screen.queryByTestId("review-card-canvas")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("review-card-pick")).not.toBeInTheDocument();
+  });
+
+  it("rating-only reviews count as nothing to share", async () => {
+    apiMock.get.mockResolvedValue(
+      reviewsPayload([
+        { id: "r1", stars: 5, body: null },
+        { id: "r2", stars: 4, body: "   " },
+      ]),
+    );
+    render(<ReviewCardCanvas producer={producer} />);
+    expect(await screen.findByTestId("review-card-empty")).toBeInTheDocument();
+    expect(screen.queryByTestId("review-card-canvas")).not.toBeInTheDocument();
+  });
+
+  it("exactly 1 review → the card, and NO picker (a one-option select does nothing)", async () => {
+    apiMock.get.mockResolvedValue(reviewsPayload([{ id: "r1", stars: 5, body: "מעולה" }]));
+    render(<ReviewCardCanvas producer={producer} />);
+    expect(await screen.findByTestId("review-card-canvas")).toBeInTheDocument();
+    expect(screen.queryByTestId("review-card-pick")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("review-card-empty")).not.toBeInTheDocument();
+    expect(screen.getByTestId("review-card-download")).toBeInTheDocument();
+    expect(screen.getByTestId("review-card-copy-caption")).toBeInTheDocument();
+  });
+
+  it("several reviews → a picker with one option per review", async () => {
+    apiMock.get.mockResolvedValue(
+      reviewsPayload([
+        { id: "r1", stars: 5, body: "הלחם מושלם" },
+        { id: "r2", stars: 4, body: "שירות נהדר" },
+        { id: "r3", stars: 5, body: "חוזרת כל שבוע" },
+      ]),
+    );
+    render(<ReviewCardCanvas producer={producer} />);
+    const pick = await screen.findByTestId("review-card-pick");
+    // Derived from the DOM, not stated: a hardcoded 3 would pass against a
+    // picker that renders a fixed number of options.
+    expect(pick.querySelectorAll("option")).toHaveLength(3);
+    expect(screen.getByTestId("review-card-canvas")).toBeInTheDocument();
+  });
+
+  it("prints no reviewer name or id anywhere in the block, including the picker", async () => {
+    apiMock.get.mockResolvedValue(
+      reviewsPayload([
+        { id: "r1", stars: 5, body: "הלחם מושלם", user_name: "רונית לוי", user_id: "u-77" },
+        { id: "r2", stars: 4, body: "שירות נהדר", user_name: "דנה כהן", user_id: "u-78" },
+      ]),
+    );
+    const { container } = render(<ReviewCardCanvas producer={producer} />);
+    await screen.findByTestId("review-card-pick");
+    for (const leak of ["רונית", "לוי", "דנה", "כהן", "u-77", "u-78"]) {
+      expect(container.textContent, `leaked ${leak}`).not.toContain(leak);
+    }
+  });
+
+  it("a failed fetch shows an error, not an empty state that reads as zero reviews", async () => {
+    apiMock.get.mockRejectedValue(new Error("boom"));
+    render(<ReviewCardCanvas producer={producer} />);
+    expect(await screen.findByTestId("review-card-error")).toBeInTheDocument();
+    expect(screen.queryByTestId("review-card-empty")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("review-card-canvas")).not.toBeInTheDocument();
+  });
+
+  it("a malformed payload is an error, never a half-drawn card (rule 19)", async () => {
+    apiMock.get.mockResolvedValue({ data: { reviews: [{ id: "r1", stars: "five" }] } });
+    render(<ReviewCardCanvas producer={producer} />);
+    expect(await screen.findByTestId("review-card-error")).toBeInTheDocument();
+    expect(screen.queryByTestId("review-card-canvas")).not.toBeInTheDocument();
+  });
+
+  it("reads page 1 of the public nested reviews route for this producer", async () => {
+    apiMock.get.mockResolvedValue(reviewsPayload([{ id: "r1", stars: 5, body: "טעים" }]));
+    render(<ReviewCardCanvas producer={producer} />);
+    await waitFor(() => expect(apiMock.get).toHaveBeenCalled());
+    const [url, config] = apiMock.get.mock.calls[0];
+    expect(url).toBe("/producers/p1/reviews");
+    expect(config.params).toEqual({ page: 1 });
   });
 });

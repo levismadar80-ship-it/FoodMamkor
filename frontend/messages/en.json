@@ -3432,7 +3432,12 @@
         "section_subtitle": "Ready-made posts for Instagram and WhatsApp status. Download, upload, done.",
         "download_story": "Download story card",
         "copy_caption": "Copy caption",
-        "copied": "Caption copied"
+        "copied": "Caption copied",
+        "review_title": "A review to share",
+        "pick_review": "Pick a review",
+        "download_review": "Download review card",
+        "review_headline": "What our customers say",
+        "reviews_empty": "No reviews to share yet. <link>Send customers a review request link</link>"
       }
     }
   },

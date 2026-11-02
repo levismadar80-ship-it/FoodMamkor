@@ -16,6 +16,7 @@ import InfoTooltip from "@/components/InfoTooltip";
 import WhatsThis from "@/components/WhatsThis";
 import ProfileCompletenessCard from "@/components/ProfileCompletenessCard";
 import DraftSubmitBanner from "@/components/producer/DraftSubmitBanner";
+import ReviewCardCanvas from "@/components/ReviewCardCanvas";
 import StoryCardCanvas from "@/components/StoryCardCanvas";
 import ChangesRequestedBanner from "./ChangesRequestedBanner";
 import RejectedBanner from "./RejectedBanner";
@@ -98,6 +99,7 @@ function ShareKitSection({ profile }) {
       <p className="text-sm text-fg-muted">{t("section_subtitle")}</p>
 
       <StoryCardCanvas producer={profile} mode="owner" />
+      <ReviewCardCanvas producer={profile} />
     </section>
   );
 }
