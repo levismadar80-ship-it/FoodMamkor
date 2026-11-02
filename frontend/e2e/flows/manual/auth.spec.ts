@@ -505,9 +505,20 @@ test.describe("manual › /register split-editorial layout (MEH-788)", () => {
   });
 
   // MT:MEH-788:6 — the English mirror carries the translated overlay.
-  test("/en/register: the overlay is in English and the heading with it", async ({ page }) => {
+  //   Amended by MEH-2568: below lg the image pane is display:none (asserted
+  //   by the mobile test above), so on the mobile project the overlay is
+  //   checked as present-in-English-but-hidden, not visible. The Hebrew string
+  //   must be absent on both projects, so an untranslated overlay still reds.
+  test("/en/register: the overlay is in English and the heading with it", async ({ page }, info) => {
     await page.goto("/en/register");
-    await expect(page.getByText("Fresh · Local · From the source", { exact: true })).toBeVisible();
+    const overlay = page.getByText("Fresh · Local · From the source", { exact: true });
+    if (info.project.name === "mobile") {
+      await expect(overlay, "the English overlay is rendered in the (hidden) image pane").toHaveCount(1);
+      await expect(overlay, "MEH-2568: no image band below lg").toBeHidden();
+    } else {
+      await expect(overlay).toBeVisible();
+    }
+    await expect(page.getByText("טרי · מקומי · מהמקור", { exact: true })).toHaveCount(0);
     await expect(page.getByTestId("register-heading")).toHaveText("Join the community");
   });
 });
