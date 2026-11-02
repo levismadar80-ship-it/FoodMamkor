@@ -207,7 +207,7 @@ export default function AdminUsersPage() {
                         {u.role === "admin" ? (
                           isSuperAdmin(u) ? (
                             <>
-                              <span className="text-xs px-2 py-0.5 rounded-full bg-[#EAF3DE] text-[#2e6853] font-medium">
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-green-50 text-primary font-medium">
                                 {t("users.roles.admin")}
                               </span>
                               <span className="text-xs px-2 py-0.5 rounded-full bg-[#FEF3C7] text-accent font-medium">
@@ -215,7 +215,7 @@ export default function AdminUsersPage() {
                               </span>
                             </>
                           ) : (
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-[#EAF3DE] text-[#2e6853] font-medium">
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-green-50 text-primary font-medium">
                               {t("users.roles.admin")}
                             </span>
                           )
@@ -390,7 +390,7 @@ export default function AdminUsersPage() {
                 }
                 className={`px-4 py-2 rounded-[10px] text-sm font-medium text-white transition ${
                   confirm.action === "promote"
-                    ? "bg-[#2e6853] hover:bg-[#2E4A2E]"
+                    ? "bg-primary hover:bg-primary-dark"
                     : "bg-red-600 hover:bg-red-700"
                 } disabled:opacity-50`}
               >
