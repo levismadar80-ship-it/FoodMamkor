@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { MapPin, Leaf, CurrencyCircleDollar, Lightbulb } from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
@@ -139,7 +139,7 @@ export default function AdminExperiencesPage() {
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 rounded-[12px] p-4">
+        <div className="bg-red-50 border border-red-200 text-red-700 rounded-md p-4">
           {error}
         </div>
       )}
@@ -209,7 +209,7 @@ export default function AdminExperiencesPage() {
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}
               rows={5}
-              className="w-full border border-border rounded-[12px] px-3 py-2 text-sm bg-white"
+              className="w-full border border-border rounded-md px-3 py-2 text-sm bg-white"
               placeholder={
                 modalAction === "changes"
                   ? t("experiences.modal.changes_placeholder")
@@ -347,7 +347,7 @@ function ExperienceRow({ ex, busy, t, locale, onApprove, onChanges, onReject }) 
                 </p>
               )}
               {ex.moderation_reason && (
-                <div className="mt-3 bg-white border border-border rounded-[12px] p-3">
+                <div className="mt-3 bg-white border border-border rounded-md p-3">
                   <p className="font-medium text-xs mb-1">
                     {t("experiences.claude_preview")}
                   </p>

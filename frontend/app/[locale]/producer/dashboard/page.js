@@ -147,7 +147,7 @@ function StatusSupportModal({ onClose }) {
         <button
           type="button"
           onClick={onClose}
-          className="w-full py-2.5 rounded-[12px] text-sm font-medium text-fg-muted hover:text-text transition"
+          className="w-full py-2.5 rounded-md text-sm font-medium text-fg-muted hover:text-text transition"
         >
           {t("close_cta")}
         </button>
@@ -730,7 +730,7 @@ export default function ProducerDashboardPage() {
                     setAvailabilityState(opt.value);
                   }
                 }}
-                className={`inline-flex items-center gap-2 px-4 py-2 rounded-[12px] text-sm font-medium transition border focus-visible:ring-2 focus-visible:ring-primary/40 ${
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition border focus-visible:ring-2 focus-visible:ring-primary/40 ${
                   showActive
                     ? "bg-primary text-white border-primary"
                     : "bg-white text-text border-border hover:bg-green-50"

@@ -804,6 +804,15 @@ test.describe("manual › /producer/[id] — loading behaviour", () => {
     // from the payload. Bounded at six loads, and a catalog that holds no such
     // business is a NAMED red carrying every measurement — never a skip, which
     // would print the same thing whether the catalog is thin or the gate broke.
+    //
+    // MEH-2323 (02/11): since #3888 moved the reviews into a tighter band,
+    // every zero-review page on the staging catalog put `#reviews` at
+    // 962–1030 — under the 1200 bar a 900px desktop fold sets, so the row went
+    // red on a page that could not answer. The fold is the one input this row
+    // controls without touching the product: a shorter window lowers the bar
+    // to 900 while the gate (rootMargin 300, the same IOs) is unchanged.
+    const SHORT_FOLD = 600;
+    await page.setViewportSize({ width: page.viewportSize()!.width, height: SHORT_FOLD });
     const viewportHeight = page.viewportSize()!.height;
     const candidates = [...zeroReview].sort(
       (a, b) => renderableImages(b.images).length - renderableImages(a.images).length,
@@ -915,8 +924,24 @@ test.describe("manual › /producer/[id] — main-column content", () => {
     const root = await openProducer(page, named.id);
     const card = root.getByTestId("producer-main-column").getByTestId("owner-card");
     await expect(card).toHaveCount(1, CLIENT_FETCH);
-    await expect(card.getByRole("heading", { level: 2 })).toHaveText(DETAIL_HE.owner_card.heading);
-    await expect(card.getByRole("heading", { level: 3 })).toHaveText(named.contact_name!.trim());
+    const name = named.contact_name!.trim();
+    if (named.description) {
+      // MEH-2592 (#3892): with a description the card is NESTED inside «אודות»
+      // (ProducerSections.jsx `<OwnerCard producer={producer} nested />`) — an
+      // h3 «מאחורי העסק» and the name as plain text, no own section.
+      await expect(
+        root.locator("#section-bio").getByTestId("owner-card"),
+        "the owner card sits inside the about section",
+      ).toHaveCount(1);
+      await expect(card).toHaveAttribute("data-nested", "true");
+      await expect(card.getByRole("heading", { level: 3 })).toHaveText(DETAIL_HE.owner_card.heading);
+      await expect(card.getByText(name, { exact: true })).toBeVisible();
+    } else {
+      // No «אודות» to sit in → the standalone section: h2 heading, name as h3.
+      await expect(card).not.toHaveAttribute("data-nested", "true");
+      await expect(card.getByRole("heading", { level: 2 })).toHaveText(DETAIL_HE.owner_card.heading);
+      await expect(card.getByRole("heading", { level: 3 })).toHaveText(name);
+    }
 
     // The other half of the mockup rule ("אין שם → הסקשן לא מרונדר כלל") is
     // NOT asserted here: it would need a second fixture the catalog may not
@@ -939,12 +964,27 @@ test.describe("manual › /producer/[id] — main-column content", () => {
     // Real scroll, not `scrollIntoViewIfNeeded()` — `#reviews` is zero-height
     // until ReviewsSection mounts, and that call no-ops on a zero-height
     // target (measured 04/09: `scrollY: 0` after it, section never mounted).
-    const reviewsTop = await root
-      .locator("#reviews")
-      .evaluate((el) => el.getBoundingClientRect().top + window.scrollY);
-    await page.evaluate((y) => window.scrollTo(0, y), reviewsTop - 100);
+    //
+    // MEH-2323 (02/11): measured ONCE, the top went stale — sections that
+    // mount after first paint (ProducerActivities above #reviews) push the
+    // section down after the scroll, so the window sat above it and nothing
+    // ever intersected. Re-measure and re-scroll on every poll until a dated
+    // review renders; the assertion below is unchanged.
     const dates = root.getByTestId("review-date");
-    await expect(dates.first()).toBeVisible({ timeout: 20_000 });
+    await expect
+      .poll(
+        async () => {
+          await root
+            .locator("#reviews")
+            .evaluate((el) =>
+              window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - 100),
+            );
+          return dates.count();
+        },
+        { message: "a dated review must render once #reviews is scrolled into view", timeout: 20_000 },
+      )
+      .toBeGreaterThan(0);
+    await expect(dates.first()).toBeVisible();
     const count = await dates.count();
     expect(count, "the reviews list must render at least one dated review").toBeGreaterThan(0);
     for (let i = 0; i < count; i += 1) {

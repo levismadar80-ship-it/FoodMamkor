@@ -97,7 +97,7 @@ graph TD
     Dashboard[/producer/dashboard page] --> Me_p[GET /producers/me<br/>👤 own producer record]
     Dashboard --> DashData[GET /producers/me/dashboard<br/>👤 favorites_count + whatsapp_clicks_week]
     Dashboard --> Analytics[GET /producers/me/analytics<br/>👤 feature/producer-analytics<br/>windowed views+searches+whatsapp,<br/>follower delta, avg rating,<br/>home_products, 30d chart, top cities]
-    Dashboard --> Avail[POST /producers/me/availability<br/>👤 toggle is_available_today]
+    Dashboard --> Avail[POST /producers/me/availability<br/>👤 legacy toggle → availability_state]
     Dashboard --> Update[PUT /producers/me<br/>👤 edit own profile<br/>city: organizer only MEH-2475]
     Dashboard --> UploadImg[POST /upload/image<br/>🔑 Cloudinary, magic-byte validated]
     Dashboard --> UploadOwner[POST /upload/owner-photo<br/>👤 MEH-1335 owner photo — no freemium gate,<br/>square crop, writes producers.owner_photo_url]

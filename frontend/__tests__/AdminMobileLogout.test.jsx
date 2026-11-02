@@ -11,7 +11,7 @@ const authState = vi.hoisted(() => ({ user: null, logout: vi.fn() }));
 vi.mock("@/lib/auth-context", () => ({
   useAuth: () => ({ user: authState.user, loading: false, logout: authState.logout }),
 }));
-vi.mock("@/i18n/navigation", () => ({ usePathname: () => "/admin" }));
+vi.mock("@/i18n/navigation", () => ({ Link: ({ href, children, prefetch, ...p }) => <a href={typeof href === "string" ? href : href?.pathname} {...p}>{children}</a>,  usePathname: () => "/admin" }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }) }));
 vi.mock("next/link", () => ({
   default: ({ href, children, ...p }) => <a href={typeof href === "string" ? href : "#"} {...p}>{children}</a>,

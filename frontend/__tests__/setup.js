@@ -29,3 +29,28 @@ if (!Element.prototype.scrollTo) {
 if (!Element.prototype.scrollIntoView) {
   Element.prototype.scrollIntoView = vi.fn();
 }
+
+// MEH-2579: app/ and components/ take Link from `@/i18n/navigation` (so an
+// /en reader keeps /en). That module calls next-intl's createNavigation, whose
+// next/navigation import does not resolve in jsdom. Default stand-in: Link
+// renders the same plain <a href> next/link does, so DOM assertions are
+// unchanged; a test that needs other behaviour still vi.mock()s the module
+// in its own file, which overrides this one.
+vi.mock("@/i18n/navigation", async () => {
+  const React = await import("react");
+  const toHref = (href) =>
+    typeof href === "string"
+      ? href
+      : `${href?.pathname ?? ""}${href?.query ? `?${new URLSearchParams(href.query)}` : ""}${href?.hash ? `#${href.hash}` : ""}`;
+  const Link = React.forwardRef(function Link({ href, children, prefetch, locale, scroll, replace, shallow, ...rest }, ref) {
+    return React.createElement("a", { href: toHref(href), ...rest, ref }, children);
+  });
+  const router = { push: vi.fn(), replace: vi.fn(), back: vi.fn(), forward: vi.fn(), refresh: vi.fn(), prefetch: vi.fn() };
+  return {
+    Link,
+    redirect: vi.fn(),
+    usePathname: () => "/",
+    useRouter: () => router,
+    getPathname: ({ href }) => toHref(href),
+  };
+});

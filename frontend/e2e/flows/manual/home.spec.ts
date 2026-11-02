@@ -18,6 +18,8 @@ import { FILTER_AXES, homeParamFor } from "../../../lib/filter-taxonomy.js";
 // @ts-expect-error TS7016 — JS lib, no .d.ts
 import { CHIPS_CONFIG } from "../../../lib/producer-filters.js";
 // @ts-expect-error TS7016 — JS lib, no .d.ts
+import { SERVICE_CHIP_KEYS } from "../../../lib/map-chips.js";
+// @ts-expect-error TS7016 — JS lib, no .d.ts
 import { DELIVERY_DAYS } from "../../../lib/delivery-days.js";
 // @ts-expect-error TS7016 — JS lib, no .d.ts
 import { ORDER_DAY_KEYS } from "../../../lib/orderWindow.js";
@@ -230,9 +232,12 @@ const AXES = FILTER_AXES as Record<string, Axis>;
 type Chip = { key: string; label: string };
 const HOME_CHIPS = CHIPS_CONFIG as Chip[];
 
-// MEH-2173: home promotes exactly this pair out of CHIPS_CONFIG and files the
-// rest behind the sheet (HomeProducersGrid.jsx:50 PROMOTED_KEYS).
-const PROMOTED = ["verified", "has_delivery"] as const;
+// MEH-2598: home promotes the shared service trio «משלוח · איסוף עצמי · קנייה
+// במקום» out of CHIPS_CONFIG and files the rest — «מאומת» included — behind the
+// sheet (HomeProducersGrid.jsx:43 PROMOTED_KEYS = SERVICE_CHIP_KEYS). It
+// replaced MEH-2173's «מאומת» + «משלוח» pair. Read from the product constant so
+// the order (PromotedServiceChips renders in SERVICE_CHIP_KEYS order) is too.
+const PROMOTED = SERVICE_CHIP_KEYS as readonly string[];
 
 // DENY-lists — the three expectations that cannot be derived from the copy they
 // forbid, so they are literals on purpose (same shape as chunk 2's
@@ -306,6 +311,11 @@ function producer(
     has_gluten_free_products: true,
     has_lactose_free_products: true,
     has_no_added_sugar_products: true,
+    // MEH-2598: `on_site` is gated the same way (GATED_DIET_KEYS, counted on
+    // `sells_on_site`) — and it is PROMOTED, so the gate decides whether the
+    // promoted row is two chips or three. Declared on every row so the row is
+    // the full trio and the sheet the full home axis set; censused in beforeAll.
+    sells_on_site: true,
     // MEH-2131: `open_for_orders_now` is the OTHER runtime-gated axis — the sheet
     // withholds it below OPEN_NOW_CHIP_MIN (5) declared windows, and again when
     // no business is open at the current clock. An all-week 00:00-23:59 window on
@@ -426,6 +436,11 @@ test.beforeAll(() => {
   const sugarDeclared = PRODUCERS.filter((p) => p.has_no_added_sugar_products).length;
   if (sugarDeclared < 5)
     throw new Error(`DIET_CHIP_MIN = 5 declared businesses are needed to un-gate no_added_sugar, got ${sugarDeclared}`);
+  const onSite = PRODUCERS.filter((p) => p.sells_on_site).length;
+  if (onSite < 5)
+    throw new Error(`DIET_CHIP_MIN = 5 businesses selling on site are needed to un-gate on_site, got ${onSite}`);
+  if (PROMOTED.includes("verified"))
+    throw new Error("«מאומת» is promoted again — MT:1418:2 below asserts it lives in the sheet only (MEH-2598)");
   const windowed = PRODUCERS.filter((p) => p.order_window).length;
   if (windowed < 5)
     throw new Error(`OPEN_NOW_CHIP_MIN = 5 declared windows are needed to un-gate open_for_orders_now, got ${windowed}`);
@@ -1092,16 +1107,25 @@ test.describe("manual › filter chips + FilterSheet (MEH-1418 · task 12)", () 
   //   stale in docs/qa/conversion-progress.md. What survives from MEH-1418
   //   unchanged is the claim under test here: each toggle carries a leading
   //   aria-hidden glyph and the taxonomy's own label.
-  test("the home filter row is exactly the two promoted chips plus the sheet trigger and the day chip, each promoted chip with an aria-hidden glyph", async ({ page }) => {
+  test("the home filter row is exactly the promoted service chips plus the sheet trigger and the day chip, each promoted chip with an aria-hidden glyph", async ({ page }) => {
     await consent(page);
     await stubTiles(page);
-    await mockApi(page);
-    await gotoHome(page);
+    // MEH-2323 (02/11): `on_site` is data-gated (MEH-2598), so the promoted row
+    // is three chips only when the LOADED feed clears DIET_CHIP_MIN. A bare
+    // gotoHome renders the server's catalog on a live-backend runner (header
+    // ⚠️ block) — staging has < 5 on-site businesses, so CI saw 2 chips. The
+    // fixture feed is what beforeAll censuses, so it must be what loaded.
+    await gotoFixtureFeed(page, "/", PRODUCERS);
     const row = scope(page).getByTestId("home-filter-row");
     // Counted by testid, not by role: MEH-2537 moved the delivery-day chip into
     // this row, and its ✕ appears whenever days are set, so a role count would
     // depend on fixture state rather than on what this test is about.
-    await expect(row.locator('[data-testid^="home-promoted-chip-"]')).toHaveCount(PROMOTED.length);
+    const promoted = row.locator('[data-testid^="home-promoted-chip-"]');
+    await expect(promoted).toHaveCount(PROMOTED.length);
+    // …and in SERVICE_CHIP_KEYS order, the one order all three surfaces share.
+    expect(
+      await promoted.evaluateAll((els) => els.map((el) => el.getAttribute("data-testid"))),
+    ).toEqual(PROMOTED.map((k) => `home-promoted-chip-${k}`));
     await expect(row.getByTestId("home-filters-button")).toHaveCount(1);
     await expect(row.getByTestId("delivery-day-chip")).toHaveCount(1);
     for (const key of PROMOTED) {
@@ -1119,12 +1143,16 @@ test.describe("manual › filter chips + FilterSheet (MEH-1418 · task 12)", () 
   //   «מאומת» (filter-taxonomy.js:123). The live label is asserted from the
   //   taxonomy, and the DENY-list half of the row — no «מאומתים» — is asserted
   //   as written, since that is the part that is actually a regression guard.
+  //   MEH-2598 (Sapir 29/10, «אחיד, מאומת בסינון») took «מאומת» off the surface
+  //   row: it now lives in the sheet only, so that is where its label is read,
+  //   and the row is asserted NOT to carry it.
   test("the verification chip carries the taxonomy label and «מאומתים» appears nowhere on the page", async ({ page }) => {
     await consent(page);
     await stubTiles(page);
     await mockApi(page);
     await gotoHome(page);
-    await expect(promotedChip(page, "verified")).toHaveText(AXES.verified.label);
+    await expect(promotedChip(page, PROMOTED[0])).toBeVisible(FIRST_PAINT);
+    await expect(promotedChip(page, "verified"), "«מאומת» lives in the sheet, not on the row").toHaveCount(0);
     await filtersButton(page).click();
     await expect(sheetPanel(page)).toBeVisible(FIRST_PAINT);
     await expect(sheetPanel(page).getByTestId("chip-verified")).toContainText(AXES.verified.label);
@@ -1257,7 +1285,7 @@ test.describe("manual › filter chips + FilterSheet (MEH-1418 · task 12)", () 
   // MT:T12:8 — multi-select: two axes at once compose into ONE request carrying
   //   BOTH params. The row names כשר + אורגני; `organic` was removed outright
   //   (MEH-1259) and `kosher` is verified-only since MEH-986, so the pair used
-  //   here is the live promoted pair. The claim under test — composition — is
+  //   here is the live promoted pair — «משלוח» + «איסוף עצמי» since MEH-2598. The claim under test — composition — is
   //   unchanged; the axes it is asserted on are not.
   test("two active chips compose into one request carrying both params", async ({ page }) => {
     const seen = await gotoWithFeed(page);
@@ -1267,10 +1295,10 @@ test.describe("manual › filter chips + FilterSheet (MEH-1418 · task 12)", () 
     // render, and the two axes then leave as two single-param requests instead of
     // one composed one — observed once in 5 runs on the mobile project, which is
     // exactly the intermittence a spec must not ship with.
-    await promotedChip(page, "verified").click();
-    await expect(promotedChip(page, "verified")).toHaveAttribute("aria-pressed", "true");
+    await promotedChip(page, "pickup_points").click();
+    await expect(promotedChip(page, "pickup_points")).toHaveAttribute("aria-pressed", "true");
     await expect
-      .poll(() => seen.producers[seen.producers.length - 1]?.searchParams.has("verified"), {
+      .poll(() => seen.producers[seen.producers.length - 1]?.searchParams.has("pickup_points"), {
         message: "the first axis is applied before the second is pressed",
       })
       .toBe(true);
@@ -1285,13 +1313,13 @@ test.describe("manual › filter chips + FilterSheet (MEH-1418 · task 12)", () 
       .poll(
         () =>
           seen.producers.some(
-            (u) => u.searchParams.has("verified") && u.searchParams.has("has_delivery"),
+            (u) => u.searchParams.has("pickup_points") && u.searchParams.has("has_delivery"),
           ),
         { message: "one request carries BOTH params" },
       )
       .toBe(true);
     // Both chips read as pressed at the same time — the multi-select claim.
-    await expect(promotedChip(page, "verified")).toHaveAttribute("aria-pressed", "true");
+    await expect(promotedChip(page, "pickup_points")).toHaveAttribute("aria-pressed", "true");
     await expect(promotedChip(page, "has_delivery")).toHaveAttribute("aria-pressed", "true");
   });
 

@@ -170,6 +170,8 @@ function DeepAnalyticsSection({ analytics, profile }) {
     total_reviews,
     views_by_day,
     top_cities,
+    // MEH-1676: absent on a cached pre-MEH-1676 payload → empty state, not a crash.
+    coverage_requests = [],
   } = analytics;
 
   return (
@@ -283,6 +285,50 @@ function DeepAnalyticsSection({ analytics, profile }) {
           <TopCitiesBarChart data={top_cities} />
         </div>
       </div>
+
+      {/* MEH-1676: where demand the business does NOT cover comes from. The
+          data has been captured since MEH-1677 (city on a coverage-request
+          click); this is the first screen that reads it. */}
+      <CoverageRequestsCard data={coverage_requests} />
+    </div>
+  );
+}
+
+/**
+ * MEH-1676 — "ביקוש מאזורים חדשים": one row per city whose visitors tapped
+ * «לא מגיעים ל{עיר}? אפשר לשאול את בית העסק» in the last 30 days, most
+ * requested first (server order). Three count states (0 / 1 / many) per
+ * the 5-state rule; no open/closed state. The scope line follows the
+ * Google Business Profile pattern: name the action counted, say what the
+ * number does not capture.
+ */
+function CoverageRequestsCard({ data }) {
+  const t = useTranslations("dashboard.producer.analytics.coverage_requests");
+  const rows = Array.isArray(data) ? data : [];
+  return (
+    <div
+      className="bg-white border border-border rounded-[16px] p-5"
+      data-testid="coverage-requests-card"
+    >
+      <h2 className="font-headline-md text-lg font-bold mb-3">{t("title")}</h2>
+      {rows.length === 0 ? (
+        <p className="text-sm text-fg-muted">{t("empty")}</p>
+      ) : (
+        <ul className="space-y-2">
+          {rows.map((row) => (
+            <li
+              key={row.city}
+              className="text-sm text-text"
+              data-testid="coverage-request-row"
+            >
+              {row.count === 1
+                ? t("row_one", { city: row.city })
+                : t("row_many", { count: row.count, city: row.city })}
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="text-xs text-fg-muted mt-3">{t("scope")}</p>
     </div>
   );
 }
