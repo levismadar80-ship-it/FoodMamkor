@@ -612,7 +612,11 @@ def record_whatsapp_click(
     return {"detail": "logged"}
 
 
-_VALID_CONTACT_METHODS = frozenset({"phone", "instagram", "website", "email"})
+# MEH-2626: "whatsapp_group" = a tap on the business's WhatsApp updates link
+# (contact-card bell + delivery-checker pill). It is a contact click, not a
+# WhatsApp CTA click — those stay on /whatsapp-click — so it lands here, and
+# the first-review gate (reviews.py, MEH-2204) reads it with no change there.
+_VALID_CONTACT_METHODS = frozenset({"phone", "instagram", "website", "email", "whatsapp_group"})
 
 
 @router.post("/producers/{producer_id}/contact-click", status_code=204)

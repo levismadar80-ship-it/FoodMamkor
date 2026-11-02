@@ -327,8 +327,12 @@ def _pending_and_approvable(db, producer) -> bool:
 # city through the locations CRUD, which pings nobody. That gap is real and
 # pre-dates this change; it is MEH-2073 chunk 2's to close by moving the ping
 # into `_sync_producer_city_from_primary`, not this handler's to paper over.
+#
+# MEH-2626: `whatsapp_group` (the WhatsApp updates link) joined — it goes live
+# on the public page the moment it is saved, and a swapped link sends every
+# visitor who taps it to a different group or channel.
 SENSITIVE_FIELDS = frozenset(
-    {"phone", "vegan_scope", "vegetarian_scope", "gluten_free_facility"}
+    {"phone", "vegan_scope", "vegetarian_scope", "gluten_free_facility", "whatsapp_group"}
 )
 
 # MEH-1938 follow-up (Sapir, 02/09) — the single-primary invariant speaks with

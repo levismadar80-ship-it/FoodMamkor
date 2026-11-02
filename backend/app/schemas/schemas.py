@@ -375,10 +375,30 @@ def _phone_validator(value: str | None) -> str | None:
     return cleaned
 
 
+# MEH-2626: the field is the business's WhatsApp UPDATES link — a group invite
+# (chat.whatsapp.com/<code>) or a channel (whatsapp.com/channel/<id>). Channels
+# are the recommended shape: members never see each other's numbers and there
+# is no member cap. `www.` is accepted for the channel host only — it is what
+# WhatsApp's own share sheet produces there; www.chat.whatsapp.com is not a
+# real host and stays rejected (MEH-1537 "subdomain drift" case).
+_WHATSAPP_GROUP_HOSTS = frozenset({"chat.whatsapp.com"})
+_WHATSAPP_CHANNEL_HOSTS = frozenset({"whatsapp.com", "www.whatsapp.com"})
+WHATSAPP_UPDATES_LINK_ERROR = (
+    "קישור לעדכונים בוואטסאפ חייב להתחיל ב-https://chat.whatsapp.com"
+    " או ב-https://whatsapp.com/channel"
+)
+
+
+def _is_whatsapp_channel_path(path: str) -> bool:
+    """`/channel/<id>` with a non-empty id — the bare site is not a channel."""
+    prefix = "/channel/"
+    return path.startswith(prefix) and path[len(prefix):].strip("/") != ""
+
+
 def _whatsapp_group_validator(value: str | None) -> str | None:
-    """WhatsApp group invite links must be https://chat.whatsapp.com/… — any
-    other scheme/host is a dead or wrong link on the public contact card.
-    Empty/whitespace → None.
+    """WhatsApp updates link: https://chat.whatsapp.com/… (group) or
+    https://[www.]whatsapp.com/channel/<id> (channel). Any other scheme/host
+    is a dead or wrong link on the public page. Empty/whitespace → None.
     """
     if value is None:
         return None
@@ -386,8 +406,11 @@ def _whatsapp_group_validator(value: str | None) -> str | None:
     if stripped == "":
         return None
     parsed = urlparse(stripped)
-    if parsed.scheme != "https" or parsed.netloc.lower() != "chat.whatsapp.com":
-        raise ValueError("קישור קבוצת וואטסאפ חייב להתחיל ב-https://chat.whatsapp.com")
+    host = parsed.netloc.lower()
+    is_group = host in _WHATSAPP_GROUP_HOSTS
+    is_channel = host in _WHATSAPP_CHANNEL_HOSTS and _is_whatsapp_channel_path(parsed.path)
+    if parsed.scheme != "https" or not (is_group or is_channel):
+        raise ValueError(WHATSAPP_UPDATES_LINK_ERROR)
     return stripped
 
 
