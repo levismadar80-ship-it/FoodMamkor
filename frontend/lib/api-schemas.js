@@ -152,6 +152,35 @@ export const ReviewInviteLinkSchema = z.object({
   url: z.string().url(),
 });
 
+// MEH-1428: GET /producers/{id}/reviews → ReviewsPage (reviews.py:235). Declared
+// here rather than inline in ReviewCardCanvas so there stays ONE owner for a
+// response schema (workflow.md → Smell #1).
+//
+// `.loose()`, like FavoriteWithProducerSchema above and for the same reason:
+// the consumer needs a STRUCTURAL guarantee on three fields, and a stripping
+// parse would silently drop the rest of ReviewOut (reply, reply_at, …) from any
+// future consumer of the same schema.
+//
+// `user_name` is deliberately NOT declared. ReviewOut carries it, but the share
+// card must never print a reviewer's identity, and leaving it undeclared means
+// the schema cannot be the thing that hands it to a renderer.
+// Not exported on its own: ReviewsPageSchema is the only consumer, and a second
+// exported name with no second call site is what the Knip ratchet counts.
+const MAX_STARS = 5;
+const shareableReview = z
+  .object({
+    id: z.union([z.string(), z.number()]),
+    stars: z.number().int().min(1).max(MAX_STARS),
+    body: z.string().nullable().optional(),
+  })
+  .loose();
+
+export const ReviewsPageSchema = z
+  .object({
+    reviews: z.array(shareableReview),
+  })
+  .loose();
+
 // MEH-2324: POST /producer-claim/preview → ProducerClaimPreviewOut. Only the
 // public fields of a draft (producer_claim.py). `name` is the page heading, so
 // an empty one is a malformed response, not a business to claim.
