@@ -259,7 +259,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
                   {relatedProducts.map((p) => (
                     <li
                       key={p.id}
-                      className="bg-white rounded-[12px] border border-border p-3 flex items-center gap-3"
+                      className="bg-white rounded-md border border-border p-3 flex items-center gap-3"
                     >
                       {p.image_url ? (
                         // MEH-1229: helper-routed square crop + graceful fallback.

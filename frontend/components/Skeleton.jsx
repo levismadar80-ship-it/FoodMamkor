@@ -138,7 +138,7 @@ export function SkeletonList({ count = 4, label, className = "", testId }) {
       {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}
-          className="flex items-center gap-3 bg-surface-card border border-border rounded-[12px] p-3"
+          className="flex items-center gap-3 bg-surface-card border border-border rounded-md p-3"
           aria-hidden="true"
         >
           <div className="skeleton-box rounded-[9px] w-11 h-11 shrink-0" />
@@ -162,7 +162,7 @@ export function SkeletonTable({ rows = 5, cols = 4, label, className = "", testI
   return (
     <SkeletonStatus label={label} className={className} testId={testId}>
       <div
-        className="hidden md:block rounded-[12px] border border-border overflow-hidden bg-surface-card"
+        className="hidden md:block rounded-md border border-border overflow-hidden bg-surface-card"
         aria-hidden="true"
         data-testid="skeleton-table-wide"
       >
@@ -192,7 +192,7 @@ export function SkeletonTable({ rows = 5, cols = 4, label, className = "", testI
       </div>
       <div className="md:hidden space-y-3" aria-hidden="true" data-testid="skeleton-table-stack">
         {Array.from({ length: Math.min(rows, 4) }).map((_, r) => (
-          <div key={r} className="bg-surface-card border border-border rounded-[12px] px-4 py-3 space-y-2">
+          <div key={r} className="bg-surface-card border border-border rounded-md px-4 py-3 space-y-2">
             {[0, 1, 2].map((l) => (
               <div key={l} className="flex items-center gap-3">
                 <div className="skeleton-box rounded-lg h-[10px] w-16 shrink-0" />
@@ -213,7 +213,7 @@ export function SkeletonForm({ fields = 5, label, className = "", testId }) {
       {Array.from({ length: fields }).map((_, i) => (
         <div key={i} className="space-y-2" aria-hidden="true">
           <div className="skeleton-box rounded-lg h-[12px] w-28" />
-          <div className={`skeleton-box rounded-[12px] w-full ${i === fields - 1 ? "h-24" : "h-11"}`} />
+          <div className={`skeleton-box rounded-md w-full ${i === fields - 1 ? "h-24" : "h-11"}`} />
         </div>
       ))}
     </SkeletonStatus>

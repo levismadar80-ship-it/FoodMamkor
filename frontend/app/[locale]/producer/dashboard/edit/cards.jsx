@@ -516,7 +516,7 @@ function AssistForm({ t, assist }) {
   const canGenerate = !!sells.trim();
 
   return (
-    <div className="bg-primary/5 border border-primary/15 rounded-[12px] p-3 space-y-3">
+    <div className="bg-primary/5 border border-primary/15 rounded-md p-3 space-y-3">
       <div className="flex items-center gap-2">
         <Sparkle size={16} weight="fill" className="text-accent shrink-0" aria-hidden="true" />
         <strong className="text-sm flex-1">{t("assist_title")}</strong>
@@ -2464,7 +2464,7 @@ export function BusinessNameCard({ profile }) {
 
       {justSent && (
         <div
-          className="bg-green-50 border border-primary rounded-[12px] p-4 text-sm text-text"
+          className="bg-green-50 border border-primary rounded-md p-4 text-sm text-text"
           role="status"
           data-testid="name-change-sent"
         >
@@ -2474,7 +2474,7 @@ export function BusinessNameCard({ profile }) {
 
       {pending ? (
         <div
-          className="bg-yellow-50 border border-yellow-300 rounded-[12px] p-4 space-y-1"
+          className="bg-yellow-50 border border-yellow-300 rounded-md p-4 space-y-1"
           role="status"
           data-testid="name-change-pending"
         >

@@ -106,7 +106,7 @@ export default function DraftProductsPanel({ producerId, initialProducts = [] })
   return (
     <section
       data-testid="draft-products-panel"
-      className="bg-white rounded-[12px] border border-border p-6 mb-6 max-w-4xl"
+      className="bg-white rounded-md border border-border p-6 mb-6 max-w-4xl"
     >
       <h2 className="font-semibold text-lg mb-2 text-primary">{t("title")}</h2>
       <p className="text-sm text-muted mb-4">{t("intro")}</p>
@@ -137,7 +137,7 @@ export default function DraftProductsPanel({ producerId, initialProducts = [] })
                     data-testid="draft-product-confirm-delete"
                     onClick={() => remove(p.id)}
                     disabled={deletingId === p.id}
-                    className="min-h-[44px] px-4 rounded-[12px] bg-error hover:opacity-90 text-white text-sm disabled:opacity-50"
+                    className="min-h-[44px] px-4 rounded-md bg-error hover:opacity-90 text-white text-sm disabled:opacity-50"
                   >
                     {tConfirm("confirm")}
                   </button>
@@ -145,7 +145,7 @@ export default function DraftProductsPanel({ producerId, initialProducts = [] })
                     type="button"
                     onClick={() => setConfirmId(null)}
                     disabled={deletingId === p.id}
-                    className="min-h-[44px] px-4 rounded-[12px] border border-border text-sm"
+                    className="min-h-[44px] px-4 rounded-md border border-border text-sm"
                   >
                     {tConfirm("cancel")}
                   </button>
@@ -156,7 +156,7 @@ export default function DraftProductsPanel({ producerId, initialProducts = [] })
                   data-testid="draft-product-delete"
                   aria-label={tProducts("card.delete_aria_template", { name: p.name })}
                   onClick={() => setConfirmId(p.id)}
-                  className="min-h-[44px] px-4 rounded-[12px] border border-border text-sm hover:bg-background"
+                  className="min-h-[44px] px-4 rounded-md border border-border text-sm hover:bg-background"
                 >
                   {tConfirm("confirm")}
                 </button>
@@ -217,7 +217,7 @@ export default function DraftProductsPanel({ producerId, initialProducts = [] })
           type="submit"
           data-testid="draft-product-add"
           disabled={saving}
-          className="min-h-[44px] bg-primary text-white rounded-[12px] px-6 py-2 text-sm font-medium hover:bg-primary-dark transition disabled:opacity-50"
+          className="min-h-[44px] bg-primary text-white rounded-md px-6 py-2 text-sm font-medium hover:bg-primary-dark transition disabled:opacity-50"
         >
           {saving ? tProducts("add_submitting") : tProducts("add_submit_cta")}
         </button>
