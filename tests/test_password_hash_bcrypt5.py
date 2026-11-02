@@ -16,9 +16,9 @@ import pytest
 from app.auth import hash_password, verify_password
 from app.services.password_policy import _check_reuse_sync
 
-SHORT_PASSWORD = "Zx7Yp9Mq2Lr4"
+EXAMPLE_SHORT_PASSWORD = "Zx7Yp9Mq2Lr4"
 # 39 Hebrew letters (2 bytes each) + 12 ASCII = 90 UTF-8 bytes.
-LONG_HEBREW_PASSWORD = "סיסמהארוכהמאודשלמשתמשותיקבמהמקורעםמילים" + "Zx7Yp9Mq2Lr4"
+EXAMPLE_LONG_HEBREW_PASSWORD = "סיסמהארוכהמאודשלמשתמשותיקבמהמקורעםמילים" + "Zx7Yp9Mq2Lr4"
 
 # Generated with passlib 1.7.4 + bcrypt 4.3.0 (pre-MEH-2220 stack).
 FIXTURE_HASH_SHORT = "$2b$12$nm99jwJ6ZB5u8.gO.zyrCeQADONLXF2AA2qrZCRbjwJVTj2YqKLvm"
@@ -35,48 +35,48 @@ def _first_72_bytes_twin(password: str) -> str:
 
 
 def test_long_fixture_is_really_over_72_bytes():
-    assert len(LONG_HEBREW_PASSWORD.encode("utf-8")) == 90
+    assert len(EXAMPLE_LONG_HEBREW_PASSWORD.encode("utf-8")) == 90
 
 
 class TestLegacyFixtureHashesStillVerify:
     def test_short_password_fixture_verifies(self):
-        assert verify_password(SHORT_PASSWORD, FIXTURE_HASH_SHORT) is True
+        assert verify_password(EXAMPLE_SHORT_PASSWORD, FIXTURE_HASH_SHORT) is True
 
     def test_long_hebrew_password_fixture_verifies(self):
-        assert verify_password(LONG_HEBREW_PASSWORD, FIXTURE_HASH_LONG_HEBREW) is True
+        assert verify_password(EXAMPLE_LONG_HEBREW_PASSWORD, FIXTURE_HASH_LONG_HEBREW) is True
 
     def test_long_hebrew_fixture_verifies_for_72_byte_twin(self):
-        twin = _first_72_bytes_twin(LONG_HEBREW_PASSWORD)
+        twin = _first_72_bytes_twin(EXAMPLE_LONG_HEBREW_PASSWORD)
         assert verify_password(twin, FIXTURE_HASH_LONG_HEBREW) is True
 
     def test_wrong_password_fails_against_fixtures(self):
         assert verify_password("Zx7Yp9Mq2Lr5", FIXTURE_HASH_SHORT) is False
-        assert verify_password(SHORT_PASSWORD, FIXTURE_HASH_LONG_HEBREW) is False
+        assert verify_password(EXAMPLE_SHORT_PASSWORD, FIXTURE_HASH_LONG_HEBREW) is False
 
     def test_reuse_check_verifies_long_fixture(self):
         # password_policy has its own verify path (MEH-2220 found two).
-        assert _check_reuse_sync(LONG_HEBREW_PASSWORD, FIXTURE_HASH_LONG_HEBREW)
+        assert _check_reuse_sync(EXAMPLE_LONG_HEBREW_PASSWORD, FIXTURE_HASH_LONG_HEBREW)
 
 
 class TestNewHashes:
     def test_rounds_stay_12(self):
         # MEH-648: cost factor pinned at 12.
-        assert hash_password(SHORT_PASSWORD).startswith("$2b$12$")
+        assert hash_password(EXAMPLE_SHORT_PASSWORD).startswith("$2b$12$")
 
     def test_long_hebrew_password_hashes_and_verifies(self):
-        hashed = hash_password(LONG_HEBREW_PASSWORD)
-        assert verify_password(LONG_HEBREW_PASSWORD, hashed) is True
+        hashed = hash_password(EXAMPLE_LONG_HEBREW_PASSWORD)
+        assert verify_password(EXAMPLE_LONG_HEBREW_PASSWORD, hashed) is True
 
     def test_72_byte_twin_verifies_new_long_hash(self):
-        hashed = hash_password(LONG_HEBREW_PASSWORD)
-        twin = _first_72_bytes_twin(LONG_HEBREW_PASSWORD)
+        hashed = hash_password(EXAMPLE_LONG_HEBREW_PASSWORD)
+        twin = _first_72_bytes_twin(EXAMPLE_LONG_HEBREW_PASSWORD)
         assert verify_password(twin, hashed) is True
 
     def test_wrong_password_fails(self):
-        hashed = hash_password(LONG_HEBREW_PASSWORD)
+        hashed = hash_password(EXAMPLE_LONG_HEBREW_PASSWORD)
         assert verify_password("סיסמה-אחרת-לגמרי-123", hashed) is False
 
     def test_garbage_hash_raises_value_error(self):
         # passlib raised UnknownHashError (a ValueError); keep the class.
         with pytest.raises(ValueError):
-            verify_password(SHORT_PASSWORD, "not-a-hash")
+            verify_password(EXAMPLE_SHORT_PASSWORD, "not-a-hash")
