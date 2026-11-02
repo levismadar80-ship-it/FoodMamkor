@@ -592,32 +592,37 @@ async def admin_only(
 ### 12. Password Hashing — bcrypt בלבד
 
 ```python
-# pip install passlib[bcrypt]
-from passlib.context import CryptContext
+# backend/app/auth.py — bcrypt called directly (passlib removed, MEH-2220)
+import bcrypt
 
-# MEH-648: bcrypt__rounds=12 pinned explicitly. Matches the passlib
-# default at time of pinning + all existing user.password_hash rows.
-# Prevents future drift if passlib bumps its default — see SENTINEL_HASH
-# at backend/app/routers/auth.py (used by §13 timing equalization).
-pwd_context = CryptContext(schemes=["bcrypt"], bcrypt__rounds=12, deprecated="auto")
+BCRYPT_ROUNDS = 12      # MEH-648 — see SENTINEL_HASH, §13
+BCRYPT_MAX_BYTES = 72   # MEH-2220 — truncate in BOTH hash and verify
 
 # שמירה:
-hashed = pwd_context.hash(plain_password)
+hashed = hash_password(plain_password)   # gensalt(rounds=12) + hashpw
 
 # בדיקה:
-is_valid = pwd_context.verify(plain_password, hashed_password)
+is_valid = verify_password(plain_password, hashed_password)  # checkpw
 
 # ❌ אל תשתמשי ב: MD5, SHA1, SHA256 (מהירים מדי = ניתן לפצח)
 # ✅ רק: bcrypt, argon2, scrypt
 ```
 
-**Why explicit `bcrypt__rounds=12`?** passlib's default rounds can change
-between library versions. Without an explicit pin, a passlib upgrade
-that bumps the default would re-generate `SENTINEL_HASH` (§13) at a
-higher cost than the existing `user.password_hash` rows still on the
-older cost — breaking the timing-equalization invariant. Any future
-rounds bump must be a deliberate decision with a migration plan to
-re-hash existing rows.
+**Why explicit rounds=12?** A library default can change between
+versions. Without an explicit pin, an upgrade that bumps the default
+would re-generate `SENTINEL_HASH` (§13) at a higher cost than the
+existing `user.password_hash` rows still on the older cost — breaking
+the timing-equalization invariant. Any future rounds bump must be a
+deliberate decision with a migration plan to re-hash existing rows.
+
+**Why truncate to 72 bytes (MEH-2220)?** bcrypt only reads the first 72
+bytes. passlib + bcrypt 4 dropped the rest silently, so every stored hash
+of a longer password (≈ 36+ Hebrew letters) is a hash of its first 72
+bytes. bcrypt 5 raises `ValueError` for >72 bytes instead. Truncating
+explicitly in both `hash_password` and `verify_password` keeps those rows
+verifying and keeps behaviour identical. Rejecting >72-byte passwords was
+considered and declined (it needs new user-facing copy). NUL bytes are
+still refused with `ValueError`, as passlib did.
 
 ### 13. Timing equalization (anti-enumeration)
 
