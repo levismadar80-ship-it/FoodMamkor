@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { CaretLeft } from "@phosphor-icons/react";
 import { MAP_REFERRER } from "@/lib/map-view-state";
 

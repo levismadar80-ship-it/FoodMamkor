@@ -15,7 +15,7 @@
  *           frontend/tailwind.config.js:29-36 (font tokens).
  * History:  MEH-539 (creation, 2026-05-16) — Phase 2D of MEH-615.
  */
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { ArrowRight } from "@phosphor-icons/react/ssr";
 import { BRAND_NAME } from "@/lib/constants";
 
