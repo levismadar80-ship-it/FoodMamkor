@@ -162,7 +162,7 @@ export default function AdminSettingsPage() {
           nothing ever read. The real gallery cap is the hardcoded `>= 3` in
           backend/app/routers/upload.py:101. */}
 
-      <div className="bg-white border border-border rounded-[12px] p-5 space-y-4">
+      <div className="bg-white border border-border rounded-md p-5 space-y-4">
         <h2 className="font-semibold">
           {t("settings.sections.holiday")}
           <InfoTooltip
@@ -187,7 +187,7 @@ export default function AdminSettingsPage() {
           <select
             value={settings.holiday_override_key || ""}
             onChange={(event) => update("holiday_override_key", event.target.value)}
-            className="w-full border border-border rounded-[12px] px-3 py-2 bg-white"
+            className="w-full border border-border rounded-md px-3 py-2 bg-white"
           >
             <option value="">{t("settings.fields.holiday_none")}</option>
             <option value="pesach">{t("settings.fields.holiday_pesach")}</option>
@@ -200,7 +200,7 @@ export default function AdminSettingsPage() {
         </Field>
       </div>
 
-      <div className="bg-white border border-border rounded-[12px] p-5 space-y-4">
+      <div className="bg-white border border-border rounded-md p-5 space-y-4">
         <h2 className="font-semibold">
           {t("settings.sections.friday_mode")}
           <InfoTooltip
@@ -235,7 +235,7 @@ export default function AdminSettingsPage() {
       </div>
 
       {/* MEH-509 PR2a — vacation mode (state only; PR2b watchdog consumes it). */}
-      <div className="bg-white border border-border rounded-[12px] p-5 space-y-4">
+      <div className="bg-white border border-border rounded-md p-5 space-y-4">
         <h2 className="font-semibold">
           {t("settings.sections.vacation")}
           <InfoTooltip
@@ -277,7 +277,7 @@ export default function AdminSettingsPage() {
           <button
             onClick={saveVacation}
             disabled={vacationSaving || !vacationCanSave}
-            className="bg-primary text-white px-5 py-2 rounded-[12px] text-sm disabled:opacity-50"
+            className="bg-primary text-white px-5 py-2 rounded-md text-sm disabled:opacity-50"
           >
             {vacationSaving ? t("settings.save.saving") : t("settings.sections.vacation_save")}
           </button>
@@ -295,7 +295,7 @@ export default function AdminSettingsPage() {
         </div>
       </div>
 
-      <div className="bg-white border border-border rounded-[12px] p-5 space-y-3">
+      <div className="bg-white border border-border rounded-md p-5 space-y-3">
         <h2 className="font-semibold">{t("settings.sections.tests")}</h2>
         {[
           { key: "whatsapp", label: "WhatsApp" },
@@ -316,7 +316,7 @@ export default function AdminSettingsPage() {
                 )}
                 <button
                   onClick={() => testService(key)}
-                  className="text-xs bg-primary text-white px-3 py-1 rounded-[12px]"
+                  className="text-xs bg-primary text-white px-3 py-1 rounded-md"
                 >
                   {t("settings.tests.test_btn")}
                 </button>
@@ -326,7 +326,7 @@ export default function AdminSettingsPage() {
         })}
       </div>
 
-      <div className="bg-white border border-border rounded-[12px] p-5">
+      <div className="bg-white border border-border rounded-md p-5">
         <h2 className="font-semibold mb-2">{t("settings.sections.categories")}</h2>
         <p className="text-sm text-muted mb-3">{t("settings.sections.categories_hint")}</p>
         <Link href="/admin/content" className="text-primary text-sm hover:underline">
@@ -338,7 +338,7 @@ export default function AdminSettingsPage() {
         <button
           onClick={save}
           disabled={saving || !isDirty}
-          className="bg-primary text-white px-5 py-2 rounded-[12px] text-sm disabled:opacity-50"
+          className="bg-primary text-white px-5 py-2 rounded-md text-sm disabled:opacity-50"
           title={isDirty ? undefined : t("settings.save.nothing_to_save_title")}
         >
           {saving ? t("settings.save.saving") : t("settings.save.submit")}
