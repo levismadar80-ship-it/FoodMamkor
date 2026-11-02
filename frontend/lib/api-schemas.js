@@ -123,8 +123,8 @@ export const SavedItemsResponseSchema = z.object({
 // plain z.object parse strips every OTHER field ProducerCard renders —
 // measured on a 12-key card fixture, a bare ProducerSchema.parse kept 2 of 12
 // (`trust_tier`, `favorites_count`, `short_description`, `top_product_name`,
-// `availability_state`, `availability_status`, `is_available_today`,
-// `has_physical_location`, `offers_delivery` all vanish, and all 9 ARE
+// `availability_state`, `has_physical_location`, `offers_delivery` all vanish
+// (plus the legacy availability pair, until MEH-2272 removed it), and all ARE
 // serialized by ProducerListOut, schemas.py:1649-1738). `.loose()` keeps 12
 // of 12. /favorites renders raw, unvalidated data today, so a stripping parse
 // would REGRESS the page it is meant to harden.

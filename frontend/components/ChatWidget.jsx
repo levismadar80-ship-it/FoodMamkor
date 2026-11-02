@@ -364,7 +364,7 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
           >
             {messages.map((m, i) => (
               <div key={i} className={`flex ${m.role === "user" ? "justify-start" : "justify-end"}`}>
-                <div className={`max-w-[85%] px-3 py-2 rounded-[12px] text-sm leading-relaxed whitespace-pre-line ${
+                <div className={`max-w-[85%] px-3 py-2 rounded-md text-sm leading-relaxed whitespace-pre-line ${
                   m.role === "user" ? "bg-primary text-white" : "bg-white text-text border border-border"
                 }`}>
                   {m.content}
@@ -373,7 +373,7 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
             ))}
             {sending && (
               <div className="flex justify-end">
-                <div className="bg-white text-fg-muted border border-border px-3 py-2 rounded-[12px] text-sm">
+                <div className="bg-white text-fg-muted border border-border px-3 py-2 rounded-md text-sm">
                   <span className="inline-flex gap-1">
                     <span className="animate-pulse">●</span>
                     <span className="animate-pulse" style={{ animationDelay: "0.15s" }}>●</span>

@@ -162,9 +162,7 @@ const fullProducer = {
   city: "רחובות",
   images: ["https://example.com/photo.jpg"],
   verification_tier: "verified",
-  // MEH-291 Phase 3 — new field (legacy is_available_today preserved during overlap).
   availability_state: "available_today",
-  is_available_today: true,
   reviews_count: 12,
   avg_rating: 4.5,
   short_description: "גבינות עיזים וכבשים, כולן מחלב טרי.",
@@ -184,7 +182,6 @@ const minimalProducer = {
   images: [],
   verification_tier: null,
   availability_state: "accepting_orders",
-  is_available_today: false,
   reviews_count: 0,
   avg_rating: null,
   short_description: null,
