@@ -5,12 +5,12 @@
  *           from the same rule instead of four hand-rolled fallback chains.
  * Does NOT: write availability. The owner-facing writes live in
  *           backend/app/routers/producer_me.py; this is read-side only.
- * Related:  backend/app/schemas/schemas.py (state_to_legacy — the derivation
- *           that now produces the legacy pair server-side), lib/schemas.js
- *           (the two legacy Zod fields, removed by MEH-2272).
+ * Related:  lib/schemas.js (`availability_state`, the only availability
+ *           field in the contract); __tests__/LegacyAvailabilityFieldsGone.test.js.
  * History:  MEH-1854 (creation — MEH-291 Phase 4, readers to enum-first) ·
  *           MEH-2271 (chunk 3a — legacy fallback removed; the enum is the
- *           only thing written and the only thing read).
+ *           only thing written and the only thing read) · MEH-2272 (the
+ *           legacy pair and the server's state_to_legacy removed).
  */
 
 /** The canonical 4-state enum. `availability_state` on the API. */
