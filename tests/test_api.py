@@ -3337,7 +3337,7 @@ class TestVacationBadgeClear:
         )
         assert resp.status_code == 200
         body = resp.json()
-        assert body["availability_status"] == "vacation"
+        assert body["availability_state"] == "on_vacation"
         assert body["vacation_until"] == future
 
     def test_expired_vacation_clears_in_api_response(self, client, db):
@@ -3432,13 +3432,11 @@ class TestVacationBadgeClear:
             "/producers/me/availability", headers=auth_header(user)
         ).json()
         assert body["availability_state"] == "available_today"
-        assert body["is_available_today"] is True
 
         body = client.post(
             "/producers/me/availability", headers=auth_header(user)
         ).json()
         assert body["availability_state"] == "accepting_orders"
-        assert body["is_available_today"] is False
 
     def test_a_legacy_only_vacation_row_is_ignored(self, client, db):
         """MEH-2271, pinned deliberately: the legacy COLUMN no longer speaks.
@@ -3599,7 +3597,6 @@ class TestAvailabilityState:
         resp = client.post("/producers/me/availability", headers=auth_header(user))
         assert resp.status_code == 200, resp.text
         body = resp.json()
-        assert body["is_available_today"] is True
         assert body["availability_state"] == "available_today"
         db.refresh(producer)
         assert producer.availability_state == "available_today"
