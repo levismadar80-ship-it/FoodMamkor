@@ -444,7 +444,7 @@ export default function ReviewCardCanvas({ producer }) {
               ratio with `height: auto` (MEH-2511: a percentage height inside a
               table cell went unresolved in WebKit and rendered ×4). */}
           <div
-            className="relative bg-[#1f4a3a] rounded-[12px] overflow-hidden"
+            className="relative bg-[#1f4a3a] rounded-md overflow-hidden"
             style={{ aspectRatio: "9/16", maxWidth: PREVIEW_MAX_W }}
           >
             <canvas
