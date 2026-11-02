@@ -8,8 +8,6 @@ Touches:  Test DB only (producers rows via the conftest factory).
 Does NOT: test WHEN the trigger fires — APScheduler's cron math is not this
           repo's to verify. It asserts the trigger's declared fields instead.
 Related:  backend/app/services/availability_expiry.py (the subject);
-          backend/app/schemas/schemas.py (state_to_legacy — the derivation
-          that replaced the dual-write);
           tests/test_scheduler_job_isolation.py (the job-wiring precedent).
 History:  MEH-1828 (creation) · MEH-2271 (MEH-1854 chunk 3a — the
           discriminating assertion INVERTED, see below).
@@ -165,7 +163,7 @@ def test_reset_touches_only_full_this_week(db):
         )
         # MEH-2271: the legacy columns are asserted against the SENTINEL the
         # setup planted, not against a mapping of the state. Comparing them
-        # to state_to_legacy(state) would pass under a re-introduced
+        # to a mapping of the state (the deleted state_to_legacy) would pass under a re-introduced
         # dual-write for three of these rows, because the reset would write
         # exactly the value being compared against. The sentinel cannot be
         # produced by any mapping, so only "nothing wrote here" satisfies it.
