@@ -392,7 +392,7 @@ WHATSAPP_UPDATES_LINK_ERROR = (
 def _is_whatsapp_channel_path(path: str) -> bool:
     """`/channel/<id>` with a non-empty id — the bare site is not a channel."""
     prefix = "/channel/"
-    return path.startswith(prefix) and path[len(prefix):].strip("/") != ""
+    return path.startswith(prefix) and path[len(prefix) :].strip("/") != ""
 
 
 def _whatsapp_group_validator(value: str | None) -> str | None:
@@ -408,7 +408,9 @@ def _whatsapp_group_validator(value: str | None) -> str | None:
     parsed = urlparse(stripped)
     host = parsed.netloc.lower()
     is_group = host in _WHATSAPP_GROUP_HOSTS
-    is_channel = host in _WHATSAPP_CHANNEL_HOSTS and _is_whatsapp_channel_path(parsed.path)
+    is_channel = host in _WHATSAPP_CHANNEL_HOSTS and _is_whatsapp_channel_path(
+        parsed.path
+    )
     if parsed.scheme != "https" or not (is_group or is_channel):
         raise ValueError(WHATSAPP_UPDATES_LINK_ERROR)
     return stripped

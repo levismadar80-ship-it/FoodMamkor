@@ -332,7 +332,13 @@ def _pending_and_approvable(db, producer) -> bool:
 # on the public page the moment it is saved, and a swapped link sends every
 # visitor who taps it to a different group or channel.
 SENSITIVE_FIELDS = frozenset(
-    {"phone", "vegan_scope", "vegetarian_scope", "gluten_free_facility", "whatsapp_group"}
+    {
+        "phone",
+        "vegan_scope",
+        "vegetarian_scope",
+        "gluten_free_facility",
+        "whatsapp_group",
+    }
 )
 
 # MEH-1938 follow-up (Sapir, 02/09) — the single-primary invariant speaks with
