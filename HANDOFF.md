@@ -4,6 +4,34 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-03 22:15 — drain 03/11 ד': ‏#3950 ו-#3954 מוזגו, השורש של producer-locations:285 נמצא (#3950, #3954)
+
+**‏שורה אחת:** ‏#3950 (docs של ג') ו-#3954 מוזגו. ‏#3954 מחליף את #3926 של dependabot: אותה העלאת mutmut, הפעם עם `uv.lock` מחודש. ‏`24-producer-locations:285` שוחזר מול staging עם trace, והממצא רשום ב-MEH-2323.
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏ה-pin שה-reveal loop של `:285` ראה הוא ילד זמני של אנימציית הזום. אחרי ש-`waitForMapSettled` מסתיים, אף pin משני לא נשאר בודד, גם אחרי שש לחיצות. לכן תיקון התזמון בספק לבד לא מספיק. ההשערות (איפוס זום, נקודות זהות ב-seed, הגדרות הקלאסטר) רשומות בכרטיס.
+- ‏ה-PRs של dependabot ב-backend (#3941, ‏#3925) נופלים באותו פגם: `pyproject.toml` עודכן ו-`uv.lock` לא. התיקון זהה ל-#3954.
+
+**‏לא עכשיו / מחכה לספיר:**
+- ‏#3945 — ה-E2E החדש לא התחיל.
+- ‏#3946 — טבלת אייקוני החגים.
+- ‏#3949 — שורת ההיקף של צ'יפי ה-100%.
+- ‏#3927 — rebase של dependabot (פקודת בוט) ו-E2E.
+- ‏#3923 — `.github/**`.
+- ‏#3928 — major של eslint-plugin-unicorn שובר build.
+
+## 2026-11-03 19:45 — drain 03/11 ג': שבעה PRs מוזגו, שלושה מחכים להכרעה (#3921, #3942, #3943, #3944, #3940, #3948, #3947 · #3945 · #3946, #3949, #3908)
+
+**‏שורה אחת:** ‏#3921 ‏(עדכונים בוואטסאפ), ‏#3942 ו-#3944 (שני הצ'אנקים הראשונים של קודי השגיאה), ‏#3940 ‏(המתג של ה-CTA, ‏MEH-1676 Done), ‏#3947 ‏(scrim אחיד), ‏#3948 ‏(docs עיצוב) ו-#3943 ‏(docs של ב') מוזגו. ‏#3945 ‏(צבעי טוקן) ירוק בשני ה-gates, וה-E2E שלו רץ מחדש אחרי ביטול.
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏`24-producer-locations:285` (לחיצה על marker משני במפה) נכשל עכשיו קשיח על כל PR: ‏#3942, ‏#3944, ‏#3940 ו-#3947, אף שה-diffs שלהם לא קשורים זה לזה. זה כשל עומד של staging או של ה-spec, לא כשל של PR. לפני שמסיקים ממנו משהו על PR, צריך לבדוק אותו לבד.
+- ‏ה-E2E על push ל-staging מדלג (paths filter). לכן ה-baseline האחרון שרץ בפועל הוא עדיין 41547587766.
+- ‏הפרדיקט שמחליט מתי רואים את בודק המשלוחים ואת ה-CTA נמצא עכשיו ב-`frontend/lib/delivery-coverage.js` (`isDeliveryCheckerUsable`, `coverageCtaReachable`). ‏DeliveryChecker, ‏DeliveryBlock ו-CoverageCtaToggle קוראים ממנו.
+- ‏ה-stop hook בונה את ה-checkout הראשי רק כשהוא שונה מ-origin/staging, והבנייה נופלת בלי NEXT_PUBLIC env. אחרי כל מיזוג צריך `git checkout --detach origin/staging`.
+
+**‏לא עכשיו / מחכה לספיר:** ‏#3908 — `EXPECTED_TABLES` 43→44 (הנוסח אומת) · ‏#3946 — טבלת אייקוני החגים (הצעה ב-PR) · ‏#3949 — איפה מציגים «לפי הצהרת בית העסק» ליד צ'יפי ה-100% (שלוש אפשרויות בכרטיס) · קודי שגיאה, ה-routers הבאים — נוסח en (הצעה בכרטיס) · ‏schemathesis 4.33 — 24 errors, כנראה lifespan שרץ לכל case · ‏P1–P4 — רצו ברמת API, ובלי demo-admin אי אפשר לאמת ש«אין שורה שנייה» · ‏@dependabot unignore this major version על #2943.
+
 ## 2026-11-03 09:30 — drain 03/11 ב': ארבעה PRs מוזגו, שלושה ירוקים מחכים ל-E2E, ‏#3908 מחכה לאישור נוסח (#3939, #3920, #3905, #3910 · #3921, #3940, #3942)
 
 **‏שורה אחת:** ‏#3939, ‏#3920, ‏#3905 ו-#3910 מוזגו, ו-#3908 עבר rebase על הראש החדש. שלושה PRs חדשים או מעודכנים (#3921 עדכונים בוואטסאפ, ‏#3940 מתג ה-CTA של הכיסוי, ‏#3942 צ'אנק 1 של קודי השגיאה) ירוקים בשני ה-gates, ואין בהם Must Fix. הם חיכו רק לריצת ה-E2E הסדרתית מול staging.
