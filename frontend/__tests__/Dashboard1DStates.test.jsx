@@ -56,6 +56,8 @@ vi.mock("@/components/InfoTooltip", () => ({ default: () => null }));
 vi.mock("@/components/PhoneVerifyCard", () => ({ default: () => null }));
 vi.mock("@/components/ProfileCompletenessCard", () => ({ default: () => null }));
 vi.mock("@/lib/holidays", () => ({ getUpcomingHoliday: () => null }));
+// MEH-1687 D: the holiday hint renders HolidayIcon (Phosphor names this file's icon mock lacks).
+vi.mock("@/components/HolidayIcon", () => ({ default: () => null }));
 
 // Mutable refs the api + completeness mocks close over (vi.hoisted — mock
 // factories are hoisted above these declarations).
