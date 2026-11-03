@@ -828,8 +828,9 @@ GET    /categories                                public
 GET    /producers/me                              producer
 PUT    /producers/me                              producer — MEH-999: license gate grandfathers already-held categories (validates NEWLY-ADDED category_ids only, so MEH-971 license-pending producers can edit their profile); clearing a held producer_license_number while a license-required category remains → 422.
                                                   MEH-2073: notification-only admin ping when an ALREADY-APPROVED producer changes a
-                                                  sensitive field — SENSITIVE_FIELDS = {city, phone, vegan_scope, vegetarian_scope,
-                                                  gluten_free_facility} (producer_me.py). Values are snapshotted before the setattr
+                                                  sensitive field — SENSITIVE_FIELDS = {phone, vegan_scope, vegetarian_scope,
+                                                  gluten_free_facility, whatsapp_group (MEH-2626)} (producer_me.py; `city` left
+                                                  under MEH-1938 5a and pings from the locations CRUD). Values are snapshotted before the setattr
                                                   loop and diffed post-commit, so a form resubmitting an unchanged value does NOT
                                                   ping; one BackgroundTask per PUT listing every changed field. Persistence,
                                                   status, requested_changes and the response shape are all untouched — this closes
@@ -912,6 +913,12 @@ POST   /producers/{id}/whatsapp-click             public    — anonymous, rate-
                                                               would break every anonymous click. Only
                                                               the coverage CTA sends one, via
                                                               fetch(keepalive)
+POST   /producers/{id}/contact-click              public    — 10/min, body {method} ∈ phone | instagram | website |
+                                                              email | whatsapp_group (MEH-2626: the WhatsApp updates
+                                                              link — contact-card bell + delivery-checker pill); else
+                                                              422. 204 + a producer_contact_clicks row (owner/admin
+                                                              clicks not logged). A row with user_id satisfies the
+                                                              first-review gate (reviews.py, MEH-2204).
 ```
 
 ### Favorites (`app/routers/favorites.py`)

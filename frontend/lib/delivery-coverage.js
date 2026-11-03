@@ -6,20 +6,25 @@
  *           (CoverageCtaToggle) share one owner without the dashboard
  *           pulling in the checker's UI imports.
  * History:  MEH-1536 (gates 1–3, written inline in DeliveryChecker) ·
+ *           MEH-2626 (exported from DeliveryChecker for DeliveryBlock) ·
  *           MEH-1676 (extracted; 03/11 ערב: hide the switch where the CTA
  *           can never appear).
  */
 import { normalizePhone } from "@/lib/utils";
 
-/**
- * Gates 1–3 of DeliveryChecker as one predicate:
- *   1. only for producers that actually deliver;
- *   2. nationwide with no exclusions → the answer is always "yes", no checker;
- *   3. not nationwide AND no delivery_areas rows → always "no", no checker.
- */
-export function deliveryCheckerUsable({ offersDelivery = false, nationwide = false, excluded = [], areas = [] }) {
+// Gate 1 (spec): only for producers that actually deliver.
+// Gate 2 (spec): nationwide with no exclusions — the answer is trivially
+//   "yes" for every city, so a checker would be pure noise.
+// Gate 3 (MEH-1536 judgment call, documented in the PR): not nationwide AND
+//   no delivery_areas rows — every possible answer would be "לא מגיעים",
+//   which contradicts the "משלוחים בתיאום מראש" line DeliveryBlock renders
+//   right below it. An always-negative checker is worse than none.
+// MEH-2626: DeliveryBlock places the WhatsApp updates pill under its
+// nationwide badge on exactly the pages this returns false for — one rule,
+// read by both, so the pill never has two homes on one page.
+export function isDeliveryCheckerUsable({ offersDelivery, nationwide, excluded = [], areas = [] }) {
   const hasExclusions = nationwide && excluded.length > 0;
-  return !!offersDelivery && (hasExclusions || (!nationwide && areas.length > 0));
+  return Boolean(offersDelivery) && (hasExclusions || (!nationwide && areas.length > 0));
 }
 
 /**
@@ -31,7 +36,7 @@ export function deliveryCheckerUsable({ offersDelivery = false, nationwide = fal
  */
 export function coverageCtaReachable(producer) {
   if (!normalizePhone(producer?.phone)) return false;
-  return deliveryCheckerUsable({
+  return isDeliveryCheckerUsable({
     offersDelivery: !!producer?.offers_delivery,
     nationwide: producer?.delivery_nationwide,
     excluded: producer?.delivery_excluded_cities || [],

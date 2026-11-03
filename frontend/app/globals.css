@@ -38,6 +38,12 @@
 .bg-whatsapp {
   @apply bg-[#25D366];
 }
+/* MEH-2626: the WhatsApp logo on a white pill (WhatsAppUpdatesPill). The
+   btn-whatsapp fill above, reused — not a new colour: #25D366 on white is
+   1.98:1, under the 3:1 non-text floor, while #16803E is 5.01:1. */
+.text-whatsapp {
+  @apply text-[#16803E];
+}
 
 /* ── MEH-136 — S4 design tokens (CSS utility layer) ───────────────────────
    Motion, focus-ring, and ghost-button primitives the S4 homepage (MEH-639)

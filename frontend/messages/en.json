@@ -837,6 +837,9 @@
       "contact_sidebar": {
         "join_whatsapp_group": "Join WhatsApp group"
       },
+      "whatsapp_updates": {
+        "full": "WhatsApp updates from the business"
+      },
       "contact_card": {
         "status_open": "Open for orders",
         "aria": {
@@ -846,7 +849,7 @@
           "email": "Email",
           "facebook": "Facebook",
           "external_order": "Order form",
-          "whatsapp_group": "WhatsApp group"
+          "whatsapp_group": "Updates"
         },
         "single": {
           "phone": "Call us",
@@ -855,7 +858,7 @@
           "email": "Send an email",
           "facebook": "Facebook",
           "external_order": "Order form",
-          "whatsapp_group": "WhatsApp group"
+          "whatsapp_group": "WhatsApp updates from the business"
         },
         "email_fallback_toast": "We couldn't open your email app — the address was copied",
         "email_copy_failed_toast": "We couldn't open your email app or copy — please try again",
@@ -1630,8 +1633,9 @@
           "instagram_placeholder": "maafiat_hasade",
           "website": "Website",
           "website_placeholder": "https://...",
-          "whatsapp_group": "WhatsApp group link",
-          "whatsapp_group_placeholder": "https://chat.whatsapp.com/...",
+          "whatsapp_group": "WhatsApp updates",
+          "whatsapp_group_placeholder": "https://whatsapp.com/channel/…",
+          "whatsapp_group_hint": "We recommend a WhatsApp channel: customers can't see each other's numbers, and there's no limit on how many can join.",
           "primary_contact": "Primary contact method",
           "primary_contact_whatsapp": "WhatsApp",
           "primary_contact_phone": "Phone",
@@ -4466,13 +4470,14 @@
         "phone_field_helper": "This number is used for both WhatsApp and calls",
         "field_instagram": "Instagram (username)",
         "field_website": "Website (link)",
-        "field_whatsapp_group": "WhatsApp group link",
+        "field_whatsapp_group": "WhatsApp updates",
+        "whatsapp_group_helper": "We recommend a WhatsApp channel: customers can't see each other's numbers, and there's no limit on how many can join.",
         "field_email": "Email",
         "field_facebook": "Facebook (link)",
         "field_external_order": "Order form (link)",
         "instagram_placeholder": "maafiat_hasade",
         "website_placeholder": "https://example.co.il",
-        "whatsapp_group_placeholder": "https://chat.whatsapp.com/AbCd",
+        "whatsapp_group_placeholder": "https://whatsapp.com/channel/…",
         "email_placeholder": "hello@example.co.il",
         "facebook_placeholder": "https://facebook.com/hasade",
         "primary_legend": "Primary channel",
