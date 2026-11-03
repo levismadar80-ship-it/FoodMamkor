@@ -134,3 +134,34 @@ def test_recipe_missing_products_is_a_code(client, db):
     }
     assert missing not in detail["message"]
     assert "product_ids" not in detail["message"]
+
+
+def test_recipe_patch_missing_products_is_a_code(client, db):
+    """PATCH shares _validate_product_ids with POST; pinned so the two can't drift."""
+    user = _owner(db, email="owner-1943b-patch@example.com")
+    payload = {
+        "title": "חלת מחמצת קלאסית",
+        "description": "מתכון פשוט לחלה",
+        "ingredients": "קמח, מים, מלח, מחמצת",
+        "instructions": "לערבב, ללוש, להתפיח ולאפות ב-220 מעלות.",
+        "prep_time_min": 30,
+        "cook_time_min": 35,
+        "servings": 8,
+        "product_ids": [],
+    }
+    created = client.post(
+        "/producers/me/recipes", json=payload, headers=auth_header(user)
+    )
+    assert created.status_code == 201, created.text
+    missing = str(uuid.uuid4())
+    r = client.patch(
+        f"/producers/me/recipes/{created.json()['id']}",
+        json={"product_ids": [missing]},
+        headers=auth_header(user),
+    )
+    assert r.status_code == 422
+    assert r.json()["detail"] == {
+        "code": "products_not_found",
+        "message": "חלק מהמוצרים לא נמצאו",
+        "params": {"product_ids": [missing]},
+    }
