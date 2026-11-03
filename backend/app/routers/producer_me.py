@@ -360,6 +360,21 @@ PRIMARY_MUST_BE_BRANCH = (
     "אם אין לעסק כתובת פיזית, אפשר להשאיר את המיקום הראשי ריק."
 )
 
+# MEH-1943 chunk 1: `{code, message, params}` (the MEH-1164 / MEH-1940 shape).
+# `message` is the approved sentence above, word for word, so a consumer that
+# still renders `detail.message` shows exactly what it showed before; the
+# frontend maps the `code` to settings.locations.errors.<code> (he + en).
+ONE_PRIMARY_REQUIRED_DETAIL = {
+    "code": "one_primary_required",
+    "message": ONE_PRIMARY_REQUIRED,
+    "params": {},
+}
+PRIMARY_MUST_BE_BRANCH_DETAIL = {
+    "code": "primary_must_be_branch",
+    "message": PRIMARY_MUST_BE_BRANCH,
+    "params": {},
+}
+
 
 def _snapshot_sensitive(producer) -> dict:
     """Read the sensitive fields BEFORE the setattr loop mutates them.
@@ -2603,7 +2618,7 @@ def create_my_location(
     #      owner adding her only pickup point, and per MEH-213 she legitimately
     #      has no pin at all. Refusing her would block a valid business shape.
     if loc.is_primary and loc.kind != "branch":
-        raise HTTPException(status_code=422, detail=PRIMARY_MUST_BE_BRANCH)
+        raise HTTPException(status_code=422, detail=PRIMARY_MUST_BE_BRANCH_DETAIL)
 
     # Single-primary: the first BRANCH is primary; an explicit is_primary=true
     # on a later one clears the existing primary. A producer whose only rows
@@ -2670,13 +2685,13 @@ def update_my_location(  # noqa: PLR0913 — all 6 args are FastAPI-injected (sl
         # DeliveryBlock.jsx:468). A primary whose own marker disappears under a
         # layer toggle is a third answer to a question that must have one.
         if loc.kind != "branch":
-            raise HTTPException(status_code=422, detail=PRIMARY_MUST_BE_BRANCH)
+            raise HTTPException(status_code=422, detail=PRIMARY_MUST_BE_BRANCH_DETAIL)
         _clear_other_primaries(db, user.producer_id, loc.id)
         loc.is_primary = True
     elif want_primary is False and loc.is_primary:
         # Can't directly demote the sole primary (that would leave zero) — the
         # owner promotes another location instead (which clears this one).
-        raise HTTPException(status_code=422, detail=ONE_PRIMARY_REQUIRED)
+        raise HTTPException(status_code=422, detail=ONE_PRIMARY_REQUIRED_DETAIL)
 
     # MEH-2141: re-derive `Producer.city` on exactly two events — this row was
     # just PROMOTED to primary (the primary's identity changed), or this row is
@@ -2733,7 +2748,7 @@ def delete_my_location(
             is not None
         )
         if others_remain:
-            raise HTTPException(status_code=422, detail=ONE_PRIMARY_REQUIRED)
+            raise HTTPException(status_code=422, detail=ONE_PRIMARY_REQUIRED_DETAIL)
 
     # Deleting the LAST remaining location is allowed and leaves no primary.
     # The business stays approved but is unpinned and cannot submit — STRICT
