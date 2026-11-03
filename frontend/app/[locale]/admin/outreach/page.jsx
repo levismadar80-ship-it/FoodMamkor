@@ -406,7 +406,7 @@ function AddLeadModal({ onClose, onCreated }) {
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 z-[9500] flex items-center justify-center p-4"
+      className="fixed inset-0 bg-black/40 z-[9500] flex items-center justify-center p-4"
       onClick={onClose}
     >
       <form
@@ -488,7 +488,7 @@ function ScriptModal({ onClose }) {
   const t = useTranslations("admin");
   return (
     <div
-      className="fixed inset-0 bg-black/50 z-[9500] flex items-center justify-center p-4"
+      className="fixed inset-0 bg-black/40 z-[9500] flex items-center justify-center p-4"
       onClick={onClose}
     >
       <div
@@ -561,7 +561,7 @@ function WhatsAppModal({ lead, onClose, onPrefillMinted }) {
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 z-[9500] flex items-center justify-center p-4"
+      className="fixed inset-0 bg-black/40 z-[9500] flex items-center justify-center p-4"
       onClick={onClose}
     >
       <div
