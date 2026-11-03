@@ -2144,6 +2144,11 @@ class GroupBuy(Base):
     # MEH-1457: free-text "מתי ואיך מקבלים" (OFN "Ready for" precedent).
     # Nullable — hidden on the public page when NULL. Alembic-only (MEH-267).
     fulfillment_note = Column(Text, nullable=True)
+    # MEH-2621: the same answer split in two — where/when to pick up, and
+    # where/for how much it is delivered. New rows carry one or both; rows
+    # from before carry only fulfillment_note. Alembic-only (MEH-267).
+    pickup_note = Column(Text, nullable=True)
+    delivery_note = Column(Text, nullable=True)
     # open | funded | cancelled | fulfilled
     status = Column(String(20), default="open", nullable=False)
     # MEH-1651: one-way latch for the open->funded notification pair. NULL =
