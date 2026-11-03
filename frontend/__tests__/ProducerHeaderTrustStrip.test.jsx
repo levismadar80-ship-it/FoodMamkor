@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 
 // MEH-1048: the header "trust strip" turns the rating + review count into an
 // anchor (#reviews) next to the h1. Zero reviews → nothing. This covers the
@@ -112,7 +112,12 @@ describe("ProducerHeader trust strip (MEH-1048)", () => {
 // tier-2 badge absence stays "affirmatively explained" (ADR-022 gate 1). The
 // next-intl mock echoes the key, so we assert on the key path.
 describe("ProducerHeader declared explainer (MEH-1170)", () => {
-  it("renders declared_explainer copy for the declared tier", () => {
+  // MEH-2634: the explainer moved behind a Popover. ADR-022 gate 1 asks that
+  // the badge absence be "affirmatively explained in consumer copy" — so the
+  // test that matters is no longer "the paragraph is on screen" but "the
+  // explanation is REACHABLE from the header", which is what the two cells
+  // below assert: the trigger is there, and tapping it produces the copy.
+  it("shows the declared trigger, not the explainer paragraph, for the declared tier", () => {
     render(
       <ProducerHeader
         producer={{ ...baseProducer, verification_tier: "declared" }}
@@ -120,6 +125,23 @@ describe("ProducerHeader declared explainer (MEH-1170)", () => {
         hasImages
       />,
     );
+    expect(screen.getByTestId("declared-explainer-trigger")).toBeInTheDocument();
+    expect(screen.getByText("producer.badge.declared_trigger")).toBeInTheDocument();
+    // The discriminating half: before the tap the three sentences are absent.
+    // Without this, the cell below would pass against the OLD always-open
+    // paragraph too, and would not be evidence for this change.
+    expect(screen.queryByText("producer.badge.declared_explainer")).not.toBeInTheDocument();
+  });
+
+  it("reveals declared_explainer when the trigger is tapped (ADR-022 gate 1)", () => {
+    render(
+      <ProducerHeader
+        producer={{ ...baseProducer, verification_tier: "declared" }}
+        primaryCategory={null}
+        hasImages
+      />,
+    );
+    fireEvent.click(screen.getByTestId("declared-explainer-trigger"));
     expect(screen.getByText("producer.badge.declared_explainer")).toBeInTheDocument();
   });
 
@@ -132,6 +154,7 @@ describe("ProducerHeader declared explainer (MEH-1170)", () => {
       />,
     );
     expect(screen.queryByText("producer.badge.declared_explainer")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("declared-explainer-trigger")).not.toBeInTheDocument();
     rerender(
       <ProducerHeader
         producer={{ ...baseProducer, verification_tier: null }}
@@ -140,6 +163,7 @@ describe("ProducerHeader declared explainer (MEH-1170)", () => {
       />,
     );
     expect(screen.queryByText("producer.badge.declared_explainer")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("declared-explainer-trigger")).not.toBeInTheDocument();
   });
 });
 

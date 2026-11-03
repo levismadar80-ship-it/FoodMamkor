@@ -50,7 +50,7 @@ vi.mock("@phosphor-icons/react", () => {
   return { CaretDown: Stub, ChatCircle: Stub };
 });
 
-import WhatsAppQuestionChips from "@/components/WhatsAppQuestionChips";
+import WhatsAppQuestionChips, { WA_SUFFIX } from "@/components/WhatsAppQuestionChips";
 import { pingWhatsAppBeacon, markWhatsAppClickedLocal } from "@/lib/contact-tracking";
 
 const PID = 7;
@@ -64,7 +64,7 @@ beforeEach(() => {
 describe("WhatsAppQuestionChips — click attribution (MEH-1886)", () => {
   it("fires BOTH helpers on a question link, exactly once per tap", () => {
     render(<WhatsAppQuestionChips producer={{ ...base, custom_questions: ["יש חלה לשבת?"] }} />);
-    const link = screen.getByText("יש חלה לשבת?").closest("a");
+    const link = screen.getByText(`יש חלה לשבת?${WA_SUFFIX}`).closest("a");
     // Guard the premise: this is genuinely a WhatsApp deep-link.
     expect(link.getAttribute("href")).toContain("wa.me/972501234567");
 
@@ -127,7 +127,7 @@ describe("WhatsAppQuestionChips — click attribution (MEH-1886)", () => {
   // The wiring must not have disturbed what the link actually does.
   it("leaves the href and its prefill byte-identical", () => {
     render(<WhatsAppQuestionChips producer={{ ...base, custom_questions: ["יש חלה לשבת?"] }} />);
-    const href = screen.getByText("יש חלה לשבת?").closest("a").getAttribute("href");
+    const href = screen.getByText(`יש חלה לשבת?${WA_SUFFIX}`).closest("a").getAttribute("href");
     expect(decodeURIComponent(href)).toBe(
       "https://wa.me/972501234567?text=שלום חוות השקמה, יש חלה לשבת?\n\nהגעתי דרך מהמקור",
     );
@@ -146,7 +146,7 @@ describe("WhatsAppQuestionChips — click attribution (MEH-1886)", () => {
 
   it("is inert without a producer id (no id → no attributed click)", () => {
     render(<WhatsAppQuestionChips producer={{ ...base, id: undefined, custom_questions: ["ש1"] }} />);
-    fireEvent.click(screen.getByText("ש1").closest("a"));
+    fireEvent.click(screen.getByText(`ש1${WA_SUFFIX}`).closest("a"));
     expect(pingWhatsAppBeacon).not.toHaveBeenCalled();
     expect(markWhatsAppClickedLocal).not.toHaveBeenCalled();
   });

@@ -123,7 +123,7 @@ describe("getPrimaryContactHref", () => {
 describe("getPrimaryContactLabel", () => {
   it("returns the Hebrew label for each method", () => {
     expect(getPrimaryContactLabel({ primary_contact_method: "whatsapp" })).toBe(
-      "שליחת הודעה",
+      "שליחת הודעה בוואטסאפ",
     );
     expect(getPrimaryContactLabel({ primary_contact_method: "phone" })).toBe(
       "התקשרו",
@@ -137,7 +137,7 @@ describe("getPrimaryContactLabel", () => {
   });
 
   it("falls back for unknown method", () => {
-    expect(getPrimaryContactLabel({})).toBe("שליחת הודעה"); // default → whatsapp
+    expect(getPrimaryContactLabel({})).toBe("שליחת הודעה בוואטסאפ"); // default → whatsapp
   });
 });
 

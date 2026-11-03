@@ -37,7 +37,7 @@ describe("PrimaryContactButton", () => {
     const btn = screen.getByTestId("primary-contact-button");
     expect(btn).toHaveAttribute("data-method", "whatsapp");
     expect(btn.getAttribute("href")).toContain("wa.me/");
-    expect(screen.getByText("שליחת הודעה")).toBeInTheDocument();
+    expect(screen.getByText("שליחת הודעה בוואטסאפ")).toBeInTheDocument();
     expect(screen.getByTestId("icon-whatsapp")).toBeInTheDocument();
   });
 

@@ -392,12 +392,16 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
 
   return (
     <section ref={sectionRef} className="mt-12">
-      <h2 className="font-headline-md text-2xl font-bold text-text mb-6">
-        {t("section_heading")}
-        {total > 0 && (
+      {/* MEH-2634: no heading at zero reviews. MEH-2592 already removed the
+          reader empty state, so the heading was announcing an absence on its
+          own — «ביקורות» over nothing but the write hint. At zero the section
+          is the one quiet line; the count parenthesis was already gated. */}
+      {total > 0 && (
+        <h2 className="font-headline-md text-2xl font-bold text-text mb-6">
+          {t("section_heading")}
           <span className="text-base font-normal text-fg-muted ms-2">({total})</span>
-        )}
-      </h2>
+        </h2>
+      )}
 
       {/* Rating summary block — only when ≥3 reviews */}
       {/* MEH-2592: the summary is one line — number · stars · count, aligned to

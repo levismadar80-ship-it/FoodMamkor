@@ -37,11 +37,18 @@ export function getSectionNavItems(producer, t) {
       ),
     },
     {
-      // The reviews wrapper always renders (it is the lazy-load IO point), so
-      // this pill is unconditional — the row is never empty.
+      // MEH-2634: gated on reviews_count, like the other four pills. The
+      // `#reviews` WRAPPER still always renders — it is the lazy-load IO
+      // observation point and cannot be gated without breaking the fetch — so
+      // this is the one item where the pill is deliberately NARROWER than its
+      // anchor: pill ⇒ anchor holds (no dead jump, which is what this list
+      // exists to prevent), anchor ⇒ pill does not. At zero reviews the
+      // section carries only the write hint (ReviewsSection, MEH-2592 + this
+      // ticket), which is not a destination worth a pill.
+      // SectionAnchorNav.test.jsx encodes that asymmetry explicitly.
       id: "reviews",
       label: t("producer.detail.tabs.reviews_label"),
-      show: true,
+      show: (producer.reviews_count ?? 0) > 0,
     },
     {
       id: "section-delivery",

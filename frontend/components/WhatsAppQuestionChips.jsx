@@ -124,6 +124,15 @@ function Disclosure({ question, children }) {
   );
 }
 
+// MEH-2634: every row WaItem renders is a wa.me deep link that leaves the site —
+// the Q1/Q2 fallbacks AND the owner's custom questions, which have no
+// answer-first branch at all. The chip looked like the Disclosure rows beside
+// it, which open in place, so the suffix names the destination before the tap.
+// It is appended here rather than at each call site precisely because this
+// component IS the wa.me branch: a row that renders in-page answers is a
+// Disclosure, never a WaItem.
+export const WA_SUFFIX = " (וואטסאפ)";
+
 /** WhatsApp deep-link row (unchanged idiom: ChatCircle glyph + quiet link). */
 function WaItem({ href, question, onTrack }) {
   return (
@@ -138,6 +147,7 @@ function WaItem({ href, question, onTrack }) {
       >
         <ChatCircle size={16} weight="regular" className="flex-shrink-0" aria-hidden="true" />
         {question}
+        {WA_SUFFIX}
       </a>
     </li>
   );

@@ -403,7 +403,10 @@ export default function AboutProcessClient() {
                 {t("cta.submit")}
                 <ArrowLeft size={19} aria-hidden />
               </BusinessCtaLink>
-              <span className="font-body-md text-[13px] text-background/90">{t("cta.secondary")}</span>
+              {/* MEH-2634: the «ממשיכים לטופס ההרשמה» caption is gone. It sat
+                  beside the button looking like a second, unclickable action
+                  while only restating where the button already goes — which
+                  the relabelled button now says itself. */}
             </div>
           </div>
         </div>

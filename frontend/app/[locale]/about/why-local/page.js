@@ -137,7 +137,10 @@ export default async function WhyLocalPage({ params }) {
 
         <div className="mt-12 sm:mt-14">
           <Link
-            href="/producers"
+            // MEH-2634: /producers → /map. The copy says «באזור שלכם», and
+            // the paginated catalog has no area axis; /map is the surface that
+            // answers it.
+            href="/map"
             data-testid="why-local-cta"
             className="inline-flex items-center gap-2 font-medium transition hover:opacity-90 bg-primary text-white rounded-sm px-6 py-3 focus-ring"
           >
