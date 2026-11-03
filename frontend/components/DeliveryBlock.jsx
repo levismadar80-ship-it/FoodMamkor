@@ -8,7 +8,8 @@ import { formatPrice } from "@/lib/utils";
 import { groupDeliveryAreas } from "@/lib/deliveryGroups";
 import { resolveDeliveryFee } from "@/lib/deliveryFee";
 import { getSingleOrderCutoff } from "@/lib/orderWindow";
-import DeliveryChecker from "@/components/DeliveryChecker";
+import DeliveryChecker, { isDeliveryCheckerUsable } from "@/components/DeliveryChecker";
+import WhatsAppUpdatesPill, { whatsappUpdatesHref } from "@/components/WhatsAppUpdatesPill";
 import HoursText from "@/components/HoursText";
 
 // MEH-2592 C: every row list in the block (areas and pickup) sits in one soft
@@ -632,12 +633,30 @@ export default function DeliveryBlock({
       )}
 
       {nationwide ? (
-        <span className="inline-flex items-center gap-1.5 bg-green-50 text-text border border-border rounded-[20px] text-[13px] px-3 py-1.5 font-medium mb-4">
-          <Truck size={14} className="text-current ms-1" aria-hidden="true" />
-          {hasExclusions
-            ? t("nationwide_except", { cities: excluded.join(", ") })
-            : t("nationwide")}
-        </span>
+        <>
+          <span className="inline-flex items-center gap-1.5 bg-green-50 text-text border border-border rounded-[20px] text-[13px] px-3 py-1.5 font-medium mb-4">
+            <Truck size={14} className="text-current ms-1" aria-hidden="true" />
+            {hasExclusions
+              ? t("nationwide_except", { cities: excluded.join(", ") })
+              : t("nationwide")}
+          </span>
+          {/* MEH-2626: with no checker on the page there is no positive
+              answer to carry the WhatsApp updates pill, so it sits directly
+              under the nationwide badge instead. When the checker DOES render
+              (nationwide + exclusions), the pill lives in its "yes" answer
+              only — the same gate function decides both, so never two. */}
+          {whatsappUpdatesHref(producer) &&
+            !isDeliveryCheckerUsable({
+              offersDelivery: !!producer?.offers_delivery,
+              nationwide,
+              excluded,
+              areas,
+            }) && (
+              <div className="mb-4">
+                <WhatsAppUpdatesPill producer={producer} />
+              </div>
+            )}
+        </>
       ) : bare ? (
         <CompactCities areas={areas} t={t} />
       ) : hasAreas ? (
