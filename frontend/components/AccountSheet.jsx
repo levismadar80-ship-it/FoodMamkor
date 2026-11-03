@@ -113,7 +113,7 @@ export default function AccountSheet({ open, onClose, user, logout }) {
         type="button"
         aria-label={t("nav.menu_close")}
         onClick={onClose}
-        className="fixed inset-0 z-[1001] bg-green-900/50"
+        className="fixed inset-0 z-[1001] bg-black/40"
       />
       <div
         ref={panelRef}
