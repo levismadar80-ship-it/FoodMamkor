@@ -406,7 +406,9 @@ def test_deleting_the_primary_with_a_survivor_is_refused_and_pings_nothing(
         )
 
     assert resp.status_code == 422, resp.text
-    assert resp.json()["detail"] == "חובה מיקום ראשי אחד"
+    # MEH-1943: the 422 is {code, message, params}; the sentence is unchanged.
+    assert resp.json()["detail"]["code"] == "one_primary_required"
+    assert resp.json()["detail"]["message"] == "חובה מיקום ראשי אחד"
     ping.assert_not_called()
 
 
