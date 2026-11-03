@@ -106,7 +106,7 @@ function CertModal({ src, expiryText, onClose, t }) {
       aria-modal="true"
       aria-label={t("cert.dialog_label")}
       data-testid="kashrut-cert-modal"
-      className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/60 p-4"
+      className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40 p-4"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
