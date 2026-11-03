@@ -86,7 +86,7 @@ generic SaaS checklist shipped with the workflow.
 
 ## V. Interaction design
 
-- [ ] **Tap targets — mobile (< md): ≥ 44×44px, no exceptions** (Apple HIG 44pt). Header icons, favorite heart, bottom nav, card actions. **Desktop (md+): ≥ 32px allowed.** There is no 34px mobile carve-out (ruling «⚖️ 03/11», MEH-1687 E).
+- [ ] **Tap targets — mobile (< md): ≥ 44×44px, no exceptions for standalone controls** (Apple HIG 44pt; inline body-text links keep the DESIGN.md exemption). Header icons, favorite heart, bottom nav, card actions. **Desktop (md+): ≥ 32px allowed.** There is no 34px mobile carve-out (ruling «⚖️ 03/11», MEH-1687 E).
 - [ ] Visible focus state on every interactive element (not default browser outline — branded ring).
 - [ ] Hover states on desktop feel instant (≤ 150ms, ease-out).
 - [ ] Transitions 150–300ms with `ease-in-out`. No bouncy/spring animations except for Ken Burns hero.

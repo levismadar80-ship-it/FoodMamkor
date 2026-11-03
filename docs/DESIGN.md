@@ -684,7 +684,13 @@ reserved for the documented non-interactive or exception cases below.
 hit area of **≥ 44 × 44px, with no exceptions for standalone controls** (WCAG 2.5.5 Target Size
 (Enhanced); Apple HIG 44pt). On desktop (md+) **≥ 32px** is allowed — pointer
 precision, not touch. There is no 34px mobile carve-out (ruling «⚖️ 03/11»,
-MEH-1687 E). When the
+the decision block at the top of the MEH-1687 Linear card, item E — delegated
+by Sapir 03/11 01:18). _As of 03/11/2026 three shipped sites still sit below
+the floor and are known violations of this rule, not exceptions to it:
+`components/ProducerCard.jsx:174` (card heart, `w-[34px] h-[34px] sm:w-11`),
+`app/[locale]/favorites/FavoritesClient.jsx:90` (`h-[34px] sm:h-11`) and
+`components/Header.jsx:761` (avatar button, `w-[34px] h-[34px]`). Their fix is
+a separate code PR, tracked on MEH-1687; until it lands, do not copy them._ When the
 visible control is smaller than 44px, the target is enlarged with
 `min-h-[44px] min-w-[44px]` plus `flex items-center justify-center` so the
 glyph stays centered inside the padded hit area — the `HeroSearch` submit
