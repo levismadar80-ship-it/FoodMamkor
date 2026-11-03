@@ -268,7 +268,9 @@ class TestDelete:
         )
 
         assert resp.status_code == 422, resp.text
-        assert resp.json()["detail"] == "חובה מיקום ראשי אחד"
+        # MEH-1943: the 422 is {code, message, params}; the sentence is unchanged.
+        assert resp.json()["detail"]["code"] == "one_primary_required"
+        assert resp.json()["detail"]["message"] == "חובה מיקום ראשי אחד"
         assert _city_of(db, producer.id) == "חיפה"
 
     def test_deleting_the_LAST_location_keeps_the_last_city(self, client, db):
