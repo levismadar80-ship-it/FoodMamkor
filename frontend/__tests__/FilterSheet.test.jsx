@@ -79,9 +79,12 @@ describe("FilterSheet (MEH-1075)", () => {
     // Labels stay literal (a copy lock — MEH-1418 renamed one of these and this
     // roster is what would catch the next such rename).
     const LABELS = [
-      // diet — pills (MEH-2169)
-      "טבעוני",
-      "צמחוני",
+      // diet — pills (MEH-2169). MEH-1508 chunk 3ב-2: the §6.6 rename, plus
+      // the two 100% axes beside their partial twins.
+      "מתאים לטבעונים",
+      "100% טבעוני",
+      "מתאים לצמחונים",
+      "100% צמחוני",
       "ללא גלוטן",
       "ללא לקטוז",
       "ללא סוכר מוסף",
@@ -187,7 +190,7 @@ describe("FilterSheet (MEH-1075)", () => {
       chipState: { ...ALL_OFF, vegan: true },
     });
     // MEH-2169: diet toggles are role="switch" PILLS writing shared state.
-    const veganRow = screen.getByRole("switch", { name: "טבעוני" });
+    const veganRow = screen.getByRole("switch", { name: "מתאים לטבעונים" });
     expect(veganRow).toHaveAttribute("aria-checked", "true");
     // MEH-1259: was the organic chip (removed) — grass_fed is the other quality toggle.
     expect(screen.getByRole("switch", { name: "גראס פד" })).toHaveAttribute(

@@ -121,10 +121,11 @@ There are **two** declaration sites, and they cover different surfaces:
 | `frontend/lib/filter-taxonomy.js` (`FILTER_AXES`) | **filter chips** — one declaration per axis, projected into `ATTRIBUTE_LABELS` / `CHIPS_CONFIG` / `TOGGLE_CHIPS` (MEH-2130) | home · /producers · /map filter rows, FilterSheet |
 | `frontend/lib/badges.js` (`BADGE_CONFIG`) | **badges** — the pills on a card and a detail page (MEH-1753) | ProducerCard, BadgeRow, the `+N` overflow popover |
 
-**Nine claims exist on both** — eight sharing a key (`verified`, `grass_fed`,
+**Eleven claims exist on both** — ten sharing a key (`verified`, `grass_fed`,
 `gluten_free`, `vegetarian`, `vegan`, `lactose_free`, `no_added_sugar`,
-`kosher`) plus `delivery` ↔ `has_delivery`, which are the same claim under
-different keys. They are **not** hand-copies: `LabelScopeContract.test.js`
+`kosher`, and — MEH-1508 chunk 3ב-2 — `vegan_all` / `vegetarian_all`, the
+«100% טבעוני/צמחוני» layer at `business` × `self-declared`) plus `delivery` ↔
+`has_delivery`, which are the same claim under different keys. They are **not** hand-copies: `LabelScopeContract.test.js`
 asserts each pair agrees on scope and evidence, so changing one side alone goes
 red.
 
@@ -140,7 +141,7 @@ filter surfaces consume. Each entry is an object:
 
 ```js
 vegan: {
-  label: "טבעוני",            // the rendered string (chip row unchanged)
+  label: "מתאים לטבעונים",    // the rendered string (MEH-1508 §6.6 rename)
   scope: "any-product",       // MEH-293 EXISTS-over-products
   evidence: "self-declared",  // owner asserts it
   subtext: "עסקים עם מוצרים טבעוניים בקטלוג", // in-component scope explanation (LOCKED)
