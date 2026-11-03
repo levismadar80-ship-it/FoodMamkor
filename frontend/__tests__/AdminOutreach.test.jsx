@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import AdminOutreachPage from "@/app/[locale]/admin/outreach/page";
+import api from "@/lib/api";
+import { showToast } from "@/lib/toast";
 
 // Mock api
 const listRef = { current: { data: [] } };
@@ -75,6 +77,9 @@ vi.mock("next-intl", () => {
     "admin.outreach.modal_wa.close": "סגור",
     "admin.outreach.call_script": '1. פתיחה חמה: "היי, אני מדברת ממהמקור, זה שם טוב?"',
     "admin.common.cancel": "ביטול",
+    // MEH-2633
+    "admin.outreach.badge_community": "המלצת קהילה",
+    "admin.outreach.thank_suggester": "שליחת תודה",
   };
   const resolve = (fullKey, values) => {
     const raw = flat[fullKey] ?? fullKey;
@@ -84,6 +89,8 @@ vi.mock("next-intl", () => {
     return s;
   };
   return {
+    // MEH-2633: the page now formats the thanked date with the active locale.
+    useLocale: () => "he",
     useTranslations: (scope) => {
       const t = (key, values = {}) => resolve(scope ? `${scope}.${key}` : key, values);
       // PR-B WhatsApp templates use t.raw() to preserve literal placeholders
@@ -108,6 +115,23 @@ const sampleLead = {
   prefill_token_expires_at: null,
   created_at: "2026-04-15T08:00:00",
   updated_at: "2026-04-15T08:00:00",
+};
+
+// MEH-2633: a community suggestion carries five fields a manual lead never
+// does. `status: "registered"` + wants_update + no thanked_at is the ONE
+// combination where "שליחת תודה" is enabled, so it is the default here and the
+// disabled cases override a single field each.
+const communityLead = {
+  ...sampleLead,
+  id: "lead-2",
+  name: "מעדניית הזיתים",
+  source: "community",
+  status: "registered",
+  suggested_by_name: "דנה",
+  suggested_by_email: "dana@example-suggester.co.il",
+  suggester_wants_update: true,
+  suggestion_reason: "הזיתים הכי טובים שאכלתי",
+  suggester_thanked_at: null,
 };
 
 describe("AdminOutreachPage", () => {
@@ -276,5 +300,113 @@ describe("MEH-2566 · counters are the status filter; the list pages by 25", () 
     render(<AdminOutreachPage />);
     await screen.findByText("ליד 25");
     expect(screen.queryByTestId("pagination")).toBeNull();
+  });
+
+  // ---------- MEH-2633: community suggestions ----------
+
+  describe("community suggestions", () => {
+    it("badge, reason and suggester render for a community lead", async () => {
+      listRef.current = { data: [communityLead] };
+      render(<AdminOutreachPage />);
+      await screen.findByText("מעדניית הזיתים");
+      expect(screen.getByTestId("community-badge-lead-2")).toHaveTextContent("המלצת קהילה");
+      expect(screen.getByText("הזיתים הכי טובים שאכלתי")).toBeInTheDocument();
+      expect(screen.getByText("דנה")).toBeInTheDocument();
+      expect(screen.getByText("dana@example-suggester.co.il")).toBeInTheDocument();
+    });
+
+    it("a manual lead gets no badge and no suggester block", async () => {
+      // Discriminates: without this, a badge rendered unconditionally would
+      // pass every other test in this describe.
+      listRef.current = { data: [sampleLead] };
+      render(<AdminOutreachPage />);
+      await screen.findByText("מאפיית אביב");
+      expect(screen.queryByTestId("community-badge-lead-1")).toBeNull();
+      expect(screen.queryByTestId("thank-suggester-lead-1")).toBeNull();
+    });
+
+    it("the source chip sends ?source=community, and toggles back off", async () => {
+      listRef.current = { data: [communityLead] };
+      metricsRef.current = {
+        data: { total: 1, new: 0, contacted: 0, replied: 0, registered: 1, declined: 0, community: 1 },
+      };
+      render(<AdminOutreachPage />);
+      await screen.findByText("מעדניית הזיתים");
+
+      // Only the leads calls, in order. `toHaveBeenLastCalledWith` is wrong
+      // here: Promise.all fires the metrics request after the leads one, so
+      // the last call on this mock is always /metrics/summary.
+      const leadParams = () =>
+        api.get.mock.calls.filter((c) => c[0] === "/admin/outreach").map((c) => c[1]);
+
+      const chip = screen.getByTestId("outreach-source-chips").querySelector("button");
+      fireEvent.click(chip);
+      await waitFor(() =>
+        expect(leadParams()).toContainEqual({ params: { source: "community" } })
+      );
+      const afterOn = leadParams().length;
+
+      // Off again — the param must DISAPPEAR, not become "manual" or "".
+      // Asserting a NEW call is what makes this discriminate: the mount's own
+      // `{params: {}}` call is already in the list, so a bare "contains empty
+      // params" check would pass even if the second click did nothing.
+      fireEvent.click(chip);
+      await waitFor(() => expect(leadParams().length).toBeGreaterThan(afterOn));
+      expect(leadParams().at(-1)).toEqual({ params: {} });
+    });
+
+    it("thank button posts, then the row shows the thanked date", async () => {
+      listRef.current = { data: [communityLead] };
+      render(<AdminOutreachPage />);
+      await screen.findByText("מעדניית הזיתים");
+
+      const btn = screen.getByTestId("thank-suggester-lead-2");
+      expect(btn).toBeEnabled();
+
+      // The refreshed row comes back thanked — the date IS the feedback, which
+      // is why this flow needs no success toast.
+      listRef.current = {
+        data: [{ ...communityLead, suggester_thanked_at: "2026-11-03T10:00:00" }],
+      };
+      fireEvent.click(btn);
+      await waitFor(() =>
+        expect(api.post).toHaveBeenCalledWith("/admin/outreach/lead-2/thank-suggester")
+      );
+      await screen.findByTestId("thanked-at-lead-2");
+      expect(screen.queryByTestId("thank-suggester-lead-2")).toBeNull();
+    });
+
+    it("thank button is DISABLED when the suggester asked for no update", async () => {
+      listRef.current = { data: [{ ...communityLead, suggester_wants_update: false }] };
+      render(<AdminOutreachPage />);
+      await screen.findByText("מעדניית הזיתים");
+      expect(screen.getByTestId("thank-suggester-lead-2")).toBeDisabled();
+    });
+
+    it("thank button is DISABLED until the business is registered", async () => {
+      listRef.current = { data: [{ ...communityLead, status: "contacted" }] };
+      render(<AdminOutreachPage />);
+      await screen.findByText("מעדניית הזיתים");
+      expect(screen.getByTestId("thank-suggester-lead-2")).toBeDisabled();
+    });
+
+    it("no thank control at all without a suggester email", async () => {
+      listRef.current = { data: [{ ...communityLead, suggested_by_email: null }] };
+      render(<AdminOutreachPage />);
+      await screen.findByText("מעדניית הזיתים");
+      expect(screen.queryByTestId("thank-suggester-lead-2")).toBeNull();
+      expect(screen.queryByTestId("thanked-at-lead-2")).toBeNull();
+    });
+
+    it("a 409 surfaces the backend's own Hebrew detail", async () => {
+      listRef.current = { data: [communityLead] };
+      api.post.mockRejectedValueOnce({
+        response: { status: 409, data: { detail: "תודה כבר נשלחה" } },
+      });
+      render(<AdminOutreachPage />);
+      await screen.findByText("מעדניית הזיתים");
+      fireEvent.click(screen.getByTestId("thank-suggester-lead-2"));
+      await waitFor(() => expect(showToast.error).toHaveBeenCalledWith("תודה כבר נשלחה"));
+    });
   });
 });

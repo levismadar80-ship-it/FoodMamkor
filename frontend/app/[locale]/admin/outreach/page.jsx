@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Phone } from "@phosphor-icons/react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
+import { detailToMessage } from "@/lib/errors";
 import { getWhatsAppHref, normalizePhone } from "@/lib/utils";
 import { instagramHandle, instagramUrl } from "@/lib/social-links";
 import Input from "@/components/ui/Input";
@@ -49,6 +50,7 @@ const PAGE_SIZE = 25;
 
 export default function AdminOutreachPage() {
   const t = useTranslations("admin");
+  const locale = useLocale();
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [metrics, setMetrics] = useState({
@@ -58,9 +60,15 @@ export default function AdminOutreachPage() {
     replied: 0,
     registered: 0,
     declined: 0,
+    // MEH-2633: counts by SOURCE, not status — see metrics_summary's comment.
+    community: 0,
   });
   const [cityFilter, setCityFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  // MEH-2633: null = every source. Only "community" is offered — "manual" is
+  // "everything else" to an admin, and a chip for it would just be the
+  // complement of this one.
+  const [sourceFilter, setSourceFilter] = useState(null);
   const [page, setPage] = useState(1);
   const [addOpen, setAddOpen] = useState(false);
   const [scriptOpen, setScriptOpen] = useState(false);
@@ -75,6 +83,7 @@ export default function AdminOutreachPage() {
     const params = {};
     if (cityFilter) params.city = cityFilter;
     if (statusFilter !== "all") params.status = statusFilter;
+    if (sourceFilter) params.source = sourceFilter;
     setLoadError(false);
     Promise.all([
       api.get("/admin/outreach", { params }).then((r) => r.data),
@@ -89,13 +98,27 @@ export default function AdminOutreachPage() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(load, [cityFilter, statusFilter]);
+  useEffect(load, [cityFilter, statusFilter, sourceFilter]);
   // A new filter starts from page 1; a shrinking list (status change, delete)
   // never strands the view past its last page.
-  useEffect(() => setPage(1), [cityFilter, statusFilter]);
+  useEffect(() => setPage(1), [cityFilter, statusFilter, sourceFilter]);
   const totalPages = Math.max(1, Math.ceil(leads.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
   const pageLeads = leads.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  // MEH-2633. Deliberately no success toast: `load()` refreshes and the row
+  // then shows the thanked date, which is the feedback. A failure surfaces the
+  // backend's own Hebrew `detail` (the four 409 rules each have their own
+  // sentence in admin_outreach.thank_suggester), so this adds no frontend copy
+  // and cannot drift from what the server actually enforced.
+  const handleThankSuggester = async (id) => {
+    try {
+      await api.post(`/admin/outreach/${id}/thank-suggester`);
+      load();
+    } catch (err) {
+      showToast.error(detailToMessage(err.response?.data?.detail));
+    }
+  };
 
   const handleStatusChange = async (id, status) => {
     await api
@@ -173,6 +196,20 @@ export default function AdminOutreachPage() {
         ))}
       </div>
 
+      {/* MEH-2633: source is a SECOND axis, so it gets its own group rather
+          than joining the status row above — one aria-label cannot describe
+          both, and a chip that silently ANDs with a status chip is clearer
+          when it is visibly separate. */}
+      <div className="flex flex-wrap gap-2" role="group" aria-label={t("outreach.badge_community")} data-testid="outreach-source-chips">
+        <StatusChip
+          id="community"
+          label={t("outreach.badge_community")}
+          count={metrics.community}
+          active={sourceFilter === "community"}
+          onClick={() => setSourceFilter(sourceFilter === "community" ? null : "community")}
+        />
+      </div>
+
       {/* Filters + add */}
       <div className="flex flex-col md:flex-row gap-3">
         <input
@@ -232,7 +269,36 @@ export default function AdminOutreachPage() {
               {!loading &&
                 pageLeads.map((lead) => (
                   <tr key={lead.id} className="border-t align-top">
-                    <td className="px-3 py-3 font-medium">{lead.name}</td>
+                    <td className="px-3 py-3 font-medium">
+                      {lead.name}
+                      {lead.source === "community" && (
+                        <span
+                          className="ms-2 align-middle inline-block text-[11px] px-2 py-0.5 rounded-full bg-green-50 text-primary border border-border"
+                          data-testid={`community-badge-${lead.id}`}
+                        >
+                          {t("outreach.badge_community")}
+                        </span>
+                      )}
+                      {lead.suggestion_reason && (
+                        <p className="mt-1 text-xs text-muted font-normal whitespace-pre-line">
+                          {lead.suggestion_reason}
+                        </p>
+                      )}
+                      {(lead.suggested_by_name || lead.suggested_by_email) && (
+                        <p className="mt-1 text-xs text-muted font-normal">
+                          {lead.suggested_by_name || "—"}
+                          {lead.suggested_by_email && (
+                            <a
+                              dir="ltr"
+                              href={`mailto:${lead.suggested_by_email}`}
+                              className="ms-2 text-primary hover:underline"
+                            >
+                              {lead.suggested_by_email}
+                            </a>
+                          )}
+                        </p>
+                      )}
+                    </td>
                     <td className="px-3 py-3 text-muted" data-label={t("outreach.columns.city")}>{lead.city || "—"}</td>
                     <td className="px-3 py-3 text-muted" data-label={t("outreach.columns.category")}>{lead.category || "—"}</td>
                     {/* MEH-2426: dir="ltr" moved from the <td> to the value, so
@@ -293,6 +359,34 @@ export default function AdminOutreachPage() {
                           >
                             {t("outreach.actions.whatsapp")}
                           </button>
+                        )}
+                        {/* MEH-2633. Rendered only for a lead that actually
+                            carries a suggester, and ENABLED only when all four
+                            of the endpoint's 409 rules are satisfied, so the
+                            button mirrors the server rather than guessing.
+                            Already thanked -> the date replaces it.
+                            The card asks for a tooltip naming WHY it is
+                            disabled; that needs four new strings and is PARKED
+                            for Sapir (see the PR). */}
+                        {lead.suggested_by_email && (
+                          lead.suggester_thanked_at ? (
+                            <span
+                              className="text-xs px-2 py-1 text-muted"
+                              data-testid={`thanked-at-${lead.id}`}
+                            >
+                              {new Date(lead.suggester_thanked_at).toLocaleDateString(locale)}
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleThankSuggester(lead.id)}
+                              disabled={!lead.suggester_wants_update || lead.status !== "registered"}
+                              data-testid={`thank-suggester-${lead.id}`}
+                              className="text-xs px-2 py-1 rounded-lg border border-border text-primary hover:bg-green-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                              {t("outreach.thank_suggester")}
+                            </button>
+                          )
                         )}
                         <button
                           type="button"
