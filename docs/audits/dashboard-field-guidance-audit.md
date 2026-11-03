@@ -89,6 +89,7 @@ A field missing (2) or (3) where it applies is `missing-guidance` below.
 | `instagram` | `ContactChannelsCard` | ✓ | — | ✓ `instagram_placeholder` — bare handle (MEH-1597) | ✓ card-level `subtitle` | ok |
 | `website` | `ContactChannelsCard` | ✓ | — | ✓ `website_placeholder` | ✓ card-level | ok |
 | `whatsapp_group` | `ContactChannelsCard` | ✓ | — | ✓ `whatsapp_group_placeholder` | ✓ card-level | ok |
+| `coverage_cta_enabled` | `CoverageCtaToggle` (MEH-1676) | ✓ `coverage_cta.label` | ✓ `coverage_cta.helper` | — (a switch: no free text, no placeholder) | ✓ `coverage_cta.helper` — the «לא מגיעים אליך?» button on her page | ok |
 | `contact_email` | `ContactChannelsCard` | ✓ | — | ✓ `email_placeholder` | ✓ card-level | ok |
 | `facebook` | `ContactChannelsCard` | ✓ | — | ✓ `facebook_placeholder` | ✓ card-level | ok |
 
