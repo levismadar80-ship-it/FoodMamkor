@@ -9,7 +9,7 @@
  *           MEH-1677; CoverageRequestCta.jsx already hides itself on false.
  * Does NOT: decide where the CTA shows — CoverageRequestCta owns that. The
  *           switch only renders when the owner's page CAN show the CTA, read
- *           from the same gate (DeliveryChecker.jsx coverageCtaReachable).
+ *           from the same gate (lib/delivery-coverage.js coverageCtaReachable).
  * History:  MEH-1676 (creation; copy approved 03/11, Sapir's delegation;
  *           03/11 ערב: 44×44 hit area + hidden where the CTA never renders).
  */
@@ -17,7 +17,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
-import { coverageCtaReachable } from "@/components/DeliveryChecker";
+import { coverageCtaReachable } from "@/lib/delivery-coverage";
 
 export default function CoverageCtaToggle({ producer, onSaved }) {
   const t = useTranslations("dashboard.producer.coverage_cta");
@@ -69,11 +69,11 @@ export default function CoverageCtaToggle({ producer, onSaved }) {
         disabled={saving}
         onClick={toggle}
         data-testid="coverage-cta-switch"
-        className="relative shrink-0 inline-flex items-center justify-center min-h-[44px] min-w-[44px] -my-2.5 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+        className="group relative shrink-0 inline-flex items-center justify-center min-h-[44px] min-w-[44px] -my-2.5 focus-visible:outline-none"
       >
         <span
           aria-hidden="true"
-          className={`relative block w-10 h-6 rounded-full transition-colors ${on ? "bg-primary" : "bg-border"}`}
+          className={`relative block w-10 h-6 rounded-full transition-colors group-focus-visible:ring-2 group-focus-visible:ring-primary/40 ${on ? "bg-primary" : "bg-border"}`}
         >
           <span
             className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${

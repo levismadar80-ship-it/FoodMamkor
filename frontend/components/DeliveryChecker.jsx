@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { CheckCircle, XCircle } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
-import { formatPrice, normalizePhone } from "@/lib/utils";
+import { formatPrice } from "@/lib/utils";
+import { deliveryCheckerUsable } from "@/lib/delivery-coverage";
 import CitySearch from "@/components/CitySearch";
 import CoverageRequestCta from "@/components/CoverageRequestCta";
 import { useUserCity } from "@/lib/use-user-city";
@@ -64,34 +65,6 @@ export function matchDeliveryCity({ city, nationwide, excluded = [], areas = [] 
 
 // status → i18n key, so the verdict line stays a flat lookup rather than a
 // nested ternary. Every status a match can return must appear here.
-/**
- * Gates 1–3 below, as one predicate: does this producer's page render the
- * checker at all? coverageCtaReachable below reuses it so the owner dashboard (CoverageCtaToggle,
- * MEH-1676) hides its switch on exactly the pages where the CTA can never
- * appear, instead of keeping a second copy of the rule.
- */
-function deliveryCheckerUsable({ offersDelivery = false, nationwide = false, excluded = [], areas = [] }) {
-  const hasExclusions = nationwide && excluded.length > 0;
-  return !!offersDelivery && (hasExclusions || (!nationwide && areas.length > 0));
-}
-
-/**
- * Can this producer's public page ever show CoverageRequestCta? The checker
- * must render (gates 1–3, fed the same producer fields DeliveryBlock passes at
- * ProducerSections.jsx:676-681) and the CTA needs a WhatsApp phone
- * (CoverageRequestCta.jsx:40-43). The opt-out flag is deliberately NOT part of
- * this: it is what the owner's switch controls.
- */
-export function coverageCtaReachable(producer) {
-  if (!normalizePhone(producer?.phone)) return false;
-  return deliveryCheckerUsable({
-    offersDelivery: !!producer?.offers_delivery,
-    nationwide: producer?.delivery_nationwide,
-    excluded: producer?.delivery_excluded_cities || [],
-    areas: producer?.delivery_areas || [],
-  });
-}
-
 const VERDICT_KEY = {
   yes_nationwide: "checker.yes_nationwide",
   yes: "checker.yes",
