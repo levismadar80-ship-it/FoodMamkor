@@ -265,7 +265,7 @@ export default function ProducerDecisionModal({
   const handlePrimary = () => (groupOf(value) === REJECT ? onRequestConfirm() : onSubmit());
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-[9000] flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/40 z-[9000] flex items-center justify-center p-4">
       <div
         role="dialog"
         aria-modal="true"

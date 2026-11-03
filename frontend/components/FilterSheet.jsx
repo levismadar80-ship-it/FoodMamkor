@@ -217,7 +217,7 @@ export default function FilterSheet({
         type="button"
         aria-label={t("filters.sheet.close_aria")}
         onClick={onClose}
-        className="fixed inset-0 z-[1200] bg-green-900/50 lg:bg-transparent"
+        className="fixed inset-0 z-[1200] bg-black/40 lg:bg-transparent"
       />
       <div
         ref={panelRef}
