@@ -136,7 +136,7 @@ describe("location rows (MEH-2429 §16)", () => {
 
 describe("holiday hint CTA (MEH-2429 §5)", () => {
   it("goes to the products card, not back to the overview it sits on", async () => {
-    holidayRef.current = { emoji: "🕎", color: "#2e6853", dashboardHint: "חנוכה מתקרבת" };
+    holidayRef.current = { icon: "Flame", color: "#2e6853", dashboardHint: "חנוכה מתקרבת" };
     renderIntl(<OverviewPage />);
     const cta = await screen.findByText(he.dashboard.producer.holiday_catalog_cta);
     expect(cta.closest("a")).toHaveAttribute("href", "/producer/dashboard/edit#products");
