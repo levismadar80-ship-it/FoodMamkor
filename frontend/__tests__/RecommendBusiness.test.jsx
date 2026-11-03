@@ -165,8 +165,24 @@ describe("RecommendClient", () => {
     render(<RecommendClient />);
     fireEvent.change(screen.getByLabelText(/שם בית העסק/), { target: { value: "מעדנייה" } });
     fireEvent.submit(screen.getByTestId("recommend-form"));
-    expect(await screen.findByText("צריך לפחות דרך אחת ליצור קשר עם בית העסק")).toBeInTheDocument();
+    const err = await screen.findByTestId("recommend-contact-error");
+    expect(err).toHaveTextContent("צריך לפחות דרך אחת ליצור קשר עם בית העסק");
     expect(api.post).not.toHaveBeenCalled();
+
+    // The rule is about the GROUP: the message must NOT be bound to the
+    // instagram field, which is how it first shipped — that red-bordered one
+    // box and read as "instagram is invalid". Caught by reading the 375
+    // capture; pinned here so it cannot come back.
+    const instagram = document.getElementById("recommend-instagram");
+    const describedBy = instagram.getAttribute("aria-describedby");
+    const desc = describedBy ? document.getElementById(describedBy) : null;
+    expect(desc?.textContent ?? "").not.toContain("צריך לפחות דרך אחת");
+    expect(err.closest("fieldset")).toBeTruthy();
+    // The error must be VISIBLY an error. `text-destructive` is not a token in
+    // this repo's Tailwind config, so it shipped once as a dead class and the
+    // message rendered in body colour — invisible to every content assertion.
+    // ui/Input.jsx:148 uses `text-error`; so does this.
+    expect(err.className).toContain("text-error");
   });
 
   it("a phone alone satisfies the contact rule", async () => {
@@ -215,9 +231,9 @@ describe("RecommendClient", () => {
     fillValid();
     fireEvent.submit(screen.getByTestId("recommend-form"));
 
-    expect(await screen.findByTestId("recommend-rate-limited")).toHaveTextContent(
-      "אפשר לנסות שוב בעוד שעה"
-    );
+    const limited = await screen.findByTestId("recommend-rate-limited");
+    expect(limited).toHaveTextContent("אפשר לנסות שוב בעוד שעה");
+    expect(limited.className).toContain("text-error");
     expect(screen.queryByTestId("recommend-error")).toBeNull();
     expect(screen.getByTestId("recommend-form")).toBeInTheDocument();
   });
@@ -229,7 +245,9 @@ describe("RecommendClient", () => {
     fillValid();
     fireEvent.submit(screen.getByTestId("recommend-form"));
 
-    expect(await screen.findByTestId("recommend-error")).toHaveTextContent("משהו השתבש");
+    const generic = await screen.findByTestId("recommend-error");
+    expect(generic).toHaveTextContent("משהו השתבש");
+    expect(generic.className).toContain("text-error");
     // The pair of assertions is the point: folding 429 into `error` would make
     // one of these two tests fail, which is why both exist.
     expect(screen.queryByTestId("recommend-rate-limited")).toBeNull();

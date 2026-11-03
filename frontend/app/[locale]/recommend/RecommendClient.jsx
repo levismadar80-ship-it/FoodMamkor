@@ -150,7 +150,10 @@ export default function RecommendClient() {
               />
             </div>
 
-            <fieldset className="mt-6">
+            <fieldset
+              className="mt-6"
+              aria-describedby={contactError ? "recommend-contact-error" : undefined}
+            >
               <legend className="block text-sm font-medium text-text">
                 {t("field_contact_label")}
               </legend>
@@ -161,7 +164,6 @@ export default function RecommendClient() {
                 value={form.instagram}
                 onChange={set("instagram")}
                 maxLength={100}
-                error={contactError ? t("error_contact_missing") : undefined}
               />
               <div className="mt-3">
                 <Input
@@ -182,6 +184,23 @@ export default function RecommendClient() {
                   maxLength={200}
                 />
               </div>
+              {/* The rule is about the GROUP — any one of the three satisfies
+                  it — so the message belongs to the fieldset, not to a field.
+                  It was first hung on `error` of the instagram Input, which
+                  red-bordered that one box and read as "instagram is invalid",
+                  contradicting the hint right above it. Caught by reading the
+                  375 capture (rule 23), not by any test. role="alert" so it is
+                  announced; aria-describedby ties it to the whole group. */}
+              {contactError && (
+                <p
+                  id="recommend-contact-error"
+                  role="alert"
+                  className="mt-2 text-sm text-error"
+                  data-testid="recommend-contact-error"
+                >
+                  {t("error_contact_missing")}
+                </p>
+              )}
             </fieldset>
 
             <div className="mt-6">
@@ -255,12 +274,12 @@ export default function RecommendClient() {
             </div>
 
             {status === "error" && (
-              <p className="mt-4 text-sm text-destructive" role="alert" data-testid="recommend-error">
+              <p className="mt-4 text-sm text-error" role="alert" data-testid="recommend-error">
                 {t("error_generic")}
               </p>
             )}
             {status === "rate_limited" && (
-              <p className="mt-4 text-sm text-destructive" role="alert" data-testid="recommend-rate-limited">
+              <p className="mt-4 text-sm text-error" role="alert" data-testid="recommend-rate-limited">
                 {t("error_rate_limited")}
               </p>
             )}
