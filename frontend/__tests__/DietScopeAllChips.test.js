@@ -192,6 +192,17 @@ describe("§6.4 — the 100% badges", () => {
     expect(allBadges({ has_vegan_products: true }).map((b) => b.key)).toEqual(["vegan"]);
   });
 
+  it("a business 100% vegan AND 100% vegetarian wears only «100% טבעוני» (vegan ⊆ vegetarian)", () => {
+    const keys = allBadges({ vegan_scope: "all", vegetarian_scope: "all" }).map((b) => b.key);
+    expect(keys).toContain("vegan_all");
+    expect(keys).not.toContain("vegetarian_all");
+    expect(keys).toEqual(["vegan_all"]);
+    // 100% vegetarian alone is untouched.
+    expect(
+      allBadges({ vegan_scope: "some", vegetarian_scope: "all" }).map((b) => b.key),
+    ).toEqual(["vegetarian_all"]);
+  });
+
   it("the two Zod-parsed feeds keep the fields the badge reads", () => {
     const parsed = ProducerSchema.parse({
       id: "p-1",
