@@ -126,6 +126,54 @@ class TestSubmitSuggestion:
         assert db.query(OutreachLead).one().instagram == "hazeitim"
 
 
+class TestNoExistenceOracle:
+    """The endpoint must not reveal whether a business is already queued.
+
+    The 2xx paths were built byte-identical for this reason. The security
+    review (04/11) found the 5xx path was not: a crafted `phone` that passes
+    validation but overflows outreach_leads.phone VARCHAR(20) only reaches the
+    INSERT on a miss — the duplicate branch returns before `phone` is written.
+    Miss -> 500, hit -> 201 is a clean binary oracle for an anonymous caller.
+
+    `_phone_validator` returns `cleaned` (only [\s()-] stripped) while
+    validating the DIGIT projection, so non-digits survive up to the field's
+    30-char input cap, over the 20-char column. Measured: the value below is
+    accepted and 25 chars long.
+
+    The assertion is on the INVARIANT, not on a status code, so it keeps
+    holding if the chosen remedy changes which code both paths return.
+    """
+
+    CRAFTED_PHONE = "+" * 15 + "0501234567"
+
+    def test_hit_and_miss_answer_identically_for_a_crafted_phone(
+        self, client, db, monkeypatch
+    ):
+        _silence_notify(monkeypatch)
+        body = _payload(instagram=None, phone=self.CRAFTED_PHONE)
+
+        miss = client.post(ENDPOINT, json=body)
+        # Pre-seed the same (name, city) so the second call takes the
+        # duplicate branch.
+        db.add(OutreachLead(name=_payload()["name"], city="חיפה", source="manual"))
+        db.commit()
+        hit = client.post(ENDPOINT, json=body)
+
+        assert miss.status_code == hit.status_code, (
+            f"existence oracle: miss={miss.status_code} hit={hit.status_code}"
+        )
+        assert miss.json() == hit.json()
+
+    def test_the_crafted_phone_never_500s(self, client, db, monkeypatch):
+        """A 422 or a 201 are both fine; an unhandled 500 is not — it is the
+        asymmetry above AND a bare error to an anonymous caller."""
+        _silence_notify(monkeypatch)
+        r = client.post(
+            ENDPOINT, json=_payload(instagram=None, phone=self.CRAFTED_PHONE)
+        )
+        assert r.status_code < 500, r.status_code
+
+
 class TestHoneypot:
     def test_filled_honeypot_returns_201_and_stores_nothing(
         self, client, db, monkeypatch
@@ -183,13 +231,24 @@ class TestDuplicateSuggestion:
         assert lead.suggested_by_email == "dana@example-suggester.co.il"
         assert lead.suggested_by_name == "דנה"
 
-    def test_suggestion_on_an_admin_typed_lead_fills_the_empty_slot(
+    def test_an_admin_typed_lead_cannot_be_CLAIMED_by_an_anonymous_caller(
         self, client, db, monkeypatch
     ):
-        """An admin-created lead has no first suggester to keep. Leaving the
-        slot empty would mean this person can never be thanked when the
-        business joins. `source` stays "manual" — the lead keeps its
-        provenance."""
+        """Security review (04/11) finding 2 — this assertion is INVERTED from
+        what chunk A shipped.
+
+        Chunk A filled the empty suggester slot on any matching lead, so that a
+        person suggesting a business the admin had already typed could still be
+        thanked. The review showed what that allows: the dedupe key is public
+        information about a food business and the match is case/trim-loose, so
+        an anonymous caller can guess (name, city), attach their own address to
+        a lead they had nothing to do with, and have the thank-you mail
+        redirected to them — while appearing in /admin/outreach as the person
+        who recommended a business that joined.
+
+        The suggestion is still recorded in `notes`, so nothing is lost for the
+        admin; only the hijackable slot-fill is gone.
+        """
         _silence_notify(monkeypatch)
         db.add(
             OutreachLead(
@@ -204,10 +263,93 @@ class TestDuplicateSuggestion:
         rows = db.query(OutreachLead).all()
         assert len(rows) == 1
         lead = rows[0]
-        assert lead.suggested_by_email == "dana@example-suggester.co.il"
-        assert lead.suggester_wants_update is True
+        assert lead.suggested_by_email is None, "an admin-typed lead was claimed"
+        assert lead.suggester_wants_update is False
         assert lead.source == "manual"
         assert lead.status == "contacted"
+        # The signal still reaches the admin.
+        assert "המלצה נוספת" in lead.notes
+
+    def test_a_community_leads_empty_slot_is_still_fillable(
+        self, client, db, monkeypatch
+    ):
+        """The control for the narrowing above: it must not freeze the case the
+        fill exists for — a community suggestion whose first suggester left no
+        address, followed by one who did."""
+        _silence_notify(monkeypatch)
+        assert (
+            client.post(
+                ENDPOINT, json=_payload(suggester_email=None, suggester_name=None)
+            ).status_code
+            == 201
+        )
+        assert db.query(OutreachLead).one().source == "community"
+
+        assert (
+            client.post(
+                ENDPOINT, json=_payload(suggester_email="late@example-suggester.co.il")
+            ).status_code
+            == 201
+        )
+        db.expire_all()
+        assert (
+            db.query(OutreachLead).one().suggested_by_email
+            == "late@example-suggester.co.il"
+        )
+
+    def test_a_repeat_suggestion_never_erases_the_first_suggester_name(
+        self, client, db, monkeypatch
+    ):
+        """REFEREE finding 1 (adversarial review): the adopt branch set
+        `suggested_by_name` unconditionally, so a second suggestion carrying an
+        email but NO name wiped the first suggester's name.
+
+        Both halves of the setup are reachable with the documented schema:
+        name and email are each optional, so a lead with a name and no email is
+        an ordinary first suggestion.
+        """
+        _silence_notify(monkeypatch)
+        # First: a name, no email.
+        assert (
+            client.post(
+                ENDPOINT, json=_payload(suggester_name="דנה", suggester_email=None)
+            ).status_code
+            == 201
+        )
+        lead = db.query(OutreachLead).one()
+        assert lead.suggested_by_name == "דנה"
+        assert lead.suggested_by_email is None
+
+        # Second: an email, no name → the empty email slot is filled, and the
+        # name that was already there must survive.
+        assert (
+            client.post(
+                ENDPOINT,
+                json=_payload(
+                    suggester_name=None, suggester_email="second@example-suggester.co.il"
+                ),
+            ).status_code
+            == 201
+        )
+        db.expire_all()
+        lead = db.query(OutreachLead).one()
+        assert lead.suggested_by_email == "second@example-suggester.co.il"
+        assert lead.suggested_by_name == "דנה", "the first suggester's name was erased"
+
+    def test_a_repeat_suggestion_with_a_name_still_fills_an_empty_name(
+        self, client, db, monkeypatch
+    ):
+        """The control for the fix above: `or existing.…` must not freeze the
+        field. An empty name slot still accepts the new suggester's name."""
+        _silence_notify(monkeypatch)
+        client.post(ENDPOINT, json=_payload(suggester_name=None, suggester_email=None))
+        client.post(
+            ENDPOINT,
+            json=_payload(suggester_name="יעל", suggester_email="y@example-suggester.co.il"),
+        )
+        db.expire_all()
+        lead = db.query(OutreachLead).one()
+        assert lead.suggested_by_name == "יעל"
 
     def test_a_different_city_is_a_different_business(self, client, db, monkeypatch):
         """Discriminates the dedupe key: same name, other city → a NEW row.
@@ -299,6 +441,33 @@ class TestLoggedInPrefill:
         _silence_notify(monkeypatch)
         user = make_user(db, email="member@example-suggester.co.il")
         r = client.post(ENDPOINT, json=_payload(), headers=auth_header(user))
+        assert r.status_code == 201
+        assert (
+            db.query(OutreachLead).one().suggested_by_email
+            == "dana@example-suggester.co.il"
+        )
+
+    def test_no_opt_in_means_the_account_email_is_NOT_stored(
+        self, client, db, monkeypatch
+    ):
+        """REFEREE finding 3: purpose limitation. The 04/11 notice promises the
+        address is used only to send the update, so with no opt-in there is no
+        purpose to store it for — and MEH-2638 would keep it 180 days."""
+        _silence_notify(monkeypatch)
+        user = make_user(db, email="member@example-suggester.co.il")
+        r = client.post(
+            ENDPOINT,
+            json=_payload(suggester_email=None, wants_update=False),
+            headers=auth_header(user),
+        )
+        assert r.status_code == 201
+        assert db.query(OutreachLead).one().suggested_by_email is None
+
+    def test_a_typed_email_is_kept_even_without_opt_in(self, client, db, monkeypatch):
+        """Control: the narrowing applies ONLY to the server-side prefill. An
+        address the visitor typed themselves is their own act and is stored."""
+        _silence_notify(monkeypatch)
+        r = client.post(ENDPOINT, json=_payload(wants_update=False))
         assert r.status_code == 201
         assert (
             db.query(OutreachLead).one().suggested_by_email

@@ -120,8 +120,15 @@ def submit_business_suggestion(
     # logged-in visitor who left the email field empty gets their account
     # address, so the thank-you can reach them. An email they DID type always
     # wins — overriding it would silently retarget their mail.
+    #
+    # The prefill is gated on `wants_update` (adversarial review, finding 3).
+    # The notice at the point of collection promises the address is used ONLY
+    # to send the update about this suggestion, so with no opt-in there is no
+    # purpose to hold it for — and MEH-2638 would then keep it for 180 days.
+    # This NARROWS the chunk-A line "prefill if the field is empty"; it does
+    # not touch an address the visitor typed, which is their own act.
     suggester_email = body.suggester_email or (
-        getattr(user, "email", None) if user is not None else None
+        getattr(user, "email", None) if user is not None and body.wants_update else None
     )
 
     existing = _find_existing_lead(db, _norm(body.name), _norm(body.city))
@@ -137,9 +144,30 @@ def submit_business_suggestion(
         # `source` is deliberately NOT rewritten to "community" — an
         # admin-created lead stays admin-created, so this lead keeps its
         # provenance and will not appear under ?source=community.
-        if not existing.suggested_by_email and suggester_email:
+        # `existing.source == COMMUNITY_SOURCE` is the security review's
+        # finding 2 (04/11): without it the slot-fill applied to ANY matching
+        # lead, including one an admin typed by hand — every such lead has an
+        # empty slot. Since the dedupe key is public information about a food
+        # business and the match is deliberately loose, an anonymous caller
+        # could guess (name, city), attach their own address to a lead they had
+        # nothing to do with, and have the thank-you redirected to them.
+        # Narrowed to leads this flow created: a community lead whose first
+        # suggester left no address can still be filled, which is the case the
+        # fill existed for.
+        if (
+            existing.source == COMMUNITY_SOURCE
+            and not existing.suggested_by_email
+            and suggester_email
+        ):
             existing.suggested_by_email = suggester_email
-            existing.suggested_by_name = body.suggester_name
+            # `or`, not a bare assign (adversarial review, finding 1): name and
+            # email are each optional, so a first suggestion can leave a name
+            # and no email. A later one carrying an email but no name used to
+            # overwrite that name with None and lose it. Filling an EMPTY name
+            # still works — tested both directions.
+            existing.suggested_by_name = (
+                body.suggester_name or existing.suggested_by_name
+            )
             existing.suggester_wants_update = body.wants_update
         db.commit()
         background_tasks.add_task(

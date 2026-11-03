@@ -4120,6 +4120,11 @@ class OutreachPrefillResponse(BaseModel):
 
 
 # --- MEH-2633 Community business suggestions ---
+#: outreach_leads.phone is VARCHAR(20) (models.py:896). Named here because the
+#: shared PhoneNumberField caps at 30 and cannot know the column it lands in.
+_OUTREACH_PHONE_MAX_LEN = 20
+
+
 class BusinessSuggestionCreate(BaseModel):
     """Public body for POST /business-suggestions (MEH-2633).
 
@@ -4181,6 +4186,31 @@ class BusinessSuggestionCreate(BaseModel):
     @classmethod
     def _normalize_instagram_handle(cls, v):
         return _normalize_instagram(v)
+
+    # MEH-2633 security review (04/11), finding 1. PhoneNumberField caps the
+    # INPUT at 30 chars and `_phone_validator` returns `cleaned` — only
+    # [\s()-] removed — while validating the DIGIT projection. So non-digits
+    # survive: "+" * 15 + "0501234567" is accepted at 25 chars, over
+    # outreach_leads.phone VARCHAR(20) (models.py:896), and the INSERT raised
+    # DataError -> an unhandled 500. That 500 was reachable ONLY on the
+    # new-lead path, because the duplicate branch returns before `phone` is
+    # written — which made it a clean existence oracle for an anonymous
+    # caller, defeating the property BusinessSuggestionAck exists to provide.
+    #
+    # Rejecting here means BOTH paths answer 422 for the same body, so the
+    # asymmetry is gone rather than merely harder to reach.
+    #
+    # Deliberately NOT fixed in `_phone_validator`: nine other schemas share
+    # it, and its own comment claims the digit regex "keeps every value inside
+    # the String(20) columns", which is false. That is a pre-existing latent
+    # bug with a wide blast radius and belongs to its own card, not to a
+    # merge-time patch.
+    @field_validator("phone")
+    @classmethod
+    def _phone_fits_the_column(cls, v):
+        if v is not None and len(v) > _OUTREACH_PHONE_MAX_LEN:
+            raise ValueError("מספר טלפון לא תקין")
+        return v
 
     @field_validator("suggester_name")
     @classmethod
