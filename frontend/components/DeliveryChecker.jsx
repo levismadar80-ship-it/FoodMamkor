@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { CheckCircle, XCircle } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { formatPrice } from "@/lib/utils";
+import { isDeliveryCheckerUsable } from "@/lib/delivery-coverage";
 import CitySearch from "@/components/CitySearch";
 import CoverageRequestCta from "@/components/CoverageRequestCta";
 import { useUserCity } from "@/lib/use-user-city";
@@ -26,7 +27,7 @@ import WhatsAppUpdatesPill, { whatsappUpdatesHref } from "@/components/WhatsAppU
  *           MEH-1455 — reused as-is, no modification);
  *           backend/app/services/delivery_validation.py (exclusion invariant).
  * History:  MEH-1536 (creation); MEH-2626 (WhatsApp updates pill inside a
- *           positive verdict; visibility gate exported as isDeliveryCheckerUsable).
+ *           positive verdict; visibility gate in lib/delivery-coverage.js, isDeliveryCheckerUsable).
  */
 
 // MEH-1536: exact-city matching only — trimmed + case-insensitive. NO fuzzy
@@ -62,21 +63,6 @@ export function matchDeliveryCity({ city, nationwide, excluded = [], areas = [] 
     day: area.delivery_day || null,
     minOrder: area.min_order ?? null,
   };
-}
-
-// Gate 1 (spec): only for producers that actually deliver.
-// Gate 2 (spec): nationwide with no exclusions — the answer is trivially
-//   "yes" for every city, so a checker would be pure noise.
-// Gate 3 (MEH-1536 judgment call, documented in the PR): not nationwide AND
-//   no delivery_areas rows — every possible answer would be "לא מגיעים",
-//   which contradicts the "משלוחים בתיאום מראש" line DeliveryBlock renders
-//   right below it. An always-negative checker is worse than none.
-// MEH-2626: exported so DeliveryBlock places the WhatsApp updates pill under
-// its nationwide badge on exactly the pages this returns false for — one rule,
-// read by both, so the pill never has two homes on one page.
-export function isDeliveryCheckerUsable({ offersDelivery, nationwide, excluded = [], areas = [] }) {
-  const hasExclusions = nationwide && excluded.length > 0;
-  return Boolean(offersDelivery) && (hasExclusions || (!nationwide && areas.length > 0));
 }
 
 // status → i18n key, so the verdict line stays a flat lookup rather than a
@@ -127,7 +113,7 @@ export default function DeliveryChecker({
     setChecked(userCity);
   }, [userCity]);
 
-  // Gates documented on isDeliveryCheckerUsable above.
+  // Gates documented on isDeliveryCheckerUsable (lib/delivery-coverage.js).
   if (!isDeliveryCheckerUsable({ offersDelivery, nationwide, excluded, areas })) return null;
 
   const result = matchDeliveryCity({ city: checked, nationwide, excluded, areas });

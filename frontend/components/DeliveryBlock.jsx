@@ -8,7 +8,8 @@ import { formatPrice } from "@/lib/utils";
 import { groupDeliveryAreas } from "@/lib/deliveryGroups";
 import { resolveDeliveryFee } from "@/lib/deliveryFee";
 import { getSingleOrderCutoff } from "@/lib/orderWindow";
-import DeliveryChecker, { isDeliveryCheckerUsable } from "@/components/DeliveryChecker";
+import DeliveryChecker from "@/components/DeliveryChecker";
+import { isDeliveryCheckerUsable } from "@/lib/delivery-coverage";
 import WhatsAppUpdatesPill, { whatsappUpdatesHref } from "@/components/WhatsAppUpdatesPill";
 import HoursText from "@/components/HoursText";
 

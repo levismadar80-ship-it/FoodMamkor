@@ -592,7 +592,7 @@ export default function GroupBuyDetailClient({ id }) {
           feedback-modal idiom (z-50) is unsafe here. */}
       {confirmCancelOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-[9500] flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/40 z-[9500] flex items-center justify-center p-4"
           onClick={() => setConfirmCancelOpen(false)}
         >
           <div

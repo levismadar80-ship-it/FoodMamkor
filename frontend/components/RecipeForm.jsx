@@ -154,6 +154,10 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
         setError(detail.reason || t("errors.rejected_default"));
       } else if (typeof detail === "string") {
         setError(detail);
+      } else if (detail?.code && typeof detail.message === "string") {
+        // MEH-1943 chunk 2: the {code, message, params} contract
+        // (products_not_found). Pydantic's 422 array still goes generic.
+        setError(detail.message);
       } else {
         setError(tError("generic"));
       }
