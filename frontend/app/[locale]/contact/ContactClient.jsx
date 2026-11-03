@@ -62,7 +62,7 @@ export default function ContactClient() {
             {t("subtitle")}
           </p>
 
-          <div className="bg-green-50/60 border border-border rounded-[12px] p-4 mb-6 text-sm">
+          <div className="bg-green-50/60 border border-border rounded-md p-4 mb-6 text-sm">
             <p className="flex items-center gap-2 flex-wrap">
               <Envelope size={16} className="text-primary" aria-hidden="true" />
               <span>{t("email_label")}</span>
@@ -134,7 +134,7 @@ export default function ContactClient() {
                   onChange={set("message")}
                   required
                   rows={5}
-                  className="w-full border border-border rounded-[12px] px-3 py-2 resize-none focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                  className="w-full border border-border rounded-md px-3 py-2 resize-none focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                 />
               </div>
 
@@ -150,7 +150,7 @@ export default function ContactClient() {
               />
 
               {status === "error" && (
-                <div className="text-sm text-red-600 bg-red-50 rounded-[12px] p-3">
+                <div className="text-sm text-red-600 bg-red-50 rounded-md p-3">
                   <p>{errorMsg}</p>
                   <a
                     href={mailtoHref}
@@ -164,7 +164,7 @@ export default function ContactClient() {
               <button
                 type="submit"
                 disabled={status === "loading"}
-                className="w-full bg-primary text-white py-3 rounded-[12px] hover:bg-primary-dark transition font-medium disabled:opacity-50"
+                className="w-full bg-primary text-white py-3 rounded-md hover:bg-primary-dark transition font-medium disabled:opacity-50"
               >
                 {status === "loading" ? t("submit_loading") : t("submit")}
               </button>

@@ -11,9 +11,8 @@ Does NOT: decide WHEN to run — the CronTrigger in startup.py owns timing
           (Israel Sunday 00:10). It also does not touch on_vacation /
           vacation_until; that flow has its own read-time auto-clear
           (schemas.py, MEH-155) and is deliberately untouched here.
-Related:  backend/app/schemas/schemas.py (state_to_legacy — the one owner
-          of the enum→legacy mapping, called only by the ProducerListOut
-          derivation); backend/app/startup.py (job wiring).
+Related:  backend/app/startup.py (job wiring). No enum→legacy mapping exists
+          any more — MEH-2272 removed the derived pair from every response.
 History:  MEH-1828 (creation) · MEH-2271 (MEH-1854 chunk 3a — state-only write).
 """
 
@@ -45,12 +44,11 @@ def reset_expired_full_week(db: Session) -> int:
 
     MEH-1828 Phase 0 found the write was THREE columns, because the legacy
     pair was still read off the row. MEH-2271 (MEH-1854 chunk 3a) inverted
-    that: `availability_state` is the only column written anywhere, and
-    ProducerListOut derives is_available_today / availability_status from it
-    at serialization time. So the one-column write below is now the COMPLETE
-    conversion, not the partial one that finding warned about — every reader
-    that used to see a stale availability_status='full' now reads a value
-    computed from the state this function just reset.
+    that: `availability_state` is the only column written anywhere, and MEH-2272
+    took the derived is_available_today / availability_status off every
+    response. So the one-column write below is now the COMPLETE conversion,
+    not the partial one that finding warned about — no reader sees the legacy
+    pair at all.
 
     The import of `_state_to_legacy` from the router is gone with it, which
     also removes the service→router edge MEH-1828 had to justify.

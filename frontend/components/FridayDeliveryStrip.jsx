@@ -31,7 +31,7 @@ function ProducerMiniCard({ producer }) {
   return (
     <Link
       href={producer.slug ? `/${producer.slug}` : `/producer/${producer.id}`}
-      className="flex-shrink-0 w-36 rounded-[12px] overflow-hidden border border-border bg-white transition group"
+      className="flex-shrink-0 w-36 rounded-md overflow-hidden border border-border bg-white transition group"
       aria-label={producer.name}
     >
       <div className="relative h-24 bg-green-50">
@@ -85,7 +85,7 @@ export default function FridayDeliveryStrip({ city, onVisibilityChange }) {
 
   return (
     <section
-      className="bg-[#F5F0E8] border-b border-border py-4 px-4"
+      className="bg-background border-b border-border py-4 px-4"
       aria-label={t("title")}
       // MEH-991: VRT hides this weekday-dependent strip via injected CSS (e2e/visual/parity.css)
       data-testid="friday-delivery-strip"

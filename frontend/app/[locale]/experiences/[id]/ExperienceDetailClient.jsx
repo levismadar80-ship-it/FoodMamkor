@@ -208,7 +208,7 @@ export default function ExperienceDetailClient() {
         )}
         <div
           aria-hidden="true"
-          className="lg:hidden absolute start-4 -bottom-7 w-16 rounded-[12px] bg-white shadow-lg text-center overflow-hidden"
+          className="lg:hidden absolute start-4 -bottom-7 w-16 rounded-md bg-white shadow-lg text-center overflow-hidden"
         >
           <span className="block bg-accent text-white text-[11px] font-bold py-0.5">{month}</span>
           <span className="block font-headline-display font-black text-[28px] leading-tight pt-1 numeric">{day}</span>
@@ -228,13 +228,13 @@ export default function ExperienceDetailClient() {
           />
 
           {justSubmitted && ex.status === "pending" && (
-            <div className="bg-green-50 border border-primary text-primary rounded-[12px] p-4 mb-4">
+            <div className="bg-green-50 border border-primary text-primary rounded-md p-4 mb-4">
               {t("just_submitted")}
             </div>
           )}
 
           {banner && !justSubmitted && (
-            <div className={`border rounded-[12px] p-4 mb-4 ${banner.className}`}>
+            <div className={`border rounded-md p-4 mb-4 ${banner.className}`}>
               <p className="font-medium">{banner.label}</p>
               {ex.status === "changes_requested" && ex.admin_feedback && (
                 <p className="text-sm mt-2 whitespace-pre-wrap">

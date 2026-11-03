@@ -69,7 +69,7 @@ export default function AdminCategoryRequestsPage() {
       </div>
 
       {groups.length === 0 && (
-        <div className="bg-white border border-border rounded-[12px] p-8 text-center text-fg-muted">
+        <div className="bg-white border border-border rounded-md p-8 text-center text-fg-muted">
           {t("category_requests.empty")}
         </div>
       )}
@@ -77,7 +77,7 @@ export default function AdminCategoryRequestsPage() {
       {groups.map((group) => (
         <div
           key={group.requested_name}
-          className="bg-white border border-border rounded-[12px] overflow-x-auto"
+          className="bg-white border border-border rounded-md overflow-x-auto"
         >
           <div className="px-5 py-4 border-b border-border flex items-center justify-between">
             <div>
