@@ -5802,6 +5802,17 @@
             ],
             "title": "Contact Name"
           },
+          "coverage_cta_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coverage Cta Enabled"
+          },
           "custom_questions": {
             "anyOf": [
               {
@@ -10474,6 +10485,17 @@
               }
             ],
             "title": "Contact Name"
+          },
+          "coverage_cta_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coverage Cta Enabled"
           },
           "custom_questions": {
             "anyOf": [
