@@ -37,6 +37,7 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import Input from "@/components/ui/Input";
 import CitySearch from "@/components/CitySearch";
+import CollectionNotice from "@/components/CollectionNotice";
 import api from "@/lib/api";
 
 const EMPTY = {
@@ -59,6 +60,10 @@ export default function RecommendClient() {
   // owner per string is the house rule (ContactClient.jsx:22-24 does the same
   // with two other namespaces).
   const tContact = useTranslations("contact");
+  // MEH-2633 (Sapir 04/11): the notice-at-collection line. It lives in the
+  // shared privacy namespace with the other seven, because the RULE is
+  // site-wide even though the sentence is per-surface.
+  const tNotice = useTranslations("privacy.collection_notice");
   const [form, setForm] = useState(EMPTY);
   const [status, setStatus] = useState("idle");
   const [contactError, setContactError] = useState(false);
@@ -111,7 +116,18 @@ export default function RecommendClient() {
           </h1>
           <p className="text-fg-muted text-center mb-8">{t("subtitle")}</p>
 
-          <form onSubmit={handleSubmit} noValidate data-testid="recommend-form">
+          {/* No `noValidate` (adversarial review, finding 2). ui/Input
+              forwards `required` as the NATIVE attribute, and MEH-2015 records
+              that intercepting it was a measured regression: the browser gate
+              IS the empty-field gate on this repo's public forms. With
+              noValidate an empty business name posted and came back 422, which
+              surfaced the generic error instead of naming the field.
+              City is a separate matter: CitySearch sets aria-required only
+              (CitySearch.jsx:286), not the native attribute, so an empty city
+              still falls through to the server's 422 — the same behaviour
+              every other CitySearch form in the repo has. Not changed here;
+              it would mean editing the canonical component. */}
+          <form onSubmit={handleSubmit} data-testid="recommend-form">
             <Input
               id="recommend-name"
               label={t("field_name_label")}
@@ -193,6 +209,19 @@ export default function RecommendClient() {
                 label={t("field_suggester_email_label")}
                 value={form.suggester_email}
                 onChange={set("suggester_email")}
+              />
+              {/* Privacy Protection Law Amendment 13 §11: the notice sits AT
+                  the point of collection — directly under the field, not only
+                  in a policy — and states purpose + who it does not go to.
+                  Sapir approved this wording 04/11. The link label is
+                  surface-owned (`recommend.privacy_link`) because the approved
+                  text is «מדיניות הפרטיות», while the shared register-page
+                  label reads «למדיניות הפרטיות»; reusing that would alter
+                  approved copy, editing it would alter the register pages. */}
+              <CollectionNotice
+                message={tNotice("business_suggestion")}
+                linkLabel={t("privacy_link")}
+                testId="recommend-collection-notice"
               />
             </div>
 

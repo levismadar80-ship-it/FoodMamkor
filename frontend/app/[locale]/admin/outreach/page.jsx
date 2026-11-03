@@ -360,33 +360,17 @@ export default function AdminOutreachPage() {
                             {t("outreach.actions.whatsapp")}
                           </button>
                         )}
-                        {/* MEH-2633. Rendered only for a lead that actually
-                            carries a suggester, and ENABLED only when all four
-                            of the endpoint's 409 rules are satisfied, so the
-                            button mirrors the server rather than guessing.
-                            Already thanked -> the date replaces it.
-                            The card asks for a tooltip naming WHY it is
-                            disabled; that needs four new strings and is PARKED
-                            for Sapir (see the PR). */}
-                        {lead.suggested_by_email && (
-                          lead.suggester_thanked_at ? (
-                            <span
-                              className="text-xs px-2 py-1 text-muted"
-                              data-testid={`thanked-at-${lead.id}`}
-                            >
-                              {new Date(lead.suggester_thanked_at).toLocaleDateString(locale)}
-                            </span>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => handleThankSuggester(lead.id)}
-                              disabled={!lead.suggester_wants_update || lead.status !== "registered"}
-                              data-testid={`thank-suggester-${lead.id}`}
-                              className="text-xs px-2 py-1 rounded-lg border border-border text-primary hover:bg-green-50 disabled:opacity-40 disabled:cursor-not-allowed"
-                            >
-                              {t("outreach.thank_suggester")}
-                            </button>
-                          )
+                        {/* MEH-2633 (Sapir 04/11): the control is shown for
+                            every suggestion-sourced lead, disabled with the
+                            reason rather than hidden — a missing button tells
+                            an admin nothing. */}
+                        {isSuggestion(lead) && (
+                          <ThankSuggesterCell
+                            lead={lead}
+                            locale={locale}
+                            t={t}
+                            onThank={handleThankSuggester}
+                          />
                         )}
                         <button
                           type="button"
@@ -435,6 +419,85 @@ export default function AdminOutreachPage() {
         />
       )}
     </div>
+  );
+}
+
+/**
+ * MEH-2633: which of the four thank-suggester rules blocks the action, or null
+ * when it is available.
+ *
+ * The ORDER is not cosmetic — it is the same order
+ * admin_outreach.thank_suggester raises its four 409s (no email -> no opt-in ->
+ * already thanked -> not registered). A lead can fail more than one rule at
+ * once, so a different order here would show a tooltip naming a reason the
+ * server would not have given. Change one side and you must change the other.
+ */
+function thankBlockedReason(lead) {
+  if (!lead.suggested_by_email) return "no_email";
+  if (!lead.suggester_wants_update) return "no_update_request";
+  if (lead.suggester_thanked_at) return "already_sent";
+  if (lead.status !== "registered") return "not_registered";
+  return null;
+}
+
+/** A lead the thank control is meaningful for: it came from a suggestion. */
+function isSuggestion(lead) {
+  return Boolean(
+    lead.source === "community" || lead.suggested_by_email || lead.suggested_by_name
+  );
+}
+
+/**
+ * MEH-2633 thank control. Enabled only when every rule passes; otherwise
+ * disabled WITH the reason, per Sapir's 04/11 ruling.
+ *
+ * The tooltip rides a wrapping <span>, not the button: `title` on a disabled
+ * button is unreliable (Safari suppresses its pointer events). The same text
+ * is also in an sr-only span the button points at with aria-describedby, so a
+ * screen-reader user gets the reason a sighted user gets from the hover — a
+ * title attribute alone reaches neither keyboard nor AT users.
+ */
+function ThankSuggesterCell({ lead, locale, t, onThank }) {
+  const thankedDate = lead.suggester_thanked_at
+    ? new Date(lead.suggester_thanked_at).toLocaleDateString(locale)
+    : null;
+  const reason = thankBlockedReason(lead);
+
+  if (!reason) {
+    return (
+      <button
+        type="button"
+        onClick={() => onThank(lead.id)}
+        data-testid={`thank-suggester-${lead.id}`}
+        className="text-xs px-2 py-1 rounded-lg border border-border text-primary hover:bg-green-50"
+      >
+        {t("outreach.thank_suggester")}
+      </button>
+    );
+  }
+
+  const tip = t(`outreach.thank_disabled.${reason}`, { date: thankedDate ?? "" });
+  const tipId = `thank-reason-${lead.id}`;
+  return (
+    <span className="inline-flex items-center gap-1.5" title={tip}>
+      <button
+        type="button"
+        disabled
+        aria-describedby={tipId}
+        data-testid={`thank-suggester-${lead.id}`}
+        className="text-xs px-2 py-1 rounded-lg border border-border text-primary disabled:opacity-40 disabled:cursor-not-allowed"
+      >
+        {t("outreach.thank_suggester")}
+      </button>
+      <span id={tipId} className="sr-only" data-testid={`thank-reason-${lead.id}`}>
+        {tip}
+      </span>
+      {thankedDate && (
+        <span className="text-xs text-muted" data-testid={`thanked-at-${lead.id}`}>
+          {thankedDate}
+        </span>
+      )}
+    </span>
   );
 }
 

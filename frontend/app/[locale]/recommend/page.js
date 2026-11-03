@@ -29,10 +29,20 @@ export async function generateMetadata({ params }) {
       images: ["/og-image.png"],
     },
     alternates: buildAlternates("/recommend", locale),
-    // Deliberately NO `robots: { index: false }`, unlike contact/page.js: that
-    // page is noindex as auth chrome, while this one is a public acquisition
-    // page that should be findable. Flagged in the PR as a choice, not a
-    // default — the card does not rule on it.
+    // MEH-2633 (Sapir 04/11): `noindex, follow` and OUT of the sitemap. It is
+    // a form page with no content of its own, and keeping it out of search
+    // also keeps bot traffic off an anonymous write endpoint. The way in is
+    // the footer link. `follow` is deliberate: the page links to /privacy and
+    // those links should still carry.
+    //
+    // This is exactly the pair sitemap.js:65 already documents for /register,
+    // /login and /contact — absent from the sitemap AND noindex on the page,
+    // because listing a noindex URL produces GSC "Submitted URL marked
+    // 'noindex'". The sitemap's staticDefs is a hand-maintained list that does
+    // NOT read lib/static-routes.json, so /recommend is out of it by default;
+    // __tests__/RecommendNoindex.test.js asserts both halves so neither can
+    // drift back.
+    robots: { index: false, follow: true },
   };
 }
 

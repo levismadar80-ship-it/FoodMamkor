@@ -80,6 +80,12 @@ vi.mock("next-intl", () => {
     // MEH-2633
     "admin.outreach.badge_community": "המלצת קהילה",
     "admin.outreach.thank_suggester": "שליחת תודה",
+    // MEH-2633 Sapir 04/11 — the four disabled reasons.
+    "admin.outreach.thank_disabled.no_email": "לא השאירו אימייל",
+    "admin.outreach.thank_disabled.no_update_request": "לא ביקשו עדכון",
+    "admin.outreach.thank_disabled.already_sent": "התודה נשלחה ב-{date}",
+    "admin.outreach.thank_disabled.not_registered":
+      "אפשר לשלוח תודה אחרי שבית העסק נרשם",
   };
   const resolve = (fullKey, values) => {
     const raw = flat[fullKey] ?? fullKey;
@@ -373,7 +379,10 @@ describe("MEH-2566 · counters are the status filter; the list pages by 25", () 
         expect(api.post).toHaveBeenCalledWith("/admin/outreach/lead-2/thank-suggester")
       );
       await screen.findByTestId("thanked-at-lead-2");
-      expect(screen.queryByTestId("thank-suggester-lead-2")).toBeNull();
+      // Sapir 04/11 changed this: the button stays on screen, disabled, with
+      // the date in its reason — it used to be removed entirely. A second
+      // send is still impossible because it is disabled.
+      expect(screen.getByTestId("thank-suggester-lead-2")).toBeDisabled();
     });
 
     it("thank button is DISABLED when the suggester asked for no update", async () => {
@@ -390,12 +399,75 @@ describe("MEH-2566 · counters are the status filter; the list pages by 25", () 
       expect(screen.getByTestId("thank-suggester-lead-2")).toBeDisabled();
     });
 
-    it("no thank control at all without a suggester email", async () => {
-      listRef.current = { data: [{ ...communityLead, suggested_by_email: null }] };
+    // ---- the four disabled reasons (Sapir 04/11) ----
+    // Each case below fails exactly ONE rule, so the tooltip it asserts can
+    // only come from that rule. That does NOT pin the ORDER — a reordered
+    // thankBlockedReason returns the same answer for every single-failure
+    // lead — so the ORDER gets its own case further down, with a lead that
+    // fails two rules at once. (An earlier version of this comment claimed
+    // these four covered the order. They did not.)
+    const REASONS = [
+      ["no suggester email", { suggested_by_email: null }, "לא השאירו אימייל"],
+      ["no opt-in", { suggester_wants_update: false }, "לא ביקשו עדכון"],
+      ["not registered yet", { status: "contacted" }, "אפשר לשלוח תודה אחרי שבית העסק נרשם"],
+    ];
+
+    for (const [label, override, tip] of REASONS) {
+      it(`disabled with its own reason — ${label}`, async () => {
+        listRef.current = { data: [{ ...communityLead, ...override }] };
+        render(<AdminOutreachPage />);
+        await screen.findByText("מעדניית הזיתים");
+        expect(screen.getByTestId("thank-suggester-lead-2")).toBeDisabled();
+        expect(screen.getByTestId("thank-reason-lead-2")).toHaveTextContent(tip);
+      });
+    }
+
+    it("already thanked → the reason carries the date", async () => {
+      listRef.current = {
+        data: [{ ...communityLead, suggester_thanked_at: "2026-11-03T10:00:00" }],
+      };
       render(<AdminOutreachPage />);
       await screen.findByText("מעדניית הזיתים");
-      expect(screen.queryByTestId("thank-suggester-lead-2")).toBeNull();
-      expect(screen.queryByTestId("thanked-at-lead-2")).toBeNull();
+      expect(screen.getByTestId("thank-suggester-lead-2")).toBeDisabled();
+      // The date is interpolated, not a bare "{date}" left on screen.
+      const reason = screen.getByTestId("thank-reason-lead-2");
+      expect(reason).toHaveTextContent("התודה נשלחה ב-");
+      expect(reason.textContent).not.toContain("{date}");
+    });
+
+    it("a lead failing TWO rules names the one the server would name first", async () => {
+      // No email AND no opt-in. admin_outreach.thank_suggester checks the
+      // email first, so "לא השאירו אימייל" is the only correct answer; a
+      // reordered thankBlockedReason reds exactly here and nowhere else.
+      listRef.current = {
+        data: [{ ...communityLead, suggested_by_email: null, suggester_wants_update: false }],
+      };
+      render(<AdminOutreachPage />);
+      await screen.findByText("מעדניית הזיתים");
+      const reason = screen.getByTestId("thank-reason-lead-2");
+      expect(reason).toHaveTextContent("לא השאירו אימייל");
+      expect(reason).not.toHaveTextContent("לא ביקשו עדכון");
+    });
+
+    it("the reason is reachable by AT, not just on hover", async () => {
+      // A bare title= attribute reaches neither keyboard nor screen-reader
+      // users, which is why the button points at an sr-only span.
+      listRef.current = { data: [{ ...communityLead, suggester_wants_update: false }] };
+      render(<AdminOutreachPage />);
+      await screen.findByText("מעדניית הזיתים");
+      const btn = screen.getByTestId("thank-suggester-lead-2");
+      const describedBy = btn.getAttribute("aria-describedby");
+      expect(describedBy).toBeTruthy();
+      expect(document.getElementById(describedBy)).toHaveTextContent("לא ביקשו עדכון");
+    });
+
+    it("a lead with no suggester at all gets no thank control", async () => {
+      // Keeps the disabled-button change from putting a dead control on every
+      // manual lead in the queue.
+      listRef.current = { data: [sampleLead] };
+      render(<AdminOutreachPage />);
+      await screen.findByText("מאפיית אביב");
+      expect(screen.queryByTestId("thank-suggester-lead-1")).toBeNull();
     });
 
     it("a 409 surfaces the backend's own Hebrew detail", async () => {

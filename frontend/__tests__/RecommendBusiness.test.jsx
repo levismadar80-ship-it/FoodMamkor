@@ -52,6 +52,10 @@ vi.mock("next-intl", () => {
     // plain t() call ship once. The assertion below depends on these tags.
     "contact.privacy_notice":
       "בשליחת הטופס את מאשרת שקראת את <link>מדיניות הפרטיות</link>.",
+    // MEH-2633 Sapir 04/11 — notice at collection, under the email field.
+    "privacy.collection_notice.business_suggestion":
+      "נשתמש באימייל רק כדי לעדכן אתכם על ההמלצה הזו. הוא לא עובר לבית העסק ולא משמש לשיווק.",
+    "recommend.privacy_link": "מדיניות הפרטיות",
   };
   return {
     useLocale: () => "he",
@@ -101,8 +105,54 @@ describe("RecommendClient", () => {
     // The failure this catches is visible to a human and invisible to a
     // tag-free mock: `t()` instead of `t.rich()` prints "<link>…</link>".
     render(<RecommendClient />);
-    expect(screen.getByText("מדיניות הפרטיות")).toBeInTheDocument();
+    // getAllByText, not getByText: since the collection notice landed there
+    // are TWO links with this label (the consent line under the button and the
+    // notice under the email field). Both must be real links.
+    const links = screen.getAllByText("מדיניות הפרטיות");
+    expect(links.length).toBe(2);
+    for (const el of links) expect(el.tagName).toBe("A");
     expect(document.body.textContent).not.toContain("<link>");
+  });
+
+  it("states the email's purpose at the point of collection, with a /privacy link", () => {
+    // Amendment 13 §11: purpose + who it is NOT shared with, next to the
+    // field. Asserting the sentence, not just the component's presence — an
+    // empty or wrong message would render a link with no disclosure.
+    render(<RecommendClient />);
+    const notice = screen.getByTestId("recommend-collection-notice");
+    expect(notice).toHaveTextContent("נשתמש באימייל רק כדי לעדכן אתכם על ההמלצה הזו");
+    expect(notice).toHaveTextContent("לא עובר לבית העסק ולא משמש לשיווק");
+    const link = screen.getByTestId("recommend-collection-notice-link");
+    expect(link).toHaveTextContent("מדיניות הפרטיות");
+    expect(link.getAttribute("href")).toContain("/privacy");
+  });
+
+  it("the notice sits with the email field, not at the end of the form", () => {
+    // "At the point of collection" is a position, not just a presence: a
+    // notice under the submit button is a different (weaker) disclosure.
+    render(<RecommendClient />);
+    const email = document.getElementById("recommend-suggester-email");
+    const notice = screen.getByTestId("recommend-collection-notice");
+    // The notice's IMMEDIATELY PRECEDING sibling must be the email field's
+    // block. `parentElement.contains(email)` was the first attempt and it is
+    // not a check: the <form> contains the email too, so moving the notice to
+    // the very end of the form satisfied it — a mutation proved that green.
+    // previousElementSibling is what distinguishes "next to the field" from
+    // "somewhere in the same form".
+    expect(notice.previousElementSibling).toBeTruthy();
+    expect(notice.previousElementSibling.contains(email)).toBe(true);
+  });
+
+  it("keeps the browser's empty-field gate: no noValidate, native required", () => {
+    // Adversarial review, finding 2. jsdom's fireEvent.submit does NOT run
+    // constraint validation, so there is no honest way to assert "an empty
+    // name is blocked" here — a test that claimed to would be measuring
+    // nothing. What IS checkable is the structure the native gate needs:
+    // the form must not opt out, and the field must carry the real attribute
+    // (ui/Input forwards `required`, MEH-2015). Both reds on the old code.
+    render(<RecommendClient />);
+    expect(screen.getByTestId("recommend-form").hasAttribute("novalidate")).toBe(false);
+    expect(document.getElementById("recommend-name").required).toBe(true);
   });
 
   it("uses the canonical CitySearch, not a hand-rolled city input", () => {

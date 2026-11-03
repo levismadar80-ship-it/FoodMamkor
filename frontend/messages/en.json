@@ -2006,7 +2006,13 @@
       },
       "call_script": "1. Opening (10 s): \"Hi, this is [name] from Mehamakor. I work with Sapir, who is building a site for local food businesses. Free, no commission. Do you have a minute?\" If she is busy: \"When is a good time to call back?\"\n2. Personal connection (20 s): \"I saw your [product / stall] at [where]. A business that makes its own food, not a reseller.\" Let her talk. Take notes.\n3. Permission: \"Can I take five minutes to explain, and you decide?\"\n4. The three things (60 s): \"One: free. No commission and no subscription. Two: customers contact you directly on WhatsApp. Three: a permanent page Google finds. A post disappears, the page stays.\" No numbers about businesses or visitors.\n5. The ask: \"I'm sending you a WhatsApp link now, your details are already filled in. Registration takes 5–10 minutes, and Sapir reviews and approves every business herself within 3 business days. Sound good?\" Yes → \"Prepare profile\" and send during the call. Maybe → link + one reminder in a week. No → \"Thanks for listening\", status \"Declined\", never contact again.",
       "badge_community": "Community pick",
-      "thank_suggester": "Send thanks"
+      "thank_suggester": "Send thanks",
+      "thank_disabled": {
+        "no_email": "No email was left",
+        "no_update_request": "No update was requested",
+        "already_sent": "Thanks sent on {date}",
+        "not_registered": "Thanks can be sent once the business has registered"
+      }
     },
     "kashrut": {
       "title": "Kashrut certificate approvals",
@@ -3259,6 +3265,7 @@
     "field_reason_label": "What makes it special? (optional)",
     "field_suggester_name_label": "Your name (optional)",
     "field_suggester_email_label": "Email (optional)",
+    "privacy_link": "Privacy policy",
     "wants_update_label": "Let me know when the business joins",
     "submit": "Send recommendation",
     "success": "Thank you! We got your recommendation. We'll check it and reach out to the business.",
@@ -3669,7 +3676,8 @@
       "event": "What you submit here is intended for publication on the site, after review.",
       "category_request": "The request is sent to us for review and is not published on the site.",
       "newsletter": "Your email is used only to send the updates.",
-      "contact": "Your message is sent to us so we can reply, and is not published on the site."
+      "contact": "Your message is sent to us so we can reply, and is not published on the site.",
+      "business_suggestion": "We use your email only to update you about this suggestion. It is not shared with the business or used for marketing."
     },
     "sections": {
       "operator": {
