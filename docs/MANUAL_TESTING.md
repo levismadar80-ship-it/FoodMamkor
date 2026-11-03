@@ -2176,7 +2176,7 @@ CC רץ אחרי Tier 1 — לכל מה ש-Tier 1 לא יכול אבל אינו 
 - ✅ → `frontend/e2e/flows/manual/producer-detail.spec.ts` (MT:PDP:3 + MT:PDP:4 מכסים) — **הוכרע 05/09 (MEH-2254): הדרישה «CTA מעל הקפל» מסופקת ע"י הפס הדביק, לא ע"י הכרטיס האינליין.** דפוס Wolt / Google Maps — CTA קבוע בתחתית המסך בנייד, וב-Pixel 5 (393×727) הפס נכנס בדיוק כשהכרטיס האינליין יוצא מה-viewport (PDP:3/4). ה-CTA האינליין ב-y=780→828, 101px מתחת לקפל על fixture דל במכוון, **תקין ואינו רגרסיה**; אין תיקון layout ואין טסט על מיקום הכרטיס. השורה המקורית (2026-04-18): «Mobile: inline CTA visible above fold — כפתור יצירת קשר נראה מיד מתחת לשם» — הוחלפה, לא נמחקה. מדידה: docs/qa/conversion-progress.md chunk 8, finding 2.
 - ✅ → `frontend/e2e/flows/manual/producer-detail.spec.ts` (MT:PDP:3) — Mobile: scroll past CTA → sticky bar slides in
 - ✅ → `frontend/e2e/flows/manual/producer-detail.spec.ts` (MT:PDP:4) — Mobile: scroll back to CTA → sticky bar slides out
-- [ ] Vacation state: banner visible, CTA muted, sticky bar muted — שיני `availability_status` ל-`vacation` בDB → banner ענבר ← כפתור ירוק כהה + "יחזרו בקרוב"
+- [ ] Vacation state: banner visible, CTA muted, sticky bar muted — שיני `availability_state` ל-`on_vacation` (עם `vacation_until`) בDB → banner ענבר ← כפתור ירוק כהה + "יחזרו בקרוב"
 - [ ] No images: category emoji + initials placeholder (not leaf) — עסק ללא תמונות → placeholder 120px עם emoji + 2 אותיות ראשונות
 - ✅ → `frontend/e2e/flows/manual/producer-detail.spec.ts` (MT:PDP:7) — With images: first image loads eagerly — `fetchpriority=high` + לא `loading=lazy` על התא הראשון, ולא-eager על תא משני (הבקרה שמבדילה)
 - ✅ → `frontend/e2e/flows/manual/producer-detail.spec.ts` (MT:PDP:8) — Desktop: no duplicate PrimaryContactButton — שני mounts, אחד נגיש, והוא של ה-sidebar
@@ -2823,7 +2823,7 @@ _(Desktop top-banner case is covered by the legend assertion above, MEH-1009.)_
 - [ ] **Image ratio** — resize viewport from 375→768→1280; image stays square on mobile, shifts to 4:3 at `lg` breakpoint. No letterboxing / stretching.
 - [ ] **Cloudinary smart-crop** — for a Cloudinary source image, the URL has `c_fill,g_auto,ar_4:3` injected. Portrait producer photos don't crop heads off.
 - [ ] **Rating gate** — producer with `reviews_count = 2` shows no rating; `reviews_count >= 3` shows `★ 4.5 · 12` in the name row, `dir="ltr"`.
-- [ ] **Availability dot** — `is_available_today=true` → green; `availability_status="vacation"` → orange (overrides even if `is_available_today=true`); neither → no dot.
+- [ ] **Availability dot** — `availability_state="available_today"` → green; `"on_vacation"` → orange; `"accepting_orders"` → no dot. (The legacy `is_available_today` / `availability_status` are in no API response since MEH-2272 — `curl /producers` shows neither key.)
 - [ ] **Description fallback** — `short_description` shown when present; else `top_product_name`; else row hidden. Descriptions past 80 chars get a trailing `…`.
 - [ ] **BadgeRow fold** — producer with `is_verified + is_recommended + organic_certified + grass_fed` shows exactly 2 pills (verified + recommended) per the new 8-key priority.
 - [ ] **Footer** — price truncates at `max-w-[120px]`; primary-method icon switches per `primary_contact_method` (whatsapp → WhatsappLogo, phone → Phone, website → Globe, email → EnvelopeSimple).
@@ -4397,3 +4397,13 @@ ROLLBACK;   -- חובה. הבדיקה היא האם ה-DELETE נכשל, לא ה�
 - [ ] לחיצה על «הגיעו ליעד» — **תוצאה מצופה:** השורה מתחלפת ל«הקבוצות האלה הגיעו למינימום. ההצטרפות נסגרה ובית העסק בקשר עם המשתתפות.»
 - [ ] לחיצה על «הושלמו» — **תוצאה מצופה:** «ההזמנות נמסרו למשתתפות.»
 - [ ] לוח העסק → קבוצות הרכש שלי, קבוצה שהגיעה למינימום — **תוצאה מצופה:** סטטוס «הגיעה ליעד» (לא «ממומנת»)
+
+## MEH-2626 — עדכונים בוואטסאפ שלב 1 (02/11/2026)
+- [ ] לוח העסק → ערוצי קשר: להדביק `https://whatsapp.com/channel/<id>` ולשמור — תוצאה מצופה: נשמר; הלייבל «עדכונים בוואטסאפ», ההסבר «מומלץ ערוץ וואטסאפ: …» מתחת לשדה.
+- [ ] אותו שדה עם `https://chat.whatsapp.com/<code>` ועם `https://www.whatsapp.com/channel/<id>` — תוצאה מצופה: שניהם נשמרים.
+- [ ] אותו שדה עם `https://example.com/x` — תוצאה מצופה: שגיאה «קישור לעדכונים בוואטסאפ חייב להתחיל ב-https://chat.whatsapp.com או ב-https://whatsapp.com/channel».
+- [ ] דף העסק, כרטיס יצירת הקשר — תוצאה מצופה: עיגול פעמון «עדכונים» בשורת הערוצים, באותו גודל כמו השאר; בלי קישור — אין פעמון. לחיצה פותחת את הקישור בלשונית חדשה.
+- [ ] «מגיעים אלייך?» → עיר שמגיעים אליה — תוצאה מצופה: מתחת לתשובה «כן, מגיעים ל…» כפתור «עדכונים מבית העסק בוואטסאפ» (לוגו ירוק, חץ אפור). עיר שלא מגיעים אליה — אין כפתור.
+- [ ] עסק עם משלוחים לכל הארץ בלי ערים מוחרגות — תוצאה מצופה: הכפתור מתחת ל«משלוחים לכל הארץ».
+- [ ] אחרי לחיצה על הפעמון או על הכפתור כמשתמשת מחוברת — תוצאה מצופה: שורה ב-`producer_contact_clicks` עם `method = whatsapp_group`, ושליחת ביקורת ראשונה מתקבלת בשרת (201).
+- [ ] עסק מאושר משנה את הקישור — תוצאה מצופה: התראה אחת לאדמין עם «קישור לעדכונים בוואטסאפ». שמירה בלי שינוי — אין התראה.

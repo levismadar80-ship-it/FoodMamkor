@@ -375,10 +375,30 @@ def _phone_validator(value: str | None) -> str | None:
     return cleaned
 
 
+# MEH-2626: the field is the business's WhatsApp UPDATES link — a group invite
+# (chat.whatsapp.com/<code>) or a channel (whatsapp.com/channel/<id>). Channels
+# are the recommended shape: members never see each other's numbers and there
+# is no member cap. `www.` is accepted for the channel host only — it is what
+# WhatsApp's own share sheet produces there; www.chat.whatsapp.com is not a
+# real host and stays rejected (MEH-1537 "subdomain drift" case).
+_WHATSAPP_GROUP_HOSTS = frozenset({"chat.whatsapp.com"})
+_WHATSAPP_CHANNEL_HOSTS = frozenset({"whatsapp.com", "www.whatsapp.com"})
+WHATSAPP_UPDATES_LINK_ERROR = (
+    "קישור לעדכונים בוואטסאפ חייב להתחיל ב-https://chat.whatsapp.com"
+    " או ב-https://whatsapp.com/channel"
+)
+
+
+def _is_whatsapp_channel_path(path: str) -> bool:
+    """`/channel/<id>` with a non-empty id — the bare site is not a channel."""
+    prefix = "/channel/"
+    return path.startswith(prefix) and path[len(prefix) :].strip("/") != ""
+
+
 def _whatsapp_group_validator(value: str | None) -> str | None:
-    """WhatsApp group invite links must be https://chat.whatsapp.com/… — any
-    other scheme/host is a dead or wrong link on the public contact card.
-    Empty/whitespace → None.
+    """WhatsApp updates link: https://chat.whatsapp.com/… (group) or
+    https://[www.]whatsapp.com/channel/<id> (channel). Any other scheme/host
+    is a dead or wrong link on the public page. Empty/whitespace → None.
     """
     if value is None:
         return None
@@ -386,8 +406,13 @@ def _whatsapp_group_validator(value: str | None) -> str | None:
     if stripped == "":
         return None
     parsed = urlparse(stripped)
-    if parsed.scheme != "https" or parsed.netloc.lower() != "chat.whatsapp.com":
-        raise ValueError("קישור קבוצת וואטסאפ חייב להתחיל ב-https://chat.whatsapp.com")
+    host = parsed.netloc.lower()
+    is_group = host in _WHATSAPP_GROUP_HOSTS
+    is_channel = host in _WHATSAPP_CHANNEL_HOSTS and _is_whatsapp_channel_path(
+        parsed.path
+    )
+    if parsed.scheme != "https" or not (is_group or is_channel):
+        raise ValueError(WHATSAPP_UPDATES_LINK_ERROR)
     return stripped
 
 
@@ -1963,43 +1988,9 @@ AVAILABILITY_STATES = (
 )
 
 
-# MEH-2271 (MEH-1854 chunk 3a): the ONE owner of the enum -> legacy mapping.
-# It used to live in routers/producer_me.py as `_state_to_legacy` with three
-# callers — the state endpoint, the expiry job, and nothing else read the
-# result back, so the pair of columns and the enum were two authorities over
-# one fact (workflow.md Smell #1). Chunk 3a inverts that: `availability_state`
-# is the only thing written, and the two legacy fields exist only as a derived
-# view on `ProducerListOut` for the one release before MEH-2272 removes them.
-#
-# MEH-2272 chunk 1 removed them from ProducerListOut. The remaining callers are
-# the untyped dict responses in routers/producer_me.py (the legacy toggle /
-# status endpoints and GET /dashboard); a later MEH-2272 chunk removes those
-# keys and this function with them.
-#
-# It lives here, beside AVAILABILITY_STATES, because schemas.py is the single
-# module both the routers and the services can import without a cycle —
-# services/availability_validation.py already imports AVAILABILITY_STATES from
-# here, so the arrow only points one way.
-_STATE_TO_LEGACY: dict[str, tuple[bool, str]] = {
-    "accepting_orders": (False, "available"),
-    "available_today": (True, "available"),
-    "full_this_week": (False, "full"),
-    "on_vacation": (False, "vacation"),
-}
-
-
-def state_to_legacy(state: str | None) -> tuple[bool, str]:
-    """Derive the legacy ``(is_available_today, availability_status)`` pair
-    from ``availability_state``.
-
-    Total by construction: an unknown or NULL state falls back to the default
-    row rather than raising. The column is ``NOT NULL`` with a server default
-    (models.py), so the fallback is unreachable through the ORM — it exists so
-    a hand-built dict or a fixture with a missing state cannot 500 a listing.
-    The previous version of this mapping was a bare dict subscript and would
-    have raised ``KeyError`` on exactly that input.
-    """
-    return _STATE_TO_LEGACY.get(state or "", _STATE_TO_LEGACY["accepting_orders"])
+# MEH-2272 chunk 2: `state_to_legacy` (enum -> legacy pair) is gone. Its last
+# callers were the dict responses in routers/producer_me.py; no response
+# carries is_available_today / availability_status any more.
 
 
 # MEH-1490: normalize the Google Place ID. Blank → None (admin clears the
@@ -2322,6 +2313,18 @@ class ProducerUpdate(BaseModel):
     @classmethod
     def _validate_whatsapp_group(cls, v):
         return _whatsapp_group_validator(v)
+
+    # MEH-1676: the owner's opt-out for the public «לא מגיעים אליך?» CTA
+    # (column since MEH-1677). Optional so an absent key leaves it alone; an
+    # explicit null is refused because the column is NOT NULL.
+    coverage_cta_enabled: bool | None = None
+
+    @field_validator("coverage_cta_enabled")
+    @classmethod
+    def _coverage_cta_not_null(cls, v):
+        if v is None:
+            raise ValueError("coverage_cta_enabled must be true or false")
+        return v
 
     # MEH-1608: URL/@ → bare handle (the renderer builds the link itself).
     @field_validator("instagram")
@@ -4136,6 +4139,10 @@ class GroupBuyOut(BaseModel):
     deadline: datetime
     city: str | None = None
     fulfillment_note: str | None = None
+    # MEH-2621: pickup and delivery as two answers. Rows created before this
+    # carry only fulfillment_note; new rows carry one or both of these.
+    pickup_note: str | None = None
+    delivery_note: str | None = None
     status: str
     commits_count: int = 0
     created_at: datetime
@@ -4168,11 +4175,16 @@ class GroupBuyCreate(BaseModel):
     deadline: datetime
     city: str | None = Field(None, max_length=100)
     # MEH-1457: free-text "מתי ואיך מקבלים" (OFN "Ready for").
-    # MEH-2453: required. A participant from another city reads it before she
-    # joins; without it she cannot tell whether the product reaches her.
-    # Existing rows keep NULL (the column stays nullable); only new creates
-    # must carry it.
-    fulfillment_note: str = Field(..., max_length=1000)
+    # MEH-2453: a participant from another city reads it before she joins;
+    # without it she cannot tell whether the product reaches her.
+    # MEH-2621: split into two answers, pickup and delivery (Shopify / Local
+    # Line ask the seller about each separately). At least ONE of the three
+    # is required (_require_pickup_or_delivery). fulfillment_note stays
+    # accepted so the pre-split dashboard form keeps working until it moves
+    # to the two fields (Expand-Contract, ADR-007).
+    fulfillment_note: str | None = Field(None, max_length=1000)
+    pickup_note: str | None = Field(None, max_length=1000)
+    delivery_note: str | None = Field(None, max_length=1000)
 
     # MEH-1626 chunk 1: description gets the same bleach every other
     # description field in this module has (EventCreate:2528, HomeProductCreate,
@@ -4184,15 +4196,29 @@ class GroupBuyCreate(BaseModel):
     def _sanitize_description(cls, v):
         return sanitize_text(v, max_length=2000)
 
-    @field_validator("fulfillment_note")
+    @field_validator("fulfillment_note", "pickup_note", "delivery_note")
     @classmethod
-    def _require_fulfillment_note(cls, v: str) -> str:
-        # Blank, or no real words ("." / "כן"): the MEH-555 letter floor, with
-        # the field's own message rather than the generic one.
+    def _clean_fulfillment_text(cls, v: str | None, info) -> str | None:
+        # Blank means "not given" — the model validator below decides whether
+        # that is allowed. Given but with no real words ("." / "כן"): the
+        # MEH-555 letter floor, with the field's own message.
+        if v is None:
+            return None
         v = v.strip()
+        if not v:
+            return None
         if len(_LETTER_REGEX.sub("", v)) < 3:
-            raise ValueError("יש לכתוב מתי ואיך מקבלים את המוצרים")
+            if info.field_name == "fulfillment_note":
+                raise ValueError("יש לכתוב מתי ואיך מקבלים את המוצרים")
+            raise ValueError("יש למלא איסוף או משלוח")
         return v
+
+    @model_validator(mode="after")
+    def _require_pickup_or_delivery(self):
+        # MEH-2621: copy approved by Sapir 30/10.
+        if not (self.pickup_note or self.delivery_note or self.fulfillment_note):
+            raise ValueError("יש למלא איסוף או משלוח")
+        return self
 
     @field_validator("deadline")
     @classmethod

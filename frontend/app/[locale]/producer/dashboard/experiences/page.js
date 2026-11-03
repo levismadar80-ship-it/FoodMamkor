@@ -143,7 +143,7 @@ export default function ManageExperiencesPage() {
             return (
             <li
               key={ex.id}
-              className={`bg-white border rounded-[12px] p-4 ${cancelled ? "border-yellow-300 bg-yellow-50/40" : "border-border"}`}
+              className={`bg-white border rounded-md p-4 ${cancelled ? "border-yellow-300 bg-yellow-50/40" : "border-border"}`}
             >
               <div className="flex items-start justify-between gap-3 flex-wrap">
                 <div className="min-w-0">

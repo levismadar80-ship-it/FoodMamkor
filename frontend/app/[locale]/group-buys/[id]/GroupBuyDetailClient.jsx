@@ -387,7 +387,7 @@ export default function GroupBuyDetailClient({ id }) {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full bg-primary text-white py-3 rounded-[12px] hover:bg-primary-dark transition font-medium disabled:opacity-50"
+              className="w-full bg-primary text-white py-3 rounded-md hover:bg-primary-dark transition font-medium disabled:opacity-50"
             >
               {submitting ? t("submitting") : user ? t("submit_join") : t("submit_login")}
             </button>
@@ -402,7 +402,7 @@ export default function GroupBuyDetailClient({ id }) {
         {/* Already committed */}
         {gb.user_committed && (
           <div className="space-y-3">
-            <div className="rounded-[12px] bg-green-50 border border-primary/20 px-4 py-3 text-primary text-sm font-medium text-center">
+            <div className="rounded-md bg-green-50 border border-primary/20 px-4 py-3 text-primary text-sm font-medium text-center">
               {t("committed_confirm")}
               {gb.user_commit?.quantity > 1 && t("committed_units", { count: gb.user_commit.quantity })}
             </div>
@@ -419,7 +419,7 @@ export default function GroupBuyDetailClient({ id }) {
         )}
 
         {expired && open && (
-          <div className="rounded-[12px] bg-border px-4 py-3 text-fg-muted text-sm text-center">
+          <div className="rounded-md bg-border px-4 py-3 text-fg-muted text-sm text-center">
             {t("deadline_passed")}
           </div>
         )}
@@ -455,16 +455,16 @@ export default function GroupBuyDetailClient({ id }) {
         </Link>
 
         {funded && (
-          <div className="mb-5 rounded-[12px] bg-primary text-white px-5 py-4 text-center">
+          <div className="mb-5 rounded-md bg-primary text-white px-5 py-4 text-center">
             <p className="text-xl font-bold">{t("funded_title")}</p>
             <p className="text-sm mt-1 opacity-90">{t("funded_subtitle", { name: gb.producer_name })}</p>
           </div>
         )}
         {cancelled && (
-          <div className="mb-5 rounded-[12px] bg-border px-5 py-3 text-center text-fg-muted text-sm">{t("cancelled")}</div>
+          <div className="mb-5 rounded-md bg-border px-5 py-3 text-center text-fg-muted text-sm">{t("cancelled")}</div>
         )}
         {fulfilled && (
-          <div className="mb-5 rounded-[12px] bg-green-50 border border-primary/20 px-5 py-3 text-center text-primary text-sm font-medium">{t("fulfilled")}</div>
+          <div className="mb-5 rounded-md bg-green-50 border border-primary/20 px-5 py-3 text-center text-primary text-sm font-medium">{t("fulfilled")}</div>
         )}
 
         <div className="grid gap-6 lg:gap-x-10 lg:grid-cols-[1fr_380px] lg:items-start">
@@ -512,7 +512,7 @@ export default function GroupBuyDetailClient({ id }) {
             {/* MEH-2544: how a group buy works, while it can still be joined —
                 copy approved by Sapir 29/10. */}
             {open && (
-              <section className="mt-6 rounded-[12px] bg-green-50 p-4" data-testid="group-buy-how">
+              <section className="mt-6 rounded-md bg-green-50 p-4" data-testid="group-buy-how">
                 <h2 className="font-headline-md text-lg font-bold text-text mb-3">{t("how_title")}</h2>
                 <ol className="space-y-2">
                   {[t("how_join"), t("how_unlock", { min: gb.min_participants }), t("how_no_commit")].map((line, i) => (
@@ -592,7 +592,7 @@ export default function GroupBuyDetailClient({ id }) {
           feedback-modal idiom (z-50) is unsafe here. */}
       {confirmCancelOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-[9500] flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/40 z-[9500] flex items-center justify-center p-4"
           onClick={() => setConfirmCancelOpen(false)}
         >
           <div

@@ -159,7 +159,7 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-[9000] flex items-end sm:items-center justify-center bg-primary/10 backdrop-blur-sm sm:px-4"
+      className="fixed inset-0 z-[9000] flex items-end sm:items-center justify-center bg-black/40 sm:px-4"
       onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
     >
       {/* MEH-2039: aria-label -> aria-labelledby. The panel HAS a visible <h2>,

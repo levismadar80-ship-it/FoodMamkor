@@ -134,7 +134,7 @@ export default function ReportInfoModal({ open, onClose, producerSlug }) {
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder={t("placeholder")}
-              className="w-full border rounded-[12px] px-3 py-2 text-sm text-start resize-none"
+              className="w-full border rounded-md px-3 py-2 text-sm text-start resize-none"
             />
           </div>
 
@@ -151,7 +151,7 @@ export default function ReportInfoModal({ open, onClose, producerSlug }) {
               maxLength={254}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full border rounded-[12px] px-3 py-2 text-sm text-start"
+              className="w-full border rounded-md px-3 py-2 text-sm text-start"
             />
           </div>
 
@@ -159,14 +159,14 @@ export default function ReportInfoModal({ open, onClose, producerSlug }) {
             <button
               type="submit"
               disabled={loading || !canSubmit}
-              className="flex-1 bg-primary text-white py-2 rounded-[12px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-50"
+              className="flex-1 bg-primary text-white py-2 rounded-md text-sm font-medium hover:bg-primary-dark transition disabled:opacity-50"
             >
               {loading ? t("submit_loading") : t("submit")}
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-[12px] text-sm text-fg-muted hover:text-text border transition"
+              className="px-4 py-2 rounded-md text-sm text-fg-muted hover:text-text border transition"
             >
               {t("close")}
             </button>

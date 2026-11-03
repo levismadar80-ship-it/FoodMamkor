@@ -179,20 +179,20 @@ export default function AdminOutreachPage() {
           placeholder={t("outreach.filters.city_placeholder")}
           value={cityFilter}
           onChange={(e) => setCityFilter(e.target.value)}
-          className="flex-1 border border-border rounded-[12px] px-3 py-2"
+          className="flex-1 border border-border rounded-md px-3 py-2"
         />
         <button
           type="button"
           onClick={() => setAddOpen(true)}
           data-testid="outreach-new-lead"
-          className="bg-primary text-white px-4 py-2 rounded-[12px] text-sm font-medium hover:bg-primary-dark transition"
+          className="bg-primary text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-dark transition"
         >
           {t("outreach.filters.new_lead")}
         </button>
       </div>
 
       {/* Leads table */}
-      <div className="bg-white border border-border rounded-[12px] overflow-hidden">
+      <div className="bg-white border border-border rounded-md overflow-hidden">
         <div className="overflow-x-auto">
           {/* MEH-2426: one card per row below md (globals.css .table-stack). */}
           <table className="table-stack w-full text-sm">
@@ -406,7 +406,7 @@ function AddLeadModal({ onClose, onCreated }) {
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 z-[9500] flex items-center justify-center p-4"
+      className="fixed inset-0 bg-black/40 z-[9500] flex items-center justify-center p-4"
       onClick={onClose}
     >
       <form
@@ -460,21 +460,21 @@ function AddLeadModal({ onClose, onCreated }) {
           value={form.notes}
           onChange={set("notes")}
           rows={2}
-          className="w-full border border-border rounded-[12px] px-3 py-2"
+          className="w-full border border-border rounded-md px-3 py-2"
         />
         {error && <p className="text-sm text-red-600" role="alert">{error}</p>}
         <div className="flex gap-2">
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 border border-border rounded-[12px] py-2 text-sm hover:bg-green-50"
+            className="flex-1 border border-border rounded-md py-2 text-sm hover:bg-green-50"
           >
             {t("common.cancel")}
           </button>
           <button
             type="submit"
             disabled={saving}
-            className="flex-1 bg-primary text-white rounded-[12px] py-2 text-sm font-medium disabled:opacity-60"
+            className="flex-1 bg-primary text-white rounded-md py-2 text-sm font-medium disabled:opacity-60"
           >
             {saving ? t("outreach.modal_add.submit_saving") : t("outreach.modal_add.submit")}
           </button>
@@ -488,7 +488,7 @@ function ScriptModal({ onClose }) {
   const t = useTranslations("admin");
   return (
     <div
-      className="fixed inset-0 bg-black/50 z-[9500] flex items-center justify-center p-4"
+      className="fixed inset-0 bg-black/40 z-[9500] flex items-center justify-center p-4"
       onClick={onClose}
     >
       <div
@@ -507,7 +507,7 @@ function ScriptModal({ onClose }) {
         <button
           type="button"
           onClick={onClose}
-          className="mt-4 w-full bg-primary text-white rounded-[12px] py-2 text-sm font-medium"
+          className="mt-4 w-full bg-primary text-white rounded-md py-2 text-sm font-medium"
         >
           {t("outreach.modal_script.close")}
         </button>
@@ -561,7 +561,7 @@ function WhatsAppModal({ lead, onClose, onPrefillMinted }) {
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 z-[9500] flex items-center justify-center p-4"
+      className="fixed inset-0 bg-black/40 z-[9500] flex items-center justify-center p-4"
       onClick={onClose}
     >
       <div
@@ -579,7 +579,7 @@ function WhatsAppModal({ lead, onClose, onPrefillMinted }) {
         {WA_TEMPLATE_KEYS.map((tpl) => (
           <div
             key={tpl.key}
-            className="border border-border rounded-[12px] p-3"
+            className="border border-border rounded-md p-3"
           >
             <div className="flex items-center justify-between mb-1">
               <h3 className="font-semibold">{t(`outreach.wa_templates.${tpl.key}_title`)}</h3>
@@ -608,7 +608,7 @@ function WhatsAppModal({ lead, onClose, onPrefillMinted }) {
         <button
           type="button"
           onClick={onClose}
-          className="w-full border border-border rounded-[12px] py-2 text-sm hover:bg-green-50"
+          className="w-full border border-border rounded-md py-2 text-sm hover:bg-green-50"
         >
           {t("outreach.modal_wa.close")}
         </button>

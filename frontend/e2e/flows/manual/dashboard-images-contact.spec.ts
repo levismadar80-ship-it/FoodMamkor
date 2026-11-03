@@ -245,7 +245,9 @@ test.describe("contact channels — the wire", () => {
     await openAt(page, "contact-channels");
     await b(page).getByLabel("טלפון", { exact: true }).fill("050-123-4567");
     await b(page).getByRole("textbox", { name: "אימייל" }).fill("owner@example.com");
-    await b(page).getByLabel("קישור לקבוצת וואטסאפ", { exact: true }).fill("https://chat.whatsapp.com/ABCdef123");
+    // MEH-2626: the field is the business's WhatsApp UPDATES link now
+    // (dashboard.producer.contact_channels.field_whatsapp_group).
+    await b(page).getByLabel("עדכונים בוואטסאפ", { exact: true }).fill("https://chat.whatsapp.com/ABCdef123");
     await save(page).click();
     await expect.poll(() => writes.filter((w) => w.method === "PUT").length).toBe(1);
     expect(writes.find((w) => w.method === "PUT")!.body).toMatchObject({ phone: "050-123-4567", contact_email: "owner@example.com", whatsapp_group: "https://chat.whatsapp.com/ABCdef123" });

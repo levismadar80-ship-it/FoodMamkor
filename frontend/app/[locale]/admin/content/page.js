@@ -26,7 +26,7 @@ export default function AdminContentPage() {
           <button
             key={s.id}
             onClick={() => setSection(s.id)}
-            className={`px-3 py-1.5 rounded-[12px] text-sm transition ${
+            className={`px-3 py-1.5 rounded-md text-sm transition ${
               section === s.id ? "bg-primary text-white" : "bg-white border border-border hover:bg-accent"
             }`}
           >
@@ -116,18 +116,18 @@ function CategoriesEditor() {
   }, [confirmDelete, deleting]);
 
   return (
-    <div className="bg-white border border-border rounded-[12px] p-5 space-y-4">
+    <div className="bg-white border border-border rounded-md p-5 space-y-4">
       <form onSubmit={create} className="flex gap-2">
         <input
           placeholder={t("content.categories.name_placeholder")}
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="flex-1 min-w-0 border border-border rounded-[12px] px-3 py-2"
+          className="flex-1 min-w-0 border border-border rounded-md px-3 py-2"
         />
         <button
           type="submit"
           disabled={isBusy("category-create")}
-          className="bg-primary text-white px-4 py-2 rounded-[12px] text-sm disabled:opacity-50"
+          className="bg-primary text-white px-4 py-2 rounded-md text-sm disabled:opacity-50"
         >
           {t("content.categories.add")}
         </button>
@@ -206,7 +206,7 @@ function CategoryRow({ cat, onSave, onDelete, saving }) {
     // MEH-2426: flex-wrap + a floor on the input — at 375 the input's
     // intrinsic width pushed the count and the save/delete buttons past the
     // card's edge; now they drop to a second line instead.
-    <li className="flex flex-wrap gap-2 items-center border border-border rounded-[12px] p-2">
+    <li className="flex flex-wrap gap-2 items-center border border-border rounded-md p-2">
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
@@ -276,22 +276,22 @@ function PageEditor({ slug }) {
     });
 
   return (
-    <div className="bg-white border border-border rounded-[12px] p-5 space-y-3">
+    <div className="bg-white border border-border rounded-md p-5 space-y-3">
       <input
         value={page.title}
         onChange={(e) => { setPage({ ...page, title: e.target.value }); setSaved(false); }}
         placeholder={t("content.page_editor.title_placeholder")}
-        className="w-full border border-border rounded-[12px] px-3 py-2 font-semibold"
+        className="w-full border border-border rounded-md px-3 py-2 font-semibold"
       />
       <textarea
         value={page.body}
         onChange={(e) => { setPage({ ...page, body: e.target.value }); setSaved(false); }}
         placeholder={t("content.page_editor.body_placeholder")}
         rows={16}
-        className="w-full border border-border rounded-[12px] px-3 py-2 font-mono text-sm"
+        className="w-full border border-border rounded-md px-3 py-2 font-mono text-sm"
       />
       <div className="flex items-center gap-3">
-        <button onClick={save} disabled={saving} className="bg-primary text-white px-4 py-2 rounded-[12px] text-sm disabled:opacity-50">
+        <button onClick={save} disabled={saving} className="bg-primary text-white px-4 py-2 rounded-md text-sm disabled:opacity-50">
           {saving ? t("content.page_editor.saving") : t("content.page_editor.save")}
         </button>
         {saved && <span className="text-sm text-primary">{t("content.page_editor.saved")}</span>}

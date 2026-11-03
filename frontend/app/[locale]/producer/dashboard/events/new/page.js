@@ -45,7 +45,7 @@ export default function NewEventPage() {
     return (
       <div className="max-w-2xl mx-auto px-4 py-12">
         <div
-          className="bg-green-50 border border-primary rounded-[12px] p-6 text-center"
+          className="bg-green-50 border border-primary rounded-md p-6 text-center"
           role="status"
         >
           <h1 className="font-headline-lg text-2xl font-bold text-text mb-2">

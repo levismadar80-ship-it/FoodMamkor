@@ -62,6 +62,17 @@ vi.mock("next/link", () => ({
   ),
 }));
 
+// MEH-1428: the "ערכת שיתוף" section mounts two canvas cards. Stubbed here for
+// the same reason the sibling cards above are: this file asserts a PAGE-level
+// contract, and a real canvas would drag Instagram-card geometry (and its icon
+// set) into it. Their own behaviour is covered by ReviewCardLayout.test.jsx +
+// ShareKitOwnerMode.test.jsx.
+vi.mock("@/components/StoryCardCanvas", () => ({
+  default: () => <div data-testid="story-card-canvas-stub" />,
+}));
+vi.mock("@/components/ReviewCardCanvas", () => ({
+  default: () => <div data-testid="review-card-canvas-stub" />,
+}));
 vi.mock("@phosphor-icons/react", () => ({
   PencilSimple: (p) => <span {...p} />,
   Warning: (p) => <span {...p} />,
@@ -82,6 +93,8 @@ vi.mock("@/components/InfoTooltip", () => ({ default: () => null }));
 vi.mock("@/components/PhoneVerifyCard", () => ({ default: () => null }));
 vi.mock("@/components/ui/Input", () => ({ default: () => null }));
 vi.mock("@/lib/holidays", () => ({ getUpcomingHoliday: () => null }));
+// MEH-1687 D: the holiday hint renders HolidayIcon (Phosphor names this file's icon mock lacks).
+vi.mock("@/components/HolidayIcon", () => ({ default: () => null }));
 // ProfileCompletenessCard is NOT mocked — we render the real canonical card so
 // its ring (role="progressbar") is the thing we count.
 

@@ -22,7 +22,6 @@ from app.models import (
     User,
 )
 from app.rate_limit import limiter
-from app.utils.stack_probe import log_depth
 
 # MEH-460 Pkg 5 (FINAL): ContactClickIn relocated to app.schemas.schemas per ADR-006 R1.
 from app.schemas.schemas import (
@@ -378,9 +377,6 @@ def random_producer(request: Request, db: Session = Depends(get_db)):
 @router.get("/producers/by-slug/{slug}", response_model=ProducerDetailOut)
 @limiter.limit("120/minute")
 def get_producer_by_slug(slug: str, request: Request, db: Session = Depends(get_db)):
-    # MEH-2119 measurement gate — TEMPORARY. Logs the request's frame depth
-    # on staging; see app/utils/stack_probe.py for the read-off and removal.
-    log_depth("producers.by_slug")
     producer = (
         db.query(Producer)
         .options(
@@ -605,7 +601,13 @@ def record_whatsapp_click(
     return {"detail": "logged"}
 
 
-_VALID_CONTACT_METHODS = frozenset({"phone", "instagram", "website", "email"})
+# MEH-2626: "whatsapp_group" = a tap on the business's WhatsApp updates link
+# (contact-card bell + delivery-checker pill). It is a contact click, not a
+# WhatsApp CTA click — those stay on /whatsapp-click — so it lands here, and
+# the first-review gate (reviews.py, MEH-2204) reads it with no change there.
+_VALID_CONTACT_METHODS = frozenset(
+    {"phone", "instagram", "website", "email", "whatsapp_group"}
+)
 
 
 @router.post("/producers/{producer_id}/contact-click", status_code=204)
@@ -678,9 +680,6 @@ def create_producer(
 def list_categories(
     request: Request, response: Response, db: Session = Depends(get_db)
 ):
-    # MEH-2119 measurement gate — TEMPORARY control route (same middleware
-    # chain, no joinedload under it). See app/utils/stack_probe.py.
-    log_depth("categories.list")
     # MEH-1833: the category list is the most static public payload we serve —
     # same edge policy as /producers. No auth or user state is read here.
     response.headers["Cache-Control"] = _PUBLIC_CATALOG_CACHE

@@ -208,7 +208,7 @@ function DecisionForm({ presets, presetsError, value, setValue, freeText, setFre
         onChange={(e) => setFreeText(e.target.value)}
         rows={4}
         aria-required={isOther}
-        className="w-full border border-border rounded-[12px] px-3 py-2 text-sm bg-white"
+        className="w-full border border-border rounded-md px-3 py-2 text-sm bg-white"
         placeholder={t("producers.decision.free_text_placeholder")}
       />
 
@@ -265,7 +265,7 @@ export default function ProducerDecisionModal({
   const handlePrimary = () => (groupOf(value) === REJECT ? onRequestConfirm() : onSubmit());
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-[9000] flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/40 z-[9000] flex items-center justify-center p-4">
       <div
         role="dialog"
         aria-modal="true"

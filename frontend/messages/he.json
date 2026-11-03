@@ -837,6 +837,9 @@
       "contact_sidebar": {
         "join_whatsapp_group": "הצטרפו לקבוצת וואטסאפ"
       },
+      "whatsapp_updates": {
+        "full": "עדכונים מבית העסק בוואטסאפ"
+      },
       "contact_card": {
         "status_open": "פתוח להזמנות",
         "aria": {
@@ -846,7 +849,7 @@
           "email": "אימייל",
           "facebook": "פייסבוק",
           "external_order": "טופס הזמנות",
-          "whatsapp_group": "קבוצת וואטסאפ"
+          "whatsapp_group": "עדכונים"
         },
         "single": {
           "phone": "חייגו אלינו",
@@ -855,7 +858,7 @@
           "email": "שלחו אימייל",
           "facebook": "פייסבוק",
           "external_order": "טופס הזמנה",
-          "whatsapp_group": "קבוצת הוואטסאפ"
+          "whatsapp_group": "עדכונים מבית העסק בוואטסאפ"
         },
         "email_fallback_toast": "לא הצלחנו לפתוח אפליקציית מייל — הכתובת הועתקה",
         "email_copy_failed_toast": "לא הצלחנו לפתוח אפליקציית מייל ולא להעתיק — נסו שוב",
@@ -1240,7 +1243,7 @@
       "title_alt": "בתי עסק עם משלוח היום"
     },
     "holiday_banner": {
-      "approaching": "{name} מתקרב {emoji}",
+      "approaching": "{name} מתקרב",
       "aria": "הודעת חג",
       "close_aria": "סגרו"
     }
@@ -1630,8 +1633,9 @@
           "instagram_placeholder": "maafiat_hasade",
           "website": "אתר",
           "website_placeholder": "https://...",
-          "whatsapp_group": "קישור לקבוצת וואטסאפ",
-          "whatsapp_group_placeholder": "https://chat.whatsapp.com/...",
+          "whatsapp_group": "עדכונים בוואטסאפ",
+          "whatsapp_group_placeholder": "https://whatsapp.com/channel/…",
+          "whatsapp_group_hint": "מומלץ ערוץ וואטסאפ: הלקוחות לא רואים זה את המספר של זה, ואין הגבלה על מספר המצטרפים.",
           "primary_contact": "אמצעי קשר ראשי",
           "primary_contact_whatsapp": "WhatsApp",
           "primary_contact_phone": "טלפון",
@@ -3422,7 +3426,19 @@
       "uploading": "בהעלאה...",
       "save_cloudinary": "שמרי ל-Cloudinary",
       "copy_caption": "העתקת caption",
-      "copied": "הועתק!"
+      "copied": "הועתק!",
+      "owner": {
+        "section_title": "ערכת שיתוף",
+        "section_subtitle": "פוסטים מוכנים לאינסטגרם ולסטטוס בוואטסאפ. מורידות, מעלות, וזהו.",
+        "download_story": "הורידי כרטיס סטורי",
+        "copy_caption": "העתיקי כיתוב",
+        "copied": "הכיתוב הועתק",
+        "review_title": "ביקורת לשיתוף",
+        "pick_review": "בחרי ביקורת",
+        "download_review": "הורידי כרטיס ביקורת",
+        "review_headline": "מה הלקוחות מספרות",
+        "reviews_empty": "עדיין אין ביקורות לשיתוף. <link>שלחי ללקוחות קישור לבקשת ביקורת</link>"
+      }
     }
   },
   "footer": {
@@ -4450,13 +4466,14 @@
         "phone_field_helper": "המספר הזה משמש גם לוואטסאפ וגם לשיחות",
         "field_instagram": "אינסטגרם (שם משתמש)",
         "field_website": "אתר (קישור)",
-        "field_whatsapp_group": "קישור לקבוצת וואטסאפ",
+        "field_whatsapp_group": "עדכונים בוואטסאפ",
+        "whatsapp_group_helper": "מומלץ ערוץ וואטסאפ: הלקוחות לא רואים זה את המספר של זה, ואין הגבלה על מספר המצטרפים.",
         "field_email": "אימייל",
         "field_facebook": "פייסבוק (קישור)",
         "field_external_order": "טופס הזמנות (קישור)",
         "instagram_placeholder": "maafiat_hasade",
         "website_placeholder": "https://example.co.il",
-        "whatsapp_group_placeholder": "https://chat.whatsapp.com/AbCd",
+        "whatsapp_group_placeholder": "https://whatsapp.com/channel/…",
         "email_placeholder": "hello@example.co.il",
         "facebook_placeholder": "https://facebook.com/hasade",
         "primary_legend": "הערוץ הראשי",
@@ -4850,6 +4867,10 @@
         "last_7d": "7 ימים",
         "last_30d": "30 ימים",
         "total": "הכל"
+      },
+      "coverage_cta": {
+        "label": "הצעה לפנות אליי מאזורים שאני לא מגיעה אליהם",
+        "helper": "כשזה דלוק, בעמוד שלך מופיע כפתור למי שגרה באזור שאת עדיין לא מגיעה אליו"
       }
     }
   },
