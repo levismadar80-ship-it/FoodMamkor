@@ -1,7 +1,7 @@
 """meh2612_rabanut_code_backfill
 
 Revision ID: 4b7e1d2c9a60
-Revises: 9c534d477f2b
+Revises: e4b7c1a9d2f6
 Create Date: 2026-10-30 14:30:00.000000+00:00
 
 MEH-2612: data-only. The staging demo seed (seed_demo_producers.py) wrote the
@@ -27,7 +27,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "4b7e1d2c9a60"
-down_revision: Union[str, None] = "9c534d477f2b"
+down_revision: Union[str, None] = "e4b7c1a9d2f6"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
