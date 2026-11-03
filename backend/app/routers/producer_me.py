@@ -1026,7 +1026,12 @@ def set_availability_status(
     if data.status not in AVAILABILITY_STATUSES:
         raise HTTPException(
             status_code=400,
-            detail=f"סטטוס לא תקין. חייב להיות אחד מתוך: {sorted(AVAILABILITY_STATUSES)}",
+            # MEH-1943 chunk 2: the allowed set moves to params, never the message.
+            detail={
+                "code": "invalid_availability_status",
+                "message": "סטטוס לא תקין",
+                "params": {"allowed": sorted(AVAILABILITY_STATUSES)},
+            },
         )
     # AUD-039: reject a past return date here too (Israel tz), so the legacy
     # surface can't persist an already-expired vacation.
@@ -1076,7 +1081,12 @@ def set_availability_state(
     if data.state not in AVAILABILITY_STATES:
         raise HTTPException(
             status_code=400,
-            detail=f"מצב לא תקין. חייב להיות אחד מתוך: {', '.join(AVAILABILITY_STATES)}",
+            # MEH-1943 chunk 2: the allowed set moves to params, never the message.
+            detail={
+                "code": "invalid_availability_state",
+                "message": "מצב לא תקין",
+                "params": {"allowed": list(AVAILABILITY_STATES)},
+            },
         )
 
     producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
@@ -1772,7 +1782,12 @@ def request_kashrut_badge(
     if body.badge_code not in VALID_BADGE_CODES:
         raise HTTPException(
             status_code=400,
-            detail=f"קוד badge לא תקין. ערכים מותרים: {', '.join(sorted(VALID_BADGE_CODES))}",
+            # MEH-1943 chunk 2: the allowed set moves to params, never the message.
+            detail={
+                "code": "invalid_badge_code",
+                "message": "קוד תג לא תקין",
+                "params": {"allowed": sorted(VALID_BADGE_CODES)},
+            },
         )
     producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
     if not producer:
