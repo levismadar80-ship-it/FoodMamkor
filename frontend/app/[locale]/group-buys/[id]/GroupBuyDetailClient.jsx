@@ -383,7 +383,7 @@ export default function GroupBuyDetailClient({ id }) {
               className="text-right"
               dir="ltr"
             />
-            {error && <p className="text-red-500 text-sm" role="alert">{error}</p>}
+            {error && <p className="text-error text-sm" role="alert">{error}</p>}
             <button
               type="submit"
               disabled={submitting}
@@ -410,7 +410,7 @@ export default function GroupBuyDetailClient({ id }) {
               <button
                 onClick={handleCancel}
                 disabled={cancelling}
-                className="w-full text-sm text-fg-muted hover:text-red-500 transition text-center"
+                className="w-full text-sm text-fg-muted hover:text-error transition text-center"
               >
                 {cancelling ? t("cancelling") : t("cancel_cta")}
               </button>

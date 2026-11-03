@@ -1246,7 +1246,7 @@ describe("RegisterProducerClient — address/city mismatch notice (MEH-2181)", (
     const notice = screen.getByTestId("register-address-city-mismatch");
     expect(notice).toHaveTextContent(`${K}.fields.address_city_mismatch`);
     // Not error-styled: the gold token, never a red one.
-    expect(notice).toHaveStyle({ color: "#8B6914" });
+    expect(notice).toHaveClass("text-accent"); // MEH-1687 B: was inline #8B6914
     // ...and no auto-correct affordance (MEH-213).
     expect(notice.querySelector("button")).toBeNull();
   });

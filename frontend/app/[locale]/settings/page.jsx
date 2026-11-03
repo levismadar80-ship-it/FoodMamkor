@@ -630,7 +630,7 @@ function PasswordChangeCard({ isOAuth }) {
             </button>
           </div>
           {mismatch && (
-            <p className="text-xs text-red-500 mt-1 text-right" role="alert">{t("mismatch_error")}</p>
+            <p className="text-xs text-error mt-1 text-right" role="alert">{t("mismatch_error")}</p>
           )}
         </div>
 
