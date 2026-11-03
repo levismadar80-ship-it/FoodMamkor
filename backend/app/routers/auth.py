@@ -287,7 +287,7 @@ async def register(
     if not result.ok:
         raise HTTPException(status_code=422, detail={"failures": result.failures})
 
-    # MEH-306: hash_password (passlib bcrypt) blocks ~50-200ms per call.
+    # MEH-306: hash_password (bcrypt) blocks ~50-200ms per call.
     # The handler is async (validate_password awaits HIBP), so the bcrypt
     # call must run off the event loop or it serializes concurrent signups.
     # MEH-328: pwd_hash is computed unconditionally to equalise timing —

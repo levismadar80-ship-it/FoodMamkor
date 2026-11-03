@@ -620,6 +620,19 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > cancelled is final in `OWNER_TRANSITIONS`, so a repeat is a 409 and sends
 > nothing. No latch column. An admin cancel (admin route) sends nothing.
 >
+> **MEH-2621 (MEH-2615 split, chunk 1) — pickup and delivery as two answers.**
+> Two new nullable `Text` columns on `group_buys`: `pickup_note`,
+> `delivery_note` (Expand-only, no backfill; `fulfillment_note` unchanged).
+> `POST /group-buys` accepts both (stripped, ≤1000, ≥3 letters when given);
+> **at least one of `pickup_note` / `delivery_note` / `fulfillment_note` is
+> required** — none → 422 «יש למלא איסוף או משלוח»
+> (`GroupBuyCreate._require_pickup_or_delivery`). Blank / whitespace / `null`
+> count as not given. `fulfillment_note` is now optional on write (kept for the
+> pre-split form) and keeps its own wordless-text message. `GET /group-buys`
+> and `GET /group-buys/{id}` return `pickup_note` and `delivery_note`
+> (`null` on older rows). This supersedes the "required" rule in the MEH-2453
+> note below.
+>
 > **MEH-2453 (MEH-2435 chunk 5) — how a participant from another city gets the
 > product.** `POST /group-buys`: `fulfillment_note` is now **required** — a
 > string, stripped, ≤1000 chars, at least 3 letters (the MEH-555 floor, so "."
