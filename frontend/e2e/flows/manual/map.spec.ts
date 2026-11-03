@@ -262,10 +262,11 @@ const P_ASH = producer(6, "עסק לדוגמה", null, [branch(31.67, 34.57, "א
 const PRODUCERS: Producer[] = [P_HAIFA, P_TLV, P_JLM, P_BSV, P_KSH, P_ASH];
 const MEAT = PRODUCERS.filter((p) => (p.categories as Array<{ name: string }>)[0]?.name === CAT_MEAT.name);
 const DAIRY = PRODUCERS.filter((p) => (p.categories as Array<{ name: string }>)[0]?.name === CAT_DAIRY.name);
-// avg_rating DESC, then reviews_count DESC, unrated last (mapSort.test.js:39 pins
-// the comparator; this is the fixture's answer under it, written out so a
-// reader can check it against the ratings above without running anything).
-const RATING_ORDER = [P_KSH, P_HAIFA, P_TLV, P_JLM, P_BSV, P_ASH].map((p) => p.name);
+// MEH-2617: weighted rating DESC — (avg·n + 4.0·5) / (n + 5), so one 4.9 review
+// no longer outranks twelve 4.8s — then reviews_count DESC, unrated last
+// (mapSort.test.js pins the comparator). Written out so a reader can check it:
+// HAIFA 4.56 · TLV 4.40 · JLM 4.19 · KSH 4.15 · BSV 3.98 · ASH unrated.
+const RATING_ORDER = [P_HAIFA, P_TLV, P_JLM, P_KSH, P_BSV, P_ASH].map((p) => p.name);
 const FEED_ORDER = PRODUCERS.map((p) => p.name);
 
 // A GPS fix 1 km south of P_HAIFA's branch — nearest by construction, and inside
@@ -1547,12 +1548,23 @@ test.describe("manual › /map service row fits narrow phones (MEH-2514)", () =>
   // MEH-2532: the upper edge of `max-[374px]`. The geometry above stays green
   // if the breakpoint drifts (375 has room for px-4), so the padding itself is
   // pinned on both sides of it.
-  for (const [width, pad] of [[374, 12], [375, 16]] as const) {
-    test(`${width}px: the service chips and «סינון» use ${pad}px inline padding`, async ({ page }, info) => {
+  // MEH-2598 (Sapir 29/10, «אחיד»): the service chips are now the shared
+  // PromotedServiceChips — one geometry on home, /producers and /map, `px-4`
+  // at every width — and the row became a sideways rail, so they no longer
+  // squeeze. The `max-[374px]` step survives on «סינון» alone
+  // (FilterChipsBar.jsx:167), which is what this pair now pins; the chips are
+  // pinned to the shared 16px on both sides so a per-surface fork shows here.
+  for (const [width, filtersPad] of [[374, 12], [375, 16]] as const) {
+    test(`${width}px: «סינון» uses ${filtersPad}px inline padding, the shared service chips 16px`, async ({ page }, info) => {
       mobileOnly(info, "the service row's phone geometry");
       await page.setViewportSize({ width, height: 700 });
       const { shell } = await gotoWithCatalog(page, info);
-      for (const [name, btn] of [["has_delivery", serviceChip(shell, "has_delivery")], ["pickup_points", serviceChip(shell, "pickup_points")], ["filters", filtersButton(shell)]] as const) {
+      const SHARED_CHIP_PAD = 16;
+      for (const [name, btn, pad] of [
+        ["has_delivery", serviceChip(shell, "has_delivery"), SHARED_CHIP_PAD],
+        ["pickup_points", serviceChip(shell, "pickup_points"), SHARED_CHIP_PAD],
+        ["filters", filtersButton(shell), filtersPad],
+      ] as const) {
         const padding = await btn.evaluate((el) => [getComputedStyle(el).paddingInlineStart, getComputedStyle(el).paddingInlineEnd]);
         expect(padding, `${name} inline padding at ${width}px`).toEqual([`${pad}px`, `${pad}px`]);
       }

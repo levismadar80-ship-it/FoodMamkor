@@ -72,7 +72,7 @@ export default function Toaster() {
         <div
           key={t.id}
           className={[
-            "pointer-events-auto w-fit min-w-[16rem] max-w-full px-5 py-3 rounded-[12px] shadow-lg text-sm font-medium flex items-center gap-3",
+            "pointer-events-auto w-fit min-w-[16rem] max-w-full px-5 py-3 rounded-md shadow-lg text-sm font-medium flex items-center gap-3",
             "animate-[toast-in_200ms_ease-out]",
             t.type === "error"
               ? "bg-red-600 text-white"

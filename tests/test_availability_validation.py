@@ -224,13 +224,11 @@ def test_read_path_auto_clear_uses_israel_day(monkeypatch):
             "name": "חוות סוף החופשה",
             "vacation_until": date(2026, 6, 4),
             "availability_state": "on_vacation",
-            "availability_status": "vacation",
         }
     )
 
     assert out.vacation_until is None
     assert out.availability_state == "accepting_orders"
-    assert out.availability_status == "available"
 
 
 def test_read_path_keeps_a_vacation_that_ends_today(monkeypatch):
@@ -251,7 +249,6 @@ def test_read_path_keeps_a_vacation_that_ends_today(monkeypatch):
             "name": "חוות סוף החופשה",
             "vacation_until": date(2026, 6, 5),
             "availability_state": "on_vacation",
-            "availability_status": "vacation",
         }
     )
 

@@ -198,7 +198,7 @@ producers (
   -- MEH-213 location mode + MEH-1255 nationwide exclusion list
   has_physical_location bool, offers_delivery bool,
   delivery_nationwide bool, delivery_excluded_cities text[] NOT NULL default '{}',
-  admin_notes, is_available_today bool,
+  admin_notes, is_available_today bool (legacy column — no reader, no writer, in no response since MEH-2272; dropped by MEH-2273),
   avg_rating float, reviews_count int,
   created_at, last_active_at,
   -- MEH-51: trust ladder + kashrut
@@ -757,11 +757,12 @@ DELETE /admin/producers/{id}/products/{product_id}  admin — 60/hour. Same 409 
 
 ```
 GET    /producers                                 public — filters: lat+lng+radius_km, require_physical, category, delivery_city,
-                                               has_delivery, verified, kosher, city (producer city), is_available_today, grass_fed,
+                                               has_delivery, verified, kosher, city (producer city), availability_state, grass_fed,
                                                near_city (MEH-2602 — the map's city filter: own city OR a location row in it OR
                                                delivers there; located ones ordered first, non-geo mode only)
                                                sort: newest (default) | rating (MEH-1483). "newest"/absent → created_at DESC
-                                               (byte-identical default). "rating" → avg_rating DESC, NULLs last, tiebreak
+                                               (byte-identical default). "rating" → unreviewed (NULL avg or reviews_count<1) LAST, then
+                                               MEH-2617 Bayesian score (avg*n + 4.0*5)/(n + 5) DESC, tiebreak
                                                reviews_count DESC, then created_at DESC. Any other value → 422 "ערך מיון לא חוקי".
                                                Non-geo only (geo results always order by distance). Drives the /producers sort select.
                                                MEH-1829: sort=distance (needs lat+lng, NO radius_km) → ORDER BY the MEH-1402
@@ -855,13 +856,13 @@ PATCH  /admin/name-change-requests/{id}          admin     — {status: approved
 GET    /producers/me/review-link                 producer  — MEH-1428 chunk 1: the owner's shareable "request a review" URL → {url}. Approved only (else 403 «קישור לבקשת ביקורת זמין רק לעסק מאושר»), 30/min, no DB write. URL = {frontend_url}/p/{slug}?rt=<token> (or /producer/{id} when the business has no slug). Token = HS256 JWT {producer_id, scope:"review_invite"}, 30-day TTL, NOT single-use (auth.py create_review_invite_token); a fresh call re-mints. Presenting it as `review_token` on POST /producers/{id}/reviews satisfies the contact-click gate for THAT producer only — invalid/expired/forged/other-producer → the same 403 as no contact; the row is stamped source="invite_link" (DB + admin payload only; the public ReviewOut never exposes it).
 POST   /producers/me/request-review              producer  — MEH-1236 resubmit-for-review ping: pending → notification-only (admin WhatsApp+email via notify_admin_producer_resubmit, fail-open), NO DB write, requested_changes stays admin-owned. MEH-2210: ALSO admits rejected → cap 3 (constants.MAX_PRODUCER_RESUBMISSIONS) else 409; then the MEH-2120 completeness gate (unverified phone → 422); then status=pending, resubmission_count+=1, resubmitted_at=now(), rejection_reason+code KEPT, admin ping «🔁 שליחה חוזרת #n», returns {detail,status,resubmission_count}. Every other status → 409. 3/hr
 POST   /producers/me/submit-for-review           producer  — MEH-2100 draft→pending: DRAFT ONLY (else 409), 5/hr. Server-side completeness gate via services/submission_gate.submission_missing_items — image>=1 · product>=1 · category>=1 · location · phone_verified. On failure 422 with detail={code:"submit_gate_incomplete", message, params:{missing:[codes]}} (MEH-1943 shape, so detailToMessage renders `message` unchanged). On success: status="pending", submitted_for_review_at=now(tz-aware), admin ping via notify_admin_new_producer (post-commit BackgroundTask, fail-open). License is deliberately NOT gated (MEH-971 license_pending must still reach the queue); opening hours are recommended, not required.
-POST   /producers/me/availability                 producer  — toggle is_available_today (legacy; mirrors to availability_state during MEH-291 7-day overlap)
-POST   /producers/me/availability-status           producer  — set durable status (legacy; mirrors to availability_state during MEH-291 overlap)
+POST   /producers/me/availability                 producer  — legacy toggle: accepting_orders ⇄ available_today on availability_state (full/vacation left alone); returns {availability_state} only (MEH-2272)
+POST   /producers/me/availability-status           producer  — legacy durable status → availability_state; returns {availability_state, vacation_until} (MEH-2272)
 POST   /producers/me/availability-state            producer  — MEH-291 unified 4-value enum
                                                               body: { state: "accepting_orders"|"available_today"|"full_this_week"|"on_vacation",
                                                                       vacation_until?: ISO date }
                                                               vacation_until REQUIRED when state="on_vacation" (422 with "תאריך חזרה לחופשה נדרש")
-                                                              dual-writes to is_available_today + availability_status during 7-day overlap
+                                                              the ONLY availability write (MEH-2271); no response carries the legacy pair (MEH-2272)
                                                               GET /producers supports ?availability_state= filter (opt-in; default listing unchanged in Phase 2)
 GET    /producers/me/locations                    producer  — MEH-1421 (MEH-1388 chunk 4a): owner's producer_locations
                                                               rows (ProducerLocationOwnerOut — full, incl. address/hours/phone),
@@ -890,7 +891,10 @@ GET    /producers/me/analytics                    producer  — feature/producer
                                                               favorites, the canonical interest record — decision A);
                                                               average_rating + total_reviews;
                                                               home_products_count; views_by_day (30-entry zero-filled
-                                                              series); top_cities (top 5, excludes NULL city)
+                                                              series); top_cities (top 5, excludes NULL city);
+                                                              coverage_requests (MEH-1676: [{city, count}], top 5,
+                                                              last 30 days, from producer_whatsapp_clicks rows whose
+                                                              city IS NOT NULL — i.e. «לא מגיעים ל{עיר}?» clicks only)
 
 # Producer detail — public (tracked, anonymous)
 GET    /producers/{id}?from=search|map|...        public    — GET that also logs a producer_page_views row

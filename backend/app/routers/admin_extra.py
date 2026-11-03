@@ -516,12 +516,20 @@ def _primary_location_points(db: Session, *, limit: int | None = None):
 
 
 def _last_six_months(now):
-    """[(month_start, next_month_start)] for the last 6 months, oldest first."""
-    buckets = []
-    for i in range(5, -1, -1):
-        ref = (now.replace(day=1) - timedelta(days=30 * i)).replace(day=1)
-        buckets.append((ref, (ref + timedelta(days=32)).replace(day=1)))
-    return buckets
+    """[(month_start, next_month_start)] for the last 6 months, oldest first.
+
+    A month starts at 00:00 on day 1 (UTC). `now.replace(day=1)` alone kept the
+    request's time of day, so whatever was created on day 1 before that hour
+    counted in the month before — on day 1 itself, everything created that day.
+    """
+    # Step back one calendar month at a time: fixed 30-day steps skipped
+    # February and doubled a neighbour whenever it was in the window.
+    ref = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    starts = [ref]
+    for _ in range(5):
+        ref = (ref - timedelta(days=1)).replace(day=1)
+        starts.append(ref)
+    return [(s, (s + timedelta(days=32)).replace(day=1)) for s in reversed(starts)]
 
 
 def _counts_per_bucket(db, id_col, created_col, buckets, *filters):

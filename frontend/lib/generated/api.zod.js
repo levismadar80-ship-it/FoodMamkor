@@ -737,7 +737,6 @@ export const UpdateStaticPageAdminPagesSlugPutResponse = /*#__PURE__*/ zod.objec
  */
 export const listProducersAdminProducersGetResponseAmbassadorDefault = false;
 export const listProducersAdminProducersGetResponseAvailabilityStateDefault = `accepting_orders`;
-export const listProducersAdminProducersGetResponseAvailabilityStatusDefault = `available`;
 export const listProducersAdminProducersGetResponseAvgRatingDefault = 0;
 export const listProducersAdminProducersGetResponseBusinessDaysWaitingDefault = 0;
 export const listProducersAdminProducersGetResponseCategoriesItemIsSystemDefault = false;
@@ -762,7 +761,6 @@ export const listProducersAdminProducersGetResponseHasProducerLicenseDefault = f
 export const listProducersAdminProducersGetResponseHasVeganProductsDefault = false;
 export const listProducersAdminProducersGetResponseHasVegetarianProductsDefault = false;
 export const listProducersAdminProducersGetResponseImagesDefault = [];
-export const listProducersAdminProducersGetResponseIsAvailableTodayDefault = false;
 export const listProducersAdminProducersGetResponseIsRecommendedDefault = false;
 export const listProducersAdminProducersGetResponseKashrutBadgesDefault = [];
 export const listProducersAdminProducersGetResponseKashrutCertsDefault = [];
@@ -809,7 +807,6 @@ export const ListProducersAdminProducersGetResponseItem = /*#__PURE__*/ zod.obje
   "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "ambassador": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseAmbassadorDefault),
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listProducersAdminProducersGetResponseAvailabilityStateDefault),
-  "availability_status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listProducersAdminProducersGetResponseAvailabilityStatusDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), listProducersAdminProducersGetResponseAvgRatingDefault),
   "business_days_waiting": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listProducersAdminProducersGetResponseBusinessDaysWaitingDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
@@ -868,7 +865,6 @@ export const ListProducersAdminProducersGetResponseItem = /*#__PURE__*/ zod.obje
   "images": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), listProducersAdminProducersGetResponseImagesDefault),
   "in_season_until": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.date(),/*#__PURE__*/ zod.null()])),
   "instagram": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "is_available_today": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseIsAvailableTodayDefault),
   "is_recommended": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersAdminProducersGetResponseIsRecommendedDefault),
   "kashrut_badges": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), listProducersAdminProducersGetResponseKashrutBadgesDefault),
   "kashrut_certs": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
@@ -967,7 +963,6 @@ export const ListProducersAdminProducersGetResponse = /*#__PURE__*/ zod.array(Li
  */
 export const adminCreateProducerAdminProducersPostResponseAmbassadorDefault = false;
 export const adminCreateProducerAdminProducersPostResponseAvailabilityStateDefault = `accepting_orders`;
-export const adminCreateProducerAdminProducersPostResponseAvailabilityStatusDefault = `available`;
 export const adminCreateProducerAdminProducersPostResponseAvgRatingDefault = 0;
 export const adminCreateProducerAdminProducersPostResponseBusinessDaysWaitingDefault = 0;
 export const adminCreateProducerAdminProducersPostResponseCategoriesItemIsSystemDefault = false;
@@ -992,7 +987,6 @@ export const adminCreateProducerAdminProducersPostResponseHasProducerLicenseDefa
 export const adminCreateProducerAdminProducersPostResponseHasVeganProductsDefault = false;
 export const adminCreateProducerAdminProducersPostResponseHasVegetarianProductsDefault = false;
 export const adminCreateProducerAdminProducersPostResponseImagesDefault = [];
-export const adminCreateProducerAdminProducersPostResponseIsAvailableTodayDefault = false;
 export const adminCreateProducerAdminProducersPostResponseIsRecommendedDefault = false;
 export const adminCreateProducerAdminProducersPostResponseKashrutBadgesDefault = [];
 export const adminCreateProducerAdminProducersPostResponseKashrutCertsDefault = [];
@@ -1039,7 +1033,6 @@ export const AdminCreateProducerAdminProducersPostResponse = /*#__PURE__*/ zod.o
   "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "ambassador": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseAmbassadorDefault),
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminCreateProducerAdminProducersPostResponseAvailabilityStateDefault),
-  "availability_status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminCreateProducerAdminProducersPostResponseAvailabilityStatusDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), adminCreateProducerAdminProducersPostResponseAvgRatingDefault),
   "business_days_waiting": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminCreateProducerAdminProducersPostResponseBusinessDaysWaitingDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
@@ -1098,7 +1091,6 @@ export const AdminCreateProducerAdminProducersPostResponse = /*#__PURE__*/ zod.o
   "images": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), adminCreateProducerAdminProducersPostResponseImagesDefault),
   "in_season_until": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.date(),/*#__PURE__*/ zod.null()])),
   "instagram": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "is_available_today": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseIsAvailableTodayDefault),
   "is_recommended": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminCreateProducerAdminProducersPostResponseIsRecommendedDefault),
   "kashrut_badges": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), adminCreateProducerAdminProducersPostResponseKashrutBadgesDefault),
   "kashrut_certs": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
@@ -1194,7 +1186,6 @@ export const AdminCreateProducerAdminProducersPostResponse = /*#__PURE__*/ zod.o
  */
 export const pendingProducersAdminProducersPendingGetResponseAmbassadorDefault = false;
 export const pendingProducersAdminProducersPendingGetResponseAvailabilityStateDefault = `accepting_orders`;
-export const pendingProducersAdminProducersPendingGetResponseAvailabilityStatusDefault = `available`;
 export const pendingProducersAdminProducersPendingGetResponseAvgRatingDefault = 0;
 export const pendingProducersAdminProducersPendingGetResponseBusinessDaysWaitingDefault = 0;
 export const pendingProducersAdminProducersPendingGetResponseCategoriesItemIsSystemDefault = false;
@@ -1219,7 +1210,6 @@ export const pendingProducersAdminProducersPendingGetResponseHasProducerLicenseD
 export const pendingProducersAdminProducersPendingGetResponseHasVeganProductsDefault = false;
 export const pendingProducersAdminProducersPendingGetResponseHasVegetarianProductsDefault = false;
 export const pendingProducersAdminProducersPendingGetResponseImagesDefault = [];
-export const pendingProducersAdminProducersPendingGetResponseIsAvailableTodayDefault = false;
 export const pendingProducersAdminProducersPendingGetResponseIsRecommendedDefault = false;
 export const pendingProducersAdminProducersPendingGetResponseKashrutBadgesDefault = [];
 export const pendingProducersAdminProducersPendingGetResponseKashrutCertsDefault = [];
@@ -1266,7 +1256,6 @@ export const PendingProducersAdminProducersPendingGetResponseItem = /*#__PURE__*
   "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "ambassador": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseAmbassadorDefault),
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), pendingProducersAdminProducersPendingGetResponseAvailabilityStateDefault),
-  "availability_status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), pendingProducersAdminProducersPendingGetResponseAvailabilityStatusDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), pendingProducersAdminProducersPendingGetResponseAvgRatingDefault),
   "business_days_waiting": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), pendingProducersAdminProducersPendingGetResponseBusinessDaysWaitingDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
@@ -1325,7 +1314,6 @@ export const PendingProducersAdminProducersPendingGetResponseItem = /*#__PURE__*
   "images": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), pendingProducersAdminProducersPendingGetResponseImagesDefault),
   "in_season_until": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.date(),/*#__PURE__*/ zod.null()])),
   "instagram": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "is_available_today": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseIsAvailableTodayDefault),
   "is_recommended": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), pendingProducersAdminProducersPendingGetResponseIsRecommendedDefault),
   "kashrut_badges": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), pendingProducersAdminProducersPendingGetResponseKashrutBadgesDefault),
   "kashrut_certs": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
@@ -1484,7 +1472,6 @@ export const AdminDeleteProducerAdminProducersProducerIdDeleteResponse = /*#__PU
  */
 export const adminGetProducerAdminProducersProducerIdGetResponseAmbassadorDefault = false;
 export const adminGetProducerAdminProducersProducerIdGetResponseAvailabilityStateDefault = `accepting_orders`;
-export const adminGetProducerAdminProducersProducerIdGetResponseAvailabilityStatusDefault = `available`;
 export const adminGetProducerAdminProducersProducerIdGetResponseAvgRatingDefault = 0;
 export const adminGetProducerAdminProducersProducerIdGetResponseBusinessDaysWaitingDefault = 0;
 export const adminGetProducerAdminProducersProducerIdGetResponseCategoriesItemIsSystemDefault = false;
@@ -1509,7 +1496,6 @@ export const adminGetProducerAdminProducersProducerIdGetResponseHasProducerLicen
 export const adminGetProducerAdminProducersProducerIdGetResponseHasVeganProductsDefault = false;
 export const adminGetProducerAdminProducersProducerIdGetResponseHasVegetarianProductsDefault = false;
 export const adminGetProducerAdminProducersProducerIdGetResponseImagesDefault = [];
-export const adminGetProducerAdminProducersProducerIdGetResponseIsAvailableTodayDefault = false;
 export const adminGetProducerAdminProducersProducerIdGetResponseIsRecommendedDefault = false;
 export const adminGetProducerAdminProducersProducerIdGetResponseKashrutBadgesDefault = [];
 export const adminGetProducerAdminProducersProducerIdGetResponseKashrutCertsDefault = [];
@@ -1556,7 +1542,6 @@ export const AdminGetProducerAdminProducersProducerIdGetResponse = /*#__PURE__*/
   "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "ambassador": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseAmbassadorDefault),
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminGetProducerAdminProducersProducerIdGetResponseAvailabilityStateDefault),
-  "availability_status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminGetProducerAdminProducersProducerIdGetResponseAvailabilityStatusDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), adminGetProducerAdminProducersProducerIdGetResponseAvgRatingDefault),
   "business_days_waiting": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminGetProducerAdminProducersProducerIdGetResponseBusinessDaysWaitingDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
@@ -1615,7 +1600,6 @@ export const AdminGetProducerAdminProducersProducerIdGetResponse = /*#__PURE__*/
   "images": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), adminGetProducerAdminProducersProducerIdGetResponseImagesDefault),
   "in_season_until": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.date(),/*#__PURE__*/ zod.null()])),
   "instagram": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "is_available_today": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseIsAvailableTodayDefault),
   "is_recommended": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminGetProducerAdminProducersProducerIdGetResponseIsRecommendedDefault),
   "kashrut_badges": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), adminGetProducerAdminProducersProducerIdGetResponseKashrutBadgesDefault),
   "kashrut_certs": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
@@ -1711,7 +1695,6 @@ export const AdminGetProducerAdminProducersProducerIdGetResponse = /*#__PURE__*/
  */
 export const adminUpdateProducerAdminProducersProducerIdPutResponseAmbassadorDefault = false;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseAvailabilityStateDefault = `accepting_orders`;
-export const adminUpdateProducerAdminProducersProducerIdPutResponseAvailabilityStatusDefault = `available`;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseAvgRatingDefault = 0;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseBusinessDaysWaitingDefault = 0;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseCategoriesItemIsSystemDefault = false;
@@ -1736,7 +1719,6 @@ export const adminUpdateProducerAdminProducersProducerIdPutResponseHasProducerLi
 export const adminUpdateProducerAdminProducersProducerIdPutResponseHasVeganProductsDefault = false;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseHasVegetarianProductsDefault = false;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseImagesDefault = [];
-export const adminUpdateProducerAdminProducersProducerIdPutResponseIsAvailableTodayDefault = false;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseIsRecommendedDefault = false;
 export const adminUpdateProducerAdminProducersProducerIdPutResponseKashrutBadgesDefault = [];
 export const adminUpdateProducerAdminProducersProducerIdPutResponseKashrutCertsDefault = [];
@@ -1783,7 +1765,6 @@ export const AdminUpdateProducerAdminProducersProducerIdPutResponse = /*#__PURE_
   "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "ambassador": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseAmbassadorDefault),
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminUpdateProducerAdminProducersProducerIdPutResponseAvailabilityStateDefault),
-  "availability_status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminUpdateProducerAdminProducersProducerIdPutResponseAvailabilityStatusDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), adminUpdateProducerAdminProducersProducerIdPutResponseAvgRatingDefault),
   "business_days_waiting": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminUpdateProducerAdminProducersProducerIdPutResponseBusinessDaysWaitingDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
@@ -1842,7 +1823,6 @@ export const AdminUpdateProducerAdminProducersProducerIdPutResponse = /*#__PURE_
   "images": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), adminUpdateProducerAdminProducersProducerIdPutResponseImagesDefault),
   "in_season_until": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.date(),/*#__PURE__*/ zod.null()])),
   "instagram": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "is_available_today": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseIsAvailableTodayDefault),
   "is_recommended": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), adminUpdateProducerAdminProducersProducerIdPutResponseIsRecommendedDefault),
   "kashrut_badges": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), adminUpdateProducerAdminProducersProducerIdPutResponseKashrutBadgesDefault),
   "kashrut_certs": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
@@ -3523,7 +3503,6 @@ export const PreviewClaimProducerClaimPreviewPostResponse = /*#__PURE__*/ zod.ob
  */
 export const listProducersProducersGetResponseAmbassadorDefault = false;
 export const listProducersProducersGetResponseAvailabilityStateDefault = `accepting_orders`;
-export const listProducersProducersGetResponseAvailabilityStatusDefault = `available`;
 export const listProducersProducersGetResponseAvgRatingDefault = 0;
 export const listProducersProducersGetResponseCategoriesItemIsSystemDefault = false;
 export const listProducersProducersGetResponseCategoriesDefault = [];
@@ -3546,7 +3525,6 @@ export const listProducersProducersGetResponseHasProducerLicenseDefault = false;
 export const listProducersProducersGetResponseHasVeganProductsDefault = false;
 export const listProducersProducersGetResponseHasVegetarianProductsDefault = false;
 export const listProducersProducersGetResponseImagesDefault = [];
-export const listProducersProducersGetResponseIsAvailableTodayDefault = false;
 export const listProducersProducersGetResponseIsRecommendedDefault = false;
 export const listProducersProducersGetResponseKashrutBadgesDefault = [];
 export const listProducersProducersGetResponseKashrutCertsDefault = [];
@@ -3582,7 +3560,6 @@ export const ListProducersProducersGetResponseItem = /*#__PURE__*/ zod.object({
 }).check(/*#__PURE__*/ zod.describe('Public read of an active, unexpired offer. The server never emits an\nexpired one (producer_listing \/ producers.py filter on expires_at), so a\nconsumer holding this object can render it without re-checking the date.')),/*#__PURE__*/ zod.null()])),
   "ambassador": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersProducersGetResponseAmbassadorDefault),
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listProducersProducersGetResponseAvailabilityStateDefault),
-  "availability_status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listProducersProducersGetResponseAvailabilityStatusDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), listProducersProducersGetResponseAvgRatingDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "emoji": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -3625,7 +3602,6 @@ export const ListProducersProducersGetResponseItem = /*#__PURE__*/ zod.object({
   "has_vegetarian_products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersProducersGetResponseHasVegetarianProductsDefault),
   "id": /*#__PURE__*/ zod.uuid(),
   "images": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), listProducersProducersGetResponseImagesDefault),
-  "is_available_today": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersProducersGetResponseIsAvailableTodayDefault),
   "is_recommended": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listProducersProducersGetResponseIsRecommendedDefault),
   "kashrut_badges": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), listProducersProducersGetResponseKashrutBadgesDefault),
   "kashrut_certs": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
@@ -3699,7 +3675,6 @@ export const ListProducersProducersGetResponse = /*#__PURE__*/ zod.array(ListPro
  */
 export const createProducerProducersPostResponseAmbassadorDefault = false;
 export const createProducerProducersPostResponseAvailabilityStateDefault = `accepting_orders`;
-export const createProducerProducersPostResponseAvailabilityStatusDefault = `available`;
 export const createProducerProducersPostResponseAvgRatingDefault = 0;
 export const createProducerProducersPostResponseCategoriesItemIsSystemDefault = false;
 export const createProducerProducersPostResponseCategoriesDefault = [];
@@ -3723,7 +3698,6 @@ export const createProducerProducersPostResponseHasProducerLicenseDefault = fals
 export const createProducerProducersPostResponseHasVeganProductsDefault = false;
 export const createProducerProducersPostResponseHasVegetarianProductsDefault = false;
 export const createProducerProducersPostResponseImagesDefault = [];
-export const createProducerProducersPostResponseIsAvailableTodayDefault = false;
 export const createProducerProducersPostResponseIsRecommendedDefault = false;
 export const createProducerProducersPostResponseKashrutBadgesDefault = [];
 export const createProducerProducersPostResponseKashrutCertsDefault = [];
@@ -3767,7 +3741,6 @@ export const CreateProducerProducersPostResponse = /*#__PURE__*/ zod.object({
 }).check(/*#__PURE__*/ zod.describe('Public read of an active, unexpired offer. The server never emits an\nexpired one (producer_listing \/ producers.py filter on expires_at), so a\nconsumer holding this object can render it without re-checking the date.')),/*#__PURE__*/ zod.null()])),
   "ambassador": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createProducerProducersPostResponseAmbassadorDefault),
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), createProducerProducersPostResponseAvailabilityStateDefault),
-  "availability_status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), createProducerProducersPostResponseAvailabilityStatusDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), createProducerProducersPostResponseAvgRatingDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "emoji": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -3819,7 +3792,6 @@ export const CreateProducerProducersPostResponse = /*#__PURE__*/ zod.object({
   "id": /*#__PURE__*/ zod.uuid(),
   "images": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), createProducerProducersPostResponseImagesDefault),
   "instagram": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "is_available_today": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createProducerProducersPostResponseIsAvailableTodayDefault),
   "is_recommended": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createProducerProducersPostResponseIsRecommendedDefault),
   "kashrut_badges": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), createProducerProducersPostResponseKashrutBadgesDefault),
   "kashrut_certs": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
@@ -3900,7 +3872,6 @@ export const CreateProducerProducersPostResponse = /*#__PURE__*/ zod.object({
  */
 export const getProducerBySlugProducersBySlugSlugGetResponseAmbassadorDefault = false;
 export const getProducerBySlugProducersBySlugSlugGetResponseAvailabilityStateDefault = `accepting_orders`;
-export const getProducerBySlugProducersBySlugSlugGetResponseAvailabilityStatusDefault = `available`;
 export const getProducerBySlugProducersBySlugSlugGetResponseAvgRatingDefault = 0;
 export const getProducerBySlugProducersBySlugSlugGetResponseCategoriesItemIsSystemDefault = false;
 export const getProducerBySlugProducersBySlugSlugGetResponseCategoriesDefault = [];
@@ -3924,7 +3895,6 @@ export const getProducerBySlugProducersBySlugSlugGetResponseHasProducerLicenseDe
 export const getProducerBySlugProducersBySlugSlugGetResponseHasVeganProductsDefault = false;
 export const getProducerBySlugProducersBySlugSlugGetResponseHasVegetarianProductsDefault = false;
 export const getProducerBySlugProducersBySlugSlugGetResponseImagesDefault = [];
-export const getProducerBySlugProducersBySlugSlugGetResponseIsAvailableTodayDefault = false;
 export const getProducerBySlugProducersBySlugSlugGetResponseIsRecommendedDefault = false;
 export const getProducerBySlugProducersBySlugSlugGetResponseKashrutBadgesDefault = [];
 export const getProducerBySlugProducersBySlugSlugGetResponseKashrutCertsDefault = [];
@@ -3968,7 +3938,6 @@ export const GetProducerBySlugProducersBySlugSlugGetResponse = /*#__PURE__*/ zod
 }).check(/*#__PURE__*/ zod.describe('Public read of an active, unexpired offer. The server never emits an\nexpired one (producer_listing \/ producers.py filter on expires_at), so a\nconsumer holding this object can render it without re-checking the date.')),/*#__PURE__*/ zod.null()])),
   "ambassador": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerBySlugProducersBySlugSlugGetResponseAmbassadorDefault),
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getProducerBySlugProducersBySlugSlugGetResponseAvailabilityStateDefault),
-  "availability_status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getProducerBySlugProducersBySlugSlugGetResponseAvailabilityStatusDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), getProducerBySlugProducersBySlugSlugGetResponseAvgRatingDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "emoji": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -4020,7 +3989,6 @@ export const GetProducerBySlugProducersBySlugSlugGetResponse = /*#__PURE__*/ zod
   "id": /*#__PURE__*/ zod.uuid(),
   "images": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), getProducerBySlugProducersBySlugSlugGetResponseImagesDefault),
   "instagram": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "is_available_today": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerBySlugProducersBySlugSlugGetResponseIsAvailableTodayDefault),
   "is_recommended": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerBySlugProducersBySlugSlugGetResponseIsRecommendedDefault),
   "kashrut_badges": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), getProducerBySlugProducersBySlugSlugGetResponseKashrutBadgesDefault),
   "kashrut_certs": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
@@ -4135,7 +4103,6 @@ export const ProducersCountProducersCountGetResponse = /*#__PURE__*/ zod.unknown
  */
 export const getMyProducerProducersMeGetResponseAmbassadorDefault = false;
 export const getMyProducerProducersMeGetResponseAvailabilityStateDefault = `accepting_orders`;
-export const getMyProducerProducersMeGetResponseAvailabilityStatusDefault = `available`;
 export const getMyProducerProducersMeGetResponseAvgRatingDefault = 0;
 export const getMyProducerProducersMeGetResponseCategoriesItemIsSystemDefault = false;
 export const getMyProducerProducersMeGetResponseCategoriesDefault = [];
@@ -4159,7 +4126,6 @@ export const getMyProducerProducersMeGetResponseHasProducerLicenseDefault = fals
 export const getMyProducerProducersMeGetResponseHasVeganProductsDefault = false;
 export const getMyProducerProducersMeGetResponseHasVegetarianProductsDefault = false;
 export const getMyProducerProducersMeGetResponseImagesDefault = [];
-export const getMyProducerProducersMeGetResponseIsAvailableTodayDefault = false;
 export const getMyProducerProducersMeGetResponseIsRecommendedDefault = false;
 export const getMyProducerProducersMeGetResponseKashrutBadgesDefault = [];
 export const getMyProducerProducersMeGetResponseKashrutCertsDefault = [];
@@ -4206,7 +4172,6 @@ export const GetMyProducerProducersMeGetResponse = /*#__PURE__*/ zod.object({
   "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "ambassador": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMyProducerProducersMeGetResponseAmbassadorDefault),
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getMyProducerProducersMeGetResponseAvailabilityStateDefault),
-  "availability_status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getMyProducerProducersMeGetResponseAvailabilityStatusDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), getMyProducerProducersMeGetResponseAvgRatingDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "emoji": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -4259,7 +4224,6 @@ export const GetMyProducerProducersMeGetResponse = /*#__PURE__*/ zod.object({
   "id": /*#__PURE__*/ zod.uuid(),
   "images": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), getMyProducerProducersMeGetResponseImagesDefault),
   "instagram": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "is_available_today": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMyProducerProducersMeGetResponseIsAvailableTodayDefault),
   "is_recommended": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getMyProducerProducersMeGetResponseIsRecommendedDefault),
   "kashrut_badges": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), getMyProducerProducersMeGetResponseKashrutBadgesDefault),
   "kashrut_certs": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
@@ -4347,7 +4311,6 @@ export const GetMyProducerProducersMeGetResponse = /*#__PURE__*/ zod.object({
  */
 export const updateMyProducerProducersMePutResponseAmbassadorDefault = false;
 export const updateMyProducerProducersMePutResponseAvailabilityStateDefault = `accepting_orders`;
-export const updateMyProducerProducersMePutResponseAvailabilityStatusDefault = `available`;
 export const updateMyProducerProducersMePutResponseAvgRatingDefault = 0;
 export const updateMyProducerProducersMePutResponseCategoriesItemIsSystemDefault = false;
 export const updateMyProducerProducersMePutResponseCategoriesDefault = [];
@@ -4371,7 +4334,6 @@ export const updateMyProducerProducersMePutResponseHasProducerLicenseDefault = f
 export const updateMyProducerProducersMePutResponseHasVeganProductsDefault = false;
 export const updateMyProducerProducersMePutResponseHasVegetarianProductsDefault = false;
 export const updateMyProducerProducersMePutResponseImagesDefault = [];
-export const updateMyProducerProducersMePutResponseIsAvailableTodayDefault = false;
 export const updateMyProducerProducersMePutResponseIsRecommendedDefault = false;
 export const updateMyProducerProducersMePutResponseKashrutBadgesDefault = [];
 export const updateMyProducerProducersMePutResponseKashrutCertsDefault = [];
@@ -4418,7 +4380,6 @@ export const UpdateMyProducerProducersMePutResponse = /*#__PURE__*/ zod.object({
   "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "ambassador": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateMyProducerProducersMePutResponseAmbassadorDefault),
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), updateMyProducerProducersMePutResponseAvailabilityStateDefault),
-  "availability_status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), updateMyProducerProducersMePutResponseAvailabilityStatusDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), updateMyProducerProducersMePutResponseAvgRatingDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "emoji": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -4471,7 +4432,6 @@ export const UpdateMyProducerProducersMePutResponse = /*#__PURE__*/ zod.object({
   "id": /*#__PURE__*/ zod.uuid(),
   "images": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), updateMyProducerProducersMePutResponseImagesDefault),
   "instagram": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "is_available_today": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateMyProducerProducersMePutResponseIsAvailableTodayDefault),
   "is_recommended": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateMyProducerProducersMePutResponseIsRecommendedDefault),
   "kashrut_badges": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), updateMyProducerProducersMePutResponseKashrutBadgesDefault),
   "kashrut_certs": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
@@ -5111,7 +5071,6 @@ export const RandomProducerProducersRandomGetResponse = /*#__PURE__*/ zod.object
  */
 export const getProducerProducersProducerIdGetResponseAmbassadorDefault = false;
 export const getProducerProducersProducerIdGetResponseAvailabilityStateDefault = `accepting_orders`;
-export const getProducerProducersProducerIdGetResponseAvailabilityStatusDefault = `available`;
 export const getProducerProducersProducerIdGetResponseAvgRatingDefault = 0;
 export const getProducerProducersProducerIdGetResponseCategoriesItemIsSystemDefault = false;
 export const getProducerProducersProducerIdGetResponseCategoriesDefault = [];
@@ -5135,7 +5094,6 @@ export const getProducerProducersProducerIdGetResponseHasProducerLicenseDefault 
 export const getProducerProducersProducerIdGetResponseHasVeganProductsDefault = false;
 export const getProducerProducersProducerIdGetResponseHasVegetarianProductsDefault = false;
 export const getProducerProducersProducerIdGetResponseImagesDefault = [];
-export const getProducerProducersProducerIdGetResponseIsAvailableTodayDefault = false;
 export const getProducerProducersProducerIdGetResponseIsRecommendedDefault = false;
 export const getProducerProducersProducerIdGetResponseKashrutBadgesDefault = [];
 export const getProducerProducersProducerIdGetResponseKashrutCertsDefault = [];
@@ -5179,7 +5137,6 @@ export const GetProducerProducersProducerIdGetResponse = /*#__PURE__*/ zod.objec
 }).check(/*#__PURE__*/ zod.describe('Public read of an active, unexpired offer. The server never emits an\nexpired one (producer_listing \/ producers.py filter on expires_at), so a\nconsumer holding this object can render it without re-checking the date.')),/*#__PURE__*/ zod.null()])),
   "ambassador": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerProducersProducerIdGetResponseAmbassadorDefault),
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getProducerProducersProducerIdGetResponseAvailabilityStateDefault),
-  "availability_status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getProducerProducersProducerIdGetResponseAvailabilityStatusDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), getProducerProducersProducerIdGetResponseAvgRatingDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "emoji": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -5231,7 +5188,6 @@ export const GetProducerProducersProducerIdGetResponse = /*#__PURE__*/ zod.objec
   "id": /*#__PURE__*/ zod.uuid(),
   "images": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), getProducerProducersProducerIdGetResponseImagesDefault),
   "instagram": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
-  "is_available_today": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerProducersProducerIdGetResponseIsAvailableTodayDefault),
   "is_recommended": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getProducerProducersProducerIdGetResponseIsRecommendedDefault),
   "kashrut_badges": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), getProducerProducersProducerIdGetResponseKashrutBadgesDefault),
   "kashrut_certs": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
@@ -5714,7 +5670,6 @@ export const UpdateProfileUsersMePatchResponse = /*#__PURE__*/ zod.object({
  */
 export const getFavoritesUsersMeFavoritesGetResponseProducerAmbassadorDefault = false;
 export const getFavoritesUsersMeFavoritesGetResponseProducerAvailabilityStateDefault = `accepting_orders`;
-export const getFavoritesUsersMeFavoritesGetResponseProducerAvailabilityStatusDefault = `available`;
 export const getFavoritesUsersMeFavoritesGetResponseProducerAvgRatingDefault = 0;
 export const getFavoritesUsersMeFavoritesGetResponseProducerCategoriesItemIsSystemDefault = false;
 export const getFavoritesUsersMeFavoritesGetResponseProducerCategoriesDefault = [];
@@ -5737,7 +5692,6 @@ export const getFavoritesUsersMeFavoritesGetResponseProducerHasProducerLicenseDe
 export const getFavoritesUsersMeFavoritesGetResponseProducerHasVeganProductsDefault = false;
 export const getFavoritesUsersMeFavoritesGetResponseProducerHasVegetarianProductsDefault = false;
 export const getFavoritesUsersMeFavoritesGetResponseProducerImagesDefault = [];
-export const getFavoritesUsersMeFavoritesGetResponseProducerIsAvailableTodayDefault = false;
 export const getFavoritesUsersMeFavoritesGetResponseProducerIsRecommendedDefault = false;
 export const getFavoritesUsersMeFavoritesGetResponseProducerKashrutBadgesDefault = [];
 export const getFavoritesUsersMeFavoritesGetResponseProducerKashrutCertsDefault = [];
@@ -5775,7 +5729,6 @@ export const GetFavoritesUsersMeFavoritesGetResponseItem = /*#__PURE__*/ zod.obj
 }).check(/*#__PURE__*/ zod.describe('Public read of an active, unexpired offer. The server never emits an\nexpired one (producer_listing \/ producers.py filter on expires_at), so a\nconsumer holding this object can render it without re-checking the date.')),/*#__PURE__*/ zod.null()])),
   "ambassador": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getFavoritesUsersMeFavoritesGetResponseProducerAmbassadorDefault),
   "availability_state": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getFavoritesUsersMeFavoritesGetResponseProducerAvailabilityStateDefault),
-  "availability_status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getFavoritesUsersMeFavoritesGetResponseProducerAvailabilityStatusDefault),
   "avg_rating": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.number(), getFavoritesUsersMeFavoritesGetResponseProducerAvgRatingDefault),
   "categories": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
   "emoji": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -5818,7 +5771,6 @@ export const GetFavoritesUsersMeFavoritesGetResponseItem = /*#__PURE__*/ zod.obj
   "has_vegetarian_products": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getFavoritesUsersMeFavoritesGetResponseProducerHasVegetarianProductsDefault),
   "id": /*#__PURE__*/ zod.uuid(),
   "images": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), getFavoritesUsersMeFavoritesGetResponseProducerImagesDefault),
-  "is_available_today": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getFavoritesUsersMeFavoritesGetResponseProducerIsAvailableTodayDefault),
   "is_recommended": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), getFavoritesUsersMeFavoritesGetResponseProducerIsRecommendedDefault),
   "kashrut_badges": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()), getFavoritesUsersMeFavoritesGetResponseProducerKashrutBadgesDefault),
   "kashrut_certs": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({

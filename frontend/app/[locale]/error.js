@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import Image from "next/image";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { WarningCircle } from "@phosphor-icons/react";
 import * as Sentry from "@sentry/nextjs";
 import { useTranslations } from "next-intl";
@@ -57,6 +57,7 @@ export default function GlobalError({ error, reset }) {
           </Link>
         </p>
         {process.env.NODE_ENV === "development" && error?.message && (
+          // rtl-ok — dev-only dump of an English error message: physical left IS its start.
           <pre className="mt-8 text-left text-xs text-fg-muted bg-white border border-border rounded-[8px] p-4 overflow-auto max-h-40">
             {error.message}
           </pre>

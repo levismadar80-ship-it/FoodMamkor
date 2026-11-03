@@ -25,7 +25,7 @@ import { useHomePage, LOAD_MORE_CAP } from "@/lib/use-home-page";
 
 const router = { replace: vi.fn(), push: vi.fn() };
 vi.mock("next/navigation", () => ({ useRouter: () => router }));
-vi.mock("@/i18n/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }) }));
+vi.mock("@/i18n/navigation", () => ({ Link: ({ href, children, prefetch, ...p }) => <a href={typeof href === "string" ? href : href?.pathname} {...p}>{children}</a>,  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }) }));
 vi.mock("next-intl", () => ({ useTranslations: () => (k) => k }));
 vi.mock("@/lib/analytics", () => ({ trackEvent: vi.fn() }));
 vi.mock("@/lib/i18n-key-map", () => ({ mapKey: (k) => k }));

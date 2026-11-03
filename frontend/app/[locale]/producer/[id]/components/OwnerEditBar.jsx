@@ -36,7 +36,7 @@ export default function OwnerEditBar({ producer }) {
 
   return (
     <div
-      className="flex items-center gap-2 mb-4 bg-accent/10 border border-accent/30 rounded-[12px] px-4 py-2 text-sm"
+      className="flex items-center gap-2 mb-4 bg-accent/10 border border-accent/30 rounded-md px-4 py-2 text-sm"
       role="note"
       aria-label={t("producer.detail.owner_bar.aria")}
     >

@@ -4772,11 +4772,6 @@
             "title": "Availability State",
             "type": "string"
           },
-          "availability_status": {
-            "default": "available",
-            "title": "Availability Status",
-            "type": "string"
-          },
           "avg_rating": {
             "default": 0,
             "title": "Avg Rating",
@@ -5150,11 +5145,6 @@
               }
             ],
             "title": "Instagram"
-          },
-          "is_available_today": {
-            "default": false,
-            "title": "Is Available Today",
-            "type": "boolean"
           },
           "is_recommended": {
             "default": false,
@@ -5764,17 +5754,6 @@
             ],
             "title": "Availability State"
           },
-          "availability_status": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Availability Status"
-          },
           "category_ids": {
             "anyOf": [
               {
@@ -6061,17 +6040,6 @@
               }
             ],
             "title": "Instagram"
-          },
-          "is_available_today": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is Available Today"
           },
           "is_recommended": {
             "anyOf": [
@@ -6728,11 +6696,6 @@
             "title": "Availability State",
             "type": "string"
           },
-          "availability_status": {
-            "default": "available",
-            "title": "Availability Status",
-            "type": "string"
-          },
           "avg_rating": {
             "default": 0,
             "title": "Avg Rating",
@@ -7031,11 +6994,6 @@
               }
             ],
             "title": "Instagram"
-          },
-          "is_available_today": {
-            "default": false,
-            "title": "Is Available Today",
-            "type": "boolean"
           },
           "is_recommended": {
             "default": false,
@@ -7559,11 +7517,6 @@
             "title": "Availability State",
             "type": "string"
           },
-          "availability_status": {
-            "default": "available",
-            "title": "Availability Status",
-            "type": "string"
-          },
           "avg_rating": {
             "default": 0,
             "title": "Avg Rating",
@@ -7765,11 +7718,6 @@
             },
             "title": "Images",
             "type": "array"
-          },
-          "is_available_today": {
-            "default": false,
-            "title": "Is Available Today",
-            "type": "boolean"
           },
           "is_recommended": {
             "default": false,
@@ -8891,11 +8839,6 @@
             "title": "Availability State",
             "type": "string"
           },
-          "availability_status": {
-            "default": "available",
-            "title": "Availability Status",
-            "type": "string"
-          },
           "avg_rating": {
             "default": 0,
             "title": "Avg Rating",
@@ -9206,11 +9149,6 @@
               }
             ],
             "title": "Instagram"
-          },
-          "is_available_today": {
-            "default": false,
-            "title": "Is Available Today",
-            "type": "boolean"
           },
           "is_recommended": {
             "default": false,
@@ -10489,17 +10427,6 @@
             ],
             "title": "Availability State"
           },
-          "availability_status": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Availability Status"
-          },
           "category_ids": {
             "anyOf": [
               {
@@ -10774,17 +10701,6 @@
               }
             ],
             "title": "Instagram"
-          },
-          "is_available_today": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is Available Today"
           },
           "is_recommended": {
             "anyOf": [
@@ -19344,22 +19260,6 @@
                 }
               ],
               "title": "Near City"
-            }
-          },
-          {
-            "in": "query",
-            "name": "is_available_today",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "boolean"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Is Available Today"
             }
           },
           {

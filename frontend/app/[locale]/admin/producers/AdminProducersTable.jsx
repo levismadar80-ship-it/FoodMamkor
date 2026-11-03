@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { Cow, Seal, Circle, StarOfDavid, Warning } from "@phosphor-icons/react";
 import Pagination from "@/components/Pagination";
@@ -641,7 +641,7 @@ export default function AdminProducersTable({
     onReload: onRetryLoad,
   };
   return (
-    <div className="bg-white border border-border rounded-[12px] overflow-hidden">
+    <div className="bg-white border border-border rounded-md overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <TableHead />

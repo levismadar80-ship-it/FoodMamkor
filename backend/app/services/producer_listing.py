@@ -43,6 +43,7 @@ from app.services.producer_queries import (
     attach_badge_fields,
     attach_favorites_counts,
     haversine_min_km,
+    weighted_rating_expr,
 )
 from app.services.verification_status import verified_current_condition
 from app.utils.clock import israel_now, israel_today, utc_now
@@ -130,11 +131,8 @@ _SIMPLE_FILTERS: list[tuple[str, str]] = [
     # consumers surface unverified "organic" producers — same risk family as the
     # MEH-986 free-text kosher filter. Re-add only behind an admin-verified flow
     # (post-launch, Option B). The column stays (owner/admin managed).
-    # MEH-2271 — ("is_available_today", "is_available_today") was here. The
-    # public parameter survives as a deprecated ALIAS onto availability_state
-    # (block below); it no longer reads the column, which nothing writes any
-    # more. Removing it from this table is what makes that true rather than
-    # leaving two filters racing on one parameter name.
+    # MEH-2271 removed the legacy boolean availability row from this table;
+    # MEH-2272 removed the alias that briefly replaced it.
     # MEH-291 — opt-in 4-value enum filter. Default listing behavior unchanged
     # in Phase 2 (Q4b — default-hide-on_vacation ships in Phase 3 with frontend).
     ("availability_state", "availability_state"),
@@ -295,14 +293,19 @@ def _build_base_queries(  # noqa: PLR0913 — keyword-only query axes; MEH-2602 
     # the distance too" switch below.
     distance_expr = None
     if sort == "rating":
-        # MEH-1483: avg_rating DESC, NULLs last, tiebreak reviews_count DESC,
-        # then created_at DESC. `avg_rating.is_(None)` is a boolean order key
-        # (FALSE < TRUE → non-null first, null last) — the portable nulls-last
-        # idiom this codebase already uses instead of .nullslast() (see
-        # search.py:85-87, which orders on `(Producer.name != q_clean)`).
-        order = (
+        # MEH-1483: rated first, NULL/unreviewed last, tiebreak reviews_count
+        # DESC, then created_at DESC. The `unrated` key is a boolean order key
+        # (FALSE < TRUE → rated first) — the portable nulls-last idiom this
+        # codebase already uses instead of .nullslast() (see search.py:85-87).
+        # MEH-2617: the primary key is the Bayesian average, not the raw mean,
+        # so one 5.0 review no longer outranks a 4.8 from twelve.
+        unrated = or_(
             Producer.avg_rating.is_(None),
-            Producer.avg_rating.desc(),
+            func.coalesce(Producer.reviews_count, 0) < 1,
+        )
+        order = (
+            unrated,
+            weighted_rating_expr().desc(),
             Producer.reviews_count.desc(),
             Producer.created_at.desc(),
         )
@@ -826,63 +829,9 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, P
         q = q.filter(veg_cond if vegetarian else ~veg_cond)
         count_q = count_q.filter(veg_cond if vegetarian else ~veg_cond)
 
-    # MEH-2271 (MEH-1854 chunk 3a) — the deprecated ?is_available_today=
-    # alias, mapped onto availability_state.
-    #
-    # It maps rather than 422s because the frontend is the only consumer and
-    # a hard removal is MEH-2272's job, one release later (Expand-Contract:
-    # the alias IS the expand phase for the parameter).
-    #
-    # `true`  -> availability_state == "available_today"
-    # `false` -> availability_state != "available_today"
-    #
-    # The false half is a real negation, not a no-op: the old column filter
-    # answered `is_available_today = FALSE`, and dropping that half would
-    # silently widen a caller's result set. The negation is safe against
-    # SQL's three-valued logic because availability_state is NOT NULL
-    # (models.py, server_default 'accepting_orders') — `!=` on a nullable
-    # column would drop unmarked rows from BOTH halves of the comparison.
-    #
-    # An explicit ?availability_state= WINS: the caller asked for the real
-    # filter, so the alias does not get to override or intersect it.
-    #
-    # MEH-2276 — what this block does NOT do, because it reads like a missing
-    # clause and is not one. It does not suppress the MEH-291 default-hide of
-    # `on_vacation` below, and that is correct rather than an oversight.
-    #
-    # The gate down there is `if filters.get("availability_state") is None`. It
-    # keys on the PRESENCE of that parameter, not on where this block sits, so
-    # moving these lines above or below it changes nothing. A caller passing
-    # only `?is_available_today=` leaves `availability_state` unset, the gate
-    # therefore fires, and the vacation exclusion applies to BOTH halves of the
-    # alias — which is exactly what the old column filter did, for the same
-    # reason, before 3a replaced it. Preserving that is the whole point of an
-    # alias.
-    #
-    # (Raised as a Minor on #3460 with the placement stated the other way round.
-    # The observation was worth recording, the premise was not: order is not the
-    # mechanism here, parameter presence is.)
-    legacy_available = filters.get("is_available_today")
-    if legacy_available is not None:
-        if filters.get("availability_state") is not None:
-            logger.warning(
-                "deprecated_filter_ignored",
-                filter="is_available_today",
-                reason="explicit availability_state wins",
-                removed_in="MEH-2272",
-            )
-        else:
-            logger.warning(
-                "deprecated_filter_used",
-                filter="is_available_today",
-                mapped_to="availability_state",
-                value=bool(legacy_available),
-                removed_in="MEH-2272",
-            )
-            avail_cond = Producer.availability_state == "available_today"
-            cond = avail_cond if legacy_available else ~avail_cond
-            q = q.filter(cond)
-            count_q = count_q.filter(cond)
+    # MEH-2272 (MEH-1854 chunk 3b): the legacy boolean alias that MEH-2271
+    # mapped onto availability_state is gone. The router no longer declares
+    # the parameter, so nothing reaches this function under that key.
 
     # MEH-291 Phase 3 — default-hide on_vacation. When the caller does NOT
     # explicitly filter by availability_state, exclude vacation producers from
@@ -1246,8 +1195,7 @@ def build_producers_query(db: Session, **filters: Any) -> tuple[list[Producer], 
     canonical Hebrew day; explicit-row matching only), delivery_days (MEH-2036 —
     OR-list of the same vocabulary; WINS over delivery_day when both are
     present), has_delivery, verified, kosher, city, near_city (MEH-2602),
-    is_available_today (MEH-2271 — DEPRECATED alias onto availability_state,
-    removed by MEH-2272; it no longer reads the column), grass_fed,
+    grass_fed,
     gluten_free, vegan, vegetarian, lactose_free,
     no_added_sugar, low_carb (MEH-1934), sort, search_q, limit, offset, exclude.
     (MEH-1259: `organic` removed — the public ?organic filter is gone.)

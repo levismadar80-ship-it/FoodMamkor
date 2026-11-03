@@ -91,7 +91,11 @@ const HEBREW_RANGE =
 const LATIN_RANGE =
   "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD";
 
-async function loadFonts() {
+// Exported for ReviewCardCanvas.jsx, which draws a second 1080×1920 card in
+// the same type system. Named exports off this component rather than a shared
+// utils module: there is exactly one other consumer, and the font/mark setup
+// belongs to the story-card family, not to the app at large.
+export async function loadFonts() {
   // Each FontFace carries an explicit `unicodeRange` descriptor (3rd
   // constructor arg): without one it defaults to the full codespace, so BOTH
   // same-named faces would claim every character and which one wins for a
@@ -140,7 +144,7 @@ function drawCover(ctx, img, x, y, w, h) {
   ctx.drawImage(img, (img.width - sw) / 2, (img.height - sh) / 2, sw, sh, x, y, w, h);
 }
 
-function wrapLines(ctx, text, maxWidth) {
+export function wrapText(ctx, text, maxWidth) {
   const out = [];
   let line = "";
   for (const word of (text || "").split(/\s+/).filter(Boolean)) {
@@ -166,11 +170,11 @@ function fitName(ctx, text, maxWidth) {
   const fits = (l) => ctx.measureText(l).width <= maxWidth;
   for (let size = max; size >= min; size -= 4) {
     ctx.font = `900 ${size}px ${SERIF}`;
-    const lines = wrapLines(ctx, text, maxWidth);
+    const lines = wrapText(ctx, text, maxWidth);
     if (lines.length <= 2 && lines.every(fits)) return { size, lines };
   }
   ctx.font = `900 ${min}px ${SERIF}`;
-  const all = wrapLines(ctx, text, maxWidth);
+  const all = wrapText(ctx, text, maxWidth);
   const lines = all.slice(0, 2);
   const cutChars = (line) => {
     let out = line;
@@ -222,8 +226,9 @@ function drawMark(ctx, cx, cy, size) {
 }
 
 // Brand lockup centred on (cx, cy): wordmark with the mark at its start
-// (right) side, as on the site header.
-function drawLockup(ctx, cx, cy) {
+// (right) side, as on the site header. Exported for ReviewCardCanvas.jsx so
+// the two cards carry a byte-identical lockup (and one copy of MARK_PETALS).
+export function drawLockup(ctx, cx, cy) {
   const size = 56;
   ctx.font = `700 ${size}px ${SERIF}`;
   const textW = ctx.measureText(BRAND_NAME).width;
@@ -253,12 +258,21 @@ function drawLabel(ctx, text, right, cy) {
   ctx.textBaseline = "alphabetic";
 }
 
+/**
+ * Draws the card. Returns false when there is no 2D context to draw into, so
+ * the caller can leave the download disabled rather than hand the viewer a
+ * blank JPEG. `getContext` returns null for real reasons — a lost context, a
+ * canvas the browser refuses to back — and the old unguarded `ctx.direction`
+ * turned that into an unhandled rejection inside the un-awaited draw promise.
+ */
 export async function drawCard(canvas, producer, strings) {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return false;
+
   await loadFonts();
   const imageUrl = producer.images?.[0];
   const photo = imageUrl ? await loadImage(photoSrc(imageUrl)) : null;
 
-  const ctx = canvas.getContext("2d");
   canvas.width = W;
   canvas.height = H;
   ctx.direction = "rtl";
@@ -318,10 +332,32 @@ export async function drawCard(canvas, producer, strings) {
     ctx.fillText(metaLine, right, y + 12);
   }
   ctx.textAlign = "center";
+  return true;
 }
 
-export default function StoryCardCanvas({ producer, onUploaded, onClose }) {
+/**
+ * @param {object}  props
+ * @param {object}  props.producer   the business whose card is drawn
+ * @param {"admin"|"owner"} [props.mode]
+ *   `admin` (default) — the admin producers table: download, copy caption AND
+ *   the Cloudinary upload, which POSTs /admin/producers/{id}/story-card.
+ *   `owner` — the business owner's own dashboard (MEH-1428 "ערכת שיתוף"):
+ *   download + copy caption only. The upload button is NOT rendered, because
+ *   that route is admin-only and the owner's token would get a 403; the
+ *   story_card_url it writes is an admin-curated field. Owner-facing labels
+ *   are feminine-singular and live under `story.canvas.owner.*`.
+ * @param {(url: string) => void} [props.onUploaded] admin mode only
+ * @param {() => void} [props.onClose] renders the X + wires Esc when present
+ */
+export default function StoryCardCanvas({ producer, mode = "admin", onUploaded, onClose }) {
   const t = useTranslations("story.canvas");
+  const tError = useTranslations("error");
+  const isOwner = mode === "owner";
+  // Owner-facing labels are feminine-singular and name the artefact
+  // ("הורידי כרטיס סטורי"); the admin table keeps its terser existing copy.
+  const downloadLabel = isOwner ? t("owner.download_story") : t("download");
+  const copyLabel = isOwner ? t("owner.copy_caption") : t("copy_caption");
+  const copiedLabel = isOwner ? t("owner.copied") : t("copied");
   const canvasRef = useRef(null);
   const [rendered, setRendered] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -330,7 +366,11 @@ export default function StoryCardCanvas({ producer, onUploaded, onClose }) {
 
   useEffect(() => {
     if (!canvasRef.current) return;
-    drawCard(canvasRef.current, producer, { kicker: t("kicker") }).then(() => setRendered(true));
+    drawCard(canvasRef.current, producer, { kicker: t("kicker") })
+      .then((ok) => setRendered(ok !== false))
+      // A draw that failed leaves `rendered` false, which keeps the download
+      // button disabled — the honest outcome, and never an unhandled rejection.
+      .catch(() => setRendered(false));
   }, [producer, t]);
 
   // MEH-1267: Esc closes the story panel (mirrors the kebab toggle). The panel
@@ -374,10 +414,24 @@ export default function StoryCardCanvas({ producer, onUploaded, onClose }) {
   }\n${producer.short_description || producer.description?.slice(0, 100) || ""}\n👉 ${SITE_HOST}/p/${producer.slug || ""}`;
 
   const copyCaption = () => {
-    navigator.clipboard.writeText(caption).then(() => {
-      setCaptionCopied(true);
-      setTimeout(() => setCaptionCopied(false), 2500);
-    });
+    // MEH-1428: this had no rejection path at all — `navigator.clipboard` is
+    // absent in an insecure context and some in-app WebViews, and a denied
+    // write rejects, so the old form produced an unhandled rejection and a
+    // button that silently did nothing. Same class as the null-context crash
+    // fixed on the draw path above. REUSES:
+    // components/producer/RequestReviewCard.jsx:62-71.
+    const write = navigator.clipboard?.writeText
+      ? navigator.clipboard.writeText(caption)
+      : Promise.reject(new Error("clipboard unavailable"));
+    write
+      .then(() => {
+        setCaptionCopied(true);
+        setTimeout(() => setCaptionCopied(false), 2500);
+      })
+      .catch(() => {
+        setCaptionCopied(false);
+        showToast.error(tError("generic"));
+      });
   };
 
   return (
@@ -404,7 +458,7 @@ export default function StoryCardCanvas({ producer, onUploaded, onClose }) {
           canvas fell back to its intrinsic 1920px and showed stretched ×4 and
           clipped on iPhone. The wrapper keeps the ratio too, so the
           «מייצר...» overlay has a frame before the first draw. */}
-      <div className="relative bg-[#1f4a3a] rounded-[12px] overflow-hidden" style={{ aspectRatio: "9/16", maxWidth: 270 }}>
+      <div className="relative bg-[#1f4a3a] rounded-md overflow-hidden" style={{ aspectRatio: "9/16", maxWidth: 270 }}>
         <canvas
           ref={canvasRef}
           style={{ width: "100%", height: "auto", aspectRatio: "9/16", display: "block" }}
@@ -421,26 +475,38 @@ export default function StoryCardCanvas({ producer, onUploaded, onClose }) {
         <button
           onClick={download}
           disabled={!rendered}
+          data-testid="story-card-download"
           className="text-sm border border-border px-4 py-2 rounded-[8px] hover:border-primary transition disabled:opacity-40"
         >
-          <DownloadSimple size={16} className="inline align-[-2px]" aria-hidden="true" /> {t("download")}
+          <DownloadSimple size={16} className="inline align-[-2px]" aria-hidden="true" />{" "}
+          {downloadLabel}
         </button>
-        <button
-          onClick={uploadToCloudinary}
-          disabled={!rendered || uploading}
-          className="text-sm bg-primary text-white px-4 py-2 rounded-[8px] hover:bg-primary-dark transition disabled:opacity-40"
-        >
-          {uploading ? t("uploading") : t("save_cloudinary")}
-        </button>
+        {/* MEH-1428: the Cloudinary upload is admin-only — POST
+            /admin/producers/{id}/story-card sits behind require_admin, so in
+            owner mode the button is not rendered at all (a disabled button
+            would advertise an action she can never take). */}
+        {!isOwner && (
+          <button
+            onClick={uploadToCloudinary}
+            disabled={!rendered || uploading}
+            data-testid="story-card-upload"
+            className="text-sm bg-primary text-white px-4 py-2 rounded-[8px] hover:bg-primary-dark transition disabled:opacity-40"
+          >
+            {uploading ? t("uploading") : t("save_cloudinary")}
+          </button>
+        )}
         <button
           onClick={copyCaption}
+          data-testid="story-card-copy-caption"
           className="text-sm border border-border px-4 py-2 rounded-[8px] hover:border-primary transition"
         >
-          {captionCopied ? t("copied") : t("copy_caption")}
+          {captionCopied ? copiedLabel : copyLabel}
         </button>
       </div>
 
-      {uploadedUrl && (
+      {/* The uploaded Cloudinary URL is an admin artifact — never surfaced to
+          the owner, who has no upload path to produce it. */}
+      {!isOwner && uploadedUrl && (
         <p className="text-xs text-primary break-all" dir="ltr">{uploadedUrl}</p>
       )}
 
