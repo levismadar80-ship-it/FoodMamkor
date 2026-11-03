@@ -22,7 +22,12 @@ that there is no physical presence to pin.
 from tests.conftest import auth_header, make_producer, make_user
 
 from app.models.models import Producer, ProducerLocation
-from app.routers.producer_me import ONE_PRIMARY_REQUIRED, PRIMARY_MUST_BE_BRANCH
+from app.routers.producer_me import (
+    ONE_PRIMARY_REQUIRED,
+    ONE_PRIMARY_REQUIRED_DETAIL,
+    PRIMARY_MUST_BE_BRANCH,
+    PRIMARY_MUST_BE_BRANCH_DETAIL,
+)
 
 
 def _producer_user(db, *, city="תל אביב", has_physical_location=None, **kwargs):
@@ -57,7 +62,9 @@ def _location(**overrides):
 
 def _add(client, user, **overrides):
     resp = client.post(
-        "/producers/me/locations", json=_location(**overrides), headers=auth_header(user)
+        "/producers/me/locations",
+        json=_location(**overrides),
+        headers=auth_header(user),
     )
     assert resp.status_code == 201, resp.text
     return resp.json()
@@ -107,7 +114,7 @@ class TestDeleteThePrimary:
 
         assert resp.status_code == 422, resp.text
         # The same string the demote arm raises — one invariant, one voice.
-        assert resp.json()["detail"] == ONE_PRIMARY_REQUIRED
+        assert resp.json()["detail"] == ONE_PRIMARY_REQUIRED_DETAIL
         assert len(_rows(db, producer.id)) == 2, "a refused delete mutates nothing"
 
     def test_the_pickup_is_not_promoted(self, client, db):
@@ -163,7 +170,9 @@ class TestDeleteThePrimary:
         # Producer.city KEEPS its last value: 17 readers depend on it and a
         # NULL there is silent, so this path deliberately does not re-derive.
         db.expire_all()
-        assert db.query(Producer).filter(Producer.id == producer.id).one().city == "חיפה"
+        assert (
+            db.query(Producer).filter(Producer.id == producer.id).one().city == "חיפה"
+        )
 
 
 class TestPromotionIsBranchOnly:
@@ -179,7 +188,7 @@ class TestPromotionIsBranchOnly:
         )
 
         assert resp.status_code == 422, resp.text
-        assert resp.json()["detail"] == PRIMARY_MUST_BE_BRANCH
+        assert resp.json()["detail"] == PRIMARY_MUST_BE_BRANCH_DETAIL
         assert [r.kind for r in _rows(db, producer.id) if r.is_primary] == ["branch"]
 
     def test_a_market_stand_cannot_be_promoted_either(self, client, db):
@@ -247,7 +256,7 @@ class TestCreateEnforcesBranchOnlyToo:
         )
 
         assert resp.status_code == 422, resp.text
-        assert resp.json()["detail"] == PRIMARY_MUST_BE_BRANCH
+        assert resp.json()["detail"] == PRIMARY_MUST_BE_BRANCH_DETAIL
         assert [r.kind for r in _rows(db, producer.id) if r.is_primary] == ["branch"]
 
     def test_an_explicit_primary_on_a_market_stand_is_refused(self, client, db):
@@ -337,3 +346,16 @@ class TestDeliveryOnlyHasNoPrimaryAndThatIsCorrect:
         )
 
         assert resp.status_code == 422, resp.text
+
+
+def test_meh1943_primary_details_carry_code_and_the_same_sentence():
+    """MEH-1943 chunk 1: the 422s became `{code, message, params}`. The literal
+    pins above still hold the approved Hebrew; this pins that the wire carries
+    it unchanged as `message`, next to a stable code the frontend maps."""
+    assert ONE_PRIMARY_REQUIRED_DETAIL == {
+        "code": "one_primary_required",
+        "message": "חובה מיקום ראשי אחד",
+        "params": {},
+    }
+    assert PRIMARY_MUST_BE_BRANCH_DETAIL["code"] == "primary_must_be_branch"
+    assert PRIMARY_MUST_BE_BRANCH_DETAIL["message"] == PRIMARY_MUST_BE_BRANCH

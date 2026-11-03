@@ -41,6 +41,9 @@ import {
 
 import api from "@/lib/api";
 import { detailToMessage, sameCityLabelParams } from "@/lib/errors";
+
+// MEH-1943: codes this editor maps to settings.locations.errors.<code>.
+const LOCATION_ERROR_CODES = new Set(["one_primary_required", "primary_must_be_branch"]);
 import { showToast } from "@/lib/toast";
 import { LocationInputSchema } from "@/lib/schemas";
 import EmptyState from "@/components/ui/EmptyState";
@@ -190,15 +193,23 @@ export default function LocationsEditor() {
     [t, tKind],
   );
 
+  // MEH-1943 chunk 1: the backend's location 422s carry a stable `code`; the
+  // copy lives in settings.locations.errors.<code> (same sentence, he + en).
+  // Unknown codes return null so detailToMessage falls back to `message`.
+  const resolveLocationCode = useCallback(
+    (code) => (LOCATION_ERROR_CODES.has(code) ? t(`errors.${code}`) : null),
+    [t],
+  );
+
   const saveErrorFrom = useCallback(
     (err) => {
       const detail = err?.response?.data?.detail;
       const params = sameCityLabelParams(detail);
       if (params) return sameCityMessage(params);
       // Pre-`code` backend, or any other failure: the bare `message` string.
-      return detailToMessage(detail) || t("errors.save_failed");
+      return detailToMessage(detail, resolveLocationCode) || t("errors.save_failed");
     },
-    [sameCityMessage, t],
+    [sameCityMessage, resolveLocationCode, t],
   );
 
   // MEH-2144: true exactly when the server said `location_same_city_needs_label`
@@ -288,11 +299,11 @@ export default function LocationsEditor() {
         reload();
       } catch (err) {
         showToast.error(
-          detailToMessage(err?.response?.data?.detail) || t("errors.save_failed"),
+          detailToMessage(err?.response?.data?.detail, resolveLocationCode) || t("errors.save_failed"),
         );
       }
     },
-    [reload, t],
+    [reload, resolveLocationCode, t],
   );
 
   const handleDelete = useCallback(
@@ -303,13 +314,13 @@ export default function LocationsEditor() {
         reload();
       } catch (err) {
         showToast.error(
-          detailToMessage(err?.response?.data?.detail) || t("errors.delete_failed"),
+          detailToMessage(err?.response?.data?.detail, resolveLocationCode) || t("errors.delete_failed"),
         );
       } finally {
         setDeletingId(null);
       }
     },
-    [reload, t],
+    [reload, resolveLocationCode, t],
   );
 
   if (loadError) {

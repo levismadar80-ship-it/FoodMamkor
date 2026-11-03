@@ -566,3 +566,35 @@ describe("same-town error renders from code + params (MEH-1940)", () => {
     expect(box.textContent).toBe("כשיש שני מיקומים באותו יישוב יש להוסיף שם מזהה");
   });
 });
+
+// MEH-1943 chunk 1 — the two primary-location 422s now arrive as
+// `{code, message, params}`. The editor must render its OWN key for the code
+// (settings.locations.errors.<code>), not the server's `message`: the message
+// is the same sentence today, so a test that only checked "Hebrew appeared"
+// would pass on both the old string and the new object.
+describe("primary-location errors render from code (MEH-1943)", () => {
+  // REUSES: the submitAndFail helper of the in-form error block above (scoped there).
+  async function submitAndFail(rejection) {
+    await openAddForm();
+    fireEvent.change(cityInput(), { target: { value: "זכרון יעקב" } });
+    apiMock.post.mockRejectedValueOnce(rejection);
+    fireEvent.click(screen.getByTestId("location-save"));
+    return waitFor(() => screen.getByTestId("location-form-error"));
+  }
+
+  for (const code of ["one_primary_required", "primary_must_be_branch"]) {
+    it(`${code} → settings.locations.errors.${code}`, async () => {
+      const box = await submitAndFail({
+        response: { status: 422, data: { detail: { code, message: "SERVER-SENTENCE", params: {} } } },
+      });
+      expect(box.textContent).toBe(`settings.locations.errors.${code}`);
+    });
+  }
+
+  it("an unknown code still falls back to the server message", async () => {
+    const box = await submitAndFail({
+      response: { status: 422, data: { detail: { code: "some_other_code", message: "SERVER-SENTENCE", params: {} } } },
+    });
+    expect(box.textContent).toBe("SERVER-SENTENCE");
+  });
+});
