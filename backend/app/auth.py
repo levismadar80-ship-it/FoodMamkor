@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 from uuid import UUID
 
+import bcrypt
 import structlog
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
@@ -11,7 +12,6 @@ from joserfc import jwt as jose_jwt
 from joserfc.errors import JoseError
 from joserfc.jwk import OctKey
 from joserfc.jwt import JWTClaimsRegistry
-from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -19,21 +19,37 @@ from app.database import get_db
 from app.models import User
 from app.utils.clock import utc_now
 
-# MEH-648: bcrypt__rounds=12 pinned explicitly. Matches the passlib
-# default at time of pinning AND all existing user.password_hash rows.
-# Prevents future drift if passlib bumps its default — see MEH-626 A7.
-pwd_context = CryptContext(schemes=["bcrypt"], bcrypt__rounds=12, deprecated="auto")
+# MEH-648: rounds=12 pinned explicitly. Matches the passlib default at time
+# of pinning AND all existing user.password_hash rows — see MEH-626 A7.
+BCRYPT_ROUNDS = 12
+# MEH-2220: bcrypt reads only the first 72 bytes. passlib + bcrypt 4 dropped
+# the rest silently; bcrypt 5 raises ValueError instead. Truncating in BOTH
+# hash and verify keeps every existing hash (long passwords included)
+# verifying, exactly as before.
+# DO NOT drop the [:72] or reject >72 bytes — breaks existing long-password
+# logins (MEH-2220 ruling, option א).
+BCRYPT_MAX_BYTES = 72
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
 
 logger = structlog.get_logger(__name__)
 
 
+def _bcrypt_secret(password: str) -> bytes:
+    secret = password.encode("utf-8")
+    if b"\x00" in secret:
+        # passlib refused NUL bytes anywhere (PasswordValueError, a ValueError).
+        # Keep refusing rather than let bcrypt see a NUL.
+        raise ValueError("bcrypt does not allow NULL bytes in password")
+    return secret[:BCRYPT_MAX_BYTES]
+
+
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    salt = bcrypt.gensalt(rounds=BCRYPT_ROUNDS)
+    return bcrypt.hashpw(_bcrypt_secret(password), salt).decode("ascii")
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+    return bcrypt.checkpw(_bcrypt_secret(plain), hashed.encode("ascii"))
 
 
 def _jwt_key() -> OctKey:

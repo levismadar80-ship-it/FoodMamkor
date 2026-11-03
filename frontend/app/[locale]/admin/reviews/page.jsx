@@ -253,12 +253,12 @@ export default function AdminReviewsPage() {
           placeholder={t("reviews.search_placeholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 border border-border rounded-[12px] px-3 py-2"
+          className="flex-1 border border-border rounded-md px-3 py-2"
         />
         <select
           value={starFilter}
           onChange={(e) => setStarFilter(e.target.value)}
-          className="border border-border rounded-[12px] px-3 py-2 bg-white"
+          className="border border-border rounded-md px-3 py-2 bg-white"
           aria-label={t("reviews.filter_aria")}
         >
           <option value="all">{t("reviews.all_ratings")}</option>
@@ -283,7 +283,7 @@ export default function AdminReviewsPage() {
         </label>
       </div>
 
-      <div className="bg-white border border-border rounded-[12px] overflow-hidden">
+      <div className="bg-white border border-border rounded-md overflow-hidden">
         <div className="overflow-x-auto">
           {/* MEH-2426: one card per row below md (globals.css .table-stack). */}
           <table className="table-stack w-full text-sm">

@@ -138,7 +138,7 @@ async def change_password(
             status_code=400,
             detail="SET_PASSWORD_UNSUPPORTED",
         )
-    # MEH-306: passlib bcrypt verify blocks ~50-200ms; offload to a thread
+    # MEH-306: bcrypt verify blocks ~50-200ms; offload to a thread
     # so the async handler doesn't block the event loop.
     if not await asyncio.to_thread(
         verify_password, data.current_password, user.password_hash

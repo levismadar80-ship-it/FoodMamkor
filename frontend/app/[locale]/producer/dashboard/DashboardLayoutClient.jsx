@@ -98,7 +98,7 @@ function DashboardChromeSkeleton({ label }) {
         </div>
       </div>
       <div className="max-w-5xl mx-auto px-4 py-12 space-y-4">
-        <div className="h-8 w-48 bg-border rounded-[12px] animate-pulse" />
+        <div className="h-8 w-48 bg-border rounded-md animate-pulse" />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[0, 1, 2, 3, 4].map((i) => (
             <div key={i} className="h-32 bg-border rounded-[16px] animate-pulse" />

@@ -11,7 +11,7 @@
  *           MEH-475 PR-C4b/chunk-5 (i18n, 2026-05-20) — GUIDES + chrome
  *           wired to `guides.index.*` + per-guide title keys.
  */
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { BRAND_NAME } from "@/lib/constants";
 import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";

@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { MagnifyingGlass, Plant, Leaf, CaretDown, Faders, MapPin } from "@phosphor-icons/react";
 import { chipsToQuery } from "@/lib/filter-url";
 import { useTranslations } from "next-intl";
@@ -950,9 +950,12 @@ export default function ProducersClient({
           sideways scroller bled to the glass below lg (-mx-4/px-4 against the
           page's px-4), py-1/-mt-1 keep focus rings inside the scrollport,
           overscroll-x-none so iOS does not rubber-band the rail (MEH-2574),
-          visible overflow at lg+ so the sheet's anchored panel is not clipped. */}
+          visible overflow at lg+ so the sheet's anchored panel is not clipped;
+          lg:flex-wrap so the MEH-2598 service chips wrap instead of pushing
+          the row past the viewport at 200% text (WCAG 1.4.4, 44-text-scale;
+          same as /map ServiceChipRow). */}
       <div
-        className="-mx-4 -mt-1 mb-3 flex items-center gap-2 min-w-0 overflow-x-auto overscroll-x-none px-4 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:-mx-1 lg:px-1 lg:overflow-visible"
+        className="-mx-4 -mt-1 mb-3 flex items-center gap-2 min-w-0 overflow-x-auto overscroll-x-none px-4 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:-mx-1 lg:px-1 lg:overflow-visible lg:flex-wrap"
         data-testid="producers-filter-row"
         onFocus={keepFocusedChipClear}
       >
@@ -1221,7 +1224,7 @@ function FilterEmptyState({ onClear, searchQ }) {
         type="button"
         onClick={onClear}
         data-testid="producers-empty-clear"
-        className="bg-primary text-white px-6 py-3 rounded-[12px] font-medium hover:bg-primary-dark transition"
+        className="bg-primary text-white px-6 py-3 rounded-md font-medium hover:bg-primary-dark transition"
       >
         {t("empty.clear_all_show_all")}
       </button>
@@ -1254,7 +1257,7 @@ function CatalogEmptyState() {
         {!isAdmin && (
           <Link
             href="/register/producer"
-            className="bg-primary text-white px-6 py-3 rounded-[12px] font-medium hover:bg-primary-dark transition"
+            className="bg-primary text-white px-6 py-3 rounded-md font-medium hover:bg-primary-dark transition"
           >
             {t("add_cta")}
           </Link>
@@ -1267,7 +1270,7 @@ function CatalogEmptyState() {
             same-page jump rather than a cross-page hop. */}
         <Link
           href="#newsletter"
-          className="border border-primary text-primary px-6 py-3 rounded-[12px] font-medium hover:bg-green-50 transition"
+          className="border border-primary text-primary px-6 py-3 rounded-md font-medium hover:bg-green-50 transition"
         >
           {t("notify_cta")}
         </Link>
@@ -1283,7 +1286,7 @@ function PageOverflowState() {
       <p className="text-fg-muted mb-4">{t("message")}</p>
       <Link
         href="/producers"
-        className="inline-flex items-center bg-primary text-white px-5 py-2 rounded-[12px] hover:bg-primary-dark transition"
+        className="inline-flex items-center bg-primary text-white px-5 py-2 rounded-md hover:bg-primary-dark transition"
       >
         {t("back_cta")}
       </Link>
@@ -1306,12 +1309,12 @@ function ServerPageLinks({ page, totalPages }) {
       {prev ? (
         <Link
           href={prev}
-          className="border border-border bg-white text-text px-4 py-2 rounded-[12px] hover:bg-green-50 transition"
+          className="border border-border bg-white text-text px-4 py-2 rounded-md hover:bg-green-50 transition"
         >
           {t("prev")}
         </Link>
       ) : (
-        <span className="border border-border text-fg-muted px-4 py-2 rounded-[12px] opacity-50">
+        <span className="border border-border text-fg-muted px-4 py-2 rounded-md opacity-50">
           {t("prev")}
         </span>
       )}
@@ -1319,12 +1322,12 @@ function ServerPageLinks({ page, totalPages }) {
       {next ? (
         <Link
           href={next}
-          className="border border-border bg-white text-text px-4 py-2 rounded-[12px] hover:bg-green-50 transition"
+          className="border border-border bg-white text-text px-4 py-2 rounded-md hover:bg-green-50 transition"
         >
           {t("next")}
         </Link>
       ) : (
-        <span className="border border-border text-fg-muted px-4 py-2 rounded-[12px] opacity-50">
+        <span className="border border-border text-fg-muted px-4 py-2 rounded-md opacity-50">
           {t("next")}
         </span>
       )}

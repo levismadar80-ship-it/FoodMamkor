@@ -2796,6 +2796,18 @@
             "title": "Deadline",
             "type": "string"
           },
+          "delivery_note": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Note"
+          },
           "description": {
             "anyOf": [
               {
@@ -2808,9 +2820,16 @@
             "title": "Description"
           },
           "fulfillment_note": {
-            "maxLength": 1000,
-            "title": "Fulfillment Note",
-            "type": "string"
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fulfillment Note"
           },
           "max_participants": {
             "anyOf": [
@@ -2828,6 +2847,18 @@
             "minimum": 2.0,
             "title": "Min Participants",
             "type": "integer"
+          },
+          "pickup_note": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Note"
           },
           "price_per_unit_group": {
             "anyOf": [
@@ -2884,8 +2915,7 @@
           "price_per_unit_regular",
           "price_per_unit_group",
           "min_participants",
-          "deadline",
-          "fulfillment_note"
+          "deadline"
         ],
         "title": "GroupBuyCreate",
         "type": "object"
@@ -2918,6 +2948,17 @@
             "format": "date-time",
             "title": "Deadline",
             "type": "string"
+          },
+          "delivery_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Note"
           },
           "description": {
             "anyOf": [
@@ -2960,6 +3001,17 @@
           "min_participants": {
             "title": "Min Participants",
             "type": "integer"
+          },
+          "pickup_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Note"
           },
           "price_per_unit_group": {
             "title": "Price Per Unit Group",
@@ -3078,6 +3130,17 @@
             "title": "Deadline",
             "type": "string"
           },
+          "delivery_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Note"
+          },
           "description": {
             "anyOf": [
               {
@@ -3119,6 +3182,17 @@
           "min_participants": {
             "title": "Min Participants",
             "type": "integer"
+          },
+          "pickup_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Note"
           },
           "price_per_unit_group": {
             "title": "Price Per Unit Group",
@@ -4698,11 +4772,6 @@
             "title": "Availability State",
             "type": "string"
           },
-          "availability_status": {
-            "default": "available",
-            "title": "Availability Status",
-            "type": "string"
-          },
           "avg_rating": {
             "default": 0,
             "title": "Avg Rating",
@@ -5076,11 +5145,6 @@
               }
             ],
             "title": "Instagram"
-          },
-          "is_available_today": {
-            "default": false,
-            "title": "Is Available Today",
-            "type": "boolean"
           },
           "is_recommended": {
             "default": false,
@@ -5690,17 +5754,6 @@
             ],
             "title": "Availability State"
           },
-          "availability_status": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Availability Status"
-          },
           "category_ids": {
             "anyOf": [
               {
@@ -5987,17 +6040,6 @@
               }
             ],
             "title": "Instagram"
-          },
-          "is_available_today": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is Available Today"
           },
           "is_recommended": {
             "anyOf": [
@@ -6654,11 +6696,6 @@
             "title": "Availability State",
             "type": "string"
           },
-          "availability_status": {
-            "default": "available",
-            "title": "Availability Status",
-            "type": "string"
-          },
           "avg_rating": {
             "default": 0,
             "title": "Avg Rating",
@@ -6957,11 +6994,6 @@
               }
             ],
             "title": "Instagram"
-          },
-          "is_available_today": {
-            "default": false,
-            "title": "Is Available Today",
-            "type": "boolean"
           },
           "is_recommended": {
             "default": false,
@@ -7485,11 +7517,6 @@
             "title": "Availability State",
             "type": "string"
           },
-          "availability_status": {
-            "default": "available",
-            "title": "Availability Status",
-            "type": "string"
-          },
           "avg_rating": {
             "default": 0,
             "title": "Avg Rating",
@@ -7691,11 +7718,6 @@
             },
             "title": "Images",
             "type": "array"
-          },
-          "is_available_today": {
-            "default": false,
-            "title": "Is Available Today",
-            "type": "boolean"
           },
           "is_recommended": {
             "default": false,
@@ -8817,11 +8839,6 @@
             "title": "Availability State",
             "type": "string"
           },
-          "availability_status": {
-            "default": "available",
-            "title": "Availability Status",
-            "type": "string"
-          },
           "avg_rating": {
             "default": 0,
             "title": "Avg Rating",
@@ -9132,11 +9149,6 @@
               }
             ],
             "title": "Instagram"
-          },
-          "is_available_today": {
-            "default": false,
-            "title": "Is Available Today",
-            "type": "boolean"
           },
           "is_recommended": {
             "default": false,
@@ -10415,17 +10427,6 @@
             ],
             "title": "Availability State"
           },
-          "availability_status": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Availability Status"
-          },
           "category_ids": {
             "anyOf": [
               {
@@ -10700,17 +10701,6 @@
               }
             ],
             "title": "Instagram"
-          },
-          "is_available_today": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is Available Today"
           },
           "is_recommended": {
             "anyOf": [
@@ -19270,22 +19260,6 @@
                 }
               ],
               "title": "Near City"
-            }
-          },
-          {
-            "in": "query",
-            "name": "is_available_today",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "boolean"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Is Available Today"
             }
           },
           {

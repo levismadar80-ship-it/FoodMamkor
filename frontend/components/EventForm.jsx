@@ -18,7 +18,7 @@
  */
 
 import { useState } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { X } from "@phosphor-icons/react";
 import api from "@/lib/api";

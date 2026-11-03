@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { CheckCircle, HourglassSimple } from "@phosphor-icons/react";
 import { detailToMessage } from "@/lib/errors";
@@ -37,7 +37,7 @@ export default function AdminHome() {
   const error = loadError ? detailToMessage(errorDetail) || t("common.error_loading") : "";
 
   if (error) {
-    return <div className="bg-red-50 border border-red-200 text-red-700 rounded-[12px] p-4">{error}</div>;
+    return <div className="bg-red-50 border border-red-200 text-red-700 rounded-md p-4">{error}</div>;
   }
   if (!data) {
     return <SkeletonTiles count={4} label={t("common.loading")} />;
@@ -71,7 +71,7 @@ export default function AdminHome() {
           count is in the heading so the empty state is explicit, not blank. */}
       <section
         data-testid="admin-home-pending"
-        className={`bg-white border rounded-[12px] p-5 ${
+        className={`bg-white border rounded-md p-5 ${
           pendingCount > 0 ? "border-yellow-300" : "border-border"
         }`}
       >
@@ -125,7 +125,7 @@ export default function AdminHome() {
       </section>
 
       {/* 2. Every other queue — one row per non-empty queue; none → one line. */}
-      <section data-testid="admin-home-queues" className="bg-white border border-border rounded-[12px] p-5">
+      <section data-testid="admin-home-queues" className="bg-white border border-border rounded-md p-5">
         <h2 className="font-semibold mb-3">{t("dashboard.queues.heading")}</h2>
         {busyQueues.length === 0 && !countsUnknown ? (
           <p className="text-sm text-muted flex items-center gap-2">
