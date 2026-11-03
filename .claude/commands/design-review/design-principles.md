@@ -60,7 +60,7 @@ generic SaaS checklist shipped with the workflow.
 - [ ] Grid gutter on mobile: 16px. Card padding: 16px mobile / 24px desktop.
 
 ### Radii
-- [ ] Inputs/buttons: 8px. Cards: 12–16px. Modals: 16–20px. No `rounded-full` on rectangles.
+- [ ] **Buttons/actions: `rounded-full`** — `frontend/components/ui/Button.jsx` is the canonical action radius (ruling «⚖️ 03/11», MEH-1687 E). Inputs: 8px. Cards: 12–16px. Modals: 16–20px. No `rounded-full` on non-action rectangles (cards, inputs, containers).
 
 ### Shadows
 - [ ] At most 2 shadow levels: `card` (subtle) and `elevated` (dropdowns, modals).
@@ -86,7 +86,7 @@ generic SaaS checklist shipped with the workflow.
 
 ## V. Interaction design
 
-- [ ] **Tap targets ≥ 44×44px** on mobile. Header icons, favorite heart, bottom nav, card actions.
+- [ ] **Tap targets — mobile (< md): ≥ 44×44px, no exceptions** (Apple HIG 44pt). Header icons, favorite heart, bottom nav, card actions. **Desktop (md+): ≥ 32px allowed.** There is no 34px mobile carve-out (ruling «⚖️ 03/11», MEH-1687 E).
 - [ ] Visible focus state on every interactive element (not default browser outline — branded ring).
 - [ ] Hover states on desktop feel instant (≤ 150ms, ease-out).
 - [ ] Transitions 150–300ms with `ease-in-out`. No bouncy/spring animations except for Ken Burns hero.

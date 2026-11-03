@@ -316,11 +316,20 @@ Concrete applications:
 
 ## Shapes
 
-Corners are softly rounded, never pill-shaped on rectangles. Inputs and
-buttons use `rounded.sm` (8px); cards use `rounded.lg` (16px) — `rounded.md`
-(12px) is the in-between for smaller cards and chips; modals use `rounded.xl`
-(20px). **No `rounded-full` on rectangular elements** (BRAND.md §3) — full
-rounding is reserved for genuinely circular elements (avatars, icon buttons).
+Corners are softly rounded, never pill-shaped on non-action rectangles.
+**Buttons (actions) are `rounded-full`** — `frontend/components/ui/Button.jsx`
+is the canonical action radius (ruling «⚖️ 03/11», MEH-1687 E). Inputs use
+`rounded.sm` (8px); cards use `rounded.lg` (16px) — `rounded.md` (12px) is the
+in-between for smaller cards and chips; modals use `rounded.xl` (20px). **No
+`rounded-full` on non-action rectangles** (cards, inputs, containers) — beyond
+actions, full rounding is reserved for genuinely circular elements (avatars,
+icon buttons).
+
+_As-of 03/11: the front-matter `button-primary` binding still reads
+`{rounded.sm}`, because the token scale has no `full` step. Adding one changes
+`frontend/tailwind.tokens.json` (the design-token drift gate re-exports it), so
+it belongs to a code PR, not to this docs-only one. Until then this paragraph
+and `ui/Button.jsx` are the action-radius rule._
 
 ## Components
 
@@ -328,7 +337,7 @@ Components are composed from the tokens above; see the `components` block in the
 front matter for the normative token bindings.
 
 - **Buttons:** `button-primary` is forest green (`primary`) with white
-  (`surface`) text, 8px radius, `label-md` type. Hover goes **darker**
+  (`surface`) text, `rounded-full` (see Shapes), `label-md` type. Hover goes **darker**
   (`primary-dark`), never lighter and never with a shadow.
 - **Cards (ProducerCard et al.):** white `surface` on cream, `border` hairline,
   16px radius, 24px desktop padding. Captions and metadata use the `muted`
@@ -671,8 +680,11 @@ the absolute minimum for secondary/compact controls (`sm` buttons, dense
 metadata actions); nothing interactive renders below it. Sub-14px type is
 reserved for the documented non-interactive or exception cases below.
 
-**Tap-target floor (reach).** Every tappable control has a hit area of
-**≥ 44 × 44px** (WCAG 2.5.5 Target Size (Enhanced); Apple HIG 44pt). When the
+**Tap-target floor (reach).** On mobile (< md) every tappable control has a
+hit area of **≥ 44 × 44px, with no exceptions for standalone controls** (WCAG 2.5.5 Target Size
+(Enhanced); Apple HIG 44pt). On desktop (md+) **≥ 32px** is allowed — pointer
+precision, not touch. There is no 34px mobile carve-out (ruling «⚖️ 03/11»,
+MEH-1687 E). When the
 visible control is smaller than 44px, the target is enlarged with
 `min-h-[44px] min-w-[44px]` plus `flex items-center justify-center` so the
 glyph stays centered inside the padded hit area — the `HeroSearch` submit
