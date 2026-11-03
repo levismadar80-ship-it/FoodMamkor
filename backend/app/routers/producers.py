@@ -24,7 +24,6 @@ from app.models import (
     User,
 )
 from app.rate_limit import limiter
-from app.utils.stack_probe import log_depth
 
 # MEH-460 Pkg 5 (FINAL): ContactClickIn relocated to app.schemas.schemas per ADR-006 R1.
 from app.schemas.schemas import (
@@ -163,17 +162,11 @@ def list_producers(
     # (own city or any location row) OR delivering to it, located ones first.
     # delivery_city keeps its strict "delivers to" meaning for the other callers.
     near_city: str | None = None,
-    # DEPRECATED (MEH-2271, MEH-1854 chunk 3a) — kept for one release as an
-    # alias onto `availability_state`, not as a column filter. It no longer
-    # reads producers.is_available_today at all: `true` selects
-    # availability_state == "available_today", `false` selects everything
-    # else. Same result set as before, because the column and the enum agreed
-    # (desync measured 0/29 on staging, 06/09) and now the enum is the only
-    # thing written. Removed by MEH-2272; the column drops in MEH-2273.
-    is_available_today: bool | None = None,
-    # MEH-291 — durable 4-value enum filter, and as of MEH-2271 the only
-    # availability filter that reads a column. An explicit value here WINS
-    # over the deprecated alias above.
+    # MEH-291 — durable 4-value enum filter, the only availability filter.
+    # MEH-2272 removed the one-release legacy boolean alias that MEH-2271
+    # mapped onto it. FastAPI ignores an undeclared query parameter, so a
+    # stale caller still sending it gets a 200 and an UNFILTERED listing —
+    # not a 422 (pinned in tests/test_api.py::TestAvailabilityState).
     availability_state: str | None = None,
     grass_fed: bool | None = None,
     gluten_free: bool | None = None,
@@ -267,7 +260,6 @@ def list_producers(
         open_for_orders_now=open_for_orders_now,  # MEH-1881
         city=city,
         near_city=near_city,  # MEH-2602
-        is_available_today=is_available_today,
         # MEH-291 — opt-in 4-value enum filter; default listing behavior
         # unchanged in Phase 2 (Q4b — default-hide-on_vacation ships in
         # Phase 3 alongside frontend).
@@ -391,9 +383,6 @@ def random_producer(request: Request, db: Session = Depends(get_db)):
 @router.get("/producers/by-slug/{slug}", response_model=ProducerDetailOut)
 @limiter.limit("120/minute")
 def get_producer_by_slug(slug: str, request: Request, db: Session = Depends(get_db)):
-    # MEH-2119 measurement gate — TEMPORARY. Logs the request's frame depth
-    # on staging; see app/utils/stack_probe.py for the read-off and removal.
-    log_depth("producers.by_slug")
     producer = (
         db.query(Producer)
         .options(
@@ -764,9 +753,6 @@ def create_producer(
 def list_categories(
     request: Request, response: Response, db: Session = Depends(get_db)
 ):
-    # MEH-2119 measurement gate — TEMPORARY control route (same middleware
-    # chain, no joinedload under it). See app/utils/stack_probe.py.
-    log_depth("categories.list")
     # MEH-1833: the category list is the most static public payload we serve —
     # same edge policy as /producers. No auth or user state is read here.
     response.headers["Cache-Control"] = _PUBLIC_CATALOG_CACHE

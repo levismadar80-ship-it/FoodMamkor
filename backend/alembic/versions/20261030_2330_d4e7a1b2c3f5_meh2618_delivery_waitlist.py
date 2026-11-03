@@ -1,7 +1,7 @@
 """meh2618_delivery_waitlist
 
 Revision ID: d4e7a1b2c3f5
-Revises: 9c534d477f2b
+Revises: 4b7e1d2c9a60
 Create Date: 2026-10-30 23:30:00.000000+00:00
 
 MEH-2618: adds the `delivery_waitlist` table — «תודיעו לי כשתגיעו ל{עיר}».
@@ -41,7 +41,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = "d4e7a1b2c3f5"
-down_revision: Union[str, None] = "9c534d477f2b"
+down_revision: Union[str, None] = "4b7e1d2c9a60"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

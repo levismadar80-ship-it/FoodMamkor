@@ -372,6 +372,12 @@
 - ✅ → `frontend/e2e/flows/manual/producers.spec.ts` (MT:MEH-1592:5 — ⚠️ STALE: superseded by MEH-1871 — the «+N» panel now CLOSES on scroll; the current behaviour is asserted in the MEH-1871 block) — **גלילה** — פתחי "+N" וגללי את העמוד — **תוצאה מצופה:** הפאנל נשאר צמוד למונה שלו (לא "נתקע" במקום על המסך)
 - ✅ → `frontend/e2e/flows/manual/producers.spec.ts` (MT:MEH-1592:6) — **נייד ללא שינוי** — 375px, "+N" — **תוצאה מצופה:** עדיין מגירה תחתונה (bottom sheet) כמו ב-MEH-1547, מעל ה-BottomNav
 
+## MEH-2622 — מגירת «+N» בנייד לא נפתחת בתוך הכרטיס ולא נבחרת בלחיצה ארוכה (30/10)
+- [ ] **לחיצה ארוכה ב-iPhone** — `/producers` ב-Safari, לחיצה ארוכה על «+N» בכרטיס — תוצאה מצופה: נפתחת מגירה תחתונה ברוחב המסך (לא בתוך הכרטיס); אין סימון כחול על הדף ואין ידיות בחירה
+- [ ] **לחיצה ארוכה על טקסט המגירה** — תוצאה מצופה: הטקסט לא נבחר, אין תפריט «העתק»
+- [ ] **סגירה בהקשה על הרקע האפור** — תוצאה מצופה: המגירה נסגרת, נשארים ב-`/producers` (לא עוברים לדף העסק שמתחת)
+- [ ] **אותו דבר בדף הבית** (רשת בתי העסק) **ובאזור «עסקים נוספים»** בדף עסק
+
 ## MEH-1537 — ולידציית פרטי קשר (אימייל / טלפון / קבוצת וואטסאפ) (26/07)
 - [ ] **אימייל לא תקין (דשבורד)** — כבעלת-עסק → `/producer/dashboard/edit` → כרטיס "ערוצי קשר" → שדה "אימייל" → הקלידי `not-an-email` → "שמירת ערוצי קשר" — **תוצאה מצופה:** שגיאה אדומה inline "כתובת אימייל לא תקינה" (אייקון אזהרה), לא נשמר.
 - [ ] **טלפון לא תקין (דשבורד)** — אותו כרטיס → שדה "טלפון" → `12345` → שמירה — **תוצאה מצופה:** "מספר טלפון לא תקין" inline.
@@ -439,6 +445,8 @@
 - ✅ → `frontend/e2e/flows/manual/producers.spec.ts` (MT:MEH-1465:3) — **`/producers` — קטגוריה אינה תג להסרה** — עם קטגוריה נבחרת — **תוצאה מצופה:** אין צ'יפ קטגוריה עם × בשורת הפילטרים; היציאה היא דרך "הכל" או הקשה חוזרת. "נקו הכל" מאפס גם קטגוריות וגם תכונות.
 - ✅ → `frontend/e2e/flows/manual/producers.spec.ts` (MT:MEH-1465:4) — **`/producers` — deep-link ישן** — פתחי `/producers?category=<id>` — **תוצאה מצופה:** הקטגוריה טעונה ונבחרת, הרשימה מסוננת (זהה להתנהגות טרום-1465).
 - [ ] **`/producers` — מיון לפי דירוג (MEH-1483)** — ליד מונה התוצאות יש בורר "מיון:" (ברירת מחדל "הצטרפו לאחרונה"). בחרי "הכי מדורגות" — **תוצאה מצופה:** הרשימה ממוינת לפי דירוג ממוצע יורד (עסקים ללא דירוג בסוף), ה-URL מקבל `?order=`… בעצם `?sort=rating`; גללי לעמוד 2 (טעינה אינסופית) — הסדר נשאר רציף לפי דירוג; שילוב עם סינון קטגוריה/עיר שומר על המיון. חזרה ל"הצטרפו לאחרונה" מחזירה בדיוק לסדר ברירת המחדל (created_at יורד) ומורידה את `?sort=` מה-URL.
+- [ ] **«הכי מדורגות» שוקל את מספר הביקורות (MEH-2617)** — ב-/producers וב-/map (מחשב) בחרי «הכי מדורגות» — **תוצאה מצופה:** עסק עם 4.8 משתים־עשרה ביקורות מופיע לפני עסק עם 5.0 מביקורת אחת; עסקים בלי ביקורות תמיד בסוף; הדירוג המוצג על הכרטיס לא משתנה. שני הדפים מציגים אותו סדר.
+- [ ] **«מרחק» בלי מיקום שמור (MEH-2616)** — בחלון גלישה פרטית פתחי /producers ובחרי «מרחק» במיון — **תוצאה מצופה:** הדפדפן מבקש מיקום; אישור → הרשימה ממוינת מהקרוב לרחוק עם ק״מ על הכרטיסים ו-`?sort=distance` ב-URL; סירוב → הודעה «לא ניתן גישה למיקום. אפשרי בהגדרות הדפדפן.» והמיון נשאר «הצטרפו לאחרונה». האפשרות אף פעם לא אפורה.
 - [ ] **`/producers` — מיון deep-link** — פתחי `/producers?sort=rating` — **תוצאה מצופה:** הבורר מסומן "הכי מדורגות" והרשימה ממוינת לפי דירוג; ערך לא חוקי (`?sort=xyz`) נופל בשקט לברירת המחדל בצד ה-client (וה-API עצמו מחזיר 422 לערך לא חוקי).
 - [ ] **API — `sort=distance` (MEH-1829 chunk 1/2, backend בלבד; ה-UI בתת-כרטיס 2/2)** — `curl -i "$API/producers?sort=distance&lat=32.0853&lng=34.7818"` ואז אותו דבר עם `sort=newest` — **תוצאה מצופה:** ב-distance ה-`distance_km` עולה משורה לשורה, עסקים בלי קואורדינטות בסוף הרשימה (עם `distance_km: null`) ולא נעלמים, ו-`X-Total-Count` זהה בשתי הקריאות. `?sort=distance` בלי `lat`/`lng` → 422 עם הודעה בעברית. `?lat&lng` בלי `sort` → הסדר הרגיל (הצטרפו לאחרונה), ללא `distance_km`.
 - [ ] **`/map` — 2 קטגוריות = פינים מאוחדים** — הקישי "בשר ודגים" + "חלב וגבינות" — **תוצאה מצופה:** טבעת על שני הצ'יפים; הפינים/מונה המפה מציגים את האיחוד; "כל" ghost.
@@ -2168,7 +2176,7 @@ CC רץ אחרי Tier 1 — לכל מה ש-Tier 1 לא יכול אבל אינו 
 - ✅ → `frontend/e2e/flows/manual/producer-detail.spec.ts` (MT:PDP:3 + MT:PDP:4 מכסים) — **הוכרע 05/09 (MEH-2254): הדרישה «CTA מעל הקפל» מסופקת ע"י הפס הדביק, לא ע"י הכרטיס האינליין.** דפוס Wolt / Google Maps — CTA קבוע בתחתית המסך בנייד, וב-Pixel 5 (393×727) הפס נכנס בדיוק כשהכרטיס האינליין יוצא מה-viewport (PDP:3/4). ה-CTA האינליין ב-y=780→828, 101px מתחת לקפל על fixture דל במכוון, **תקין ואינו רגרסיה**; אין תיקון layout ואין טסט על מיקום הכרטיס. השורה המקורית (2026-04-18): «Mobile: inline CTA visible above fold — כפתור יצירת קשר נראה מיד מתחת לשם» — הוחלפה, לא נמחקה. מדידה: docs/qa/conversion-progress.md chunk 8, finding 2.
 - ✅ → `frontend/e2e/flows/manual/producer-detail.spec.ts` (MT:PDP:3) — Mobile: scroll past CTA → sticky bar slides in
 - ✅ → `frontend/e2e/flows/manual/producer-detail.spec.ts` (MT:PDP:4) — Mobile: scroll back to CTA → sticky bar slides out
-- [ ] Vacation state: banner visible, CTA muted, sticky bar muted — שיני `availability_status` ל-`vacation` בDB → banner ענבר ← כפתור ירוק כהה + "יחזרו בקרוב"
+- [ ] Vacation state: banner visible, CTA muted, sticky bar muted — שיני `availability_state` ל-`on_vacation` (עם `vacation_until`) בDB → banner ענבר ← כפתור ירוק כהה + "יחזרו בקרוב"
 - [ ] No images: category emoji + initials placeholder (not leaf) — עסק ללא תמונות → placeholder 120px עם emoji + 2 אותיות ראשונות
 - ✅ → `frontend/e2e/flows/manual/producer-detail.spec.ts` (MT:PDP:7) — With images: first image loads eagerly — `fetchpriority=high` + לא `loading=lazy` על התא הראשון, ולא-eager על תא משני (הבקרה שמבדילה)
 - ✅ → `frontend/e2e/flows/manual/producer-detail.spec.ts` (MT:PDP:8) — Desktop: no duplicate PrimaryContactButton — שני mounts, אחד נגיש, והוא של ה-sidebar
@@ -2598,19 +2606,19 @@ Two tightly coupled tasks shipped in one PR. Task 7 = show/hide password button.
 
 ### Inline validation — /login (task 8)
 
-- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:8) — submit is disabled on load — `/login` — load page — submit button is **disabled** (form is empty)
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:8) — **MEH-2623: submit is ENABLED on load** — `/login` — load page, tap «כניסה» on the empty form — `"האימייל לא תקין"` below the email, focus moves there, nothing is sent (was: button disabled)
 - ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:9) — touched-but-empty email is neutral — Email field — tap then tap away without typing → no error (touched but empty is neutral)
 - ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:10) — a malformed email blurs to «האימייל לא תקין» + aria-invalid — Email — type `foo` → tap away → red border + error `"האימייל לא תקין"` below the field
 - ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:11) — fixing it clears the error and shows «✓ תקין» — Email — fix to `foo@bar.com` → red border gone, now green border + `"✓ תקין"` below
 - ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:12) — password touched-empty blurs to «הזינו סיסמה» + aria-invalid — Password — tap then tap away empty → red border + error `"הזינו סיסמה"` below the field, `aria-invalid="true"` **(MEH-2256, 05/09: the row used to say «→ no error» — that was the observable of an unreachable predicate, not a design choice; option 1 revived the branch)**
 - [ ] Password — type `abc` → tap away → red border + error `"סיסמא חייבת להכיל לפחות 8 תווים"`
 - [ ] Password — fix to `abcdefgh` (8 chars) → green border + `"✓ תקין"`
-- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:15) — the gate — but the floor is ONE character, not eight: MEH-835 removed the minimum on /login on purpose — Submit button — disabled until BOTH email is valid AND password is ≥8 chars — then enabled
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:15) — the gate — the floor is ONE character (MEH-835) and since MEH-2623 it is enforced on click, not by a disabled button — valid email + empty password → tap «כניסה» → `"הזינו סיסמה"`, focus on the password, nothing sent
 - [ ] Server error path — submit with right-format-but-wrong-credentials → banner-level error appears → button re-enables
 
 ### Inline validation — /register (task 8)
 
-- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:17) — /register submit is disabled on load — `/register` — load page — submit button is **disabled** (form is empty + terms not agreed)
+- ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:17) — **MEH-2623: /register submit is ENABLED on load** — each tap names the first failing rule (name → email → password → terms) in the form error, focuses that field, and sends nothing; terms unticked → `"יש לאשר את תנאי השימוש לפני ההצטרפות"`
 - ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:18) — an empty name blurs to «שם מלא הוא שדה חובה» — Name field — tap then tap away empty → red border + `"שם מלא הוא שדה חובה"`
 - [ ] Name — type `שרה` → green border + `"✓ תקין"`
 - ✅ → `frontend/e2e/flows/manual/auth.spec.ts` (MT:eye-toggle:20) — the email error behaves as it does on /login — Email — same pattern as /login (`"האימייל לא תקין"` error)
@@ -2815,7 +2823,7 @@ _(Desktop top-banner case is covered by the legend assertion above, MEH-1009.)_
 - [ ] **Image ratio** — resize viewport from 375→768→1280; image stays square on mobile, shifts to 4:3 at `lg` breakpoint. No letterboxing / stretching.
 - [ ] **Cloudinary smart-crop** — for a Cloudinary source image, the URL has `c_fill,g_auto,ar_4:3` injected. Portrait producer photos don't crop heads off.
 - [ ] **Rating gate** — producer with `reviews_count = 2` shows no rating; `reviews_count >= 3` shows `★ 4.5 · 12` in the name row, `dir="ltr"`.
-- [ ] **Availability dot** — `is_available_today=true` → green; `availability_status="vacation"` → orange (overrides even if `is_available_today=true`); neither → no dot.
+- [ ] **Availability dot** — `availability_state="available_today"` → green; `"on_vacation"` → orange; `"accepting_orders"` → no dot. (The legacy `is_available_today` / `availability_status` are in no API response since MEH-2272 — `curl /producers` shows neither key.)
 - [ ] **Description fallback** — `short_description` shown when present; else `top_product_name`; else row hidden. Descriptions past 80 chars get a trailing `…`.
 - [ ] **BadgeRow fold** — producer with `is_verified + is_recommended + organic_certified + grass_fed` shows exactly 2 pills (verified + recommended) per the new 8-key priority.
 - [ ] **Footer** — price truncates at `max-w-[120px]`; primary-method icon switches per `primary_contact_method` (whatsapp → WhatsappLogo, phone → Phone, website → Globe, email → EnvelopeSimple).
@@ -4391,6 +4399,10 @@ ROLLBACK;   -- חובה. הבדיקה היא האם ה-DELETE נכשל, לא ה�
 - [ ] לחיצה על קישור הביטול במייל — תוצאה מצופה: «הוסרת מרשימת ההמתנה». לחיצה שנייה — אותו דף. קישור משובש — «הקישור אינו תקין».
 - [ ] ב-375: השדה והכפתור אחד מתחת לשני, כפתור 44px; ב-1440: באותה שורה.
 
+## MEH-1676 — «ביקוש מאזורים חדשים» בתובנות בית העסק (30/10/2026)
+- [ ] כאורחת, בדף קבוצת רכש (או דף בית עסק) להקליד ב«מגיעים אלייך?» עיר שלא ברשימה וללחוץ «אפשר לשאול את בית העסק» — אחר כך כבעלת העסק לפתוח /producer/dashboard/insights — תוצאה מצופה: כרטיס «ביקוש מאזורים חדשים» עם «אחת ביקשה משלוח ל{עיר}» (ואחרי לחיצה נוספת «2 ביקשו משלוח ל{עיר}»).
+- [ ] בית עסק בלי בקשות — תוצאה מצופה: הכרטיס מוצג עם «עוד אין בקשות…», בלי שורות.
+- [ ] לחיצת וואטסאפ רגילה (לא דרך «אפשר לשאול») — תוצאה מצופה: לא נספרת בכרטיס.
 ## MEH-2620 — שורת הסבר מתחת לסינון בקבוצות רכש
 - [ ] `/group-buys` ב-375 — **תוצאה מצופה:** לשוניות «פתוחות להצטרפות · הגיעו ליעד · הושלמו»; מתחתיהן «מצטרפות עכשיו בלי לשלם. כשמגיעים למינימום המשתתפות, המחיר הקבוצתי נפתח.»
 - [ ] לחיצה על «הגיעו ליעד» — **תוצאה מצופה:** השורה מתחלפת ל«הקבוצות האלה הגיעו למינימום. ההצטרפות נסגרה ובית העסק בקשר עם המשתתפות.»

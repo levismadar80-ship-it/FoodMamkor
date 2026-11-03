@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { MagnifyingGlass, Plant, Leaf, CaretDown, Faders, MapPin } from "@phosphor-icons/react";
 import { chipsToQuery } from "@/lib/filter-url";
 import { useTranslations } from "next-intl";
@@ -40,7 +40,8 @@ import {
 import FilterSheet from "@/components/FilterSheet";
 import { withChipIcons } from "@/lib/chip-icons";
 import { useUserCity } from "@/lib/use-user-city";
-import { useUserLocation } from "@/lib/user-location";
+import { useUserLocation, setUserLocation } from "@/lib/user-location";
+import { showToast } from "@/lib/toast";
 import { trackEvent } from "@/lib/analytics";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
@@ -119,6 +120,8 @@ export default function ProducersClient({
   ratingSortEnabled = false,
 }) {
   const t = useTranslations("producers");
+  // MEH-2616: the location-error strings shared with /map's GPS button.
+  const tGeo = useTranslations("map.client.errors");
   const searchParams = useSearchParams();
 
   // MEH-990: city chip is text-only like the rest of CHIPS_CONFIG (Emoji LOCK,
@@ -174,6 +177,9 @@ export default function ProducersClient({
   // enables the distance option without a reload. `locRef` mirrors it for the
   // useCallback([]) fetchers, exactly like sortOrderRef.
   const userLoc = useUserLocation();
+  // MEH-2616: true while a "מרחק" pick waits on the browser's location answer.
+  // Disables the select (as on /map) so a second pick cannot race the first.
+  const [geoSortPending, setGeoSortPending] = useState(false);
   const locRef = useRef(userLoc);
   useEffect(() => { locRef.current = userLoc; }, [userLoc]);
   // The order actually requested: a distance choice with no fix (deep-link
@@ -512,16 +518,89 @@ export default function ProducersClient({
   // it), flip state (fires the [sortOrder] effect → re-establishes the
   // unfiltered base), and refetch the filtered list in place when filters are
   // active so the visible results re-order immediately.
+  //
+  // MEH-2616: "מרחק" is a trigger, not a disabled option — the /map decision
+  // (MEH-2014, MapClient.jsx handleSortChange). This page has no other way to
+  // give a location, so a grey option here could never become usable. Picking
+  // it without a fix asks the browser once; success stores the fix and applies
+  // the sort, failure leaves the order as it was and says why. The request is
+  // in-context only, never on page load.
   const handleSortChange = (e) => {
-    const next = sortValuesFor(ratingSortEnabled, !!userLoc).includes(e.target.value)
-      ? e.target.value
-      : SORT_DEFAULT;
-    if (next === sortOrder) return;
+    const value = e.target.value;
+    if (value === SORT_DISTANCE && !userLoc) {
+      requestDistanceSort();
+      return;
+    }
+    applySort(value);
+  };
+
+  const applySort = (value) => {
+    // hasLocation=true: applySort is only reached for distance once a fix
+    // exists (or is being stored this tick by requestDistanceSort).
+    const next = sortValuesFor(ratingSortEnabled, true).includes(value) ? value : SORT_DEFAULT;
+    if (next === sortOrderRef.current) return;
     sortOrderRef.current = next;
     setSortOrder(next);
     syncUrl(chips, cityFilter, searchQ, categoryFilter);
     // MEH-2294: the filtered refetch now happens in the [effectiveSort] effect.
     trackEvent("producers_sort_change", { sort: next });
+  };
+  // MEH-2616: the location answer can land seconds after the pick, while the
+  // chips/search stay usable. The callback calls the LATEST applySort through
+  // this ref, so it syncs the URL with the current filters, not the ones
+  // captured at pick time. `mountedRef` drops an answer that lands after unmount.
+  const applySortRef = useRef(applySort);
+  applySortRef.current = applySort;
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
+
+  const requestDistanceSort = () => {
+    if (geoSortPending) return;
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      showToast.error(tGeo("no_gps"));
+      return;
+    }
+    setGeoSortPending(true);
+    // Some browsers call NEITHER callback when the permission prompt is
+    // dismissed (the 8 s timeout only starts after permission resolves), which
+    // would leave the select disabled for good. Release it after 15 s; a late
+    // answer still applies normally.
+    const release = setTimeout(() => {
+      if (mountedRef.current) setGeoSortPending(false);
+    }, 15000);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        clearTimeout(release);
+        if (!mountedRef.current) return;
+        setGeoSortPending(false);
+        const { latitude: lat, longitude: lng } = pos.coords || {};
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+          showToast.error(tGeo("gps_unknown"));
+          return;
+        }
+        setUserLocation(lat, lng);
+        applySortRef.current(SORT_DISTANCE);
+      },
+      (err) => {
+        clearTimeout(release);
+        if (!mountedRef.current) return;
+        setGeoSortPending(false);
+        // Never surface GeolocationPositionError.message (English-only,
+        // developer-facing). These strings name no city picker — /producers
+        // has none that sets a sort origin, unlike /map's sort.geo_* copy.
+        const msgs = {
+          1: tGeo("permission_denied"),
+          2: tGeo("position_unavailable"),
+          3: tGeo("timeout"),
+        };
+        showToast.info(msgs[err?.code] ?? tGeo("gps_unknown"));
+        // sortOrder is untouched, so the controlled <select> snaps back.
+      },
+      { timeout: 8000, enableHighAccuracy: true },
+    );
   };
 
   const handleChipClick = (key) => {
@@ -871,9 +950,12 @@ export default function ProducersClient({
           sideways scroller bled to the glass below lg (-mx-4/px-4 against the
           page's px-4), py-1/-mt-1 keep focus rings inside the scrollport,
           overscroll-x-none so iOS does not rubber-band the rail (MEH-2574),
-          visible overflow at lg+ so the sheet's anchored panel is not clipped. */}
+          visible overflow at lg+ so the sheet's anchored panel is not clipped;
+          lg:flex-wrap so the MEH-2598 service chips wrap instead of pushing
+          the row past the viewport at 200% text (WCAG 1.4.4, 44-text-scale;
+          same as /map ServiceChipRow). */}
       <div
-        className="-mx-4 -mt-1 mb-3 flex items-center gap-2 min-w-0 overflow-x-auto overscroll-x-none px-4 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:-mx-1 lg:px-1 lg:overflow-visible"
+        className="-mx-4 -mt-1 mb-3 flex items-center gap-2 min-w-0 overflow-x-auto overscroll-x-none px-4 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:-mx-1 lg:px-1 lg:overflow-visible lg:flex-wrap"
         data-testid="producers-filter-row"
         onFocus={keepFocusedChipClear}
       >
@@ -1007,29 +1089,28 @@ export default function ProducersClient({
               it re-syncs ?sort=, resets pagination, and refetches (both the
               filtered fetch and infinite-scroll pages). Mirrors the /map sort
               control shape (MapClient.jsx).
-              MEH-1864: this axis has exactly two values, so gating "rating" off
-              would leave a select whose only option is the value already
-              applied — a dead affordance. The whole control goes with it; it
-              returns intact the moment the catalog crosses the threshold.
-              (/map keeps its control below the threshold: it still has
-              nearest + newest to switch between.) */}
-          {/* MEH-2294: rendered whenever it holds ≥2 real choices — the rating
-              gate above, OR a location fix (newest + distance, the /map shape).
-              Below the rating threshold with no fix: no control, as before. */}
-          {(ratingSortEnabled || !!userLoc) && (
+              MEH-1864: "rating" is offered only above the rating-data
+              threshold. Below it the control used to disappear entirely; since
+              MEH-2616 it stays with newest + distance (see below). */}
+          {/* MEH-2616: always rendered — "מרחק" is a trigger now, so even below
+              the rating threshold there are two real choices (newest +
+              distance), the same shape /map keeps. */}
           <div className="relative inline-flex items-center shrink-0 ms-auto">
             <span className="text-fg-muted" aria-hidden="true">{t("sort.label")}</span>
             <select
               value={effectiveSort}
               onChange={handleSortChange}
+              disabled={geoSortPending}
+              aria-busy={geoSortPending || undefined}
               aria-label={t("sort.aria_label")}
               data-testid="producers-sort"
-              className="appearance-none bg-transparent border-0 font-medium text-primary min-h-[44px] ps-1 pe-6 cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
+              className="appearance-none bg-transparent border-0 font-medium text-primary min-h-[44px] ps-1 pe-6 cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 disabled:opacity-60"
             >
               <option value="newest">{t("sort.newest")}</option>
               {ratingSortEnabled && <option value="rating">{t("sort.top_rated")}</option>}
-              {/* MEH-2294: disabled until a location fix exists; enables live. */}
-              <option value={SORT_DISTANCE} disabled={!userLoc} data-testid="producers-sort-distance">
+              {/* MEH-2616: never disabled — picking it without a fix asks for
+                  one (requestDistanceSort). */}
+              <option value={SORT_DISTANCE} data-testid="producers-sort-distance">
                 {t("sort.distance")}
               </option>
             </select>
@@ -1040,7 +1121,6 @@ export default function ProducersClient({
               className="pointer-events-none absolute end-1 text-primary"
             />
           </div>
-          )}
         </div>
       )}
 
@@ -1144,7 +1224,7 @@ function FilterEmptyState({ onClear, searchQ }) {
         type="button"
         onClick={onClear}
         data-testid="producers-empty-clear"
-        className="bg-primary text-white px-6 py-3 rounded-[12px] font-medium hover:bg-primary-dark transition"
+        className="bg-primary text-white px-6 py-3 rounded-md font-medium hover:bg-primary-dark transition"
       >
         {t("empty.clear_all_show_all")}
       </button>
@@ -1177,7 +1257,7 @@ function CatalogEmptyState() {
         {!isAdmin && (
           <Link
             href="/register/producer"
-            className="bg-primary text-white px-6 py-3 rounded-[12px] font-medium hover:bg-primary-dark transition"
+            className="bg-primary text-white px-6 py-3 rounded-md font-medium hover:bg-primary-dark transition"
           >
             {t("add_cta")}
           </Link>
@@ -1190,7 +1270,7 @@ function CatalogEmptyState() {
             same-page jump rather than a cross-page hop. */}
         <Link
           href="#newsletter"
-          className="border border-primary text-primary px-6 py-3 rounded-[12px] font-medium hover:bg-green-50 transition"
+          className="border border-primary text-primary px-6 py-3 rounded-md font-medium hover:bg-green-50 transition"
         >
           {t("notify_cta")}
         </Link>
@@ -1206,7 +1286,7 @@ function PageOverflowState() {
       <p className="text-fg-muted mb-4">{t("message")}</p>
       <Link
         href="/producers"
-        className="inline-flex items-center bg-primary text-white px-5 py-2 rounded-[12px] hover:bg-primary-dark transition"
+        className="inline-flex items-center bg-primary text-white px-5 py-2 rounded-md hover:bg-primary-dark transition"
       >
         {t("back_cta")}
       </Link>
@@ -1229,12 +1309,12 @@ function ServerPageLinks({ page, totalPages }) {
       {prev ? (
         <Link
           href={prev}
-          className="border border-border bg-white text-text px-4 py-2 rounded-[12px] hover:bg-green-50 transition"
+          className="border border-border bg-white text-text px-4 py-2 rounded-md hover:bg-green-50 transition"
         >
           {t("prev")}
         </Link>
       ) : (
-        <span className="border border-border text-fg-muted px-4 py-2 rounded-[12px] opacity-50">
+        <span className="border border-border text-fg-muted px-4 py-2 rounded-md opacity-50">
           {t("prev")}
         </span>
       )}
@@ -1242,12 +1322,12 @@ function ServerPageLinks({ page, totalPages }) {
       {next ? (
         <Link
           href={next}
-          className="border border-border bg-white text-text px-4 py-2 rounded-[12px] hover:bg-green-50 transition"
+          className="border border-border bg-white text-text px-4 py-2 rounded-md hover:bg-green-50 transition"
         >
           {t("next")}
         </Link>
       ) : (
-        <span className="border border-border text-fg-muted px-4 py-2 rounded-[12px] opacity-50">
+        <span className="border border-border text-fg-muted px-4 py-2 rounded-md opacity-50">
           {t("next")}
         </span>
       )}

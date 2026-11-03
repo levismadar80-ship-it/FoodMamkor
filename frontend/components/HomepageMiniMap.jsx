@@ -24,7 +24,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { renderToStaticMarkup } from "react-dom/server";
 import { MapContainer, TileLayer, Marker, Tooltip, useMap } from "react-leaflet";
 import { ArrowRight, MapTrifold } from "@phosphor-icons/react";
@@ -132,7 +132,7 @@ function FitToBusinesses({ points }) {
 function PreviewSkeleton() {
   const t = useTranslations("map.homepage_mini");
   return (
-    <div className="w-full h-full rounded-[12px] bg-green-50 animate-pulse flex flex-col items-center justify-center gap-3">
+    <div className="w-full h-full rounded-md bg-green-50 animate-pulse flex flex-col items-center justify-center gap-3">
       <MapTrifold size={48} className="text-primary/30" />
       <p className="text-fg-muted text-sm">{t("loading")}</p>
     </div>
@@ -142,7 +142,7 @@ function PreviewSkeleton() {
 function PreviewEmpty() {
   const t = useTranslations("map.homepage_mini");
   return (
-    <div className="w-full h-full rounded-[12px] bg-green-50 flex flex-col items-center justify-center gap-2 px-4 text-center">
+    <div className="w-full h-full rounded-md bg-green-50 flex flex-col items-center justify-center gap-2 px-4 text-center">
       <MapTrifold size={48} className="text-primary/40" />
       <p className="text-text text-sm">
         {t("pre_launch_hint")}
@@ -241,7 +241,7 @@ export default function HomepageMiniMap() {
           <p className="text-sm text-fg-muted mt-1">{t("dot_subtitle")}</p>
         </header>
 
-        <div className="rounded-[12px] overflow-hidden border border-border h-[320px] md:h-[420px] relative">
+        <div className="rounded-md overflow-hidden border border-border h-[320px] md:h-[420px] relative">
           {!shouldLoad || plottable === null ? (
             <PreviewSkeleton />
           ) : plottable.length === 0 ? (

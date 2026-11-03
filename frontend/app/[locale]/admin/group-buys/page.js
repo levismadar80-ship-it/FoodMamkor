@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { ShoppingCart } from "@phosphor-icons/react";
 import { formatEventDate } from "@/lib/format-date";
@@ -14,7 +14,7 @@ import { SkeletonList } from "@/components/Skeleton";
 // Status class map; labels resolved via t() in render
 const STATUS_CLS = {
   open: "bg-blue-50 text-blue-700",
-  funded: "bg-[#EAF3DE] text-primary",
+  funded: "bg-green-50 text-primary",
   cancelled: "bg-gray-100 text-gray-500",
   fulfilled: "bg-green-50 text-primary",
 };

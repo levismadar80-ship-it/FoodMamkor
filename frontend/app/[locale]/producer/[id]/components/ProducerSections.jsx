@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 // MEH-999: the events card became a Link to /events/[id] (was a static div).
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { CaretLeft, Leaf, MapPin } from "@phosphor-icons/react";
 import dynamic from "next/dynamic";
 import { useTranslations, useFormatter, useLocale } from "next-intl";

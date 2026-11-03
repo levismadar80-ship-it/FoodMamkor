@@ -62,6 +62,17 @@ vi.mock("next/link", () => ({
   ),
 }));
 
+// MEH-1428: the "ערכת שיתוף" section mounts two canvas cards. Stubbed here for
+// the same reason the sibling cards above are: this file asserts a PAGE-level
+// contract, and a real canvas would drag Instagram-card geometry (and its icon
+// set) into it. Their own behaviour is covered by ReviewCardLayout.test.jsx +
+// ShareKitOwnerMode.test.jsx.
+vi.mock("@/components/StoryCardCanvas", () => ({
+  default: () => <div data-testid="story-card-canvas-stub" />,
+}));
+vi.mock("@/components/ReviewCardCanvas", () => ({
+  default: () => <div data-testid="review-card-canvas-stub" />,
+}));
 vi.mock("@phosphor-icons/react", () => ({
   PencilSimple: (p) => <span {...p} />,
   Warning: (p) => <span {...p} />,

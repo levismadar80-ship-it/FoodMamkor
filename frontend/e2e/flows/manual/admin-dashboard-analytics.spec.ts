@@ -247,7 +247,8 @@ test.describe("/admin — «מה מחכה לטיפול»", () => {
     const stub = await stubAdmin(page);
     await openDashboard(page);
     expect(stub.unstubbed, "an /api/* read reached the 404 catch-all — a stub is missing").toEqual([]);
-    expect(stub.dashboardCalls(), "the layout and the page each read /admin/dashboard once").toBe(2);
+    // MEH-2399 (admin/dashboard-data.js): the layout and the home share ONE /admin/dashboard fetch.
+    expect(stub.dashboardCalls(), "the layout and the page share one /admin/dashboard read").toBe(1);
   });
 
   // MT:MEH-2359:1 — the pending list IS the page: one row per preview entry, «בדוק» → the edit screen,
