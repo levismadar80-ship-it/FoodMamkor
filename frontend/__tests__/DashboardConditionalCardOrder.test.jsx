@@ -87,6 +87,8 @@ vi.mock("@phosphor-icons/react", () => ({
 vi.mock("@/components/InfoTooltip", () => ({ default: () => null }));
 vi.mock("@/components/PhoneVerifyCard", () => ({ default: () => null }));
 vi.mock("@/lib/holidays", () => ({ getUpcomingHoliday: () => null }));
+// MEH-1687 D: the holiday hint renders HolidayIcon (Phosphor names this file's icon mock lacks).
+vi.mock("@/components/HolidayIcon", () => ({ default: () => null }));
 // The order contract is page-level — stub the card to a stable testid.
 vi.mock("@/components/ProfileCompletenessCard", () => ({
   default: () => <div data-testid="completeness-card" />,

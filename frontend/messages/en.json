@@ -1243,7 +1243,7 @@
       "title_alt": "Businesses delivering today"
     },
     "holiday_banner": {
-      "approaching": "{name} is approaching {emoji}",
+      "approaching": "{name} is approaching",
       "aria": "Holiday notice",
       "close_aria": "Close"
     }

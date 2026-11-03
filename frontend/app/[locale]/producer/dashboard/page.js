@@ -12,6 +12,7 @@ import { detailToMessage } from "@/lib/errors";
 import { israelToday } from "@/lib/israel-date";
 import { showToast } from "@/lib/toast";
 import { getUpcomingHoliday } from "@/lib/holidays";
+import HolidayIcon from "@/components/HolidayIcon";
 import InfoTooltip from "@/components/InfoTooltip";
 import WhatsThis from "@/components/WhatsThis";
 import ProfileCompletenessCard from "@/components/ProfileCompletenessCard";
@@ -659,7 +660,8 @@ export default function ProducerDashboardPage() {
             className="rounded-[16px] p-4 mb-6 text-sm flex items-start gap-3"
             style={{ backgroundColor: h.color + "15", border: `1.5px solid ${h.color}35` }}
           >
-            <span className="text-xl shrink-0" aria-hidden="true">{h.emoji}</span>
+            {/* MEH-1687 D: Phosphor icon, not a colour emoji. */}
+            <span className="text-xl shrink-0 flex" aria-hidden="true"><HolidayIcon name={h.icon} /></span>
             <div>
               <p className="font-semibold text-text">{h.dashboardHint}</p>
               {/* MEH-2429: this pointed at /producer/dashboard — the page it
