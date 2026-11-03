@@ -2314,6 +2314,18 @@ class ProducerUpdate(BaseModel):
     def _validate_whatsapp_group(cls, v):
         return _whatsapp_group_validator(v)
 
+    # MEH-1676: the owner's opt-out for the public «לא מגיעים אליך?» CTA
+    # (column since MEH-1677). Optional so an absent key leaves it alone; an
+    # explicit null is refused because the column is NOT NULL.
+    coverage_cta_enabled: bool | None = None
+
+    @field_validator("coverage_cta_enabled")
+    @classmethod
+    def _coverage_cta_not_null(cls, v):
+        if v is None:
+            raise ValueError("coverage_cta_enabled must be true or false")
+        return v
+
     # MEH-1608: URL/@ → bare handle (the renderer builds the link itself).
     @field_validator("instagram")
     @classmethod
