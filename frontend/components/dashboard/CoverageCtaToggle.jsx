@@ -7,13 +7,17 @@
  *           switches in AlertPrefsPanel.
  * Touches:  PUT /producers/me { coverage_cta_enabled } — the column since
  *           MEH-1677; CoverageRequestCta.jsx already hides itself on false.
- * Does NOT: decide where the CTA shows — CoverageRequestCta owns that.
- * History:  MEH-1676 (creation; copy approved 03/11, Sapir's delegation).
+ * Does NOT: decide where the CTA shows — CoverageRequestCta owns that. The
+ *           switch only renders when the owner's page CAN show the CTA, read
+ *           from the same gate (DeliveryChecker.jsx coverageCtaReachable).
+ * History:  MEH-1676 (creation; copy approved 03/11, Sapir's delegation;
+ *           03/11 ערב: 44×44 hit area + hidden where the CTA never renders).
  */
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
+import { coverageCtaReachable } from "@/components/DeliveryChecker";
 
 export default function CoverageCtaToggle({ producer, onSaved }) {
   const t = useTranslations("dashboard.producer.coverage_cta");
@@ -37,6 +41,12 @@ export default function CoverageCtaToggle({ producer, onSaved }) {
     }
   };
 
+  // An owner whose page never renders the CTA (no delivery, nationwide with no
+  // exclusions, no named areas, or no WhatsApp phone) gets no switch: turning
+  // it on or off would change nothing she can see. After the hooks above, so
+  // the hook order is the same on every render.
+  if (!coverageCtaReachable(producer)) return null;
+
   return (
     <div className="flex items-start justify-between gap-4 py-3" data-testid="coverage-cta-toggle">
       <div className="min-w-0">
@@ -47,6 +57,9 @@ export default function CoverageCtaToggle({ producer, onSaved }) {
           {t("helper")}
         </p>
       </div>
+      {/* The track stays 40×24; the button around it is the 44×44 tap
+          target (03/11 ערב, MEH-1687 E: 44 on mobile, no exceptions). The
+          negative block margin keeps the row height it had. */}
       <button
         type="button"
         role="switch"
@@ -56,15 +69,18 @@ export default function CoverageCtaToggle({ producer, onSaved }) {
         disabled={saving}
         onClick={toggle}
         data-testid="coverage-cta-switch"
-        className={`relative shrink-0 w-10 h-6 rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-primary/40 ${
-          on ? "bg-primary" : "bg-border"
-        }`}
+        className="relative shrink-0 inline-flex items-center justify-center min-h-[44px] min-w-[44px] -my-2.5 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
       >
         <span
-          className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${
-            on ? "end-1" : "start-1"
-          }`}
-        />
+          aria-hidden="true"
+          className={`relative block w-10 h-6 rounded-full transition-colors ${on ? "bg-primary" : "bg-border"}`}
+        >
+          <span
+            className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${
+              on ? "end-1" : "start-1"
+            }`}
+          />
+        </span>
       </button>
     </div>
   );
