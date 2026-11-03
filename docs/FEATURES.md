@@ -194,6 +194,7 @@ column and use staging's `SECTIONS`-array layout with `font-headline` + `site-te
 | Status | Version | Feature | Notes |
 |---|---|---|---|
 | 🚧 | v1 | GitHub branch protection rules (`main`, `staging`) | Manual UI setup — see [DEPLOYMENT.md](./DEPLOYMENT.md) §C |
+| 🚧 | v1 | «המליצו על בית עסק» — community business suggestions (`/recommend` → `outreach_leads` with `source="community"`, admin badge + «שליחת תודה») | MEH-2633. Publishes nothing: the business still registers itself and passes manual approval + the licence check. PII retention is MEH-2638 |
 | 🚧 | v1 | Real Lighthouse run against production domain | Sandbox can't run Chrome — must run from a dev machine. See [TESTING.md](./TESTING.md) |
 | 🚧 | v1 | Railway `staging` environment + Vercel `staging.mehamakor.online` domain | Manual UI setup — see [DEPLOYMENT.md](./DEPLOYMENT.md) §A + §B |
 | 📋 | v1 | User testing (5 consumers + 3 producers per [LAUNCH_CHECKLIST.md](./archive/LAUNCH_CHECKLIST.md)) | Manual, not in scope for code |
