@@ -41,7 +41,7 @@ vi.mock("@/lib/holidays", () => ({ getActiveHoliday: vi.fn() }));
 const HOLIDAY = {
   key: "test",
   name: "TestHoliday",
-  emoji: "🎉",
+  icon: "Sparkle",
   color: "#abcdef",
   tagline: "tag",
   cta: "Shop",

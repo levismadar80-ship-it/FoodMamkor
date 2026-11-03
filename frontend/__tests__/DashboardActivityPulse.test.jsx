@@ -69,6 +69,8 @@ vi.mock("@/components/InfoTooltip", () => ({ default: () => null }));
 vi.mock("@/components/PhoneVerifyCard", () => ({ default: () => null }));
 vi.mock("@/components/ui/Input", () => ({ default: () => null }));
 vi.mock("@/lib/holidays", () => ({ getUpcomingHoliday: () => null }));
+// MEH-1687 D: the holiday hint renders HolidayIcon (Phosphor names this file's icon mock lacks).
+vi.mock("@/components/HolidayIcon", () => ({ default: () => null }));
 
 // Mutable analytics payload — each test sets it before render (vi.hoisted so
 // the api mock factory can close over it despite vi.mock hoisting).
