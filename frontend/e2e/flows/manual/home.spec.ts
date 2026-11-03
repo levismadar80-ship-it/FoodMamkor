@@ -1110,8 +1110,12 @@ test.describe("manual › filter chips + FilterSheet (MEH-1418 · task 12)", () 
   test("the home filter row is exactly the promoted service chips plus the sheet trigger and the day chip, each promoted chip with an aria-hidden glyph", async ({ page }) => {
     await consent(page);
     await stubTiles(page);
-    await mockApi(page);
-    await gotoHome(page);
+    // MEH-2323 (02/11): `on_site` is data-gated (MEH-2598), so the promoted row
+    // is three chips only when the LOADED feed clears DIET_CHIP_MIN. A bare
+    // gotoHome renders the server's catalog on a live-backend runner (header
+    // ⚠️ block) — staging has < 5 on-site businesses, so CI saw 2 chips. The
+    // fixture feed is what beforeAll censuses, so it must be what loaded.
+    await gotoFixtureFeed(page, "/", PRODUCERS);
     const row = scope(page).getByTestId("home-filter-row");
     // Counted by testid, not by role: MEH-2537 moved the delivery-day chip into
     // this row, and its ✕ appears whenever days are set, so a role count would

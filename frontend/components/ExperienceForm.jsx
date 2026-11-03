@@ -373,7 +373,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
     <form onSubmit={submit} noValidate className="bg-background border border-border rounded-[16px] p-6 space-y-5">
       {unverified && <UnverifiedEmailNotice />}
       {serverError && (
-        <div className="bg-red-50 border border-red-200 text-red-700 rounded-[12px] p-3 text-sm">{serverError}</div>
+        <div className="bg-red-50 border border-red-200 text-red-700 rounded-md p-3 text-sm">{serverError}</div>
       )}
 
       <Input
@@ -395,7 +395,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
           onChange={setField("description")}
           rows={5}
           placeholder={t("field_description_placeholder")}
-          className={`w-full border rounded-[12px] px-3 py-2 bg-white ${
+          className={`w-full border rounded-md px-3 py-2 bg-white ${
             fieldErrors.description ? "border-error" : "border-border"
           }`}
           required
@@ -407,7 +407,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
       {/* Live moderation feedback */}
       {checking && <p className="text-xs text-fg-muted">{t("checking_content")}</p>}
       {verdict?.status === "FLAGGED" && (
-        <div className="bg-yellow-50 border border-yellow-300 text-yellow-800 rounded-[12px] p-3 text-sm">
+        <div className="bg-yellow-50 border border-yellow-300 text-yellow-800 rounded-md p-3 text-sm">
           <Warning size={16} weight="fill" className="inline align-[-2px]" aria-hidden="true" /> {verdict.reason}
           {verdict.suggestion && (
             <p className="text-xs text-yellow-700 mt-1">
@@ -417,7 +417,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
         </div>
       )}
       {verdict?.status === "REJECTED" && (
-        <div className="bg-red-50 border border-red-300 text-red-800 rounded-[12px] p-3 text-sm">
+        <div className="bg-red-50 border border-red-300 text-red-800 rounded-md p-3 text-sm">
           <XCircle size={16} weight="fill" className="inline align-[-2px]" aria-hidden="true" /> {verdict.reason || t("rejected_fallback")}
         </div>
       )}
@@ -426,7 +426,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
         <select
           value={form.category}
           onChange={setField("category")}
-          className="w-full border border-border rounded-[12px] px-3 py-2 bg-white"
+          className="w-full border border-border rounded-md px-3 py-2 bg-white"
         >
           <option value="">{t("category_none")}</option>
           {CATEGORY_KEYS.map((c) => (
@@ -684,7 +684,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
           onChange={setField("requirements")}
           rows={3}
           placeholder={t("field_requirements_placeholder")}
-          className="w-full border border-border rounded-[12px] px-3 py-2 bg-white"
+          className="w-full border border-border rounded-md px-3 py-2 bg-white"
         />
       </Field>
 

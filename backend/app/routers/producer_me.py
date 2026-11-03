@@ -59,7 +59,6 @@ from app.schemas.schemas import (
     ProductOut,
     ProductUpdate,
     ReviewInviteLinkOut,
-    state_to_legacy,
 )
 from app.services.auth_notifications import (
     notify_admin_new_producer,
@@ -916,8 +915,9 @@ def update_my_producer(
 # is_available_today or availability_status any more, so the two mapping
 # helpers that lived here are gone. What replaced them:
 #
-#   enum -> legacy   schemas.state_to_legacy — one caller, the ProducerListOut
-#                    derivation. Not called from a router at all.
+#   enum -> legacy   nothing. MEH-2272 removed the derived pair from every
+#                    response (typed contract in chunk 1, these dict responses
+#                    in chunk 2) and deleted schemas.state_to_legacy with them.
 #   legacy -> enum   _status_to_state below, which reads the CURRENT STATE
 #                    rather than the two columns. That is the whole point: the
 #                    old _legacy_to_state consulted columns this module had
@@ -987,12 +987,9 @@ def toggle_availability(
         )
     producer.last_active_at = utc_now()
     db.commit()
-    return {
-        # Derived for the response, not read back off a column. MEH-2272
-        # removes this key together with the field on ProducerListOut.
-        "is_available_today": producer.availability_state == "available_today",
-        "availability_state": producer.availability_state,
-    }
+    # MEH-2272 chunk 2: the derived `is_available_today` key is gone — the
+    # enum is the only availability field any response carries.
+    return {"availability_state": producer.availability_state}
 
 
 # MEH-12: durable availability status ("open | full | vacation") that
@@ -1037,9 +1034,8 @@ def set_availability_status(
     producer.vacation_until = data.vacation_until if data.status == "vacation" else None
     producer.last_active_at = utc_now()
     db.commit()
+    # MEH-2272 chunk 2: the derived `availability_status` key is gone.
     return {
-        # Derived, same as the toggle above.
-        "availability_status": state_to_legacy(producer.availability_state)[1],
         "availability_state": producer.availability_state,
         "vacation_until": producer.vacation_until.isoformat()
         if producer.vacation_until
@@ -1128,26 +1124,10 @@ def dashboard(
         or 0
     )
 
-    # MEH-2271 — bound here rather than spread inline from a zip(): the
-    # comment below is load-bearing and a zip idiom buries it (CI reviewer,
-    # #3460).
-    _derived_today, _derived_status = state_to_legacy(producer.availability_state)
-
     return {
         "producer": {
             "id": str(producer.id),
             "name": producer.name,
-            # MEH-2271 — both derived from the enum, not read off the two
-            # columns this module no longer writes. Reading the columns here
-            # would report the value they froze at, which is the exact bug
-            # deriving everywhere else exists to prevent. This is the SECOND
-            # call site of state_to_legacy, and Sapir's ruling of 2026-09-06 asked for
-            # exactly one (the schema derivation) — the deviation is stated in
-            # the PR body rather than resolved by leaving a stale read here.
-            # MEH-2272 removes both keys; the frontend dashboard already reads
-            # only availability_state (app/[locale]/producer/dashboard/page.js).
-            "is_available_today": _derived_today,
-            "availability_status": _derived_status,
             # MEH-291 — durable 4-value enum, the only one written.
             # Defensive default in case ORM ever returns NULL despite NOT NULL.
             "availability_state": producer.availability_state or "accepting_orders",

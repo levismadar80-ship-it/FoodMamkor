@@ -44,7 +44,7 @@ export default function ForgotPasswordClient() {
              for a known and an unknown address — the spec asserts exactly that. */
         <div
           data-testid="forgot-sent"
-          className="bg-green-50 border border-primary/20 rounded-[12px] px-5 py-4 text-primary text-sm"
+          className="bg-green-50 border border-primary/20 rounded-md px-5 py-4 text-primary text-sm"
         >
           <p className="font-medium mb-1">
             {t("auth.passwordRecovery.forgot.success_main")}

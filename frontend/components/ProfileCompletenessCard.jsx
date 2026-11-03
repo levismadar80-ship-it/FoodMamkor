@@ -354,7 +354,7 @@ export default function ProfileCompletenessCard({ producer }) {
           {/* Top remaining step emphasized as the primary next-step. Box = faint
               primary tint via opacity (REUSES: KashrutBadgeStrip.jsx:53). */}
           {firstTodo && (
-            <div className="mt-4 bg-primary/5 border border-primary/20 rounded-[12px] p-4">
+            <div className="mt-4 bg-primary/5 border border-primary/20 rounded-md p-4">
               <p className="text-sm text-text">
                 <span className="font-semibold">{t("next_step_prefix")}</span>{" "}
                 {t(`steps.${firstTodo.key}`)}

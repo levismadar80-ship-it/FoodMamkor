@@ -1988,43 +1988,9 @@ AVAILABILITY_STATES = (
 )
 
 
-# MEH-2271 (MEH-1854 chunk 3a): the ONE owner of the enum -> legacy mapping.
-# It used to live in routers/producer_me.py as `_state_to_legacy` with three
-# callers — the state endpoint, the expiry job, and nothing else read the
-# result back, so the pair of columns and the enum were two authorities over
-# one fact (workflow.md Smell #1). Chunk 3a inverts that: `availability_state`
-# is the only thing written, and the two legacy fields exist only as a derived
-# view on `ProducerListOut` for the one release before MEH-2272 removes them.
-#
-# MEH-2272 chunk 1 removed them from ProducerListOut. The remaining callers are
-# the untyped dict responses in routers/producer_me.py (the legacy toggle /
-# status endpoints and GET /dashboard); a later MEH-2272 chunk removes those
-# keys and this function with them.
-#
-# It lives here, beside AVAILABILITY_STATES, because schemas.py is the single
-# module both the routers and the services can import without a cycle —
-# services/availability_validation.py already imports AVAILABILITY_STATES from
-# here, so the arrow only points one way.
-_STATE_TO_LEGACY: dict[str, tuple[bool, str]] = {
-    "accepting_orders": (False, "available"),
-    "available_today": (True, "available"),
-    "full_this_week": (False, "full"),
-    "on_vacation": (False, "vacation"),
-}
-
-
-def state_to_legacy(state: str | None) -> tuple[bool, str]:
-    """Derive the legacy ``(is_available_today, availability_status)`` pair
-    from ``availability_state``.
-
-    Total by construction: an unknown or NULL state falls back to the default
-    row rather than raising. The column is ``NOT NULL`` with a server default
-    (models.py), so the fallback is unreachable through the ORM — it exists so
-    a hand-built dict or a fixture with a missing state cannot 500 a listing.
-    The previous version of this mapping was a bare dict subscript and would
-    have raised ``KeyError`` on exactly that input.
-    """
-    return _STATE_TO_LEGACY.get(state or "", _STATE_TO_LEGACY["accepting_orders"])
+# MEH-2272 chunk 2: `state_to_legacy` (enum -> legacy pair) is gone. Its last
+# callers were the dict responses in routers/producer_me.py; no response
+# carries is_available_today / availability_status any more.
 
 
 # MEH-1490: normalize the Google Place ID. Blank → None (admin clears the
