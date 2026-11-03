@@ -11,13 +11,16 @@
  * Convention: `start` = the eve (erev), `end` = the last festival day, both
  * inclusive. This file is the ONLY date table: chips, banners and the dashboard
  * hint import from here (MEH-1889 B) — never a second static list.
+ *
+ * MEH-1687 D: `icon` names a Phosphor glyph rendered by components/HolidayIcon
+ * (the holiday → icon table lives there). No emoji here — Emoji LOCK.
  */
 import { israelToday } from "@/lib/israel-date";
 
 export const HOLIDAYS = {
   pesach: {
     name: "פסח",
-    emoji: "🫓",
+    icon: "Sparkle",
     start: "2027-04-21",
     end: "2027-04-28",
     tagline: "מצאי מוצרים כשרים לפסח ממקורות מקומיים",
@@ -29,7 +32,7 @@ export const HOLIDAYS = {
   },
   shavuot: {
     name: "שבועות",
-    emoji: "🧀",
+    icon: "Cheese",
     start: "2027-06-10",
     end: "2027-06-11",
     tagline: "גבינות ומוצרי חלב איכותיים לחג",
@@ -41,7 +44,7 @@ export const HOLIDAYS = {
   },
   rosh_hashana: {
     name: "ראש השנה",
-    emoji: "🍎",
+    icon: "Jar",
     start: "2026-09-11",
     end: "2026-09-13",
     tagline: "תפוח ודבש, רימון ועוד — מהמיטב המקומי",
@@ -53,7 +56,7 @@ export const HOLIDAYS = {
   },
   sukkot: {
     name: "סוכות",
-    emoji: "🌿",
+    icon: "Leaf",
     start: "2026-09-25",
     end: "2026-10-03",
     tagline: "פירות הארץ ומוצרי עונה טריים",
@@ -65,7 +68,7 @@ export const HOLIDAYS = {
   },
   chanuka: {
     name: "חנוכה",
-    emoji: "🕎",
+    icon: "Flame",
     start: "2026-12-05",
     end: "2026-12-12",
     tagline: "שמן זית כתית מהמיטב — הדליקי אור",
@@ -77,7 +80,7 @@ export const HOLIDAYS = {
   },
   tu_bishvat: {
     name: "ט\"ו בשבט",
-    emoji: "🌳",
+    icon: "Tree",
     start: "2027-01-23",
     end: "2027-01-23",
     tagline: "דבש, פירות יבשים ופירות הארץ",
