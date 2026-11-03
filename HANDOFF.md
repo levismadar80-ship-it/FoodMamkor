@@ -4,6 +4,22 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-03 22:15 — drain 03/11 ד': ‏#3950 ו-#3954 מוזגו, השורש של producer-locations:285 נמצא (#3950, #3954)
+
+**‏שורה אחת:** ‏#3950 (docs של ג') ו-#3954 מוזגו. ‏#3954 מחליף את #3926 של dependabot: אותה העלאת mutmut, הפעם עם `uv.lock` מחודש. ‏`24-producer-locations:285` שוחזר מול staging עם trace, והממצא רשום ב-MEH-2323.
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏ה-pin שה-reveal loop של `:285` ראה הוא ילד זמני של אנימציית הזום. אחרי ש-`waitForMapSettled` מסתיים, אף pin משני לא נשאר בודד, גם אחרי שש לחיצות. לכן תיקון התזמון בספק לבד לא מספיק. ההשערות (איפוס זום, נקודות זהות ב-seed, הגדרות הקלאסטר) רשומות בכרטיס.
+- ‏ה-PRs של dependabot ב-backend (#3941, ‏#3925) נופלים באותו פגם: `pyproject.toml` עודכן ו-`uv.lock` לא. התיקון זהה ל-#3954.
+
+**‏לא עכשיו / מחכה לספיר:**
+- ‏#3945 — ה-E2E החדש לא התחיל.
+- ‏#3946 — טבלת אייקוני החגים.
+- ‏#3949 — שורת ההיקף של צ'יפי ה-100%.
+- ‏#3927 — rebase של dependabot (פקודת בוט) ו-E2E.
+- ‏#3923 — `.github/**`.
+- ‏#3928 — major של eslint-plugin-unicorn שובר build.
+
 ## 2026-11-03 19:45 — drain 03/11 ג': שבעה PRs מוזגו, שלושה מחכים להכרעה (#3921, #3942, #3943, #3944, #3940, #3948, #3947 · #3945 · #3946, #3949, #3908)
 
 **‏שורה אחת:** ‏#3921 ‏(עדכונים בוואטסאפ), ‏#3942 ו-#3944 (שני הצ'אנקים הראשונים של קודי השגיאה), ‏#3940 ‏(המתג של ה-CTA, ‏MEH-1676 Done), ‏#3947 ‏(scrim אחיד), ‏#3948 ‏(docs עיצוב) ו-#3943 ‏(docs של ב') מוזגו. ‏#3945 ‏(צבעי טוקן) ירוק בשני ה-gates, וה-E2E שלו רץ מחדש אחרי ביטול.

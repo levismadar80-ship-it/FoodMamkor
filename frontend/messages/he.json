@@ -1250,7 +1250,7 @@
       "title_alt": "בתי עסק עם משלוח היום"
     },
     "holiday_banner": {
-      "approaching": "{name} מתקרב {emoji}",
+      "approaching": "{name} מתקרב",
       "aria": "הודעת חג",
       "close_aria": "סגרו"
     }
