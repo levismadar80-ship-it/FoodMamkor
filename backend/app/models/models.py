@@ -2135,7 +2135,8 @@ class ContactClick(Base):
         nullable=True,
         index=True,
     )
-    method = Column(String(20), nullable=False)  # phone | instagram | website | email
+    # phone | instagram | website | email | whatsapp_group (MEH-2626: updates link)
+    method = Column(String(20), nullable=False)
     ip_hash = Column(String(64), nullable=True)
     clicked_at = Column(DateTime, default=utc_now, nullable=False, index=True)
 

@@ -223,7 +223,12 @@ def create_event(
     if data.category not in VALID_CATEGORIES:
         raise HTTPException(
             status_code=400,
-            detail=f"קטגוריה לא חוקית. אפשרויות: {', '.join(sorted(VALID_CATEGORIES))}",
+            # MEH-1943 chunk 2: the allowed set moves to params, never the message.
+            detail={
+                "code": "invalid_event_category",
+                "message": "קטגוריה לא תקינה",
+                "params": {"allowed": sorted(VALID_CATEGORIES)},
+            },
         )
     if not user.producer_id:
         raise HTTPException(status_code=403, detail="Producer account required")

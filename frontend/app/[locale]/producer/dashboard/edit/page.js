@@ -35,6 +35,7 @@
  * RTL: logical properties only — see .claude/rules/rtl.md.
  */
 
+import CoverageCtaToggle from "@/components/dashboard/CoverageCtaToggle";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 // MEH-1157: locale-aware router — push("/login") lands on /{locale}/login
 // instead of dropping an /en session onto the default-locale page.
@@ -1068,6 +1069,11 @@ function EditPageInner() {
             onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
             reportDirty={reportDirty}
           />
+          {/* MEH-1676: the owner's switch for the public «לא מגיעים אליך?» CTA. */}
+          <CoverageCtaToggle
+            producer={profile}
+            onSaved={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+          />
         </EditAccordionCard>
 
 
@@ -1602,8 +1608,11 @@ function ContactChannelsCard({
           placeholder={t("website_placeholder")}
           onChange={(e) => upd("website", e.target.value)} error={fieldError("website")} />
         {/* MEH-1242 PR3: WhatsApp group link — not a primary method, so no
-            empty-primary guard applies (fieldError never targets it). */}
+            empty-primary guard applies (fieldError never targets it).
+            MEH-2626: now the WhatsApp UPDATES link (group or channel); the
+            helper recommends a channel and the placeholder shows its shape. */}
         <Input type="url" dir="ltr" label={t("field_whatsapp_group")} value={form.whatsapp_group}
+          helperText={t("whatsapp_group_helper")}
           placeholder={t("whatsapp_group_placeholder")}
           onChange={(e) => upd("whatsapp_group", e.target.value)} />
         <Input type="email" inputMode="email" dir="ltr" label={t("field_email")} value={form.contact_email}
