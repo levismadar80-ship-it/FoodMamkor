@@ -538,7 +538,7 @@ def notify_admin_new_business_suggestion(
     message = (
         f"{headline}: {safe_business}\n"
         f"עיר: {safe_city}\n"
-        f"ממליצ/ה: {safe_suggester}\n"
+        f"ממליצים: {safe_suggester}\n"
         f"לטיפול: {settings.frontend_url}/admin/outreach?source=community"
     )
     # Per-channel guards (not one shared try) — a WhatsApp raise must not skip

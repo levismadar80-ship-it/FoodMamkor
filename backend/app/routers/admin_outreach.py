@@ -220,10 +220,14 @@ def thank_suggester(
     if not lead:
         raise HTTPException(status_code=404, detail="ליד לא נמצא")
 
+    # Neutral plural voice, no slash forms: docs/BRAND.md:81 lists the slash
+    # form ("טוענ/ת") as forbidden across ALL surfaces, and :211 layer 3 puts
+    # operational/admin surfaces on fully neutral phrasing. These three details
+    # read "הממליצ/ה …" for one iteration; the MEH-2633 copy gate caught them.
     if not lead.suggested_by_email:
-        raise HTTPException(status_code=409, detail="אין כתובת אימייל של הממליצ/ה")
+        raise HTTPException(status_code=409, detail="אין כתובת אימייל בהמלצה הזו")
     if not lead.suggester_wants_update:
-        raise HTTPException(status_code=409, detail="הממליצ/ה לא ביקש/ה עדכון")
+        raise HTTPException(status_code=409, detail="לא ביקשו עדכון על ההמלצה הזו")
     if lead.suggester_thanked_at is not None:
         raise HTTPException(status_code=409, detail="תודה כבר נשלחה")
     if lead.status != THANKABLE_STATUS:
