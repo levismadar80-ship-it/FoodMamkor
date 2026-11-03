@@ -5,15 +5,13 @@ import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { CheckCircle, EnvelopeSimple, Leaf, MapPin, Warning, WhatsappLogo, X } from "@phosphor-icons/react";
+import { CheckCircle, EnvelopeSimple, Leaf, WhatsappLogo, X } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { trackEvent } from "@/lib/analytics";
 import { detailToMessage } from "@/lib/errors";
 import ButtonSpinner from "@/components/ButtonSpinner";
 import CategoryRequestModal from "@/components/CategoryRequestModal";
-import AddressSearch from "@/components/AddressSearch";
 import CategorySelector from "@/components/CategorySelector";
-import CitiesAutocomplete from "@/components/CitiesAutocomplete";
 import CitySearch from "@/components/CitySearch";
 import PasswordStrength from "@/components/PasswordStrength";
 import ProducerOAuthButtons from "@/components/ProducerOAuthButtons";
@@ -51,6 +49,31 @@ import BrandLoader from "@/components/BrandLoader";
 const STEP = { ACCOUNT: 1, DETAILS: 2, CATEGORY: 3, STORY: 4, CONFIRM: 5 };
 // MEH-435: readable step labels for funnel events (numeric step is
 // re-index-fragile; the label is stable across the STEP enum).
+// MEH-2640: step 2's four delivery controls collapse into one question.
+// The pair of booleans is unchanged — this is only how she is asked.
+// `onsite` is the schema default (has_physical_location: true,
+// offers_delivery: false, schemas.py:957-958), so a visitor who never
+// touches the radio still posts a coherent shape.
+const FULFILMENT_OPTIONS = [
+  { value: "onsite", has_physical_location: true, offers_delivery: false },
+  { value: "delivery", has_physical_location: false, offers_delivery: true },
+  { value: "both", has_physical_location: true, offers_delivery: true },
+];
+
+// `fulfilment` is STORED, not derived from the two booleans. Deriving it was
+// the first shape and it was wrong: the form's defaults are
+// has_physical_location:true + offers_delivery:false, which IS "onsite", so a
+// derived value is never "" — the radio would arrive pre-lit on a question
+// nobody answered and the required gate below could never fire. One stored
+// answer, booleans computed from it at submit.
+function fulfilmentBooleans(value) {
+  const hit = FULFILMENT_OPTIONS.find((o) => o.value === value);
+  return {
+    has_physical_location: hit ? hit.has_physical_location : true,
+    offers_delivery: hit ? hit.offers_delivery : false,
+  };
+}
+
 const STEP_NAME = {
   [STEP.ACCOUNT]: "account",
   [STEP.DETAILS]: "details",
@@ -184,10 +207,12 @@ const EMPTY_FORM = {
   // nothing — ADR-036). An organizer skips CATEGORY and the delivery axis;
   // the server writes its location shape (schemas.py _validate_location_mode).
   kind: "producer",
-  has_physical_location: true,
-  offers_delivery: false,
-  delivery_nationwide: false,
-  delivery_cities: [],
+  // MEH-2640: one field for the one question step 2 now asks. "" = not
+  // answered yet, which is what the required gate needs to be able to see.
+  // delivery_nationwide / delivery_cities are no longer collected here at
+  // all — the dashboard owns delivery areas, and ProducerRegister defaults
+  // both (schemas.py:959-960).
+  fulfilment: "",
 };
 
 // MEH-1471: fixed dropdown order — English keys stored in the DB, Hebrew labels
@@ -265,10 +290,13 @@ function RegisterProducerPageBody() {
   const [showDraftBanner, setShowDraftBanner] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [stepError, setStepError] = useState("");
-  // MEH-2602: the empty-delivery-cities error waits for the first «הבא» that
-  // it blocks (Baymard: validate on submit/blur, never before the seller has
-  // had a chance). It used to render the moment delivery was ticked.
-  const [deliveryCitiesTried, setDeliveryCitiesTried] = useState(false);
+  // MEH-2640: the fulfilment question's error lives in its OWN state, not in
+  // `fieldErrors`. That map is documented just below as holding ONLY the
+  // CROSS_STEP_REQUIRED fields, and `crossStepErrors` is derived from it — so
+  // a fulfilment key in there inflated the submit-gate summary to two
+  // offenders while listing one, which is exactly what
+  // RegisterProducerClient.test.jsx caught.
+  const [fulfilmentError, setFulfilmentError] = useState("");
   // MEH-1807: per-field messages for CROSS_STEP_REQUIRED, keyed by form field.
   // Only ever holds those three, which is what lets the STORY summary below
   // derive itself from this object instead of carrying its own state — an
@@ -297,28 +325,12 @@ function RegisterProducerPageBody() {
   // license number and enter the pending queue.
   const [licensePending, setLicensePending] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
-  // MEH-1422 (MEH-1388 chunk 4b): informational multi-location intake toggle.
-  // UI-only — it sets NO backend field, creates NO location rows, and is not
-  // part of the submit payload; on "yes" it points the owner to the dashboard
-  // LocationsEditor (chunk 4a) to add points after registration.
-  const [hasMultipleLocations, setHasMultipleLocations] = useState(false);
   // MEH-759 Chunk C (ADR-022 gate 2): the binding licensing declaration and
   // the conditional grower declaration are separate affirmative acts from the
   // ToS/privacy consent above (ADR-014 voice: first-person legal vs plural
   // chrome). Both fold into the single declaration_accepted bool — no new API
   // field. A distinct affirmative act = stronger evidentiary value (Brief Q1.4).
   const [declarationConfirmed, setDeclarationConfirmed] = useState(false);
-  // MEH-2182: the seller dragged the pin, so the point is hers rather than the
-  // provider's. UI-ONLY — it swaps one confirmation line and rides in no
-  // payload. location_precision is untouched: this ticket adds no precision
-  // semantics, and inventing one here would be a schema decision in disguise.
-  // MEH-2182: UI-only, and deliberately NOT part of the saved draft. The
-  // COORDINATES persist (they always did); this flag is only the wording of the
-  // confirmation line, so a seller who reloads mid-signup keeps her dragged
-  // point and sees the plain "location identified" line again. Persisting it
-  // would mean a new draft key for a sentence, and the sentence is not what the
-  // form is for.
-  const [pinAdjusted, setPinAdjusted] = useState(false);
   const [farmerConfirmed, setFarmerConfirmed] = useState(false);
   // MEH-328 Chunks C+D: emailExistsWarning (onBlur) + emailExistsSubmitError
   // (409 on submit) state both removed. Backend's non-upgrade path no longer
@@ -357,6 +369,8 @@ function RegisterProducerPageBody() {
   // the selected category IDs against the categories list fetched at mount.
   const [licenseOptionalExpanded, setLicenseOptionalExpanded] = useState(false);
   const isOrganizer = form.kind === "organizer"; // MEH-2460
+  // MEH-2640: the stored answer; the payload's booleans come from it.
+  const fulfilment = form.fulfilment;
   const licenseRequired =
     !isOrganizer && requiresProducerLicense(categories, form.category_ids);
   const licenseWarning = hasLicenseFormatWarning(form.producer_license_number);
@@ -369,24 +383,11 @@ function RegisterProducerPageBody() {
     (form.phone && !validateIsraeliPhone(form.phone)
       ? t("auth.register.producer.validation.phone_invalid")
       : "");
-  // MEH-1808: coordinates are only meaningful while they still belong to the
-  // text in the field — onChange nulls them on every free keystroke, so this
-  // doubles as "the seller picked this from the list".
-  const addressConfirmed = form.lat != null && form.lng != null;
-  // Friendly place name, never coordinates. The admin form shows raw
-  // "current: lat, lng" (MEH-1242); a seller cannot check her own shop against
-  // a decimal pair, so the street + city she recognises is the whole point.
-  const addressConfirmLabel = [form.address, form.address_city].filter(Boolean).join(", ");
-  // MEH-2181: the provider's own city for the PICKED address vs the canonical
-  // CitySearch value the seller chose. Only meaningful once a point is
-  // attached — before that `address_city` is "" and there is nothing to
-  // compare. Deliberately a soft signal: MEH-213 forbids a raw provider string
-  // from reaching `city`, so this can inform her and must never auto-correct.
-  const addressCityMismatch =
-    addressConfirmed &&
-    Boolean(form.address_city) &&
-    Boolean(form.city) &&
-    form.address_city !== form.city;
+  // MEH-2640: addressConfirmed / addressConfirmLabel / addressCityMismatch
+  // left with the address block. `form.address` and lat/lng stay in the form
+  // shape (and in the payload, where the schema makes them optional) so the
+  // upgrade path and any saved draft keep their keys.
+
   // MEH-1807: the GOV.UK-style summary next to "הצטרפו" is DERIVED from
   // fieldErrors rather than stored, so fixing a field removes its summary row
   // with no second piece of state to keep in sync.
@@ -736,9 +737,8 @@ function RegisterProducerPageBody() {
         // fields silently, so the form "succeeded" while every business landed
         // on the same default shape. That silence is why this needs a test that
         // reads the POST body, not one that asserts the request returned 200.
-        has_physical_location: form.has_physical_location,
-        offers_delivery: form.offers_delivery,
-        delivery_nationwide: form.delivery_nationwide,
+        // MEH-2640: computed from the one answer step 2 collects.
+        ...fulfilmentBooleans(form.fulfilment),
       };
       // Sent only when non-empty: a physical-only registration posts no empty
       // array (the card's own acceptance criterion) and the server default is
@@ -746,9 +746,10 @@ function RegisterProducerPageBody() {
       // ROWS (auth.py:586-588) — the only store the consumer filter reads
       // (producer_listing.py:258). It never writes the legacy flat column of the
       // same name (auth.py:550).
-      if (form.offers_delivery && form.delivery_cities.length > 0) {
-        body.delivery_cities = form.delivery_cities;
-      }
+      // MEH-2640: delivery_cities is no longer collected at registration —
+      // the dashboard owns it. ProducerRegister defaults it to []
+      // (schemas.py:960), so omitting it posts the same shape a
+      // physical-only registration always did.
       // MEH-143: logged-in users upgrade; account fields not needed.
       if (!isUpgrade) {
         body.email = form.email;
@@ -889,7 +890,13 @@ function RegisterProducerPageBody() {
           <p className="text-fg-muted text-center mb-4">{t("auth.register.producer.subtitle")}</p>
           <RegisterPreflight
             showAccountLine={!isUpgrade && step === STEP.ACCOUNT}
-            onStart={() => setShowPreflight(false)}
+            // MEH-2640: the preflight can now start EITHER flow. `kind` is
+            // the only thing that differs — same wizard, same steps minus
+            // CATEGORY (MEH-2460 already skips it for an organizer).
+            onStart={(kind) => {
+              if (kind === "organizer") setAndSave((prev) => ({ ...prev, kind: "organizer" }));
+              setShowPreflight(false);
+            }}
           />
         </div>
       </div>
@@ -1125,7 +1132,7 @@ function RegisterProducerPageBody() {
                 setStepError("");
                 setStep(STEP.DETAILS);
               }}
-              className="w-full border-2 border-primary-dark text-primary-dark bg-transparent py-3 rounded-md hover:bg-primary-dark hover:text-white transition"
+              className="w-full bg-primary text-white py-3 rounded-md hover:bg-primary-dark transition font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
             >
               {t("auth.register.producer.actions.next")}
             </button>
@@ -1224,379 +1231,69 @@ function RegisterProducerPageBody() {
               <p id="register-city-error" className="text-xs text-red-500 mt-1 inline-flex items-center gap-1"><X size={14} className="text-current" />{fieldErrors.city}</p>
             )}
             </div>
-
-            {/* address is optional (no "*", not gated at submit) — label carries
-                no asterisk and the input gets no required attr. */}
-            {/* MEH-1766: this was a raw <Input>, so step 2's address field had no
-                autocomplete at all — "דרך שרה" returned 0 suggestions because
-                nothing was ever queried. AddressSearch.jsx's docstring claimed
-                "RegisterProducer consumers untouched"; that claim was never true.
-                REUSES: components/EventForm.jsx:183-200 (MEH-1405 pattern —
-                visible <label htmlFor> above, no `label` prop, so there is no
-                duplicate sr-only association).
-                MEH-1808 SUPERSEDES the next sentence, which used to read
-                "onSelect fills the address TEXT ONLY: the registration payload
-                carries no lat/lng and adding one would be a payload change,
-                out of scope for MEH-1766." That was true when written and is
-                false now: onSelect keeps lat/lng and the payload sends them.
-                Leaving it in place would have been worse than deleting it — a
-                stale comment is read as current fact. The deferral it describes
-                turned out to BE the bug: with no coordinates ever sent, every
-                business registering here landed with lat/lng NULL and never
-                appeared on the map, whether or not the seller picked from the
-                list. */}
-            {/* MEH-2460 (review #3711 F5): an organizer has no fixed address,
-                and this block's map copy («במפה מופיעה נקודה») contradicts the
-                approved organizer hint. Hidden with the multi-location intake. */}
+{/* MEH-2640: step 2 is three fields and one question. What left, and
+                where it went:
+                  · address + the pin-drag/confirm/mismatch block — the dashboard
+                  · "יותר מנקודת מכירה אחת"                        — the dashboard
+                  · the organizer checkbox        — RegisterPreflight (Sapir, 03/11)
+                  · the delivery-cities picker    — the dashboard, with the note below
+                The payload simply stops carrying them, which the schema already
+                allows: ProducerRegister gives has_physical_location /
+                offers_delivery / delivery_nationwide / delivery_cities defaults
+                (schemas.py:957-960) and address / lat / lng are optional
+                (:838-840). `city` stays required there (:837) and stays a
+                required field here.
+                This also removes the LAST seven `admin.*` strings the register
+                flow rendered — they were all inside the delivery block. */}
+            {/* MEH-2640: not for an organizer. "איך קונים אצלכם?" is a
+                business question — she runs markets, she has no counter and
+                no deliveries — and MEH-2460 already hid the delivery axis this
+                replaces for the same reason. The gate below skips with her. */}
             {!isOrganizer && (
-            <>
-            <div>
-              <label
-                htmlFor="producer-address"
-                className="block text-sm font-medium text-text mb-1"
-              >
-                {t("auth.register.producer.fields.address_label")}
-              </label>
-              <AddressSearch
-                id="producer-address"
-                inputTestId="register-details-address"
-                // MEH-2181: scope suggestions to the city already chosen above.
-                // Opt-in prop — the other four AddressSearch consumers omit it
-                // and compose their queries exactly as before.
-                city={form.city}
-                value={form.address}
-                // MEH-1808: free typing INVALIDATES a previously picked point —
-                // otherwise coordinates from an earlier selection would ride
-                // along with a different address the seller typed over it, which
-                // is worse than having none: the pin would confidently show the
-                // wrong place. Clearing here is what makes `lat != null` mean
-                // "these coordinates belong to the text currently in the field".
-                onChange={(v) => {
-                  // MEH-2182: the manual-adjust flag dies with the coordinates
-                  // it describes. Deliberately folded into the EXISTING MEH-1808
-                  // null-out rather than given its own reset — two reset paths
-                  // for one fact is how they drift apart.
-                  setPinAdjusted(false);
-                  setAndSave((prev) => ({
-                    ...prev,
-                    address: v,
-                    address_city: "",
-                    lat: null,
-                    lng: null,
-                  }));
-                }}
-                onSelect={(picked) =>
-                  setAndSave((prev) => ({
-                    ...prev,
-                    address: picked.street || picked.displayName || prev.address,
-                    // MEH-1808: the picked point's own city, for the
-                    // confirmation LABEL only. Deliberately NOT written into
-                    // `city`, for two reasons found in self-QA:
-                    //  1. a second pick in a different town kept the FIRST
-                    //     town's name (`prev.city ||` never re-fires), so the
-                    //     line confirmed a place the pin was no longer on —
-                    //     the exact lying-confirmation this ticket exists to
-                    //     prevent;
-                    //  2. `city` is fed by CitySearch precisely because
-                    //     free-text towns are forbidden (MEH-213), and a raw
-                    //     Nominatim string is not a canonical value.
-                    address_city: picked.city || "",
-                    lat: picked.lat ?? null,
-                    lng: picked.lng ?? null,
-                  }))
-                }
-                placeholder={t("auth.register.producer.fields.address")}
-              />
-              {/* MEH-951 map-privacy reassurance — same copy, moved out of the
-                  Input helperText slot it used to ride; class recipe mirrors the
-                  address_optional_hint paragraph directly below. */}
-              <p className="text-xs text-fg-muted mt-1 text-start">
-                {t("auth.register.producer.fields.address_map_privacy_hint")}
-              </p>
-              {/* MEH-1808: the address stays OPTIONAL — this line exists so a
-                  delivery-only or home-based seller does not read the field as a
-                  demand (MEH-213 / location_precision: approximate already
-                  support them; only the reassurance was missing). */}
-              <p className="text-xs text-fg-muted mt-1 text-start">
-                {t("auth.register.producer.fields.address_optional_hint")}
-              </p>
-
-              {/* MEH-1808 — three mutually exclusive states, keyed on whether the
-                  text in the field has coordinates attached to it:
-                    empty            → nothing but the hints above
-                    typed, no coords → soft, non-blocking nudge
-                    coords           → confirmation line + street-level map
-                  The nudge is deliberately NOT error-styled: the address is
-                  optional, so a red blocker here would be a lie about the form
-                  (Baymard's documented anti-pattern of address validators that
-                  trap users, quoted in AddressSearch.jsx:29-31). */}
-              {addressConfirmed ? (
-                <div data-testid="register-address-confirm" className="mt-3">
-                  <p className="text-sm text-primary inline-flex items-center gap-1.5 text-start">
-                    <CheckCircle size={16} weight="fill" aria-hidden="true" className="shrink-0" />
-                    <span>
-                      {pinAdjusted
-                        ? t("auth.register.producer.fields.address_pin_adjusted")
-                        : t("auth.register.producer.fields.address_confirmed", {
-                            location: addressConfirmLabel,
-                          })}
-                    </span>
-                  </p>
-                  {/* MEH-2181: the picked address resolved to a different town
-                      than the one chosen above. NOT error-styled and NOT
-                      blocking — same reasoning as the pick-from-list nudge
-                      below: the address is optional, so a red blocker would be
-                      a lie about the form. Gold rather than red says "worth a
-                      look", which is exactly the claim being made.
-                      There is deliberately NO "use {found} instead" button:
-                      MEH-213 forbids a raw provider string from landing in
-                      `city`, which is CitySearch's canonical value. Correcting
-                      it stays the seller's action, in the field that owns it. */}
-                  {addressCityMismatch && (
-                    <p
-                      data-testid="register-address-city-mismatch"
-                      className="text-xs mt-2 inline-flex items-start gap-1.5 text-start"
-                      style={{ color: "#8B6914" }}
-                    >
-                      <Warning size={14} weight="fill" aria-hidden="true" className="mt-0.5 shrink-0" />
-                      <span>
-                        {t("auth.register.producer.fields.address_city_mismatch", {
-                          found: form.address_city,
-                          selected: form.city,
-                        })}
-                      </span>
-                    </p>
-                  )}
-                  <div className="mt-2 overflow-hidden rounded-md">
-                    {/* Confirmation only — no Waze/Google pills ("navigate to
-                        your own address" means nothing mid-signup) and a street
-                        zoom instead of MiniMap's neighbourhood default. Both are
-                        opt-in props added in MEH-1808; every other consumer of
-                        MiniMap is untouched by them. */}
-                    <MiniMap
-                      lat={form.lat}
-                      lng={form.lng}
-                      name={form.producer_name || form.address}
-                      zoom={ADDRESS_CONFIRM_ZOOM}
-                      showNavigation={false}
-                      // MEH-2182: two more opt-in props, same shape as the two
-                      // above. A geocoder lands within a street or two; only the
-                      // seller knows which gate is hers. The drag moves the
-                      // POINT and nothing else — the address TEXT is untouched
-                      // on purpose, so no reverse-geocode fires and the field
-                      // never rewrites itself under her.
-                      //
-                      // a11y, stated plainly rather than assumed away: dragging
-                      // is a pointer gesture with no keyboard equivalent, so
-                      // WCAG 2.2 SC 2.5.7 (Dragging Movements) is satisfied only
-                      // because the drag is an ENHANCEMENT — typing a more
-                      // precise address and re-picking reaches the same outcome
-                      // without any drag, and that path is unchanged. If the pin
-                      // ever becomes the only way to set a location, this needs
-                      // a tap-to-place alternative.
-                      draggableMarker
-                      onMarkerDragEnd={({ lat, lng }) => {
-                        setPinAdjusted(true);
-                        setAndSave((prev) => ({ ...prev, lat, lng }));
-                      }}
-                    />
-                  </div>
-                  {/* MEH-2182: says the pin is draggable, because nothing else
-                      on a static-looking confirmation map does. */}
-                  <p
-                    data-testid="register-pin-drag-hint"
-                    className="text-xs text-fg-muted mt-2 text-start"
-                  >
-                    {t("auth.register.producer.fields.address_pin_drag_hint")}
-                  </p>
-                </div>
-              ) : (
-                form.address.trim() !== "" && (
-                  <p
-                    data-testid="register-address-no-pick-hint"
-                    className="text-xs text-fg-muted mt-2 inline-flex items-start gap-1.5 text-start"
-                  >
-                    <MapPin size={14} weight="fill" aria-hidden="true" className="mt-0.5 shrink-0 text-primary" />
-                    <span>{t("auth.register.producer.fields.address_pick_from_list")}</span>
-                  </p>
-                )
-              )}
-            </div>
-
-            {/* MEH-1422 (MEH-1388 chunk 4b): informational multi-location intake.
-                Mirrors the DeliveryCard checkbox idiom (cards.jsx:1623). UI-only —
-                no backend field and no location rows; the copy refers the owner
-                to the dashboard LocationsEditor (chunk 4a).
-
-                MEH-1768: the line is now PERMANENT rather than revealed by the
-                checkbox. Behind the tick it answered a question the owner had
-                already decided — the reassurance is what makes the tick safe, so
-                it has to be readable BEFORE she ticks. One renderer, one string:
-                the old conditional `multi_location_yes_copy` is gone rather than
-                kept alongside, so the copy cannot appear twice.
-
-                Styling is this step's own hint recipe, `:1243`
-                (`text-xs text-fg-muted mt-1 text-start` on the
-                `address_optional_hint` paragraph), not the tinted callout the
-                conditional line used — a permanent hint reads as a hint. `ms-6`
-                is kept so it aligns under the label text rather than the box. */}
-            <div className="pt-1">
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={hasMultipleLocations}
-                  onChange={(e) => setHasMultipleLocations(e.target.checked)}
-                  className="w-4 h-4 accent-primary"
-                  data-testid="register-multi-location-toggle"
-                />
-                {t("auth.register.producer.fields.multi_location_label")}
-              </label>
-              <p
-                data-testid="register-multi-location-copy"
-                className="text-xs text-fg-muted mt-1 ms-6 text-start"
-              >
-                {t("auth.register.producer.fields.multi_location_hint")}
-              </p>
-            </div>
-            </>
-            )}
-
-            {/* MEH-1838 chunk B: the delivery axis, on DETAILS because it is a
-                location question and sits with city/address above. Idiom mirrors
-                the admin ProducerForm block (ProducerForm.jsx:811-880) rather
-                than inventing one — same fields, same order, same nesting, and
-                every string is that block's own key reused verbatim (rule 22).
-
-                The keys are read as `admin.producers.form.fields.*`: the admin
-                form reaches them as `producers.form.fields.*` only because it
-                scopes `useTranslations("admin")` (ProducerForm.jsx:57). This
-                component's `t` is UNSCOPED, so copying the admin call verbatim
-                would silently render the key name instead of the string. */}
-            {/* MEH-2460: the organizer option (copy approved on MEH-2458,
-                rule 22). Checked → no category step, no delivery axis, no
-                license; the payload carries kind="organizer". */}
-            <div className="pt-1" data-testid="register-organizer-option">
-              <label className="flex items-start gap-2 text-sm cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={isOrganizer}
-                  data-testid="register-organizer-toggle"
-                  onChange={(e) => {
-                    const on = e.target.checked;
-                    setAndSave((prev) => ({ ...prev, kind: on ? "organizer" : "producer" }));
-                  }}
-                  className="w-4 h-4 mt-0.5 accent-primary"
-                />
-                {t("auth.register.producer.fields.organizer_label")}
-              </label>
-              <p
-                data-testid="register-organizer-hint"
-                className="text-xs text-fg-muted mt-1 ms-6 text-start"
-              >
-                {t("auth.register.producer.fields.organizer_hint")}
-              </p>
-            </div>
-
-            {!isOrganizer && (
-            <div className="pt-1 space-y-3" data-testid="register-delivery-axis">
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={form.has_physical_location}
-                  data-testid="register-has-physical-location"
-                  onChange={(e) => {
-                    const on = e.target.checked;
-                    setAndSave((prev) => ({ ...prev, has_physical_location: on }));
-                  }}
-                  className="w-4 h-4 accent-primary"
-                />
-                {t("admin.producers.form.fields.has_physical_location")}
-              </label>
-
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={form.offers_delivery}
-                  data-testid="register-offers-delivery"
-                  onChange={(e) => {
-                    const on = e.target.checked;
-                    // MEH-1879 (inherited from ProducerForm.jsx:829-845): the
-                    // block below is CONDITIONALLY RENDERED, and unmounting it
-                    // leaves its state untouched — so unticking here would post
-                    // delivery_nationwide=true alongside offers_delivery=false,
-                    // which the validator rejects (schemas.py:857+) and which the
-                    // DB CHECK producer_nationwide_requires_delivery (MEH-1849)
-                    // turns into a 500 further down. Both owned fields are
-                    // cleared: leaving cities would write delivery_areas rows for
-                    // a business declaring no delivery — a cross-table
-                    // contradiction no CHECK can express.
-                    setAndSave((prev) => ({
-                      ...prev,
-                      offers_delivery: on,
-                      ...(on ? {} : { delivery_nationwide: false, delivery_cities: [] }),
-                    }));
-                  }}
-                  className="w-4 h-4 accent-primary"
-                />
-                {t("admin.producers.form.fields.offers_delivery")}
-              </label>
-
-              {!form.has_physical_location && !form.offers_delivery && (
-                <p className="text-xs text-red-600" data-testid="register-delivery-axis-error">
-                  {t("admin.producers.form.fields.type_validation")}
+            <fieldset className="pt-1 space-y-3" data-testid="register-fulfilment">
+              <legend className="block text-sm font-medium text-text mb-1 text-start">
+                {t("auth.register.producer.fields.fulfilment.legend")}
+                <span aria-hidden="true"> *</span>
+              </legend>
+              {FULFILMENT_OPTIONS.map((opt) => (
+                <label
+                  key={opt.value}
+                  htmlFor={`fulfilment-${opt.value}`}
+                  className="flex items-center gap-3 min-h-[44px] cursor-pointer"
+                >
+                  <input
+                    type="radio"
+                    id={`fulfilment-${opt.value}`}
+                    name="fulfilment"
+                    value={opt.value}
+                    data-testid={`register-fulfilment-${opt.value}`}
+                    checked={fulfilment === opt.value}
+                    onChange={() => {
+                      setStepError("");
+                      setFulfilmentError("");
+                      setAndSave((prev) => ({ ...prev, fulfilment: opt.value }));
+                    }}
+                    className="w-5 h-5 accent-primary shrink-0"
+                  />
+                  <span className="text-sm text-text">
+                    {t(`auth.register.producer.fields.fulfilment.${opt.value}`)}
+                  </span>
+                </label>
+              ))}
+              {fulfilmentError && (
+                <p className="text-xs text-red-600" data-testid="register-fulfilment-error">
+                  {fulfilmentError}
                 </p>
               )}
-
-              {form.offers_delivery && (
-                <div className="ms-6 space-y-3 border-s-2 border-border ps-4 pt-1">
-                  <label className="flex items-center gap-2 text-sm cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={form.delivery_nationwide}
-                      data-testid="register-delivery-nationwide"
-                      onChange={(e) => {
-                        const on = e.target.checked;
-                        // Entering nationwide clears the city list — the XOR the
-                        // validator enforces (schemas.py:857+) and the DB CHECK
-                        // delivery_nationwide_xor_cities is written against.
-                        setAndSave((prev) => ({
-                          ...prev,
-                          delivery_nationwide: on,
-                          ...(on ? { delivery_cities: [] } : {}),
-                        }));
-                      }}
-                      className="w-4 h-4 accent-primary"
-                    />
-                    {t("admin.producers.form.fields.delivery_nationwide")}
-                  </label>
-
-                  {!form.delivery_nationwide && (
-                    <div>
-                      <span className="block text-sm text-muted mb-1">
-                        {t("admin.producers.form.fields.delivery_cities_label")}
-                      </span>
-                      <div data-testid="register-delivery-cities">
-                        <CitiesAutocomplete
-                          value={form.delivery_cities}
-                          onChange={(cities) =>
-                            setAndSave((prev) => ({ ...prev, delivery_cities: cities }))
-                          }
-                          showRegionChips
-                        />
-                      </div>
-                      {deliveryCitiesTried && form.delivery_cities.length === 0 && (
-                        <p
-                          className="text-xs text-red-600 mt-1"
-                          data-testid="register-delivery-cities-error"
-                        >
-                          {t("admin.producers.form.fields.delivery_cities_required")}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+              {/* MEH-2640: the delivery-areas picker moved to the dashboard
+                  she lands in anyway. ProducerDashboardDelivery's editor
+                  already owns that list — see the dashboard delivery editor
+                  cited in the PR — so this is a pointer, not a promise of
+                  something unbuilt. */}
+              <p className="text-xs text-fg-muted text-start" data-testid="register-delivery-note">
+                {t("auth.register.producer.fields.fulfilment.areas_note")}
+              </p>
+            </fieldset>
             )}
 
             <div className="flex gap-3">
@@ -1626,28 +1323,20 @@ function RegisterProducerPageBody() {
                     setStep(STEP.STORY);
                     return;
                   }
-                  if (!form.has_physical_location && !form.offers_delivery) {
-                    setStepError(t("admin.producers.form.fields.type_validation"));
-                    return;
-                  }
-                  // "לכל הארץ" with zero cities is valid; a city list without
-                  // nationwide is valid. Delivery declared with NEITHER is the
-                  // hole — it would post offers_delivery=true and no rows, so the
-                  // business claims delivery the consumer filter can never match
-                  // (producer_listing.py:258 reads delivery_areas rows).
-                  if (
-                    form.offers_delivery &&
-                    !form.delivery_nationwide &&
-                    form.delivery_cities.length === 0
-                  ) {
-                    setDeliveryCitiesTried(true);
-                    setStepError(t("admin.producers.form.fields.delivery_cities_required"));
+                  // MEH-2640: one question, one gate, and the copy is ours
+                  // rather than borrowed from the admin namespace.
+                  // The old "delivery declared with neither nationwide nor
+                  // cities" hole cannot be reached from here any more: this
+                  // step no longer collects either, and the dashboard editor
+                  // that does owns that validation.
+                  if (!form.fulfilment) {
+                    setFulfilmentError(t("auth.register.producer.fields.fulfilment.required"));
                     return;
                   }
                   setStepError("");
                   setStep(STEP.CATEGORY);
                 }}
-                className="flex-1 border-2 border-primary-dark text-primary-dark bg-transparent py-3 rounded-md hover:bg-primary-dark hover:text-white transition font-medium"
+                className="flex-1 bg-primary text-white py-3 rounded-md hover:bg-primary-dark transition font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
               >
                 {t("auth.register.producer.actions.next")}
               </button>
@@ -1846,7 +1535,7 @@ function RegisterProducerPageBody() {
                   setLicenseRequiredError(false);
                   setStep(STEP.STORY);
                 }}
-                className="flex-1 border-2 border-primary-dark text-primary-dark bg-transparent py-3 rounded-md hover:bg-primary-dark hover:text-white transition font-medium"
+                className="flex-1 bg-primary text-white py-3 rounded-md hover:bg-primary-dark transition font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
               >
                 {t("auth.register.producer.actions.next")}
               </button>
@@ -2184,7 +1873,7 @@ function RegisterProducerPageBody() {
                   handleSubmit();
                 }}
                 disabled={loading}
-                className="flex-1 border-2 border-primary-dark text-primary-dark bg-transparent py-3 rounded-md hover:bg-primary-dark hover:text-white transition font-medium disabled:opacity-50"
+                className="flex-1 bg-primary text-white py-3 rounded-md hover:bg-primary-dark transition font-medium disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
               >
                 {loading ? (
                   <span className="inline-flex items-center gap-2">

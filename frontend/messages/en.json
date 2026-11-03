@@ -223,7 +223,7 @@
       },
       "producer": {
         "heading": "Give your business a home",
-        "subtitle": "About 3 minutes. No commissions. The customer comes straight to you",
+        "subtitle": "About 5 minutes. No commissions. The customer comes straight to you",
         "gate": {
           "producer_heading": "You already have a business page on Mehamakor",
           "producer_body": "Everything is linked to your account — update your page, products, and story straight from your dashboard.",
@@ -237,11 +237,12 @@
           "item_story": "A short story about your business",
           "item_photos": "2–3 photos of your business or products",
           "item_license": "Producer license number, if your category requires one. Don't have it yet? You can add it later",
-          "duration": "The whole process takes about 3 minutes",
+          "duration": "The whole process takes about 5 minutes",
           "after_title": "What happens next",
           "after_body": "Every business gets a personal intro — once you complete your profile and send it for review, our team checks the details, gets in touch if needed, and your business goes live within up to 3 business days.",
           "after_link": "How the acceptance process works",
-          "cta": "Start"
+          "cta": "Start",
+          "organizer_entry": "Organising a group buy? Start here"
         },
         "loading": "Loading...",
         "loading_form": "Loading registration form...",
@@ -260,7 +261,7 @@
           "account": {
             "title": "1. Account details",
             "email_section": "Sign up with email",
-            "duration_hint": "About 3 minutes. You can stop and continue later."
+            "duration_hint": "About 5 minutes. You can stop and continue later."
           },
           "business": {
             "title": "2. Business details",
@@ -290,6 +291,14 @@
           "producer_name": "e.g. Ruth's Bakery",
           "producer_name_label": "Business name",
           "city": "e.g. Zikhron Ya'akov",
+          "fulfilment": {
+            "legend": "How do people buy from you?",
+            "onsite": "They come to us",
+            "delivery": "We deliver",
+            "both": "Both",
+            "required": "Pick one option",
+            "areas_note": "You set your delivery areas in the dashboard"
+          },
           "city_label": "City",
           "address": "e.g. 5 Olive St., Haifa",
           "address_label": "Address",
@@ -313,7 +322,6 @@
           "phone_hint": "We'll send you a WhatsApp message to verify and complete the profile",
           "license_required_label": "Producer license number (required)",
           "license_required_hint": "Food production in this category requires a producer license from the Ministry of Health",
-          "license_what_is_it": "A producer license is issued by the Ministry of Health for food businesses.",
           "license_pending_optin_label": "I don't have a license number yet",
           "license_pending_optin_hint": "You can complete registration now. Your business will be approved and go live only after we receive your license number.",
           "license_optional_label": "Producer license number",
@@ -640,7 +648,7 @@
       "title": "Join as a business | Mehamakor",
       "description": "A page of your own with photos and a story, every business hand-picked, and customers contact you directly on the channel you choose. Free to join.",
       "og_title": "Your business. A page of its own. | Mehamakor",
-      "og_description": "How local businesses get their own page on Mehamakor — about 3 minutes."
+      "og_description": "How local businesses get their own page on Mehamakor — about 5 minutes."
     },
     "share": {
       "title": "Spread the word — Mehamakor",
@@ -3501,7 +3509,7 @@
       "eyebrow": "How it works",
       "heading": "Four steps",
       "step1_title": "Sign up",
-      "step1_text": "A short form about your business and contact details. About 3 minutes. Photos come later, from the dashboard.",
+      "step1_text": "A short form about your business and contact details. About 5 minutes. Photos come later, from the dashboard.",
       "step2_title": "A personal introduction",
       "step2_text": "Our team goes over the business and the story, and reaches out for a short intro if needed.",
       "step3_title": "Your page goes live",
@@ -3580,7 +3588,7 @@
       },
       "time": {
         "q": "How much time and effort does this take from me?",
-        "a": "Signing up is a short form, and our team reviews and approves your business within 3 business days. After that the page works for you: it automatically answers \"do you deliver to me?\" and \"how do I order?\", and if wording is hard for you — there's a tool that writes your business description with you. An updated photo once a week is enough, and when you need a break — there's vacation mode."
+        "a": "Signing up takes about 5 minutes, and our team reviews and approves your business within 3 business days. After that the page works for you: it automatically answers \"do you deliver to me?\" and \"how do I order?\", and if wording is hard for you — there's a tool that writes your business description with you. An updated photo once a week is enough, and when you need a break — there's vacation mode."
       },
       "difference": {
         "q": "How is this different from Instagram or delivery apps — and who's behind it?",
@@ -5282,7 +5290,7 @@
       "intro": "We don't hide the criteria. Here, by category, is the document that earns the \"Verified\" badge — and when \"Declared\" is exactly the right path.",
       "path_or": "or",
       "groupA_title": "Categories where the law requires a license",
-      "groupA_desc": "Here the law requires a license — so here there's <b>always</b> an official document (from the local authority or the Ministry of Health) that was submitted and reviewed. Without a valid license, the business simply doesn't go live.",
+      "groupA_desc": "Here the law requires a license — so here there's <b>always</b> a production licence from the Ministry of Health that was submitted and reviewed. Without a valid license, the business simply doesn't go live.",
       "groupA_doc": "A valid official license.",
       "honey_doc": "Three licenses together — beekeeper, marketing, and business. One alone isn't enough.",
       "groupB_title": "Categories legally exempt from licensing",
