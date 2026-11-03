@@ -623,6 +623,8 @@ def update_my_producer(
         "instagram",
         "website",
         "whatsapp_group",
+        # MEH-1676: the owner's opt-out for the public coverage CTA.
+        "coverage_cta_enabled",
         "primary_contact_method",
         "contact_email",
         "facebook",

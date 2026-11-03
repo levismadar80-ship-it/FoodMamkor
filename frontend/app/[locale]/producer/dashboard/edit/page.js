@@ -35,6 +35,7 @@
  * RTL: logical properties only — see .claude/rules/rtl.md.
  */
 
+import CoverageCtaToggle from "@/components/dashboard/CoverageCtaToggle";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 // MEH-1157: locale-aware router — push("/login") lands on /{locale}/login
 // instead of dropping an /en session onto the default-locale page.
@@ -1067,6 +1068,11 @@ function EditPageInner() {
             profile={profile}
             onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
             reportDirty={reportDirty}
+          />
+          {/* MEH-1676: the owner's switch for the public «לא מגיעים אליך?» CTA. */}
+          <CoverageCtaToggle
+            producer={profile}
+            onSaved={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
           />
         </EditAccordionCard>
 
