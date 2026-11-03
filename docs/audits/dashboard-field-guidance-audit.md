@@ -88,7 +88,7 @@ A field missing (2) or (3) where it applies is `missing-guidance` below.
 | product image | `ProductsSection` | ✓ `image_label` | — | — (file) | ✓ card-level `where` | ok |
 | `instagram` | `ContactChannelsCard` | ✓ | — | ✓ `instagram_placeholder` — bare handle (MEH-1597) | ✓ card-level `subtitle` | ok |
 | `website` | `ContactChannelsCard` | ✓ | — | ✓ `website_placeholder` | ✓ card-level | ok |
-| `whatsapp_group` | `ContactChannelsCard` | ✓ | — | ✓ `whatsapp_group_placeholder` | ✓ card-level | ok |
+| `whatsapp_group` | `ContactChannelsCard` | ✓ «עדכונים בוואטסאפ» (MEH-2626) | ✓ `whatsapp_group_helper` — recommends a channel | ✓ `whatsapp_group_placeholder` — `https://whatsapp.com/channel/…` | ✓ card-level | ok |
 | `contact_email` | `ContactChannelsCard` | ✓ | — | ✓ `email_placeholder` | ✓ card-level | ok |
 | `facebook` | `ContactChannelsCard` | ✓ | — | ✓ `facebook_placeholder` | ✓ card-level | ok |
 
@@ -110,7 +110,7 @@ above.
 | product image | `ProductsSection` | no "where" | ✓ card-level `where` |
 | `instagram` | `ContactChannelsCard` | no placeholder | ✓ `instagram_placeholder` — a **bare handle**, not a URL: `ContactCard.jsx:105-106` composes the URL itself, so a URL here would render a doubled, dead link. Since MEH-1608 the server also normalizes URL/@ input to a bare handle on every producer write schema (`_normalize_instagram`, schemas.py) |
 | `website` | `ContactChannelsCard` | no placeholder | ✓ `website_placeholder` — full URL, matching `_url_scheme_validator` |
-| `whatsapp_group` | `ContactChannelsCard` | no placeholder | ✓ `whatsapp_group_placeholder` — the `https://chat.whatsapp.com/…` shape its validator requires |
+| `whatsapp_group` | `ContactChannelsCard` | no placeholder | ✓ `whatsapp_group_placeholder` — since MEH-2626 the `https://whatsapp.com/channel/…` shape (the validator accepts a group `chat.whatsapp.com/…` or a channel `[www.]whatsapp.com/channel/<id>`) |
 | `contact_email` | `ContactChannelsCard` | no placeholder | ✓ `email_placeholder` |
 | `facebook` | `ContactChannelsCard` | no placeholder | ✓ `facebook_placeholder` — full URL, matching `_url_scheme_validator` |
 

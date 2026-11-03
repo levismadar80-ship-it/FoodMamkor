@@ -205,6 +205,7 @@ def test_sensitive_fields_are_all_writable(client, db):
         "vegan_scope": "all",
         "vegetarian_scope": "all",
         "gluten_free_facility": "dedicated",
+        "whatsapp_group": "https://whatsapp.com/channel/0029VaPing",  # MEH-2626
     }
     assert set(values) == set(SENSITIVE_FIELDS), (
         "this test must cover every sensitive field — update `values` when "
