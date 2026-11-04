@@ -23,7 +23,7 @@ from app.models.models import Producer
 # sentence word for word, so a consumer without a code resolver shows exactly
 # what it showed before; consumers that resolve the code read the copy from
 # messages/*.json (dashboard.producer.delivery.errors.<code>,
-# admin.producers.form.errors.<code>). The schemas.py ValueErrors carry the
+# the admin form reads the same dashboard.producer.delivery.errors.<code> keys). The schemas.py ValueErrors carry the
 # same sentences and are a separate (Pydantic array) surface.
 EXCLUDED_REQUIRES_NATIONWIDE_DETAIL = {
     "code": "excluded_requires_nationwide",
