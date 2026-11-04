@@ -24,6 +24,18 @@ vi.mock("@/lib/cloudinary", async (importOriginal) => ({
 // carry a forward chevron (LEFT in RTL) now that they open the detail sheet.
 vi.mock("@phosphor-icons/react", () => ({
   Leaf: () => <span />,
+  // MEH-2654: ProducerSections now loads lib/chip-icons (diet glyphs on rows).
+  SealCheck: () => <span />,
+  Truck: () => <span />,
+  Package: () => <span />,
+  Certificate: () => <span />,
+  Carrot: () => <span />,
+  GrainsSlash: () => <span />,
+  Barn: () => <span />,
+  DropSlash: () => <span />,
+  Cube: () => <span />,
+  Clock: () => <span />,
+  Storefront: () => <span />,
   CaretLeft: () => <span />,
   MapPin: () => <span />,
   WhatsappLogo: () => <span />,

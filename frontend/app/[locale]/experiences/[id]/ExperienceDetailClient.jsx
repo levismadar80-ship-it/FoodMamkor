@@ -11,6 +11,7 @@ import {
   CalendarBlank,
   CalendarPlus,
   CaretLeft,
+  Check,
   Clock,
   CurrencyCircleDollar,
   Leaf,
@@ -34,6 +35,7 @@ import { downloadIcs } from "@/lib/event-ics";
 import { eventWhen, addressNavLinks } from "@/lib/event-when";
 import { AddressNavLinks } from "@/components/NavAppGlyphs";
 import { SkeletonDetail } from "@/components/Skeleton";
+import { splitBringList } from "@/lib/bring-list";
 import { findExperienceCategory } from "@/lib/event-categories";
 
 // MEH-1404: reuse the producer-detail static map + Waze/Gmaps block on
@@ -60,6 +62,9 @@ function endTimeFrom(start, minutes) {
   if (!Number.isFinite(total) || total >= 24 * 60) return null;
   return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
 }
+
+// «נשארו N מקומות» shows at this many spots or fewer (approved 4/11).
+const FEW_SPOTS = 3;
 
 export default function ExperienceDetailClient() {
   const t = useTranslations("experiences.detail");
@@ -145,9 +150,9 @@ export default function ExperienceDetailClient() {
   // WhatsApp cannot reach) falls back to the recipient-less link below.
   const hostPhone = normalizePhone(hostBiz?.producer_phone);
   const waText = t("whatsapp_message", { title: ex.title });
-  const waHref = hostPhone
-    ? getWhatsAppHref(hostPhone, waText)
-    : `https://wa.me/?text=${encodeURIComponent(waText)}`;
+  const waitText = t("waitlist_message", { title: ex.title });
+  const waLink = (text) =>
+    hostPhone ? getWhatsAppHref(hostPhone, text) : `https://wa.me/?text=${encodeURIComponent(text)}`;
 
   // MEH-2549: the event page's structure (MEH-2548) in the experience's
   // gold — cover + date tile, host byline, one details card with share +
@@ -157,6 +162,7 @@ export default function ExperienceDetailClient() {
   // forms to the registry entry, so the chip and its icon read in Hebrew.
   const cat = findExperienceCategory(ex.category);
   const CatIcon = CATEGORY_ICON[cat?.key ?? ex.category] ?? CalendarBlank;
+  const bringItems = splitBringList(ex.requirements);
   // A recurring experience's date is its first occasion — no «מחר» chip, and
   // no single-date calendar entry that would read as the only one.
   const when = ex.is_recurring ? null : eventWhen(ex.event_date);
@@ -168,7 +174,12 @@ export default function ExperienceDetailClient() {
   const day = formatEventDate(ex.event_date, locale, { day: "numeric" });
   const month = formatEventDate(ex.event_date, locale, { month: "long" });
   const weekday = formatEventDate(ex.event_date, locale, { weekday: "long" });
-  const showCta = isApproved && ex.spots_left !== 0 && !isPast;
+  // A full experience swaps the sign-up CTA for a WhatsApp waitlist message.
+  const isFull = ex.max_participants != null && ex.spots_left === 0;
+  const fewLeft = !isFull && ex.max_participants != null && ex.spots_left != null && ex.spots_left <= FEW_SPOTS;
+  // A host-cancelled experience drops from the feed but its link still opens;
+  // it must not offer sign-up or a waitlist.
+  const showCta = isApproved && !isPast && ex.is_active !== false;
   const canCalendar = isApproved && !ex.is_recurring && !isPast;
   const icsEvent = {
     id: `experience-${ex.id}`,
@@ -347,14 +358,18 @@ export default function ExperienceDetailClient() {
             {ex.max_participants != null && (
               <div className={`${infoRow} border-t border-border`}>
                 <span className={infoIcon}><Users size={18} aria-hidden="true" /></span>
-                {/* sign-up happens on WhatsApp, so participants_count
-                    never moves and «8 מתוך 8» read as either full or empty.
-                    The cap is the one fact the site knows — the event page's
-                    «עד N משתתפים». */}
-                <p className="text-text" data-testid="experience-capacity">
-                  {ex.spots_left === 0
+                {/* Sign-up is on WhatsApp; the host reports the count from her
+                    dashboard. The page names the spots only when few are left
+                    (Airbnb / Eventbrite do the same) and otherwise the cap. */}
+                <p
+                  className={`text-text ${isFull || fewLeft ? "font-semibold" : ""}`}
+                  data-testid="experience-capacity"
+                >
+                  {isFull
                     ? t("sold_out")
-                    : tEv("participants_limit", { n: ex.max_participants })}
+                    : fewLeft
+                      ? t("spots_left_few", { n: ex.spots_left })
+                      : tEv("participants_limit", { n: ex.max_participants })}
                 </p>
               </div>
             )}
@@ -362,12 +377,13 @@ export default function ExperienceDetailClient() {
               <div className="border-t border-border p-4 space-y-3">
                 {showCta && (
                   <a
-                    href={waHref}
+                    href={waLink(isFull ? waitText : waText)}
                     target="_blank"
                     rel="noopener noreferrer"
+                    data-testid="experience-whatsapp-cta"
                     className="flex items-center justify-center min-h-[48px] w-full bg-primary text-white px-6 rounded-[10px] font-semibold hover:bg-primary-dark transition focus-ring"
                   >
-                    {t("whatsapp_cta")}
+                    {isFull ? t("waitlist_cta") : t("whatsapp_cta")}
                   </a>
                 )}
                 {/* MEH-2549: share + add-to-calendar, as on the event page. */}
@@ -402,20 +418,29 @@ export default function ExperienceDetailClient() {
               it nulls them for a home experience, so no residential pin leaks. */}
           {hasCoords && <MiniMap lat={ex.lat} lng={ex.lng} name={ex.title} />}
 
-          {ex.description && (
-            <div className="bg-white border border-border rounded-[16px] p-6 leading-relaxed whitespace-pre-line text-text/90">
-              {ex.description}
+          {/* «מה להביא» as a short checklist above the description, the way
+              experience sites list it: the host's free text, one item per line
+              (or per comma when she wrote one line). White like the
+              description — the old green box read as a warning. */}
+          {bringItems.length > 0 && (
+            <div className="bg-white border border-border rounded-[16px] p-6" data-testid="experience-bring">
+              <h2 className="font-headline-md text-lg font-bold text-text mb-3">
+                {t("requirements_title")}
+              </h2>
+              <ul className="space-y-2">
+                {bringItems.map((item, i) => (
+                  <li key={`${i}-${item}`} className="flex items-start gap-2 text-text/90">
+                    <Check size={18} weight="bold" className="shrink-0 mt-0.5 text-primary" aria-hidden="true" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
 
-          {ex.requirements && (
-            <div className="bg-green-50 border border-border rounded-[16px] p-6">
-              <h2 className="font-headline-md text-lg font-bold text-text mb-2">
-                {t("requirements_title")}
-              </h2>
-              <p className="text-text/85 whitespace-pre-line">
-                {ex.requirements}
-              </p>
+          {ex.description && (
+            <div className="bg-white border border-border rounded-[16px] p-6 leading-relaxed whitespace-pre-line text-text/90">
+              {ex.description}
             </div>
           )}
 

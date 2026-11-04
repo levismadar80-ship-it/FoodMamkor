@@ -13,7 +13,7 @@ import en from "../messages/en.json";
  */
 
 const CHANNEL_REQUIRED =
-  "כדי שהעדכונים יגיעו אלייך, צריך לבחור לפחות דרך אחת: וואטסאפ או התראות בדפדפן.";
+  "כדי לקבל עדכונים, צריך לבחור לפחות דרך אחת: וואטסאפ או התראות בדפדפן.";
 
 vi.mock("@/lib/auth-context", () => ({
   useAuth: () => ({ user: { id: "u1", phone: "0501234567" }, updateProfile: vi.fn() }),
