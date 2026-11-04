@@ -234,10 +234,16 @@ html {
 /* MEH-2652: fixed-bottom layers that opt in follow the visual viewport when
    iOS 26 Safari leaves them drifted above the screen bottom. --vv-shift is
    published only on iOS, only while drifted (IosViewportPin.jsx); everywhere
-   else it is absent and this is `translate: 0 0`. `translate` is its own
-   property, so it composes with any `transform` the layer already animates. */
+   else it is absent. NO fallback on purpose: with the var absent the
+   declaration is invalid at computed-value time and `translate` resolves to
+   `none`. A `0 0px` fallback would still be a non-none translate, which makes
+   the layer a containing block for fixed descendants on every platform (the
+   MEH-2622 "sheet opened inside the card" class of bug). `translate` is its own
+   property, so it composes with any `transform` the layer already animates.
+   Not on MapBottomSheet: the map controls ride its edge via --map-sheet-h and
+   would split from it. */
 .vv-pin {
-  translate: 0 var(--vv-shift, 0px);
+  translate: 0 var(--vv-shift);
 }
 
 @media (min-width: 768px) {

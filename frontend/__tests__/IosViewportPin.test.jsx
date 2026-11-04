@@ -7,6 +7,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, cleanup, act } from "@testing-library/react";
 import IosViewportPin, {
+  SETTLE_MS,
   computeViewportShift,
   isIosWebKit,
   isTextEntry,
@@ -26,8 +27,11 @@ describe("computeViewportShift", () => {
   it("layout viewport stuck at keyboard height → shift by the difference", () => {
     expect(computeViewportShift({ ...base, innerHeight: 364 })).toBe(300);
   });
-  it("text field focused (keyboard legitimately up) → 0", () => {
-    expect(computeViewportShift({ ...base, vvOffsetTop: 300, editing: true })).toBe(0);
+  it("keyboard actually up (field focused, visual viewport short) → 0", () => {
+    expect(computeViewportShift({ ...base, vvHeight: 364, vvOffsetTop: 300, editing: true })).toBe(0);
+  });
+  it("field still focused but no keyboard (iPad hardware keyboard) → still compensates", () => {
+    expect(computeViewportShift({ ...base, innerHeight: 364, editing: true })).toBe(300);
   });
   it("pinch-zoomed → 0", () => {
     expect(computeViewportShift({ ...base, vvOffsetTop: 200, vvScale: 2 })).toBe(0);
@@ -66,6 +70,7 @@ describe("IosViewportPin component", () => {
   const originalVV = Object.getOwnPropertyDescriptor(window, "visualViewport");
   afterEach(() => {
     cleanup();
+    vi.useRealTimers();
     vi.restoreAllMocks();
     if (originalVV) Object.defineProperty(window, "visualViewport", originalVV);
     else delete window.visualViewport;
@@ -77,39 +82,69 @@ describe("IosViewportPin component", () => {
     const stub = Object.assign(target, { height: 664, offsetTop: 0, scale: 1, ...vv });
     Object.defineProperty(window, "visualViewport", { configurable: true, value: stub });
     vi.spyOn(window, "innerHeight", "get").mockReturnValue(664);
-    vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb) => {
-      cb();
-      return 1;
-    });
+    // rAF on the fake clock, returning the id BEFORE the callback runs.
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb) => setTimeout(cb, 16));
+    vi.spyOn(window, "cancelAnimationFrame").mockImplementation((id) => clearTimeout(id));
     return stub;
   };
 
-  it("on iPhone publishes --vv-shift while drifted and clears it when healthy", () => {
+  const iphone = () =>
     vi.spyOn(window.navigator, "userAgent", "get").mockReturnValue("Mozilla/5.0 (iPhone)");
+  const tick = (ms) => act(() => vi.advanceTimersByTime(ms));
+  const fire = (vv, type = "scroll") => act(() => vv.dispatchEvent(new Event(type)));
+
+  it("on iPhone publishes --vv-shift once the drift settles, clears it when healthy, and re-applies", () => {
+    vi.useFakeTimers();
+    iphone();
     const vv = stubViewport({ offsetTop: 300 });
     render(<IosViewportPin />);
+    expect(shiftVar()).toBe(""); // not yet settled
+    tick(SETTLE_MS + 20);
     expect(shiftVar()).toBe("300px");
 
-    act(() => {
-      vv.offsetTop = 0;
-      vv.dispatchEvent(new Event("scroll"));
-    });
+    vv.offsetTop = 0;
+    fire(vv);
+    tick(20);
+    expect(shiftVar()).toBe(""); // back to 0 immediately
+
+    vv.offsetTop = 120; // drifts again: a second event must still be heard
+    fire(vv, "resize");
+    tick(SETTLE_MS + 40);
+    expect(shiftVar()).toBe("120px");
+  });
+
+  it("a transient mismatch that heals before it settles never moves anything", () => {
+    vi.useFakeTimers();
+    iphone();
+    const vv = stubViewport({ offsetTop: 0 });
+    render(<IosViewportPin />);
+    vv.offsetTop = 60; // toolbar mid-collapse
+    fire(vv);
+    tick(50);
+    expect(shiftVar()).toBe(""); // not moved mid-collapse
+    vv.offsetTop = 0;
+    fire(vv);
+    tick(SETTLE_MS * 2);
     expect(shiftVar()).toBe("");
   });
 
   it("removes the var on unmount", () => {
-    vi.spyOn(window.navigator, "userAgent", "get").mockReturnValue("Mozilla/5.0 (iPhone)");
+    vi.useFakeTimers();
+    iphone();
     stubViewport({ offsetTop: 40 });
     const { unmount } = render(<IosViewportPin />);
+    tick(SETTLE_MS + 20);
     expect(shiftVar()).toBe("40px");
     unmount();
     expect(shiftVar()).toBe("");
   });
 
   it("does nothing off iOS, even with the same drifted reading", () => {
+    vi.useFakeTimers();
     vi.spyOn(window.navigator, "userAgent", "get").mockReturnValue("Mozilla/5.0 (Linux; Android 14)");
     stubViewport({ offsetTop: 300 });
     render(<IosViewportPin />);
+    tick(SETTLE_MS * 2);
     expect(shiftVar()).toBe("");
   });
 });

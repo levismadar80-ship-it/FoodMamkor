@@ -335,7 +335,7 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
       {open && (
         <div
           style={panelStyle}
-          className="flex flex-col bg-background border border-border shadow-[0_8px_32px_rgba(46,104,83,0.18)] overflow-hidden"
+          className="vv-pin flex flex-col bg-background border border-border shadow-[0_8px_32px_rgba(46,104,83,0.18)] overflow-hidden"
           role="dialog"
           aria-modal="false"
           aria-label={t("panel_label")}

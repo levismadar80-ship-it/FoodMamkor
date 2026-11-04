@@ -291,9 +291,8 @@ export default function BottomNav() {
   const shellRef = useRef(null);
   useEffect(() => {
     const root = document.documentElement;
-    const nav = navRef.current;
     const shell = shellRef.current;
-    if (!nav || !shell) {
+    if (!shell) {
       if (noBottomChrome) {
         root.style.setProperty("--bottom-nav-clearance", NO_PILL_CLEARANCE);
         return () => root.style.removeProperty("--bottom-nav-clearance");

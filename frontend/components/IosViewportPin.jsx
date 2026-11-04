@@ -26,10 +26,16 @@ import { useEffect } from "react";
  * which composes with any `transform` they already use.
  *
  * Deliberately 0 while:
- *  - a text field is focused: the keyboard is legitimately up, and moving the
- *    nav onto the keyboard would steal the room the user is typing in;
+ *  - the keyboard is actually up (a text field is focused AND the visual
+ *    viewport is clearly shorter than the layout viewport). Focus alone is not
+ *    enough: an iPad hardware keyboard or a dismissed keyboard can leave the
+ *    field focused in exactly the drifted state this exists for;
  *  - the page is pinch-zoomed: offsetTop is then real panning, not drift;
  *  - the gap is ≤ 1px (sub-pixel rounding) or negative.
+ *
+ * A non-zero shift is applied only once it has held for SETTLE_MS, so a
+ * transient height mismatch while the toolbar collapses mid-scroll never moves
+ * anything. Returning to 0 is immediate.
  *
  * iOS/iPadOS only. Android and desktop never mount the listeners, so this
  * cannot change anything there.
@@ -58,8 +64,11 @@ export function isTextEntry(el) {
 
 const MAX_SHIFT_RATIO = 0.6;
 
+// The on-screen keyboard is never shorter than this.
+const KEYBOARD_MIN_PX = 120;
+
 export function computeViewportShift({ innerHeight, vvHeight, vvOffsetTop, vvScale = 1, editing }) {
-  if (editing) return 0;
+  if (editing && innerHeight - vvHeight > KEYBOARD_MIN_PX) return 0;
   if (Math.abs(vvScale - 1) > 0.01) return 0;
   if (!(innerHeight > 0) || !(vvHeight > 0)) return 0;
   const shift = Math.round(vvOffsetTop + vvHeight - innerHeight);
@@ -72,6 +81,8 @@ export function computeViewportShift({ innerHeight, vvHeight, vvOffsetTop, vvSca
 
 // The keyboard's slide-out runs ~250–400ms; offsetTop settles after it.
 const SETTLE_CHECKS_MS = [120, 400, 900];
+// A non-zero reading must hold this long before it moves anything.
+export const SETTLE_MS = 200;
 
 export default function IosViewportPin() {
   useEffect(() => {
@@ -81,21 +92,43 @@ export default function IosViewportPin() {
     const root = document.documentElement;
     let applied = 0;
     let raf = null;
+    let pending = null; // { shift, timer } — a non-zero reading waiting to settle
     const timers = new Set();
 
-    const apply = () => {
-      raf = null;
-      const shift = computeViewportShift({
+    const write = (shift) => {
+      applied = shift;
+      if (shift) root.style.setProperty("--vv-shift", `${shift}px`);
+      else root.style.removeProperty("--vv-shift");
+    };
+    const read = () =>
+      computeViewportShift({
         innerHeight: window.innerHeight,
         vvHeight: vv.height,
         vvOffsetTop: vv.offsetTop,
         vvScale: vv.scale,
         editing: isTextEntry(document.activeElement),
       });
-      if (shift === applied) return;
-      applied = shift;
-      if (shift) root.style.setProperty("--vv-shift", `${shift}px`);
-      else root.style.removeProperty("--vv-shift");
+    const clearPending = () => {
+      if (pending) clearTimeout(pending.timer);
+      pending = null;
+    };
+    const apply = () => {
+      raf = null;
+      const shift = read();
+      if (shift === applied) return clearPending();
+      if (shift === 0) {
+        clearPending();
+        return write(0);
+      }
+      if (pending && pending.shift === shift) return;
+      clearPending();
+      pending = {
+        shift,
+        timer: setTimeout(() => {
+          pending = null;
+          if (read() === shift) write(shift);
+        }, SETTLE_MS),
+      };
     };
     const schedule = () => {
       if (raf == null) raf = window.requestAnimationFrame(apply);
@@ -113,7 +146,6 @@ export default function IosViewportPin() {
 
     vv.addEventListener("resize", schedule);
     vv.addEventListener("scroll", schedule);
-    window.addEventListener("scroll", schedule, { passive: true });
     window.addEventListener("resize", schedule);
     document.addEventListener("focusin", schedule);
     document.addEventListener("focusout", settle);
@@ -123,13 +155,13 @@ export default function IosViewportPin() {
     return () => {
       vv.removeEventListener("resize", schedule);
       vv.removeEventListener("scroll", schedule);
-      window.removeEventListener("scroll", schedule);
       window.removeEventListener("resize", schedule);
       document.removeEventListener("focusin", schedule);
       document.removeEventListener("focusout", settle);
       window.removeEventListener("pageshow", settle);
       if (raf != null) window.cancelAnimationFrame(raf);
       for (const id of timers) clearTimeout(id);
+      clearPending();
       root.style.removeProperty("--vv-shift");
     };
   }, []);
