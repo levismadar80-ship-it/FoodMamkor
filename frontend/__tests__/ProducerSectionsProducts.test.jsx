@@ -366,7 +366,7 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
     expect(freeText.closest('span[dir="ltr"]')).toBeNull();
   });
 
-  it("MEH-1463: price_range present keeps priority — product price NOT used as fallback", () => {
+  it("MEH-2654: the matched product's own price wins over the business-level price_range", () => {
     render(
       <ProducerSections
         {...baseProps}
@@ -381,9 +381,47 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
         }}
       />,
     );
-    expect(screen.getByText("החל מ-25₪")).toBeInTheDocument();
-    // the product's own numeric price must not appear (label wins)
-    expect(screen.queryByText("99₪")).not.toBeInTheDocument();
+    // The card and the product sheet show the same price (Sapir 31/10: card
+    // said «₪₪», sheet said 32₪). The business-wide «מחיר התחלתי» is not
+    // this product's price, so it must not sit on this product's card.
+    expect(screen.getByText("99₪")).toBeInTheDocument();
+    expect(screen.queryByText("החל מ-25₪")).not.toBeInTheDocument();
+  });
+
+  it("MEH-2654: a price_range with no digit («₪₪») is not a price — the product price shows", () => {
+    render(
+      <ProducerSections
+        {...baseProps}
+        producer={{
+          id: 1,
+          name: "מאפיית השדה",
+          top_product_name: "לחם מחמצת כוסמין מלא",
+          price_range: "₪₪",
+          products: [
+            { id: 21, name: "לחם מחמצת כוסמין מלא", image_url: null, price_min: 32 },
+          ],
+        }}
+      />,
+    );
+    expect(screen.getByText("32₪")).toBeInTheDocument();
+    expect(screen.queryByText("₪₪")).not.toBeInTheDocument();
+  });
+
+  it("MEH-2654: a digit-less price_range with no product price renders no price line at all", () => {
+    render(
+      <ProducerSections
+        {...baseProps}
+        producer={{
+          id: 1,
+          name: "מאפיית השדה",
+          top_product_name: "לחם מחמצת כוסמין מלא",
+          price_range: "₪₪",
+          products: [],
+        }}
+      />,
+    );
+    expect(screen.getByText("לחם מחמצת כוסמין מלא")).toBeInTheDocument();
+    expect(screen.queryByText("₪₪")).not.toBeInTheDocument();
   });
 
   // MEH-1855: price_range is the canonical field. Chunk 1 made every public
@@ -495,7 +533,7 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
       expect(screen.queryByText("החל מ-25₪")).not.toBeInTheDocument();
     });
 
-    it("price_range set blocks the product-price fallback (same priority rule as the alias)", () => {
+    it("MEH-2654: a product with its own price shows that price even when price_range is set", () => {
       render(
         <ProducerSections
           {...baseProps}
@@ -508,8 +546,8 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
           }}
         />,
       );
-      expect(screen.getByText("מ-₪20")).toBeInTheDocument();
-      expect(screen.queryByText("99₪")).not.toBeInTheDocument();
+      expect(screen.getByText("99₪")).toBeInTheDocument();
+      expect(screen.queryByText("מ-₪20")).not.toBeInTheDocument();
     });
   });
 
@@ -616,5 +654,34 @@ describe("MEH-1901 — product rows open the detail sheet", () => {
     );
     expect(screen.queryByTestId("signature-product-trigger")).not.toBeInTheDocument();
     expect(screen.getByText("משהו שאין לו שורה")).toBeInTheDocument();
+  });
+});
+
+// MEH-2654: the recipe page's product rows deep-link `?product=<id>`.
+describe("MEH-2654 — ?product=<id> opens that product's sheet on arrival", () => {
+  const products = [
+    { id: 21, name: "לחם", image_url: null },
+    { id: 22, name: "גבינה", image_url: null },
+  ];
+  const withSearch = (search) => window.history.replaceState(null, "", `/x${search}`);
+
+  it("opens the matching product", () => {
+    withSearch("?product=22");
+    render(<ProducerSections {...baseProps} producer={producerWith(products)} />);
+    expect(screen.getByTestId("product-sheet")).toHaveAttribute("aria-label", "גבינה");
+    withSearch("");
+  });
+
+  it("an id that matches nothing opens no sheet", () => {
+    withSearch("?product=999");
+    render(<ProducerSections {...baseProps} producer={producerWith(products)} />);
+    expect(screen.queryByTestId("product-sheet")).toBeNull();
+    withSearch("");
+  });
+
+  it("no param: no sheet", () => {
+    withSearch("");
+    render(<ProducerSections {...baseProps} producer={producerWith(products)} />);
+    expect(screen.queryByTestId("product-sheet")).toBeNull();
   });
 });
