@@ -11,6 +11,7 @@ import {
   CalendarBlank,
   CalendarPlus,
   CaretLeft,
+  Check,
   Clock,
   CurrencyCircleDollar,
   Leaf,
@@ -34,6 +35,7 @@ import { downloadIcs } from "@/lib/event-ics";
 import { eventWhen, addressNavLinks } from "@/lib/event-when";
 import { AddressNavLinks } from "@/components/NavAppGlyphs";
 import { SkeletonDetail } from "@/components/Skeleton";
+import { splitBringList } from "@/lib/bring-list";
 import { findExperienceCategory } from "@/lib/event-categories";
 
 // MEH-1404: reuse the producer-detail static map + Waze/Gmaps block on
@@ -157,6 +159,7 @@ export default function ExperienceDetailClient() {
   // forms to the registry entry, so the chip and its icon read in Hebrew.
   const cat = findExperienceCategory(ex.category);
   const CatIcon = CATEGORY_ICON[cat?.key ?? ex.category] ?? CalendarBlank;
+  const bringItems = splitBringList(ex.requirements);
   // A recurring experience's date is its first occasion — no «מחר» chip, and
   // no single-date calendar entry that would read as the only one.
   const when = ex.is_recurring ? null : eventWhen(ex.event_date);
@@ -402,20 +405,29 @@ export default function ExperienceDetailClient() {
               it nulls them for a home experience, so no residential pin leaks. */}
           {hasCoords && <MiniMap lat={ex.lat} lng={ex.lng} name={ex.title} />}
 
-          {ex.description && (
-            <div className="bg-white border border-border rounded-[16px] p-6 leading-relaxed whitespace-pre-line text-text/90">
-              {ex.description}
+          {/* «מה להביא» as a short checklist above the description, the way
+              experience sites list it: the host's free text, one item per line
+              (or per comma when she wrote one line). White like the
+              description — the old green box read as a warning. */}
+          {bringItems.length > 0 && (
+            <div className="bg-white border border-border rounded-[16px] p-6" data-testid="experience-bring">
+              <h2 className="font-headline-md text-lg font-bold text-text mb-3">
+                {t("requirements_title")}
+              </h2>
+              <ul className="space-y-2">
+                {bringItems.map((item, i) => (
+                  <li key={`${i}-${item}`} className="flex items-start gap-2 text-text/90">
+                    <Check size={18} weight="bold" className="shrink-0 mt-0.5 text-primary" aria-hidden="true" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
 
-          {ex.requirements && (
-            <div className="bg-green-50 border border-border rounded-[16px] p-6">
-              <h2 className="font-headline-md text-lg font-bold text-text mb-2">
-                {t("requirements_title")}
-              </h2>
-              <p className="text-text/85 whitespace-pre-line">
-                {ex.requirements}
-              </p>
+          {ex.description && (
+            <div className="bg-white border border-border rounded-[16px] p-6 leading-relaxed whitespace-pre-line text-text/90">
+              {ex.description}
             </div>
           )}
 
