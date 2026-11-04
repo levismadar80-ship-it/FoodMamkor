@@ -631,6 +631,8 @@ export default function ProductSheet({
                       {t("producer.detail.sections.products.facts.allergens_heading")}
                     </h3>
                     <p className="text-sm text-text" data-testid="product-sheet-allergens">
+                      {/* One label source with the owner form on purpose: the
+                          public name must be the exact word the owner ticked. */}
                       {allergenCodes
                         .map((code) => t(`settings.products.form.allergen_${code}`))
                         .join(", ")}

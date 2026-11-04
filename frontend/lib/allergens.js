@@ -1,6 +1,7 @@
 // MEH-2662: the closed allergen list, in the same canonical order as
-// backend/app/allergens.py ALLERGEN_CODES. AllergenCodesParity.test.js reads
-// the backend file and fails if the two lists ever differ.
+// backend/app/allergens.py ALLERGEN_CODES. __tests__/ProductsSectionAllergens.test.jsx
+// ("matches backend/app/allergens.py exactly") reads the backend file and
+// fails if the two lists ever differ.
 export const ALLERGEN_CODES = [
   "gluten",
   "milk",
