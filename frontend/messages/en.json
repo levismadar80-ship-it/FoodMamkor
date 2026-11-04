@@ -40,6 +40,7 @@
       "privacy_short": "Privacy",
       "accessibility": "Accessibility",
       "contact": "Contact us",
+      "recommend": "Recommend a business",
       "cta_pitch": "Do you have a local food business?",
       "cta_subpitch": "Join thousands of business owners on Mehamakor",
       "brand_aria": "Mehamakor — Home page",
@@ -617,6 +618,12 @@
       "description": "Have a question, suggestion, or idea? We'd love to hear from you. Reach out and we'll get back to you shortly.",
       "og_title": "Contact Mehamakor",
       "og_description": "Questions, suggestions, or ideas for collaboration — we're here."
+    },
+    "recommend": {
+      "title": "Know a business that belongs here?",
+      "description": "Tell us about it. We check every recommendation, reach out to the business, and list only businesses that hold a licence.",
+      "og_title": "Know a business that belongs here?",
+      "og_description": "Tell us about it. We check every recommendation, reach out to the business, and list only businesses that hold a licence."
     },
     "forgot_password": {
       "title": "Reset your password | Mehamakor",
@@ -1997,7 +2004,15 @@
         "short_title": "Short",
         "short_body": "{name}, adding you to Mehamakor 💚\n{prefillUrl}\n\nOne-time message from Mehamakor — local businesses that make real food. Not interested? Reply \"remove\" and we won't contact you again."
       },
-      "call_script": "1. Opening (10 s): \"Hi, this is [name] from Mehamakor. I work with Sapir, who is building a site for local food businesses. Free, no commission. Do you have a minute?\" If she is busy: \"When is a good time to call back?\"\n2. Personal connection (20 s): \"I saw your [product / stall] at [where]. A business that makes its own food, not a reseller.\" Let her talk. Take notes.\n3. Permission: \"Can I take five minutes to explain, and you decide?\"\n4. The three things (60 s): \"One: free. No commission and no subscription. Two: customers contact you directly on WhatsApp. Three: a permanent page Google finds. A post disappears, the page stays.\" No numbers about businesses or visitors.\n5. The ask: \"I'm sending you a WhatsApp link now, your details are already filled in. Registration takes 5–10 minutes, and Sapir reviews and approves every business herself within 3 business days. Sound good?\" Yes → \"Prepare profile\" and send during the call. Maybe → link + one reminder in a week. No → \"Thanks for listening\", status \"Declined\", never contact again."
+      "call_script": "1. Opening (10 s): \"Hi, this is [name] from Mehamakor. I work with Sapir, who is building a site for local food businesses. Free, no commission. Do you have a minute?\" If she is busy: \"When is a good time to call back?\"\n2. Personal connection (20 s): \"I saw your [product / stall] at [where]. A business that makes its own food, not a reseller.\" Let her talk. Take notes.\n3. Permission: \"Can I take five minutes to explain, and you decide?\"\n4. The three things (60 s): \"One: free. No commission and no subscription. Two: customers contact you directly on WhatsApp. Three: a permanent page Google finds. A post disappears, the page stays.\" No numbers about businesses or visitors.\n5. The ask: \"I'm sending you a WhatsApp link now, your details are already filled in. Registration takes 5–10 minutes, and Sapir reviews and approves every business herself within 3 business days. Sound good?\" Yes → \"Prepare profile\" and send during the call. Maybe → link + one reminder in a week. No → \"Thanks for listening\", status \"Declined\", never contact again.",
+      "badge_community": "Community pick",
+      "thank_suggester": "Send thanks",
+      "thank_disabled": {
+        "no_email": "No email was left",
+        "no_update_request": "No update was requested",
+        "already_sent": "Thanks sent on {date}",
+        "not_registered": "Thanks can be sent once the business has registered"
+      }
     },
     "kashrut": {
       "title": "Kashrut certificate approvals",
@@ -3237,6 +3252,28 @@
     "mailto_body_email": "Email:",
     "privacy_notice": "By submitting the form you confirm you have read the <link>privacy policy</link>."
   },
+  "recommend": {
+    "title": "Know a business that belongs here?",
+    "subtitle": "Tell us about it. We check every recommendation, reach out to the business, and list only businesses that hold a licence.",
+    "field_name_label": "Business name",
+    "field_city_label": "City",
+    "field_contact_label": "Instagram, phone or website",
+    "field_contact_hint": "One is enough, so we can reach them",
+    "field_instagram_label": "Instagram",
+    "field_phone_label": "Phone",
+    "field_website_label": "Website",
+    "field_reason_label": "What makes it special? (optional)",
+    "field_suggester_name_label": "Your name (optional)",
+    "field_suggester_email_label": "Email (optional)",
+    "privacy_link": "Privacy policy",
+    "wants_update_label": "Let me know when the business joins",
+    "submit": "Send recommendation",
+    "success": "Thank you! We got your recommendation. We'll check it and reach out to the business.",
+    "success_wants_update": "Thank you! We got your recommendation. If the business joins, we'll email you.",
+    "error_contact_missing": "We need at least one way to contact the business",
+    "error_rate_limited": "We've already had a few recommendations from you. Try again in an hour.",
+    "error_generic": "Something went wrong. Try again in a moment."
+  },
   "search": {
     "hero": {
       "submit_aria": "Search",
@@ -3639,7 +3676,8 @@
       "event": "What you submit here is intended for publication on the site, after review.",
       "category_request": "The request is sent to us for review and is not published on the site.",
       "newsletter": "Your email is used only to send the updates.",
-      "contact": "Your message is sent to us so we can reply, and is not published on the site."
+      "contact": "Your message is sent to us so we can reply, and is not published on the site.",
+      "business_suggestion": "We use your email only to update you about this suggestion. It is not shared with the business or used for marketing."
     },
     "sections": {
       "operator": {

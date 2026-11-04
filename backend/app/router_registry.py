@@ -11,6 +11,7 @@ from app.routers import (
     admin_whatsapp,
     alerts,
     auth,
+    business_suggestions,
     category_requests,
     chat,
     cities,
@@ -119,6 +120,8 @@ def register_routers(app: FastAPI) -> None:
     # MEH-771 Chunk C: admin view of undelivered WhatsApp sends.
     app.include_router(admin_whatsapp.router)
     app.include_router(chat.router)
+    # MEH-2633: public community suggestions (POST /business-suggestions).
+    app.include_router(business_suggestions.router)
     app.include_router(category_requests.router)
     # MEH-1872: the re-moderated name-change route. Deliberately NOT part of
     # producer_me — that router's writable-field set is what MEH-1851 closed.

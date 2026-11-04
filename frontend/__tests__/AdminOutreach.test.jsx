@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import AdminOutreachPage from "@/app/[locale]/admin/outreach/page";
+import api from "@/lib/api";
+import { showToast } from "@/lib/toast";
 
 // Mock api
 const listRef = { current: { data: [] } };
@@ -75,6 +77,15 @@ vi.mock("next-intl", () => {
     "admin.outreach.modal_wa.close": "סגור",
     "admin.outreach.call_script": '1. פתיחה חמה: "היי, אני מדברת ממהמקור, זה שם טוב?"',
     "admin.common.cancel": "ביטול",
+    // MEH-2633
+    "admin.outreach.badge_community": "המלצת קהילה",
+    "admin.outreach.thank_suggester": "שליחת תודה",
+    // MEH-2633 Sapir 04/11 — the four disabled reasons.
+    "admin.outreach.thank_disabled.no_email": "לא השאירו אימייל",
+    "admin.outreach.thank_disabled.no_update_request": "לא ביקשו עדכון",
+    "admin.outreach.thank_disabled.already_sent": "התודה נשלחה ב-{date}",
+    "admin.outreach.thank_disabled.not_registered":
+      "אפשר לשלוח תודה אחרי שבית העסק נרשם",
   };
   const resolve = (fullKey, values) => {
     const raw = flat[fullKey] ?? fullKey;
@@ -84,6 +95,8 @@ vi.mock("next-intl", () => {
     return s;
   };
   return {
+    // MEH-2633: the page now formats the thanked date with the active locale.
+    useLocale: () => "he",
     useTranslations: (scope) => {
       const t = (key, values = {}) => resolve(scope ? `${scope}.${key}` : key, values);
       // PR-B WhatsApp templates use t.raw() to preserve literal placeholders
@@ -108,6 +121,23 @@ const sampleLead = {
   prefill_token_expires_at: null,
   created_at: "2026-04-15T08:00:00",
   updated_at: "2026-04-15T08:00:00",
+};
+
+// MEH-2633: a community suggestion carries five fields a manual lead never
+// does. `status: "registered"` + wants_update + no thanked_at is the ONE
+// combination where "שליחת תודה" is enabled, so it is the default here and the
+// disabled cases override a single field each.
+const communityLead = {
+  ...sampleLead,
+  id: "lead-2",
+  name: "מעדניית הזיתים",
+  source: "community",
+  status: "registered",
+  suggested_by_name: "דנה",
+  suggested_by_email: "dana@example-suggester.co.il",
+  suggester_wants_update: true,
+  suggestion_reason: "הזיתים הכי טובים שאכלתי",
+  suggester_thanked_at: null,
 };
 
 describe("AdminOutreachPage", () => {
@@ -276,5 +306,179 @@ describe("MEH-2566 · counters are the status filter; the list pages by 25", () 
     render(<AdminOutreachPage />);
     await screen.findByText("ליד 25");
     expect(screen.queryByTestId("pagination")).toBeNull();
+  });
+
+  // ---------- MEH-2633: community suggestions ----------
+
+  describe("community suggestions", () => {
+    it("badge, reason and suggester render for a community lead", async () => {
+      listRef.current = { data: [communityLead] };
+      render(<AdminOutreachPage />);
+      await screen.findByText("מעדניית הזיתים");
+      expect(screen.getByTestId("community-badge-lead-2")).toHaveTextContent("המלצת קהילה");
+      expect(screen.getByText("הזיתים הכי טובים שאכלתי")).toBeInTheDocument();
+      expect(screen.getByText("דנה")).toBeInTheDocument();
+      expect(screen.getByText("dana@example-suggester.co.il")).toBeInTheDocument();
+    });
+
+    it("a manual lead gets no badge and no suggester block", async () => {
+      // Discriminates: without this, a badge rendered unconditionally would
+      // pass every other test in this describe.
+      listRef.current = { data: [sampleLead] };
+      render(<AdminOutreachPage />);
+      await screen.findByText("מאפיית אביב");
+      expect(screen.queryByTestId("community-badge-lead-1")).toBeNull();
+      expect(screen.queryByTestId("thank-suggester-lead-1")).toBeNull();
+    });
+
+    it("the source chip sends ?source=community, and toggles back off", async () => {
+      listRef.current = { data: [communityLead] };
+      metricsRef.current = {
+        data: { total: 1, new: 0, contacted: 0, replied: 0, registered: 1, declined: 0, community: 1 },
+      };
+      render(<AdminOutreachPage />);
+      await screen.findByText("מעדניית הזיתים");
+
+      // Only the leads calls, in order. `toHaveBeenLastCalledWith` is wrong
+      // here: Promise.all fires the metrics request after the leads one, so
+      // the last call on this mock is always /metrics/summary.
+      const leadParams = () =>
+        api.get.mock.calls.filter((c) => c[0] === "/admin/outreach").map((c) => c[1]);
+
+      const chip = screen.getByTestId("outreach-source-chips").querySelector("button");
+      fireEvent.click(chip);
+      await waitFor(() =>
+        expect(leadParams()).toContainEqual({ params: { source: "community" } })
+      );
+      const afterOn = leadParams().length;
+
+      // Off again — the param must DISAPPEAR, not become "manual" or "".
+      // Asserting a NEW call is what makes this discriminate: the mount's own
+      // `{params: {}}` call is already in the list, so a bare "contains empty
+      // params" check would pass even if the second click did nothing.
+      fireEvent.click(chip);
+      await waitFor(() => expect(leadParams().length).toBeGreaterThan(afterOn));
+      expect(leadParams().at(-1)).toEqual({ params: {} });
+    });
+
+    it("thank button posts, then the row shows the thanked date", async () => {
+      listRef.current = { data: [communityLead] };
+      render(<AdminOutreachPage />);
+      await screen.findByText("מעדניית הזיתים");
+
+      const btn = screen.getByTestId("thank-suggester-lead-2");
+      expect(btn).toBeEnabled();
+
+      // The refreshed row comes back thanked — the date IS the feedback, which
+      // is why this flow needs no success toast.
+      listRef.current = {
+        data: [{ ...communityLead, suggester_thanked_at: "2026-11-03T10:00:00" }],
+      };
+      fireEvent.click(btn);
+      await waitFor(() =>
+        expect(api.post).toHaveBeenCalledWith("/admin/outreach/lead-2/thank-suggester")
+      );
+      await screen.findByTestId("thanked-at-lead-2");
+      // Sapir 04/11 changed this: the button stays on screen, disabled, with
+      // the date in its reason — it used to be removed entirely. A second
+      // send is still impossible because it is disabled.
+      expect(screen.getByTestId("thank-suggester-lead-2")).toBeDisabled();
+    });
+
+    it("thank button is DISABLED when the suggester asked for no update", async () => {
+      listRef.current = { data: [{ ...communityLead, suggester_wants_update: false }] };
+      render(<AdminOutreachPage />);
+      await screen.findByText("מעדניית הזיתים");
+      expect(screen.getByTestId("thank-suggester-lead-2")).toBeDisabled();
+    });
+
+    it("thank button is DISABLED until the business is registered", async () => {
+      listRef.current = { data: [{ ...communityLead, status: "contacted" }] };
+      render(<AdminOutreachPage />);
+      await screen.findByText("מעדניית הזיתים");
+      expect(screen.getByTestId("thank-suggester-lead-2")).toBeDisabled();
+    });
+
+    // ---- the four disabled reasons (Sapir 04/11) ----
+    // Each case below fails exactly ONE rule, so the tooltip it asserts can
+    // only come from that rule. That does NOT pin the ORDER — a reordered
+    // thankBlockedReason returns the same answer for every single-failure
+    // lead — so the ORDER gets its own case further down, with a lead that
+    // fails two rules at once. (An earlier version of this comment claimed
+    // these four covered the order. They did not.)
+    const REASONS = [
+      ["no suggester email", { suggested_by_email: null }, "לא השאירו אימייל"],
+      ["no opt-in", { suggester_wants_update: false }, "לא ביקשו עדכון"],
+      ["not registered yet", { status: "contacted" }, "אפשר לשלוח תודה אחרי שבית העסק נרשם"],
+    ];
+
+    for (const [label, override, tip] of REASONS) {
+      it(`disabled with its own reason — ${label}`, async () => {
+        listRef.current = { data: [{ ...communityLead, ...override }] };
+        render(<AdminOutreachPage />);
+        await screen.findByText("מעדניית הזיתים");
+        expect(screen.getByTestId("thank-suggester-lead-2")).toBeDisabled();
+        expect(screen.getByTestId("thank-reason-lead-2")).toHaveTextContent(tip);
+      });
+    }
+
+    it("already thanked → the reason carries the date", async () => {
+      listRef.current = {
+        data: [{ ...communityLead, suggester_thanked_at: "2026-11-03T10:00:00" }],
+      };
+      render(<AdminOutreachPage />);
+      await screen.findByText("מעדניית הזיתים");
+      expect(screen.getByTestId("thank-suggester-lead-2")).toBeDisabled();
+      // The date is interpolated, not a bare "{date}" left on screen.
+      const reason = screen.getByTestId("thank-reason-lead-2");
+      expect(reason).toHaveTextContent("התודה נשלחה ב-");
+      expect(reason.textContent).not.toContain("{date}");
+    });
+
+    it("a lead failing TWO rules names the one the server would name first", async () => {
+      // No email AND no opt-in. admin_outreach.thank_suggester checks the
+      // email first, so "לא השאירו אימייל" is the only correct answer; a
+      // reordered thankBlockedReason reds exactly here and nowhere else.
+      listRef.current = {
+        data: [{ ...communityLead, suggested_by_email: null, suggester_wants_update: false }],
+      };
+      render(<AdminOutreachPage />);
+      await screen.findByText("מעדניית הזיתים");
+      const reason = screen.getByTestId("thank-reason-lead-2");
+      expect(reason).toHaveTextContent("לא השאירו אימייל");
+      expect(reason).not.toHaveTextContent("לא ביקשו עדכון");
+    });
+
+    it("the reason is reachable by AT, not just on hover", async () => {
+      // A bare title= attribute reaches neither keyboard nor screen-reader
+      // users, which is why the button points at an sr-only span.
+      listRef.current = { data: [{ ...communityLead, suggester_wants_update: false }] };
+      render(<AdminOutreachPage />);
+      await screen.findByText("מעדניית הזיתים");
+      const btn = screen.getByTestId("thank-suggester-lead-2");
+      const describedBy = btn.getAttribute("aria-describedby");
+      expect(describedBy).toBeTruthy();
+      expect(document.getElementById(describedBy)).toHaveTextContent("לא ביקשו עדכון");
+    });
+
+    it("a lead with no suggester at all gets no thank control", async () => {
+      // Keeps the disabled-button change from putting a dead control on every
+      // manual lead in the queue.
+      listRef.current = { data: [sampleLead] };
+      render(<AdminOutreachPage />);
+      await screen.findByText("מאפיית אביב");
+      expect(screen.queryByTestId("thank-suggester-lead-1")).toBeNull();
+    });
+
+    it("a 409 surfaces the backend's own Hebrew detail", async () => {
+      listRef.current = { data: [communityLead] };
+      api.post.mockRejectedValueOnce({
+        response: { status: 409, data: { detail: "תודה כבר נשלחה" } },
+      });
+      render(<AdminOutreachPage />);
+      await screen.findByText("מעדניית הזיתים");
+      fireEvent.click(screen.getByTestId("thank-suggester-lead-2"));
+      await waitFor(() => expect(showToast.error).toHaveBeenCalledWith("תודה כבר נשלחה"));
+    });
   });
 });

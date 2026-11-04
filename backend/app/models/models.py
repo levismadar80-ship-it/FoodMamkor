@@ -899,7 +899,12 @@ class OutreachLead(Base):
     city = Column(String(100), nullable=True)
     category = Column(String(100), nullable=True)
     notes = Column(Text, nullable=True)
-    source = Column(String(50), default="manual")  # manual | claude_search (future)
+    # MEH-2633: "community" is a visitor suggestion from POST
+    # /business-suggestions (routers/business_suggestions.py) — the suggester
+    # columns below are populated only for that value.
+    source = Column(
+        String(50), default="manual"
+    )  # manual | community | claude_search (future)
     status = Column(
         String(20), default="new"
     )  # new | contacted | replied | registered | declined
@@ -908,6 +913,26 @@ class OutreachLead(Base):
     # whenever the admin clicks the button again.
     prefill_token = Column(String(64), unique=True, nullable=True, index=True)
     prefill_token_expires_at = Column(DateTime, nullable=True)
+    # MEH-2633: community-suggestion columns. Populated ONLY when
+    # source == "community"; NULL on every manually-added lead, which is the
+    # honest value (nobody suggested it). Paired with revision d7a511246b14.
+    # PII: `suggested_by_email` is NEVER returned by a public endpoint — the
+    # only reader is OutreachLeadOut, behind require_admin — and never logged
+    # unmasked (services/email.py:47 `_mask`).
+    # DO NOT add these columns in main.py — Alembic is the sole schema
+    #        authority since MEH-267.
+    suggested_by_name = Column(String(100), nullable=True)
+    suggested_by_email = Column(String(254), nullable=True)
+    # NOT NULL + server_default false: consent to be emailed has no "unknown"
+    # state and the default is the one that sends nothing. Same shape as
+    # categories.is_system (:977).
+    suggester_wants_update = Column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
+    suggestion_reason = Column(Text, nullable=True)
+    # Stamped by POST /admin/outreach/{id}/thank-suggester; it IS that
+    # endpoint's idempotency key, so nothing else may write it.
+    suggester_thanked_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=utc_now)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
