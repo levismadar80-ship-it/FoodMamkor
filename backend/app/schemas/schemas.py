@@ -3780,6 +3780,9 @@ class ExperienceUpdate(BaseModel):
     is_recurring: bool | None = None
     recurring_schedule: str | None = None
     is_active: bool | None = None  # MEH-1419: reversible cancel — mirrors EventUpdate
+    # MEH-2663: sign-up happens on WhatsApp, so the host reports the count.
+    # Bookkeeping, not content — the router keeps it out of moderation.
+    participants_count: int | None = Field(None, ge=0, le=500)
 
     @field_validator("title")
     @classmethod

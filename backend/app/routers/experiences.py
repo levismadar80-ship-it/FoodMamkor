@@ -427,6 +427,8 @@ def submit_experience(
 
 # ---------- Update ----------
 
+_NON_CONTENT_FIELDS = frozenset({"is_active", "participants_count"})
+
 
 @router.put("/{experience_id}", response_model=ExperienceDetailOut)
 def update_experience(
@@ -457,7 +459,9 @@ def update_experience(
     # (those never reach the feed) and still must not re-run Claude. Events
     # have no moderation, so their toggle is a plain PUT (events.py:238); the
     # experience toggle needs this guard because content edits below reset.
-    content_changed = any(field != "is_active" for field in payload)
+    # MEH-2663: participants_count is the host's own sign-up tally (sign-up
+    # is on WhatsApp) — bookkeeping like is_active, not content to moderate.
+    content_changed = any(field not in _NON_CONTENT_FIELDS for field in payload)
 
     # Any content edit after a negative moderation verdict sends the
     # experience back to `pending` and clears the admin-written feedback so

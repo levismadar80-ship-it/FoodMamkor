@@ -2647,7 +2647,10 @@
       "whatsapp_message": "היי! אני רוצה להירשם ל-\"{title}\"",
       "host_label": "מארחת:",
       "free": "חינם",
-      "sold_out": "אזל",
+      "sold_out": "הסדנה מלאה",
+      "spots_left_few": "{n, plural, one {נשאר מקום אחרון} other {נשארו # מקומות}}",
+      "waitlist_cta": "לרשימת ההמתנה ב-WhatsApp",
+      "waitlist_message": "היי! אשמח להיכנס לרשימת ההמתנה של \"{title}\"",
       "spots_count": "{spots} מתוך {max}",
       "breadcrumb_home": "בית",
       "breadcrumb_experiences": "חוויות",
@@ -4847,7 +4850,9 @@
         "status_approved": "מאושרת",
         "status_rejected": "נדחתה",
         "status_changes_requested": "נדרשים תיקונים",
-        "badge_past": "הסתיימה"
+        "badge_past": "הסתיימה",
+        "signed_up_label": "כמה כבר נרשמו",
+        "signed_up_hint": "מופיע בדף החוויה כשנשארו 3 מקומות או פחות"
       },
       "name_change": {
         "heading": "שינוי שם העסק",

@@ -1027,6 +1027,81 @@ class TestExperienceCancelToggle:
         assert ex.status == "pending"
 
 
+# ---------- Sign-up count (MEH-2663) ----------
+
+
+class TestExperienceSignupCount:
+    """Sign-up happens on WhatsApp, so the host types how many signed up.
+    PUT {participants_count} updates spots_left and — like is_active — must
+    not send an approved experience back to moderation."""
+
+    def test_owner_sets_count_spots_left_follows(self, client, db, monkeypatch):
+        _mock_moderation(monkeypatch, status="APPROVED")
+        host = _make_host(db)
+        ex = _make_experience(db, host, status="approved", max_participants=8)
+        resp = client.put(
+            f"/experiences/{ex.id}",
+            json={"participants_count": 6},
+            headers=auth_header(host),
+        )
+        assert resp.status_code == 200, resp.text
+        body = resp.json()
+        assert body["participants_count"] == 6
+        assert body["spots_left"] == 2
+        db.refresh(ex)
+        assert ex.status == "approved"  # not bumped back to pending
+
+    def test_count_and_toggle_together_still_no_re_moderation(self, client, db, monkeypatch):
+        _mock_moderation(monkeypatch, status="APPROVED")
+        host = _make_host(db)
+        ex = _make_experience(db, host, status="approved", max_participants=8)
+        resp = client.put(
+            f"/experiences/{ex.id}",
+            json={"participants_count": 8, "is_active": True},
+            headers=auth_header(host),
+        )
+        assert resp.status_code == 200
+        assert resp.json()["spots_left"] == 0
+        db.refresh(ex)
+        assert ex.status == "approved"
+
+    def test_count_with_content_edit_re_moderates(self, client, db, monkeypatch):
+        _mock_moderation(monkeypatch, status="APPROVED")
+        host = _make_host(db)
+        ex = _make_experience(db, host, status="approved", max_participants=8)
+        resp = client.put(
+            f"/experiences/{ex.id}",
+            json={"participants_count": 2, "title": "כותרת חדשה לגמרי"},
+            headers=auth_header(host),
+        )
+        assert resp.status_code == 200
+        db.refresh(ex)
+        assert ex.status == "pending"
+
+    def test_negative_count_rejected(self, client, db):
+        host = _make_host(db)
+        ex = _make_experience(db, host, status="approved", max_participants=8)
+        resp = client.put(
+            f"/experiences/{ex.id}",
+            json={"participants_count": -1},
+            headers=auth_header(host),
+        )
+        assert resp.status_code == 422
+
+    def test_stranger_cannot_set_count(self, client, db):
+        host = _make_host(db)
+        stranger = make_user(db)
+        ex = _make_experience(db, host, status="approved", max_participants=8)
+        resp = client.put(
+            f"/experiences/{ex.id}",
+            json={"participants_count": 8},
+            headers=auth_header(stranger),
+        )
+        assert resp.status_code == 404
+        db.refresh(ex)
+        assert (ex.participants_count or 0) == 0
+
+
 # ---------- Location-pin privacy (MEH-1417) ----------
 
 
