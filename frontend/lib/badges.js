@@ -10,6 +10,8 @@
  *    surfaces; it simply lights no badge.)
  *   new          (auto)    — producer.days_since_created <= 30
  *   grass_fed    (manual)  — producer.grass_fed
+ *   vegan_all    (manual)  — producer.vegan_scope === "all"       (owner declaration, MEH-1508 chunk 3ב-2)
+ *   vegetarian_all (manual) — producer.vegetarian_scope === "all" (owner declaration, MEH-1508 chunk 3ב-2)
  *   (organic REMOVED — MEH-1259: self-declared organic_certified presented an
  *    unverified claim as a certificate; hidden until an admin-verified flow.)
  *   gluten_free  (manual)  — has_gluten_free_products  (any product is_gluten_free,  MEH-479)
@@ -29,7 +31,7 @@
  *    diluted the badges that do. products_count itself is unchanged.)
  *
  * Priority (highest first — drives the card's max-2 truncation):
- *   verified > recommended > new > grass_fed > gluten_free > vegetarian > vegan > lactose_free > no_added_sugar > kosher > delivery
+ *   verified > recommended > new > grass_fed > vegan_all > vegetarian_all > gluten_free > vegetarian > vegan > lactose_free > no_added_sugar > kosher > delivery
  *   (MEH-1934: the two new diet badges join the diet run, after lactose_free.
  *    They therefore outrank kosher and delivery, which is how every other diet
  *    badge already sits — consistency with the existing group, not a claim
@@ -55,8 +57,9 @@
  * are inert at render time and `LabelScopeContract.test.js` asserts the full
  * label set is byte-identical.
  *
- * NINE of these keys also exist as filter axes in lib/filter-taxonomy.js
- * (eight by the same key, plus `delivery` <-> `has_delivery`). Their scope and
+ * ELEVEN of these keys also exist as filter axes in lib/filter-taxonomy.js
+ * (ten by the same key, plus `delivery` <-> `has_delivery`; MEH-1508 chunk
+ * 3ב-2 added `vegan_all` / `vegetarian_all` to the original nine). Their scope and
  * evidence are NOT hand-copied here in the sense that matters: an equality
  * assertion in LabelScopeContract.test.js requires each pair to agree, so a
  * change to one side without the other goes red.
@@ -185,7 +188,8 @@ export const BADGE_CONFIG = {
     // MEH-1439 over-claim, and the tooltip below is worded to prevent it.
     scope: "any-product",
     evidence: "self-declared",
-    label: "צמחוני",
+    // MEH-1508 chunk 3ב-2 (§6.6, LOCKED): scope in the term, matching the axis.
+    label: "מתאים לצמחונים",
     tooltip: "לעסק יש מוצרים צמחוניים מסומנים בקטלוג.",
     color: "muted",
   },
@@ -197,8 +201,33 @@ export const BADGE_CONFIG = {
     // MEH-1439 over-claim, and the tooltip below is worded to prevent it.
     scope: "any-product",
     evidence: "self-declared",
-    label: "טבעוני",
+    // MEH-1508 chunk 3ב-2 (§6.6, LOCKED): scope in the term, matching the axis.
+    label: "מתאים לטבעונים",
     tooltip: "לעסק יש מוצרים טבעוניים מסומנים בקטלוג.",
+    color: "muted",
+  },
+  // MEH-1508 chunk 3ב-2 — the 100% layer (card §6.4, copy LOCKED). Matches
+  // FILTER_AXES.vegan_all / vegetarian_all (SHARED_CLAIMS pairs). `business`,
+  // never `any-product`: it reads the owner's declaration about EVERYTHING she
+  // sells (`vegan_scope === "all"`), not a product flag. `self-declared`: the
+  // admin approval cross-checks it against the catalog, but no external
+  // register is consulted — so it wears the muted pill and no tick, the
+  // MEH-1259 pattern and never MEH-1087's (verified kashrut). The tooltip says
+  // whose word it is, which is the whole of the attribution model (§2).
+  vegan_all: {
+    key: "vegan_all",
+    scope: "business",
+    evidence: "self-declared",
+    label: "100% טבעוני",
+    tooltip: "לפי הצהרת בית העסק",
+    color: "muted",
+  },
+  vegetarian_all: {
+    key: "vegetarian_all",
+    scope: "business",
+    evidence: "self-declared",
+    label: "100% צמחוני",
+    tooltip: "לפי הצהרת בית העסק",
     color: "muted",
   },
   lactose_free: {
@@ -293,6 +322,11 @@ export const BADGE_PRIORITY = [
   "new",
   // MEH-1259: "organic" removed — see BADGE_CONFIG note above.
   "grass_fed",
+  // MEH-1508 chunk 3ב-2: the whole-business diet declarations lead the diet
+  // run, beside grass_fed (the other business-scope self-declaration) and
+  // ahead of the any-product badges, which say strictly less.
+  "vegan_all",
+  "vegetarian_all",
   "gluten_free",
   "vegetarian",
   "vegan",
@@ -335,10 +369,26 @@ function earnsBadge(producer, key) {
     case "gluten_free":
       // MEH-293/MEH-479: aggregated from products.is_gluten_free.
       return !!producer.has_gluten_free_products;
+    case "vegan_all":
+      return producer.vegan_scope === "all";
+    case "vegetarian_all":
+      // MEH-1508 chunk 3ב-2 (decision 03/11): vegan ⊆ vegetarian, so a
+      // business that declared BOTH wears only «100% טבעוני» — two 100% badges
+      // would spend both card slots on one fact. Same supersession shape as the
+      // partial twins below.
+      if (producer.vegan_scope === "all") return false;
+      return producer.vegetarian_scope === "all";
     case "vegetarian":
       // MEH-1438: aggregated has_vegetarian_products (is_vegetarian OR is_vegan).
+      // MEH-1508 chunk 3ב-2 — specific supersedes generic (the MEH-1841 shape
+      // the delivery case below uses): a business that declared «100% צמחוני»
+      // does not also wear «מתאים לצמחונים», which says strictly less about
+      // the same fact and would spend the card's second slot on a repeat.
+      if (producer.vegetarian_scope === "all") return false;
       return !!producer.has_vegetarian_products;
     case "vegan":
+      // MEH-1508 chunk 3ב-2: same supersession as vegetarian above.
+      if (producer.vegan_scope === "all") return false;
       return !!producer.has_vegan_products;
     case "lactose_free":
       return !!producer.has_lactose_free_products;
