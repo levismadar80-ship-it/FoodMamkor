@@ -112,7 +112,7 @@ export default function GlobalError({ error, reset }) {
                 textDecoration: "none",
               }}
             >
-              חזרי לדף הבית
+              חזרה לדף הבית
             </a>
           </div>
         </div>

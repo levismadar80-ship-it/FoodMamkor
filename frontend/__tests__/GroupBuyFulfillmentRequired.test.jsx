@@ -2,7 +2,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 // MEH-2453 (MEH-2435 chunk 5) — "מתי ואיך מקבלים" is required on the create
-// form. A participant from another city reads it before she joins; without it
+// form. MEH-2651 split it into two boxes, pickup and delivery; at least one is
+// required, and a filled one needs real words. A participant from another city reads it before she joins; without it
 // she cannot tell whether the product reaches her. The server refuses a blank
 // note too (GroupBuyCreate._require_fulfillment_note); this is the client half,
 // so the owner sees the reason next to the field instead of a raw 422.
@@ -49,12 +50,13 @@ const F = "group_buys.dashboard.form";
 async function openForm() {
   render(<ProducerGroupBuysPage />);
   fireEvent.click(await screen.findByRole("button", { name: "group_buys.dashboard.empty_cta" }));
-  const note = screen.getByLabelText(new RegExp(`${F}.fulfillment_label`));
+  const pickup = screen.getByLabelText(`${F}.pickup_label`);
+  const delivery = screen.getByLabelText(`${F}.delivery_label`);
   // The submit handler builds an ISO deadline, so the date must be a real one.
   fireEvent.change(screen.getByLabelText(new RegExp(`${F}.deadline_label`)), {
     target: { value: "2099-01-01T12:00" },
   });
-  return { note, form: note.closest("form") };
+  return { pickup, delivery, form: pickup.closest("form") };
 }
 
 beforeEach(() => {
@@ -62,63 +64,105 @@ beforeEach(() => {
   post.mockResolvedValue({ data: { id: "new" } });
 });
 
-describe("the fulfillment note on the create form", () => {
-  it("is a required field with the helper text tied to it", async () => {
-    const { note } = await openForm();
-    expect(note).toBeRequired();
-    // Same cap as the server (GroupBuyCreate max_length=1000).
-    expect(note).toHaveAttribute("maxLength", "1000");
+describe("pickup and delivery on the create form", () => {
+  it("shows two boxes under one marked group, with the helper tied to both", async () => {
+    const { pickup, delivery } = await openForm();
+    const group = screen.getByTestId("gb-fulfillment-fields");
+    expect(group.tagName).toBe("FIELDSET");
+    expect(group.querySelector("legend").textContent).toContain(`${F}.fulfillment_legend`);
+    expect(group.querySelector("legend").textContent).toContain("*");
     const helper = screen.getByText(`${F}.fulfillment_helper`);
-    expect(note.getAttribute("aria-describedby")).toContain(helper.id);
-    // The label carries the same visual marker as every other required field.
-    expect(screen.getByText(`${F}.fulfillment_label`).closest("label").textContent).toContain("*");
+    for (const box of [pickup, delivery]) {
+      // Either may be blank on its own — the pair is what is required.
+      expect(box).not.toBeRequired();
+      // Same cap as the server (GroupBuyCreate max_length=1000).
+      expect(box).toHaveAttribute("maxLength", "1000");
+      expect(box.getAttribute("aria-describedby")).toContain(helper.id);
+    }
+    expect(pickup).toHaveAttribute("placeholder", `${F}.pickup_placeholder`);
+    expect(delivery).toHaveAttribute("placeholder", `${F}.delivery_placeholder`);
   });
 
   it("shows no error before a submit", async () => {
-    const { note } = await openForm();
+    const { pickup, delivery } = await openForm();
     expect(screen.queryByText(`${F}.fulfillment_required`)).toBeNull();
-    expect(note).not.toHaveAttribute("aria-invalid");
+    expect(pickup).not.toHaveAttribute("aria-invalid");
+    expect(delivery).not.toHaveAttribute("aria-invalid");
   });
 
-  // Native `required` accepts whitespace, so these are the cases only the
-  // JS check catches. Empty is included for the case where the browser gate
-  // is bypassed (the test's fireEvent.submit, or an old browser).
   for (const [label, value] of [
     ["empty", ""],
     ["spaces", "   "],
     ["newlines", " \n \n"],
-    // Not blank, still no answer: the server's 3-letter floor (MEH-555).
-    ["punctuation", ". - ?"],
-    ["two-letter", "כן"],
   ]) {
-    it(`a ${label} note does not send and says why next to the field`, async () => {
-      const { note, form } = await openForm();
-      fireEvent.change(note, { target: { value } });
+    it(`both boxes ${label}: nothing is sent, both are marked, focus goes to pickup`, async () => {
+      const { pickup, delivery, form } = await openForm();
+      fireEvent.change(pickup, { target: { value } });
+      fireEvent.change(delivery, { target: { value } });
       fireEvent.submit(form);
       const err = await screen.findByText(`${F}.fulfillment_required`);
       expect(post).not.toHaveBeenCalled();
-      expect(note).toHaveAttribute("aria-invalid", "true");
-      expect(note.getAttribute("aria-describedby")).toContain(err.id);
-      expect(document.activeElement).toBe(note);
+      for (const box of [pickup, delivery]) {
+        expect(box).toHaveAttribute("aria-invalid", "true");
+        expect(box.getAttribute("aria-describedby")).toContain(err.id);
+      }
+      expect(document.activeElement).toBe(pickup);
+    });
+  }
+
+  // Not blank, still no answer: the server's 3-letter floor (MEH-555).
+  for (const [label, value] of [
+    ["punctuation", ". - ?"],
+    ["two-letter", "כן"],
+  ]) {
+    it(`a ${label} delivery next to a real pickup marks only delivery`, async () => {
+      const { pickup, delivery, form } = await openForm();
+      fireEvent.change(pickup, { target: { value: "מהמשק ביום שישי" } });
+      fireEvent.change(delivery, { target: { value } });
+      fireEvent.submit(form);
+      await screen.findByText(`${F}.fulfillment_required`);
+      expect(post).not.toHaveBeenCalled();
+      expect(delivery).toHaveAttribute("aria-invalid", "true");
+      expect(pickup).not.toHaveAttribute("aria-invalid");
+      expect(document.activeElement).toBe(delivery);
+    });
+
+    it(`a ${label} pickup alone does not send`, async () => {
+      const { pickup, form } = await openForm();
+      fireEvent.change(pickup, { target: { value } });
+      fireEvent.submit(form);
+      await screen.findByText(`${F}.fulfillment_required`);
+      expect(post).not.toHaveBeenCalled();
+      expect(pickup).toHaveAttribute("aria-invalid", "true");
     });
   }
 
   it("typing clears the error", async () => {
-    const { note, form } = await openForm();
+    const { pickup, delivery, form } = await openForm();
     fireEvent.submit(form);
     await screen.findByText(`${F}.fulfillment_required`);
-    fireEvent.change(note, { target: { value: "א" } });
+    fireEvent.change(delivery, { target: { value: "א" } });
     expect(screen.queryByText(`${F}.fulfillment_required`)).toBeNull();
-    expect(note).not.toHaveAttribute("aria-invalid");
+    expect(pickup).not.toHaveAttribute("aria-invalid");
+    expect(delivery).not.toHaveAttribute("aria-invalid");
   });
 
-  it("a filled note is sent trimmed", async () => {
-    const { note, form } = await openForm();
-    fireEvent.change(note, { target: { value: "  משלוח לחדרה ולפרדס חנה \n" } });
-    fireEvent.submit(form);
-    await waitFor(() => expect(post).toHaveBeenCalledTimes(1));
-    const [url, body] = post.mock.calls[0];
-    expect(url).toBe("/group-buys");
-    expect(body.fulfillment_note).toBe("משלוח לחדרה ולפרדס חנה");
-  });
+  for (const [label, p, d, want] of [
+    ["pickup only", "  מהמשק ביום שישי \n", "", { pickup_note: "מהמשק ביום שישי", delivery_note: null }],
+    ["delivery only", "", " לזכרון יעקב ביום ראשון ", { pickup_note: null, delivery_note: "לזכרון יעקב ביום ראשון" }],
+    ["both", "מהמשק", "לחדרה ולפרדס חנה", { pickup_note: "מהמשק", delivery_note: "לחדרה ולפרדס חנה" }],
+  ]) {
+    it(`${label}: sent trimmed, the blank one as null, no fulfillment_note`, async () => {
+      const { pickup, delivery, form } = await openForm();
+      fireEvent.change(pickup, { target: { value: p } });
+      fireEvent.change(delivery, { target: { value: d } });
+      fireEvent.submit(form);
+      await waitFor(() => expect(post).toHaveBeenCalledTimes(1));
+      const [url, body] = post.mock.calls[0];
+      expect(url).toBe("/group-buys");
+      expect(body.pickup_note).toBe(want.pickup_note);
+      expect(body.delivery_note).toBe(want.delivery_note);
+      expect(body).not.toHaveProperty("fulfillment_note");
+    });
+  }
 });

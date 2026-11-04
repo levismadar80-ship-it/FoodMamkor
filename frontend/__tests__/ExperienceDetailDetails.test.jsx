@@ -128,4 +128,35 @@ describe("MEH-2476 — experience details", () => {
     expect(row.querySelector("a")).toBeNull();
     expect(row.querySelector("svg")).toBeNull();
   });
+
+  // MEH-2653: an older row stores the English key — the chip must read Hebrew.
+  it.each([
+    ["workshop", "סדנה"],
+    ["סדנה", "סדנה"],
+    ["food_tour", "סיור אוכל"],
+  ])("category %s → chip «%s»", async (category, label) => {
+    await renderWith({ category });
+    expect(screen.getByTestId("experience-category").textContent).toBe(label);
+  });
+
+  it("an unknown category → no chip, never a raw key", async () => {
+    await renderWith({ category: "zzz" });
+    expect(screen.queryByTestId("experience-category")).not.toBeInTheDocument();
+  });
+
+  it("no category → no chip", async () => {
+    await renderWith({});
+    expect(screen.queryByTestId("experience-category")).not.toBeInTheDocument();
+  });
+
+  // MEH-2653: sign-up is on WhatsApp, so the count never moves — show the cap.
+  it("a cap reads «עד N משתתפים», not «N מתוך N»", async () => {
+    await renderWith({ max_participants: 8, spots_left: 8, participants_count: 0 });
+    expect(screen.getByTestId("experience-capacity").textContent).toBe("עד 8 משתתפים");
+  });
+
+  it("no cap → no capacity line", async () => {
+    await renderWith({ max_participants: null, spots_left: null });
+    expect(screen.queryByTestId("experience-capacity")).not.toBeInTheDocument();
+  });
 });

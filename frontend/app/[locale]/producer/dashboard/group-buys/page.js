@@ -58,16 +58,20 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
     max_participants: "",
     deadline: "",
     city: producerCity || "",
-    fulfillment_note: "",
+    pickup_note: "",
+    delivery_note: "",
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   // MEH-1164 B: verified-email 403 → resend CTA notice instead of a dead-end.
   const [unverified, setUnverified] = useState(false);
-  // MEH-2453: the note is required. Native `required` lets whitespace through,
-  // so the blank check is ours; the error sits under the field, not at the end.
-  const [noteError, setNoteError] = useState(false);
-  const noteRef = useRef(null);
+  // MEH-2453 / MEH-2621 split (UI): pickup or delivery is required — at least one of the
+  // two boxes, each with real words if filled. `noteError` names the boxes the
+  // error belongs to: both when both are blank, else the one that is too short.
+  // The error sits under the pair, not at the end of the form.
+  const [noteError, setNoteError] = useState(null);
+  const pickupRef = useRef(null);
+  const deliveryRef = useRef(null);
 
   const set = (field) => (e) => setForm({ ...form, [field]: e.target.value });
 
@@ -83,17 +87,25 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
     e.preventDefault();
     setError("");
     setUnverified(false);
-    const fulfillmentNote = form.fulfillment_note.trim();
-    if (countLetters(fulfillmentNote) < NOTE_MIN_LETTERS) {
-      setNoteError(true);
-      noteRef.current?.focus();
+    const pickupNote = form.pickup_note.trim();
+    const deliveryNote = form.delivery_note.trim();
+    const tooShort = (text) => text !== "" && countLetters(text) < NOTE_MIN_LETTERS;
+    let invalid = null;
+    if (!pickupNote && !deliveryNote) invalid = ["pickup", "delivery"];
+    else if (tooShort(pickupNote)) invalid = ["pickup"];
+    else if (tooShort(deliveryNote)) invalid = ["delivery"];
+    if (invalid) {
+      setNoteError(invalid);
+      (invalid[0] === "pickup" ? pickupRef : deliveryRef).current?.focus();
       return;
     }
     setSubmitting(true);
     try {
       await api.post("/group-buys", {
         ...form,
-        fulfillment_note: fulfillmentNote,
+        // Blank means "not offered" — sent as null, never as "".
+        pickup_note: pickupNote || null,
+        delivery_note: deliveryNote || null,
         price_per_unit_regular: Number(form.price_per_unit_regular),
         price_per_unit_group: Number(form.price_per_unit_group),
         min_participants: Number(form.min_participants),
@@ -241,37 +253,51 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
         />
 
         {/* MEH-1457: "מתי ואיך מקבלים" — free text (OFN "Ready for").
-            MEH-2453: required, with a helper saying who reads it. A textarea,
-            so it cannot ride ui/Input; the label marker, helper and error
-            copy Input's markup and aria wiring. */}
-        <div className="sm:col-span-2 flex flex-col gap-1.5">
-          <label htmlFor="gb-fulfillment" className="text-sm font-medium text-text">
-            {t("fulfillment_label")}
+            MEH-2453: required, with a helper saying who reads it.
+            MEH-2621 split (UI): two boxes, pickup and delivery (Shopify / Local Line ask
+            the seller about each separately); at least one is required. Copy
+            approved by Sapir 30/10. Textareas, so they cannot ride ui/Input;
+            the helper and error copy Input's markup and aria wiring. */}
+        <fieldset className="sm:col-span-2 flex flex-col gap-3" data-testid="gb-fulfillment-fields">
+          <legend className="text-sm font-medium text-text mb-1">
+            {t("fulfillment_legend")}
             <span className="text-error" aria-hidden="true">
               {" *"}
             </span>
-          </label>
-          <textarea
-            id="gb-fulfillment"
-            ref={noteRef}
-            value={form.fulfillment_note}
-            onChange={(e) => {
-              setNoteError(false);
-              set("fulfillment_note")(e);
-            }}
-            placeholder={t("fulfillment_placeholder")}
-            required
-            maxLength={1000}
-            aria-invalid={noteError || undefined}
-            aria-describedby={
-              noteError ? "gb-fulfillment-helper gb-fulfillment-error" : "gb-fulfillment-helper"
-            }
-            rows={2}
-            className={`w-full border rounded-[8px] px-3 py-2 text-start resize-none ${
-              noteError ? "border-error" : "border-border"
-            }`}
-            dir="rtl"
-          />
+          </legend>
+          {[
+            ["pickup", pickupRef],
+            ["delivery", deliveryRef],
+          ].map(([kind, ref]) => {
+            const invalid = noteError?.includes(kind);
+            return (
+              <div key={kind} className="flex flex-col gap-1.5">
+                <label htmlFor={`gb-${kind}`} className="text-sm text-text">
+                  {t(`${kind}_label`)}
+                </label>
+                <textarea
+                  id={`gb-${kind}`}
+                  ref={ref}
+                  value={form[`${kind}_note`]}
+                  onChange={(e) => {
+                    setNoteError(null);
+                    set(`${kind}_note`)(e);
+                  }}
+                  placeholder={t(`${kind}_placeholder`)}
+                  maxLength={1000}
+                  aria-invalid={invalid || undefined}
+                  aria-describedby={
+                    invalid ? "gb-fulfillment-helper gb-fulfillment-error" : "gb-fulfillment-helper"
+                  }
+                  rows={2}
+                  className={`w-full border rounded-[8px] px-3 py-2 text-start resize-none ${
+                    invalid ? "border-error" : "border-border"
+                  }`}
+                  dir="rtl"
+                />
+              </div>
+            );
+          })}
           <p id="gb-fulfillment-helper" className="text-xs text-fg-muted">
             {t("fulfillment_helper")}
           </p>
@@ -280,7 +306,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
               {t("fulfillment_required")}
             </p>
           )}
-        </div>
+        </fieldset>
       </div>
 
       {/* MEH-1165: role="alert" so the submit error is announced to AT. */}

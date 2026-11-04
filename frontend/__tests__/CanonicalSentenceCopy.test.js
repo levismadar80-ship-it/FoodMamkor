@@ -16,7 +16,7 @@ import he from "../messages/he.json";
 import en from "../messages/en.json";
 import { CANONICAL_SENTENCE } from "@/lib/constants";
 
-const APPROVED_HE = "אוכל מבתי עסק מקומיים שבחרנו אישית — קרוב אלייך, בלי לחפש שעות.";
+const APPROVED_HE = "אוכל מבתי עסק מקומיים שבחרנו אישית — קרוב לבית, בלי לחפש שעות.";
 const APPROVED_EN =
   "Food from local businesses we've personally chosen — close to you, without searching for hours.";
 const APPROVED_LOGIN_OG =

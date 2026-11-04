@@ -69,8 +69,10 @@ export default function EventEntryRow({ entry, freeLabel, compact = false }) {
   const day = formatEventDate(entry.date, locale, { day: "2-digit" });
   const weekday = formatEventDate(entry.date, locale, { weekday: "long" });
   const month = formatEventDate(entry.date, locale, { month: "long" });
-  // MEH-2469: «09:30–15:00» when the event has an end time.
-  const time = formatTimeRange(entry.time, entry.endTime);
+  // MEH-2619: start time only. The «09:30–15:00» range (MEH-2469) is wider
+  // than the 64px date rail at 375 and ran into the tick; the full range
+  // stays on the event page, as in Meetup/Facebook lists.
+  const time = formatTimeRange(entry.time);
   const meta = [entry.who, entry.city, entry.schedule].filter(Boolean).join(" · ");
   const isFree = !(entry.price > 0);
 

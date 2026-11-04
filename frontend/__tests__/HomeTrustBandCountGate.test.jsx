@@ -240,7 +240,7 @@ describe("MEH-1692 — positive guards (surfaces that must NOT change)", () => {
   });
 
   it("the hero subtitle value itself is untouched in he.json", () => {
-    expect(he.home.hero.subtitle).toBe("ישר מהמקור אלייך. בתי עסק שכבר בדקנו בשבילך.");
+    expect(he.home.hero.subtitle).toBe("ישר מהמקור הביתה. בתי עסק שכבר בדקנו בשבילך.");
   });
 
   it("nav.trust_strip value is untouched in he.json", () => {

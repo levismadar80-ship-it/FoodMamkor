@@ -133,6 +133,12 @@ def test_outreach_summary_one_query_same_numbers(client, db):
         "replied": 2,
         "registered": 1,
         "declined": 1,
+        # MEH-2633 added this key. The seven leads above are all ORM-created
+        # with no source, so they take the model default "manual" — none is a
+        # community suggestion. Kept as an EXACT dict comparison on purpose:
+        # relaxing it to a subset check is what would let the next added key
+        # through unexamined.
+        "community": 0,
     }
     leads = [s for s in seen if "outreach_leads" in s.lower()]
     assert len(leads) == 1, leads

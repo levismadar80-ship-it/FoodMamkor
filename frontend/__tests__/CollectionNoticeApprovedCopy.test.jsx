@@ -88,6 +88,14 @@ import ContactClient from "@/app/[locale]/contact/ContactClient";
 // are derived from the five: `newsletter` mirrors `password_reset`,
 // `contact` mirrors `category_request`. Sapir can change a word; that is a
 // one-string edit in he.json AND here (this file pins copy on purpose).
+//
+// `business_suggestion` is the eighth, approved by Sapir in MEH-2633's ⚖️ 04/11
+// block. It is NOT derived from the five: /recommend collects a THIRD PARTY's
+// email, so the line has to state the purpose AND that the address does not
+// reach the business — Amendment 13 §11. This file reddening when it was added
+// is the guard doing its job: a new notice line is a rule-22 decision, and
+// `collection_notice.category_request` was deliberately NOT reused because it
+// never mentions an email at all, which would have under-disclosed.
 const APPROVED = {
   chat: "מה שנכתב כאן נשלח ל-Anthropic כדי לנסח את התשובה.",
   password_reset: "האימייל משמש לשליחת קישור האיפוס בלבד.",
@@ -95,7 +103,9 @@ const APPROVED = {
   event: "מה שנשלח כאן מיועד לפרסום באתר, אחרי בדיקה.",
   category_request: "הבקשה נשלחת אלינו לעיון ואינה מתפרסמת באתר.",
   newsletter: "האימייל משמש לשליחת העדכונים בלבד.",
-  contact: "ההודעה נשלחת אלינו כדי לחזור אלייך, ואינה מתפרסמת באתר.",
+  contact: "ההודעה נשלחת אלינו כדי שנוכל לחזור עם תשובה, ואינה מתפרסמת באתר.",
+  business_suggestion:
+    "נשתמש באימייל רק כדי לעדכן אתכם על ההמלצה הזו. הוא לא עובר לבית העסק ולא משמש לשיווק.",
 };
 // The link label is a REUSE of the registration pages' string, per the card —
 // one privacy-link label site-wide, not a sixth approved string.
