@@ -20,7 +20,6 @@ import api from "@/lib/api";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { formatEventDate } from "@/lib/format-date";
 import CitySearch from "@/components/CitySearch";
-import Breadcrumb from "@/components/Breadcrumb";
 import ChipScrollRow from "@/components/ChipScrollRow";
 import CalendarView from "@/components/CalendarView";
 // MEH-2497: the date-rail row (and its row normalizer) now lives in one shared
@@ -247,16 +246,9 @@ export default function EventsPage({ initialTab = "events" }) {
 
   return (
     <div>
-      {/* Breadcrumb — stays on cream so it reads on the dark desktop hero
-          below without recoloring the shared component. */}
-      <div className="max-w-5xl mx-auto px-4 pt-4">
-        <Breadcrumb
-          items={[
-            { href: "/", label: t("breadcrumb_home") },
-            { label: isExp ? t("breadcrumb_experiences") : t("breadcrumb_events") },
-          ]}
-        />
-      </div>
+      {/* MEH-2653: no breadcrumb on this list page — no other top-level list
+          (/producers, /group-buys) carries one, and «בית › חוויות» on a
+          first-level page only repeats the bottom nav. Detail pages keep theirs. */}
 
       {/* Header — type-led per tab, now a full-bleed Ken Burns produce hero
           (MEH-788). Image on all viewports; the green HERO_SCRIM band holds the
