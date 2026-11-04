@@ -679,6 +679,17 @@ describe("MEH-2654 — per-product diet pills on the rows + facility line placem
     expect(container.querySelector("#section-products").contains(line)).toBe(true);
   });
 
+  it("dedicated facility: its sentence renders inside the products section", () => {
+    const { container } = render(
+      <ProducerSections
+        {...baseProps}
+        producer={{ ...producerWith([{ id: 1, name: "לחם", image_url: null }]), gluten_free_facility: "dedicated" }}
+      />,
+    );
+    const line = screen.getByTestId("gluten-facility-dedicated");
+    expect(container.querySelector("#section-products").contains(line)).toBe(true);
+  });
+
   it("no products: no facility line here (the header keeps it)", () => {
     render(<ProducerSections {...baseProps} producer={{ ...producerWith([]), gluten_free_facility: "shared" }} />);
     expect(screen.queryByTestId("gluten-facility-shared")).toBeNull();
