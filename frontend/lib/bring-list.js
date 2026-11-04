@@ -17,6 +17,8 @@ function splitTopLevelCommas(line) {
     }
   }
   parts.push(cur);
+  // An unclosed bracket would swallow the rest of the line — split plainly.
+  if (depth > 0) return line.split(/[,،]/);
   return parts;
 }
 

@@ -31,6 +31,8 @@ describe("splitBringList", () => {
     [null, []],
     ["  ,  ", []],
     ["גרביים (לבנות, לא צבעוניות), סינר", ["גרביים (לבנות, לא צבעוניות)", "סינר"]],
+    // An unclosed "(" must not swallow the rest of the line into one item.
+    ["סינר (גדול, נעליים, כובע", ["סינר (גדול", "נעליים", "כובע"]],
   ])("%j → %j", (text, items) => {
     expect(splitBringList(text)).toEqual(items);
   });
