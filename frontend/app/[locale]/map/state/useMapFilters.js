@@ -472,11 +472,17 @@ export function useMapFilters({
   // reading as an empty area.
   // The desktop legend's category toggles (activeCategoryNames) and the city
   // search narrow the list too, so they count — resetEverything clears both.
-  const hasActiveFilters =
+  // MEH-2639: the city is split out. A city that returns nothing is a
+  // different event from a chip combination that returns nothing — "אין בתי
+  // עסק בבנימינה" is an answer worth giving, and offering to "clear the
+  // filter" there would be offering to un-ask the question. Everything EXCEPT
+  // the city:
+  const hasNonCityFilters =
     activeAttributeCount > 0 ||
     chipState.categoryKeys.length > 0 ||
-    activeCategoryNames !== null ||
-    cityFilter.trim() !== "";
+    activeCategoryNames !== null;
+
+  const hasActiveFilters = hasNonCityFilters || cityFilter.trim() !== "";
 
   // MEH-2170: which toggle chips FilterSheet offers. Derived from the mount
   // snapshot + the active state only — NOT from allProducers, which reloads
@@ -517,6 +523,7 @@ export function useMapFilters({
     resetAllFilters,
     hasActiveFilters,
     handleCityFilter,
+    hasNonCityFilters,
     toggleCategory,
     isCategoryActive,
     // derived

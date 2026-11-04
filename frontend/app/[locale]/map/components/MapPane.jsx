@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { Link } from "@/i18n/navigation";
+
 import { useTranslations } from "next-intl";
 import {
   CircleNotch,
@@ -259,11 +259,12 @@ export default function MapPane({
               <button type="button" onClick={onResetFilters} className="inline-block bg-primary text-white px-4 py-2 rounded-sm text-sm hover:bg-primary-dark transition">{t("map.bottom_sheet.reset_filters")}</button>
             </>
           ) : (
-            <>
-              <h3 className="font-headline-md text-lg font-bold text-text mb-2">{t("map.pane.empty.heading")}</h3>
-              <p className="text-fg-muted text-sm mb-4">{t("map.pane.empty.body")}</p>
-              <Link href="/register/producer" className="inline-block bg-primary text-white px-4 py-2 rounded-sm text-sm hover:bg-primary-dark transition">{t("map.pane.empty.cta")}</Link>
-            </>
+            // MEH-2639: the body and the «הוסיפו עסק» link are gone. This
+            // overlay is shown to a CONSUMER who is looking for somewhere to
+            // buy; pitching her business registration answers a question she
+            // did not ask, and the sheet underneath already offers the nearest
+            // businesses. Only the statement of fact survives.
+            <h3 className="font-headline-md text-lg font-bold text-text" data-testid="map-pane-empty">{t("map.pane.empty.heading")}</h3>
           )}
         </div>
       )}

@@ -1330,9 +1330,7 @@
     "pane": {
       "search_this_area": "Search this area",
       "empty": {
-        "heading": "No businesses in this area yet",
-        "body": "Know someone who could join?",
-        "cta": "Add a business +"
+        "heading": "No businesses in this area yet"
       },
       "aria": {
         "center_on_me": "Center map on my location",
@@ -1397,7 +1395,10 @@
       "expanded_aria": "Full screen map"
     },
     "bottom_sheet": {
-      "count": "{count, plural, =0 {No local businesses in this area} one {One local business in this area} other {# local businesses in this area}}",
+      "count": "{count, plural, =0 {No local businesses} one {One local business} two {Two local businesses} other {# local businesses}}",
+      "count_area": "{count, plural, =0 {No local businesses in this area} one {One local business in this area} other {# local businesses in this area}}",
+      "city_zero": "No businesses in {city} yet. Here are the nearest:",
+      "near_me_empty": "No businesses near you yet. Here are the nearest.",
       "count_filtered_zero": "No results for these filters",
       "reset_filters": "Clear filters"
     },
@@ -2876,7 +2877,7 @@
       },
       "verification": {
         "heading": "How we verify",
-        "body": "Every business on Mehamakor is approved by hand: we talk with the owner, she signs a declaration that the details are true, and only then does the business go live. No automatic sign-ups, no shortcuts. And if the business has a licence, we check it ourselves: when you see the ✓ Verified seal, you know a real person actually saw the document."
+        "body": "Every business on Mehamakor is approved by hand: we talk with the owner, she signs a declaration that the details are true, and only then does the business go live. No automatic sign-ups, no shortcuts. And if the business has a licensing document or exemption approval, we check the document ourselves at the time it joins: when you see the ✓ Verified seal, you know a real person actually saw it — and that the date beside it is the date of the check, not a promise about what came after."
       },
       "editors_pick": {
         "heading": "Editor's Pick",
@@ -3807,7 +3808,7 @@
     "meta_title": "Terms of Use | Mehamakor",
     "meta_description": "Terms of use for Mehamakor — local food businesses from across Israel, in one place.",
     "heading": "Terms of Use",
-    "date_label": "Last updated: October 2026",
+    "date_label": "Last updated: November 2026",
     "sections": {
       "operator": {
         "title": "Site operator details",
@@ -3824,7 +3825,7 @@
       "licensing": {
         "title": "2. Seller responsibility for licensing",
         "intro": "Every seller listed on the platform bears <b>sole responsibility</b> for holding all licenses, approvals, and permits required by law, including (but not limited to): the Business Licensing Law (1968), public-health (food) regulations, Ministry of Health directives, and relevant kashrut and labeling provisions.",
-        "outro": "On registering as a business, the seller declares that she holds all required licenses for the products she sells and that she will keep them valid throughout her use of the platform. Mehamakor <b>does not inspect, verify, or approve</b> these licenses, and compliance responsibility lies solely with the seller."
+        "outro": "On registering as a business, the seller declares that she holds all required licenses for the products she sells and that she will keep them valid throughout her use of the platform. Mehamakor inspects a licensing document or exemption approval that the seller presents to it, at the time of presentation only (see section 5). It <b>does not verify the document against the authorities, does not supervise sellers on an ongoing basis, does not confirm that the licence is valid at any given moment, and is not a party to the transaction</b>. Compliance responsibility lies solely with the seller."
       },
       "age": {
         "title": "3. Minimum age",
@@ -3838,7 +3839,7 @@
         "title": "5. Verification & display tiers",
         "intro": "Every business on Mehamakor goes through a manual acceptance review that includes a personal introduction: basic identity verification, getting to know the business's story, and, where needed, a conversation with the people behind it. This review is not a regulatory inspection and does not guarantee the quality of the products, their standard, or the business's compliance with any law.",
         "verified_badge_title": "“Verified” badge",
-        "verified_badge_body": "A business that presented us with an official licensing document or exemption approval, whose existence and validity we checked at the time of presentation, is marked with a “Verified” badge together with the date of the check. The check is limited to verifying the document presented, does not include ongoing monitoring with the authorities, and provides no guarantee that the document remained valid after the date of the check. The badge is provided free of charge.",
+        "verified_badge_body": "A business that presented us with an official licensing document or exemption approval, whose existence and validity we checked at the time of presentation, is marked with a “Verified” badge together with the date of the check. The check is limited to verifying the document presented, does not include ongoing monitoring with the authorities, and provides no guarantee that the document remained valid after the date of the check. Where the document's expiry date was also given to us, the badge is withdrawn automatically once that date passes; where no expiry date was given, the badge is not withdrawn by itself, and the date of the check shown on the business page is the only information about how current it is. The badge is provided free of charge.",
         "declared_title": "“Declared” business",
         "declared_body": "A business operating in a category that is legally exempt from the licensing requirement is displayed on the site on the basis of a binding declaration it provided, stating that it operates lawfully. We do not verify this declaration with the authorities; responsibility for its accuracy and for keeping it up to date rests with the business alone.",
         "indemnity_title": "Indemnification",
