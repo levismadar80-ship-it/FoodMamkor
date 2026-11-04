@@ -292,7 +292,7 @@ def submit_contact(request: Request, data: ContactIn, db: Session = Depends(get_
     # No en variant exists because the backend has NO i18n mechanism at all
     # (nothing reads Accept-Language); every response string is hardcoded and
     # the locale split lives entirely in the frontend dictionaries.
-    return {"detail": "תודה! נחזור אלייך תוך 3 ימי עסקים"}
+    return {"detail": "תודה! נחזור אליכם תוך 3 ימי עסקים"}
 
 
 def _send_contact_email(msg: ContactMessage, label: str) -> None:

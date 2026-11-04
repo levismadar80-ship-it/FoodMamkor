@@ -23,7 +23,7 @@ def send_reset_email(email: str, name: str, reset_link: str) -> None:
     body = (
         f"שלום {name},\n\n"
         f"קיבלנו בקשה לאיפוס הסיסמה שלך במהמקור.\n\n"
-        f"לחצי על הקישור הבא לאיפוס הסיסמה (תוקף: שעה אחת):\n"
+        f"לאיפוס הסיסמה יש ללחוץ על הקישור הבא (תוקף: שעה אחת):\n"
         f"{reset_link}\n\n"
         f"אם לא ביקשת לאפס את הסיסמה, אפשר להתעלם ממייל זה — החשבון שלך בטוח.\n\n"
         f"בברכה,\nצוות מהמקור 🌱"
@@ -40,7 +40,7 @@ def send_reset_email(email: str, name: str, reset_link: str) -> None:
           <tr>
             <td style="text-align:right;direction:rtl;">
               <h1 style="font-size:20px;color:#1C1A17;margin:0 0 12px;">שלום {name_html},</h1>
-              <p style="color:#3a3a3a;font-size:15px;line-height:1.7;margin:0 0 24px;">קיבלנו בקשה לאיפוס הסיסמה שלך במהמקור.<br>לחצי על הכפתור לאיפוס הסיסמה (תוקף: שעה אחת):</p>
+              <p style="color:#3a3a3a;font-size:15px;line-height:1.7;margin:0 0 24px;">קיבלנו בקשה לאיפוס הסיסמה שלך במהמקור.<br>לאיפוס הסיסמה יש ללחוץ על הכפתור (תוקף: שעה אחת):</p>
               <div style="text-align:center;margin:0 0 28px;">
                 <a href="{reset_link}"
                    style="display:inline-block;background:#2e6853;color:#ffffff;text-decoration:none;
@@ -51,7 +51,7 @@ def send_reset_email(email: str, name: str, reset_link: str) -> None:
               <p style="color:#666;font-size:13px;line-height:1.6;margin:0 0 24px;">אם לא ביקשת לאפס את הסיסמה, אפשר להתעלם ממייל זה — החשבון שלך בטוח.</p>
               <hr style="border:none;border-top:1px solid #eee;margin:0 0 16px;">
               <p style="color:#999;font-size:11px;word-break:break-all;margin:0;">
-                אם הכפתור לא עובד, העתיקי את הקישור לדפדפן:<br>
+                אם הכפתור לא עובד, אפשר להעתיק את הקישור לדפדפן:<br>
                 <a href="{reset_link}" style="color:#2e6853;">{reset_link}</a>
               </p>
             </td>
@@ -77,7 +77,7 @@ def send_verify_email(email: str, name: str, token: str) -> bool:
     name_html = html_escape(name or "")
     body = (
         f"שלום {name},\n\n"
-        f"לאימות כתובת האימייל שלך לחצי על הקישור הבא:\n\n"
+        f"לאימות כתובת האימייל שלך יש ללחוץ על הקישור הבא:\n\n"
         f"{verify_url}\n\n"
         f"הקישור תקף ל-24 שעות.\n\n"
         f"אם לא נרשמת למהמקור, אפשר להתעלם מהמייל הזה.\n\n"
@@ -95,19 +95,19 @@ def send_verify_email(email: str, name: str, token: str) -> bool:
           <tr>
             <td style="text-align:right;direction:rtl;">
               <h1 style="font-size:20px;color:#1C1A17;margin:0 0 12px;">שלום {name_html},</h1>
-              <p style="color:#3a3a3a;font-size:15px;line-height:1.7;margin:0 0 24px;">לאימות כתובת האימייל שלך, לחצי על הכפתור:</p>
+              <p style="color:#3a3a3a;font-size:15px;line-height:1.7;margin:0 0 24px;">לאימות כתובת האימייל שלך יש ללחוץ על הכפתור:</p>
               <div style="text-align:center;margin:0 0 28px;">
                 <a href="{verify_url}"
                    style="display:inline-block;background:#2e6853;color:#ffffff;text-decoration:none;
                           font-size:15px;font-weight:bold;padding:14px 36px;border-radius:10px;">
-                  אמתי את האימייל שלך
+                  אימות האימייל
                 </a>
               </div>
               <p style="color:#666;font-size:13px;line-height:1.6;margin:0 0 8px;">הקישור תקף ל-24 שעות.</p>
               <p style="color:#666;font-size:13px;line-height:1.6;margin:0 0 24px;">אם לא נרשמת למהמקור, אפשר להתעלם מהמייל הזה.</p>
               <hr style="border:none;border-top:1px solid #eee;margin:0 0 16px;">
               <p style="color:#999;font-size:11px;word-break:break-all;margin:0;">
-                אם הכפתור לא עובד, העתיקי את הקישור לדפדפן:<br>
+                אם הכפתור לא עובד, אפשר להעתיק את הקישור לדפדפן:<br>
                 <a href="{verify_url}" style="color:#2e6853;">{verify_url}</a>
               </p>
             </td>
@@ -118,7 +118,7 @@ def send_verify_email(email: str, name: str, token: str) -> bool:
   </table>
 </body>
 </html>"""
-    send_email(email, "מהמקור - אמתי את האימייל שלך", body, html=html_body)
+    send_email(email, "מהמקור - אימות האימייל שלך", body, html=html_body)
     return True
 
 
@@ -134,25 +134,25 @@ def send_welcome_email(email: str, name: str, role: str = "consumer") -> bool:
     first_name = ((name or "").split() or [""])[0]
     first_name_html = html_escape(first_name)
 
-    # MEH-1401: consumer copy is LOCKED (Linear MEH-1401) — do not paraphrase.
+    # MEH-1401 locked this copy; Sapir re-approved it in neutral form 04/11/2026.
     consumer_body = (
         f"שלום {first_name},\n\n"
-        f"ברוכה הבאה למהמקור! 🌿\n\n"
+        f"ברוכים הבאים למהמקור! 🌿\n\n"
         f"מהמקור מרכז בתי עסק מקומיים לאוכל אמיתי — כל אחד נבחר ואושר אישית.\n\n"
         f"מה עכשיו?\n"
-        f"• גלי בתי עסק לפי עיר או קטגוריה\n"
-        f"• פתחי את המפה וראי מי קרוב אלייך: {settings.frontend_url}/map\n"
-        f"• שמרי מועדפים כדי לא לאבד אותם\n\n"
-        f"יש שאלה? פשוט השיבי למייל הזה.\n\n"
+        f"• לגלות בתי עסק לפי עיר או קטגוריה\n"
+        f"• לפתוח את המפה ולראות מה יש בסביבה: {settings.frontend_url}/map\n"
+        f"• לשמור מועדפים כדי לא לאבד אותם\n\n"
+        f"יש שאלה? אפשר פשוט להשיב למייל הזה.\n\n"
         f"בברכה,\nצוות מהמקור 🌱"
     )
     producer_body = (
         f"שלום {first_name},\n\n"
-        f"ברוכה הבאה למהמקור! 🌿\n\n"
+        f"ברוכים הבאים למהמקור! 🌿\n\n"
         f"העסק שלך ממתין כרגע לאישור אדמין — אנחנו בודקים כל עסק חדש כדי לוודא\n"
         f"שהוא מתאים לקריטריונים שלנו (ייצור מקומי, חומרי גלם מזוהים, ללא מעובד).\n\n"
-        f"אחרי האישור תקבלי מייל עם הקישור לעסק שלך,\n"
-        f"ותוכלי לפרסם אירועים, לעדכן מוצרים ולעקוב אחרי מועדפים.\n\n"
+        f"אחרי האישור יגיע מייל עם הקישור לעסק שלך,\n"
+        f"ואפשר יהיה לפרסם אירועים, לעדכן מוצרים ולעקוב אחרי מועדפים.\n\n"
         f"לדשבורד: {settings.frontend_url}/producer/dashboard\n\n"
         f"בברכה,\nצוות מהמקור 🌱"
     )
@@ -172,13 +172,13 @@ def send_welcome_email(email: str, name: str, role: str = "consumer") -> bool:
           <tr>
             <td style="text-align:right;direction:rtl;">
               <h1 style="font-size:20px;color:#1C1A17;margin:0 0 12px;">שלום {first_name_html},</h1>
-              <p style="color:#1C1A17;font-size:16px;font-weight:bold;line-height:1.7;margin:0 0 16px;">ברוכה הבאה למהמקור! 🌿</p>
+              <p style="color:#1C1A17;font-size:16px;font-weight:bold;line-height:1.7;margin:0 0 16px;">ברוכים הבאים למהמקור! 🌿</p>
               <p style="color:#3a3a3a;font-size:15px;line-height:1.7;margin:0 0 20px;">מהמקור מרכז בתי עסק מקומיים לאוכל אמיתי — כל אחד נבחר ואושר אישית.</p>
               <p style="color:#1C1A17;font-size:15px;font-weight:bold;margin:0 0 8px;">מה עכשיו?</p>
               <p style="color:#3a3a3a;font-size:15px;line-height:1.9;margin:0 0 24px;">
-                • גלי בתי עסק לפי עיר או קטגוריה<br>
-                • פתחי את המפה וראי מי קרוב אלייך: <a href="{settings.frontend_url}/map" style="color:#2e6853;">{settings.frontend_url}/map</a><br>
-                • שמרי מועדפים כדי לא לאבד אותם
+                • לגלות בתי עסק לפי עיר או קטגוריה<br>
+                • לפתוח את המפה ולראות מה יש בסביבה: <a href="{settings.frontend_url}/map" style="color:#2e6853;">{settings.frontend_url}/map</a><br>
+                • לשמור מועדפים כדי לא לאבד אותם
               </p>
               <div style="text-align:center;margin:0 0 28px;">
                 <a href="{settings.frontend_url}"
@@ -187,7 +187,7 @@ def send_welcome_email(email: str, name: str, role: str = "consumer") -> bool:
                   גלו בתי עסק
                 </a>
               </div>
-              <p style="color:#666;font-size:13px;line-height:1.6;margin:0 0 16px;">יש שאלה? פשוט השיבי למייל הזה.</p>
+              <p style="color:#666;font-size:13px;line-height:1.6;margin:0 0 16px;">יש שאלה? אפשר פשוט להשיב למייל הזה.</p>
               <hr style="border:none;border-top:1px solid #eee;margin:0 0 16px;">
               <p style="color:#999;font-size:13px;line-height:1.6;margin:0;">בברכה,<br>צוות מהמקור 🌱</p>
             </td>
@@ -210,9 +210,9 @@ def send_welcome_email(email: str, name: str, role: str = "consumer") -> bool:
           <tr>
             <td style="text-align:right;direction:rtl;">
               <h1 style="font-size:20px;color:#1C1A17;margin:0 0 12px;">שלום {first_name_html},</h1>
-              <p style="color:#1C1A17;font-size:16px;font-weight:bold;line-height:1.7;margin:0 0 16px;">ברוכה הבאה למהמקור! 🌿</p>
+              <p style="color:#1C1A17;font-size:16px;font-weight:bold;line-height:1.7;margin:0 0 16px;">ברוכים הבאים למהמקור! 🌿</p>
               <p style="color:#3a3a3a;font-size:15px;line-height:1.7;margin:0 0 16px;">העסק שלך ממתין כרגע לאישור אדמין — אנחנו בודקים כל עסק חדש כדי לוודא שהוא מתאים לקריטריונים שלנו (ייצור מקומי, חומרי גלם מזוהים, ללא מעובד).</p>
-              <p style="color:#3a3a3a;font-size:15px;line-height:1.7;margin:0 0 24px;">אחרי האישור תקבלי מייל עם הקישור לעסק שלך, ותוכלי לפרסם אירועים, לעדכן מוצרים ולעקוב אחרי מועדפים.</p>
+              <p style="color:#3a3a3a;font-size:15px;line-height:1.7;margin:0 0 24px;">אחרי האישור יגיע מייל עם הקישור לעסק שלך, ואפשר יהיה לפרסם אירועים, לעדכן מוצרים ולעקוב אחרי מועדפים.</p>
               <div style="text-align:center;margin:0 0 28px;">
                 <a href="{settings.frontend_url}/producer/dashboard"
                    style="display:inline-block;background:#2e6853;color:#ffffff;text-decoration:none;
@@ -234,7 +234,7 @@ def send_welcome_email(email: str, name: str, role: str = "consumer") -> bool:
         body, html_body = producer_body, producer_html
     else:
         body, html_body = consumer_body, consumer_html
-    send_email(email, "ברוכה הבאה למהמקור 🌿", body, html=html_body)
+    send_email(email, "ברוכים הבאים למהמקור 🌿", body, html=html_body)
     return True
 
 
@@ -252,8 +252,8 @@ def send_duplicate_attempt_email(
     POST /auth/register where the response body is identical to the
     happy path; this email is the only out-of-band signal the legitimate
     owner receives. `provider` selects body copy:
-      - "password" → "את כבר רשומה אצלנו עם סיסמה"
-      - "google"/"apple" → "את כבר רשומה אצלנו דרך {Google|Apple}"
+      - "password" → "כבר יש לך חשבון אצלנו עם סיסמה"
+      - "google"/"apple" → "כבר יש לך חשבון אצלנו דרך {Google|Apple}"
 
     MEH-1815: `flow` selects which registration surface was attempted.
     The producer collision branch discards the entire Producer payload
@@ -272,22 +272,22 @@ def send_duplicate_attempt_email(
         producer_register_path = _PRODUCER_REGISTER_PATH
         if provider == "password":
             identity = (
-                "את כבר רשומה אצלנו עם סיסמה — אם זו את, שימי לב: "
+                "כבר יש לך חשבון אצלנו עם סיסמה. אם זה היה ניסיון שלך, חשוב לדעת: "
                 "פרטי העסק שמולאו בטופס לא נשמרו."
             )
-            closing = "אם זה לא את — סיסמתך לא נחשפה ולא דרושה פעולה."
+            closing = "אם זה לא היה ניסיון שלך — הסיסמה לא נחשפה ולא דרושה פעולה."
         else:
             provider_label = "Google" if provider == "google" else "Apple"
             identity = (
-                f"את כבר רשומה אצלנו דרך {provider_label} — אם זו את, שימי לב: "
+                f"כבר יש לך חשבון אצלנו דרך {provider_label}. אם זה היה ניסיון שלך, חשוב לדעת: "
                 f"פרטי העסק שמולאו בטופס לא נשמרו."
             )
-            closing = "אם זה לא את — חשבונך לא נפגע ולא דרושה פעולה."
+            closing = "אם זה לא היה ניסיון שלך — החשבון לא נפגע ולא דרושה פעולה."
         body = (
             f"היי {name},\n"
             f"מישהו ניסה לרשום בית עסק במהמקור עם הכתובת שלך.\n"
             f"{identity}\n"
-            f"כדי לרשום את העסק, היכנסי לחשבון ומלאי את הטופס — "
+            f"כדי לרשום את העסק, צריך להיכנס לחשבון ולמלא את הטופס — "
             f"הפרטים ששמרנו בדפדפן ימתינו לך:\n"
             f"{login_url}?redirect={producer_register_path}\n\n"
             f"{closing}\n"
@@ -296,14 +296,14 @@ def send_duplicate_attempt_email(
         )
         send_email(email, "ניסיון רישום עסק במהמקור — יש לך כבר חשבון", body)
         return
-    subject = "ניסיון רישום במהמקור — את כבר רשומה"
+    subject = "ניסיון רישום במהמקור — יש לך כבר חשבון"
     if provider == "password":
         body = (
             f"היי {name},\n"
             f"מישהו ניסה להירשם למהמקור עם הכתובת שלך.\n"
-            f"את כבר רשומה אצלנו עם סיסמה — אם זו את, היכנסי כאן:\n"
+            f"כבר יש לך חשבון אצלנו עם סיסמה. אם זה היה ניסיון שלך, אפשר להיכנס כאן:\n"
             f"{login_url}\n\n"
-            f"אם זה לא את — סיסמתך לא נחשפה ולא דרושה פעולה.\n"
+            f"אם זה לא היה ניסיון שלך — הסיסמה לא נחשפה ולא דרושה פעולה.\n"
             f"בברכה,\n"
             f"צוות מהמקור"
         )
@@ -312,9 +312,9 @@ def send_duplicate_attempt_email(
         body = (
             f"היי {name},\n"
             f"מישהו ניסה להירשם למהמקור עם הכתובת שלך.\n"
-            f"את כבר רשומה אצלנו דרך {provider_label} — אם זו את, היכנסי כאן:\n"
+            f"כבר יש לך חשבון אצלנו דרך {provider_label}. אם זה היה ניסיון שלך, אפשר להיכנס כאן:\n"
             f"{login_url}\n\n"
-            f"אם זה לא את — חשבונך לא נפגע ולא דרושה פעולה.\n"
+            f"אם זה לא היה ניסיון שלך — החשבון לא נפגע ולא דרושה פעולה.\n"
             f"בברכה,\n"
             f"צוות מהמקור"
         )
@@ -326,13 +326,10 @@ def send_deletion_email(email: str, name: str) -> None:
         f"שלום {name},\n\n"
         f"החשבון שלך במהמקור נמחק בהצלחה.\n"
         f"כל הנתונים שלך, כולל מועדפים, מוצרים ודירוגים, נמחקו לצמיתות.\n\n"
-        # MEH-1965: was "צור" — pure masculine imperative addressed to the
-        # reader, which docs/BRAND.md §4 forbids on every surface ("פנייה
-        # זכרית לקוראת", ADR-024). The same sentence already ended in the
-        # feminine "מיידית", and every other imperative in this module is
-        # feminine (לחצי / העתיקי / אמתי / השיבי), so this was a slip, not a
-        # voice choice. BRAND.md names "צרי" as the feminine example verbatim.
-        f"אם לא ביקשת למחוק את החשבון, צרי איתנו קשר מיידית.\n\n"
+        # Neutral plural (Sapir, 04/11/2026): every reader-facing imperative in
+        # this module is plural or infinitive, never feminine or masculine
+        # singular. Was "צור" (MEH-1965), then "צרי".
+        f"אם לא ביקשת למחוק את החשבון, צרו איתנו קשר מיידית.\n\n"
         f"בברכה,\nצוות מהמקור"
     )
     send_email(email, "מהמקור - החשבון שלך נמחק", body)
