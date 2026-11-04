@@ -279,6 +279,10 @@ _OWNER_DECLARED_FLAGS = {
     "is_lactose_free",
     "is_no_added_sugar",
     "is_low_carb",
+    # MEH-2662: ingredients + allergens are the owner's declaration about her
+    # food — same rule as the diet flags.
+    "ingredients",
+    "allergens",
 }
 
 _NOT_EDITABLE = "אפשר לערוך מוצרים מהאדמין רק בטיוטה שעוד לא שויכה לבעלת העסק"
