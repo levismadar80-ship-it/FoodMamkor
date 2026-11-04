@@ -1,19 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
-// MEH-999: the events card became a Link to /events/[id] (was a static div).
-import { Link } from "@/i18n/navigation";
 import { CaretLeft, Leaf, MapPin } from "@phosphor-icons/react";
 import dynamic from "next/dynamic";
-import { useTranslations, useFormatter, useLocale } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import api from "@/lib/api";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
-import ImageWithFallback from "@/components/ImageWithFallback";
 // MEH-1140: canonical shekel format — amount then ₪ ("35₪"), one owner in lib/utils.
-import { formatPrice, formatPriceRange, isPriceLabel } from "@/lib/utils";
+import { formatPriceRange, isPriceLabel } from "@/lib/utils";
 import { badgeIcon } from "@/lib/chip-icons";
 import { formatEventDate } from "@/lib/format-date";
 import DeliveryBlock from "@/components/DeliveryBlock";
-import OfferBadge from "@/components/OfferBadge";
 // MEH-788: scroll-reveal on the description + similar sections (not LCP/gallery).
 import FadeInSection, { REVEAL_PRESET } from "@/components/FadeInSection";
 import DirectoryDisclaimer from "@/components/DirectoryDisclaimer";
@@ -130,8 +126,8 @@ function ProductDietPills({ product, t }) {
 /**
  * The middle of the main column. MEH-2592 reorders the sections so everything
  * about this business comes first: about → owner → products → recipes →
- * events → reviews → delivery → order window → location (OpeningHours +
- * MiniMap) → fine print (disclaimer, report, last-updated). The similar /
+ * events + experiences → group buys (ProducerActivities) → reviews →
+ * delivery → order window → location (OpeningHours + MiniMap) → fine print (disclaimer, report, last-updated). The similar /
  * nearby rows moved out to <OtherBusinesses>, which ProducerDetail renders
  * full width below both columns. The signature product (top_product_name / price_range)
  * moved OUT of ProducerHeader to the top of the products section here.
@@ -141,9 +137,10 @@ function ProductDietPills({ product, t }) {
  * a demoted tertiary CTA. It renders whenever the producer has any delivery or
  * pickup signal. The legacy delivery_areas table was retired from this page.
  *
- * showAllEvents state lives here as local UI state. The reviews wrapper
- * accepts reviewsContainerRef and reviewsVisible from useLazyReviews so the
- * IO observation point remains identical to the source.
+ * The events list (and its show-all state) moved to ProducerActivities
+ * (MEH #2659), merged with experiences. The reviews wrapper accepts
+ * reviewsContainerRef and reviewsVisible from useLazyReviews so the IO
+ * observation point remains identical to the source.
  */
 export default function ProducerSections({
   producer,
@@ -154,7 +151,6 @@ export default function ProducerSections({
   isOwner = false,
 }) {
   const t = useTranslations();
-  const format = useFormatter();
   const locale = useLocale();
   // MEH-1938 chunk 5a: the one point that stands for "where the business is"
   // (the is_primary row or null) — gates the location section and centres the
@@ -166,7 +162,6 @@ export default function ProducerSections({
   // and two call sites would be two chances to disagree.
   const storeHours = resolveStoreHours(producer);
   const hasLocation = parseHasLocation(producer, primaryPin);
-  const [showAllEvents, setShowAllEvents] = useState(false);
   // MEH-1460: "report wrong info" modal — moved from ContactCard so the
   // correction link lives in the page-end meta block, not the CTA card.
   const [reportOpen, setReportOpen] = useState(false);
@@ -572,98 +567,9 @@ export default function ProducerSections({
         </section>
       )}
 
-      {/* Events section */}
-      {events.length > 0 && (
-        <section className="mt-12" ref={(el) => { sectionRefs.current.events = el; }}>
-          <h2 className="font-headline-md text-2xl font-bold text-text mb-4">{t("producer.detail.sections.events.heading")}</h2>
-          <div className="space-y-3">
-            {(showAllEvents ? events : events.slice(0, 3)).map((ev) => {
-              // MEH-473: Q4 — Gregorian dates via next-intl/format. The
-              // `locale` param is implicit (provider sets it); options match
-              // the prior `toLocaleDateString("he-IL", {weekday/day/month})`.
-              const dateStr = format.dateTime(new Date(ev.event_date), {
-                weekday: "short", day: "numeric", month: "long",
-              });
-              const timeStr = ev.event_time
-                ? ev.event_time.slice(0, 5)
-                : null;
-              return (
-                // MEH-999: the card was a static <div> — the only event surface
-                // that did not open its public /events/[id] page. Now a Link,
-                // hover/focus styling — the hover treatment the experience
-                // card carried before it was deleted (MEH-2248).
-                // The registration_url <a> MOVED OUT of the Link (sibling row
-                // below it) — an <a> inside an <a> is invalid HTML and React
-                // hydration-unsafe; there is no stopPropagation precedent in
-                // EventsClient.jsx (its card carries no inner anchor).
-                <div
-                  key={ev.id}
-                  className="bg-white rounded-md border border-border transition-colors duration-base ease-quart hover:border-primary"
-                >
-                  <Link
-                    href={`/events/${ev.id}`}
-                    className="p-4 flex gap-4 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40"
-                  >
-                    {/* MEH-1229: was a raw <Image src={ev.image_url}> that bypassed
-                        the helper. Now routed through it (square crop + f_auto,q_auto)
-                        with graceful fallback so a broken URL degrades to the
-                        placeholder instead of a _next/image 404. */}
-                    {ev.image_url && (
-                      <ImageWithFallback
-                        src={ev.image_url}
-                        alt={ev.title}
-                        aspectRatio={IMAGE_RATIOS.square}
-                        optimizeWidth={128}
-                        width={64}
-                        height={64}
-                        className="w-16 h-16 rounded-sm object-cover flex-shrink-0"
-                      />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-text leading-snug">{ev.title}</p>
-                      <p className="text-sm text-fg-muted mt-0.5">
-                        {dateStr}{timeStr && ` · ${timeStr}`}
-                        {ev.city && ` · ${ev.city}`}
-                      </p>
-                      {ev.price > 0 && (
-                        <p className="text-sm text-accent font-medium mt-1"><span dir="ltr">{formatPrice(ev.price)}</span></p>
-                      )}
-                      {ev.price === 0 && (
-                        <p className="text-sm text-primary font-medium mt-1">{t("producer.detail.sections.events.free")}</p>
-                      )}
-                    </div>
-                  </Link>
-                  {ev.registration_url && (
-                    // Indented to line up under the text column when the card
-                    // has a thumbnail: p-4 (1rem) + w-16 (4rem) + gap-4 (1rem).
-                    <div className={`pb-4 pe-4 ${ev.image_url ? "ps-24" : "ps-4"}`}>
-                      <a
-                        href={ev.registration_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-block text-xs text-primary underline hover:text-primary-dark"
-                      >
-                        {t("producer.detail.sections.events.register")}
-                      </a>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          {events.length > 3 && !showAllEvents && (
-            <button
-              onClick={() => setShowAllEvents(true)}
-              className="mt-4 text-sm text-primary hover:text-primary-dark font-medium underline"
-            >
-              {t("producer.detail.sections.events.show_all_count", { count: events.length })}
-            </button>
-          )}
-        </section>
-      )}
-
-      {/* MEH-2602: the business's open group buys + upcoming experiences. */}
-      <ProducerActivities producerId={producer.id} />
+      {/* Events + experiences (one list) and open group buys — MEH-2602,
+          reshaped under MEH #2659. */}
+      <ProducerActivities producerId={producer.id} events={events} sectionRefs={sectionRefs} />
 
       {/* Reviews — IO-lazy: only mounts the fetch when the section
           scrolls within 300px of the viewport (saves ~300ms on 3G).
@@ -716,16 +622,6 @@ export default function ProducerSections({
           (offers_delivery, delivery_areas rows, or pickup_points). Its WhatsApp
           order CTA stays tone="tertiary" so it never competes with the contact
           card's single primary CTA. */}
-      {/* MEH-1823: the active offer sits ABOVE the delivery block, and outside
-          its gate on purpose — an offer is not a delivery fact, and a business
-          with an offer but no delivery (pickup_discount, first_order) would
-          otherwise never show it. Renders nothing when there is no offer. */}
-      {producer.active_offer && (
-        <div className="mt-8" data-testid="offer-badge-section">
-          <OfferBadge offer={producer.active_offer} variant="badge" />
-        </div>
-      )}
-
       {(producer.offers_delivery ||
         producer.delivery_areas?.length > 0 ||
         producer.pickup_points) && (
