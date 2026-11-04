@@ -203,8 +203,16 @@ export const FILTER_AXES = {
   // one matching product in the catalog), so its scope is any-product and NOT
   // the whole business — the exact over-claim MEH-1507 makes explicit, and the
   // MEH-1439 tooltip incident. Subtext copy LOCKED (MEH-1507 §hebrew_copy).
+  //
+  // MEH-1508 chunk 3ב-2 (card §6.6, LOCKED 23/07): the two partial axes carry
+  // their scope IN THE TERM — «מתאים לטבעונים» / «מתאים לצמחונים» — because
+  // the 100% pair below now sits beside them, and a bare «טבעוני» next to
+  // «100% טבעוני» would leave the reader to infer that the unqualified word
+  // means "partial". The card's research (HappyCow / easy / NN/g / Baymard)
+  // rejected a tooltip or a second subtext for this: scope lives in the label.
+  // Subtexts are unchanged (MEH-1507 lock).
   vegan: {
-    label: "טבעוני",
+    label: "מתאים לטבעונים",
     scope: "any-product",
     evidence: "self-declared",
     subtext: "עסקים עם מוצרים טבעוניים בקטלוג",
@@ -214,10 +222,43 @@ export const FILTER_AXES = {
   // MEH-1438: a vegan product counts as vegetarian (?vegetarian matches
   // is_vegetarian OR is_vegan) — see badges.js.
   vegetarian: {
-    label: "צמחוני",
+    label: "מתאים לצמחונים",
     scope: "any-product",
     evidence: "self-declared",
     subtext: "עסקים עם מוצרים צמחוניים בקטלוג",
+    group: "diet",
+    surfaces: ["home", "producers", "map"],
+  },
+  // MEH-1508 chunk 3ב-2 — the 100% layer. A DIFFERENT CLAIM from the partial
+  // axes above, not a stricter version of the same one: the backend answers
+  // `?vegan_all=true` from `Producer.vegan_scope == 'all'` ALONE
+  // (producer_listing._SCOPE_ALL_FILTERS, PR #3448), so a bakery with one vegan
+  // cookie satisfies `vegan` and must NOT satisfy `vegan_all`. Hence scope
+  // `business` (the owner declared it about everything she sells) and evidence
+  // `self-declared` (admin approval cross-checks the catalog, but nothing is
+  // verified against an external register — the MEH-1259 pattern, which is why
+  // no checkmark glyph either, card §6.4). Label and subtext LOCKED (§6.4/§6.6).
+  //
+  // The key IS the backend param name, which is what makes every surface's
+  // URL/param plumbing (buildChipParams · chipStateToParams · use-home-page ·
+  // filter-url) carry it with no per-surface wiring.
+  //
+  // Gated at threshold 1 (card 06/09) — see SCOPE_ALL_CHIP_MIN in
+  // producer-filters.js. Gluten / lactose have NO 100% axis: their business
+  // layer is a facility question (§2, §6.3), not a catalog one.
+  vegan_all: {
+    label: "100% טבעוני",
+    scope: "business",
+    evidence: "self-declared",
+    subtext: "לפי הצהרת בית העסק",
+    group: "diet",
+    surfaces: ["home", "producers", "map"],
+  },
+  vegetarian_all: {
+    label: "100% צמחוני",
+    scope: "business",
+    evidence: "self-declared",
+    subtext: "לפי הצהרת בית העסק",
     group: "diet",
     surfaces: ["home", "producers", "map"],
   },
@@ -286,7 +327,9 @@ export const MAP_CHIP_ORDER = [
   "kosher",
   "grass_fed",
   "vegan",
+  "vegan_all", // MEH-1508 chunk 3ב-2: each 100% chip right after its partial twin
   "vegetarian",
+  "vegetarian_all",
   "gluten_free",
   "lactose_free",
   "no_added_sugar",
@@ -308,7 +351,9 @@ export const MAP_CHIP_ORDER = [
 export const LISTING_CHIP_ORDER = [
   "kosher",
   "vegan",
+  "vegan_all", // MEH-1508 chunk 3ב-2: each 100% chip right after its partial twin
   "vegetarian",
+  "vegetarian_all",
   "gluten_free",
   "lactose_free",
   "no_added_sugar",

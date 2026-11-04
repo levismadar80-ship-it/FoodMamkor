@@ -108,14 +108,15 @@ describe("MEH-2461 organizer page", () => {
     expect(screen.queryByTestId("organizer-events-empty")).not.toBeInTheDocument();
   });
 
-  it("MEH-2469: an event with an end time shows «09:30–15:00» in an LTR isolate", async () => {
+  it("MEH-2619: an event with an end time shows only its start «09:30» in an LTR isolate", async () => {
     respond(200, {
       ...ORG,
       upcoming_events: [{ ...ev("e1", "2026-11-07"), event_time: "09:30:00", end_time: "15:00:00" }],
     });
     await renderPage();
-    const range = screen.getByText("09:30–15:00");
-    expect(range.getAttribute("dir")).toBe("ltr");
+    const start = screen.getByText("09:30");
+    expect(start.getAttribute("dir")).toBe("ltr");
+    expect(screen.queryByText(/15:00/)).not.toBeInTheDocument();
   });
 
   it("many events: rendered in the order the API returns (soonest first)", async () => {

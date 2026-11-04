@@ -1,6 +1,6 @@
 # ADR-024 — Voice: surface-function taxonomy + owner-noun gender (refines ADR-014)
 
-Status: Accepted
+Status: Accepted — §1 feminine half (brand narrative + warmth → feminine) superseded 2026-11-04 by [ADR-037](./ADR-037-neutral-reader-address.md); §2 owner-noun taxonomy and §3 still in force
 Date: 2026-06-25
 Deciders: Sapir · Claude (orchestrator)
 Refines: ADR-014

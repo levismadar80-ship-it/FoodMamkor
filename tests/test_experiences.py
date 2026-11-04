@@ -1027,6 +1027,113 @@ class TestExperienceCancelToggle:
         assert ex.status == "pending"
 
 
+# ---------- Sign-up count (MEH-2663) ----------
+
+
+class TestExperienceSignupCount:
+    """Sign-up happens on WhatsApp, so the host types how many signed up.
+    PUT {participants_count} updates spots_left and — like is_active — must
+    not send an approved experience back to moderation."""
+
+    def test_owner_sets_count_spots_left_follows(self, client, db, monkeypatch):
+        _mock_moderation(monkeypatch, status="APPROVED")
+        host = _make_host(db)
+        ex = _make_experience(db, host, status="approved", max_participants=8)
+        resp = client.put(
+            f"/experiences/{ex.id}",
+            json={"participants_count": 6},
+            headers=auth_header(host),
+        )
+        assert resp.status_code == 200, resp.text
+        body = resp.json()
+        assert body["participants_count"] == 6
+        assert body["spots_left"] == 2
+        db.refresh(ex)
+        assert ex.status == "approved"  # not bumped back to pending
+
+    def test_count_and_toggle_together_still_no_re_moderation(self, client, db, monkeypatch):
+        _mock_moderation(monkeypatch, status="APPROVED")
+        host = _make_host(db)
+        ex = _make_experience(db, host, status="approved", max_participants=8)
+        resp = client.put(
+            f"/experiences/{ex.id}",
+            json={"participants_count": 8, "is_active": True},
+            headers=auth_header(host),
+        )
+        assert resp.status_code == 200
+        assert resp.json()["spots_left"] == 0
+        db.refresh(ex)
+        assert ex.status == "approved"
+
+    def test_count_with_content_edit_re_moderates(self, client, db, monkeypatch):
+        _mock_moderation(monkeypatch, status="APPROVED")
+        host = _make_host(db)
+        ex = _make_experience(db, host, status="approved", max_participants=8)
+        resp = client.put(
+            f"/experiences/{ex.id}",
+            json={"participants_count": 2, "title": "כותרת חדשה לגמרי"},
+            headers=auth_header(host),
+        )
+        assert resp.status_code == 200
+        db.refresh(ex)
+        assert ex.status == "pending"
+
+    def test_negative_count_rejected(self, client, db):
+        host = _make_host(db)
+        ex = _make_experience(db, host, status="approved", max_participants=8)
+        resp = client.put(
+            f"/experiences/{ex.id}",
+            json={"participants_count": -1},
+            headers=auth_header(host),
+        )
+        assert resp.status_code == 422
+
+    def test_count_above_cap_is_clamped_to_cap(self, client, db, monkeypatch):
+        # The dashboard clamps too; a direct PUT must not store 12 of 8.
+        _mock_moderation(monkeypatch, status="APPROVED")
+        host = _make_host(db)
+        ex = _make_experience(db, host, status="approved", max_participants=8)
+        resp = client.put(
+            f"/experiences/{ex.id}",
+            json={"participants_count": 12},
+            headers=auth_header(host),
+        )
+        assert resp.status_code == 200, resp.text
+        assert resp.json()["participants_count"] == 8
+        assert resp.json()["spots_left"] == 0
+        db.refresh(ex)
+        assert ex.participants_count == 8
+
+    def test_explicit_null_count_stores_zero(self, client, db, monkeypatch):
+        _mock_moderation(monkeypatch, status="APPROVED")
+        host = _make_host(db)
+        ex = _make_experience(db, host, status="approved", max_participants=8)
+        ex.participants_count = 5
+        db.commit()
+        resp = client.put(
+            f"/experiences/{ex.id}",
+            json={"participants_count": None},
+            headers=auth_header(host),
+        )
+        assert resp.status_code == 200, resp.text
+        db.refresh(ex)
+        assert ex.participants_count == 0
+        assert ex.status == "approved"
+
+    def test_stranger_cannot_set_count(self, client, db):
+        host = _make_host(db)
+        stranger = make_user(db)
+        ex = _make_experience(db, host, status="approved", max_participants=8)
+        resp = client.put(
+            f"/experiences/{ex.id}",
+            json={"participants_count": 8},
+            headers=auth_header(stranger),
+        )
+        assert resp.status_code == 404
+        db.refresh(ex)
+        assert (ex.participants_count or 0) == 0
+
+
 # ---------- Location-pin privacy (MEH-1417) ----------
 
 

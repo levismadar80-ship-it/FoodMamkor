@@ -34,7 +34,7 @@ from tests.conftest import auth_header, make_producer, make_user
 # The contradiction's message, from services/delivery_validation.py and the two
 # schema validators. Asserted as a substring so the three stay honest about
 # being one invariant with one wording.
-MSG = '"לכל הארץ" מסומן, אבל "משלוחים" לא. סמני "משלוחים", או בטלי את "לכל הארץ".'
+MSG = '"לכל הארץ" מסומן, אבל "משלוחים" לא. סמנו "משלוחים", או בטלו את "לכל הארץ".'
 
 
 @pytest.fixture
@@ -46,7 +46,9 @@ def _detail_text(resp) -> str:
     """The DECODED message, not the wire text.
 
     Two response shapes reach here and both must be readable:
-      HTTPException(422, detail=str)  -> {"detail": "<msg>"}          (the routers)
+      HTTPException(422, detail=obj)  -> {"detail": {"code", "message", "params"}}
+                                         (the routers, since MEH-1943 chunk 3;
+                                         `message` is the same sentence)
       Pydantic ValueError            -> {"detail": [{"msg": "Value error, <msg>"}]}
 
     Decoding matters and is not defensive tidying: the copy contains ASCII
@@ -59,6 +61,8 @@ def _detail_text(resp) -> str:
     detail = body.get("detail")
     if isinstance(detail, str):
         return detail
+    if isinstance(detail, dict):
+        return detail.get("message", "")
     return " ".join(item.get("msg", "") for item in detail)
 
 

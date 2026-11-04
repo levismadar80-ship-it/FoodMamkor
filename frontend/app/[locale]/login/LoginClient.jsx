@@ -330,7 +330,7 @@ function LoginPageBody() {
               />
             </div>
             {emailInvalid && (
-              <p className="text-xs text-red-500 text-start" role="alert">{t("email_invalid")}</p>
+              <p className="text-xs text-error text-start" role="alert">{t("email_invalid")}</p>
             )}
             {emailValid && (
               <p className="text-xs text-primary text-start">{t("valid")}</p>
@@ -396,7 +396,7 @@ function LoginPageBody() {
               </button>
             </div>
             {passwordInvalid && (
-              <p className="text-xs text-red-500 text-start" role="alert">{t("password_required")}</p>
+              <p className="text-xs text-error text-start" role="alert">{t("password_required")}</p>
             )}
             {passwordValidLength && (
               <p className="text-xs text-primary text-start" data-testid="login-password-valid">{t("valid")}</p>
@@ -408,7 +408,7 @@ function LoginPageBody() {
                field-level role="alert" nodes above it. A bare getByRole("alert")
                is ambiguous here (strict-mode violation, measured), so the spec
                targets this id. */
-            <p className="text-red-500 text-sm text-start" data-testid="login-error" role="alert">
+            <p className="text-error text-sm text-start" data-testid="login-error" role="alert">
               {error}
             </p>
           )}

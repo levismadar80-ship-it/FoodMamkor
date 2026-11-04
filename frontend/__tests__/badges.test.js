@@ -16,6 +16,9 @@ describe("BADGE_PRIORITY", () => {
       "recommended",
       "new",
       "grass_fed",
+      // MEH-1508 chunk 3ב-2: the whole-business declarations lead the diet run.
+      "vegan_all",
+      "vegetarian_all",
       "gluten_free",
       "vegetarian",
       "vegan",
@@ -43,8 +46,9 @@ describe("BADGE_PRIORITY", () => {
     // in BADGE_CONFIG, so a badge present in one and absent from the other is
     // either never rendered or rendered undefined. This pin caught exactly that
     // during MEH-1934, when BADGE_PRIORITY was left un-updated.
-    expect(BADGE_PRIORITY).toHaveLength(11);
-    expect(Object.keys(BADGE_CONFIG)).toHaveLength(11);
+    // MEH-1508 chunk 3ב-2: 11 → 13 (vegan_all + vegetarian_all), both together.
+    expect(BADGE_PRIORITY).toHaveLength(13);
+    expect(Object.keys(BADGE_CONFIG)).toHaveLength(13);
     // MEH-2047: absence in BOTH structures, the same pair-check the products
     // removal above uses — a count alone would pass if something else were
     // added in the same commit that removed this.
