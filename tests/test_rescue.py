@@ -1,0 +1,715 @@
+"""MEH-2646 — the rescue-bags API (chunk 2/4 of MEH-2643).
+
+Covers the six cases the chunk's spec names plus the three guards that only
+exist because the pilot has no payment: the two-bag cap per buyer, the
+no-show block, and the admin release.
+
+CLOCK BASIS, stated so nobody "fixes" it into the wrong one (testing.md):
+`rescue_offers.date` is an ISRAEL calendar date and is seeded with
+`israel_today()`, never `date.today()`. The pickup timestamps and the 30-day
+no-show window are a rolling UTC span — `_active_no_shows` compares against
+`utc_now() - timedelta(days=30)` on naive columns — so they are seeded with
+`utc_now() ± timedelta`, deliberately NOT `israel_days_ago`, which returns an
+aware UTC value for Israel-CALENDAR-day arithmetic. Two different facts; the
+seeds match the code under test.
+
+THE FLAG: `settings.rescue_bags_enabled` does not exist yet —
+`backend/app/config.py` is denied to Claude Code, so Sapir adds the field
+(patch in PR #3963). Every test here sets it with `raising=False`, and
+`test_routes_are_404_while_the_flag_is_absent_or_off` pins the safe default so
+the field's absence can never read as "enabled".
+"""
+
+from datetime import timedelta
+
+import pytest
+from conftest import auth_header, make_producer, make_user
+from sqlalchemy import event
+
+from app.database import engine
+from app.models.models import ProducerLocation, RescueOffer, RescueOrder
+from app.routers import rescue as rescue_module
+from app.routers.rescue import (
+    NO_SHOW_BLOCK_AT,
+    NO_SHOW_WINDOW_DAYS,
+    rescue_bags_enabled,
+)
+from app.utils.clock import israel_today, utc_now
+
+
+@pytest.fixture
+def rescue_on(monkeypatch):
+    """Turn the pilot on for one test.
+
+    Patches the gate FUNCTION, not `settings`: pydantic's BaseSettings refuses
+    an assignment to a field it does not declare, and
+    `settings.rescue_bags_enabled` does not exist yet — `backend/app/config.py`
+    is denied to Claude Code, so Sapir adds it (the patch is in PR #3963).
+    Setting it here raises `ValueError: "Settings" object has no field`, which
+    is exactly how this fixture was written the first time.
+
+    `test_the_gate_reads_a_settings_field_when_one_exists` covers the part this
+    seam skips, without depending on whether the real field is there — so it
+    stays green both before and after Sapir applies the patch.
+    """
+    monkeypatch.setattr(rescue_module, "rescue_bags_enabled", lambda: True)
+    # MEH-2649: the pilot is also gated per TOWN, and the default is no town
+    # at all — so every functional test has to open the one its fixtures use,
+    # or publishing 403s and the public list is empty. Patched as a function
+    # for the same reason as the flag: `settings` has no such field yet.
+    monkeypatch.setattr(rescue_module, "rescue_cities", lambda: ("חיפה",))
+    return True
+
+
+@pytest.fixture
+def shop(db):
+    """An approved business, its owner, and an exact-precision pickup point."""
+    producer = make_producer(db, name="מאפיית ההצלה", city="חיפה")
+    owner = make_user(db, email="owner@example.com", role="producer")
+    owner.producer_id = producer.id
+    owner.is_producer = True
+    location = ProducerLocation(
+        producer_id=producer.id,
+        kind="branch",
+        is_primary=True,
+        city="חיפה",
+        address="הנביאים 10",
+        lat=32.7940,
+        lng=34.9896,
+        location_precision="exact",
+    )
+    db.add(location)
+    db.commit()
+    db.refresh(location)
+    return {"producer": producer, "owner": owner, "location": location}
+
+
+def _offer_payload(location, **over):
+    now = utc_now()
+    payload = {
+        "producer_location_id": str(location.id),
+        "date": israel_today().isoformat(),
+        "qty_total": 4,
+        "price_agorot": 1500,
+        "pickup_start": (now + timedelta(hours=1)).isoformat(),
+        "pickup_end": (now + timedelta(hours=3)).isoformat(),
+        "cancel_until": (now + timedelta(minutes=30)).isoformat(),
+    }
+    payload.update(over)
+    return payload
+
+
+def _seed_offer(db, location, *, qty_total=4, qty_left=None, **over):
+    now = utc_now()
+    offer = RescueOffer(
+        producer_location_id=location.id,
+        date=over.get("date", israel_today()),
+        qty_total=qty_total,
+        qty_left=qty_total if qty_left is None else qty_left,
+        price_agorot=1500,
+        pickup_start=over.get("pickup_start", now + timedelta(hours=1)),
+        pickup_end=over.get("pickup_end", now + timedelta(hours=3)),
+        cancel_until=over.get("cancel_until", now + timedelta(minutes=30)),
+        status=over.get("status", "active"),
+    )
+    db.add(offer)
+    db.commit()
+    db.refresh(offer)
+    return offer
+
+
+class TestFlagGate:
+    def test_routes_are_404_while_the_flag_is_absent_or_off(self, client, db, shop):
+        """No fixture flipping the flag: this is the shipped default.
+
+        The assertion on `rescue_bags_enabled()` is the discriminating half —
+        a 404 alone could come from a typo in the path, while this names WHY.
+        """
+        assert rescue_bags_enabled() is False
+        buyer = make_user(db, email="darkbuyer@example.com")
+        db.commit()
+        assert client.get("/rescue/offers").status_code == 404
+        r = client.post(
+            "/rescue/orders",
+            json={"offer_id": str(shop["location"].id), "qty": 1},
+            headers=auth_header(buyer),
+        )
+        assert r.status_code == 404
+
+    def test_the_gate_reads_a_settings_field_when_one_exists(self, monkeypatch):
+        """Both arms of the getattr, against stand-in settings objects.
+
+        Deliberately NOT `assert not hasattr(settings, "rescue_bags_enabled")`
+        — that would go red the moment Sapir applies the patch, i.e. a test
+        that breaks when someone does the right thing.
+        """
+
+        class WithField:
+            rescue_bags_enabled = True
+
+        class WithoutField:
+            pass
+
+        monkeypatch.setattr(rescue_module, "settings", WithField())
+        assert rescue_module.rescue_bags_enabled() is True
+
+        monkeypatch.setattr(rescue_module, "settings", WithoutField())
+        assert rescue_module.rescue_bags_enabled() is False
+
+    def test_the_list_is_public_once_the_flag_is_on(self, client, rescue_on):
+        # Control: the same path that 404'd above answers without any auth, so
+        # the 404 above was the flag and not a missing route.
+        assert client.get("/rescue/offers").status_code == 200
+
+
+class TestPublish:
+    def test_approved_business_publishes_todays_bag(self, client, db, shop, rescue_on):
+        r = client.post(
+            "/rescue/offers",
+            json=_offer_payload(shop["location"]),
+            headers=auth_header(shop["owner"]),
+        )
+        assert r.status_code == 201, r.text
+        body = r.json()
+        assert body["qty_left"] == body["qty_total"] == 4
+        assert body["status"] == "active"
+
+    def test_an_approximate_pickup_point_cannot_host_a_bag(
+        self, client, db, shop, rescue_on
+    ):
+        """MEH-829: a bag publishes the full address, so a fuzzy pin is refused."""
+        shop["location"].location_precision = "approximate"
+        db.commit()
+        r = client.post(
+            "/rescue/offers",
+            json=_offer_payload(shop["location"]),
+            headers=auth_header(shop["owner"]),
+        )
+        assert r.status_code == 422
+        assert "מדויקת" in r.json()["detail"]
+
+    def test_another_business_cannot_publish_on_this_point(
+        self, client, db, shop, rescue_on
+    ):
+        other_producer = make_producer(db, name="עסק אחר")
+        intruder = make_user(db, email="intruder@example.com", role="producer")
+        intruder.producer_id = other_producer.id
+        intruder.is_producer = True
+        db.commit()
+        r = client.post(
+            "/rescue/offers",
+            json=_offer_payload(shop["location"]),
+            headers=auth_header(intruder),
+        )
+        assert r.status_code == 404
+
+    def test_a_second_active_bag_on_the_same_day_is_refused(
+        self, client, db, shop, rescue_on
+    ):
+        _seed_offer(db, shop["location"])
+        r = client.post(
+            "/rescue/offers",
+            json=_offer_payload(shop["location"]),
+            headers=auth_header(shop["owner"]),
+        )
+        assert r.status_code == 409
+
+
+class TestReserve:
+    def test_happy_path_returns_a_four_digit_code_and_decrements_stock(
+        self, client, db, shop, rescue_on
+    ):
+        offer = _seed_offer(db, shop["location"], qty_total=2)
+        buyer = make_user(db, email="happy@example.com")
+        db.commit()
+        r = client.post(
+            "/rescue/orders",
+            json={"offer_id": str(offer.id), "qty": 1},
+            headers=auth_header(buyer),
+        )
+        assert r.status_code == 201, r.text
+        body = r.json()
+        assert body["pickup_code"].isdigit() and len(body["pickup_code"]) == 4
+        assert body["status"] == "reserved"
+        # The counter moved, and it moved by the quantity asked for.
+        db.refresh(offer)
+        assert offer.qty_left == 1
+        # Price and cutoff come back with the reservation so the confirmation
+        # screen needs no second request.
+        assert body["price_agorot"] == offer.price_agorot
+
+    def test_the_last_bag_cannot_be_sold_twice(self, client, db, shop, rescue_on):
+        """Sequential overflow — the house pattern for capacity
+        (tests/test_integrity_constraints.py::TestGroupBuyCapacity).
+
+        This asserts the GUARD. The lock that makes it safe under genuine
+        concurrency is asserted separately below, because a guard can be
+        correct while the lock is missing and vice versa.
+        """
+        offer = _seed_offer(db, shop["location"], qty_total=1)
+        first = make_user(db, email="first@example.com")
+        second = make_user(db, email="second@example.com")
+        db.commit()
+
+        ok = client.post(
+            "/rescue/orders",
+            json={"offer_id": str(offer.id), "qty": 1},
+            headers=auth_header(first),
+        )
+        assert ok.status_code == 201
+        clash = client.post(
+            "/rescue/orders",
+            json={"offer_id": str(offer.id), "qty": 1},
+            headers=auth_header(second),
+        )
+        assert clash.status_code == 409
+        db.refresh(offer)
+        assert offer.qty_left == 0, "stock went negative or was double-spent"
+
+    def test_the_reservation_path_selects_the_offer_for_update(
+        self, client, db, shop, rescue_on
+    ):
+        """The HANDLER's lock, observed on the statements it actually issues.
+
+        WHY IT IS WRITTEN THIS WAY. The first version of this test opened two
+        connections, took `FOR UPDATE` on the row ITSELF and asserted a second
+        `FOR UPDATE NOWAIT` was refused. That passes with
+        `.with_for_update()` deleted from `_offer_for_update` — measured, not
+        assumed — because it was testing Postgres's locking, not this
+        application's use of it. A test whose subject is the database engine
+        cannot fail on a bug in our code (testing.md: "name one other world
+        where this check is green").
+
+        So this listens to the cursor and asserts that reserving a bag issued
+        a `SELECT ... rescue_offers ... FOR UPDATE`. Removing
+        `.with_for_update()` reds it, which is the whole point.
+        """
+        offer = _seed_offer(db, shop["location"], qty_total=1)
+        buyer = make_user(db, email="locked@example.com")
+        db.commit()
+
+        seen: list[str] = []
+
+        def _capture(conn, cursor, statement, params, context, executemany):
+            seen.append(statement)
+
+        event.listen(engine, "before_cursor_execute", _capture)
+        try:
+            r = client.post(
+                "/rescue/orders",
+                json={"offer_id": str(offer.id), "qty": 1},
+                headers=auth_header(buyer),
+            )
+        finally:
+            event.remove(engine, "before_cursor_execute", _capture)
+
+        assert r.status_code == 201, r.text
+        # Control: the listener really saw this request's traffic. Without it a
+        # zero-match assertion below would read as "no lock" either way.
+        assert any("rescue_orders" in s for s in seen), "the listener saw nothing"
+
+        locking = [
+            s for s in seen if "rescue_offers" in s and "FOR UPDATE" in s.upper()
+        ]
+        assert locking, (
+            "reserving a bag did not lock the offer row — "
+            f"{len(seen)} statements seen, none a FOR UPDATE on rescue_offers"
+        )
+
+    def test_a_buyer_cannot_hold_more_than_two_bags_of_one_offer(
+        self, client, db, shop, rescue_on
+    ):
+        """The pilot's cap is per BUYER per offer. Two requests of two would
+        walk past a per-request check, which is why the handler sums."""
+        offer = _seed_offer(db, shop["location"], qty_total=20)
+        buyer = make_user(db, email="greedy@example.com")
+        db.commit()
+        headers = auth_header(buyer)
+        first = client.post(
+            "/rescue/orders",
+            json={"offer_id": str(offer.id), "qty": 2},
+            headers=headers,
+        )
+        assert first.status_code == 201
+        second = client.post(
+            "/rescue/orders",
+            json={"offer_id": str(offer.id), "qty": 1},
+            headers=headers,
+        )
+        assert second.status_code == 409
+        db.refresh(offer)
+        assert offer.qty_left == 18
+
+    def test_qty_above_the_cap_is_refused_by_the_schema(
+        self, client, db, shop, rescue_on
+    ):
+        offer = _seed_offer(db, shop["location"], qty_total=20)
+        buyer = make_user(db, email="three@example.com")
+        db.commit()
+        r = client.post(
+            "/rescue/orders",
+            json={"offer_id": str(offer.id), "qty": 3},
+            headers=auth_header(buyer),
+        )
+        assert r.status_code == 422
+
+
+class TestHandOver:
+    def _reserved(self, client, db, shop, email="pick@example.com", **offer_over):
+        offer = _seed_offer(db, shop["location"], qty_total=2, **offer_over)
+        buyer = make_user(db, email=email)
+        db.commit()
+        r = client.post(
+            "/rescue/orders",
+            json={"offer_id": str(offer.id), "qty": 1},
+            headers=auth_header(buyer),
+        )
+        assert r.status_code == 201, r.text
+        return offer, buyer, r.json()
+
+    def test_business_marks_handed_then_a_second_tap_is_409_with_the_time(
+        self, client, db, shop, rescue_on
+    ):
+        _, _, order = self._reserved(client, db, shop)
+        first = client.post(
+            f"/rescue/orders/{order['id']}/handed", headers=auth_header(shop["owner"])
+        )
+        assert first.status_code == 200
+        assert first.json()["handed_at"] is not None
+
+        again = client.post(
+            f"/rescue/orders/{order['id']}/handed", headers=auth_header(shop["owner"])
+        )
+        assert again.status_code == 409
+        # The 409 names the time, so a repeated tap at the counter is answered
+        # with "already done at HH:MM" rather than a bare conflict.
+        assert "כבר נמסרה" in again.json()["detail"]
+
+    def test_a_stranger_cannot_mark_a_bag_handed(self, client, db, shop, rescue_on):
+        _, buyer, order = self._reserved(client, db, shop, email="notowner@example.com")
+        r = client.post(
+            f"/rescue/orders/{order['id']}/handed", headers=auth_header(buyer)
+        )
+        assert r.status_code == 403
+
+    def test_no_show_only_after_the_pickup_window_closed(
+        self, client, db, shop, rescue_on
+    ):
+        now = utc_now()
+        _, _, order = self._reserved(client, db, shop, email="late@example.com")
+        early = client.post(
+            f"/rescue/orders/{order['id']}/no_show", headers=auth_header(shop["owner"])
+        )
+        assert early.status_code == 409
+
+        offer = (
+            db.query(RescueOffer).filter(RescueOffer.id == order["offer_id"]).first()
+        )
+        offer.pickup_start = now - timedelta(hours=3)
+        offer.pickup_end = now - timedelta(hours=1)
+        db.commit()
+        late = client.post(
+            f"/rescue/orders/{order['id']}/no_show", headers=auth_header(shop["owner"])
+        )
+        assert late.status_code == 200
+        assert late.json()["status"] == "no_show"
+
+
+class TestBuyerCancel:
+    def test_free_cancel_before_the_cutoff_gives_the_bag_back(
+        self, client, db, shop, rescue_on
+    ):
+        offer = _seed_offer(db, shop["location"], qty_total=2)
+        buyer = make_user(db, email="cancels@example.com")
+        db.commit()
+        order = client.post(
+            "/rescue/orders",
+            json={"offer_id": str(offer.id), "qty": 1},
+            headers=auth_header(buyer),
+        ).json()
+        db.refresh(offer)
+        assert offer.qty_left == 1
+
+        r = client.post(
+            f"/rescue/orders/{order['id']}/cancel", headers=auth_header(buyer)
+        )
+        assert r.status_code == 200
+        db.refresh(offer)
+        assert offer.qty_left == 2, "the cancelled bag was not returned to stock"
+
+    def test_cancel_after_the_cutoff_is_refused(self, client, db, shop, rescue_on):
+        offer = _seed_offer(db, shop["location"], qty_total=2)
+        buyer = make_user(db, email="toolate@example.com")
+        db.commit()
+        order = client.post(
+            "/rescue/orders",
+            json={"offer_id": str(offer.id), "qty": 1},
+            headers=auth_header(buyer),
+        ).json()
+
+        offer.cancel_until = utc_now() - timedelta(minutes=1)
+        db.commit()
+        r = client.post(
+            f"/rescue/orders/{order['id']}/cancel", headers=auth_header(buyer)
+        )
+        assert r.status_code == 409
+        db.refresh(offer)
+        assert offer.qty_left == 1, "a refused cancel must not return stock"
+
+
+class TestReview:
+    def test_review_before_the_bag_was_handed_over_is_refused(
+        self, client, db, shop, rescue_on
+    ):
+        offer = _seed_offer(db, shop["location"], qty_total=2)
+        buyer = make_user(db, email="earlyreview@example.com")
+        db.commit()
+        order = client.post(
+            "/rescue/orders",
+            json={"offer_id": str(offer.id), "qty": 1},
+            headers=auth_header(buyer),
+        ).json()
+        r = client.post(
+            f"/rescue/orders/{order['id']}/review",
+            json={"rating": 5},
+            headers=auth_header(buyer),
+        )
+        assert r.status_code == 409
+
+    def test_one_review_per_bag(self, client, db, shop, rescue_on):
+        offer = _seed_offer(db, shop["location"], qty_total=2)
+        buyer = make_user(db, email="reviewer@example.com")
+        db.commit()
+        order = client.post(
+            "/rescue/orders",
+            json={"offer_id": str(offer.id), "qty": 1},
+            headers=auth_header(buyer),
+        ).json()
+        client.post(
+            f"/rescue/orders/{order['id']}/handed", headers=auth_header(shop["owner"])
+        )
+        first = client.post(
+            f"/rescue/orders/{order['id']}/review",
+            json={"rating": 4, "contents_tags": ["לחם", "חלה"]},
+            headers=auth_header(buyer),
+        )
+        assert first.status_code == 201
+        second = client.post(
+            f"/rescue/orders/{order['id']}/review",
+            json={"rating": 1},
+            headers=auth_header(buyer),
+        )
+        assert second.status_code == 409
+
+
+class TestNoShowBlock:
+    def _past_no_show(self, db, shop, buyer, *, days_ago):
+        """One no-show whose pickup window closed `days_ago` days back.
+
+        Seeded with `utc_now() - timedelta`, matching `_active_no_shows`, which
+        measures a rolling UTC span rather than Israel calendar days.
+        """
+        now = utc_now()
+        offer = _seed_offer(
+            db,
+            shop["location"],
+            qty_total=1,
+            qty_left=0,
+            status="cancelled",
+            pickup_start=now - timedelta(days=days_ago, hours=2),
+            pickup_end=now - timedelta(days=days_ago),
+        )
+        order = RescueOrder(
+            offer_id=offer.id,
+            user_id=buyer.id,
+            qty=1,
+            pickup_code=f"{days_ago:04d}",
+            status="no_show",
+        )
+        db.add(order)
+        buyer.rescue_no_show_count = (buyer.rescue_no_show_count or 0) + 1
+        db.commit()
+        return order
+
+    def test_one_no_show_does_not_block(self, client, db, shop, rescue_on):
+        buyer = make_user(db, email="once@example.com")
+        db.commit()
+        self._past_no_show(db, shop, buyer, days_ago=3)
+        offer = _seed_offer(db, shop["location"], qty_total=2)
+        r = client.post(
+            "/rescue/orders",
+            json={"offer_id": str(offer.id), "qty": 1},
+            headers=auth_header(buyer),
+        )
+        assert r.status_code == 201, "one no-show is a warning, not a ban"
+
+    def test_the_second_no_show_inside_the_window_blocks(
+        self, client, db, shop, rescue_on
+    ):
+        buyer = make_user(db, email="twice@example.com")
+        db.commit()
+        self._past_no_show(db, shop, buyer, days_ago=3)
+        self._past_no_show(db, shop, buyer, days_ago=9)
+        offer = _seed_offer(db, shop["location"], qty_total=2)
+        r = client.post(
+            "/rescue/orders",
+            json={"offer_id": str(offer.id), "qty": 1},
+            headers=auth_header(buyer),
+        )
+        assert r.status_code == 422
+        assert r.json()["detail"] == "ההזמנות חסומות אחרי שתי אי-הגעות. כתבו לנו"
+
+    def test_two_no_shows_outside_the_window_do_not_block(
+        self, client, db, shop, rescue_on
+    ):
+        """The window is what the rule says it is.
+
+        This is the case `users.rescue_no_show_count` alone gets WRONG: the
+        counter reads 2 here and the buyer is not blocked, so a gate on the
+        counter would ban someone whose no-shows were last season.
+        """
+        buyer = make_user(db, email="longago@example.com")
+        db.commit()
+        self._past_no_show(db, shop, buyer, days_ago=NO_SHOW_WINDOW_DAYS + 5)
+        self._past_no_show(db, shop, buyer, days_ago=NO_SHOW_WINDOW_DAYS + 12)
+        db.refresh(buyer)
+        assert buyer.rescue_no_show_count == NO_SHOW_BLOCK_AT
+        offer = _seed_offer(db, shop["location"], qty_total=2)
+        r = client.post(
+            "/rescue/orders",
+            json={"offer_id": str(offer.id), "qty": 1},
+            headers=auth_header(buyer),
+        )
+        assert r.status_code == 201
+
+    def test_admin_clear_block_releases_the_buyer_without_erasing_history(
+        self, client, db, shop, rescue_on
+    ):
+        buyer = make_user(db, email="forgiven@example.com")
+        admin = make_user(db, email="admin-rescue@example.com", role="admin")
+        db.commit()
+        self._past_no_show(db, shop, buyer, days_ago=2)
+        self._past_no_show(db, shop, buyer, days_ago=4)
+
+        blocked = client.post(
+            "/rescue/orders",
+            json={"offer_id": str(_seed_offer(db, shop["location"]).id), "qty": 1},
+            headers=auth_header(buyer),
+        )
+        assert blocked.status_code == 422
+
+        cleared = client.post(
+            f"/admin/rescue/users/{buyer.id}/clear-block", headers=auth_header(admin)
+        )
+        assert cleared.status_code == 200
+        state = cleared.json()
+        assert state["active_no_shows"] == 0
+        assert state["blocked"] is False
+        # The record is kept: the lifetime counter still shows both, which is
+        # what the chunk-5 no-show-rate metric reads.
+        assert state["no_show_count"] == 2
+        assert (
+            db.query(RescueOrder)
+            .filter(RescueOrder.user_id == buyer.id, RescueOrder.status == "no_show")
+            .count()
+            == 2
+        )
+
+        again = client.post(
+            "/rescue/orders",
+            json={"offer_id": str(_seed_offer(db, shop["location"]).id), "qty": 1},
+            headers=auth_header(buyer),
+        )
+        assert again.status_code == 201
+
+    def test_a_non_admin_cannot_clear_a_block(self, client, db, shop, rescue_on):
+        buyer = make_user(db, email="selfserve@example.com")
+        db.commit()
+        r = client.post(
+            f"/admin/rescue/users/{buyer.id}/clear-block", headers=auth_header(buyer)
+        )
+        assert r.status_code == 403
+
+
+class TestPublicList:
+    def test_todays_bags_with_stock_appear_with_distance_and_typical_items(
+        self, client, db, shop, rescue_on
+    ):
+        _seed_offer(db, shop["location"], qty_total=3)
+        r = client.get("/rescue/offers", params={"lat": 32.79, "lng": 34.99})
+        assert r.status_code == 200
+        rows = r.json()
+        assert len(rows) == 1
+        row = rows[0]
+        assert row["qty_left"] == 3
+        assert row["producer"]["location_address"] == "הנביאים 10"
+        # Distance is to THE pickup point, and these coordinates are ~0.5 km
+        # from it — not None, and not a whole-country number.
+        assert row["distance_km"] is not None and row["distance_km"] < 2
+
+    def test_a_sold_out_or_cancelled_bag_is_not_listed(
+        self, client, db, shop, rescue_on
+    ):
+        sold_out = _seed_offer(db, shop["location"], qty_total=2, qty_left=0)
+        assert client.get("/rescue/offers").json() == []
+        sold_out.qty_left = 1
+        sold_out.status = "cancelled"
+        db.commit()
+        assert client.get("/rescue/offers").json() == []
+        # Control: the same row IS listed once it is active with stock, so the
+        # two empties above are the filters and not a broken query.
+        sold_out.status = "active"
+        db.commit()
+        assert len(client.get("/rescue/offers").json()) == 1
+
+    def test_distance_is_absent_when_the_caller_sends_no_coordinates(
+        self, client, db, shop, rescue_on
+    ):
+        _seed_offer(db, shop["location"])
+        row = client.get("/rescue/offers").json()[0]
+        assert row["distance_km"] is None
+
+    def test_the_city_filter_matches_the_pickup_town(self, client, db, shop, rescue_on):
+        _seed_offer(db, shop["location"])
+        assert len(client.get("/rescue/offers", params={"city": "חיפה"}).json()) == 1
+        assert client.get("/rescue/offers", params={"city": "אילת"}).json() == []
+
+
+class TestOfferCancel:
+    def test_business_cancel_closes_every_open_reservation(
+        self, client, db, shop, rescue_on
+    ):
+        offer = _seed_offer(db, shop["location"], qty_total=3)
+        buyer = make_user(db, email="stranded@example.com")
+        db.commit()
+        order = client.post(
+            "/rescue/orders",
+            json={"offer_id": str(offer.id), "qty": 1},
+            headers=auth_header(buyer),
+        ).json()
+
+        r = client.post(
+            f"/rescue/offers/{offer.id}/cancel", headers=auth_header(shop["owner"])
+        )
+        assert r.status_code == 200
+        assert r.json()["status"] == "cancelled"
+        row = db.query(RescueOrder).filter(RescueOrder.id == order["id"]).first()
+        db.refresh(row)
+        assert row.status == "cancelled"
+        assert row.cancelled_at is not None
+
+    def test_cancelling_twice_is_refused(self, client, db, shop, rescue_on):
+        offer = _seed_offer(db, shop["location"])
+        headers = auth_header(shop["owner"])
+        assert (
+            client.post(
+                f"/rescue/offers/{offer.id}/cancel", headers=headers
+            ).status_code
+            == 200
+        )
+        assert (
+            client.post(
+                f"/rescue/offers/{offer.id}/cancel", headers=headers
+            ).status_code
+            == 409
+        )

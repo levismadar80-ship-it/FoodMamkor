@@ -2353,6 +2353,48 @@ export const ResolveReportAdminReportsReportIdResolvePostResponse = /*#__PURE__*
 
 
 /**
+ * The pilot's four numbers, read-only.
+ *
+ * Rates come back as fractions, and as None when their denominator is zero:
+ * a pilot with no bags published yet has no sell-through, and reporting 0%
+ * would read as "nothing sold" rather than "nothing offered". That
+ * distinction is the whole point of a pilot metric.
+ * @summary Pilot Metrics
+ */
+export const PilotMetricsAdminRescueMetricsGetResponse = /*#__PURE__*/ zod.object({
+  "bags_offered": /*#__PURE__*/ zod.int(),
+  "bags_reserved": /*#__PURE__*/ zod.int(),
+  "buyers_total": /*#__PURE__*/ zod.int(),
+  "days": /*#__PURE__*/ zod.int(),
+  "no_show_rate": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "no_shows": /*#__PURE__*/ zod.int(),
+  "offers_per_day": /*#__PURE__*/ zod.number(),
+  "offers_total": /*#__PURE__*/ zod.int(),
+  "orders_total": /*#__PURE__*/ zod.int(),
+  "repeat_buyers": /*#__PURE__*/ zod.int(),
+  "sell_through": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()]))
+}).check(/*#__PURE__*/ zod.describe('The pilot\'s read-only numbers (chunk 5).\n\n`sell_through` and `no_show_rate` are fractions 0..1, not percentages, so\nthe UI decides how to render them and nothing is rounded twice. Both are\nNone when their denominator is zero — a pilot with no bags yet has no\nsell-through, and reporting 0% would read as \"nothing sold\" rather than\n\"nothing published\".'))
+
+
+/**
+ * Release a buyer's no-show block.
+ *
+ * Writes `rescue_block_cleared_at` instead of zeroing the counter, so the
+ * no-show rows stay in the history for the chunk-5 metrics while stopping
+ * counting against the buyer. Returns both numbers, because a reset whose
+ * effect you cannot see is a reset you have to trust.
+ * @summary Clear No Show Block
+ */
+export const ClearNoShowBlockAdminRescueUsersUserIdClearBlockPostResponse = /*#__PURE__*/ zod.object({
+  "active_no_shows": /*#__PURE__*/ zod.int(),
+  "block_cleared_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "blocked": /*#__PURE__*/ zod.boolean(),
+  "no_show_count": /*#__PURE__*/ zod.int(),
+  "user_id": /*#__PURE__*/ zod.uuid()
+}).check(/*#__PURE__*/ zod.describe('What the admin reset returns, so the operator can see the effect.\n\n`active_no_shows` is the windowed count the 422 gate actually reads — not\nthe lifetime `no_show_count`. After a reset it is 0 by construction, and\nshowing both is what makes the reset verifiable rather than hopeful.'))
+
+
+/**
  * All reviews (including hidden) for moderation.
  * @summary Admin List Reviews
  */
@@ -5069,6 +5111,56 @@ export const RequestProducerReviewProducersMeRequestReviewPostResponse = /*#__PU
 
 
 /**
+ * Today's reservations across this business's pickup points.
+ *
+ * Today only, by the Israel clock: the dashboard is a counter tool, and a
+ * bag from last week is not something anyone hands over. Cancelled rows are
+ * included — a business that sees four codes and three people should be able
+ * to tell which one cancelled rather than wonder.
+ *
+ * No buyer identity is returned; see RescueOwnerOrderOut for why.
+ * @summary List My Orders
+ */
+export const ListMyOrdersProducersMeRescueOrdersGetResponseItem = /*#__PURE__*/ zod.object({
+  "cancelled_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "handed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "offer_id": /*#__PURE__*/ zod.uuid(),
+  "pickup_code": /*#__PURE__*/ zod.string(),
+  "pickup_end": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "pickup_start": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "qty": /*#__PURE__*/ zod.int(),
+  "status": /*#__PURE__*/ zod.enum(['reserved', 'handed', 'no_show', 'cancelled'])
+}).check(/*#__PURE__*/ zod.describe('One of today\'s reservations, as the business\'s own dashboard sees it.\n\nCarries `pickup_code` — the business has to read it back against what the\nbuyer says at the counter — and the offer\'s `pickup_end`, because the\n«לא הגיע» control is only legal after that moment and the dashboard must\ndecide that without a second request.\n\nDeliberately NOT the buyer\'s name, email or phone: handing over a bag\nneeds four digits, and a list of today\'s customers on a dashboard screen\nis more personal data than the job requires.'))
+export const ListMyOrdersProducersMeRescueOrdersGetResponse = /*#__PURE__*/ zod.array(ListMyOrdersProducersMeRescueOrdersGetResponseItem)
+
+
+/**
+ * «בדרך כלל: …» as it stands. An empty list when never set — the read
+ * never has to distinguish "no row" from "empty", only the first.
+ * @summary Get Typical Items
+ */
+export const GetTypicalItemsProducersMeRescueTypicalItemsGetResponse = /*#__PURE__*/ zod.object({
+  "items": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "updated_at": /*#__PURE__*/ zod.iso.datetime({"offset":true})
+})
+
+
+/**
+ * Upsert the list. One row per business (uq_rescue_typical_items_producer),
+ * so this writes the existing row rather than racing a second insert.
+ * @summary Set Typical Items
+ */
+export const SetTypicalItemsProducersMeRescueTypicalItemsPutResponse = /*#__PURE__*/ zod.object({
+  "items": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "updated_at": /*#__PURE__*/ zod.iso.datetime({"offset":true})
+})
+
+
+/**
  * The owner's shareable "request a review" URL.
  *
  * Approved producers only: the public page the link opens exists only once
@@ -5568,6 +5660,219 @@ export const GetPrefillRegisterProducerPrefillTokenGetResponse = /*#__PURE__*/ z
  * @summary Report Producer Info
  */
 export const ReportProducerInfoReportsProducerInfoPostResponse = /*#__PURE__*/ zod.void()
+
+
+/**
+ * Today's bags that still have stock. Public — no auth.
+ *
+ * Sold-out and cancelled offers are omitted rather than greyed out: the list
+ * is "what you can still get tonight", and chunk 4 has no empty-stock state.
+ * @summary List Offers
+ */
+export const ListOffersRescueOffersGetResponseItem = /*#__PURE__*/ zod.object({
+  "cancel_until": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "date": /*#__PURE__*/ zod.iso.date(),
+  "distance_km": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "pickup_end": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "pickup_start": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "price_agorot": /*#__PURE__*/ zod.int(),
+  "producer": /*#__PURE__*/ zod.object({
+  "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "image_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "location_address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "location_city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "name": /*#__PURE__*/ zod.string(),
+  "slug": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+}).check(/*#__PURE__*/ zod.describe('The business fields the public bag list needs, and no more.\n\nDeliberately NOT `ProducerListOut`: a bag row shows a name, a photo, a\ntown and a pickup point, and nothing on this list should carry the badge\nblock, the rating aggregate or the contact details — chunk 4\'s row has no\nplace to put them and serializing them would publish more than the screen\nneeds.')),
+  "qty_left": /*#__PURE__*/ zod.int(),
+  "qty_total": /*#__PURE__*/ zod.int(),
+  "typical_items": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string())),
+  "value_max_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "value_min_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+}).check(/*#__PURE__*/ zod.describe('One row of `GET \/rescue\/offers` — the offer, who is selling it, what is\nusually in it, and how far away it is.\n\n`distance_km` is None unless the caller sent lat\/lng; chunk 4 renders it\nonly when present rather than inventing a zero.'))
+export const ListOffersRescueOffersGetResponse = /*#__PURE__*/ zod.array(ListOffersRescueOffersGetResponseItem)
+
+
+/**
+ * Publish today's bags at one pickup point.
+ *
+ * NOT VALIDATED, and it is worth knowing why: the spec asks that
+ * `pickup_end` be at least 15 minutes before the business closes. There is
+ * nothing to compute that against. `opening_hours` is unbounded free text on
+ * both producers and locations, which the repo has already ruled is not
+ * computable (models.py:443-446), and `order_window` is a different fact —
+ * when ORDERS are accepted, not when the door shuts. Validating against it
+ * would enforce the wrong rule convincingly. MEH-2646 carries the decision.
+ * @summary Create Offer
+ */
+export const CreateOfferRescueOffersPostResponse = /*#__PURE__*/ zod.object({
+  "cancel_until": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "date": /*#__PURE__*/ zod.iso.date(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "pickup_end": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "pickup_start": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "price_agorot": /*#__PURE__*/ zod.int(),
+  "producer_location_id": /*#__PURE__*/ zod.uuid(),
+  "qty_left": /*#__PURE__*/ zod.int(),
+  "qty_total": /*#__PURE__*/ zod.int(),
+  "status": /*#__PURE__*/ zod.enum(['active', 'cancelled']),
+  "value_max_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "value_min_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+}).check(/*#__PURE__*/ zod.describe('One offer as the public list and the dashboard both serialize it.\n\n`qty_left` is the only stock number published: `qty_total` is included so\nthe UI can say \"נותרו 2 מתוך 6\", and nothing here reveals who reserved.'))
+
+
+/**
+ * The business pulls the whole bag offer. Every open reservation on it is
+ * cancelled with it.
+ *
+ * No refund, because nothing was paid. No message either, yet: telling the
+ * buyers needs a Meta-approved WhatsApp template and none exists for rescue
+ * (see this module's "Does NOT"). Until one does, the buyers learn from the
+ * app — which is a real gap, recorded on MEH-2646 rather than papered over
+ * with a send that would silently fail outside the 24h window.
+ * @summary Cancel Offer
+ */
+export const CancelOfferRescueOffersOfferIdCancelPostResponse = /*#__PURE__*/ zod.object({
+  "cancel_until": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "date": /*#__PURE__*/ zod.iso.date(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "pickup_end": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "pickup_start": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "price_agorot": /*#__PURE__*/ zod.int(),
+  "producer_location_id": /*#__PURE__*/ zod.uuid(),
+  "qty_left": /*#__PURE__*/ zod.int(),
+  "qty_total": /*#__PURE__*/ zod.int(),
+  "status": /*#__PURE__*/ zod.enum(['active', 'cancelled']),
+  "value_max_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
+  "value_min_agorot": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()]))
+}).check(/*#__PURE__*/ zod.describe('One offer as the public list and the dashboard both serialize it.\n\n`qty_left` is the only stock number published: `qty_total` is included so\nthe UI can say \"נותרו 2 מתוך 6\", and nothing here reveals who reserved.'))
+
+
+/**
+ * Reserve bags and get the 4-digit code read out at the counter.
+ * @summary Create Order
+ */
+export const createOrderRescueOrdersPostResponsePickupCodeMin = 4;
+export const createOrderRescueOrdersPostResponsePickupCodeMax = 4;
+
+
+export const createOrderRescueOrdersPostResponsePickupCodeRegExp = new RegExp('^[0-9]{4}$');
+
+
+export const CreateOrderRescueOrdersPostResponse = /*#__PURE__*/ zod.object({
+  "cancel_until": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "cancelled_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "handed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "offer_id": /*#__PURE__*/ zod.uuid(),
+  "pickup_code": /*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.minLength(createOrderRescueOrdersPostResponsePickupCodeMin)).check(/*#__PURE__*/ zod.maxLength(createOrderRescueOrdersPostResponsePickupCodeMax)).check(/*#__PURE__*/ zod.regex(createOrderRescueOrdersPostResponsePickupCodeRegExp)),
+  "pickup_end": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "pickup_start": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "price_agorot": /*#__PURE__*/ zod.int(),
+  "qty": /*#__PURE__*/ zod.int(),
+  "status": /*#__PURE__*/ zod.enum(['reserved', 'handed', 'no_show', 'cancelled']),
+  "user_id": /*#__PURE__*/ zod.uuid()
+}).check(/*#__PURE__*/ zod.describe('What a successful reservation returns. Same shape as RescueOrderOut\nplus the two numbers the confirmation screen shows without a second\nrequest — the price to pay at the counter and when the free cancel ends.'))
+
+
+/**
+ * The buyer cancels, free, until the offer's `cancel_until`.
+ * @summary Cancel Order
+ */
+export const cancelOrderRescueOrdersOrderIdCancelPostResponsePickupCodeMin = 4;
+export const cancelOrderRescueOrdersOrderIdCancelPostResponsePickupCodeMax = 4;
+
+
+export const cancelOrderRescueOrdersOrderIdCancelPostResponsePickupCodeRegExp = new RegExp('^[0-9]{4}$');
+
+
+export const CancelOrderRescueOrdersOrderIdCancelPostResponse = /*#__PURE__*/ zod.object({
+  "cancelled_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "handed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "offer_id": /*#__PURE__*/ zod.uuid(),
+  "pickup_code": /*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.minLength(cancelOrderRescueOrdersOrderIdCancelPostResponsePickupCodeMin)).check(/*#__PURE__*/ zod.maxLength(cancelOrderRescueOrdersOrderIdCancelPostResponsePickupCodeMax)).check(/*#__PURE__*/ zod.regex(cancelOrderRescueOrdersOrderIdCancelPostResponsePickupCodeRegExp)),
+  "qty": /*#__PURE__*/ zod.int(),
+  "status": /*#__PURE__*/ zod.enum(['reserved', 'handed', 'no_show', 'cancelled']),
+  "user_id": /*#__PURE__*/ zod.uuid()
+}).check(/*#__PURE__*/ zod.describe('One reservation, as returned to its own buyer.\n\n`pickup_code` IS included: the buyer has to read it aloud at the counter,\nand chunk 4 renders it at 56px. The business sees the same field for its\nown offers\' orders; nobody else can reach either route (chunk 2).'))
+
+
+/**
+ * The business hands the bag over against the code.
+ *
+ * A second call is a 409 naming `handed_at`, not a silent success: at the
+ * counter a repeated tap usually means the first one was not seen, and the
+ * honest answer is "already done at 18:42".
+ * @summary Mark Handed
+ */
+export const markHandedRescueOrdersOrderIdHandedPostResponsePickupCodeMin = 4;
+export const markHandedRescueOrdersOrderIdHandedPostResponsePickupCodeMax = 4;
+
+
+export const markHandedRescueOrdersOrderIdHandedPostResponsePickupCodeRegExp = new RegExp('^[0-9]{4}$');
+
+
+export const MarkHandedRescueOrdersOrderIdHandedPostResponse = /*#__PURE__*/ zod.object({
+  "cancelled_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "handed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "offer_id": /*#__PURE__*/ zod.uuid(),
+  "pickup_code": /*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.minLength(markHandedRescueOrdersOrderIdHandedPostResponsePickupCodeMin)).check(/*#__PURE__*/ zod.maxLength(markHandedRescueOrdersOrderIdHandedPostResponsePickupCodeMax)).check(/*#__PURE__*/ zod.regex(markHandedRescueOrdersOrderIdHandedPostResponsePickupCodeRegExp)),
+  "qty": /*#__PURE__*/ zod.int(),
+  "status": /*#__PURE__*/ zod.enum(['reserved', 'handed', 'no_show', 'cancelled']),
+  "user_id": /*#__PURE__*/ zod.uuid()
+}).check(/*#__PURE__*/ zod.describe('One reservation, as returned to its own buyer.\n\n`pickup_code` IS included: the buyer has to read it aloud at the counter,\nand chunk 4 renders it at 56px. The business sees the same field for its\nown offers\' orders; nobody else can reach either route (chunk 2).'))
+
+
+/**
+ * The business records that nobody came for the bag.
+ *
+ * Only after `pickup_end` — before that the buyer may still be on their way,
+ * and a no-show is what blocks them from reserving again.
+ * @summary Mark No Show
+ */
+export const markNoShowRescueOrdersOrderIdNoShowPostResponsePickupCodeMin = 4;
+export const markNoShowRescueOrdersOrderIdNoShowPostResponsePickupCodeMax = 4;
+
+
+export const markNoShowRescueOrdersOrderIdNoShowPostResponsePickupCodeRegExp = new RegExp('^[0-9]{4}$');
+
+
+export const MarkNoShowRescueOrdersOrderIdNoShowPostResponse = /*#__PURE__*/ zod.object({
+  "cancelled_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "handed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "offer_id": /*#__PURE__*/ zod.uuid(),
+  "pickup_code": /*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.minLength(markNoShowRescueOrdersOrderIdNoShowPostResponsePickupCodeMin)).check(/*#__PURE__*/ zod.maxLength(markNoShowRescueOrdersOrderIdNoShowPostResponsePickupCodeMax)).check(/*#__PURE__*/ zod.regex(markNoShowRescueOrdersOrderIdNoShowPostResponsePickupCodeRegExp)),
+  "qty": /*#__PURE__*/ zod.int(),
+  "status": /*#__PURE__*/ zod.enum(['reserved', 'handed', 'no_show', 'cancelled']),
+  "user_id": /*#__PURE__*/ zod.uuid()
+}).check(/*#__PURE__*/ zod.describe('One reservation, as returned to its own buyer.\n\n`pickup_code` IS included: the buyer has to read it aloud at the counter,\nand chunk 4 renders it at 56px. The business sees the same field for its\nown offers\' orders; nobody else can reach either route (chunk 2).'))
+
+
+/**
+ * The buyer reviews a bag they actually collected. Once.
+ * @summary Create Review
+ */
+export const CreateReviewRescueOrdersOrderIdReviewPostResponse = /*#__PURE__*/ zod.object({
+  "comment": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "contents_tags": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "highlight_tags": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "order_id": /*#__PURE__*/ zod.uuid(),
+  "photo_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "rating": /*#__PURE__*/ zod.int()
+})
 
 
 /**

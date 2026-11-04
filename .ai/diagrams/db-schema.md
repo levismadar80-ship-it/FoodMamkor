@@ -503,6 +503,16 @@ erDiagram
 > Adds four tables → **`EXPECTED_TABLES` 43 → 47** (`pr-checks.yml`).
 > Migration `a1c9f3e8d204`.
 
+> **MEH-2646 — `users.rescue_block_cleared_at` (04/11/2026):** one nullable
+> timestamp, chunk 2. It exists because «two no-shows in 30 days blocks» and
+> «an admin endpoint to reset» cannot both be true without a time anchor: the
+> lifetime `rescue_no_show_count` carries no window, and a window derived from
+> `rescue_orders` alone makes a reset a no-op that looks like it worked. The
+> derived window stays the authority and the 422 gate counts only no-shows whose
+> `pickup_end` is AFTER this stamp — so one write releases a buyer and the
+> no-show rows stay in the history for the chunk-5 metrics. Adds no table →
+> `EXPECTED_TABLES` unchanged. Migration `b2e6d4a17c93`.
+
 ## Locked invariants (do not drift)
 
 - **No PostGIS.** Coordinates are plain `FLOAT`. Distance queries use Haversine in raw SQL over `producer_locations.lat/lng` — `backend/app/services/producer_queries.py::haversine_min_km`, the nearest row per business, with NO fallback to the legacy `producers.lat/lng` mirror since MEH-1938 chunk 5a. Reverting this breaks Railway deploy.
