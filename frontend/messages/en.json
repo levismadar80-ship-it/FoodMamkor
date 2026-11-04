@@ -784,7 +784,6 @@
         "events": {
           "heading": "Upcoming events",
           "free": "Free",
-          "register": "Register for event →",
           "show_all_count": "Show all events"
         },
         "products": {
@@ -816,10 +815,6 @@
         },
         "group_buys": {
           "heading": "Open group buys"
-        },
-        "experiences": {
-          "heading": "Upcoming experiences",
-          "free": "Free"
         }
       },
       "header": {
@@ -1382,7 +1377,6 @@
       "pre_launch_hint": "Coming very soon — first businesses join this week",
       "aria": "Map preview",
       "dot_caption": "Every business on the map",
-      "dot_subtitle": "Discover businesses by location",
       "open_full": "Open the full map"
     },
     "component": {
