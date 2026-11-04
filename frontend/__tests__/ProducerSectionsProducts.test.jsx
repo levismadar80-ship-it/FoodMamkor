@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 
 // MEH-1138: imageless product cards render the canonical no-photo state
@@ -753,5 +753,33 @@ describe("MEH-2654 — per-product diet pills on the rows + facility line placem
     );
     fireEvent.click(rows()[0]);
     expect(screen.queryByTestId("product-sheet-gluten-facility")).toBeNull();
+  });
+});
+
+// MEH-2654: the recipe page's product rows deep-link `?product=<id>`.
+describe("MEH-2654 — ?product=<id> opens that product's sheet on arrival", () => {
+  const products = [
+    { id: 21, name: "לחם", image_url: null },
+    { id: 22, name: "גבינה", image_url: null },
+  ];
+  const withSearch = (search) => window.history.replaceState(null, "", `/x${search}`);
+  afterEach(() => withSearch(""));
+
+  it("opens the matching product", () => {
+    withSearch("?product=22");
+    render(<ProducerSections {...baseProps} producer={producerWith(products)} />);
+    expect(screen.getByTestId("product-sheet")).toHaveAttribute("aria-label", "גבינה");
+  });
+
+  it("an id that matches nothing opens no sheet", () => {
+    withSearch("?product=999");
+    render(<ProducerSections {...baseProps} producer={producerWith(products)} />);
+    expect(screen.queryByTestId("product-sheet")).toBeNull();
+  });
+
+  it("no param: no sheet", () => {
+    withSearch("");
+    render(<ProducerSections {...baseProps} producer={producerWith(products)} />);
+    expect(screen.queryByTestId("product-sheet")).toBeNull();
   });
 });

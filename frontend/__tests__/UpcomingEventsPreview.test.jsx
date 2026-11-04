@@ -113,11 +113,12 @@ describe("UpcomingEventsPreview", () => {
     expect(screen.getByText(/המאפייה של דנה/).textContent).not.toMatch(/מארגן/);
   });
 
-  it("MEH-2469: a start–end range renders inside an LTR isolate (no «15:00–09:30» flip)", async () => {
+  it("MEH-2619: an event with an end time shows only its start «09:30», in an LTR isolate", async () => {
     apiResponseRef.current = { data: [{ ...IMAGED, event_time: "09:30:00", end_time: "15:00:00" }] };
     render(<UpcomingEventsPreview />);
-    const range = await screen.findByText("09:30–15:00");
-    expect(range.getAttribute("dir")).toBe("ltr");
+    const start = await screen.findByText("09:30");
+    expect(start.getAttribute("dir")).toBe("ltr");
+    expect(screen.queryByText(/15:00/)).not.toBeInTheDocument();
   });
 });
 

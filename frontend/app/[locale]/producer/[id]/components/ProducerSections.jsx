@@ -278,6 +278,20 @@ export default function ProducerSections({
     [sheetTotal],
   );
 
+  // PR #3972: a deep link `?product=<id>` (the recipe page's product rows)
+  // opens that product's sheet on arrival. Read once per producer from
+  // window.location — not useSearchParams, which would force a Suspense
+  // boundary onto a server-rendered page for a one-shot read. An id that
+  // matches nothing opens nothing (the page just loads normally).
+  const productIds = sheetProducts.map((p) => p.id).join(",");
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const wanted = new URLSearchParams(window.location.search).get("product");
+    if (!wanted) return;
+    const i = productIds.split(",").indexOf(wanted);
+    if (i >= 0) setOpenIndex(i);
+  }, [productIds]);
+
   // MEH-1463: when the signature product was deduped out of the grid and
   // the producer-level price_range (MEH-1855: the single price-label field)
   // is not set, surface the matched product's own price/description on the
