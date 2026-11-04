@@ -562,9 +562,37 @@ saved_items            (id uuid PK, user_id uuid FK→users CASCADE,
                         created_at, UNIQUE(user_id,item_type,item_id))  -- MEH-2556
 ```
 
+### Rescue bags (pilot, flag-gated — MEH-2644)
+
+```sql
+rescue_offers          (id uuid PK, producer_location_id uuid FK→producer_locations CASCADE,
+                        date, qty_total, qty_left, price_agorot,
+                        value_min_agorot nullable, value_max_agorot nullable,
+                        pickup_start, pickup_end, cancel_until,
+                        status 'active'|'cancelled' (CHECK), created_at,
+                        CHECK qty_total 1..20, CHECK 0<=qty_left<=qty_total,
+                        CHECK price_agorot>=0, CHECK pickup_end>pickup_start,
+                        INDEX (producer_location_id, date))             -- MEH-2644
+rescue_orders          (id uuid PK, offer_id uuid FK→rescue_offers CASCADE,
+                        user_id uuid FK→users CASCADE, qty (CHECK 1..2),
+                        pickup_code char(4) (CHECK ^[0-9]{4}$),
+                        status 'reserved'|'handed'|'no_show'|'cancelled' (CHECK),
+                        handed_at nullable, handed_by uuid FK→users SET NULL nullable,
+                        cancelled_at nullable, created_at,
+                        UNIQUE(offer_id,pickup_code), INDEX (user_id))   -- MEH-2644
+rescue_reviews         (id uuid PK, order_id uuid FK→rescue_orders CASCADE UNIQUE,
+                        rating (CHECK 1..5), contents_tags jsonb nullable,
+                        highlight_tags jsonb nullable, photo_url nullable,
+                        comment text nullable, created_at)              -- MEH-2644
+rescue_typical_items   (id uuid PK, producer_id uuid FK→producers CASCADE UNIQUE,
+                        items jsonb NOT NULL, created_at, updated_at)    -- MEH-2644
+```
+
 > **MEH-2528 — `retired_slugs` (28/10/2026):** tombstones for public business URLs. A business delete is a hard delete, so its UNIQUE `producers.slug` used to be free at once and the next business with the same name inherited every `/p/<slug>` link. Now admin delete, owner account delete and an admin slug change/clear write a row (`services/retired_slugs.py`, the only writer), and `_ensure_unique_slug` (`routers/admin.py`) treats a retired slug as taken (`-2`…). A business may take back a slug it retired itself (the row is then removed). Drafts are not retired — never public. `producer_id` = owner of a renamed slug (for a future redirect), NULL for a deleted business. Migration `c3d8e2f1a9b4`; **`EXPECTED_TABLES` 41 → 42**. A deleted business's URL answers **410** and renders the «בית העסק הזה כבר לא במהמקור» page (MEH-2534). Not yet: a 301 from a renamed slug.
 
 > **MEH-2556 — `saved_items` (29/10/2026):** the recipes, events and experiences a user saved to «המועדפים שלי» (parent MEH-2555). Businesses keep `favorites` (FavoriteAlert hangs off it). `item_id` has no FK — it points at a different table per `item_type`; the read path serves only items that still exist and are public, so a deleted/hidden item drops out on its own. One save per item (UNIQUE), three types only (DB CHECK, mirrored by `SAVED_ITEM_TYPES` in models.py — `tests/test_meh2556_saved_items_table.py` fails if the two disagree), account delete cascades. Migration `9c534d477f2b`; **`EXPECTED_TABLES` 42 → 43**. API (MEH-2557): `GET /users/me/saved` → `{recipes, events, experiences}`, newest save first, public items only (recipe published+approved by a live business; event owner approved, past/cancelled kept and labelled by the page; experience `_publicly_visible_query`) · `GET /users/me/saved/ids` → `[{item_type, item_id}]` for the hearts' cache · `POST /users/me/saved/{type}/{id}` → 201, idempotent, **404 unless public** · `DELETE` → 200, own rows only, works after the item was hidden. All 🔑 (401 for a guest).
+
+> **MEH-2644 — rescue bags, chunk 1 (03/11/2026):** the four tables behind «סלי הצלה» (parent MEH-2643), all dormant until `RESCUE_BAGS_ENABLED`. An offer hangs off a **location**, not a business — a bag is collected at a place, and chunk 2 refuses a location whose `location_precision` is not `exact`. `qty_left` is the counter chunk 2 decrements under `with_for_update` (the group_buys MEH-773 pattern); the `0<=qty_left<=qty_total` CHECK is what makes a lost oversell race a failed transaction instead of negative stock. `pickup_code` is unique **per offer**, not globally — two businesses may both issue 0431 on the same evening, and a global 4-digit code exhausts after 10k rows. Money is integer agorot. **The pilot has no payment** (03/11 ruling): there is no `amount_agorot`, no `paid_at`, and `paid` is not a status — buyers pay at the counter, and re-adding payment later is an expand-phase CHECK widening (ADR-007). Same revision adds `users.rescue_no_show_count` (int NOT NULL DEFAULT 0, server_default so no backfill pass): the second `no_show` inside 30 days blocks new reservations with a 422, and `rescue_orders.status` over the window stays the authority — this column is the cheap counter the gate reads first. Status vocabularies live once in `RESCUE_OFFER_STATUSES` / `RESCUE_ORDER_STATUSES` (models.py) and `tests/test_rescue_migration.py` reds if the revision's literal CHECK drifts from them. Migration `a1c9f3e8d204`; **`EXPECTED_TABLES` 43 → 47**. No endpoints yet (chunk 2), no UI (chunk 4).
 
 ---
 

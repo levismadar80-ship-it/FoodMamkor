@@ -431,6 +431,60 @@ erDiagram
         string alert_type "new_event|new_product|delivery_area (32)"
         timestamp sent_at "indexed (user,producer,channel,sent_at)"
     }
+
+    producer_locations ||--o{ rescue_offers : "today's bags (MEH-2644)"
+    rescue_offers ||--o{ rescue_orders : "reservations"
+    rescue_orders ||--o| rescue_reviews : "one review each"
+    users ||--o{ rescue_orders : "reserves"
+    producers ||--o| rescue_typical_items : "usual contents"
+
+    rescue_offers {
+        uuid id PK "MEH-2644"
+        uuid producer_location_id FK "CASCADE — a place, not a business"
+        date date "indexed (location, date)"
+        int qty_total "CHECK 1..20"
+        int qty_left "CHECK 0..qty_total — the oversell guard"
+        int price_agorot "integer agorot, never float"
+        int value_min_agorot "nullable"
+        int value_max_agorot "nullable"
+        timestamp pickup_start
+        timestamp pickup_end "CHECK > pickup_start"
+        timestamp cancel_until
+        string status "active|cancelled (CHECK) — sold out is qty_left=0"
+        timestamp created_at
+    }
+
+    rescue_orders {
+        uuid id PK "MEH-2644"
+        uuid offer_id FK "CASCADE"
+        uuid user_id FK "CASCADE (indexed)"
+        int qty "CHECK 1..2 — the pilot's max 2 bags"
+        string pickup_code "char(4), CHECK 4 digits, UNIQUE per OFFER"
+        string status "reserved|handed|no_show|cancelled (CHECK) — no 'paid'"
+        timestamp handed_at
+        uuid handed_by FK "SET NULL — keep the record, lose the account"
+        timestamp cancelled_at
+        timestamp created_at
+    }
+
+    rescue_reviews {
+        uuid id PK "MEH-2644"
+        uuid order_id FK "CASCADE, UNIQUE — one per reservation"
+        int rating "CHECK 1..5"
+        json contents_tags "JSONB, nullable"
+        json highlight_tags "JSONB, nullable"
+        string photo_url "nullable (500)"
+        text comment "nullable"
+        timestamp created_at
+    }
+
+    rescue_typical_items {
+        uuid id PK "MEH-2644"
+        uuid producer_id FK "CASCADE, UNIQUE — one row per business"
+        json items "JSONB NOT NULL, default []"
+        timestamp created_at
+        timestamp updated_at
+    }
 ```
 
 > **MEH-1338 — `alert_log` frequency cap:** append-only ledger backing the
@@ -439,6 +493,15 @@ erDiagram
 > `ix_alert_log_cap_lookup(user_id, producer_id, channel, sent_at)` serves the
 > EXISTS check. Adds one table → **`EXPECTED_TABLES` 36 → 37** (`pr-checks.yml`).
 > No retention/purge job yet (rows CASCADE-delete with their user/producer).
+
+> **MEH-2644 — rescue bags, chunk 1 (03/11/2026):** four dormant tables plus
+> `users.rescue_no_show_count` (int NOT NULL DEFAULT 0). Nothing reads them
+> until chunk 2 and nothing renders them until chunk 4; the whole feature is
+> behind `RESCUE_BAGS_ENABLED`. **The pilot has no payment** — no
+> `amount_agorot`, no `paid_at`, and `paid` is not a status (03/11 ruling);
+> buyers pay at the counter. `pickup_code` is unique per OFFER, not globally.
+> Adds four tables → **`EXPECTED_TABLES` 43 → 47** (`pr-checks.yml`).
+> Migration `a1c9f3e8d204`.
 
 ## Locked invariants (do not drift)
 
