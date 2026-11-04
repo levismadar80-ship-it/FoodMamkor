@@ -1,6 +1,6 @@
 # ADR-014: Voice rules — Hebrew Hybrid (UI gerund / brand feminine)
 
-**Status:** Accepted
+**Status:** Accepted — feminine-for-narrative half superseded 2026-11-04 by [ADR-037](./ADR-037-neutral-reader-address.md); slash ban still in force
 **Date:** 2026-05-23
 **Deciders:** Sapir Levi
 **Source:** `Drive/03-Brand-Hub/02-מדריך-מותג.md` v1.1; `MEH-124-v4-content-sync.md` §5; MEH-472 (Q7 Hybrid implementation, Done 2026-05-16); MEH-665 (4-quadrant matrix clarification); PR #682 (MEH-605/606/609) Sapir override precedent; Doc-Consolidation-Plan §B.7 G5; MEH-686 Session 2
