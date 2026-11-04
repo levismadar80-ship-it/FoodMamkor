@@ -63,6 +63,9 @@ function endTimeFrom(start, minutes) {
   return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
 }
 
+// «נשארו N מקומות» shows at this many spots or fewer (approved 4/11).
+const FEW_SPOTS = 3;
+
 export default function ExperienceDetailClient() {
   const t = useTranslations("experiences.detail");
   // MEH-2476: the place-type labels are the form's own («בבית פרטי» / «מקום ציבורי»).
@@ -147,9 +150,9 @@ export default function ExperienceDetailClient() {
   // WhatsApp cannot reach) falls back to the recipient-less link below.
   const hostPhone = normalizePhone(hostBiz?.producer_phone);
   const waText = t("whatsapp_message", { title: ex.title });
-  const waHref = hostPhone
-    ? getWhatsAppHref(hostPhone, waText)
-    : `https://wa.me/?text=${encodeURIComponent(waText)}`;
+  const waitText = t("waitlist_message", { title: ex.title });
+  const waLink = (text) =>
+    hostPhone ? getWhatsAppHref(hostPhone, text) : `https://wa.me/?text=${encodeURIComponent(text)}`;
 
   // MEH-2549: the event page's structure (MEH-2548) in the experience's
   // gold — cover + date tile, host byline, one details card with share +
@@ -171,7 +174,12 @@ export default function ExperienceDetailClient() {
   const day = formatEventDate(ex.event_date, locale, { day: "numeric" });
   const month = formatEventDate(ex.event_date, locale, { month: "long" });
   const weekday = formatEventDate(ex.event_date, locale, { weekday: "long" });
-  const showCta = isApproved && ex.spots_left !== 0 && !isPast;
+  // A full experience swaps the sign-up CTA for a WhatsApp waitlist message.
+  const isFull = ex.max_participants != null && ex.spots_left === 0;
+  const fewLeft = !isFull && ex.max_participants != null && ex.spots_left != null && ex.spots_left <= FEW_SPOTS;
+  // A host-cancelled experience drops from the feed but its link still opens;
+  // it must not offer sign-up or a waitlist.
+  const showCta = isApproved && !isPast && ex.is_active !== false;
   const canCalendar = isApproved && !ex.is_recurring && !isPast;
   const icsEvent = {
     id: `experience-${ex.id}`,
@@ -350,14 +358,18 @@ export default function ExperienceDetailClient() {
             {ex.max_participants != null && (
               <div className={`${infoRow} border-t border-border`}>
                 <span className={infoIcon}><Users size={18} aria-hidden="true" /></span>
-                {/* sign-up happens on WhatsApp, so participants_count
-                    never moves and «8 מתוך 8» read as either full or empty.
-                    The cap is the one fact the site knows — the event page's
-                    «עד N משתתפים». */}
-                <p className="text-text" data-testid="experience-capacity">
-                  {ex.spots_left === 0
+                {/* Sign-up is on WhatsApp; the host reports the count from her
+                    dashboard. The page names the spots only when few are left
+                    (Airbnb / Eventbrite do the same) and otherwise the cap. */}
+                <p
+                  className={`text-text ${isFull || fewLeft ? "font-semibold" : ""}`}
+                  data-testid="experience-capacity"
+                >
+                  {isFull
                     ? t("sold_out")
-                    : tEv("participants_limit", { n: ex.max_participants })}
+                    : fewLeft
+                      ? t("spots_left_few", { n: ex.spots_left })
+                      : tEv("participants_limit", { n: ex.max_participants })}
                 </p>
               </div>
             )}
@@ -365,12 +377,13 @@ export default function ExperienceDetailClient() {
               <div className="border-t border-border p-4 space-y-3">
                 {showCta && (
                   <a
-                    href={waHref}
+                    href={waLink(isFull ? waitText : waText)}
                     target="_blank"
                     rel="noopener noreferrer"
+                    data-testid="experience-whatsapp-cta"
                     className="flex items-center justify-center min-h-[48px] w-full bg-primary text-white px-6 rounded-[10px] font-semibold hover:bg-primary-dark transition focus-ring"
                   >
-                    {t("whatsapp_cta")}
+                    {isFull ? t("waitlist_cta") : t("whatsapp_cta")}
                   </a>
                 )}
                 {/* MEH-2549: share + add-to-calendar, as on the event page. */}
