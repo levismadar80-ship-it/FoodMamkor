@@ -35,7 +35,7 @@ vi.mock("next-intl", () => ({
 
 vi.mock("@phosphor-icons/react", () => {
   const Stub = () => <span />;
-  return { CheckCircle: Stub, XCircle: Stub, ChatCircle: Stub };
+  return { CheckCircle: Stub, XCircle: Stub, ChatCircle: Stub, BellRinging: Stub };
 });
 
 // CitySearch hydrates its list from GET /cities; keep the unit test offline.
