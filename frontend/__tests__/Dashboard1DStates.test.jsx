@@ -34,6 +34,17 @@ vi.mock("@/i18n/navigation", () => ({
 vi.mock("next/link", () => ({
   default: ({ children, href, ...props }) => <a href={href} {...props}>{children}</a>,
 }));
+// MEH-1428: the "ערכת שיתוף" section mounts two canvas cards. Stubbed here for
+// the same reason the sibling cards above are: this file asserts a PAGE-level
+// contract, and a real canvas would drag Instagram-card geometry (and its icon
+// set) into it. Their own behaviour is covered by ReviewCardLayout.test.jsx +
+// ShareKitOwnerMode.test.jsx.
+vi.mock("@/components/StoryCardCanvas", () => ({
+  default: () => <div data-testid="story-card-canvas-stub" />,
+}));
+vi.mock("@/components/ReviewCardCanvas", () => ({
+  default: () => <div data-testid="review-card-canvas-stub" />,
+}));
 vi.mock("@phosphor-icons/react", () => ({
   Eye: (p) => <span {...p} />,
   LockSimple: (p) => <span {...p} />,
@@ -45,6 +56,8 @@ vi.mock("@/components/InfoTooltip", () => ({ default: () => null }));
 vi.mock("@/components/PhoneVerifyCard", () => ({ default: () => null }));
 vi.mock("@/components/ProfileCompletenessCard", () => ({ default: () => null }));
 vi.mock("@/lib/holidays", () => ({ getUpcomingHoliday: () => null }));
+// MEH-1687 D: the holiday hint renders HolidayIcon (Phosphor names this file's icon mock lacks).
+vi.mock("@/components/HolidayIcon", () => ({ default: () => null }));
 
 // Mutable refs the api + completeness mocks close over (vi.hoisted — mock
 // factories are hoisted above these declarations).

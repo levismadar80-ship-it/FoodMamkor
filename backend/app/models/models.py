@@ -899,7 +899,12 @@ class OutreachLead(Base):
     city = Column(String(100), nullable=True)
     category = Column(String(100), nullable=True)
     notes = Column(Text, nullable=True)
-    source = Column(String(50), default="manual")  # manual | claude_search (future)
+    # MEH-2633: "community" is a visitor suggestion from POST
+    # /business-suggestions (routers/business_suggestions.py) — the suggester
+    # columns below are populated only for that value.
+    source = Column(
+        String(50), default="manual"
+    )  # manual | community | claude_search (future)
     status = Column(
         String(20), default="new"
     )  # new | contacted | replied | registered | declined
@@ -908,6 +913,26 @@ class OutreachLead(Base):
     # whenever the admin clicks the button again.
     prefill_token = Column(String(64), unique=True, nullable=True, index=True)
     prefill_token_expires_at = Column(DateTime, nullable=True)
+    # MEH-2633: community-suggestion columns. Populated ONLY when
+    # source == "community"; NULL on every manually-added lead, which is the
+    # honest value (nobody suggested it). Paired with revision d7a511246b14.
+    # PII: `suggested_by_email` is NEVER returned by a public endpoint — the
+    # only reader is OutreachLeadOut, behind require_admin — and never logged
+    # unmasked (services/email.py:47 `_mask`).
+    # DO NOT add these columns in main.py — Alembic is the sole schema
+    #        authority since MEH-267.
+    suggested_by_name = Column(String(100), nullable=True)
+    suggested_by_email = Column(String(254), nullable=True)
+    # NOT NULL + server_default false: consent to be emailed has no "unknown"
+    # state and the default is the one that sends nothing. Same shape as
+    # categories.is_system (:977).
+    suggester_wants_update = Column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
+    suggestion_reason = Column(Text, nullable=True)
+    # Stamped by POST /admin/outreach/{id}/thank-suggester; it IS that
+    # endpoint's idempotency key, so nothing else may write it.
+    suggester_thanked_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=utc_now)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
@@ -1063,6 +1088,11 @@ class Product(Base):
     is_low_carb = Column(
         Boolean, default=False, nullable=False, server_default=text("false")
     )
+    # MEH-2662: owner-declared, optional — free-text ingredient list and
+    # allergen codes from the closed list in app/allergens.py. NULL = not
+    # filled (the sheet shows nothing), never "contains none".
+    ingredients = Column(Text, nullable=True)
+    allergens: Column[list[str]] = Column(ARRAY(Text), nullable=True)
 
     # MEH-2137: the other half of the same disambiguation — see the comment on
     # Producer.products. Without it this side raises the same error.
@@ -2110,7 +2140,8 @@ class ContactClick(Base):
         nullable=True,
         index=True,
     )
-    method = Column(String(20), nullable=False)  # phone | instagram | website | email
+    # phone | instagram | website | email | whatsapp_group (MEH-2626: updates link)
+    method = Column(String(20), nullable=False)
     ip_hash = Column(String(64), nullable=True)
     clicked_at = Column(DateTime, default=utc_now, nullable=False, index=True)
 
@@ -2144,6 +2175,11 @@ class GroupBuy(Base):
     # MEH-1457: free-text "מתי ואיך מקבלים" (OFN "Ready for" precedent).
     # Nullable — hidden on the public page when NULL. Alembic-only (MEH-267).
     fulfillment_note = Column(Text, nullable=True)
+    # MEH-2621: the same answer split in two — where/when to pick up, and
+    # where/for how much it is delivered. New rows carry one or both; rows
+    # from before carry only fulfillment_note. Alembic-only (MEH-267).
+    pickup_note = Column(Text, nullable=True)
+    delivery_note = Column(Text, nullable=True)
     # open | funded | cancelled | fulfilled
     status = Column(String(20), default="open", nullable=False)
     # MEH-1651: one-way latch for the open->funded notification pair. NULL =

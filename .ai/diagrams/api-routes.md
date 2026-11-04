@@ -31,6 +31,7 @@ graph LR
     App --> Reports[reports.router<br/>/reports/*]
     App --> Upload[upload.router<br/>/upload/*]
     App --> Marketing[marketing.router<br/>/stats, /newsletter, /contact, /cities]
+    App --> BizSuggest[business_suggestions.router<br/>POST /business-suggestions]
     App --> Chat[chat.router<br/>/chat/*]
     App --> Admin[admin.router<br/>/admin/producers/*]
     App --> AdminExtra[admin_extra.router<br/>/admin/users, /analytics, /dashboard, etc.]
@@ -97,7 +98,7 @@ graph TD
     Dashboard[/producer/dashboard page] --> Me_p[GET /producers/me<br/>👤 own producer record]
     Dashboard --> DashData[GET /producers/me/dashboard<br/>👤 favorites_count + whatsapp_clicks_week]
     Dashboard --> Analytics[GET /producers/me/analytics<br/>👤 feature/producer-analytics<br/>windowed views+searches+whatsapp,<br/>follower delta, avg rating,<br/>home_products, 30d chart, top cities]
-    Dashboard --> Avail[POST /producers/me/availability<br/>👤 toggle is_available_today]
+    Dashboard --> Avail[POST /producers/me/availability<br/>👤 legacy toggle → availability_state]
     Dashboard --> Update[PUT /producers/me<br/>👤 edit own profile<br/>city: organizer only MEH-2475]
     Dashboard --> UploadImg[POST /upload/image<br/>🔑 Cloudinary, magic-byte validated]
     Dashboard --> UploadOwner[POST /upload/owner-photo<br/>👤 MEH-1335 owner photo — no freemium gate,<br/>square crop, writes producers.owner_photo_url]
@@ -190,6 +191,7 @@ graph LR
     Unsub[POST /newsletter/unsubscribe<br/>signed token] -.->|delete contact| ResendContacts
 
     ContactForm[/contact page form] --> Contact[POST /contact<br/>🌐 5/hour per IP<br/>persists to contact_messages +<br/>SMTP email to CONTACT_EMAIL,<br/>fail-open on SMTP errors]
+    RecommendForm[/recommend page form] --> BizSuggestion[POST /business-suggestions<br/>🌐 5/hour per IP<br/>MEH-2633 · outreach_leads row, source=community<br/>response is ALWAYS ok:true — no id, no echo<br/>honeypot filled → 201, nothing stored<br/>duplicate → note appended, no second row]
 
     Chat[ChatWidget.jsx floating button] --> ChatQA[POST /chat/qa<br/>🌐 Anthropic Haiku<br/>fail-open if ANTHROPIC_API_KEY unset]
     ChatQA --> ChatRouter[chat_intent_router<br/>Haiku structured output: db_query | freeform]

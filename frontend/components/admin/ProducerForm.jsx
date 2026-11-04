@@ -9,6 +9,7 @@ import { HEALTH_MINISTRY_FOOD_REGISTRY_URL } from "@/lib/official-registries";
 import { useAdminAction } from "@/lib/use-admin-action";
 import { showToast } from "@/lib/toast";
 import { detailToMessage } from "@/lib/errors";
+import { makeDeliveryCodeResolver } from "@/lib/delivery-errors";
 import { ProducerAdminCreatedSchema } from "@/lib/api-schemas";
 import { israelToday } from "@/lib/israel-date";
 import { optimizeCloudinary } from "@/lib/cloudinary";
@@ -222,7 +223,7 @@ const EMPTY = {
 // React remounted the whole subtree and dropped input focus mid-typing.
 function Section({ title, children, testId }) {
   return (
-    <div className="bg-white rounded-[12px] border border-border p-6" data-testid={testId}>
+    <div className="bg-white rounded-md border border-border p-6" data-testid={testId}>
       <h2 className="font-semibold text-lg mb-4 text-primary">{title}</h2>
       {children}
     </div>
@@ -251,6 +252,9 @@ export default function ProducerForm({ initial = null, producerId = null }) {
   // MEH-1508 ch2: the admin cross-check selects reuse the owner form's locked
   // dietary-scope copy (§6.5) — one SoT, no admin-specific strings.
   const tDiet = useTranslations("dashboard.producer.dietaryScope");
+  // MEH-1943 chunk 3: the delivery 422s resolve to the owner DeliveryCard's
+  // copy (dashboard.producer.delivery.errors.<code>) — one home per sentence.
+  const tDelivery = useTranslations("dashboard.producer.delivery");
   const router = useRouter();
   const { run, isBusy } = useAdminAction();
   const [form, setForm] = useState(EMPTY);
@@ -529,7 +533,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       },
       (err) =>
         showToast.error(
-          detailToMessage(err.response?.data?.detail) ||
+          detailToMessage(err.response?.data?.detail, makeDeliveryCodeResolver(tDelivery)) ||
             t("producers.form.errors.save"),
         ),
     );
@@ -539,7 +543,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
   // now feeds ONLY the selects + textareas (no primitive for them until the
   // epic's later waves). Delete when those migrate.
   const inputClass =
-    "w-full border border-border rounded-[12px] px-3 py-2 focus:outline-none focus:border-primary bg-white";
+    "w-full border border-border rounded-md px-3 py-2 focus:outline-none focus:border-primary bg-white";
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl">
@@ -582,6 +586,8 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             value={form.whatsapp_group}
             onChange={(e) => update("whatsapp_group", e.target.value)}
             placeholder={t("producers.form.fields.whatsapp_group_placeholder")}
+            // MEH-2626: group OR channel; the hint recommends a channel.
+            helperText={t("producers.form.fields.whatsapp_group_hint")}
           />
           {/* MEH-17 — primary contact method + business email. */}
           <Field label={t("producers.form.fields.primary_contact")}>
@@ -1220,14 +1226,14 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             (!form.has_physical_location && !form.offers_delivery) ||
             (form.offers_delivery && !form.delivery_nationwide && form.delivery_cities.length === 0)
           }
-          className="bg-primary text-white px-8 py-3 rounded-[12px] hover:bg-primary-dark transition font-medium disabled:opacity-50"
+          className="bg-primary text-white px-8 py-3 rounded-md hover:bg-primary-dark transition font-medium disabled:opacity-50"
         >
           {isBusy("producer-save") ? t("common.saving") : producerId ? t("producers.form.submit_update") : t("producers.form.submit_create")}
         </button>
         <button
           type="button"
           onClick={() => router.push("/admin?tab=producers")}
-          className="bg-white border border-border px-8 py-3 rounded-[12px] hover:bg-background transition"
+          className="bg-white border border-border px-8 py-3 rounded-md hover:bg-background transition"
         >
           {t("common.cancel")}
         </button>

@@ -161,7 +161,7 @@ export default function AdminKashrutPage() {
       {/* MEH-1673: expiry reminders. Dry-run first, always — the send button
           only appears once a preview exists, so nobody can fire the batch
           without having seen exactly who receives it. */}
-      <div className="mb-6 rounded-[12px] border border-border p-4">
+      <div className="mb-6 rounded-md border border-border p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="font-semibold text-text">{t("kashrut.reminders.title")}</h2>
@@ -247,7 +247,7 @@ export default function AdminKashrutPage() {
       ) : rows.length === 0 ? (
         <p className="text-fg-muted">{t("kashrut.no_requests")}</p>
       ) : (
-        <div className="overflow-x-auto rounded-[12px] border border-border">
+        <div className="overflow-x-auto rounded-md border border-border">
           {/* MEH-2426: one card per row below md (globals.css .table-stack). */}
           <table className="table-stack w-full text-sm">
             <thead className="bg-green-50">

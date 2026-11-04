@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import {
+  Bell,
   EnvelopeSimple,
   FacebookLogo,
   Globe,
   InstagramLogo,
   Phone,
   Receipt,
-  WhatsappLogo,
 } from "@phosphor-icons/react";
 
 import PrimaryContactButton from "@/components/PrimaryContactButton";
@@ -15,6 +15,7 @@ import WhatsAppQuestionChips from "@/components/WhatsAppQuestionChips";
 import { getPrimaryMethod } from "@/lib/contact-method";
 import { instagramUrl } from "@/lib/social-links";
 import { withReferralParams } from "@/lib/utils";
+import { whatsappUpdatesHref } from "@/components/WhatsAppUpdatesPill";
 import { markWhatsAppClickedLocal, pingWhatsAppBeacon, trackContactClick } from "@/lib/contact-tracking";
 import { showToast } from "@/lib/toast";
 
@@ -92,7 +93,8 @@ function armMailtoFallback(email, t) {
  *           MEH-1551 (degenerate states — sole channel renders a labeled row,
  *           phone reveal swaps in place instead of appending a sibling);
  *           MEH-1583 (reveal adopts the geometry of the element it replaces —
- *           one row anatomy across every cell of the count x state matrix).
+ *           one row anatomy across every cell of the count x state matrix);
+ *           MEH-2626 (whatsapp_group circle → tracked «עדכונים» bell).
  */
 
 // Secondary contact channels rendered as the quiet icon row. Each entry
@@ -112,11 +114,17 @@ const CHANNELS = [
   },
   { key: "facebook", Icon: FacebookLogo, href: (p) => httpUrl(p.facebook) },
   { key: "external_order", Icon: Receipt, href: (p) => httpUrl(p.external_order_form) },
+  // MEH-2626: the WhatsApp updates link (group or channel) — the «עדכונים»
+  // bell. REPLACES the untracked WhatsappLogo circle that sat here: a neutral
+  // Bell so it never reads as a second «שליחת הודעה» (MEH-1466 / MEH-1049),
+  // and a tap is now a contact click (method "whatsapp_group", reviews gate).
+  // `ariaKey`: the circle's visible name is the short «עדכונים»; the accessible
+  // name spells out what it opens and still starts with that word (WCAG 2.5.3).
   {
     key: "whatsapp_group",
-    Icon: WhatsappLogo,
-    href: (p) => (p.whatsapp_group?.trim() ? p.whatsapp_group.trim() : null),
-    track: false,
+    Icon: Bell,
+    href: whatsappUpdatesHref,
+    ariaKey: "producer.detail.whatsapp_updates.full",
   },
 ];
 
@@ -183,7 +191,7 @@ export default function ContactCard({ producer, isVacation }) {
 
   // Shared by both affordances (circle + single row) so the tracking and the
   // desktop phone-reveal behave identically whichever one is rendered.
-  const onChannelClick = (e, { key, track }) => {
+  const onChannelClick = (e, { key }) => {
     // MEH-1334: on desktop a phone tap reveals the number inline (no dialer)
     // — swallow the tel: navigation and show the pill.
     if (
@@ -194,7 +202,8 @@ export default function ContactCard({ producer, isVacation }) {
       e.preventDefault();
       setPhoneRevealed(true);
     }
-    if (track === false) return;
+    // MEH-2626: every channel is tracked now — the `track: false` opt-out
+    // existed only for the old untracked whatsapp_group circle.
     // Fires exactly once per click (fallback must not double-track).
     trackContactClick(producer.id, key);
     // MEH-1221: email-only silent-mailto fallback.
@@ -295,7 +304,7 @@ export default function ContactCard({ producer, isVacation }) {
                   data-testid={`contact-channel-${key}`}
                   // Same string as the visible name (WCAG 2.5.3 holds); kept so
                   // the accessible name is the name alone, not "name + icon".
-                  aria-label={t(`producer.detail.contact_card.aria.${key}`)}
+                  aria-label={t(channel.ariaKey ?? `producer.detail.contact_card.aria.${key}`)}
                   onClick={(e) => onChannelClick(e, channel)}
                   className="group flex flex-col items-center gap-1.5 text-center text-xs leading-tight text-text rounded-lg focus-visible:ring-2 focus-visible:ring-primary/40"
                 >

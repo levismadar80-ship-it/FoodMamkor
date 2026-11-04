@@ -192,7 +192,13 @@ describe("MEH-2173 — the sheet", () => {
     // "no removal of any filter capability" line, asserted rather than assumed.
     for (const chip of CHIPS_CONFIG) {
       // Gated axes (zero-data catalog in this fixture) are hidden by design.
-      if (["open_for_orders_now", "no_added_sugar", "on_site"].includes(chip.key)) continue;
+      // MEH-1508 chunk 3ב-2: + the two 100% axes (gated at threshold 1).
+      if (
+        ["open_for_orders_now", "no_added_sugar", "on_site", "vegan_all", "vegetarian_all"].includes(
+          chip.key,
+        )
+      )
+        continue;
       expect(screen.getByTestId(`chip-${chip.key}`)).toBeTruthy();
     }
   });

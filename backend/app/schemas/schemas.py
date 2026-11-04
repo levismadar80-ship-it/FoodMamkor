@@ -15,6 +15,7 @@ from pydantic import (
     model_validator,
 )
 
+from app.allergens import normalize_allergens
 from app.schemas.password import PasswordField
 from app.services.sanitization import sanitize_text
 from app.utils.clock import israel_today
@@ -375,10 +376,30 @@ def _phone_validator(value: str | None) -> str | None:
     return cleaned
 
 
+# MEH-2626: the field is the business's WhatsApp UPDATES link — a group invite
+# (chat.whatsapp.com/<code>) or a channel (whatsapp.com/channel/<id>). Channels
+# are the recommended shape: members never see each other's numbers and there
+# is no member cap. `www.` is accepted for the channel host only — it is what
+# WhatsApp's own share sheet produces there; www.chat.whatsapp.com is not a
+# real host and stays rejected (MEH-1537 "subdomain drift" case).
+_WHATSAPP_GROUP_HOSTS = frozenset({"chat.whatsapp.com"})
+_WHATSAPP_CHANNEL_HOSTS = frozenset({"whatsapp.com", "www.whatsapp.com"})
+WHATSAPP_UPDATES_LINK_ERROR = (
+    "קישור לעדכונים בוואטסאפ חייב להתחיל ב-https://chat.whatsapp.com"
+    " או ב-https://whatsapp.com/channel"
+)
+
+
+def _is_whatsapp_channel_path(path: str) -> bool:
+    """`/channel/<id>` with a non-empty id — the bare site is not a channel."""
+    prefix = "/channel/"
+    return path.startswith(prefix) and path[len(prefix) :].strip("/") != ""
+
+
 def _whatsapp_group_validator(value: str | None) -> str | None:
-    """WhatsApp group invite links must be https://chat.whatsapp.com/… — any
-    other scheme/host is a dead or wrong link on the public contact card.
-    Empty/whitespace → None.
+    """WhatsApp updates link: https://chat.whatsapp.com/… (group) or
+    https://[www.]whatsapp.com/channel/<id> (channel). Any other scheme/host
+    is a dead or wrong link on the public page. Empty/whitespace → None.
     """
     if value is None:
         return None
@@ -386,8 +407,13 @@ def _whatsapp_group_validator(value: str | None) -> str | None:
     if stripped == "":
         return None
     parsed = urlparse(stripped)
-    if parsed.scheme != "https" or parsed.netloc.lower() != "chat.whatsapp.com":
-        raise ValueError("קישור קבוצת וואטסאפ חייב להתחיל ב-https://chat.whatsapp.com")
+    host = parsed.netloc.lower()
+    is_group = host in _WHATSAPP_GROUP_HOSTS
+    is_channel = host in _WHATSAPP_CHANNEL_HOSTS and _is_whatsapp_channel_path(
+        parsed.path
+    )
+    if parsed.scheme != "https" or not (is_group or is_channel):
+        raise ValueError(WHATSAPP_UPDATES_LINK_ERROR)
     return stripped
 
 
@@ -1119,7 +1145,7 @@ class ProducerRegister(BaseModel):
             raise ValueError("לא ניתן לבחור גם משלוחים לכל הארץ וגם ערים ספציפיות")
         if self.delivery_nationwide and not self.offers_delivery:
             raise ValueError(
-                '"לכל הארץ" מסומן, אבל "משלוחים" לא. סמני "משלוחים", או בטלי את "לכל הארץ".'
+                '"לכל הארץ" מסומן, אבל "משלוחים" לא. סמנו "משלוחים", או בטלו את "לכל הארץ".'
             )
         return self
 
@@ -1678,6 +1704,16 @@ class ProductCreate(BaseModel):
     # scope; no implication from any other flag, so no defaulting-from.
     is_no_added_sugar: bool = False
     is_low_carb: bool = False
+    # MEH-2662: optional, owner-declared.
+    ingredients: SanitizedDescriptionField | None = None  # capped at 2000 by the type
+    allergens: list[str] | None = Field(
+        None, max_length=50
+    )  # 14 codes + headroom for dupes
+
+    @field_validator("allergens")
+    @classmethod
+    def _validate_allergens(cls, v):
+        return normalize_allergens(v)
 
     @field_validator("image_url", mode="before")
     @classmethod
@@ -1712,6 +1748,16 @@ class ProductUpdate(BaseModel):
     is_lactose_free: bool | None = None
     is_no_added_sugar: bool | None = None  # MEH-1934
     is_low_carb: bool | None = None  # MEH-1934
+    # MEH-2662: exclude_unset → unsent stays put; an explicit null clears.
+    ingredients: SanitizedDescriptionField | None = None  # capped at 2000 by the type
+    allergens: list[str] | None = Field(
+        None, max_length=50
+    )  # 14 codes + headroom for dupes
+
+    @field_validator("allergens")
+    @classmethod
+    def _validate_allergens(cls, v):
+        return normalize_allergens(v)
 
     @field_validator("image_url", mode="before")
     @classmethod
@@ -1750,6 +1796,8 @@ class ProductOut(BaseModel):
     is_lactose_free: bool = False
     is_no_added_sugar: bool = False  # MEH-1934
     is_low_carb: bool = False  # MEH-1934
+    ingredients: str | None = None  # MEH-2662
+    allergens: list[str] | None = None  # MEH-2662
 
     model_config = {"from_attributes": True}
 
@@ -1947,7 +1995,7 @@ class ProducerAdminCreate(BaseModel):
         # delivery_nationwide would otherwise reach the DB and 500.
         if self.delivery_nationwide and not self.offers_delivery:
             raise ValueError(
-                '"לכל הארץ" מסומן, אבל "משלוחים" לא. סמני "משלוחים", או בטלי את "לכל הארץ".'
+                '"לכל הארץ" מסומן, אבל "משלוחים" לא. סמנו "משלוחים", או בטלו את "לכל הארץ".'
             )
         return self
 
@@ -1963,43 +2011,9 @@ AVAILABILITY_STATES = (
 )
 
 
-# MEH-2271 (MEH-1854 chunk 3a): the ONE owner of the enum -> legacy mapping.
-# It used to live in routers/producer_me.py as `_state_to_legacy` with three
-# callers — the state endpoint, the expiry job, and nothing else read the
-# result back, so the pair of columns and the enum were two authorities over
-# one fact (workflow.md Smell #1). Chunk 3a inverts that: `availability_state`
-# is the only thing written, and the two legacy fields exist only as a derived
-# view on `ProducerListOut` for the one release before MEH-2272 removes them.
-#
-# MEH-2272 chunk 1 removed them from ProducerListOut. The remaining callers are
-# the untyped dict responses in routers/producer_me.py (the legacy toggle /
-# status endpoints and GET /dashboard); a later MEH-2272 chunk removes those
-# keys and this function with them.
-#
-# It lives here, beside AVAILABILITY_STATES, because schemas.py is the single
-# module both the routers and the services can import without a cycle —
-# services/availability_validation.py already imports AVAILABILITY_STATES from
-# here, so the arrow only points one way.
-_STATE_TO_LEGACY: dict[str, tuple[bool, str]] = {
-    "accepting_orders": (False, "available"),
-    "available_today": (True, "available"),
-    "full_this_week": (False, "full"),
-    "on_vacation": (False, "vacation"),
-}
-
-
-def state_to_legacy(state: str | None) -> tuple[bool, str]:
-    """Derive the legacy ``(is_available_today, availability_status)`` pair
-    from ``availability_state``.
-
-    Total by construction: an unknown or NULL state falls back to the default
-    row rather than raising. The column is ``NOT NULL`` with a server default
-    (models.py), so the fallback is unreachable through the ORM — it exists so
-    a hand-built dict or a fixture with a missing state cannot 500 a listing.
-    The previous version of this mapping was a bare dict subscript and would
-    have raised ``KeyError`` on exactly that input.
-    """
-    return _STATE_TO_LEGACY.get(state or "", _STATE_TO_LEGACY["accepting_orders"])
+# MEH-2272 chunk 2: `state_to_legacy` (enum -> legacy pair) is gone. Its last
+# callers were the dict responses in routers/producer_me.py; no response
+# carries is_available_today / availability_status any more.
 
 
 # MEH-1490: normalize the Google Place ID. Blank → None (admin clears the
@@ -2323,6 +2337,18 @@ class ProducerUpdate(BaseModel):
     def _validate_whatsapp_group(cls, v):
         return _whatsapp_group_validator(v)
 
+    # MEH-1676: the owner's opt-out for the public «לא מגיעים אליך?» CTA
+    # (column since MEH-1677). Optional so an absent key leaves it alone; an
+    # explicit null is refused because the column is NOT NULL.
+    coverage_cta_enabled: bool | None = None
+
+    @field_validator("coverage_cta_enabled")
+    @classmethod
+    def _coverage_cta_not_null(cls, v):
+        if v is None:
+            raise ValueError("coverage_cta_enabled must be true or false")
+        return v
+
     # MEH-1608: URL/@ → bare handle (the renderer builds the link itself).
     @field_validator("instagram")
     @classmethod
@@ -2372,7 +2398,7 @@ class ProducerUpdate(BaseModel):
         # (services/delivery_validation.py), not this one.
         if dn and od is False:
             raise ValueError(
-                '"לכל הארץ" מסומן, אבל "משלוחים" לא. סמני "משלוחים", או בטלי את "לכל הארץ".'
+                '"לכל הארץ" מסומן, אבל "משלוחים" לא. סמנו "משלוחים", או בטלו את "לכל הארץ".'
             )
         return self
 
@@ -3777,6 +3803,9 @@ class ExperienceUpdate(BaseModel):
     is_recurring: bool | None = None
     recurring_schedule: str | None = None
     is_active: bool | None = None  # MEH-1419: reversible cancel — mirrors EventUpdate
+    # MEH-2663: sign-up happens on WhatsApp, so the host reports the count.
+    # Bookkeeping, not content — the router keeps it out of moderation.
+    participants_count: int | None = Field(None, ge=0, le=500)
 
     @field_validator("title")
     @classmethod
@@ -4047,6 +4076,16 @@ class OutreachLeadOut(BaseModel):
     status: str = "new"
     prefill_token: str | None = None
     prefill_token_expires_at: datetime | None = None
+    # MEH-2633 community-suggestion fields. This model is served ONLY from
+    # admin_outreach.py, every route of which carries require_admin — which is
+    # what makes it the single legal reader of `suggested_by_email`. The public
+    # POST /business-suggestions answers with BusinessSuggestionAck (below),
+    # never with this model.
+    suggested_by_name: str | None = None
+    suggested_by_email: str | None = None
+    suggester_wants_update: bool = False
+    suggestion_reason: str | None = None
+    suggester_thanked_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -4106,6 +4145,143 @@ class OutreachPrefillResponse(BaseModel):
     category: str | None = None
 
 
+# --- MEH-2633 Community business suggestions ---
+#: outreach_leads.phone is VARCHAR(20) (models.py:896). Named here because the
+#: shared PhoneNumberField caps at 30 and cannot know the column it lands in.
+_OUTREACH_PHONE_MAX_LEN = 20
+
+
+class BusinessSuggestionCreate(BaseModel):
+    """Public body for POST /business-suggestions (MEH-2633).
+
+    A visitor suggesting a business that is not on Mehamakor yet. The row it
+    produces is an ordinary OutreachLead with source="community" — nothing is
+    published, and the business still registers itself and passes manual
+    approval + the licence check.
+
+    Field rules worth stating, because each one is a decision:
+
+    - `city` is REQUIRED. REUSES `clean_display_city` (:259), so it gets the
+      same bleach + >=1-letter floor as the registration form's city; "בת ים"
+      and "לוד" clear a 1-letter floor where the >=3 used for names would not.
+    - `instagram` / `phone` / `website`: at least ONE is required, enforced by
+      `_require_one_contact` below — without a way to reach the business the
+      suggestion is unactionable, which is the whole point of the queue. The
+      error text is the approved `<hebrew_copy>` string verbatim.
+    - `company` is a HONEYPOT. No human sees it (Chunk B hides it from sighted
+      users AND from screen readers), so any value at all means a bot. The
+      router answers 201 and stores nothing — never a 4xx, which would tell
+      the bot what tripped it.
+    - `suggester_email` is optional PII. It is normalised through
+      `_normalize_contact_email` (:342) so a cleared field arrives as None
+      rather than 422-ing, and capped at 254 to match the column. It is NEVER
+      echoed back: see BusinessSuggestionAck.
+
+    `Field(max_length=…)` sits at field level on `instagram` / `suggester_name`
+    / `reason`, whose separate `@field_validator`s may return None. That is
+    safe, and deliberately NOT the Annotated form: an `AfterValidator` inside
+    the annotation would have the cap applied to the validator's OUTPUT and
+    blow up with "Unable to apply constraint 'max_length' to supplied value
+    None" (the trap documented at :640-652). `suggester_email` carries no
+    field-level cap for the same reason in reverse — its validator is
+    mode="before", so a cap would land after it.
+    """
+
+    name: SanitizedLabelField = Field(..., min_length=1, max_length=200)
+    city: str = Field(..., max_length=100)
+    phone: PhoneNumberField | None = None
+    instagram: str | None = Field(None, max_length=100)
+    website: SanitizedUrlField | None = None
+    reason: str | None = Field(None, max_length=1000)
+    suggester_name: str | None = Field(None, max_length=100)
+    suggester_email: EmailStr | None = None
+    wants_update: bool = False
+    # Honeypot — see the docstring. Capped so a bot cannot post a novel here.
+    company: str | None = Field(None, max_length=200)
+
+    @field_validator("city")
+    @classmethod
+    def _validate_city(cls, v):
+        return clean_display_city(v)
+
+    # REUSES: backend/app/schemas/schemas.py:406 — _normalize_instagram.
+    # Same reason as OutreachLeadCreate (:4037): the admin list composes
+    # https://instagram.com/{instagram} from the stored value, so a pasted
+    # profile URL or a leading @ would produce a dead link.
+    @field_validator("instagram")
+    @classmethod
+    def _normalize_instagram_handle(cls, v):
+        return _normalize_instagram(v)
+
+    # MEH-2633 security review (04/11), finding 1. PhoneNumberField caps the
+    # INPUT at 30 chars and `_phone_validator` returns `cleaned` — only
+    # [\s()-] removed — while validating the DIGIT projection. So non-digits
+    # survive: "+" * 15 + "0501234567" is accepted at 25 chars, over
+    # outreach_leads.phone VARCHAR(20) (models.py:896), and the INSERT raised
+    # DataError -> an unhandled 500. That 500 was reachable ONLY on the
+    # new-lead path, because the duplicate branch returns before `phone` is
+    # written — which made it a clean existence oracle for an anonymous
+    # caller, defeating the property BusinessSuggestionAck exists to provide.
+    #
+    # Rejecting here means BOTH paths answer 422 for the same body, so the
+    # asymmetry is gone rather than merely harder to reach.
+    #
+    # Deliberately NOT fixed in `_phone_validator`: nine other schemas share
+    # it, and its own comment claims the digit regex "keeps every value inside
+    # the String(20) columns", which is false. That is a pre-existing latent
+    # bug with a wide blast radius and belongs to its own card, not to a
+    # merge-time patch.
+    @field_validator("phone")
+    @classmethod
+    def _phone_fits_the_column(cls, v):
+        if v is not None and len(v) > _OUTREACH_PHONE_MAX_LEN:
+            raise ValueError("מספר טלפון לא תקין")
+        return v
+
+    @field_validator("suggester_name")
+    @classmethod
+    def _sanitize_suggester_name(cls, v):
+        return sanitize_text(v, max_length=100)
+
+    @field_validator("reason")
+    @classmethod
+    def _sanitize_reason(cls, v):
+        return sanitize_text(v, max_length=1000)
+
+    @field_validator("suggester_email", mode="before")
+    @classmethod
+    def _normalize_suggester_email(cls, v):
+        normalized = _normalize_contact_email(v)
+        # The length cap lives here, not in Field(...) — see the docstring.
+        # 254 is the column width and the RFC 5321 maximum for an address.
+        if normalized is not None and len(normalized) > 254:
+            raise ValueError("כתובת אימייל לא תקינה")
+        return normalized
+
+    @model_validator(mode="after")
+    def _require_one_contact(self):
+        if not (self.instagram or self.phone or self.website):
+            raise ValueError("צריך לפחות דרך אחת ליצור קשר עם בית העסק")
+        return self
+
+
+class BusinessSuggestionAck(BaseModel):
+    """The ENTIRE public response to POST /business-suggestions: `{"ok": true}`.
+
+    This model exists so the no-leak guarantee is structural rather than a
+    promise about what the router happens to return. A duplicate suggestion and
+    a brand-new one produce byte-identical bodies, so the endpoint cannot be
+    used to probe whether a business is already in the outreach queue; and
+    there is no field here that could ever carry a lead id or the suggester's
+    email.
+
+    # DO NOT add fields to this model — every addition is a disclosure on an
+    #        unauthenticated endpoint (MEH-2633).
+    """
+
+    ok: bool = True
+
+
 # --- MEH-52 Group Buys ---
 class GroupBuyCommitOut(BaseModel):
     id: UUID
@@ -4136,6 +4312,10 @@ class GroupBuyOut(BaseModel):
     deadline: datetime
     city: str | None = None
     fulfillment_note: str | None = None
+    # MEH-2621: pickup and delivery as two answers. Rows created before this
+    # carry only fulfillment_note; new rows carry one or both of these.
+    pickup_note: str | None = None
+    delivery_note: str | None = None
     status: str
     commits_count: int = 0
     created_at: datetime
@@ -4168,11 +4348,16 @@ class GroupBuyCreate(BaseModel):
     deadline: datetime
     city: str | None = Field(None, max_length=100)
     # MEH-1457: free-text "מתי ואיך מקבלים" (OFN "Ready for").
-    # MEH-2453: required. A participant from another city reads it before she
-    # joins; without it she cannot tell whether the product reaches her.
-    # Existing rows keep NULL (the column stays nullable); only new creates
-    # must carry it.
-    fulfillment_note: str = Field(..., max_length=1000)
+    # MEH-2453: a participant from another city reads it before she joins;
+    # without it she cannot tell whether the product reaches her.
+    # MEH-2621: split into two answers, pickup and delivery (Shopify / Local
+    # Line ask the seller about each separately). At least ONE of the three
+    # is required (_require_pickup_or_delivery). fulfillment_note stays
+    # accepted so the pre-split dashboard form keeps working until it moves
+    # to the two fields (Expand-Contract, ADR-007).
+    fulfillment_note: str | None = Field(None, max_length=1000)
+    pickup_note: str | None = Field(None, max_length=1000)
+    delivery_note: str | None = Field(None, max_length=1000)
 
     # MEH-1626 chunk 1: description gets the same bleach every other
     # description field in this module has (EventCreate:2528, HomeProductCreate,
@@ -4184,15 +4369,29 @@ class GroupBuyCreate(BaseModel):
     def _sanitize_description(cls, v):
         return sanitize_text(v, max_length=2000)
 
-    @field_validator("fulfillment_note")
+    @field_validator("fulfillment_note", "pickup_note", "delivery_note")
     @classmethod
-    def _require_fulfillment_note(cls, v: str) -> str:
-        # Blank, or no real words ("." / "כן"): the MEH-555 letter floor, with
-        # the field's own message rather than the generic one.
+    def _clean_fulfillment_text(cls, v: str | None, info) -> str | None:
+        # Blank means "not given" — the model validator below decides whether
+        # that is allowed. Given but with no real words ("." / "כן"): the
+        # MEH-555 letter floor, with the field's own message.
+        if v is None:
+            return None
         v = v.strip()
+        if not v:
+            return None
         if len(_LETTER_REGEX.sub("", v)) < 3:
-            raise ValueError("יש לכתוב מתי ואיך מקבלים את המוצרים")
+            if info.field_name == "fulfillment_note":
+                raise ValueError("יש לכתוב מתי ואיך מקבלים את המוצרים")
+            raise ValueError("יש למלא איסוף או משלוח")
         return v
+
+    @model_validator(mode="after")
+    def _require_pickup_or_delivery(self):
+        # MEH-2621: copy approved by Sapir 30/10.
+        if not (self.pickup_note or self.delivery_note or self.fulfillment_note):
+            raise ValueError("יש למלא איסוף או משלוח")
+        return self
 
     @field_validator("deadline")
     @classmethod

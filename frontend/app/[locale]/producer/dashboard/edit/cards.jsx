@@ -30,6 +30,7 @@ import KashrutBadgeStrip, { CODE_TO_KEY } from "@/components/KashrutBadgeStrip";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import { detailToMessage } from "@/lib/errors";
+import { makeDeliveryCodeResolver } from "@/lib/delivery-errors";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import { MIN_ESTABLISHED_YEAR, currentIsraelYear } from "@/lib/established-year";
 import {
@@ -516,7 +517,7 @@ function AssistForm({ t, assist }) {
   const canGenerate = !!sells.trim();
 
   return (
-    <div className="bg-primary/5 border border-primary/15 rounded-[12px] p-3 space-y-3">
+    <div className="bg-primary/5 border border-primary/15 rounded-md p-3 space-y-3">
       <div className="flex items-center gap-2">
         <Sparkle size={16} weight="fill" className="text-accent shrink-0" aria-hidden="true" />
         <strong className="text-sm flex-1">{t("assist_title")}</strong>
@@ -1753,7 +1754,12 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
-      setErrorMsg(detailToMessage(err?.response?.data?.detail) || t("save_error"));
+      // MEH-1943 chunk 3: the delivery_validation.py 422s carry a `code`;
+      // unknown codes fall back to the server `message`.
+      setErrorMsg(
+        detailToMessage(err?.response?.data?.detail, makeDeliveryCodeResolver(t)) ||
+          t("save_error"),
+      );
     } finally {
       setSaving(false);
     }
@@ -2464,7 +2470,7 @@ export function BusinessNameCard({ profile }) {
 
       {justSent && (
         <div
-          className="bg-green-50 border border-primary rounded-[12px] p-4 text-sm text-text"
+          className="bg-green-50 border border-primary rounded-md p-4 text-sm text-text"
           role="status"
           data-testid="name-change-sent"
         >
@@ -2474,7 +2480,7 @@ export function BusinessNameCard({ profile }) {
 
       {pending ? (
         <div
-          className="bg-yellow-50 border border-yellow-300 rounded-[12px] p-4 space-y-1"
+          className="bg-yellow-50 border border-yellow-300 rounded-md p-4 space-y-1"
           role="status"
           data-testid="name-change-pending"
         >

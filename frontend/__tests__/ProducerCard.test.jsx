@@ -162,9 +162,7 @@ const fullProducer = {
   city: "רחובות",
   images: ["https://example.com/photo.jpg"],
   verification_tier: "verified",
-  // MEH-291 Phase 3 — new field (legacy is_available_today preserved during overlap).
   availability_state: "available_today",
-  is_available_today: true,
   reviews_count: 12,
   avg_rating: 4.5,
   short_description: "גבינות עיזים וכבשים, כולן מחלב טרי.",
@@ -184,7 +182,6 @@ const minimalProducer = {
   images: [],
   verification_tier: null,
   availability_state: "accepting_orders",
-  is_available_today: false,
   reviews_count: 0,
   avg_rating: null,
   short_description: null,
@@ -814,6 +811,36 @@ describe("ProducerCard — badge overflow chip (MEH-991)", () => {
     expect(chip).toHaveAttribute("aria-haspopup");
     expect(chip).toHaveAttribute("aria-expanded", "false");
     expect(chip).toHaveAttribute("aria-label", "הצגת עוד 2 תגיות");
+  });
+
+  // MEH-1508 chunk 3ב-2 (axe `target-size`, CI mobile /producers): the +N keeps
+  // a 44×44 hit area (min-h/min-w 44) inside a 24px layout box by pulling it
+  // back with a negative margin. When the strip WRAPS the +N onto a second line
+  // (a long first-row badge such as «100% צמחוני» at 393px), that margin
+  // reaches upward into the row above; with the old 4px row gap the +N — later
+  // in DOM, so painted on top — covered ~5px of «חדש» and left it 41.5×19.3,
+  // below WCAG 2.2 2.5.8's 24×24. The row gap must be at least the +N's
+  // vertical pull-back, so a wrapped +N can touch the row above but never
+  // cover it. Read off the Tailwind spacing scale (1 unit = 4px).
+  it("+N keeps a 44px target whose pull-back cannot cover a badge on the row above", () => {
+    render(<ProducerCard producer={overflowProducer} />);
+    const chip = screen.getByTestId("badge-overflow");
+    const chipClasses = chip.className.split(/\s+/);
+    expect(chipClasses).toContain("min-h-[44px]");
+    expect(chipClasses).toContain("min-w-[44px]");
+    const strip = chip.closest("div.absolute");
+    expect(strip, "the +N must sit in the absolutely-positioned badge strip").not.toBeNull();
+    const stripClasses = strip.className.split(/\s+/);
+    expect(stripClasses, "the strip wraps, which is the case this guards").toContain("flex-wrap");
+    const units = (re, classes) => {
+      const hit = classes.map((c) => re.exec(c)).find(Boolean);
+      return hit ? Number(hit[1]) : null;
+    };
+    const pullBack = units(/^-m[ty]?-(\d+(?:\.\d+)?)$/, chipClasses);
+    expect(pullBack, "the +N's vertical negative margin must be readable").not.toBeNull();
+    const rowGap = units(/^gap-y-(\d+(?:\.\d+)?)$/, stripClasses) ?? units(/^gap-(\d+(?:\.\d+)?)$/, stripClasses);
+    expect(rowGap, "the strip's row gap must be readable").not.toBeNull();
+    expect(rowGap).toBeGreaterThanOrEqual(pullBack);
   });
 
   it("tapping +N opens a popover listing ONLY the hidden badge labels (MEH-1547)", () => {

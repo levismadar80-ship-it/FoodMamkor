@@ -59,7 +59,6 @@ from app.schemas.schemas import (
     ProductOut,
     ProductUpdate,
     ReviewInviteLinkOut,
-    state_to_legacy,
 )
 from app.services.auth_notifications import (
     notify_admin_new_producer,
@@ -327,8 +326,18 @@ def _pending_and_approvable(db, producer) -> bool:
 # city through the locations CRUD, which pings nobody. That gap is real and
 # pre-dates this change; it is MEH-2073 chunk 2's to close by moving the ping
 # into `_sync_producer_city_from_primary`, not this handler's to paper over.
+#
+# MEH-2626: `whatsapp_group` (the WhatsApp updates link) joined — it goes live
+# on the public page the moment it is saved, and a swapped link sends every
+# visitor who taps it to a different group or channel.
 SENSITIVE_FIELDS = frozenset(
-    {"phone", "vegan_scope", "vegetarian_scope", "gluten_free_facility"}
+    {
+        "phone",
+        "vegan_scope",
+        "vegetarian_scope",
+        "gluten_free_facility",
+        "whatsapp_group",
+    }
 )
 
 # MEH-1938 follow-up (Sapir, 02/09) — the single-primary invariant speaks with
@@ -350,6 +359,21 @@ PRIMARY_MUST_BE_BRANCH = (
     "המיקום הראשי חייב להיות סניף. "
     "אם אין לעסק כתובת פיזית, אפשר להשאיר את המיקום הראשי ריק."
 )
+
+# MEH-1943 chunk 1: `{code, message, params}` (the MEH-1164 / MEH-1940 shape).
+# `message` is the approved sentence above, word for word, so a consumer that
+# still renders `detail.message` shows exactly what it showed before; the
+# frontend maps the `code` to settings.locations.errors.<code> (he + en).
+ONE_PRIMARY_REQUIRED_DETAIL = {
+    "code": "one_primary_required",
+    "message": ONE_PRIMARY_REQUIRED,
+    "params": {},
+}
+PRIMARY_MUST_BE_BRANCH_DETAIL = {
+    "code": "primary_must_be_branch",
+    "message": PRIMARY_MUST_BE_BRANCH,
+    "params": {},
+}
 
 
 def _snapshot_sensitive(producer) -> dict:
@@ -624,6 +648,8 @@ def update_my_producer(
         "instagram",
         "website",
         "whatsapp_group",
+        # MEH-1676: the owner's opt-out for the public coverage CTA.
+        "coverage_cta_enabled",
         "primary_contact_method",
         "contact_email",
         "facebook",
@@ -906,8 +932,9 @@ def update_my_producer(
 # is_available_today or availability_status any more, so the two mapping
 # helpers that lived here are gone. What replaced them:
 #
-#   enum -> legacy   schemas.state_to_legacy — one caller, the ProducerListOut
-#                    derivation. Not called from a router at all.
+#   enum -> legacy   nothing. MEH-2272 removed the derived pair from every
+#                    response (typed contract in chunk 1, these dict responses
+#                    in chunk 2) and deleted schemas.state_to_legacy with them.
 #   legacy -> enum   _status_to_state below, which reads the CURRENT STATE
 #                    rather than the two columns. That is the whole point: the
 #                    old _legacy_to_state consulted columns this module had
@@ -977,12 +1004,9 @@ def toggle_availability(
         )
     producer.last_active_at = utc_now()
     db.commit()
-    return {
-        # Derived for the response, not read back off a column. MEH-2272
-        # removes this key together with the field on ProducerListOut.
-        "is_available_today": producer.availability_state == "available_today",
-        "availability_state": producer.availability_state,
-    }
+    # MEH-2272 chunk 2: the derived `is_available_today` key is gone — the
+    # enum is the only availability field any response carries.
+    return {"availability_state": producer.availability_state}
 
 
 # MEH-12: durable availability status ("open | full | vacation") that
@@ -1004,7 +1028,12 @@ def set_availability_status(
     if data.status not in AVAILABILITY_STATUSES:
         raise HTTPException(
             status_code=400,
-            detail=f"סטטוס לא תקין. חייב להיות אחד מתוך: {sorted(AVAILABILITY_STATUSES)}",
+            # MEH-1943 chunk 2: the allowed set moves to params, never the message.
+            detail={
+                "code": "invalid_availability_status",
+                "message": "סטטוס לא תקין",
+                "params": {"allowed": sorted(AVAILABILITY_STATUSES)},
+            },
         )
     # AUD-039: reject a past return date here too (Israel tz), so the legacy
     # surface can't persist an already-expired vacation.
@@ -1027,9 +1056,8 @@ def set_availability_status(
     producer.vacation_until = data.vacation_until if data.status == "vacation" else None
     producer.last_active_at = utc_now()
     db.commit()
+    # MEH-2272 chunk 2: the derived `availability_status` key is gone.
     return {
-        # Derived, same as the toggle above.
-        "availability_status": state_to_legacy(producer.availability_state)[1],
         "availability_state": producer.availability_state,
         "vacation_until": producer.vacation_until.isoformat()
         if producer.vacation_until
@@ -1055,7 +1083,12 @@ def set_availability_state(
     if data.state not in AVAILABILITY_STATES:
         raise HTTPException(
             status_code=400,
-            detail=f"מצב לא תקין. חייב להיות אחד מתוך: {', '.join(AVAILABILITY_STATES)}",
+            # MEH-1943 chunk 2: the allowed set moves to params, never the message.
+            detail={
+                "code": "invalid_availability_state",
+                "message": "מצב לא תקין",
+                "params": {"allowed": list(AVAILABILITY_STATES)},
+            },
         )
 
     producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
@@ -1118,26 +1151,10 @@ def dashboard(
         or 0
     )
 
-    # MEH-2271 — bound here rather than spread inline from a zip(): the
-    # comment below is load-bearing and a zip idiom buries it (CI reviewer,
-    # #3460).
-    _derived_today, _derived_status = state_to_legacy(producer.availability_state)
-
     return {
         "producer": {
             "id": str(producer.id),
             "name": producer.name,
-            # MEH-2271 — both derived from the enum, not read off the two
-            # columns this module no longer writes. Reading the columns here
-            # would report the value they froze at, which is the exact bug
-            # deriving everywhere else exists to prevent. This is the SECOND
-            # call site of state_to_legacy, and Sapir's ruling of 2026-09-06 asked for
-            # exactly one (the schema derivation) — the deviation is stated in
-            # the PR body rather than resolved by leaving a stale read here.
-            # MEH-2272 removes both keys; the frontend dashboard already reads
-            # only availability_state (app/[locale]/producer/dashboard/page.js).
-            "is_available_today": _derived_today,
-            "availability_status": _derived_status,
             # MEH-291 — durable 4-value enum, the only one written.
             # Defensive default in case ORM ever returns NULL despite NOT NULL.
             "availability_state": producer.availability_state or "accepting_orders",
@@ -1767,7 +1784,12 @@ def request_kashrut_badge(
     if body.badge_code not in VALID_BADGE_CODES:
         raise HTTPException(
             status_code=400,
-            detail=f"קוד badge לא תקין. ערכים מותרים: {', '.join(sorted(VALID_BADGE_CODES))}",
+            # MEH-1943 chunk 2: the allowed set moves to params, never the message.
+            detail={
+                "code": "invalid_badge_code",
+                "message": "קוד תג לא תקין",
+                "params": {"allowed": sorted(VALID_BADGE_CODES)},
+            },
         )
     producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
     if not producer:
@@ -2613,7 +2635,7 @@ def create_my_location(
     #      owner adding her only pickup point, and per MEH-213 she legitimately
     #      has no pin at all. Refusing her would block a valid business shape.
     if loc.is_primary and loc.kind != "branch":
-        raise HTTPException(status_code=422, detail=PRIMARY_MUST_BE_BRANCH)
+        raise HTTPException(status_code=422, detail=PRIMARY_MUST_BE_BRANCH_DETAIL)
 
     # Single-primary: the first BRANCH is primary; an explicit is_primary=true
     # on a later one clears the existing primary. A producer whose only rows
@@ -2680,13 +2702,13 @@ def update_my_location(  # noqa: PLR0913 — all 6 args are FastAPI-injected (sl
         # DeliveryBlock.jsx:468). A primary whose own marker disappears under a
         # layer toggle is a third answer to a question that must have one.
         if loc.kind != "branch":
-            raise HTTPException(status_code=422, detail=PRIMARY_MUST_BE_BRANCH)
+            raise HTTPException(status_code=422, detail=PRIMARY_MUST_BE_BRANCH_DETAIL)
         _clear_other_primaries(db, user.producer_id, loc.id)
         loc.is_primary = True
     elif want_primary is False and loc.is_primary:
         # Can't directly demote the sole primary (that would leave zero) — the
         # owner promotes another location instead (which clears this one).
-        raise HTTPException(status_code=422, detail=ONE_PRIMARY_REQUIRED)
+        raise HTTPException(status_code=422, detail=ONE_PRIMARY_REQUIRED_DETAIL)
 
     # MEH-2141: re-derive `Producer.city` on exactly two events — this row was
     # just PROMOTED to primary (the primary's identity changed), or this row is
@@ -2743,7 +2765,7 @@ def delete_my_location(
             is not None
         )
         if others_remain:
-            raise HTTPException(status_code=422, detail=ONE_PRIMARY_REQUIRED)
+            raise HTTPException(status_code=422, detail=ONE_PRIMARY_REQUIRED_DETAIL)
 
     # Deleting the LAST remaining location is allowed and leaves no primary.
     # The business stays approved but is unpinned and cannot submit — STRICT

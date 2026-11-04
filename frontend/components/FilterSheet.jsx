@@ -209,6 +209,39 @@ export default function FilterSheet({
     if (dy > DRAG_CLOSE_PX) onClose();
   };
 
+  // One diet pill — shared by the any-product grid and the 100% grid
+  // (MEH-1508 chunk 3ב-2 split the group in two; the pill itself is the
+  // MEH-2169 form, unchanged). `extraClass` lets the 100% cell give the pill
+  // flex-1 beside its ⓘ.
+  const renderDietPill = (chip, extraClass = "") => {
+    const active = !!chipState[chip.key];
+    const icon = chipIcon(chip.key);
+    return (
+      <button
+        key={chip.key}
+        type="button"
+        role="switch"
+        aria-checked={active}
+        data-testid={`chip-${chip.key}`}
+        onClick={() => onToggleChip(chip.key)}
+        // whitespace-nowrap: the card requires single-line pills at
+        // both densities. The longest diet label is "ללא סוכר מוסף";
+        // measured widths are in the PR body. nowrap makes a future
+        // longer label overflow VISIBLY (one pill wider than its
+        // column) instead of silently growing every pill's height,
+        // which is the failure this constraint exists to catch.
+        className={`flex items-center justify-center gap-1.5 min-h-[44px] lg:min-h-[36px] rounded-full border px-2.5 py-2 lg:py-1 text-sm lg:text-[13px] font-medium whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${extraClass} ${
+          active
+            ? "bg-primary text-white border-primary"
+            : "bg-surface text-text border-border hover:border-primary"
+        }`}
+      >
+        {icon && <span aria-hidden="true">{icon}</span>}
+        {chip.label}
+      </button>
+    );
+  };
+
   const overlay = (
     <div>
       {/* Backdrop — dimmed scrim on mobile, invisible click-away layer on
@@ -217,7 +250,7 @@ export default function FilterSheet({
         type="button"
         aria-label={t("filters.sheet.close_aria")}
         onClick={onClose}
-        className="fixed inset-0 z-[1200] bg-green-900/50 lg:bg-transparent"
+        className="fixed inset-0 z-[1200] bg-black/40 lg:bg-transparent"
       />
       <div
         ref={panelRef}
@@ -262,6 +295,13 @@ export default function FilterSheet({
           // on real data. On /map every group is populated, so this branch
           // never fires there and that surface is unchanged.
           if (!groupChips.length) return null;
+          // MEH-1508 chunk 3ב-2: the diet group splits on the contract scope —
+          // the any-product pills sit under the group scope line, the
+          // business-scope 100% pills after it (see the diet block below).
+          const dietAnyProduct =
+            group === "diet" ? groupChips.filter((chip) => chip.scope === "any-product") : [];
+          const dietDeclared =
+            group === "diet" ? groupChips.filter((chip) => chip.scope !== "any-product") : [];
           return (
           <div key={group}>
             {/* MEH-1481: desktop-only density — tighter top/bottom gaps on lg+
@@ -282,58 +322,95 @@ export default function FilterSheet({
                 emptied by runtime gating (/producers, MEH-1934 DIET_CHIP_MIN, and
                 MEH-2170 next) cannot leave an orphan scope line explaining nothing —
                 the 5-state 0-items branch covers the line and the heading together. */}
-            {group === "diet" && (
-              <p className="text-xs text-fg-muted m-0 mb-1 lg:mb-0.5">
-                {t("filters.sheet.diet_scope")}
-              </p>
-            )}
-
             {group === "diet" ? (
-              /* MEH-2169 — the diet axes return to the MEH-1478 2-col pill GRID
-                 (grid-template-columns: repeat(2, minmax(0,1fr))). MEH-1507 had
-                 reverted that grid to full-width rows for one reason only: a row
-                 can carry a subtext line and a pill cannot. The group line above
-                 removes that reason, so the compact form comes back and takes ~5
-                 rows' worth of height out of the sheet.
-                 DELIBERATE DEVIATION from MEH-1478, which used `aria-pressed`:
-                 these stay role="switch" + aria-checked, like the sibling rows.
-                 Not cosmetic — __tests__/ProducersFilterSheet.test.jsx:203-204
-                 reads `chip-gluten_free`'s aria-checked on the /producers mount of
-                 THIS component, and that file is outside this card's scope. Keeping
-                 the ARIA identical also keeps "live-apply toggle" one vocabulary
-                 across the sheet; only the visual form differs between the two
-                 groups. Icon (aria-hidden) + label centred, label stays the
-                 accessible name; data-testid preserved per docs/E2E-LOCATORS.md. */
-              <div className="grid grid-cols-2 gap-1.5 lg:gap-1">
-                {groupChips.map((chip) => {
-                  const active = !!chipState[chip.key];
-                  const icon = chipIcon(chip.key);
-                  return (
-                    <button
-                      key={chip.key}
-                      type="button"
-                      role="switch"
-                      aria-checked={active}
-                      data-testid={`chip-${chip.key}`}
-                      onClick={() => onToggleChip(chip.key)}
-                      // whitespace-nowrap: the card requires single-line pills at
-                      // both densities. The longest diet label is "ללא סוכר מוסף";
-                      // measured widths are in the PR body. nowrap makes a future
-                      // longer label overflow VISIBLY (one pill wider than its
-                      // column) instead of silently growing every pill's height,
-                      // which is the failure this constraint exists to catch.
-                      className={`flex items-center justify-center gap-1.5 min-h-[44px] lg:min-h-[36px] rounded-full border px-2.5 py-2 lg:py-1 text-sm lg:text-[13px] font-medium whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
-                        active
-                          ? "bg-primary text-white border-primary"
-                          : "bg-surface text-text border-border hover:border-primary"
-                      }`}
-                    >
-                      {icon && <span aria-hidden="true">{icon}</span>}
-                      {chip.label}
-                    </button>
-                  );
-                })}
-              </div>
+              <>
+                {/* MEH-1508 chunk 3ב-2 (decision 03/11) — the scope line governs
+                    ONLY the any-product pills. «עסקים שיש להם מוצרים כאלה בקטלוג»
+                    is false for the 100% pair: the backend matches ?vegan_all on
+                    the declaration alone (producer_listing.py), so a business
+                    with zero marked products qualifies. The line and the pills it
+                    describes therefore share one block, and the 100% pills
+                    (scope `business`) render AFTER it, outside it — ordering
+                    only, no new heading, no new copy. The split keys on the
+                    contract's own `scope` field, so a future diet axis lands on
+                    the right side of the line by declaring its scope.
+                    5-state: the block (line included) renders only when at least
+                    one any-product pill survives runtime gating, so the line can
+                    never sit orphaned above the 100% pair alone. */}
+                {dietAnyProduct.length > 0 && (
+                  <div>
+                    <p className="text-xs text-fg-muted m-0 mb-1 lg:mb-0.5">
+                      {t("filters.sheet.diet_scope")}
+                    </p>
+                    {/* MEH-2169 — the diet axes return to the MEH-1478 2-col pill GRID
+                       (grid-template-columns: repeat(2, minmax(0,1fr))). MEH-1507 had
+                       reverted that grid to full-width rows for one reason only: a row
+                       can carry a subtext line and a pill cannot. The group line above
+                       removes that reason, so the compact form comes back and takes ~5
+                       rows' worth of height out of the sheet.
+                       DELIBERATE DEVIATION from MEH-1478, which used `aria-pressed`:
+                       these stay role="switch" + aria-checked, like the sibling rows.
+                       Not cosmetic — __tests__/ProducersFilterSheet.test.jsx:203-204
+                       reads `chip-gluten_free`'s aria-checked on the /producers mount of
+                       THIS component, and that file is outside this card's scope. Keeping
+                       the ARIA identical also keeps "live-apply toggle" one vocabulary
+                       across the sheet; only the visual form differs between the two
+                       groups. Icon (aria-hidden) + label centred, label stays the
+                       accessible name; data-testid preserved per docs/E2E-LOCATORS.md. */}
+                    <div className="grid grid-cols-2 gap-1.5 lg:gap-1">
+                      {dietAnyProduct.map((chip) => renderDietPill(chip))}
+                    </div>
+                  </div>
+                )}
+                {dietDeclared.length > 0 && (
+                  /* MEH-1508 chunk 3ב-2 — each 100% pill carries its evidence in
+                     an ⓘ: the SAME ui/Popover the quality/service rows use below
+                     (tap-opened; InfoTooltip is hover-only, see the row block),
+                     and the SAME string — the axis's contract `subtext`
+                     «לפי הצהרת בית העסק» (lib/filter-taxonomy.js) via
+                     chipSubtext(). The ⓘ is a sibling of the switch (no button
+                     in a button), leads the pill (the panel grows inward from
+                     the inline-start, as on the rows), and is a full 44×44 hit
+                     area. w-36: the left column's ⓘ sits ~185px from the
+                     panel's left edge at 375px, so a wider bubble would cross it. */
+                  <div
+                    className={`grid grid-cols-2 gap-1.5 lg:gap-1 ${dietAnyProduct.length > 0 ? "mt-1.5 lg:mt-1" : ""}`}
+                  >
+                    {dietDeclared.map((chip) => {
+                      const subtext = chipSubtext(chip);
+                      return (
+                        <div key={chip.key} className="flex items-center min-w-0">
+                          {subtext && (
+                            <Popover
+                              placement="bottom"
+                              contentClassName="w-36"
+                              contentTestId={`chip-info-panel-${chip.key}`}
+                              trigger={
+                                <button
+                                  type="button"
+                                  data-testid={`chip-info-${chip.key}`}
+                                  aria-label={subtext}
+                                  className="inline-flex shrink-0 items-center justify-center min-h-[44px] min-w-[44px] text-fg-muted focus:outline-none focus-visible:outline-none group"
+                                >
+                                  <span
+                                    aria-hidden="true"
+                                    className="inline-flex items-center justify-center w-5 h-5 rounded-full border border-fg-muted/40 text-[10px] leading-none transition group-hover:bg-fg-muted/10 group-focus-visible:ring-2 group-focus-visible:ring-primary/40"
+                                  >
+                                    i
+                                  </span>
+                                </button>
+                              }
+                            >
+                              {subtext}
+                            </Popover>
+                          )}
+                          {renderDietPill(chip, "flex-1 min-w-0")}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
             ) : (
             /* MEH-1507: the quality + service groups stay full-width ROWS —
                 leading icon + label at the inline-start, a Switch at the

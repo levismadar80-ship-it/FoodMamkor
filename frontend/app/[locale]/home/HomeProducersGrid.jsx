@@ -480,7 +480,7 @@ export function HomeProducersGrid({
             </p>
           )}
           {showNewUserHint && visibleProducers.length > 0 && (
-            <div className="flex items-center gap-2 bg-green-50 border border-primary/20 rounded-[12px] px-4 py-2.5 mb-4 text-sm text-primary w-fit">
+            <div className="flex items-center gap-2 bg-green-50 border border-primary/20 rounded-md px-4 py-2.5 mb-4 text-sm text-primary w-fit">
               <span className="relative flex h-2.5 w-2.5 flex-shrink-0">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-60" />
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary" />

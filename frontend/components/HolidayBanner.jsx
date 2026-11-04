@@ -5,6 +5,7 @@ import { Link } from "@/i18n/navigation";
 import { X } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { getActiveHoliday } from "@/lib/holidays";
+import HolidayIcon from "@/components/HolidayIcon";
 import api from "@/lib/api";
 
 const DISMISS_KEY = "holiday_banner_dismissed";
@@ -61,8 +62,8 @@ export default function HolidayBanner({ suppressed = false, onVisibilityChange }
 
   const searchHref = `/producers?q=${encodeURIComponent(holiday.searchParams.q)}`;
   const label = holiday.upcoming
-    ? t("approaching", { name: holiday.name, emoji: holiday.emoji })
-    : `${holiday.name} ${holiday.emoji}`;
+    ? t("approaching", { name: holiday.name })
+    : holiday.name;
 
   return (
     <div
@@ -73,7 +74,8 @@ export default function HolidayBanner({ suppressed = false, onVisibilityChange }
       className="relative mx-4 md:mx-auto md:max-w-3xl rounded-[16px] px-5 py-4 flex items-center gap-4 shadow-sm"
       style={{ backgroundColor: holiday.color + "18", border: `1.5px solid ${holiday.color}40` }}
     >
-      <span className="text-2xl shrink-0" aria-hidden="true">{holiday.emoji}</span>
+      {/* MEH-1687 D: Phosphor icon, not a colour emoji — 1em of this text-2xl slot. */}
+      <span className="text-2xl shrink-0 flex" aria-hidden="true"><HolidayIcon name={holiday.icon} /></span>
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-text text-sm leading-snug">{label}</p>
         <p className="text-fg-muted text-xs mt-0.5 leading-snug line-clamp-1">{holiday.tagline}</p>

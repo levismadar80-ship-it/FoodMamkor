@@ -205,6 +205,7 @@ def test_sensitive_fields_are_all_writable(client, db):
         "vegan_scope": "all",
         "vegetarian_scope": "all",
         "gluten_free_facility": "dedicated",
+        "whatsapp_group": "https://whatsapp.com/channel/0029VaPing",  # MEH-2626
     }
     assert set(values) == set(SENSITIVE_FIELDS), (
         "this test must cover every sensitive field — update `values` when "
@@ -405,7 +406,9 @@ def test_deleting_the_primary_with_a_survivor_is_refused_and_pings_nothing(
         )
 
     assert resp.status_code == 422, resp.text
-    assert resp.json()["detail"] == "חובה מיקום ראשי אחד"
+    # MEH-1943: the 422 is {code, message, params}; the sentence is unchanged.
+    assert resp.json()["detail"]["code"] == "one_primary_required"
+    assert resp.json()["detail"]["message"] == "חובה מיקום ראשי אחד"
     ping.assert_not_called()
 
 

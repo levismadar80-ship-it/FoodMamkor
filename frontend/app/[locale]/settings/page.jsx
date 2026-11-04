@@ -51,7 +51,7 @@ function SettingsSkeleton({ label }) {
     >
       <span className="sr-only">{label}</span>
       {/* h1: text-3xl line ≈ h-9, mb-6 — same slot as the real heading */}
-      <div className="h-9 w-48 bg-border rounded-[12px] animate-pulse mb-6" />
+      <div className="h-9 w-48 bg-border rounded-md animate-pulse mb-6" />
       {/* tab bar: p-1 pill + py-2 buttons ≈ 46px, mb-8 */}
       <div className="h-[46px] w-full max-w-xs bg-border rounded-full animate-pulse mb-8" />
       <div className="space-y-4">
@@ -389,7 +389,7 @@ export function ProfileTab() {
             value={user.email || ""}
             readOnly
             disabled
-            className="w-full border border-border rounded-[12px] px-3 py-2 bg-background-alt text-fg-muted cursor-not-allowed"
+            className="w-full border border-border rounded-md px-3 py-2 bg-background-alt text-fg-muted cursor-not-allowed"
             dir="ltr"
           />
           <p className="text-xs text-fg-muted mt-1 text-right">
@@ -436,7 +436,7 @@ export function ProfileTab() {
         <button
           type="submit"
           disabled={!canSave || saving}
-          className="bg-primary text-white px-6 py-2.5 rounded-[12px] hover:bg-primary-dark transition font-medium disabled:opacity-50"
+          className="bg-primary text-white px-6 py-2.5 rounded-md hover:bg-primary-dark transition font-medium disabled:opacity-50"
         >
           {saving ? tCommon("saving") : tCommon("save_cta")}
         </button>
@@ -559,7 +559,7 @@ function PasswordChangeCard({ isOAuth }) {
               onChange={(e) => setCurrent(e.target.value)}
               required
               // eslint-disable-next-line no-restricted-syntax -- rtl-ok: eye toggle inside dir="ltr" input
-              className="w-full border border-border rounded-[12px] pr-11 pl-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition"
+              className="w-full border border-border rounded-md pr-11 pl-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition"
               dir="ltr"
             />
             <button
@@ -615,7 +615,7 @@ function PasswordChangeCard({ isOAuth }) {
               required
               aria-invalid={mismatch || undefined}
               // rtl-ok
-              className={`w-full border rounded-[12px] pr-11 pl-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition ${mismatch ? "border-red-400" : "border-border"}`}
+              className={`w-full border rounded-md pr-11 pl-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition ${mismatch ? "border-red-400" : "border-border"}`}
               dir="ltr"
             />
             <button
@@ -630,7 +630,7 @@ function PasswordChangeCard({ isOAuth }) {
             </button>
           </div>
           {mismatch && (
-            <p className="text-xs text-red-500 mt-1 text-right" role="alert">{t("mismatch_error")}</p>
+            <p className="text-xs text-error mt-1 text-right" role="alert">{t("mismatch_error")}</p>
           )}
         </div>
 
@@ -645,7 +645,7 @@ function PasswordChangeCard({ isOAuth }) {
         <button
           type="submit"
           disabled={!canSave || saving}
-          className="bg-primary text-white px-6 py-2.5 rounded-[12px] hover:bg-primary-dark transition font-medium disabled:opacity-50"
+          className="bg-primary text-white px-6 py-2.5 rounded-md hover:bg-primary-dark transition font-medium disabled:opacity-50"
         >
           {saving ? t("submit_saving") : t("submit_cta")}
         </button>
@@ -691,26 +691,26 @@ function LogoutAllDevicesCard() {
         <button
           type="button"
           onClick={() => setConfirming(true)}
-          className="border border-amber-500 text-amber-700 px-5 py-2 rounded-[12px] text-sm font-medium hover:bg-amber-50 transition"
+          className="border border-amber-500 text-amber-700 px-5 py-2 rounded-md text-sm font-medium hover:bg-amber-50 transition"
         >
           {t("heading")}
         </button>
       ) : (
-        <div className="rounded-[12px] bg-amber-50 border border-amber-200 p-4 space-y-3">
+        <div className="rounded-md bg-amber-50 border border-amber-200 p-4 space-y-3">
           <p className="text-sm text-amber-800 font-medium">{t("confirm_prompt")}</p>
           <div className="flex gap-2">
             <button
               type="button"
               onClick={handleLogout}
               disabled={loading}
-              className="bg-amber-500 text-white px-5 py-2 rounded-[12px] text-sm font-medium hover:bg-amber-600 transition disabled:opacity-50"
+              className="bg-amber-500 text-white px-5 py-2 rounded-md text-sm font-medium hover:bg-amber-600 transition disabled:opacity-50"
             >
               {loading ? t("confirm_submitting") : t("confirm_submit")}
             </button>
             <button
               type="button"
               onClick={() => setConfirming(false)}
-              className="px-5 py-2 rounded-[12px] text-sm font-medium text-fg-muted hover:text-text transition"
+              className="px-5 py-2 rounded-md text-sm font-medium text-fg-muted hover:text-text transition"
             >
               {tCommon("cancel")}
             </button>
@@ -785,7 +785,7 @@ function DangerZoneCard() {
         <button
           type="button"
           onClick={() => setPhase("confirm")}
-          className="border border-red-400 text-red-600 px-5 py-2 rounded-[12px] text-sm font-medium hover:bg-red-50 transition"
+          className="border border-red-400 text-red-600 px-5 py-2 rounded-md text-sm font-medium hover:bg-red-50 transition"
         >
           {t("delete_cta")}
         </button>
@@ -802,7 +802,7 @@ function DangerZoneCard() {
             value={emailInput}
             onChange={(e) => setEmailInput(e.target.value)}
             placeholder={user.email || ""}
-            className="w-full border border-red-300 rounded-[12px] px-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-red-300 transition"
+            className="w-full border border-red-300 rounded-md px-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-red-300 transition"
             dir="ltr"
             autoComplete="off"
           />
@@ -811,14 +811,14 @@ function DangerZoneCard() {
             <button
               type="submit"
               disabled={!emailMatch || loading}
-              className="bg-red-600 text-white px-5 py-2 rounded-[12px] text-sm font-medium hover:bg-red-700 transition disabled:opacity-40"
+              className="bg-red-600 text-white px-5 py-2 rounded-md text-sm font-medium hover:bg-red-700 transition disabled:opacity-40"
             >
               {loading ? t("submit_deleting") : t("submit_cta")}
             </button>
             <button
               type="button"
               onClick={() => { setPhase("idle"); setEmailInput(""); setError(null); }}
-              className="px-5 py-2 rounded-[12px] text-sm font-medium text-fg-muted hover:text-text transition"
+              className="px-5 py-2 rounded-md text-sm font-medium text-fg-muted hover:text-text transition"
             >
               {tCommon("cancel")}
             </button>

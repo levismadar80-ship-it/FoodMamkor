@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import * as Sentry from "@sentry/nextjs";
 import { useRouter } from "next/navigation";
 import { Link } from "@/i18n/navigation";
-import { MagnifyingGlass, MapPin, Clock, ShoppingCart } from "@phosphor-icons/react";
+import { MagnifyingGlass, MapPin, Clock, ShoppingCart, Truck } from "@phosphor-icons/react";
 import Image from "next/image";
 import OwnerRow from "@/components/OwnerRow";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
@@ -314,6 +314,10 @@ export default function GroupBuyDetailClient({ id }) {
   }
 
   const funded = gb.status === "funded";
+  // MEH-2621 split (UI): pickup / delivery as two answers; old groups carry only the
+  // pre-split fulfillment_note.
+  const hasSplitNotes = Boolean(gb.pickup_note || gb.delivery_note);
+  const hasFulfillment = hasSplitNotes || Boolean(gb.fulfillment_note);
   const fulfilled = gb.status === "fulfilled";
   const cancelled = gb.status === "cancelled";
   const open = gb.status === "open";
@@ -383,11 +387,11 @@ export default function GroupBuyDetailClient({ id }) {
               className="text-right"
               dir="ltr"
             />
-            {error && <p className="text-red-500 text-sm" role="alert">{error}</p>}
+            {error && <p className="text-error text-sm" role="alert">{error}</p>}
             <button
               type="submit"
               disabled={submitting}
-              className="w-full bg-primary text-white py-3 rounded-[12px] hover:bg-primary-dark transition font-medium disabled:opacity-50"
+              className="w-full bg-primary text-white py-3 rounded-md hover:bg-primary-dark transition font-medium disabled:opacity-50"
             >
               {submitting ? t("submitting") : user ? t("submit_join") : t("submit_login")}
             </button>
@@ -402,7 +406,7 @@ export default function GroupBuyDetailClient({ id }) {
         {/* Already committed */}
         {gb.user_committed && (
           <div className="space-y-3">
-            <div className="rounded-[12px] bg-green-50 border border-primary/20 px-4 py-3 text-primary text-sm font-medium text-center">
+            <div className="rounded-md bg-green-50 border border-primary/20 px-4 py-3 text-primary text-sm font-medium text-center">
               {t("committed_confirm")}
               {gb.user_commit?.quantity > 1 && t("committed_units", { count: gb.user_commit.quantity })}
             </div>
@@ -410,7 +414,7 @@ export default function GroupBuyDetailClient({ id }) {
               <button
                 onClick={handleCancel}
                 disabled={cancelling}
-                className="w-full text-sm text-fg-muted hover:text-red-500 transition text-center"
+                className="w-full text-sm text-fg-muted hover:text-error transition text-center"
               >
                 {cancelling ? t("cancelling") : t("cancel_cta")}
               </button>
@@ -419,7 +423,7 @@ export default function GroupBuyDetailClient({ id }) {
         )}
 
         {expired && open && (
-          <div className="rounded-[12px] bg-border px-4 py-3 text-fg-muted text-sm text-center">
+          <div className="rounded-md bg-border px-4 py-3 text-fg-muted text-sm text-center">
             {t("deadline_passed")}
           </div>
         )}
@@ -455,16 +459,16 @@ export default function GroupBuyDetailClient({ id }) {
         </Link>
 
         {funded && (
-          <div className="mb-5 rounded-[12px] bg-primary text-white px-5 py-4 text-center">
+          <div className="mb-5 rounded-md bg-primary text-white px-5 py-4 text-center">
             <p className="text-xl font-bold">{t("funded_title")}</p>
             <p className="text-sm mt-1 opacity-90">{t("funded_subtitle", { name: gb.producer_name })}</p>
           </div>
         )}
         {cancelled && (
-          <div className="mb-5 rounded-[12px] bg-border px-5 py-3 text-center text-fg-muted text-sm">{t("cancelled")}</div>
+          <div className="mb-5 rounded-md bg-border px-5 py-3 text-center text-fg-muted text-sm">{t("cancelled")}</div>
         )}
         {fulfilled && (
-          <div className="mb-5 rounded-[12px] bg-green-50 border border-primary/20 px-5 py-3 text-center text-primary text-sm font-medium">{t("fulfilled")}</div>
+          <div className="mb-5 rounded-md bg-green-50 border border-primary/20 px-5 py-3 text-center text-primary text-sm font-medium">{t("fulfilled")}</div>
         )}
 
         <div className="grid gap-6 lg:gap-x-10 lg:grid-cols-[1fr_380px] lg:items-start">
@@ -512,7 +516,7 @@ export default function GroupBuyDetailClient({ id }) {
             {/* MEH-2544: how a group buy works, while it can still be joined —
                 copy approved by Sapir 29/10. */}
             {open && (
-              <section className="mt-6 rounded-[12px] bg-green-50 p-4" data-testid="group-buy-how">
+              <section className="mt-6 rounded-md bg-green-50 p-4" data-testid="group-buy-how">
                 <h2 className="font-headline-md text-lg font-bold text-text mb-3">{t("how_title")}</h2>
                 <ol className="space-y-2">
                   {[t("how_join"), t("how_unlock", { min: gb.min_participants }), t("how_no_commit")].map((line, i) => (
@@ -539,26 +543,49 @@ export default function GroupBuyDetailClient({ id }) {
                 (DeliveryChecker gates 1–3), and a heading over nothing would
                 be an orphan. Without a note the checker stands alone, as
                 before. */}
-            {(gb.fulfillment_note || producer) && (
+            {/* MEH-2621 split (UI): new groups answer pickup and delivery separately,
+                each as its own labelled row (MapPin / Truck). A group made
+                before the split carries only fulfillment_note and renders as
+                it did. */}
+            {(hasFulfillment || producer) && (
               // Spacing lives on the children, not the section: when there is
               // no note and the checker hides itself, the section collapses to
               // nothing instead of leaving an empty 2rem gap (review #3900).
               <section data-testid="group-buy-fulfillment">
-                {gb.fulfillment_note && (
-                  <>
-                    <h2 className="mt-8 font-headline-md text-lg font-bold text-text mb-3">{t("fulfillment_title")}</h2>
+                {hasFulfillment && (
+                  <h2 className="mt-8 font-headline-md text-lg font-bold text-text mb-3">{t("fulfillment_title")}</h2>
+                )}
+                {hasSplitNotes ? (
+                  <dl className="flex flex-col gap-4">
+                    {[
+                      ["pickup", MapPin, gb.pickup_note],
+                      ["delivery", Truck, gb.delivery_note],
+                    ]
+                      .filter(([, , note]) => note)
+                      .map(([kind, Icon, note]) => (
+                        <div key={kind} className="flex gap-3" data-testid={`group-buy-${kind}-note`}>
+                          <Icon size={22} className="text-primary shrink-0 mt-0.5" aria-hidden="true" />
+                          <div className="min-w-0">
+                            <dt className="text-sm font-bold text-text">{t(`${kind}_label`)}</dt>
+                            <dd className="text-base text-text whitespace-pre-line">{note}</dd>
+                          </div>
+                        </div>
+                      ))}
+                  </dl>
+                ) : (
+                  gb.fulfillment_note && (
                     <p className="flex gap-3 text-base text-text whitespace-pre-line" data-testid="group-buy-fulfillment-note">
                       <MapPin size={22} className="text-primary shrink-0 mt-0.5" aria-hidden="true" />
                       <span>{gb.fulfillment_note}</span>
                     </p>
-                  </>
+                  )
                 )}
                 {/* MEH-2453: «מגיעים אלייך?» from the business's own delivery
                     data, same component and copy as its page. It hides itself
                     for a business that does not deliver, or whose answer is the
                     same for every city (DeliveryChecker gates 1–3). */}
                 {producer && (
-                  <div className={gb.fulfillment_note ? "mt-4" : "mt-6"}>
+                  <div className={hasFulfillment ? "mt-4" : "mt-6"}>
                     <DeliveryChecker
                       offersDelivery={producer.offers_delivery}
                       nationwide={producer.delivery_nationwide}
@@ -592,7 +619,7 @@ export default function GroupBuyDetailClient({ id }) {
           feedback-modal idiom (z-50) is unsafe here. */}
       {confirmCancelOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-[9500] flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/40 z-[9500] flex items-center justify-center p-4"
           onClick={() => setConfirmCancelOpen(false)}
         >
           <div

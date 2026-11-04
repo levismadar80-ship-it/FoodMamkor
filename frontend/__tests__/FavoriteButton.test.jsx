@@ -102,7 +102,8 @@ describe("FavoriteButton", () => {
 
   it("guest: inline variant renders the button with 'שמור' text", () => {
     render(<FavoriteButton producerId={1} variant="inline" />);
-    const btn = screen.getByRole("button", { name: "הוסף למועדפים" });
+    // WCAG 2.5.3 Label in Name: the visible «שמור» leads the accessible name.
+    const btn = screen.getByRole("button", { name: "שמור, הוסף למועדפים" });
     expect(btn).toBeInTheDocument();
     expect(btn.textContent).toContain("שמור");
   });
@@ -169,7 +170,7 @@ describe("FavoriteButton", () => {
     expect(screen.getByLabelText("הוסף למועדפים")).toBeInTheDocument();
 
     rerender(<FavoriteButton producerId={1} variant="inline" />);
-    expect(screen.getByLabelText("הוסף למועדפים")).toBeInTheDocument();
+    expect(screen.getByLabelText("שמור, הוסף למועדפים")).toBeInTheDocument();
   });
 
   it("has aria-pressed=false in initial state (all variants)", () => {
@@ -312,7 +313,7 @@ describe("FavoriteButton — toast vs page handoff (MEH-2535)", () => {
     const { showToast } = await import("@/lib/toast");
     const onFavorited = vi.fn();
     render(<FavoriteButton producerId={7} variant="quiet" onFavorited={onFavorited} />);
-    fireEvent.click(screen.getByRole("button", { name: "הוסף למועדפים" }));
+    fireEvent.click(screen.getByRole("button", { name: /הוסף למועדפים$/ }));
     await waitFor(() => expect(onFavorited).toHaveBeenCalledTimes(1));
     expect(showToast.success).not.toHaveBeenCalled();
     expect(localStorage.getItem("favorite_hint_shown")).toBeNull();
