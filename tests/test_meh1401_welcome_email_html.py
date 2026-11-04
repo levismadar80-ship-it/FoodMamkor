@@ -42,13 +42,13 @@ def test_welcome_consumer_sends_html_with_rtl_and_locked_copy(capture):
     # LOCKED consumer copy, verbatim.
     assert "מהמקור מרכז בתי עסק מקומיים לאוכל אמיתי — כל אחד נבחר ואושר אישית." in html
     assert "מה עכשיו?" in html
-    assert "יש שאלה? פשוט השיבי למייל הזה." in html
+    assert "יש שאלה? אפשר פשוט להשיב למייל הזה." in html
     # ONE primary CTA button → frontend_url; map stays a plain inline link.
     assert "גלו בתי עסק" in html
     assert f'href="{FRONTEND}"' in html
     assert f'href="{FRONTEND}/map"' in html
     # Subject unchanged.
-    assert capture["subject"] == "ברוכה הבאה למהמקור 🌿"
+    assert capture["subject"] == "ברוכים הבאים למהמקור 🌿"
     # Plain-text fallback carries the same locked copy.
     assert "מהמקור מרכז בתי עסק מקומיים לאוכל אמיתי" in capture["body"]
 

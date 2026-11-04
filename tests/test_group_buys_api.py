@@ -959,7 +959,7 @@ class TestFundedNotificationDispatch:
             .count()
         )
         assert commit_count == 2
-        assert f"מספר משתתפות: {commit_count}" in owner_msg["body"]
+        assert f"מספר הצטרפויות: {commit_count}" in owner_msg["body"]
 
         # And no body of either kind carries a contact detail. The group URL is
         # stripped first — a random uuid4 can contain a phone-shaped digit run,

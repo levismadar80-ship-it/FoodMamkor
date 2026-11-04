@@ -504,7 +504,7 @@
 - ❌ `יצרן` / `יצרנית` — use "בית עסק" (ישות) / "בעלי עסקים" (גנרי) / "בעלת/בעל עסק" (ספציפיים), per ADR-024
 - ❌ "marketplace" / "פלטפורמה" — we are a directory, not a marketplace  
 - ❌ `שגיאה התרחשה` — use `משהו השתבש, נסו שוב`
-- ❌ מגדר לפי surface (ADR-024): functional=רבים ניטרלי · narrative/warmth=נקבה. אסור: slash · פנייה זכרית לקוראת ("המשתמש שלך")
+- ❌ פנייה ממוגדרת לקורא/ת (ADR-037, 04/11/2026 — מחליף את חלוקת ADR-024): כל פנייה לקוראים ניטרלית (רבים / שם פעולה / סתמי). נקבה רק בגוף ראשון של ספיר ובאדמין. אסור: slash · פנייה זכרית ביחיד לקורא ("המשתמש שלך")
 - ❌ `מוצרים` for food business pages — use `פריטים` or category-specific terms
 
 ---
@@ -738,7 +738,7 @@ multiple surfaces, lock it here so future copy edits stay consistent.
 | Part | Rule |
 | -- | -- |
 | The quote | Exempt — verbatim, no voice rules applied |
-| Editorial framing | Feminine allowed (reader-address) · brand-we plural |
+| Editorial framing | Neutral reader-address (ADR-037) · brand-we feminine/plural |
 | UI chrome (button/link) | gerund/plural, never feminine |
 | Attribution noun (ADR-024) | `בית העסק` (entity) · `בעלת עסק` (woman) · `בעל עסק` (man) — never `יצרן`/`יצרנית` |
 

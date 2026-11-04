@@ -79,9 +79,12 @@ describe("FilterSheet (MEH-1075)", () => {
     // Labels stay literal (a copy lock — MEH-1418 renamed one of these and this
     // roster is what would catch the next such rename).
     const LABELS = [
-      // diet — pills (MEH-2169)
-      "טבעוני",
-      "צמחוני",
+      // diet — pills (MEH-2169). MEH-1508 chunk 3ב-2: the §6.6 rename, plus
+      // the two 100% axes beside their partial twins.
+      "מתאים לטבעונים",
+      "100% טבעוני",
+      "מתאים לצמחונים",
+      "100% צמחוני",
       "ללא גלוטן",
       "ללא לקטוז",
       "ללא סוכר מוסף",
@@ -165,6 +168,53 @@ describe("FilterSheet (MEH-1075)", () => {
       }
     });
 
+    // MEH-1508 chunk 3ב-2 (decision «⚖️ 03/11 לילה»): the group line
+    // «עסקים שיש להם מוצרים כאלה בקטלוג» is FALSE for the 100% pills — the
+    // backend matches ?vegan_all on the declaration alone, with zero marked
+    // products. So the line governs only the any-product pills, and the 100%
+    // pair sits after it, outside its block. Ordering only: no new heading.
+    it("keeps the 100% pills OUTSIDE the any-product block the scope line governs", () => {
+      renderSheet();
+      const line = screen.getByText("filters.sheet.diet_scope");
+      const block = line.parentElement;
+      // The line's own block holds every any-product diet pill...
+      for (const key of ["vegan", "vegetarian", "gluten_free", "lactose_free", "no_added_sugar"]) {
+        expect(block.contains(screen.getByTestId(`chip-${key}`)), key).toBe(true);
+      }
+      // ...and neither 100% pill.
+      for (const key of ["vegan_all", "vegetarian_all"]) {
+        const pill = screen.getByTestId(`chip-${key}`);
+        expect(block.contains(pill), key).toBe(false);
+        // Still painted AFTER the line.
+        expect(
+          line.compareDocumentPosition(pill) & Node.DOCUMENT_POSITION_FOLLOWING,
+          key,
+        ).toBeTruthy();
+      }
+      // No new copy: the diet group still carries exactly one scope line.
+      expect(screen.getAllByText("filters.sheet.diet_scope")).toHaveLength(1);
+    });
+
+    it("gives each 100% pill a 44×44 ⓘ named «לפי הצהרת בית העסק» that opens the same text", () => {
+      renderSheet();
+      const triggers = screen.getAllByRole("button", { name: "לפי הצהרת בית העסק" });
+      expect(triggers).toHaveLength(2);
+      for (const key of ["vegan_all", "vegetarian_all"]) {
+        const info = screen.getByTestId(`chip-info-${key}`);
+        expect(triggers).toContain(info);
+        expect(info).toHaveClass("min-h-[44px]", "min-w-[44px]");
+        // A sibling of the switch, never nested in it (invalid HTML).
+        expect(screen.getByTestId(`chip-${key}`).contains(info)).toBe(false);
+        expect(screen.queryByTestId(`chip-info-panel-${key}`)).not.toBeInTheDocument();
+        fireEvent.click(info);
+        expect(screen.getByTestId(`chip-info-panel-${key}`)).toHaveTextContent(
+          "לפי הצהרת בית העסק",
+        );
+        fireEvent.click(info);
+        expect(screen.queryByTestId(`chip-info-panel-${key}`)).not.toBeInTheDocument();
+      }
+    });
+
     it("gives has_delivery no ⓘ — it has nothing to disclose", () => {
       renderSheet();
       expect(screen.getByRole("switch", { name: "משלוח" })).toBeInTheDocument();
@@ -187,7 +237,7 @@ describe("FilterSheet (MEH-1075)", () => {
       chipState: { ...ALL_OFF, vegan: true },
     });
     // MEH-2169: diet toggles are role="switch" PILLS writing shared state.
-    const veganRow = screen.getByRole("switch", { name: "טבעוני" });
+    const veganRow = screen.getByRole("switch", { name: "מתאים לטבעונים" });
     expect(veganRow).toHaveAttribute("aria-checked", "true");
     // MEH-1259: was the organic chip (removed) — grass_fed is the other quality toggle.
     expect(screen.getByRole("switch", { name: "גראס פד" })).toHaveAttribute(
