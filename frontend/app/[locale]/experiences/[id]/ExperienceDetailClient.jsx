@@ -11,6 +11,7 @@ import {
   CalendarBlank,
   CalendarPlus,
   CaretLeft,
+  Check,
   Clock,
   CurrencyCircleDollar,
   Leaf,
@@ -34,6 +35,8 @@ import { downloadIcs } from "@/lib/event-ics";
 import { eventWhen, addressNavLinks } from "@/lib/event-when";
 import { AddressNavLinks } from "@/components/NavAppGlyphs";
 import { SkeletonDetail } from "@/components/Skeleton";
+import { splitBringList } from "@/lib/bring-list";
+import { findExperienceCategory } from "@/lib/event-categories";
 
 // MEH-1404: reuse the producer-detail static map + Waze/Gmaps block on
 // experiences with coords. ssr:false — leaflet touches window at module eval.
@@ -66,6 +69,7 @@ export default function ExperienceDetailClient() {
   const tForm = useTranslations("experiences.new");
   // MEH-2549: the event page's shared strings (time chip, calendar).
   const tEv = useTranslations("events.detail");
+  const tCat = useTranslations("experiences.categories");
   const locale = useLocale();
   const { id } = useParams();
   const search = useSearchParams();
@@ -151,7 +155,11 @@ export default function ExperienceDetailClient() {
   // gold — cover + date tile, host byline, one details card with share +
   // calendar, then description / requirements / host card.
   const pageUrl = typeof window === "undefined" ? "" : `${window.location.origin}${window.location.pathname}`;
-  const CatIcon = CATEGORY_ICON[ex.category] ?? CalendarBlank;
+  // older rows store the English key («workshop») — resolve both
+  // forms to the registry entry, so the chip and its icon read in Hebrew.
+  const cat = findExperienceCategory(ex.category);
+  const CatIcon = CATEGORY_ICON[cat?.key ?? ex.category] ?? CalendarBlank;
+  const bringItems = splitBringList(ex.requirements);
   // A recurring experience's date is its first occasion — no «מחר» chip, and
   // no single-date calendar entry that would read as the only one.
   const when = ex.is_recurring ? null : eventWhen(ex.event_date);
@@ -250,10 +258,10 @@ export default function ExperienceDetailClient() {
             </div>
           )}
 
-          {ex.category && (
-            <span className="inline-flex items-center gap-1 bg-surface-card text-accent text-xs px-3 py-1 rounded-full mb-3">
+          {cat && (
+            <span data-testid="experience-category" className="inline-flex items-center gap-1 bg-surface-card text-accent text-xs px-3 py-1 rounded-full mb-3">
               <CatIcon size={12} weight="bold" aria-hidden="true" />
-              {ex.category}
+              {tCat(cat.labelKey)}
             </span>
           )}
 
@@ -342,13 +350,14 @@ export default function ExperienceDetailClient() {
             {ex.max_participants != null && (
               <div className={`${infoRow} border-t border-border`}>
                 <span className={infoIcon}><Users size={18} aria-hidden="true" /></span>
-                <p className="text-text">
+                {/* sign-up happens on WhatsApp, so participants_count
+                    never moves and «8 מתוך 8» read as either full or empty.
+                    The cap is the one fact the site knows — the event page's
+                    «עד N משתתפים». */}
+                <p className="text-text" data-testid="experience-capacity">
                   {ex.spots_left === 0
                     ? t("sold_out")
-                    : t("spots_count", {
-                        spots: ex.spots_left ?? ex.max_participants,
-                        max: ex.max_participants,
-                      })}
+                    : tEv("participants_limit", { n: ex.max_participants })}
                 </p>
               </div>
             )}
@@ -372,7 +381,7 @@ export default function ExperienceDetailClient() {
                     url={pageUrl}
                     title={ex.title}
                     city={ex.city}
-                    category={ex.category}
+                    category={cat ? tCat(cat.labelKey) : undefined}
                   />
                   {canCalendar && (
                     <button
@@ -396,20 +405,29 @@ export default function ExperienceDetailClient() {
               it nulls them for a home experience, so no residential pin leaks. */}
           {hasCoords && <MiniMap lat={ex.lat} lng={ex.lng} name={ex.title} />}
 
-          {ex.description && (
-            <div className="bg-white border border-border rounded-[16px] p-6 leading-relaxed whitespace-pre-line text-text/90">
-              {ex.description}
+          {/* «מה להביא» as a short checklist above the description, the way
+              experience sites list it: the host's free text, one item per line
+              (or per comma when she wrote one line). White like the
+              description — the old green box read as a warning. */}
+          {bringItems.length > 0 && (
+            <div className="bg-white border border-border rounded-[16px] p-6" data-testid="experience-bring">
+              <h2 className="font-headline-md text-lg font-bold text-text mb-3">
+                {t("requirements_title")}
+              </h2>
+              <ul className="space-y-2">
+                {bringItems.map((item, i) => (
+                  <li key={`${i}-${item}`} className="flex items-start gap-2 text-text/90">
+                    <Check size={18} weight="bold" className="shrink-0 mt-0.5 text-primary" aria-hidden="true" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
 
-          {ex.requirements && (
-            <div className="bg-green-50 border border-border rounded-[16px] p-6">
-              <h2 className="font-headline-md text-lg font-bold text-text mb-2">
-                {t("requirements_title")}
-              </h2>
-              <p className="text-text/85 whitespace-pre-line">
-                {ex.requirements}
-              </p>
+          {ex.description && (
+            <div className="bg-white border border-border rounded-[16px] p-6 leading-relaxed whitespace-pre-line text-text/90">
+              {ex.description}
             </div>
           )}
 

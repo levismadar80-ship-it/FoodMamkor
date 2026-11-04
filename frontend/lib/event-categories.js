@@ -57,3 +57,12 @@ export const EXPERIENCE_CATEGORIES = Object.freeze([
 export function withAll(categories) {
   return [{ key: "", labelKey: "all" }, ...categories];
 }
+
+// an experience's stored category is the Hebrew value, but older
+// rows carry the English wire key («workshop»). Resolve either to its
+// registry entry ({key, labelKey}) so the page never prints a raw key; null
+// for an empty or unknown value.
+export function findExperienceCategory(value) {
+  if (!value) return null;
+  return EXPERIENCE_CATEGORIES.find((c) => c.key === value || c.labelKey === value) ?? null;
+}

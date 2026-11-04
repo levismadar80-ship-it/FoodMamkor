@@ -12,9 +12,8 @@ import CollectionNotice from "@/components/CollectionNotice";
  * MEH-2499 (28/10) reverses MEH-1410 (21/07, desktop-only): the launcher is
  * back on mobile as an icon-only circle above the BottomNav pill. What made
  * MEH-1410 hide it — a second floating control stacked on bottom navigation —
- * is answered the way Material answers it for a FAB over a bottom bar: the
- * launcher steps aside while the reader scrolls DOWN and returns on scroll UP
- * (or near the top). Desktop behavior is unchanged and never hides.
+ * was answered by hiding the launcher on scroll-down; since 4/11 it stays put
+ * on every viewport (a launcher that moves read as broken on a phone).
  *
  * MEH-1617: every user-facing string moved to the `chat.*` namespace in
  * messages/{he,en}.json. The copy is UNCHANGED — a move, not a rewrite. The
@@ -22,7 +21,7 @@ import CollectionNotice from "@/components/CollectionNotice";
  * ANSWERED_PROMPT_IDS below for why it had to change.
  *
  * Launcher:
- *   Mobile (MEH-2499): icon-only circle, hides on scroll-down, pinned to
+ *   Mobile (MEH-2499): icon-only circle, always shown, pinned to
  *     the end/inline edge. MEH-850: bottom = safe-area + pill-clearance +
  *     var(--cookie-banner-h, 0) via calc() — it self-clears the cookie banner
  *     when shown and sits just above the BottomNav pill when dismissed. z 1050 (desktop launcher + panel: 9999).
@@ -134,44 +133,9 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
     return () => mq.removeEventListener("change", h);
   }, []);
 
-  // ── MEH-2499: mobile launcher steps aside on scroll-down ──
-  // rAF-throttled, same shape as BackToTop's listener. Near the top it always
-  // shows; past that, direction decides (a few px of hysteresis so iOS
-  // rubber-band jitter does not flicker it). Desktop never hides.
-  const [scrollHidden, setScrollHidden] = useState(false);
-  const launcherRef = useRef(null);
-  useEffect(() => {
-    if (typeof window === "undefined" || isDesktop) {
-      setScrollHidden(false);
-      return;
-    }
-    let lastY = Math.max(0, window.scrollY);
-    let ticking = false;
-    const update = () => {
-      ticking = false;
-      const y = Math.max(0, window.scrollY);
-      // Never hide the launcher out from under keyboard focus (axe
-      // aria-hidden-focus; an invisible focused control).
-      const focused = document.activeElement === launcherRef.current;
-      if (y < 60) setScrollHidden(false);
-      else if (y > lastY + 4) setScrollHidden(!focused);
-      else if (y < lastY - 4) setScrollHidden(false);
-      else return;
-      lastY = y;
-    };
-    const onScroll = () => {
-      if (!ticking) {
-        ticking = true;
-        window.requestAnimationFrame(update);
-      }
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, [isDesktop]);
-  // The mobile panel does not lock page scroll, so a scroll while it is open
-  // could leave the hidden flag set — closing the panel must bring the
-  // launcher back, not make it vanish.
-  useEffect(() => { setScrollHidden(false); }, [open]);
+  // The mobile launcher used to step aside on scroll-down (MEH-2499). On a
+  // phone that read as a button that "does not stay in place" (Sapir, 31/10),
+  // so since 4/11 it stays put on every viewport, like the business list's.
 
   // MEH-850: cookie-banner clearance is now handled purely in CSS via the
   // `--cookie-banner-h` var (published by CookieBanner) in the launcher's
@@ -264,7 +228,6 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
     position: "fixed", zIndex: 9999,
     insetInlineEnd: isDesktop ? 24 : 16,
     bottom: isDesktop ? 24 : MOBILE_LAUNCHER_BOTTOM,
-    transition: "opacity 200ms ease, transform 200ms ease",
   };
   // MEH-2499: on mobile the launcher sits just above the BottomNav pill and
   // BackToTop (z-1000) but BELOW every sheet/prompt that can cover the same
@@ -272,13 +235,6 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
   // 9997. At 9999 it painted over the open filter sheet's end corner. The
   // panel keeps 9999 (it is the sheet here).
   if (!isDesktop) Object.assign(launcherStyle, { zIndex: 1050 });
-  // MEH-2499: never hidden while the panel is open. (On mobile the open sheet
-  // covers the launcher, so the sheet's own X is the close control there; on
-  // desktop the launcher doubles as one.)
-  const launcherHidden = scrollHidden && !open;
-  if (launcherHidden) {
-    Object.assign(launcherStyle, { opacity: 0, transform: "translateY(16px)", pointerEvents: "none" });
-  }
   // MEH-1135: desktop 360px box anchors to the same bottom-END corner as the
   // launcher (insetInlineEnd:24, insetInlineStart:auto); mobile stays full-width
   // (both inline insets 0 → spans edge-to-edge in either direction).
@@ -305,15 +261,8 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
       <button
         type="button"
         onClick={open ? () => setOpen(false) : handleOpen}
-        // Programmatic / screen-reader-cursor focus only (tabIndex is -1 while
-        // hidden): a hidden launcher that still receives focus comes back.
-        onFocus={() => setScrollHidden(false)}
-        ref={launcherRef}
         style={launcherStyle}
         data-testid="chat-launcher"
-        data-hidden={launcherHidden ? "true" : "false"}
-        tabIndex={launcherHidden ? -1 : undefined}
-        aria-hidden={launcherHidden ? true : undefined}
         className={[
           "vv-pin flex items-center justify-center bg-primary text-white rounded-full shadow-[0_4px_24px_rgba(46,104,83,0.25)] hover:bg-primary-dark transition focus-visible:ring-2 focus-visible:ring-primary/40",
           showPillText ? "gap-2 px-4 py-3" : "w-12 h-12",
