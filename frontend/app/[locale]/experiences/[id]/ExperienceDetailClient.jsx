@@ -410,7 +410,7 @@ export default function ExperienceDetailClient() {
               </h2>
               <ul className="space-y-2">
                 {bringItems.map((item, i) => (
-                  <li key={i} className="flex items-start gap-2 text-text/90">
+                  <li key={`${i}-${item}`} className="flex items-start gap-2 text-text/90">
                     <Check size={18} weight="bold" className="shrink-0 mt-0.5 text-primary" aria-hidden="true" />
                     <span>{item}</span>
                   </li>

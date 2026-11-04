@@ -30,6 +30,7 @@ describe("splitBringList", () => {
     ["", []],
     [null, []],
     ["  ,  ", []],
+    ["גרביים (לבנות, לא צבעוניות), סינר", ["גרביים (לבנות, לא צבעוניות)", "סינר"]],
   ])("%j → %j", (text, items) => {
     expect(splitBringList(text)).toEqual(items);
   });
@@ -63,6 +64,12 @@ describe("experience page — «מה להביא»", () => {
     const bring = screen.getByTestId("experience-bring");
     const desc = screen.getByText("סדנה של בוקר שלם");
     expect(bring.compareDocumentPosition(desc) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("many items, one per line, with no description", async () => {
+    await renderWith({ requirements: "סינר\nנעליים סגורות\nבקבוק מים", description: "" });
+    const items = within(screen.getByTestId("experience-bring")).getAllByRole("listitem");
+    expect(items.map((li) => li.textContent)).toEqual(["סינר", "נעליים סגורות", "בקבוק מים"]);
   });
 
   it("no requirements → no box", async () => {
