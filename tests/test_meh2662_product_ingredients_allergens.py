@@ -83,6 +83,13 @@ def test_empty_allergen_list_and_blank_ingredients_are_stored_as_null(client, db
     assert row.ingredients is None
 
 
+def test_oversized_allergen_list_is_422_before_membership_check(client, db):
+    user, producer = _owner(db)
+    r = _create(client, user, allergens=["gluten"] * 51)
+    assert r.status_code == 422, r.text
+    assert db.query(Product).filter(Product.producer_id == producer.id).count() == 0
+
+
 def test_unknown_allergen_code_is_422_and_nothing_is_written(client, db):
     user, producer = _owner(db)
     r = _create(client, user, allergens=["gluten", "pineapple"])

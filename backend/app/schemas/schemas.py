@@ -1706,7 +1706,7 @@ class ProductCreate(BaseModel):
     is_low_carb: bool = False
     # MEH-2662: optional, owner-declared.
     ingredients: SanitizedDescriptionField | None = None  # capped at 2000 by the type
-    allergens: list[str] | None = None
+    allergens: list[str] | None = Field(None, max_length=50)  # 14 codes + headroom for dupes
 
     @field_validator("allergens")
     @classmethod
@@ -1748,7 +1748,7 @@ class ProductUpdate(BaseModel):
     is_low_carb: bool | None = None  # MEH-1934
     # MEH-2662: exclude_unset → unsent stays put; an explicit null clears.
     ingredients: SanitizedDescriptionField | None = None  # capped at 2000 by the type
-    allergens: list[str] | None = None
+    allergens: list[str] | None = Field(None, max_length=50)  # 14 codes + headroom for dupes
 
     @field_validator("allergens")
     @classmethod
