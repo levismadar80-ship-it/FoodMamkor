@@ -4,6 +4,17 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-04 01:00 — drain 04/11: ‏:285 תוקן, חמישה PRs מוזגו (#3957, #3946, #3955, #3958)
+
+**‏שורה אחת:** ‏`24-producer-locations:285` תוקן ב-#3958. מקור הכשל היה בספק ולא במוצר: הוא ספר pin שקיים רק במהלך אנימציה, ובחר cluster מחוץ למפה הנראית. ב-CI הספק הישן נכשל 4 פעמים והחדש עבר ירוק. בנוסף מוזגו ‏#3957 ‏(pytest 9.2, מחליף את #3925), ‏#3946 ‏(אייקוני חגים) ו-#3955 ‏(docs).
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏E2E רץ ב-concurrency group אחד. כל push ל-PR אחר מבטל את הריצה שממתינה בתור, וזה מה שקרה ל-#3945 שלוש פעמים. לכן PRs שמחכים ל-E2E צריך לדחוף אחד-אחד.
+- ‏#3927: ‏axe-core 4.14 מוסיף את הכלל `label-content-name-mismatch`, ועמוד בית העסק מפר אותו (2 צמתים). צריך לתקן את הצמתים ב-PR נפרד, ורק אחריו את ה-bump.
+- ‏#3949: הכרעה (b) יושמה. נשארו 3 ספקים ידניים שמקבעים את התוויות הישנות, ו-axe `target-size` על /producers.
+
+**‏לא עכשיו / מחכה לספיר:** ‏#3941 ו-#3928 — אחרי ההשקה · ‏#3923 — ‏`.github` · ‏#3908 — ‏`EXPECTED_TABLES` · ‏MEH-1943 — נוסח en לשאר ה-routers.
+
 ## 2026-11-03 22:15 — drain 03/11 ד': ‏#3950 ו-#3954 מוזגו, השורש של producer-locations:285 נמצא (#3950, #3954)
 
 **‏שורה אחת:** ‏#3950 (docs של ג') ו-#3954 מוזגו. ‏#3954 מחליף את #3926 של dependabot: אותה העלאת mutmut, הפעם עם `uv.lock` מחודש. ‏`24-producer-locations:285` שוחזר מול staging עם trace, והממצא רשום ב-MEH-2323.
