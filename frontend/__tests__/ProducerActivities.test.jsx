@@ -25,7 +25,7 @@ const GB = {
   producer_name: "מכוורת השדה", producer_image_url: "https://res.cloudinary.com/x/image/upload/a.jpg",
 };
 const EX = { id: "ex1", title: "סדנת גבינות", event_date: "2099-01-03", event_time: "10:00:00", price_per_person: "120" };
-const EV = { id: "ev1", title: "שוק חורף", event_date: "2099-01-02", event_time: "09:00:00", price: 0, producer_name: "מכוורת השדה", owner_image_url: "https://x/owner.jpg" };
+const EV = { id: "ev1", title: "שוק חורף", event_date: "2099-01-02", event_time: "09:00:00", price: 0, producer_name: "מכוורת השדה", owner_image_url: "https://x/owner.jpg", registration_url: "https://forms.example/reg" };
 
 function answer(map) {
   get.mockImplementation((url) => {
@@ -74,6 +74,8 @@ describe("ProducerActivities", () => {
     const sections = screen.getAllByTestId("producer-events");
     expect(sections).toHaveLength(1);
     const links = sections[0].querySelectorAll("a");
+    // Only the two row links: the external registration link is not repeated
+    // on the business page (the event page shows it), by decision.
     expect([...links].map((a) => a.getAttribute("href"))).toEqual(["/events/ev1", "/experiences/ex1"]);
     expect(sections[0].textContent).not.toContain("מכוורת השדה");
     // The owner photo is the page's own hero, so the row falls back to the category tile.
