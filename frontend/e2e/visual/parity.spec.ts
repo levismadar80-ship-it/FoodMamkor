@@ -542,10 +542,13 @@ test.describe("Visual parity — MEH-991", () => {
     await settle(page);
     // MEH-1765 — the two home strings, asserted BEFORE the shot so a copy
     // regression names itself instead of arriving as an unexplained pixel diff.
-    // `chips_prefix` is the string that actually escaped in MEH-1758
-    // («מחפשות עכשיו:» -> «פופולרי עכשיו:», ~2,800 px, VRT green).
+    // The second one guards the HERO CHIP ROW, which is where MEH-1758's
+    // regression escaped («מחפשות עכשיו:» -> «פופולרי עכשיו:», ~2,800 px, VRT
+    // green). MEH-2634 deleted that row's `chips_prefix` label, so the guard
+    // moved to `near_me` — the first chip in the same row, still rendered, so
+    // the row keeps a named copy assertion rather than losing one.
     await expectCopy(page, "home.hero.title");
-    await expectCopy(page, "home.hero.chips_prefix");
+    await expectCopy(page, "home.hero.near_me");
     await expect(page).toHaveScreenshot("home.png", {
       ...SHOT,
       // Live data: featured grid + events preview + homepage mini-map.

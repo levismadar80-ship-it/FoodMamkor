@@ -227,6 +227,18 @@ export default function AboutPage() {
           <p className="mt-4 font-body-md text-[17px] md:text-lg text-text/90 leading-relaxed max-w-[46ch]">
             {t("hero.subheading")}
           </p>
+          {/* MEH-2634: the page opened with no way out of it. Every other
+              /about surface ends in a CTA; the hero itself sent a reader who
+              was already convinced back to the nav. Points at /map, the same
+              destination as the why-local CTA below. */}
+          <Link
+            href="/map"
+            data-testid="about-hero-cta"
+            className="mt-6 inline-flex items-center gap-2 min-h-[48px] px-6 py-3 bg-primary text-white rounded-sm font-body-md font-semibold text-base hover:bg-primary-dark transition-colors focus-ring"
+          >
+            {t("hero.cta_map")}
+            <ArrowLeft size={19} aria-hidden="true" />
+          </Link>
           {/* MEH-2192: dateline. Small muted line, start-aligned like the rest
               of the hero — an E-E-A-T freshness signal a reader can check. */}
           <p

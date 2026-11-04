@@ -107,7 +107,6 @@ export function HomeProducersGrid({
   filters,
   chips,
   categories,
-  showNewUserHint,
   fridayMode,
   // MEH-2130: remove ONE active attribute filter from the applied-filter strip.
   onRemoveChip,
@@ -479,15 +478,11 @@ export function HomeProducersGrid({
               {t("home.producers.counter", { shown: Math.min(visibleCount, producers.length), total: producers.length })}
             </p>
           )}
-          {showNewUserHint && visibleProducers.length > 0 && (
-            <div className="flex items-center gap-2 bg-green-50 border border-primary/20 rounded-md px-4 py-2.5 mb-4 text-sm text-primary w-fit">
-              <span className="relative flex h-2.5 w-2.5 flex-shrink-0">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-60" />
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary" />
-              </span>
-              {t("home.producers.hint_favorites")}
-            </div>
-          )}
+          {/* MEH-2634: the first-visit "tap the heart" hint is gone. It was the
+              third green box a first-time visitor met (cookie banner, city
+              banner, this) and taught a feature nobody had asked for yet. The
+              `showNewUserHint` prop is still threaded in from use-home-page.js
+              for now — removing that state machine is out of this PR's scope. */}
           <div className="grid grid-cols-2 gap-3 md:gap-6 lg:grid-cols-4" data-testid="home-producers-grid">
             {visibleProducers.map((p, idx) => (
               <motion.div

@@ -290,9 +290,6 @@ export function HomeHero({
           data-testid="hero-chips-row"
           className="mt-3 px-4 flex flex-wrap items-center justify-center gap-2.5"
         >
-          {/* On the scrim now, not cream — `text-fg-muted` would fail AA here. */}
-          <span className="text-sm text-green-50">{t("home.hero.chips_prefix")}</span>
-
           {/* MEH-41 geolocation — behaviour unchanged, chip styling only. */}
           <button
             type="button"

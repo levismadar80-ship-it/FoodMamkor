@@ -10,6 +10,7 @@ import KashrutBadgeStrip from "@/components/KashrutBadgeStrip";
 import OfferBadge from "@/components/OfferBadge";
 import ProducerUpdatesButton from "@/components/ProducerUpdatesButton";
 import ShareButton from "@/components/ShareButton";
+import Popover from "@/components/ui/Popover";
 import { useAuth } from "@/lib/auth-context";
 import {
   ensureFavoritesLoaded,
@@ -405,11 +406,39 @@ export default function ProducerHeader({
 
       {/* MEH-1170: declared (tier 2) carries NO chip — ADR-022 gate 1 requires
           the badge absence to stay "affirmatively explained in consumer copy",
-          so this block survives the MEH-1334 restructure (decision 4). */}
+          so this block survives the MEH-1334 restructure (decision 4).
+          MEH-2634: the explanation is three sentences and it sat open in the
+          header, where a first-time reader met a paragraph about a badge the
+          business does NOT have before anything it does. The copy is unchanged
+          and still one tap away — ADR-022 gate 1 asks that the absence be
+          affirmatively explained, not that it be the longest text on screen.
+          Popover props mirror BadgeRow.jsx's hero branch (role, sheetOnMobile,
+          Esc + focus-return come from ui/Popover) — no `overlay` here: unlike
+          ImageGallery's masthead (MEH-1593), this block's ancestors are not
+          `overflow-hidden`, so the panel has no containing block to escape. */}
       {producer.verification_tier === "declared" && (
-        <p className="text-xs text-fg-muted leading-relaxed mt-2 max-w-prose">
-          {t("producer.badge.declared_explainer")}
-        </p>
+        <div className="mt-2">
+          <Popover
+            role="dialog"
+            sheetOnMobile
+            contentTestId="declared-explainer-popover"
+            contentClassName="w-72 flex flex-col gap-1.5"
+            sheetContentClassName="flex flex-col gap-2"
+            trigger={
+              <button
+                type="button"
+                data-testid="declared-explainer-trigger"
+                className="text-xs text-fg-muted leading-relaxed underline decoration-dotted underline-offset-2 hover:text-text focus-visible:ring-2 focus-visible:ring-primary/40 focus:outline-none rounded-sm py-1"
+              >
+                {t("producer.badge.declared_trigger")}
+              </button>
+            }
+          >
+            <span className="block text-[13px] leading-relaxed">
+              {t("producer.badge.declared_explainer")}
+            </span>
+          </Popover>
+        </div>
       )}
 
       {/* Quiet actions row (MEH-1334): שמירה · שיתוף. DESKTOP ONLY.

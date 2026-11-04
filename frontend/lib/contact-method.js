@@ -86,7 +86,9 @@ export function getPrimaryContactHref(producer) {
 export function getPrimaryContactLabel(producer) {
   switch (getPrimaryMethod(producer)) {
     case "whatsapp":
-      return "שליחת הודעה";
+      // MEH-2634: names the channel, like the instagram/facebook labels below.
+      // The bare "שליחת הודעה" gave no hint that the tap leaves for WhatsApp.
+      return "שליחת הודעה בוואטסאפ";
     case "phone":
       return "התקשרו";
     case "website":

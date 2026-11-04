@@ -108,7 +108,9 @@ export async function generateMetadata(props) {
 
   const description =
     locale === "he"
-      ? "דפדפי בכל בתי העסק, מגדלים וחוות מקומיות על מהמקור."
+      // MEH-2634: "דפדפי" (feminine singular) → "גלו", the plural voice the
+      // rest of the site uses. Literal word swap as specified.
+      ? "גלו בכל בתי העסק, מגדלים וחוות מקומיות על מהמקור."
       : "Browse all local food businesses, growers, and farms on Mehamakor.";
 
   return {
