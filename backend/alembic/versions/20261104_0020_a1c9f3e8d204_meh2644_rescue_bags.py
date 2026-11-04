@@ -1,7 +1,7 @@
 """meh2644_rescue_bags
 
 Revision ID: a1c9f3e8d204
-Revises: d7a511246b14
+Revises: c4d8e1f05a27
 Create Date: 2026-11-04 00:20:00.000000+00:00
 
 MEH-2644 (chunk 1/4 of the rescue-bags pilot, parent MEH-2643): the four tables a rescue bag
@@ -76,6 +76,12 @@ touch disjoint tables, so there is nothing to reconcile and an empty merge
 revision would only add a node. MEH-2633 adds no table, so the table count
 below is unaffected (re-measured after the merge, not carried over).
 
+Re-chained again on 04/11 night onto c4d8e1f05a27 (MEH-2665, experiences
+.min_participants), which sits on d4e7a1b2c3f5 (MEH-2618, delivery_waitlist)
+on b3e9f2a71c45 (MEH-2662) — all three landed on staging while this PR was
+open. Same reasoning: disjoint tables, linear re-chain. MEH-2618 adds one
+table, so staging counts 44 before this revision and 48 after it.
+
 # DO NOT create these tables anywhere else — Alembic is the sole schema
 #        authority since MEH-267.
 """
@@ -88,7 +94,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = "a1c9f3e8d204"
-down_revision: Union[str, None] = "d7a511246b14"
+down_revision: Union[str, None] = "c4d8e1f05a27"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
