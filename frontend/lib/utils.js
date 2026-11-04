@@ -164,6 +164,15 @@ export function formatPrice(amount, { from = false, unit = null } = {}) {
 }
 
 /**
+ * PR #3971: a free-text price label ("מ-₪30", "45₪/ק״ג") counts as a price
+ * only when it carries a digit. "₪₪" (a price-level, not a price) or "—"
+ * is not something a buyer can read as a price, so it renders nothing.
+ */
+export function isPriceLabel(label) {
+  return typeof label === "string" && /\d/.test(label);
+}
+
+/**
  * MEH-1140: min–max range in the same canon: "35₪–60₪".
  * min only → "35₪" · both equal → "35₪" · neither → null.
  */

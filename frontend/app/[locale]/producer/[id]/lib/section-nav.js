@@ -1,5 +1,6 @@
 import { resolveStoreHours } from "@/lib/hours";
 import { primaryPoint } from "@/lib/producerPoints";
+import { isPriceLabel } from "@/lib/utils";
 import { parseHasLocation } from "../components/ProducerSections";
 
 /**
@@ -29,11 +30,12 @@ export function getSectionNavItems(producer, t) {
       id: "section-products",
       label: t("producer.detail.tabs.products"),
       // ProducerSections: `producer.products?.length > 0 || hasSignature`
-      // (hasSignature = top_product_name || price_range).
+      // (hasSignature = top_product_name || a price_range with a digit —
+      // PR #3971: «₪₪» alone renders nothing, so it opens no tab).
       show: !!(
         producer.products?.length > 0 ||
         producer.top_product_name ||
-        producer.price_range
+        isPriceLabel(producer.price_range)
       ),
     },
     {

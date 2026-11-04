@@ -122,8 +122,8 @@ describe("MEH-1557 — retired over-claims stay retired", () => {
 describe("MEH-160 — the view tooltips state the dedup the code performs", () => {
   it("he: profile_views tooltip states one count per visitor per day", () => {
     const { windowed } = he.dashboard.producer.analytics;
-    expect(windowed.profile_views_tooltip).toContain("מבקרות שונות");
-    expect(windowed.profile_views_tooltip).toContain("נספרת פעם אחת");
+    expect(windowed.profile_views_tooltip).toContain("מבקרים שונים");
+    expect(windowed.profile_views_tooltip).toContain("נספר פעם אחת");
     // The retired raw-count claim, verbatim from before this change.
     expect(windowed.profile_views_tooltip).not.toContain("כולל ביקורים חוזרים");
   });
@@ -143,7 +143,7 @@ describe("MEH-160 — the view tooltips state the dedup the code performs", () =
     // Same table, same dedup — a tooltip saying "how many times" here would be
     // as wrong as the profile_views one was.
     expect(windowed.search_appearances_tooltip).toMatch(
-      /מבקרות שונות|distinct visitors/i,
+      /מבקרים שונים|distinct visitors/i,
     );
   });
 

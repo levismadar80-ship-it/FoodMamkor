@@ -40,6 +40,7 @@
       "privacy_short": "Privacy",
       "accessibility": "Accessibility",
       "contact": "Contact us",
+      "recommend": "Recommend a business",
       "cta_pitch": "Do you have a local food business?",
       "cta_subpitch": "Join thousands of business owners on Mehamakor",
       "brand_aria": "Mehamakor — Home page",
@@ -618,6 +619,12 @@
       "og_title": "Contact Mehamakor",
       "og_description": "Questions, suggestions, or ideas for collaboration — we're here."
     },
+    "recommend": {
+      "title": "Know a business that belongs here?",
+      "description": "Tell us about it. We check every recommendation, reach out to the business, and list only businesses that hold a licence.",
+      "og_title": "Know a business that belongs here?",
+      "og_description": "Tell us about it. We check every recommendation, reach out to the business, and list only businesses that hold a licence."
+    },
     "forgot_password": {
       "title": "Reset your password | Mehamakor",
       "description": "Forgot your password? Enter your email and we'll send a reset link for your Mehamakor account.",
@@ -783,6 +790,11 @@
             "no_added_sugar": "No added sugar"
           },
           "sheet_open_aria": "Details about {name}",
+          "facts": {
+            "ingredients_heading": "Ingredients",
+            "allergens_heading": "Allergens",
+            "declared_by_business": "As declared by the business"
+          },
           "sheet_close_aria": "Close product details",
           "sheet_prev_aria": "Previous product",
           "sheet_next_aria": "Next product",
@@ -1099,6 +1111,8 @@
       "remaining_to_open": "{n} more participants to unlock the price",
       "deadline_prefix": "Deadline: {date}",
       "fulfillment_title": "Pickup & delivery",
+      "pickup_label": "Pickup",
+      "delivery_label": "Delivery",
       "how_title": "How it works",
       "how_join": "Join now. You pay nothing through the site",
       "how_unlock": "Once {min} people join, the group price unlocks and the business gets in touch",
@@ -1164,10 +1178,13 @@
         "deadline_label": "Deadline",
         "deadline_helper": "The last day to join, in Israel time.",
         "city_label": "City",
-        "fulfillment_label": "When and how do buyers receive the products?",
-        "fulfillment_placeholder": "e.g. Pickup from the farm on Friday after the group closes, or home delivery within 3 days",
-        "fulfillment_helper": "Participants see this before they join. Say where to pick up and which cities get delivery.",
-        "fulfillment_required": "Say when and how buyers receive the products",
+        "fulfillment_legend": "Pickup & delivery",
+        "pickup_label": "Pickup",
+        "pickup_placeholder": "e.g. From the farm on Friday between 8 and 12",
+        "delivery_label": "Delivery",
+        "delivery_placeholder": "e.g. To Zichron Yaakov and Binyamina on Sunday, ₪20",
+        "fulfillment_helper": "Participants see this before they join. Fill in at least one. No delivery? Leave it blank.",
+        "fulfillment_required": "Fill in pickup or delivery",
         "submitting": "Creating...",
         "submit": "Create group buy",
         "toast_created": "Group buy created and open for joining"
@@ -1998,7 +2015,15 @@
         "short_title": "Short",
         "short_body": "{name}, adding you to Mehamakor 💚\n{prefillUrl}\n\nOne-time message from Mehamakor — local businesses that make real food. Not interested? Reply \"remove\" and we won't contact you again."
       },
-      "call_script": "1. Opening (10 s): \"Hi, this is [name] from Mehamakor. I work with Sapir, who is building a site for local food businesses. Free, no commission. Do you have a minute?\" If she is busy: \"When is a good time to call back?\"\n2. Personal connection (20 s): \"I saw your [product / stall] at [where]. A business that makes its own food, not a reseller.\" Let her talk. Take notes.\n3. Permission: \"Can I take five minutes to explain, and you decide?\"\n4. The three things (60 s): \"One: free. No commission and no subscription. Two: customers contact you directly on WhatsApp. Three: a permanent page Google finds. A post disappears, the page stays.\" No numbers about businesses or visitors.\n5. The ask: \"I'm sending you a WhatsApp link now, your details are already filled in. Registration takes 5–10 minutes, and Sapir reviews and approves every business herself within 3 business days. Sound good?\" Yes → \"Prepare profile\" and send during the call. Maybe → link + one reminder in a week. No → \"Thanks for listening\", status \"Declined\", never contact again."
+      "call_script": "1. Opening (10 s): \"Hi, this is [name] from Mehamakor. I work with Sapir, who is building a site for local food businesses. Free, no commission. Do you have a minute?\" If she is busy: \"When is a good time to call back?\"\n2. Personal connection (20 s): \"I saw your [product / stall] at [where]. A business that makes its own food, not a reseller.\" Let her talk. Take notes.\n3. Permission: \"Can I take five minutes to explain, and you decide?\"\n4. The three things (60 s): \"One: free. No commission and no subscription. Two: customers contact you directly on WhatsApp. Three: a permanent page Google finds. A post disappears, the page stays.\" No numbers about businesses or visitors.\n5. The ask: \"I'm sending you a WhatsApp link now, your details are already filled in. Registration takes 5–10 minutes, and Sapir reviews and approves every business herself within 3 business days. Sound good?\" Yes → \"Prepare profile\" and send during the call. Maybe → link + one reminder in a week. No → \"Thanks for listening\", status \"Declined\", never contact again.",
+      "badge_community": "Community pick",
+      "thank_suggester": "Send thanks",
+      "thank_disabled": {
+        "no_email": "No email was left",
+        "no_update_request": "No update was requested",
+        "already_sent": "Thanks sent on {date}",
+        "not_registered": "Thanks can be sent once the business has registered"
+      }
     },
     "kashrut": {
       "title": "Kashrut certificate approvals",
@@ -2516,7 +2541,7 @@
   },
   "events": {
     "list": {
-      "title": "Events at farms and local businesses",
+      "title": "Food events near you",
       "subtitle": "What's on this month — weekend after weekend, straight from the source",
       "subtitle_experiences": "Learn, taste, and discover — food experiences at local businesses",
       "eyebrow_events": "EVENTS · Close to home",
@@ -2525,7 +2550,7 @@
       "breadcrumb_home": "Home",
       "breadcrumb_events": "Events",
       "breadcrumb_experiences": "Experiences",
-      "tab_events": "Farm events",
+      "tab_events": "Events",
       "tab_experiences": "Workshops & experiences",
       "add_event": "Add event",
       "submit_experience": "Add experience",
@@ -2623,12 +2648,15 @@
       "just_submitted": "Experience submitted for review! You'll get an email when it's published",
       "team_notes": "Team notes:",
       "reason": "Reason:",
-      "requirements_title": "What to bring / requirements",
+      "requirements_title": "What to bring",
       "whatsapp_cta": "Contact host on WhatsApp",
       "whatsapp_message": "Hi! I'd like to register for \"{title}\"",
       "host_label": "Host:",
       "free": "Free",
-      "sold_out": "Sold out",
+      "sold_out": "This workshop is full",
+      "spots_left_few": "{n, plural, one {Last spot left} other {# spots left}}",
+      "waitlist_cta": "Join the waitlist on WhatsApp",
+      "waitlist_message": "Hi! I'd like to join the waitlist for \"{title}\"",
       "spots_count": "{spots} of {max}",
       "breadcrumb_home": "Home",
       "breadcrumb_experiences": "Experiences",
@@ -3238,6 +3266,28 @@
     "mailto_body_email": "Email:",
     "privacy_notice": "By submitting the form you confirm you have read the <link>privacy policy</link>."
   },
+  "recommend": {
+    "title": "Know a business that belongs here?",
+    "subtitle": "Tell us about it. We check every recommendation, reach out to the business, and list only businesses that hold a licence.",
+    "field_name_label": "Business name",
+    "field_city_label": "City",
+    "field_contact_label": "Instagram, phone or website",
+    "field_contact_hint": "One is enough, so we can reach them",
+    "field_instagram_label": "Instagram",
+    "field_phone_label": "Phone",
+    "field_website_label": "Website",
+    "field_reason_label": "What makes it special? (optional)",
+    "field_suggester_name_label": "Your name (optional)",
+    "field_suggester_email_label": "Email (optional)",
+    "privacy_link": "Privacy policy",
+    "wants_update_label": "Let me know when the business joins",
+    "submit": "Send recommendation",
+    "success": "Thank you! We got your recommendation. We'll check it and reach out to the business.",
+    "success_wants_update": "Thank you! We got your recommendation. If the business joins, we'll email you.",
+    "error_contact_missing": "We need at least one way to contact the business",
+    "error_rate_limited": "We've already had a few recommendations from you. Try again in an hour.",
+    "error_generic": "Something went wrong. Try again in a moment."
+  },
   "search": {
     "hero": {
       "submit_aria": "Search",
@@ -3640,7 +3690,8 @@
       "event": "What you submit here is intended for publication on the site, after review.",
       "category_request": "The request is sent to us for review and is not published on the site.",
       "newsletter": "Your email is used only to send the updates.",
-      "contact": "Your message is sent to us so we can reply, and is not published on the site."
+      "contact": "Your message is sent to us so we can reply, and is not published on the site.",
+      "business_suggestion": "We use your email only to update you about this suggestion. It is not shared with the business or used for marketing."
     },
     "sections": {
       "operator": {
@@ -4615,7 +4666,11 @@
         "save_cta": "Save",
         "saving": "Saving…",
         "saved": "Saved",
-        "save_error": "Save failed. Please try again."
+        "save_error": "Save failed. Please try again.",
+        "errors": {
+          "excluded_requires_nationwide": "Excluded cities are only possible with nationwide delivery",
+          "nationwide_requires_delivery": "\"Nationwide\" is ticked but \"Delivery\" is not. Tick \"Delivery\", or untick \"Nationwide\"."
+        }
       },
       "order_window": {
         "heading": "When you take orders",
@@ -4805,7 +4860,9 @@
         "status_approved": "Approved",
         "status_rejected": "Rejected",
         "status_changes_requested": "Changes requested",
-        "badge_past": "Ended"
+        "badge_past": "Ended",
+        "signed_up_label": "Signed up so far",
+        "signed_up_hint": "Shown on the experience page when 3 spots or fewer are left"
       },
       "name_change": {
         "heading": "Change business name",
@@ -5082,6 +5139,24 @@
         "diet_def_vegetarian": "No meat, poultry, or fish. May contain eggs and dairy.",
         "diet_def_lactose_free": "The product contains no lactose. Note: this does not necessarily mean \"dairy-free\" — a dairy product without lactose counts.",
         "diet_def_no_added_sugar": "No sugar was added during production — including honey, silan, syrups, and fruit concentrates. The product may contain naturally occurring sugars, so this is not \"sugar-free\".",
+        "ingredients_label": "Ingredients",
+        "ingredients_placeholder": "e.g. whole spelt flour, water, sourdough, salt",
+        "allergens_heading": "Allergens",
+        "allergens_helper": "Mark what the product contains. It will show in the product window on your business page.",
+        "allergen_gluten": "Gluten",
+        "allergen_milk": "Milk",
+        "allergen_eggs": "Eggs",
+        "allergen_tree_nuts": "Tree nuts",
+        "allergen_peanuts": "Peanuts",
+        "allergen_sesame": "Sesame",
+        "allergen_soy": "Soy",
+        "allergen_fish": "Fish",
+        "allergen_crustaceans": "Crustaceans",
+        "allergen_molluscs": "Molluscs",
+        "allergen_celery": "Celery",
+        "allergen_mustard": "Mustard",
+        "allergen_sulphites": "Sulphites",
+        "allergen_lupin": "Lupin",
         "image_label": "Product image",
         "image_alt": "Photo",
         "image_remove": "Remove",

@@ -146,6 +146,13 @@ const FOOTER_UTILITY = [
   { key: "privacy_short", href: "/privacy" },
   { key: "accessibility", href: "/accessibility" },
   { key: "contact", href: "/about#contact" },
+  // MEH-2633: «המליצו על בית עסק», added next to «צרו קשר» per the card. Sixth
+  // entry, asserted as rendered like `login` above — this list is an
+  // as-rendered lock on the utility row, and the row changed. It is NOT a
+  // legal link: rows מדיניות / תנאי / נגישות / קשר are what MT:LEGAL:9 names,
+  // and all four stay present and unmoved. The count assertion below is what
+  // caught the addition, which is the lock working.
+  { key: "recommend", href: "/recommend" },
 ] as const;
 
 /** Literal in the page (accessibility/page.js) — the approved business line. */

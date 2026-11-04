@@ -10,12 +10,31 @@ Related:  app/routers/producer_me.py (owner PUT), app/routers/admin.py
           (admin PUT), migration e7c4b1f95a2d (DB CHECK
           delivery_excluded_requires_nationwide), migration d8c3f1a75e29
           (DB CHECK producer_nationwide_requires_delivery).
-History:  MEH-1255 (creation); MEH-1879 (nationwide-requires-delivery guard).
+History:  MEH-1255 (creation); MEH-1879 (nationwide-requires-delivery guard);
+          MEH-1943 chunk 3 (`{code, message, params}` details).
 """
 
 from fastapi import HTTPException
 
 from app.models.models import Producer
+
+# MEH-1943 chunk 3: `{code, message, params}` (the MEH-1164 / MEH-1940 /
+# chunk-1 ONE_PRIMARY_REQUIRED_DETAIL shape). `message` is the existing Hebrew
+# sentence word for word, so a consumer without a code resolver shows exactly
+# what it showed before; consumers that resolve the code read the copy from
+# messages/*.json (dashboard.producer.delivery.errors.<code>,
+# the admin form reads the same dashboard.producer.delivery.errors.<code> keys). The schemas.py ValueErrors carry the
+# same sentences and are a separate (Pydantic array) surface.
+EXCLUDED_REQUIRES_NATIONWIDE_DETAIL = {
+    "code": "excluded_requires_nationwide",
+    "message": "ערים מוחרגות אפשריות רק עם משלוחים לכל הארץ",
+    "params": {},
+}
+NATIONWIDE_REQUIRES_DELIVERY_DETAIL = {
+    "code": "nationwide_requires_delivery",
+    "message": '"לכל הארץ" מסומן, אבל "משלוחים" לא. סמנו "משלוחים", או בטלו את "לכל הארץ".',
+    "params": {},
+}
 
 
 def ensure_exclusion_requires_nationwide(producer: Producer, payload: dict) -> None:
@@ -41,7 +60,7 @@ def ensure_exclusion_requires_nationwide(producer: Producer, payload: dict) -> N
     if effective_excluded and not effective_nationwide:
         raise HTTPException(
             status_code=422,
-            detail="ערים מוחרגות אפשריות רק עם משלוחים לכל הארץ",
+            detail=EXCLUDED_REQUIRES_NATIONWIDE_DETAIL,
         )
 
 
@@ -75,5 +94,5 @@ def ensure_nationwide_requires_delivery(producer: Producer, payload: dict) -> No
     if effective_nationwide and not effective_offers:
         raise HTTPException(
             status_code=422,
-            detail='"לכל הארץ" מסומן, אבל "משלוחים" לא. סמני "משלוחים", או בטלי את "לכל הארץ".',
+            detail=NATIONWIDE_REQUIRES_DELIVERY_DETAIL,
         )

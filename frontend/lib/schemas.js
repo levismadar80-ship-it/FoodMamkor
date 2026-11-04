@@ -225,6 +225,13 @@ export const ProducerListSchema = z.object({
   has_vegetarian_products: z.boolean().nullable().optional(),    // → vegetarian
   has_vegan_products: z.boolean().nullable().optional(),         // → vegan
   has_lactose_free_products: z.boolean().nullable().optional(),  // → lactose_free
+  // MEH-1508 chunk 3ב-2: the owner's whole-business declaration (unknown |
+  // some | all), served by ProducerListOut since chunk 2. Undeclared, z.object
+  // strips it on the two parsed feeds and the «100% טבעוני/צמחוני» badge plus
+  // the chip data gate never see a value. `z.string()`, not an enum — a new
+  // backend value must cost a badge, never a producer (all-or-nothing parse).
+  vegan_scope: z.string().nullable().optional(),             // → vegan_all
+  vegetarian_scope: z.string().nullable().optional(),        // → vegetarian_all
   // MEH-1934: the contract-parity test is what surfaced these — the backend
   // schema gained them in chunk 2, and an undeclared field is stripped by the
   // strict parse, so the badges would never light no matter what the API sent.
@@ -568,7 +575,7 @@ export const CoordSchema = z.object({
 // before she has exact coordinates (manual entry, no geocoding this chunk).
 export const LocationInputSchema = z.object({
   kind: z.enum(["branch", "pickup", "market_stand"], {
-    error: "בחרי סוג מיקום",
+    error: "בחרו סוג מיקום",
   }),
   label: z.string().trim().max(200).nullable().optional(),
   city: z.string().trim().max(100).nullable().optional(),
