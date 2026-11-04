@@ -245,6 +245,19 @@ export default function ProducerSections({
   // previously-focused element every time it runs. An inline arrow would hand
   // it a fresh identity on every parent render, so paging would re-run it and
   // pull focus off the chevron the reader is clicking.
+  // MEH-2654: a deep link `?product=<id>` (the recipe page's product rows)
+  // opens that product's sheet on arrival. Read once per producer from
+  // window.location — not useSearchParams, which would force a Suspense
+  // boundary onto a server-rendered page for a one-shot read. An id that
+  // matches nothing opens nothing (the page just loads normally).
+  const productIds = sheetProducts.map((p) => p.id).join(",");
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const wanted = new URLSearchParams(window.location.search).get("product");
+    if (!wanted) return;
+    const i = productIds.split(",").indexOf(wanted);
+    if (i >= 0) setOpenIndex(i);
+  }, [productIds]);
   const closeSheet = useCallback(() => setOpenIndex(null), []);
   const goPrevProduct = useCallback(() => setOpenIndex((i) => (i > 0 ? i - 1 : i)), []);
   const goNextProduct = useCallback(
