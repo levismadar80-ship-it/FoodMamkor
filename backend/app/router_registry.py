@@ -149,3 +149,6 @@ def register_routers(app: FastAPI) -> None:
     # exactly 8 paths and 10 schemas added and nothing else changed.)
     app.include_router(rescue.router)
     app.include_router(rescue.admin_router)
+    # MEH-2649: GET /producers/me/rescue/orders — the business's own counter
+    # list, beside /producers/me/group-buys.
+    app.include_router(rescue.me_router)

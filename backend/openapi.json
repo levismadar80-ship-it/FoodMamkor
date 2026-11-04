@@ -11802,6 +11802,82 @@
         "title": "RequestChangesIn",
         "type": "object"
       },
+      "RescueMetricsOut": {
+        "description": "The pilot's read-only numbers (chunk 5).\n\n`sell_through` and `no_show_rate` are fractions 0..1, not percentages, so\nthe UI decides how to render them and nothing is rounded twice. Both are\nNone when their denominator is zero — a pilot with no bags yet has no\nsell-through, and reporting 0% would read as \"nothing sold\" rather than\n\"nothing published\".",
+        "properties": {
+          "bags_offered": {
+            "title": "Bags Offered",
+            "type": "integer"
+          },
+          "bags_reserved": {
+            "title": "Bags Reserved",
+            "type": "integer"
+          },
+          "buyers_total": {
+            "title": "Buyers Total",
+            "type": "integer"
+          },
+          "days": {
+            "title": "Days",
+            "type": "integer"
+          },
+          "no_show_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "No Show Rate"
+          },
+          "no_shows": {
+            "title": "No Shows",
+            "type": "integer"
+          },
+          "offers_per_day": {
+            "title": "Offers Per Day",
+            "type": "number"
+          },
+          "offers_total": {
+            "title": "Offers Total",
+            "type": "integer"
+          },
+          "orders_total": {
+            "title": "Orders Total",
+            "type": "integer"
+          },
+          "repeat_buyers": {
+            "title": "Repeat Buyers",
+            "type": "integer"
+          },
+          "sell_through": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sell Through"
+          }
+        },
+        "required": [
+          "days",
+          "offers_total",
+          "offers_per_day",
+          "bags_offered",
+          "bags_reserved",
+          "orders_total",
+          "no_shows",
+          "buyers_total",
+          "repeat_buyers"
+        ],
+        "title": "RescueMetricsOut",
+        "type": "object"
+      },
       "RescueNoShowStateOut": {
         "description": "What the admin reset returns, so the operator can see the effect.\n\n`active_no_shows` is the windowed count the 422 gate actually reads — not\nthe lifetime `no_show_count`. After a reset it is 0 by construction, and\nshowing both is what makes the reset verifiable rather than hopeful.",
         "properties": {
@@ -12322,6 +12398,90 @@
         "title": "RescueOrderOut",
         "type": "object"
       },
+      "RescueOwnerOrderOut": {
+        "description": "One of today's reservations, as the business's own dashboard sees it.\n\nCarries `pickup_code` — the business has to read it back against what the\nbuyer says at the counter — and the offer's `pickup_end`, because the\n«לא הגיע» control is only legal after that moment and the dashboard must\ndecide that without a second request.\n\nDeliberately NOT the buyer's name, email or phone: handing over a bag\nneeds four digits, and a list of today's customers on a dashboard screen\nis more personal data than the job requires.",
+        "properties": {
+          "cancelled_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelled At"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "handed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Handed At"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "offer_id": {
+            "format": "uuid",
+            "title": "Offer Id",
+            "type": "string"
+          },
+          "pickup_code": {
+            "title": "Pickup Code",
+            "type": "string"
+          },
+          "pickup_end": {
+            "format": "date-time",
+            "title": "Pickup End",
+            "type": "string"
+          },
+          "pickup_start": {
+            "format": "date-time",
+            "title": "Pickup Start",
+            "type": "string"
+          },
+          "qty": {
+            "title": "Qty",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "reserved",
+              "handed",
+              "no_show",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "offer_id",
+          "qty",
+          "pickup_code",
+          "status",
+          "created_at",
+          "pickup_start",
+          "pickup_end"
+        ],
+        "title": "RescueOwnerOrderOut",
+        "type": "object"
+      },
       "RescueProducerSummary": {
         "description": "The business fields the public bag list needs, and no more.\n\nDeliberately NOT `ProducerListOut`: a bag row shows a name, a photo, a\ntown and a pickup point, and nothing on this list should carry the badge\nblock, the rating aggregate or the contact details — chunk 4's row has no\nplace to put them and serializing them would publish more than the screen\nneeds.",
         "properties": {
@@ -12543,6 +12703,49 @@
           "created_at"
         ],
         "title": "RescueReviewOut",
+        "type": "object"
+      },
+      "RescueTypicalItemsIn": {
+        "description": "«בדרך כלל: …» — the list a business edits once. Bounded so the line\nstays one line on a phone.",
+        "properties": {
+          "items": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 12,
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "title": "RescueTypicalItemsIn",
+        "type": "object"
+      },
+      "RescueTypicalItemsOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "producer_id": {
+            "format": "uuid",
+            "title": "Producer Id",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "producer_id",
+          "items",
+          "updated_at"
+        ],
+        "title": "RescueTypicalItemsOut",
         "type": "object"
       },
       "ResetPasswordRequest": {
@@ -17062,6 +17265,57 @@
         "summary": "Resolve Report",
         "tags": [
           "reports"
+        ]
+      }
+    },
+    "/admin/rescue/metrics": {
+      "get": {
+        "description": "The pilot's four numbers, read-only.\n\nRates come back as fractions, and as None when their denominator is zero:\na pilot with no bags published yet has no sell-through, and reporting 0%\nwould read as \"nothing sold\" rather than \"nothing offered\". That\ndistinction is the whole point of a pilot metric.",
+        "operationId": "pilot_metrics_admin_rescue_metrics_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "days",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "maximum": 365,
+              "minimum": 1,
+              "title": "Days",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RescueMetricsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Pilot Metrics",
+        "tags": [
+          "admin-rescue"
         ]
       }
     },
@@ -21826,6 +22080,109 @@
         "summary": "Request Producer Review",
         "tags": [
           "producer-management"
+        ]
+      }
+    },
+    "/producers/me/rescue/orders": {
+      "get": {
+        "description": "Today's reservations across this business's pickup points.\n\nToday only, by the Israel clock: the dashboard is a counter tool, and a\nbag from last week is not something anyone hands over. Cancelled rows are\nincluded — a business that sees four codes and three people should be able\nto tell which one cancelled rather than wonder.\n\nNo buyer identity is returned; see RescueOwnerOrderOut for why.",
+        "operationId": "list_my_orders_producers_me_rescue_orders_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RescueOwnerOrderOut"
+                  },
+                  "title": "Response List My Orders Producers Me Rescue Orders Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List My Orders",
+        "tags": [
+          "rescue"
+        ]
+      }
+    },
+    "/producers/me/rescue/typical-items": {
+      "get": {
+        "description": "«בדרך כלל: …» as it stands. An empty list when never set — the read\nnever has to distinguish \"no row\" from \"empty\", only the first.",
+        "operationId": "get_typical_items_producers_me_rescue_typical_items_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RescueTypicalItemsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Get Typical Items",
+        "tags": [
+          "rescue"
+        ]
+      },
+      "put": {
+        "description": "Upsert the list. One row per business (uq_rescue_typical_items_producer),\nso this writes the existing row rather than racing a second insert.",
+        "operationId": "set_typical_items_producers_me_rescue_typical_items_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RescueTypicalItemsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RescueTypicalItemsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Set Typical Items",
+        "tags": [
+          "rescue"
         ]
       }
     },

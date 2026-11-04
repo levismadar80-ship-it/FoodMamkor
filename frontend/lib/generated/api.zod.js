@@ -2353,6 +2353,30 @@ export const ResolveReportAdminReportsReportIdResolvePostResponse = /*#__PURE__*
 
 
 /**
+ * The pilot's four numbers, read-only.
+ *
+ * Rates come back as fractions, and as None when their denominator is zero:
+ * a pilot with no bags published yet has no sell-through, and reporting 0%
+ * would read as "nothing sold" rather than "nothing offered". That
+ * distinction is the whole point of a pilot metric.
+ * @summary Pilot Metrics
+ */
+export const PilotMetricsAdminRescueMetricsGetResponse = /*#__PURE__*/ zod.object({
+  "bags_offered": /*#__PURE__*/ zod.int(),
+  "bags_reserved": /*#__PURE__*/ zod.int(),
+  "buyers_total": /*#__PURE__*/ zod.int(),
+  "days": /*#__PURE__*/ zod.int(),
+  "no_show_rate": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
+  "no_shows": /*#__PURE__*/ zod.int(),
+  "offers_per_day": /*#__PURE__*/ zod.number(),
+  "offers_total": /*#__PURE__*/ zod.int(),
+  "orders_total": /*#__PURE__*/ zod.int(),
+  "repeat_buyers": /*#__PURE__*/ zod.int(),
+  "sell_through": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()]))
+}).check(/*#__PURE__*/ zod.describe('The pilot\'s read-only numbers (chunk 5).\n\n`sell_through` and `no_show_rate` are fractions 0..1, not percentages, so\nthe UI decides how to render them and nothing is rounded twice. Both are\nNone when their denominator is zero — a pilot with no bags yet has no\nsell-through, and reporting 0% would read as \"nothing sold\" rather than\n\"nothing published\".'))
+
+
+/**
  * Release a buyer's no-show block.
  *
  * Writes `rescue_block_cleared_at` instead of zeroing the counter, so the
@@ -5084,6 +5108,56 @@ export const UpdateMyRecipeProducersMeRecipesRecipeIdPatchResponse = /*#__PURE__
  * @summary Request Producer Review
  */
 export const RequestProducerReviewProducersMeRequestReviewPostResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
+ * Today's reservations across this business's pickup points.
+ *
+ * Today only, by the Israel clock: the dashboard is a counter tool, and a
+ * bag from last week is not something anyone hands over. Cancelled rows are
+ * included — a business that sees four codes and three people should be able
+ * to tell which one cancelled rather than wonder.
+ *
+ * No buyer identity is returned; see RescueOwnerOrderOut for why.
+ * @summary List My Orders
+ */
+export const ListMyOrdersProducersMeRescueOrdersGetResponseItem = /*#__PURE__*/ zod.object({
+  "cancelled_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "handed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "offer_id": /*#__PURE__*/ zod.uuid(),
+  "pickup_code": /*#__PURE__*/ zod.string(),
+  "pickup_end": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "pickup_start": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "qty": /*#__PURE__*/ zod.int(),
+  "status": /*#__PURE__*/ zod.enum(['reserved', 'handed', 'no_show', 'cancelled'])
+}).check(/*#__PURE__*/ zod.describe('One of today\'s reservations, as the business\'s own dashboard sees it.\n\nCarries `pickup_code` — the business has to read it back against what the\nbuyer says at the counter — and the offer\'s `pickup_end`, because the\n«לא הגיע» control is only legal after that moment and the dashboard must\ndecide that without a second request.\n\nDeliberately NOT the buyer\'s name, email or phone: handing over a bag\nneeds four digits, and a list of today\'s customers on a dashboard screen\nis more personal data than the job requires.'))
+export const ListMyOrdersProducersMeRescueOrdersGetResponse = /*#__PURE__*/ zod.array(ListMyOrdersProducersMeRescueOrdersGetResponseItem)
+
+
+/**
+ * «בדרך כלל: …» as it stands. An empty list when never set — the read
+ * never has to distinguish "no row" from "empty", only the first.
+ * @summary Get Typical Items
+ */
+export const GetTypicalItemsProducersMeRescueTypicalItemsGetResponse = /*#__PURE__*/ zod.object({
+  "items": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "updated_at": /*#__PURE__*/ zod.iso.datetime({"offset":true})
+})
+
+
+/**
+ * Upsert the list. One row per business (uq_rescue_typical_items_producer),
+ * so this writes the existing row rather than racing a second insert.
+ * @summary Set Typical Items
+ */
+export const SetTypicalItemsProducersMeRescueTypicalItemsPutResponse = /*#__PURE__*/ zod.object({
+  "items": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "updated_at": /*#__PURE__*/ zod.iso.datetime({"offset":true})
+})
 
 
 /**

@@ -53,6 +53,11 @@ def rescue_on(monkeypatch):
     stays green both before and after Sapir applies the patch.
     """
     monkeypatch.setattr(rescue_module, "rescue_bags_enabled", lambda: True)
+    # MEH-2649: the pilot is also gated per TOWN, and the default is no town
+    # at all — so every functional test has to open the one its fixtures use,
+    # or publishing 403s and the public list is empty. Patched as a function
+    # for the same reason as the flag: `settings` has no such field yet.
+    monkeypatch.setattr(rescue_module, "rescue_cities", lambda: ("חיפה",))
     return True
 
 
