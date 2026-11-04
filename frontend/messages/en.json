@@ -4342,6 +4342,10 @@
         "manage_experiences": {
           "title": "My experiences",
           "sub": "Workshops and tours people sign up for"
+        },
+        "rescue": {
+          "title": "Rescue bags",
+          "sub": "Publish today's surplus and hand it over against a code"
         }
       },
       "pulse": {
@@ -5662,6 +5666,60 @@
       "sign_in": "Sign in to reserve a bag.",
       "gone": "Rescue bags aren't active right now.",
       "generic": "Something got stuck. Try again."
+    },
+    "dashboard": {
+      "title": "Rescue bags",
+      "lead": "Today's surplus — publish, hand over against a code, mark it.",
+      "loading": "Loading…",
+      "failed": "Something got stuck. Try again.",
+      "counter": {
+        "reserved": "Reserved",
+        "handed": "Handed over",
+        "no_show": "No-shows"
+      },
+      "code_label": "Pickup code",
+      "code_placeholder": "0000",
+      "code_not_found": "No active reservation with that code.",
+      "hand_over": "Confirm handover",
+      "no_show": "Didn't show",
+      "no_show_too_early": "Can only be marked after the pickup window closes",
+      "qty": "{qty} bags",
+      "handed_at": "✓ handed over {time}",
+      "status": {
+        "cancelled": "Cancelled",
+        "no_show": "No-show",
+        "reserved": "Reserved",
+        "handed": "Handed over"
+      },
+      "orders_title": "Today's reservations",
+      "orders_empty": "No reservations for today yet.",
+      "publish_title": "Publish bags",
+      "publish_today": "Publish for today · {price} ₪",
+      "publish_tomorrow": "Publish {n} bags for tomorrow",
+      "published": "Bags published.",
+      "no_location": "You need a pickup point with an exact address.",
+      "field": {
+        "qty": "How many bags",
+        "price": "Price (₪)",
+        "from": "Pickup from",
+        "to": "until"
+      },
+      "items_title": "Usually in the bag",
+      "items_help": "Comma separated. This is what buyers see before they reserve.",
+      "items_save": "Save",
+      "items_saved": "Saved."
+    },
+    "counter_card": {
+      "title": "Mehamakor rescue bag",
+      "subtitle": "Ask for the code, check it, hand it over, mark it",
+      "print_hint": "To print: Ctrl+P (or Print in the browser menu). The card prints at A5.",
+      "step": {
+        "ask": "Ask the buyer for the code — four digits.",
+        "check": "Check the code appears in the dashboard's reservation list.",
+        "hand": "Hand over the bag.",
+        "mark": "Mark «Confirm handover» in the dashboard. Nobody came by the end of the window — «Didn't show»."
+      },
+      "footer": "Payment at the counter, at the price on the reservation. Questions — write to us."
     }
   }
 }

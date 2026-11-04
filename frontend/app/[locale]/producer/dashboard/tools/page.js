@@ -27,10 +27,11 @@
  * RTL: logical properties only — see .claude/rules/rtl.md.
  */
 
+import { rescueBagsEnabled } from "@/lib/rescue";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { CalendarPlus, UsersThree, CookingPot, Star, Sparkle } from "@phosphor-icons/react";
+import { ShoppingBag, CalendarPlus, UsersThree, CookingPot, Star, Sparkle } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import RequestReviewCard from "@/components/producer/RequestReviewCard";
@@ -137,6 +138,20 @@ export default function ProducerDashboardToolsPage() {
           <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.group_buys.title")}</p>
           <p className="text-sm text-fg-muted">{t("quick_links.group_buys.sub")}</p>
         </Link>
+        {/* MEH-2649: the rescue-bags counter tool. The tile is flag-gated so
+            the dashboard is unchanged until the pilot is switched on — the
+            route itself 404s as well, this just avoids a dead link. */}
+        {rescueBagsEnabled() && (
+          <Link
+            href="/producer/dashboard/rescue"
+            data-testid="tools-rescue-tile"
+            className="bg-white border border-border rounded-[16px] p-5 hover:border-primary transition"
+          >
+            <ShoppingBag size={24} className="text-primary mb-2" aria-hidden="true" />
+            <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.rescue.title")}</p>
+            <p className="text-sm text-fg-muted">{t("quick_links.rescue.sub")}</p>
+          </Link>
+        )}
         {/* MEH-590: producer recipes tab (chunk 3/4 of the producer-recipes epic). */}
         <Link
           href="/producer/dashboard/recipes"
