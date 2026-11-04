@@ -32,7 +32,7 @@ function byDateTime(a, b) {
   return ka < kb ? -1 : ka > kb ? 1 : 0;
 }
 
-export function GroupBuyRow({ gb }) {
+function GroupBuyRow({ gb }) {
   const t = useTranslations("group_buys.card");
   const td = useTranslations("group_buys.detail");
   const funded = gb.status === "funded";
