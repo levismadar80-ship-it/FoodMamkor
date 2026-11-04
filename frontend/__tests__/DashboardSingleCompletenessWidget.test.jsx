@@ -93,6 +93,8 @@ vi.mock("@/components/InfoTooltip", () => ({ default: () => null }));
 vi.mock("@/components/PhoneVerifyCard", () => ({ default: () => null }));
 vi.mock("@/components/ui/Input", () => ({ default: () => null }));
 vi.mock("@/lib/holidays", () => ({ getUpcomingHoliday: () => null }));
+// MEH-1687 D: the holiday hint renders HolidayIcon (Phosphor names this file's icon mock lacks).
+vi.mock("@/components/HolidayIcon", () => ({ default: () => null }));
 // ProfileCompletenessCard is NOT mocked — we render the real canonical card so
 // its ring (role="progressbar") is the thing we count.
 

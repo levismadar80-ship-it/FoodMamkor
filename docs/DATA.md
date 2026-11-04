@@ -89,7 +89,7 @@
 
 > **MEH-2495 (2026-10-28):** `ProducerAdminOut` gains a derived **`has_owner: bool | None`** (default `None`, so a route that forgot to hydrate it **fails closed** — the admin UI renders neither chip nor action for a non-boolean) — True iff at least one `users` row has `producer_id` = the producer (the same predicate as `producer_claim._has_owner`, which 409s the claim link). **Never stored, no migration.** Hydrated by `admin.py::_attach_has_owner` in **one** `SELECT DISTINCT users.producer_id … IN (…)` per response (no N+1; DISTINCT because `users.producer_id` has no unique index) on every route that returns `ProducerAdminOut` (`GET /admin/producers`, `/pending`, `/{id}`, `PUT /{id}`, `POST`). **Admin-only** — absent from `ProducerListOut` / `ProducerDetailOut` / `ProducerOwnerOut` (asserted in `tests/test_meh2495_admin_draft_owner.py`). Drives the drafts-list chips «מחכה לבעלים» / «נקלט, בהשלמה» and the row action «העתקת הודעה עם קישור» (ownerless drafts only). The set of routes returning `ProducerAdminOut` is pinned by an OpenAPI-derived inventory test, so a sixth route has to be added — and hydrated — on purpose.
 
-> **MEH-1255 (2026-07-17):** delivery-exclusion mode ("משלוחים לכל הארץ חוץ מ:"). `producers.delivery_excluded_cities` (`TEXT[] NOT NULL DEFAULT '{}'`, migration `e7c4b1f95a2d`) holds the cities a nationwide-delivery producer does NOT ship to (ShipperHQ include/exclude zone model). CHECK `delivery_excluded_requires_nationwide` (`delivery_nationwide OR delivery_excluded_cities = '{}'`) keeps it empty unless nationwide — the sibling of `delivery_nationwide_xor_cities`. Schema (`ProducerUpdate`/`ProducerAdminCreate`) validators reject an exclusion list without nationwide; partial-update effective-state (list sent alone, or nationwide switched off over a stored list) is guarded in the routers (`app/services/delivery_validation.py`) so it 422s (`ערים מוחרגות אפשריות רק עם משלוחים לכל הארץ`) instead of a DB CHECK 500. **Public** — `ProducerListOut`/`ProducerDetailOut` carry `delivery_excluded_cities` so `DeliveryBlock` renders "משלוחים לכל הארץ (למעט …)". **Consumer filter:** `GET /producers?delivery_city=X` (`producer_listing.py`) switched from an inner `JOIN delivery_areas` to `EXISTS (…) OR (delivery_nationwide AND NOT X = ANY(delivery_excluded_cities))` — a nationwide producer now matches any city except its exclusions (previously nationwide producers were never returned by the city filter, their `delivery_areas` being empty by the XOR).
+> **MEH-1255 (2026-07-17):** delivery-exclusion mode ("משלוחים לכל הארץ חוץ מ:"). `producers.delivery_excluded_cities` (`TEXT[] NOT NULL DEFAULT '{}'`, migration `e7c4b1f95a2d`) holds the cities a nationwide-delivery producer does NOT ship to (ShipperHQ include/exclude zone model). CHECK `delivery_excluded_requires_nationwide` (`delivery_nationwide OR delivery_excluded_cities = '{}'`) keeps it empty unless nationwide — the sibling of `delivery_nationwide_xor_cities`. Schema (`ProducerUpdate`/`ProducerAdminCreate`) validators reject an exclusion list without nationwide; partial-update effective-state (list sent alone, or nationwide switched off over a stored list) is guarded in the routers (`app/services/delivery_validation.py`) so it 422s instead of a DB CHECK 500 — detail `{code: "excluded_requires_nationwide", message: "ערים מוחרגות אפשריות רק עם משלוחים לכל הארץ", params: {}}` since MEH-1943 chunk 3 (its MEH-1879 sibling: `nationwide_requires_delivery`); the owner DeliveryCard and admin ProducerForm resolve the code to `dashboard.producer.delivery.errors.<code>` (`lib/delivery-errors.js`). **Public** — `ProducerListOut`/`ProducerDetailOut` carry `delivery_excluded_cities` so `DeliveryBlock` renders "משלוחים לכל הארץ (למעט …)". **Consumer filter:** `GET /producers?delivery_city=X` (`producer_listing.py`) switched from an inner `JOIN delivery_areas` to `EXISTS (…) OR (delivery_nationwide AND NOT X = ANY(delivery_excluded_cities))` — a nationwide producer now matches any city except its exclusions (previously nationwide producers were never returned by the city filter, their `delivery_areas` being empty by the XOR).
 
 > **MEH-1291 (2026-07-18):** producer freshness signal. `producers.updated_at` (`TIMESTAMP WITH TIME ZONE`, **nullable**, migration `a3f1c9d2e4b7`, Chunk A) is stamped by the model-level `onupdate=func.now()` (`models.py`) on every real producer UPDATE — owner edits (`producer_me.py:update_my_producer`) and admin edits (`admin.py:admin_update_producer`), both of which load the ORM object + `setattr` + `commit` (a bulk `update()` execute would skip the stamp — no such path exists on producers). **No `server_default`, NO backfill** (ADR-007 Expand-only): the column stays NULL for producers never edited since the migration, so the public "עודכן לאחרונה: {חודש שנה}" line renders nothing for them (honest signal). **Public** — `ProducerDetailOut` (Chunk B) carries `updated_at` read-only; `ProducerListOut`/map do NOT (detail-page-only). Rendered as a modest month-year footnote at the page end (`ProducerSections.jsx`, `frontend/lib/format-date.js` → he-IL/en-US).
 
@@ -1270,6 +1270,54 @@ POST /contact                    public — { name, email, message, topic? } →
 GET  /cities                     public — canonical cities table (data.gov.il seed,
                                  MEH-1343) ∪ live producer/delivery cities; static
                                  list only as unseeded-env fallback (MEH-1349)
+```
+
+### Community business suggestions (`app/routers/business_suggestions.py` — MEH-2633)
+
+```
+POST /business-suggestions       public — { name, city, instagram|phone|website (≥1),
+                                 reason?, suggester_name?, suggester_email?,
+                                 wants_update?, company? } → an outreach_leads row
+                                 with source="community". Nothing is published.
+                                 rate-limited 5/hour per IP
+                                 RESPONSE IS ALWAYS {"ok": true} — no id, no echo.
+                                 A new suggestion, a duplicate and a honeypot hit
+                                 are byte-identical from outside, so the endpoint
+                                 cannot be used to probe whether a business is
+                                 already in the outreach queue.
+                                 company = honeypot: any value → 201, nothing
+                                 stored, no admin ping.
+                                 duplicate (lower(name), lower(city)) → the reason
+                                 is appended to the existing lead's notes
+                                 ("המלצה נוספת: …"); the first suggester is kept,
+                                 except where the slot is empty (an admin-typed
+                                 lead), which is filled so the person can still be
+                                 thanked. `source` is never rewritten.
+                                 logged-in caller: suggester_email is prefilled
+                                 from the account ONLY when the field is empty.
+```
+
+`outreach_leads` gains five columns (revision `d7a511246b14`, no new table):
+`suggested_by_name` VARCHAR(100) NULL · `suggested_by_email` VARCHAR(254) NULL ·
+`suggester_wants_update` BOOLEAN NOT NULL DEFAULT false ·
+`suggestion_reason` TEXT NULL · `suggester_thanked_at` TIMESTAMP NULL.
+**`suggested_by_email` is admin-only** — the single reader is `OutreachLeadOut`,
+behind `require_admin`; no public endpoint returns it and it is never logged
+unmasked (`services/email.py:47` `_mask`). Retention is MEH-2638.
+
+```
+GET  /admin/outreach?source=     admin — new optional filter, exact, validated
+                                 against {manual, community} (400 otherwise).
+                                 COALESCEs a NULL source to "manual".
+POST /admin/outreach/{id}/thank-suggester
+                                 admin — emails the suggester that the business
+                                 joined; stamps suggester_thanked_at, which is the
+                                 idempotency key. Four distinct 409s: no
+                                 suggester email · no opt-in · already thanked ·
+                                 status != "registered".
+GET  /admin/outreach/metrics/summary
+                                 admin — gains "community" (a SOURCE count, not a
+                                 status); still ONE grouped SELECT (MEH-2553).
 ```
 
 ### Search (`app/routers/search.py` — MEH-99)
