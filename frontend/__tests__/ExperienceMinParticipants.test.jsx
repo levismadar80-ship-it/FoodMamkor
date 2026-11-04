@@ -76,6 +76,11 @@ describe("experience page — minimum to run", () => {
     expect(screen.getByTestId("experience-min").textContent).toBe(D.min_to_open.replace("{n}", "3"));
   });
 
+  it("minimum of 1 → no line (any sign-up opens it)", async () => {
+    await page({ min_participants: 1, participants_count: 0 });
+    expect(screen.queryByTestId("experience-min")).not.toBeInTheDocument();
+  });
+
   it("past experience → no line", async () => {
     await page({ min_participants: 4, event_date: "2020-01-01" });
     expect(screen.queryByTestId("experience-min")).not.toBeInTheDocument();

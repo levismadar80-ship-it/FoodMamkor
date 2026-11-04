@@ -459,9 +459,12 @@ def update_experience(
         raise HTTPException(status_code=404, detail="Experience not found")
 
     payload = data.model_dump(exclude_unset=True)
+    # Only an edit that touches min or max is checked, so a stored pair that
+    # is somehow already inverted never blocks an unrelated edit.
+    touches_range = "min_participants" in payload or "max_participants" in payload
     new_min = payload.get("min_participants", ex.min_participants)
     new_max = payload.get("max_participants", ex.max_participants)
-    if _min_above_max(new_min, new_max):
+    if touches_range and _min_above_max(new_min, new_max):
         raise HTTPException(status_code=422, detail=_MIN_ABOVE_MAX_DETAIL)
     for field, value in payload.items():
         setattr(ex, field, value)

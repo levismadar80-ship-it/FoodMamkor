@@ -180,7 +180,9 @@ export default function ExperienceDetailClient() {
   // A host-cancelled experience drops from the feed but its link still opens;
   // it must not offer sign-up or a waitlist.
   const showCta = isApproved && !isPast && ex.is_active !== false;
-  const showMin = ex.min_participants != null && !isPast;
+  // A minimum of 1 opens on any sign-up, so there is nothing to say (and
+  // «ב-1 נרשמים» would read wrong).
+  const showMin = ex.min_participants != null && ex.min_participants > 1 && !isPast;
   const minReached = showMin && (ex.participants_count ?? 0) >= ex.min_participants;
   const canCalendar = isApproved && !ex.is_recurring && !isPast;
   const icsEvent = {
