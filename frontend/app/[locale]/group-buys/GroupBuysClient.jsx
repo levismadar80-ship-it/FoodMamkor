@@ -119,7 +119,7 @@ export function GroupBuyCard({ gb }) {
             <Clock size={16} aria-hidden="true" className="shrink-0" />
             {daysLeft > 0 ? t("days_left", { days: daysLeft }) : t("expired")}
           </span>
-          {/* MEH-2651: one short line per answer (pickup / delivery); a group
+          {/* MEH-2621 split (UI): one short line per answer (pickup / delivery); a group
               made before the split shows its single note as before. */}
           {(gb.pickup_note || gb.delivery_note
             ? [

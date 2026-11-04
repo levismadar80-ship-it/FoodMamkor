@@ -65,7 +65,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
   const [error, setError] = useState("");
   // MEH-1164 B: verified-email 403 → resend CTA notice instead of a dead-end.
   const [unverified, setUnverified] = useState(false);
-  // MEH-2453 / MEH-2651: pickup or delivery is required — at least one of the
+  // MEH-2453 / MEH-2621 split (UI): pickup or delivery is required — at least one of the
   // two boxes, each with real words if filled. `noteError` names the boxes the
   // error belongs to: both when both are blank, else the one that is too short.
   // The error sits under the pair, not at the end of the form.
@@ -254,7 +254,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
 
         {/* MEH-1457: "מתי ואיך מקבלים" — free text (OFN "Ready for").
             MEH-2453: required, with a helper saying who reads it.
-            MEH-2651: two boxes, pickup and delivery (Shopify / Local Line ask
+            MEH-2621 split (UI): two boxes, pickup and delivery (Shopify / Local Line ask
             the seller about each separately); at least one is required. Copy
             approved by Sapir 30/10. Textareas, so they cannot ride ui/Input;
             the helper and error copy Input's markup and aria wiring. */}

@@ -314,7 +314,7 @@ export default function GroupBuyDetailClient({ id }) {
   }
 
   const funded = gb.status === "funded";
-  // MEH-2651: pickup / delivery as two answers; old groups carry only the
+  // MEH-2621 split (UI): pickup / delivery as two answers; old groups carry only the
   // pre-split fulfillment_note.
   const hasSplitNotes = Boolean(gb.pickup_note || gb.delivery_note);
   const hasFulfillment = hasSplitNotes || Boolean(gb.fulfillment_note);
@@ -543,7 +543,7 @@ export default function GroupBuyDetailClient({ id }) {
                 (DeliveryChecker gates 1–3), and a heading over nothing would
                 be an orphan. Without a note the checker stands alone, as
                 before. */}
-            {/* MEH-2651: new groups answer pickup and delivery separately,
+            {/* MEH-2621 split (UI): new groups answer pickup and delivery separately,
                 each as its own labelled row (MapPin / Truck). A group made
                 before the split carries only fulfillment_note and renders as
                 it did. */}
