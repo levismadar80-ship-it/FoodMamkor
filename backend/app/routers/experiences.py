@@ -455,7 +455,10 @@ def update_experience(
     if "participants_count" in payload or "max_participants" in payload:
         if ex.participants_count is None:
             ex.participants_count = 0
-        if ex.max_participants is not None and ex.participants_count > ex.max_participants:
+        if (
+            ex.max_participants is not None
+            and ex.participants_count > ex.max_participants
+        ):
             ex.participants_count = ex.max_participants
 
     # MEH-1419: a pure cancel/reactivate toggle (is_active only) must NOT
