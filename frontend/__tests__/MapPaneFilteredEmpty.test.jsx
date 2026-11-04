@@ -53,10 +53,18 @@ describe("MapPane empty overlay (MEH-2425)", () => {
     expect(onReset).toHaveBeenCalledTimes(1);
   });
 
-  it("no filter → the empty-region overlay with its CTA, unchanged", () => {
+  // MEH-2639: the second cell used to assert the CTA was PRESENT here. The
+  // overlay is shown to a consumer looking for somewhere to buy, so pitching
+  // her business registration answers a question she did not ask — the body
+  // and the «הוסיפו עסק» link are gone and only the statement of fact
+  // remains. The assertion is inverted rather than deleted: the CTA's absence
+  // is now the property worth protecting, in BOTH branches.
+  it("no filter → the heading alone, with no 'add a business' pitch", () => {
     render(<MapPane {...base} />);
-    expect(screen.getByText("map.pane.empty.heading")).toBeInTheDocument();
-    expect(screen.getByText("map.pane.empty.cta")).toBeInTheDocument();
+    expect(screen.getByTestId("map-pane-empty")).toHaveTextContent("map.pane.empty.heading");
+    expect(screen.queryByText("map.pane.empty.cta")).toBeNull();
+    expect(screen.queryByText("map.pane.empty.body")).toBeNull();
+    expect(screen.queryByRole("link")).toBeNull();
     expect(screen.queryByTestId("map-pane-filtered-empty")).toBeNull();
   });
 });
