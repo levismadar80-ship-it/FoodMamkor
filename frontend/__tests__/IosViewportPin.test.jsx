@@ -148,3 +148,18 @@ describe("IosViewportPin component", () => {
     expect(shiftVar()).toBe("");
   });
 });
+
+describe(".vv-pin stylesheet rule", () => {
+  // The rule must carry NO fallback: with --vv-shift absent the declaration is
+  // invalid at computed-value time and `translate` resolves to `none`. A
+  // `0px` fallback would make every pinned layer a containing block for fixed
+  // descendants on every platform (MEH-2622 class), so guard the source text.
+  it("translates by --vv-shift with no fallback value", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { resolve } = await import("node:path");
+    const css = readFileSync(resolve(__dirname, "../app/globals.css"), "utf8");
+    const rule = css.match(/\.vv-pin\s*\{([^}]*)\}/);
+    expect(rule, ".vv-pin rule exists in globals.css").not.toBeNull();
+    expect(rule[1]).toMatch(/translate:\s*0\s+var\(--vv-shift\)\s*;/);
+  });
+});
