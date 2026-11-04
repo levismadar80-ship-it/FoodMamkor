@@ -10,6 +10,7 @@ import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import ImageWithFallback from "@/components/ImageWithFallback";
 // MEH-1140: canonical shekel format — amount then ₪ ("35₪"), one owner in lib/utils.
 import { formatPrice, formatPriceRange } from "@/lib/utils";
+import { badgeIcon } from "@/lib/chip-icons";
 import { formatEventDate } from "@/lib/format-date";
 import DeliveryBlock from "@/components/DeliveryBlock";
 import OfferBadge from "@/components/OfferBadge";
@@ -31,7 +32,7 @@ import { OrderWindowScheduleBlock } from "./OrderWindowStrip";
 import RecipeCard from "@/components/public/RecipeCard";
 // MEH-1901: the full product detail (long description, per-product diet flags)
 // as an overlay — no route, no marketplace.
-import ProductSheet from "@/components/public/ProductSheet";
+import ProductSheet, { productDietKeys } from "@/components/public/ProductSheet";
 import ReportButton from "@/components/ReportButton";
 // MEH-1460: the "טעות בפרטים?" correction link relocated here from
 // ContactCard — its modal/email logic (v1, MEH-1443) is unchanged.
@@ -101,6 +102,28 @@ function SignatureShell({ product, onOpen, ariaLabel, children }) {
     >
       {children}
     </button>
+  );
+}
+
+// MEH-2654 (Sapir 31/10): the listing card shows «צמחוני +4», and the page
+// never said WHICH products carry them. Each product names its own flags —
+// icon + the same label as the sheet (MEH-2584 icon+word). Renders nothing for
+// a product with no flags (or no product at all, e.g. a free-text signature).
+function ProductDietPills({ product, t }) {
+  const keys = productDietKeys(product);
+  if (keys.length === 0) return null;
+  return (
+    <ul className="flex flex-wrap gap-1 mt-1.5" data-testid="product-row-diet">
+      {keys.map((key) => (
+        <li
+          key={key}
+          className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-xs text-fg-muted"
+        >
+          <span aria-hidden="true" className="inline-flex">{badgeIcon(key, 12)}</span>
+          {t(`producer.detail.sections.products.diet.${key}`)}
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -368,6 +391,7 @@ export default function ProducerSections({
                 ) : signatureFreeTextPrice ? (
                   <p className="text-gold-deep font-bold mt-1">{signatureFreeTextPrice}</p>
                 ) : null}
+                <ProductDietPills product={signatureProduct} t={t} />
               </div>
               {/* Forward chevron points LEFT in RTL — same convention as
                   ReviewExcerpt.jsx:86. Only when the card actually opens. */}
@@ -464,6 +488,11 @@ export default function ProducerSections({
                       {freeTextPrice && (
                         <p className="text-accent font-medium mt-1">{freeTextPrice}</p>
                       )}
+                      {/* MEH-2654 (Sapir 31/10): the card on the listing shows
+                          «צמחוני +4», and the page never said WHICH products
+                          carry them. Each row now names its own flags — icon +
+                          the same label as the sheet (MEH-2584 icon+word). */}
+                      <ProductDietPills product={product} t={t} />
                     </div>
                     {/* Forward chevron points LEFT in RTL (ReviewExcerpt.jsx:86). */}
                     <CaretLeft size={14} className="shrink-0 text-fg-muted" aria-hidden="true" />
@@ -471,6 +500,22 @@ export default function ProducerSections({
                 );
               })}
             </div>
+          )}
+
+          {/* MEH-2654: the gluten production-facility sentence lives with the
+              products it qualifies (was in the header, under the kashrut chip,
+              where it read as a note about the whole business page). Same
+              string and plain-text styling (MEH-1508 ch2: no badge/icon). The
+              header keeps it only when there are no products to sit under. */}
+          {producer.products?.length > 0 && producer.gluten_free_facility === "shared" && (
+            <p className="text-xs text-fg-muted leading-relaxed max-w-prose mt-3" data-testid="gluten-facility-shared">
+              {t("producer.detail.header.gluten_facility.shared")}
+            </p>
+          )}
+          {producer.products?.length > 0 && producer.gluten_free_facility === "dedicated" && (
+            <p className="text-xs text-fg-muted leading-relaxed max-w-prose mt-3" data-testid="gluten-facility-dedicated">
+              {t("producer.detail.header.gluten_facility.dedicated")}
+            </p>
           )}
 
           {/* MEH-1901: mounted inside the products section, rendered only while

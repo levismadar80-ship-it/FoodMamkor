@@ -89,6 +89,17 @@ const DIET_FLAGS = [
   { field: "is_no_added_sugar", key: "no_added_sugar" },
 ];
 
+// MEH-2654: the same per-product flags, as a list of i18n keys — shared by
+// the sheet and the product rows so both say the same thing. A vegan product
+// is vegetarian by definition (MEH-1438), so «צמחוני» is dropped next to
+// «טבעוני»: two pills for one claim is the noise Sapir flagged.
+export function productDietKeys(product) {
+  if (!product) return [];
+  return DIET_FLAGS.filter((f) => product[f.field] === true)
+    .filter((f) => !(f.key === "vegetarian" && product.is_vegan === true))
+    .map((f) => f.key);
+}
+
 const FOCUSABLE =
   'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
@@ -324,7 +335,7 @@ export default function ProductSheet({
   // MEH-1901 decision with before/after captures behind it.
   const chevronY = hasPhoto ? "top-1/2 -translate-y-1/2" : "bottom-2";
 
-  const dietKeys = DIET_FLAGS.filter((f) => product[f.field] === true).map((f) => f.key);
+  const dietKeys = productDietKeys(product);
 
   // MEH-1305 F, verbatim: a numeric price goes through the canonical
   // formatPriceRange (MEH-1140) and is bidi-isolated with dir="ltr"; a
@@ -565,6 +576,19 @@ export default function ProductSheet({
                   </li>
                 ))}
               </ul>
+            )}
+
+            {/* MEH-2654: a «ללא גלוטן» product made in a shared facility is
+                exactly where a celiac buyer needs the facility sentence — on
+                the product, not only up in the business header. Same string,
+                same self-declaration styling (plain text, no icon). */}
+            {product.is_gluten_free === true && producer?.gluten_free_facility === "shared" && (
+              <p
+                className="text-xs text-fg-muted leading-relaxed"
+                data-testid="product-sheet-gluten-facility"
+              >
+                {t("producer.detail.header.gluten_facility.shared")}
+              </p>
             )}
 
             {product.description && (
