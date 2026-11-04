@@ -199,7 +199,7 @@ export default function PasswordInput({
                 ? "text-primary"
                 : breachPending
                   ? "text-fg-muted"
-                  : "text-red-500"
+                  : "text-error"
             }`}
           >
             {breachOk ? (

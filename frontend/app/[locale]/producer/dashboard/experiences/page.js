@@ -15,7 +15,7 @@
 import { Link, useRouter } from "@/i18n/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
-import { Sparkle, PencilSimple, Prohibit, ArrowCounterClockwise, Trash } from "@phosphor-icons/react";
+import { Sparkle, PencilSimple, Prohibit, ArrowCounterClockwise, Trash, Check } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { showToast } from "@/lib/toast";
@@ -40,6 +40,76 @@ const STATUS_STYLE = {
 // Experience.status enum (models.py) — labels have he/en twins under
 // manage_experiences.status_*. Any unknown value falls back to the raw string.
 const KNOWN_STATUSES = ["pending", "approved", "rejected", "changes_requested"];
+
+// Sign-up happens on WhatsApp, so the host types how many signed up. Saved on
+// blur / Enter as a bare {participants_count} PUT, which the backend keeps out
+// of moderation (experiences.py _NON_CONTENT_FIELDS). The page then shows
+// «נשארו N מקומות» at 3 or fewer and «הסדנה מלאה» + a waitlist at 0.
+function SignupCountField({ ex, t, onSaved }) {
+  const [value, setValue] = useState(String(ex.participants_count ?? 0));
+  const [state, setState] = useState("idle"); // idle | saving | saved
+  const id = `signed-up-${ex.id}`;
+  const hintId = `${id}-hint`;
+
+  const save = async () => {
+    const n = Number(value);
+    const current = ex.participants_count ?? 0;
+    if (value.trim() === "" || !Number.isInteger(n) || n < 0) {
+      setValue(String(current));
+      return;
+    }
+    const clamped = Math.min(n, ex.max_participants);
+    if (clamped === current) {
+      setValue(String(current));
+      return;
+    }
+    setState("saving");
+    try {
+      const r = await api.put(`/experiences/${ex.id}`, { participants_count: clamped });
+      setValue(String(r.data.participants_count ?? clamped));
+      onSaved(r.data);
+      setState("saved");
+    } catch (err) {
+      setValue(String(current));
+      setState("idle");
+      showToast.error(detailToMessage(err.response?.data?.detail) || t("action_error"));
+    }
+  };
+
+  return (
+    <div className="mt-3 pt-3 border-t border-border flex items-center gap-3 flex-wrap" data-testid="experience-signup-count">
+      <label htmlFor={id} className="text-sm font-medium text-text">
+        {t("signed_up_label")}
+      </label>
+      <div className="flex items-center gap-2">
+        <input
+          id={id}
+          type="number"
+          inputMode="numeric"
+          min={0}
+          max={ex.max_participants}
+          value={value}
+          aria-describedby={hintId}
+          disabled={state === "saving"}
+          onChange={(e) => {
+            setValue(e.target.value);
+            setState("idle");
+          }}
+          onBlur={save}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") e.currentTarget.blur();
+          }}
+          className="w-20 min-h-[44px] border border-border rounded-[8px] px-3 text-center numeric focus-ring disabled:opacity-50"
+        />
+        <span className="text-sm text-fg-muted numeric" aria-hidden="true">/ {ex.max_participants}</span>
+        {state === "saved" && <Check size={18} weight="bold" className="text-primary" aria-hidden="true" />}
+      </div>
+      <p id={hintId} className="basis-full text-xs text-fg-muted">
+        {t("signed_up_hint")}
+      </p>
+    </div>
+  );
+}
 
 export default function ManageExperiencesPage() {
   const t = useTranslations("dashboard.producer.manage_experiences");
@@ -210,6 +280,15 @@ export default function ManageExperiencesPage() {
                   </button>
                 </div>
               </div>
+              {ex.status === "approved" && !past && ex.max_participants != null && (
+                <SignupCountField
+                  ex={ex}
+                  t={t}
+                  onSaved={(saved) =>
+                    setItems((list) => list.map((e) => (e.id === ex.id ? { ...e, ...saved } : e)))
+                  }
+                />
+              )}
             </li>
             );
           })}

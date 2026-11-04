@@ -1091,7 +1091,7 @@ function RegisterProducerPageBody() {
               />
               <PasswordStrength password={form.password} />
             </div>
-            {stepError && <p role="alert" className="text-red-500 text-sm">{stepError}</p>}
+            {stepError && <p role="alert" className="text-error text-sm">{stepError}</p>}
             <button
               data-testid="register-account-next"
               onClick={() => {
@@ -1182,7 +1182,7 @@ function RegisterProducerPageBody() {
                 dir="ltr"
               />
               {phoneErrorMessage && (
-                <p id="register-phone-error" className="text-xs text-red-500 mt-1 inline-flex items-center gap-1"><X size={14} className="text-current" />{phoneErrorMessage}</p>
+                <p id="register-phone-error" className="text-xs text-error mt-1 inline-flex items-center gap-1"><X size={14} className="text-current" />{phoneErrorMessage}</p>
               )}
               {form.phone && validateIsraeliPhone(form.phone) && (
                 <p className="text-xs text-primary mt-1">{t("auth.register.producer.validation.phone_valid")}</p>
@@ -1221,7 +1221,7 @@ function RegisterProducerPageBody() {
               aria-describedby={fieldErrors.city ? "register-city-error" : undefined}
             />
             {fieldErrors.city && (
-              <p id="register-city-error" className="text-xs text-red-500 mt-1 inline-flex items-center gap-1"><X size={14} className="text-current" />{fieldErrors.city}</p>
+              <p id="register-city-error" className="text-xs text-error mt-1 inline-flex items-center gap-1"><X size={14} className="text-current" />{fieldErrors.city}</p>
             )}
             </div>
 
@@ -1355,8 +1355,7 @@ function RegisterProducerPageBody() {
                   {addressCityMismatch && (
                     <p
                       data-testid="register-address-city-mismatch"
-                      className="text-xs mt-2 inline-flex items-start gap-1.5 text-start"
-                      style={{ color: "#8B6914" }}
+                      className="text-xs mt-2 inline-flex items-start gap-1.5 text-start text-accent"
                     >
                       <Warning size={14} weight="fill" aria-hidden="true" className="mt-0.5 shrink-0" />
                       <span>
@@ -1738,7 +1737,7 @@ function RegisterProducerPageBody() {
                     from the gray, non-blocking format warning above). role=alert
                     announces it; mirrors the inline phone-error placement. */}
                 {!licensePending && licenseRequiredError && (
-                  <p role="alert" className="text-xs text-red-500 mt-1 text-start">
+                  <p role="alert" className="text-xs text-error mt-1 text-start">
                     {t("auth.register.producer.validation.license_required")}
                   </p>
                 )}
@@ -2085,7 +2084,7 @@ function RegisterProducerPageBody() {
             {/* MEH-328 Chunk D: emailExistsSubmitError render block removed.
                 Non-upgrade collisions return identical 200 ack → step 3
                 inbox-check UI. Upgrade-path 409 still surfaces via `error`. */}
-            {error && <p role="alert" className="text-red-500 text-sm">{error}</p>}
+            {error && <p role="alert" className="text-error text-sm">{error}</p>}
 
             {/* MEH-2200 (Amendment 13, s.11 disclosure duty): the collection
                 notice must be given AT collection, so it renders inline on the
