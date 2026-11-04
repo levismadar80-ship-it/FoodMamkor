@@ -13,7 +13,7 @@ import EventEntryRow, { toEventEntry } from "@/components/EventEntryRow";
 // experiences, fetched client-side by producer_id; a failed fetch or an empty
 // list hides the section.
 //
-// MEH-2659 (Sapir, 04/11 — proposal https://claude.ai/artifact/3KGkJqw9im6RWKNv4x3hHr):
+// MEH #2659 (Sapir, 04/11 — proposal https://claude.ai/artifact/3KGkJqw9im6RWKNv4x3hHr):
 // - Events and experiences are ONE date-sorted list, drawn with the home
 //   page's EventEntryRow, under the existing «אירועים קרובים» heading. They
 //   used to be two lists of grey one-line cards with different headings.

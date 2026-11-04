@@ -336,7 +336,7 @@ export default function ProducerHeader({
         </span>
       </p>
 
-      {/* MEH-2659: the active offer, right under the status (it used to sit
+      {/* MEH #2659: the active offer, right under the status (it used to sit
           above the delivery block, two scrolls down). Renders nothing when
           there is no live offer, so no gap. */}
       {producer.active_offer && (

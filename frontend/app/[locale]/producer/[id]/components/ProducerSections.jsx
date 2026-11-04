@@ -103,8 +103,8 @@ function SignatureShell({ product, onOpen, ariaLabel, children }) {
 /**
  * The middle of the main column. MEH-2592 reorders the sections so everything
  * about this business comes first: about → owner → products → recipes →
- * events + experiences → group buys (ProducerActivities) → reviews → delivery → order window → location (OpeningHours +
- * MiniMap) → fine print (disclaimer, report, last-updated). The similar /
+ * events + experiences → group buys (ProducerActivities) → reviews →
+ * delivery → order window → location (OpeningHours + MiniMap) → fine print (disclaimer, report, last-updated). The similar /
  * nearby rows moved out to <OtherBusinesses>, which ProducerDetail renders
  * full width below both columns. The signature product (top_product_name / price_range)
  * moved OUT of ProducerHeader to the top of the products section here.
@@ -115,8 +115,9 @@ function SignatureShell({ product, onOpen, ariaLabel, children }) {
  * pickup signal. The legacy delivery_areas table was retired from this page.
  *
  * The events list (and its show-all state) moved to ProducerActivities
- * (MEH-2659), merged with experiences. The reviews wrapper accepts reviewsContainerRef and reviewsVisible from useLazyReviews so the
- * IO observation point remains identical to the source.
+ * (MEH #2659), merged with experiences. The reviews wrapper accepts
+ * reviewsContainerRef and reviewsVisible from useLazyReviews so the IO
+ * observation point remains identical to the source.
  */
 export default function ProducerSections({
   producer,
@@ -508,7 +509,7 @@ export default function ProducerSections({
       )}
 
       {/* Events + experiences (one list) and open group buys — MEH-2602,
-          reshaped under MEH-2659. */}
+          reshaped under MEH #2659. */}
       <ProducerActivities producerId={producer.id} events={events} sectionRefs={sectionRefs} />
 
       {/* Reviews — IO-lazy: only mounts the fetch when the section

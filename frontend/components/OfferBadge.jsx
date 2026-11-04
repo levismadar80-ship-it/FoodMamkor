@@ -2,7 +2,7 @@
  * OfferBadge — MEH-1823 chunk 3.
  *
  * Purpose:  Render a business's single active offer: a `line` under the
- *           status in the business-page header (MEH-2659; it was a `badge`
+ *           status in the business-page header (MEH #2659; it was a `badge`
  *           above the delivery block until then), a short `chip` on
  *           ProducerCard, and the framed `badge` (default).
  * Does NOT: decide whether the offer is live. The server already did — an
@@ -168,7 +168,7 @@ export default function OfferBadge({ offer, variant = "badge", className = "" })
     );
   }
 
-  // MEH-2659: `line` — the business page shows the offer in its header, right
+  // MEH #2659: `line` — the business page shows the offer in its header, right
   // under the status line (Sapir, 04/11: Wolt / Uber Eats / Etsy put a store's
   // offer by its name, where the visitor decides). No frame and no fill, so it
   // reads as a fact of the business and not as an ad (ADR-027).
