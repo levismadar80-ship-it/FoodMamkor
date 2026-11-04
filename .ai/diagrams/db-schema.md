@@ -62,8 +62,8 @@ erDiagram
         string kind "MEH-2459 — producer|organizer; NOT NULL default producer; CHECK producer_kind_values (ADR-036)"
         float avg_rating "cached aggregate"
         int reviews_count "cached aggregate"
-        boolean is_available_today "legacy — preserved during MEH-291 overlap"
-        string availability_status "legacy — preserved during MEH-291 overlap"
+        boolean is_available_today "legacy — unread, unwritten, in no response (MEH-2272); MEH-2273 drops it"
+        string availability_status "legacy — unread, unwritten, in no response (MEH-2272); MEH-2273 drops it"
         string availability_state "MEH-291 — accepting_orders|available_today|full_this_week|on_vacation"
         date vacation_until "nullable — required when availability_state=on_vacation"
         timestamp recommended_at "nullable — MEH-1494 chunk A, revision e2a7c9d4b6f1; when the current editorial pick was made. No backfill: NULL = picked before the clock existed, due for review"
@@ -125,6 +125,8 @@ erDiagram
         boolean is_lactose_free "MEH-293/MEH-479: single source of truth"
         boolean is_no_added_sugar "MEH-1934: 5th dietary axis; no backfill — nothing implies it"
         boolean is_low_carb "MEH-1934: 6th dietary axis; independent of every other flag"
+        text ingredients "MEH-2662: owner-declared, nullable"
+        text_array allergens "MEH-2662: codes from app/allergens.py, nullable"
     }
 
     delivery_areas {

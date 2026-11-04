@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 
 // MEH-1138: imageless product cards render the canonical no-photo state
@@ -52,6 +52,19 @@ vi.mock("@phosphor-icons/react", () => ({
   InstagramLogo: () => <span data-testid="icon-instagram" />,
   FacebookLogo: () => <span data-testid="icon-facebook" />,
   Receipt: () => <span data-testid="icon-receipt" />,
+  // MEH-2654: the product rows render diet glyphs through lib/chip-icons, which
+  // imports its whole icon set from this module.
+  SealCheck: () => <span />,
+  Truck: () => <span />,
+  Package: () => <span />,
+  Certificate: () => <span />,
+  Carrot: () => <span />,
+  GrainsSlash: () => <span />,
+  Barn: () => <span />,
+  DropSlash: () => <span />,
+  Cube: () => <span />,
+  Clock: () => <span />,
+  Storefront: () => <span />,
 }));
 
 // MEH-1901: the sheet's beacon helpers — asserted in ProductSheet.test.jsx;
@@ -366,7 +379,7 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
     expect(freeText.closest('span[dir="ltr"]')).toBeNull();
   });
 
-  it("MEH-1463: price_range present keeps priority — product price NOT used as fallback", () => {
+  it("MEH-2654: the matched product's own price wins over the business-level price_range", () => {
     render(
       <ProducerSections
         {...baseProps}
@@ -381,9 +394,47 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
         }}
       />,
     );
-    expect(screen.getByText("החל מ-25₪")).toBeInTheDocument();
-    // the product's own numeric price must not appear (label wins)
-    expect(screen.queryByText("99₪")).not.toBeInTheDocument();
+    // The card and the product sheet show the same price (Sapir 31/10: card
+    // said «₪₪», sheet said 32₪). The business-wide «מחיר התחלתי» is not
+    // this product's price, so it must not sit on this product's card.
+    expect(screen.getByText("99₪")).toBeInTheDocument();
+    expect(screen.queryByText("החל מ-25₪")).not.toBeInTheDocument();
+  });
+
+  it("MEH-2654: a price_range with no digit («₪₪») is not a price — the product price shows", () => {
+    render(
+      <ProducerSections
+        {...baseProps}
+        producer={{
+          id: 1,
+          name: "מאפיית השדה",
+          top_product_name: "לחם מחמצת כוסמין מלא",
+          price_range: "₪₪",
+          products: [
+            { id: 21, name: "לחם מחמצת כוסמין מלא", image_url: null, price_min: 32 },
+          ],
+        }}
+      />,
+    );
+    expect(screen.getByText("32₪")).toBeInTheDocument();
+    expect(screen.queryByText("₪₪")).not.toBeInTheDocument();
+  });
+
+  it("MEH-2654: a digit-less price_range with no product price renders no price line at all", () => {
+    render(
+      <ProducerSections
+        {...baseProps}
+        producer={{
+          id: 1,
+          name: "מאפיית השדה",
+          top_product_name: "לחם מחמצת כוסמין מלא",
+          price_range: "₪₪",
+          products: [],
+        }}
+      />,
+    );
+    expect(screen.getByText("לחם מחמצת כוסמין מלא")).toBeInTheDocument();
+    expect(screen.queryByText("₪₪")).not.toBeInTheDocument();
   });
 
   // MEH-1855: price_range is the canonical field. Chunk 1 made every public
@@ -495,7 +546,7 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
       expect(screen.queryByText("החל מ-25₪")).not.toBeInTheDocument();
     });
 
-    it("price_range set blocks the product-price fallback (same priority rule as the alias)", () => {
+    it("MEH-2654: a product with its own price shows that price even when price_range is set", () => {
       render(
         <ProducerSections
           {...baseProps}
@@ -508,8 +559,8 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
           }}
         />,
       );
-      expect(screen.getByText("מ-₪20")).toBeInTheDocument();
-      expect(screen.queryByText("99₪")).not.toBeInTheDocument();
+      expect(screen.getByText("99₪")).toBeInTheDocument();
+      expect(screen.queryByText("מ-₪20")).not.toBeInTheDocument();
     });
   });
 
@@ -616,5 +667,119 @@ describe("MEH-1901 — product rows open the detail sheet", () => {
     );
     expect(screen.queryByTestId("signature-product-trigger")).not.toBeInTheDocument();
     expect(screen.getByText("משהו שאין לו שורה")).toBeInTheDocument();
+  });
+});
+
+// MEH-2654 (Sapir 31/10): which product carries which tag, and where the
+// gluten-facility sentence sits. Cells: 0 / 1 / many flags on a row.
+describe("MEH-2654 — per-product diet pills on the rows + facility line placement", () => {
+  const rows = () => screen.getAllByTestId("product-row");
+
+  it("a row with no flags renders no pill list", () => {
+    render(<ProducerSections {...baseProps} producer={producerWith([{ id: 1, name: "לחם", image_url: null }])} />);
+    expect(rows()[0].querySelector('[data-testid="product-row-diet"]')).toBeNull();
+  });
+
+  it("one flag: one pill with the diet label", () => {
+    render(
+      <ProducerSections {...baseProps} producer={producerWith([{ id: 1, name: "חלה", image_url: null, is_vegetarian: true }])} />,
+    );
+    const pills = rows()[0].querySelectorAll('[data-testid="product-row-diet"] li');
+    expect([...pills].map((li) => li.textContent)).toEqual(["producer.detail.sections.products.diet.vegetarian"]);
+  });
+
+  it("many flags: each pill on its own product; vegan drops the redundant vegetarian", () => {
+    render(
+      <ProducerSections
+        {...baseProps}
+        producer={producerWith([
+          { id: 1, name: "עוגיות", image_url: null, is_vegan: true, is_vegetarian: true, is_no_added_sugar: true },
+          { id: 2, name: "גבינה", image_url: null, is_vegetarian: true },
+        ])}
+      />,
+    );
+    const labels = (row) => [...row.querySelectorAll('[data-testid="product-row-diet"] li')].map((li) => li.textContent);
+    expect(labels(rows()[0])).toEqual([
+      "producer.detail.sections.products.diet.vegan",
+      "producer.detail.sections.products.diet.no_added_sugar",
+    ]);
+    expect(labels(rows()[1])).toEqual(["producer.detail.sections.products.diet.vegetarian"]);
+  });
+
+  it("shared gluten facility: the sentence renders inside the products section", () => {
+    const { container } = render(
+      <ProducerSections
+        {...baseProps}
+        producer={{ ...producerWith([{ id: 1, name: "לחם", image_url: null }]), gluten_free_facility: "shared" }}
+      />,
+    );
+    const line = screen.getByTestId("gluten-facility-shared");
+    expect(container.querySelector("#section-products").contains(line)).toBe(true);
+  });
+
+  it("dedicated facility: its sentence renders inside the products section", () => {
+    const { container } = render(
+      <ProducerSections
+        {...baseProps}
+        producer={{ ...producerWith([{ id: 1, name: "לחם", image_url: null }]), gluten_free_facility: "dedicated" }}
+      />,
+    );
+    const line = screen.getByTestId("gluten-facility-dedicated");
+    expect(container.querySelector("#section-products").contains(line)).toBe(true);
+  });
+
+  it("no products: no facility line here (the header keeps it)", () => {
+    render(<ProducerSections {...baseProps} producer={{ ...producerWith([]), gluten_free_facility: "shared" }} />);
+    expect(screen.queryByTestId("gluten-facility-shared")).toBeNull();
+  });
+
+  it("the sheet of a «ללא גלוטן» product in a shared facility carries the sentence", () => {
+    render(
+      <ProducerSections
+        {...baseProps}
+        producer={{ ...producerWith([{ id: 1, name: "עוגה", image_url: null, is_gluten_free: true }]), gluten_free_facility: "shared" }}
+      />,
+    );
+    fireEvent.click(rows()[0]);
+    expect(screen.getByTestId("product-sheet-gluten-facility")).toBeInTheDocument();
+  });
+
+  it("the sheet of a product NOT marked gluten-free does not", () => {
+    render(
+      <ProducerSections
+        {...baseProps}
+        producer={{ ...producerWith([{ id: 1, name: "לחם", image_url: null }]), gluten_free_facility: "shared" }}
+      />,
+    );
+    fireEvent.click(rows()[0]);
+    expect(screen.queryByTestId("product-sheet-gluten-facility")).toBeNull();
+  });
+});
+
+// MEH-2654: the recipe page's product rows deep-link `?product=<id>`.
+describe("MEH-2654 — ?product=<id> opens that product's sheet on arrival", () => {
+  const products = [
+    { id: 21, name: "לחם", image_url: null },
+    { id: 22, name: "גבינה", image_url: null },
+  ];
+  const withSearch = (search) => window.history.replaceState(null, "", `/x${search}`);
+  afterEach(() => withSearch(""));
+
+  it("opens the matching product", () => {
+    withSearch("?product=22");
+    render(<ProducerSections {...baseProps} producer={producerWith(products)} />);
+    expect(screen.getByTestId("product-sheet")).toHaveAttribute("aria-label", "גבינה");
+  });
+
+  it("an id that matches nothing opens no sheet", () => {
+    withSearch("?product=999");
+    render(<ProducerSections {...baseProps} producer={producerWith(products)} />);
+    expect(screen.queryByTestId("product-sheet")).toBeNull();
+  });
+
+  it("no param: no sheet", () => {
+    withSearch("");
+    render(<ProducerSections {...baseProps} producer={producerWith(products)} />);
+    expect(screen.queryByTestId("product-sheet")).toBeNull();
   });
 });

@@ -6,6 +6,8 @@
 // Normalize an event OR experience row into one shape the rail renderer
 // understands. Field names diverge between the two APIs; the accent
 // ("green" event / "gold" experience) drives the species styling.
+import { findExperienceCategory } from "./event-categories";
+
 export function toEventEntry(row, tab, t) {
   const isExp = tab === "experiences";
   // MEH-2461: an organizer-owned event names its organizer with the approved
@@ -26,7 +28,9 @@ export function toEventEntry(row, tab, t) {
     // MEH-2476: a recurring experience names its schedule in the meta line,
     // so the date rail reads as the first occasion, not the only one.
     schedule: isExp && row.is_recurring ? row.recurring_schedule?.trim() || null : null,
-    category: row.category,
+    // an older experience row stores the English key («workshop»);
+    // the row chip shows the Hebrew value the other rows carry.
+    category: isExp ? findExperienceCategory(row.category)?.key ?? row.category : row.category,
     price: isExp ? row.price_per_person : row.price,
     description: row.description,
     accent: isExp ? "gold" : "green",

@@ -48,7 +48,7 @@ export function HomeRecentlyViewed({ items }) {
               key={p.id}
               href={href}
               data-testid="home-recent-card"
-              className="shrink-0 w-[160px] bg-background border border-border rounded-[12px] overflow-hidden transition group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40"
+              className="shrink-0 w-[160px] bg-background border border-border rounded-md overflow-hidden transition group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40"
             >
               <div className="relative w-full h-[100px] bg-green-50 overflow-hidden" data-testid="home-recent-card-image">
                 {imgSrc && failedImgs[p.id] !== imgSrc ? (

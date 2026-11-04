@@ -9,7 +9,8 @@ import api from "@/lib/api";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import ImageWithFallback from "@/components/ImageWithFallback";
 // MEH-1140: canonical shekel format — amount then ₪ ("35₪"), one owner in lib/utils.
-import { formatPrice, formatPriceRange } from "@/lib/utils";
+import { formatPrice, formatPriceRange, isPriceLabel } from "@/lib/utils";
+import { badgeIcon } from "@/lib/chip-icons";
 import { formatEventDate } from "@/lib/format-date";
 import DeliveryBlock from "@/components/DeliveryBlock";
 import OfferBadge from "@/components/OfferBadge";
@@ -31,7 +32,7 @@ import { OrderWindowScheduleBlock } from "./OrderWindowStrip";
 import RecipeCard from "@/components/public/RecipeCard";
 // MEH-1901: the full product detail (long description, per-product diet flags)
 // as an overlay — no route, no marketplace.
-import ProductSheet from "@/components/public/ProductSheet";
+import ProductSheet, { productDietKeys } from "@/components/public/ProductSheet";
 import ReportButton from "@/components/ReportButton";
 // MEH-1460: the "טעות בפרטים?" correction link relocated here from
 // ContactCard — its modal/email logic (v1, MEH-1443) is unchanged.
@@ -101,6 +102,28 @@ function SignatureShell({ product, onOpen, ariaLabel, children }) {
     >
       {children}
     </button>
+  );
+}
+
+// PR #3974 (Sapir 31/10): the listing card shows «צמחוני +4», and the page
+// never said WHICH products carry them. Each product names its own flags —
+// icon + the same label as the sheet (MEH-2584 icon+word). Renders nothing for
+// a product with no flags (or no product at all, e.g. a free-text signature).
+function ProductDietPills({ product, t }) {
+  const keys = productDietKeys(product);
+  if (keys.length === 0) return null;
+  return (
+    <ul className="flex flex-wrap gap-1 mt-1.5" data-testid="product-row-diet">
+      {keys.map((key) => (
+        <li
+          key={key}
+          className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-xs text-fg-muted"
+        >
+          <span aria-hidden="true" className="inline-flex">{badgeIcon(key, 12)}</span>
+          {t(`producer.detail.sections.products.diet.${key}`)}
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -178,7 +201,10 @@ export default function ProducerSections({
   // MEH-1855: price_range is the ONLY price-label field. Chunk 1 read it
   // first with a fallback to the legacy alias; chunk 2 dropped the alias
   // column (revision 9849fab1637a), so there is nothing to fall back to.
-  const hasSignature = !!(producer.top_product_name || producer.price_range);
+  // PR #3971: a digit-less label («₪₪») is not a price — it neither renders
+  // nor, on its own, makes the signature block appear.
+  const producerPriceLabel = isPriceLabel(producer.price_range) ? producer.price_range : null;
+  const hasSignature = !!(producer.top_product_name || producerPriceLabel);
   // MEH-1233 B4: the signature product (top_product_name) is a free-text DB
   // label. When it names a product that ALSO has a grid entry, feature that
   // entry's photo in the highlight and DROP it from the grid below (fixes the
@@ -252,21 +278,40 @@ export default function ProducerSections({
     [sheetTotal],
   );
 
+  // PR #3972: a deep link `?product=<id>` (the recipe page's product rows)
+  // opens that product's sheet on arrival. Read once per producer from
+  // window.location — not useSearchParams, which would force a Suspense
+  // boundary onto a server-rendered page for a one-shot read. An id that
+  // matches nothing opens nothing (the page just loads normally).
+  const productIds = sheetProducts.map((p) => p.id).join(",");
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const wanted = new URLSearchParams(window.location.search).get("product");
+    if (!wanted) return;
+    const i = productIds.split(",").indexOf(wanted);
+    if (i >= 0) setOpenIndex(i);
+  }, [productIds]);
+
   // MEH-1463: when the signature product was deduped out of the grid and
   // the producer-level price_range (MEH-1855: the single price-label field)
   // is not set, surface the matched product's own price/description on the
-  // highlight card so the info the dedup removed isn't lost. price_range
-  // keeps priority when present (unchanged). Numeric price → canonical
-  // formatPriceRange (MEH-1140) with dir="ltr" bidi isolation; free-text
-  // price_range is DATA (MEH-1305 F) rendered in natural direction.
+  // highlight card so the info the dedup removed isn't lost.
+  // PR #3971: the product's OWN price now wins over the business-level
+  // price_range («מחיר התחלתי»). MEH-1463 had it the other way, which put a
+  // business-wide label on one product's card while the sheet for that same
+  // product showed its real price (Sapir 31/10: card «₪₪», sheet 32₪). The
+  // business label is the fallback for a free-text signature with no priced
+  // product. Numeric price → canonical formatPriceRange (MEH-1140) with
+  // dir="ltr" bidi isolation; free-text labels are DATA (MEH-1305 F) rendered
+  // in natural direction.
   const signatureNumericPrice =
-    !producer.price_range && signatureProduct?.price_min != null
+    signatureProduct?.price_min != null
       ? formatPriceRange(signatureProduct.price_min, signatureProduct.price_max)
       : null;
-  const signatureFreeTextPrice =
-    !producer.price_range && !signatureNumericPrice
-      ? signatureProduct?.price_range || null
-      : null;
+  const signatureFreeTextPrice = signatureNumericPrice
+    ? null
+    : (isPriceLabel(signatureProduct?.price_range) ? signatureProduct.price_range : null) ||
+      producerPriceLabel;
 
   return (
     <>
@@ -359,15 +404,12 @@ export default function ProducerSections({
                 {signatureProduct?.description && (
                   <p className="text-sm text-fg-muted mt-0.5 line-clamp-2">{signatureProduct.description}</p>
                 )}
-                {producer.price_range ? (
-                  <p className="text-gold-deep font-bold mt-1">
-                    {producer.price_range}
-                  </p>
-                ) : signatureNumericPrice ? (
+                {signatureNumericPrice ? (
                   <p className="text-gold-deep font-bold mt-1"><span dir="ltr">{signatureNumericPrice}</span></p>
                 ) : signatureFreeTextPrice ? (
                   <p className="text-gold-deep font-bold mt-1">{signatureFreeTextPrice}</p>
                 ) : null}
+                <ProductDietPills product={signatureProduct} t={t} />
               </div>
               {/* Forward chevron points LEFT in RTL — same convention as
                   ReviewExcerpt.jsx:86. Only when the card actually opens. */}
@@ -464,6 +506,11 @@ export default function ProducerSections({
                       {freeTextPrice && (
                         <p className="text-accent font-medium mt-1">{freeTextPrice}</p>
                       )}
+                      {/* PR #3974 (Sapir 31/10): the card on the listing shows
+                          «צמחוני +4», and the page never said WHICH products
+                          carry them. Each row now names its own flags — icon +
+                          the same label as the sheet (MEH-2584 icon+word). */}
+                      <ProductDietPills product={product} t={t} />
                     </div>
                     {/* Forward chevron points LEFT in RTL (ReviewExcerpt.jsx:86). */}
                     <CaretLeft size={14} className="shrink-0 text-fg-muted" aria-hidden="true" />
@@ -471,6 +518,22 @@ export default function ProducerSections({
                 );
               })}
             </div>
+          )}
+
+          {/* PR #3974: the gluten production-facility sentence lives with the
+              products it qualifies (was in the header, under the kashrut chip,
+              where it read as a note about the whole business page). Same
+              string and plain-text styling (MEH-1508 ch2: no badge/icon). The
+              header keeps it only when there are no products to sit under. */}
+          {producer.products?.length > 0 && producer.gluten_free_facility === "shared" && (
+            <p className="text-xs text-fg-muted leading-relaxed max-w-prose mt-3" data-testid="gluten-facility-shared">
+              {t("producer.detail.header.gluten_facility.shared")}
+            </p>
+          )}
+          {producer.products?.length > 0 && producer.gluten_free_facility === "dedicated" && (
+            <p className="text-xs text-fg-muted leading-relaxed max-w-prose mt-3" data-testid="gluten-facility-dedicated">
+              {t("producer.detail.header.gluten_facility.dedicated")}
+            </p>
           )}
 
           {/* MEH-1901: mounted inside the products section, rendered only while

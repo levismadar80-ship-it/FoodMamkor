@@ -40,6 +40,11 @@ const RESERVED = new Set([
   "organizers",
   // MEH-2576: where the middleware rewrites a deleted business's URL.
   "business-gone",
+  // MEH-2633: the community-suggestion form. Reserved for the same reason as
+  // every entry above — a business whose slug is "recommend" would otherwise
+  // collide with the page, and this is the gate that also decides whether the
+  // site chrome unmounts.
+  "recommend",
 ]);
 
 // Real slugs are produced by backend _slugify

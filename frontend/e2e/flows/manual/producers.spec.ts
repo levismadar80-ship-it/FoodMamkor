@@ -3,7 +3,7 @@ import { test, expect, type Page } from "../_cloudinary-stub";
 import { detailPath } from "../_producer-fixture";
 import he from "../../../messages/he.json";
 import en from "../../../messages/en.json";
-// The three app libs below are plain JS (the app is JS + JSDoc); tsconfig.e2e
+// The four app libs below are plain JS (the app is JS + JSDoc); tsconfig.e2e
 // has no allowJs, so each import is TS7016 — the same shape as
 // e2e/flows/33-admin-producers-tab.spec.ts:56. Suppressed per line, not globally.
 // @ts-expect-error TS7016 — generated zod module, no .d.ts
@@ -12,6 +12,8 @@ import { ListCategoriesCategoriesGetResponse, ListProducersProducersGetResponse 
 import { allBadges } from "../../../lib/badges.js";
 // @ts-expect-error TS7016 — JS lib, no .d.ts
 import { FILTER_AXES } from "../../../lib/filter-taxonomy.js";
+// @ts-expect-error TS7016 — JS lib, no .d.ts
+import { GATED_DIET_KEYS, gatedChipMin } from "../../../lib/producer-filters.js";
 
 /**
  * Spec:     manual/producers
@@ -143,7 +145,7 @@ const SHEET_HE = he.filters.sheet;
 const MOBILE_NAV_LABEL = he.nav.mobile_label;
 const RECENT_HEADING = he.home.recent.heading;
 
-type Axis = { key: string; label: string; group: string; surfaces: string[] };
+type Axis = { key: string; label: string; group: string; surfaces: string[]; scope: string; subtext?: string | null };
 const AXES = FILTER_AXES as Record<string, Axis>;
 /** The diet axes offered on /producers, in declaration order (filter-taxonomy.js). */
 const DIET_KEYS_ON_PRODUCERS = Object.keys(AXES).filter(
@@ -151,6 +153,12 @@ const DIET_KEYS_ON_PRODUCERS = Object.keys(AXES).filter(
 );
 /** The four ungated diet chips, in LISTING_CHIP_ORDER — the MEH-1438 row-2 order. */
 const UNGATED_DIET_ORDER = ["vegan", "vegetarian", "gluten_free", "lactose_free"] as const;
+/**
+ * MEH-1508 chunk 3ב-2 — the business-scope 100% pair. Gated (GATED_DIET_KEYS,
+ * threshold gatedChipMin = 1 on `*_scope === "all"`) and rendered by the sheet
+ * AFTER the any-product pills and their scope line, in this order.
+ */
+const SCOPE_ALL_DIET_ORDER = ["vegan_all", "vegetarian_all"] as const;
 
 /** Minimal ICU plural resolver for the `{count, plural, …}` strings in he.json. */
 function icu(msg: string, count: number): string {
@@ -233,7 +241,12 @@ const P_VACATION = producer(4, "שמן זית של סבתא", {
   has_lactose_free_products: true,
   order_window: { [FIXED_DAY_KEY]: [{ open: "00:00", close: "23:59" }] },
 });
-const FILLERS = [5, 6, 7, 8].map((n) => producer(n, `עסק לדוגמה ${n}`));
+// MEH-1508 chunk 3ב-2: one filler declares BOTH 100% scopes, which un-gates
+// both pills (threshold 1). Its card wears only «100% טבעוני» (badges.js
+// supersession) — one badge, no «+N», so the overflow rows below are untouched.
+const FILLERS = [5, 6, 7, 8].map((n) =>
+  producer(n, `עסק לדוגמה ${n}`, n === 5 ? { vegan_scope: "all", vegetarian_scope: "all" } : {}),
+);
 /** Eight rows: two full desktop rows (xl:grid-cols-4) and four mobile rows. */
 const PRODUCERS: Producer[] = [P_BADGES, P_CLOSED_BETWEEN, P_NO_WINDOW, P_VACATION, ...FILLERS];
 
@@ -250,9 +263,28 @@ test.beforeAll(() => {
   // Guards on the fixture's own premises, so a later edit cannot silently
   // move the +N count or the diet order the rows below assert.
   if (HIDDEN_BADGES.length !== 3) throw new Error(`P_BADGES must fold 3 badges, got ${HIDDEN_BADGES.length}`);
-  if (DIET_KEYS_ON_PRODUCERS.slice(0, 4).join() !== UNGATED_DIET_ORDER.join()) {
+  // MEH-1508 chunk 3ב-2 interleaved the gated 100% pair into the declaration
+  // order (vegan, vegetarian, vegan_all, vegetarian_all, …), so the four
+  // ungated axes are no longer a prefix. Pinned instead: the UNGATED diet axes,
+  // in declaration order, are exactly the four; the business-scope diet axes
+  // are exactly the 100% pair, both gated and both un-gated by the fixture.
+  const ungated = DIET_KEYS_ON_PRODUCERS.filter((k) => !GATED_DIET_KEYS.includes(k));
+  if (ungated.join() !== UNGATED_DIET_ORDER.join()) {
     throw new Error(`diet order drifted: ${DIET_KEYS_ON_PRODUCERS.join(",")}`);
   }
+  const businessScope = DIET_KEYS_ON_PRODUCERS.filter((k) => AXES[k].scope !== "any-product");
+  if (businessScope.join() !== SCOPE_ALL_DIET_ORDER.join()) {
+    throw new Error(`business-scope diet axes drifted: ${businessScope.join(",")}`);
+  }
+  for (const key of SCOPE_ALL_DIET_ORDER) {
+    if (!GATED_DIET_KEYS.includes(key)) throw new Error(`${key} is no longer gated — the fixture census below is moot`);
+    const field = key === "vegan_all" ? "vegan_scope" : "vegetarian_scope";
+    const declared = PRODUCERS.filter((p) => p[field] === "all").length;
+    if (declared < gatedChipMin(key))
+      throw new Error(`${gatedChipMin(key)} business(es) declaring ${field}=all needed to un-gate ${key}, got ${declared}`);
+  }
+  if (PRODUCERS.some((p) => p.has_no_added_sugar_products))
+    throw new Error("no fixture row may declare no_added_sugar — the sheet's diet order below is pinned without it");
 });
 
 // ── helpers ─────────────────────────────────────────────────────────────────
@@ -560,11 +592,16 @@ test.describe("manual › category glyph tint (MEH-1452)", () => {
 
 // ════════════════════════════════════════════════════════════════════════════
 test.describe("manual › vegetarian axis (MEH-1438)", () => {
-  // MT:MEH-1438:2 — the «צמחוני» chip exists on /producers (FilterSheet, diet
+  // MT:MEH-1438:2 — the vegetarian chip exists on /producers (FilterSheet, diet
   //   group) and the diet order is טבעוני · צמחוני · ללא גלוטן · ללא לקטוז. The
   //   gated fifth diet chip (no_added_sugar, MEH-1934) may or may not render —
   //   it is declared AFTER these four, so only the leading four are pinned.
-  test("the filter sheet's diet group offers «צמחוני» second, in the locked order", async ({ page }) => {
+  //   MEH-1508 chunk 3ב-2 renamed the partial pair «מתאים לטבעונים» /
+  //   «מתאים לצמחונים» (card §6.6, read from FILTER_AXES) and added the 100%
+  //   pair, which the sheet renders AFTER the any-product pills — so the fixture
+  //   (which un-gates both and declares no no_added_sugar) pins the whole diet
+  //   run, and each 100% pill's ⓘ.
+  test("the filter sheet's diet group offers «מתאים לצמחונים» second, in the locked order, then the 100% pair", async ({ page }) => {
     await gotoFiltered(page);
     await scope(page).getByTestId("producers-filters-button").click();
     const panel = page.locator("#filter-sheet-panel");
@@ -574,15 +611,20 @@ test.describe("manual › vegetarian axis (MEH-1438)", () => {
     const ids = (await switches.evaluateAll((els) => els.map((e) => e.getAttribute("data-testid") ?? "")))
       .map((id) => id.replace(/^chip-/, ""))
       .filter((k) => DIET_KEYS_ON_PRODUCERS.includes(k));
-    expect(ids.slice(0, 4)).toEqual([...UNGATED_DIET_ORDER]);
+    expect(ids).toEqual([...UNGATED_DIET_ORDER, ...SCOPE_ALL_DIET_ORDER]);
     await expect(panel.getByTestId("chip-vegetarian")).toHaveText(AXES.vegetarian.label);
+    for (const key of SCOPE_ALL_DIET_ORDER) {
+      await expect(panel.getByTestId(`chip-${key}`)).toHaveText(AXES[key].label);
+      await expect(panel.getByTestId(`chip-info-${key}`)).toHaveAttribute("aria-label", String(AXES[key].subtext));
+    }
     await page.keyboard.press("Escape");
     await expect(panel).toHaveCount(0);
   });
 
-  // MT:MEH-1438:5 — toggling «צמחוני» writes `?vegetarian=1`; a reload keeps
-  //   the chip active and refetches the filtered list.
-  test("«צמחוני» writes ?vegetarian=1, the fetch carries vegetarian=true, and a reload keeps it active", async ({
+  // MT:MEH-1438:5 — toggling the vegetarian chip («מתאים לצמחונים» since
+  //   MEH-1508 chunk 3ב-2) writes `?vegetarian=1`; a reload keeps the chip
+  //   active and refetches the filtered list.
+  test("«מתאים לצמחונים» writes ?vegetarian=1, the fetch carries vegetarian=true, and a reload keeps it active", async ({
     page,
   }) => {
     const { seen } = await gotoFiltered(page);

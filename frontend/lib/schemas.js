@@ -225,6 +225,13 @@ export const ProducerListSchema = z.object({
   has_vegetarian_products: z.boolean().nullable().optional(),    // → vegetarian
   has_vegan_products: z.boolean().nullable().optional(),         // → vegan
   has_lactose_free_products: z.boolean().nullable().optional(),  // → lactose_free
+  // MEH-1508 chunk 3ב-2: the owner's whole-business declaration (unknown |
+  // some | all), served by ProducerListOut since chunk 2. Undeclared, z.object
+  // strips it on the two parsed feeds and the «100% טבעוני/צמחוני» badge plus
+  // the chip data gate never see a value. `z.string()`, not an enum — a new
+  // backend value must cost a badge, never a producer (all-or-nothing parse).
+  vegan_scope: z.string().nullable().optional(),             // → vegan_all
+  vegetarian_scope: z.string().nullable().optional(),        // → vegetarian_all
   // MEH-1934: the contract-parity test is what surfaced these — the backend
   // schema gained them in chunk 2, and an undeclared field is stripped by the
   // strict parse, so the badges would never light no matter what the API sent.
@@ -276,16 +283,11 @@ export const ProducerListSchema = z.object({
   // would debug a backend that is in fact serving it correctly (MEH-901 class).
   top_product_id: z.string().nullable().optional(),          // → ProductsSection badge, chunk 3
   top_product_name: z.string().nullable().optional(),        // → card description fallback, ProducerCard.jsx:202
-  // MEH-2271: availability_state is the only one anything reads — every
-  // surface goes through lib/availability.js, which no longer falls back.
-  // The two below are still SERVED (ProducerListOut derives them from the
-  // state) so a stale client is not broken mid-release; MEH-2272 removes
-  // them from the contract and from here in the same PR. Keeping them
-  // declared until then is what stops `.loose()`-less parses from stripping
-  // fields the backend is still sending.
+  // MEH-2271: availability_state is the only availability field — every
+  // surface goes through lib/availability.js. MEH-2272 removed the legacy
+  // is_available_today / availability_status pair from the API (chunks 1–2)
+  // and from here (chunk 3); LegacyAvailabilityFieldsGone.test.js pins it.
   availability_state: z.string().nullable().optional(),      // → availability dot, ProducerCard.jsx:64
-  availability_status: z.string().nullable().optional(),     // derived server-side; no frontend reader (MEH-2272 removes)
-  is_available_today: z.boolean().nullable().optional(),     // derived server-side; no frontend reader (MEH-2272 removes)
   has_physical_location: z.boolean().nullable().optional(),  // → "משלוחים בלבד" pill, ProducerCard.jsx:356
   offers_delivery: z.boolean().nullable().optional(),        // → "משלוחים בלבד" pill, ProducerCard.jsx:356
   // NOT read by ProducerCard today, so the card-derived guard below cannot
@@ -573,7 +575,7 @@ export const CoordSchema = z.object({
 // before she has exact coordinates (manual entry, no geocoding this chunk).
 export const LocationInputSchema = z.object({
   kind: z.enum(["branch", "pickup", "market_stand"], {
-    error: "בחרי סוג מיקום",
+    error: "בחרו סוג מיקום",
   }),
   label: z.string().trim().max(200).nullable().optional(),
   city: z.string().trim().max(100).nullable().optional(),

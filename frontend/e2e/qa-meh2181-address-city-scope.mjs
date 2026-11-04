@@ -185,7 +185,7 @@ async function run(width, tag) {
       `got: "${text.trim()}"`,
     );
     const color = await notice.evaluate((el) => getComputedStyle(el).color);
-    check(`[${tag}] the notice is gold #8B6914, not an error red`, color === "rgb(139, 105, 20)", color);
+    check(`[${tag}] the notice is accent gold #896714, not an error red`, color === "rgb(137, 103, 20)", color);
     // Non-blocking: the submit path must still be reachable.
     check(
       `[${tag}] the notice does not disable the step`,
