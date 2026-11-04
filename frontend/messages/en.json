@@ -5594,5 +5594,74 @@
       "whatsapp_group": "WhatsApp group",
       "external_order": "Order form"
     }
+  },
+  "rescue": {
+    "page": {
+      "title": "Rescue bags",
+      "lead": "Today's surplus from local businesses, at a reduced price. Pay at the counter.",
+      "description": "Mehamakor rescue bags — today's surplus from local businesses at a reduced price."
+    },
+    "home": {
+      "title": "Left today",
+      "title_city": "Left today in {city}",
+      "all": "All bags"
+    },
+    "list": {
+      "city_label": "City",
+      "city_placeholder": "e.g. Haifa",
+      "loading": "Loading today's bags…",
+      "failed": "We couldn't load the bags right now. Try refreshing.",
+      "empty": "No rescue bags today. Worth checking again this afternoon.",
+      "empty_city": "No rescue bags in {city} today. Worth checking again this afternoon.",
+      "count": "{count, plural, one {one bag} other {# bags}}"
+    },
+    "row": {
+      "left": "{count, plural, one {one left} other {# left}}",
+      "pickup": "Pickup {from}–{until}",
+      "price": "{price} ₪",
+      "km": "km",
+      "walk": "about {minutes} min walk"
+    },
+    "section": {
+      "title": "Rescue bag",
+      "cta": "Reserve · {price} ₪ at the counter",
+      "typical": "Usually: {items}",
+      "allergens": "May contain gluten, milk, nuts and sesame. Ask at the business before pickup."
+    },
+    "confirm": {
+      "title": "Your bag is reserved",
+      "say_at_counter": "Say the code at the counter",
+      "pay": "Pay at the counter: {price} ₪",
+      "terms": "Free cancellation until {cancel_until} · two no-shows = blocked",
+      "step_reserved": "Reserved",
+      "step_collect": "To collect",
+      "step_done": "Handed over",
+      "cancel": "Cancel the reservation"
+    },
+    "review": {
+      "title": "How was the bag?",
+      "star": "{n} out of 5",
+      "contents": "What was in it?",
+      "tag": {
+        "bread": "Bread",
+        "pastry": "Pastry",
+        "vegetables": "Vegetables",
+        "dairy": "Dairy",
+        "cooked": "Cooked",
+        "other": "Other"
+      },
+      "problem": "Something wrong? Write to us and we'll sort it.",
+      "submit": "Submit",
+      "failed": "We couldn't send your review. Try again.",
+      "thanks": "Thank you! Your review is saved."
+    },
+    "errors": {
+      "blocked": "Reservations are blocked after two no-shows. Please write to us.",
+      "sold_out": "That bag is gone. There are others nearby.",
+      "max_two": "You can reserve up to two bags.",
+      "sign_in": "Sign in to reserve a bag.",
+      "gone": "Rescue bags aren't active right now.",
+      "generic": "Something got stuck. Try again."
+    }
   }
 }
