@@ -289,8 +289,9 @@ async function openWithPrimaryCta(page: Page, list: Producer[], limit = 6): Prom
 }
 
 /**
- * Both ShareButton mounts carry the same accessible name (ShareButton.jsx
- * `aria-label={t("modal_title")}` on every variant).
+ * Both ShareButton mounts carry `t("modal_title")` in their accessible name
+ * (the quiet variant prefixes its visible «שיתוף» — WCAG 2.5.3 Label in
+ * Name; Playwright's `name` is a substring match, so one locator covers both).
  *
  * `includeHidden` matters and is the whole point of the pair: the two mounts
  * are CSS-gated (`hidden lg:flex` header row / `lg:hidden` hero overlay), and
