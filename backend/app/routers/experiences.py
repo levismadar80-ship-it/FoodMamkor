@@ -432,7 +432,9 @@ def submit_experience(
 
 # ---------- Update ----------
 
-_NON_CONTENT_FIELDS = frozenset({"is_active", "participants_count"})
+# MEH-2665: min_participants is a number the host sets, like the count — it
+# must not send an approved experience back to moderation.
+_NON_CONTENT_FIELDS = frozenset({"is_active", "participants_count", "min_participants"})
 
 # MEH-2665: the form blocks it first; this is the write-boundary twin.
 _MIN_ABOVE_MAX_DETAIL = "המינימום לא יכול להיות גדול מהמקסימום"
