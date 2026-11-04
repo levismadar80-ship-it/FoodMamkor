@@ -109,7 +109,7 @@ function FavoriteCardWrapper({ fav, open, onToggle, onClose }) {
         // below, and Tailwind arbitrary values take no spaces.
         <div
           ref={panelRef}
-          className="fixed inset-x-3 bottom-[calc(var(--bottom-nav-clearance,calc(4.5rem+env(safe-area-inset-bottom,0px)))+8px)] z-[1150] sm:absolute sm:inset-x-auto sm:bottom-auto sm:top-14 sm:end-0 sm:w-72"
+          className="vv-pin fixed inset-x-3 bottom-[calc(var(--bottom-nav-clearance,calc(4.5rem+env(safe-area-inset-bottom,0px)))+8px)] z-[1150] sm:absolute sm:inset-x-auto sm:bottom-auto sm:top-14 sm:end-0 sm:w-72"
         >
           <AlertPrefsPanel
             producerId={fav.producer_id}

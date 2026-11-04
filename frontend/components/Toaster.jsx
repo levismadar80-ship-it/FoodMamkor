@@ -58,7 +58,7 @@ export default function Toaster() {
       // the directive from the className and made it an unused-directive ERROR
       // (eslint.config.mjs:15 reportUnusedDisableDirectives). Caught by lint.
       // eslint-disable-next-line no-restricted-syntax -- rtl-ok: horizontal centering idiom
-      className="fixed bottom-[calc(var(--bottom-nav-clearance,5rem)+var(--cookie-banner-h,0px))] md:bottom-6 left-1/2 -translate-x-1/2 z-[2000] w-[92vw] max-w-[28rem] flex flex-col-reverse items-center gap-2 pointer-events-none"
+      className="vv-pin fixed bottom-[calc(var(--bottom-nav-clearance,5rem)+var(--cookie-banner-h,0px))] md:bottom-6 left-1/2 -translate-x-1/2 z-[2000] w-[92vw] max-w-[28rem] flex flex-col-reverse items-center gap-2 pointer-events-none"
       role="status"
       aria-live="polite"
       aria-atomic="true"

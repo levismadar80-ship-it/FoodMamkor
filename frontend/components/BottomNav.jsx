@@ -280,10 +280,20 @@ export default function BottomNav() {
   // The producer-detail gate is NOT in this set: its StickyContactBar is a
   // bottom layer, and the fallback is what keeps content clear of it.
   const noBottomChrome = isAdminRoute(pathname) || isOwnerDashboardRoute(pathname);
+  // MEH-2652: the clearance is the SHELL's own height (pill + safe-area + 16px
+  // gutter), not `innerHeight - pill.top`. The two are equal while the pill sits
+  // where CSS puts it — but iOS 26 Safari can leave every fixed-bottom layer
+  // parked hundreds of px above the viewport bottom after the keyboard closes
+  // (WebKit 297779; IosViewportPin.jsx). The old position-based reading turned
+  // that drift into a ~300px clearance, which <body> then reserved as padding:
+  // the empty cream band under the footer in Sapir's 31/10 screenshot. A height
+  // is position-independent, so a misplaced pill can no longer inflate it.
+  const shellRef = useRef(null);
   useEffect(() => {
     const root = document.documentElement;
     const nav = navRef.current;
-    if (!nav) {
+    const shell = shellRef.current;
+    if (!nav || !shell) {
       if (noBottomChrome) {
         root.style.setProperty("--bottom-nav-clearance", NO_PILL_CLEARANCE);
         return () => root.style.removeProperty("--bottom-nav-clearance");
@@ -294,15 +304,12 @@ export default function BottomNav() {
     const publish = () => {
       // Frozen while compact — the last expanded value keeps applying.
       if (compactRef.current) return;
-      const rect = nav.getBoundingClientRect();
-      if (rect.height === 0) {
+      const { height } = shell.getBoundingClientRect();
+      if (height === 0) {
         root.style.removeProperty("--bottom-nav-clearance");
         return;
       }
-      root.style.setProperty(
-        "--bottom-nav-clearance",
-        `${Math.round(window.innerHeight - rect.top)}px`
-      );
+      root.style.setProperty("--bottom-nav-clearance", `${Math.round(height)}px`);
     };
     let debounceId;
     const schedule = () => {
@@ -314,7 +321,7 @@ export default function BottomNav() {
     let ro;
     if (typeof ResizeObserver !== "undefined") {
       ro = new ResizeObserver(schedule);
-      ro.observe(nav);
+      ro.observe(shell);
     }
     return () => {
       clearTimeout(debounceId);
@@ -396,8 +403,11 @@ export default function BottomNav() {
           none + one auto suffices. pointer-events only — no visual/layout/z
           change. onFocusCapture still fires: pointer-events-none does not block
           focus events (keyboard/programmatic), only pointer hit-testing. */}
+      {/* MEH-2652: vv-pin (globals.css) re-seats the shell on the screen
+          bottom when iOS 26 leaves fixed layers drifted (IosViewportPin.jsx). */}
       <div
-        className="md:hidden fixed bottom-0 inset-x-0 z-[1000] flex justify-center px-[14px] pointer-events-none"
+        ref={shellRef}
+        className="vv-pin md:hidden fixed bottom-0 inset-x-0 z-[1000] flex justify-center px-[14px] pointer-events-none"
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 16px)" }}
         // MEH-1014: any focus landing inside the pill forces it back to full
         // size (mirror of the MEH-734 focus guard). onFocusCapture catches it

@@ -231,6 +231,15 @@ html {
   scroll-padding-bottom: var(--bottom-inset);
 }
 
+/* MEH-2652: fixed-bottom layers that opt in follow the visual viewport when
+   iOS 26 Safari leaves them drifted above the screen bottom. --vv-shift is
+   published only on iOS, only while drifted (IosViewportPin.jsx); everywhere
+   else it is absent and this is `translate: 0 0`. `translate` is its own
+   property, so it composes with any `transform` the layer already animates. */
+.vv-pin {
+  translate: 0 var(--vv-shift, 0px);
+}
+
 @media (min-width: 768px) {
   /* md — BottomNav is `md:hidden`, so its 5rem drops out. The banner is still
      there (CookieBanner.jsx:72 `md:bottom-0`, flush to the viewport edge), so
