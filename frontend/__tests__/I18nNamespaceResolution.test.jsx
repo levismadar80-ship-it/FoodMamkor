@@ -44,7 +44,7 @@ vi.mock("@/lib/holidays", () => ({
   getActiveHoliday: () => ({
     key: "sukkot",
     name: "סוכות",
-    emoji: "🌿",
+    icon: "Leaf",
     color: "#2e6853",
     tagline: "טעמי החג",
     upcoming: true,
@@ -99,10 +99,10 @@ describe("i18n namespace resolution (MEH-996 audit — misnested group_buys.* bl
   it("HolidayBanner renders the Hebrew approaching line, not a raw key path", () => {
     renderHe(<HolidayBanner />);
     expect(document.body.textContent).not.toMatch(/producer\.holiday_banner/);
-    // ICU-filled "{name} מתקרב {emoji}" with the mocked holiday values.
+    // ICU-filled "{name} מתקרב" with the mocked holiday values (MEH-1687 D:
+    // the {emoji} slot is gone — the glyph is a Phosphor icon now).
     const expected = he.group_buys.holiday_banner.approaching
-      .replace("{name}", "סוכות")
-      .replace("{emoji}", "🌿");
+      .replace("{name}", "סוכות");
     expect(screen.getByText(expected)).toBeTruthy();
   });
 });

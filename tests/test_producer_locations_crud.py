@@ -119,7 +119,9 @@ def test_delete_primary_is_refused_while_a_survivor_remains(client, db):
         headers=auth_header(user),
     )
     assert resp.status_code == 422, resp.text
-    assert resp.json()["detail"] == "חובה מיקום ראשי אחד"
+    # MEH-1943: the 422 is {code, message, params}; the sentence is unchanged.
+    assert resp.json()["detail"]["code"] == "one_primary_required"
+    assert resp.json()["detail"]["message"] == "חובה מיקום ראשי אחד"
 
     listing = client.get("/producers/me/locations", headers=auth_header(user)).json()
     assert len(listing) == 2, "a refused delete removes nothing"

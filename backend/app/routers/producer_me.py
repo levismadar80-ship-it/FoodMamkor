@@ -326,8 +326,18 @@ def _pending_and_approvable(db, producer) -> bool:
 # city through the locations CRUD, which pings nobody. That gap is real and
 # pre-dates this change; it is MEH-2073 chunk 2's to close by moving the ping
 # into `_sync_producer_city_from_primary`, not this handler's to paper over.
+#
+# MEH-2626: `whatsapp_group` (the WhatsApp updates link) joined — it goes live
+# on the public page the moment it is saved, and a swapped link sends every
+# visitor who taps it to a different group or channel.
 SENSITIVE_FIELDS = frozenset(
-    {"phone", "vegan_scope", "vegetarian_scope", "gluten_free_facility"}
+    {
+        "phone",
+        "vegan_scope",
+        "vegetarian_scope",
+        "gluten_free_facility",
+        "whatsapp_group",
+    }
 )
 
 # MEH-1938 follow-up (Sapir, 02/09) — the single-primary invariant speaks with
@@ -349,6 +359,21 @@ PRIMARY_MUST_BE_BRANCH = (
     "המיקום הראשי חייב להיות סניף. "
     "אם אין לעסק כתובת פיזית, אפשר להשאיר את המיקום הראשי ריק."
 )
+
+# MEH-1943 chunk 1: `{code, message, params}` (the MEH-1164 / MEH-1940 shape).
+# `message` is the approved sentence above, word for word, so a consumer that
+# still renders `detail.message` shows exactly what it showed before; the
+# frontend maps the `code` to settings.locations.errors.<code> (he + en).
+ONE_PRIMARY_REQUIRED_DETAIL = {
+    "code": "one_primary_required",
+    "message": ONE_PRIMARY_REQUIRED,
+    "params": {},
+}
+PRIMARY_MUST_BE_BRANCH_DETAIL = {
+    "code": "primary_must_be_branch",
+    "message": PRIMARY_MUST_BE_BRANCH,
+    "params": {},
+}
 
 
 def _snapshot_sensitive(producer) -> dict:
@@ -623,6 +648,8 @@ def update_my_producer(
         "instagram",
         "website",
         "whatsapp_group",
+        # MEH-1676: the owner's opt-out for the public coverage CTA.
+        "coverage_cta_enabled",
         "primary_contact_method",
         "contact_email",
         "facebook",
@@ -1009,7 +1036,12 @@ def set_availability_status(
     if data.status not in AVAILABILITY_STATUSES:
         raise HTTPException(
             status_code=400,
-            detail=f"סטטוס לא תקין. חייב להיות אחד מתוך: {sorted(AVAILABILITY_STATUSES)}",
+            # MEH-1943 chunk 2: the allowed set moves to params, never the message.
+            detail={
+                "code": "invalid_availability_status",
+                "message": "סטטוס לא תקין",
+                "params": {"allowed": sorted(AVAILABILITY_STATUSES)},
+            },
         )
     # AUD-039: reject a past return date here too (Israel tz), so the legacy
     # surface can't persist an already-expired vacation.
@@ -1059,7 +1091,12 @@ def set_availability_state(
     if data.state not in AVAILABILITY_STATES:
         raise HTTPException(
             status_code=400,
-            detail=f"מצב לא תקין. חייב להיות אחד מתוך: {', '.join(AVAILABILITY_STATES)}",
+            # MEH-1943 chunk 2: the allowed set moves to params, never the message.
+            detail={
+                "code": "invalid_availability_state",
+                "message": "מצב לא תקין",
+                "params": {"allowed": list(AVAILABILITY_STATES)},
+            },
         )
 
     producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
@@ -1755,7 +1792,12 @@ def request_kashrut_badge(
     if body.badge_code not in VALID_BADGE_CODES:
         raise HTTPException(
             status_code=400,
-            detail=f"קוד badge לא תקין. ערכים מותרים: {', '.join(sorted(VALID_BADGE_CODES))}",
+            # MEH-1943 chunk 2: the allowed set moves to params, never the message.
+            detail={
+                "code": "invalid_badge_code",
+                "message": "קוד תג לא תקין",
+                "params": {"allowed": sorted(VALID_BADGE_CODES)},
+            },
         )
     producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
     if not producer:
@@ -2601,7 +2643,7 @@ def create_my_location(
     #      owner adding her only pickup point, and per MEH-213 she legitimately
     #      has no pin at all. Refusing her would block a valid business shape.
     if loc.is_primary and loc.kind != "branch":
-        raise HTTPException(status_code=422, detail=PRIMARY_MUST_BE_BRANCH)
+        raise HTTPException(status_code=422, detail=PRIMARY_MUST_BE_BRANCH_DETAIL)
 
     # Single-primary: the first BRANCH is primary; an explicit is_primary=true
     # on a later one clears the existing primary. A producer whose only rows
@@ -2668,13 +2710,13 @@ def update_my_location(  # noqa: PLR0913 — all 6 args are FastAPI-injected (sl
         # DeliveryBlock.jsx:468). A primary whose own marker disappears under a
         # layer toggle is a third answer to a question that must have one.
         if loc.kind != "branch":
-            raise HTTPException(status_code=422, detail=PRIMARY_MUST_BE_BRANCH)
+            raise HTTPException(status_code=422, detail=PRIMARY_MUST_BE_BRANCH_DETAIL)
         _clear_other_primaries(db, user.producer_id, loc.id)
         loc.is_primary = True
     elif want_primary is False and loc.is_primary:
         # Can't directly demote the sole primary (that would leave zero) — the
         # owner promotes another location instead (which clears this one).
-        raise HTTPException(status_code=422, detail=ONE_PRIMARY_REQUIRED)
+        raise HTTPException(status_code=422, detail=ONE_PRIMARY_REQUIRED_DETAIL)
 
     # MEH-2141: re-derive `Producer.city` on exactly two events — this row was
     # just PROMOTED to primary (the primary's identity changed), or this row is
@@ -2731,7 +2773,7 @@ def delete_my_location(
             is not None
         )
         if others_remain:
-            raise HTTPException(status_code=422, detail=ONE_PRIMARY_REQUIRED)
+            raise HTTPException(status_code=422, detail=ONE_PRIMARY_REQUIRED_DETAIL)
 
     # Deleting the LAST remaining location is allowed and leaves no primary.
     # The business stays approved but is unpinned and cannot submit — STRICT

@@ -16,7 +16,7 @@ import { CategoriesResponseSchema, StatsSchema } from "../../../lib/api-schemas.
 // @ts-expect-error TS7016 — JS lib, no .d.ts
 import { FILTER_AXES, homeParamFor } from "../../../lib/filter-taxonomy.js";
 // @ts-expect-error TS7016 — JS lib, no .d.ts
-import { CHIPS_CONFIG } from "../../../lib/producer-filters.js";
+import { CHIPS_CONFIG, gatedChipMin } from "../../../lib/producer-filters.js";
 // @ts-expect-error TS7016 — JS lib, no .d.ts
 import { SERVICE_CHIP_KEYS } from "../../../lib/map-chips.js";
 // @ts-expect-error TS7016 — JS lib, no .d.ts
@@ -227,7 +227,7 @@ const LOC_MODAL = he.modals.location;
 const FRIDAY_HE = he.group_buys.friday_delivery;
 const FRIDAY_EN = en.group_buys.friday_delivery;
 
-type Axis = { key: string; label: string; subtext?: string | null; group?: string };
+type Axis = { key: string; label: string; subtext?: string | null; group?: string; scope?: string };
 const AXES = FILTER_AXES as Record<string, Axis>;
 type Chip = { key: string; label: string };
 const HOME_CHIPS = CHIPS_CONFIG as Chip[];
@@ -368,7 +368,15 @@ const P5 = producer(5, LONG_NAME, CAT_B, {
   images: ["https://res.cloudinary.com/dfzpscjks/image/upload/fixture/long-name.jpg"],
   short_description: "תיאור ארוך מאוד של בית העסק שנועד לבדוק את קיצור השורה בכרטיס",
 });
-const REST = [6, 7, 8, 9, 10].map((n) => producer(n, `עסק לדוגמה ${n}`, CAT_B));
+// MEH-1508 chunk 3ב-2: «100% טבעוני» / «100% צמחוני» are runtime-gated too —
+// at gatedChipMin (1) businesses DECLARING `*_scope === "all"`, counted on the
+// VISIBLE slice (HomeProducersGrid `visibleGatedDietKeys(visibleProducers)`),
+// so the declaring row must sit inside the first PAGE_SIZE. One row declares
+// both, which un-gates both pills; censused in beforeAll.
+const SCOPE_ALL_DECLARED = { vegan_scope: "all", vegetarian_scope: "all" };
+const REST = [6, 7, 8, 9, 10].map((n) =>
+  producer(n, `עסק לדוגמה ${n}`, CAT_B, n === 6 ? SCOPE_ALL_DECLARED : {}),
+);
 const PRODUCERS: Producer[] = [P1, P2, P3, P4, P5, ...REST];
 const PAGE_SIZE = 8; // use-home-page.js:48
 const CAT_A_MEMBERS = PRODUCERS.filter(
@@ -439,6 +447,16 @@ test.beforeAll(() => {
   const onSite = PRODUCERS.filter((p) => p.sells_on_site).length;
   if (onSite < 5)
     throw new Error(`DIET_CHIP_MIN = 5 businesses selling on site are needed to un-gate on_site, got ${onSite}`);
+  // MEH-1508 chunk 3ב-2: the 100% pair is gated on the VISIBLE slice, not the feed.
+  const firstPage = PRODUCERS.slice(0, PAGE_SIZE);
+  for (const [key, field] of [
+    ["vegan_all", "vegan_scope"],
+    ["vegetarian_all", "vegetarian_scope"],
+  ] as const) {
+    const declared = firstPage.filter((p) => p[field] === "all").length;
+    if (declared < gatedChipMin(key))
+      throw new Error(`${gatedChipMin(key)} visible business(es) declaring ${field}=all needed to un-gate ${key}, got ${declared}`);
+  }
   if (PROMOTED.includes("verified"))
     throw new Error("«מאומת» is promoted again — MT:1418:2 below asserts it lives in the sheet only (MEH-2598)");
   const windowed = PRODUCERS.filter((p) => p.order_window).length;
@@ -1171,7 +1189,11 @@ test.describe("manual › filter chips + FilterSheet (MEH-1418 · task 12)", () 
   //                        (`chipSubtext`, :68-70), so it gets one too.
   //     · the diet group → a 2-col pill grid with NO per-row ⓘ and ONE group-level
   //                        scope line, `filters.sheet.diet_scope` (:279-283).
-  //   Both live shapes are asserted, derived from `FILTER_AXES[...].group`.
+  //       MEH-1508 chunk 3ב-2 split that group on the contract `scope`: the
+  //       any-product pills keep the shared line and carry no ⓘ; the two
+  //       business-scope pills («100% טבעוני» / «100% צמחוני») render AFTER the
+  //       line, each with its own ⓘ whose Popover carries the axis `subtext`.
+  //   All live shapes are asserted, derived from `FILTER_AXES[...].group/scope`.
   test("the FilterSheet gives every toggle a label, keeps every explanation reachable, and Esc closes it", async ({ page }) => {
     // The sheet's diet group is RUNTIME-GATED on the loaded catalog
     // (`visibleGatedDietKeys`, DIET_CHIP_MIN = 5 — `producer-filters.js:169-176`),
@@ -1200,10 +1222,26 @@ test.describe("manual › filter chips + FilterSheet (MEH-1418 · task 12)", () 
     await expect(info).toBeVisible();
     await info.click();
     await expect(panel.getByTestId(`chip-info-panel-${withInfo.key}`)).toHaveText(String(AXES[withInfo.key].subtext));
-    // The diet group carries its one shared scope line instead of per-row ones.
+    // The diet group carries its one shared scope line for the any-product pills
+    // instead of per-row ones; the business-scope 100% pills each carry an ⓘ.
+    const dietAnyProduct = diet.filter((c) => AXES[c.key]?.scope === "any-product");
+    const dietDeclared = diet.filter((c) => AXES[c.key]?.scope !== "any-product");
+    expect(dietAnyProduct.length, "the any-product diet pills must be non-empty or the no-ⓘ branch asserts nothing").toBeGreaterThan(0);
+    expect(dietDeclared.map((c) => c.key), "the business-scope diet pills are the 100% pair").toEqual(["vegan_all", "vegetarian_all"]);
     await expect(panel).toContainText(he.filters.sheet.diet_scope);
-    for (const chip of diet) {
-      await expect(panel.getByTestId(`chip-info-${chip.key}`), "a diet pill carries no ⓘ of its own").toHaveCount(0);
+    for (const chip of dietAnyProduct) {
+      await expect(panel.getByTestId(`chip-info-${chip.key}`), "an any-product diet pill carries no ⓘ of its own").toHaveCount(0);
+    }
+    for (const chip of dietDeclared) {
+      const subtext = String(AXES[chip.key].subtext);
+      const pillInfo = panel.getByTestId(`chip-info-${chip.key}`);
+      await expect(pillInfo, "a 100% pill carries its own ⓘ").toBeVisible();
+      await expect(pillInfo).toHaveAttribute("aria-label", subtext);
+      await pillInfo.click();
+      await expect(panel.getByTestId(`chip-info-panel-${chip.key}`)).toHaveText(subtext);
+      // Re-tap closes it, so the next pill's ⓘ is tapped with nothing open over it.
+      await pillInfo.click();
+      await expect(panel.getByTestId(`chip-info-panel-${chip.key}`)).toHaveCount(0);
     }
     await page.keyboard.press("Escape");
     await expect(panel).toBeHidden();

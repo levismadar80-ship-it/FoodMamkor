@@ -529,6 +529,129 @@
         "title": "Body_upload_owner_photo_upload_owner_photo_post",
         "type": "object"
       },
+      "BusinessSuggestionAck": {
+        "description": "The ENTIRE public response to POST /business-suggestions: `{\"ok\": true}`.\n\nThis model exists so the no-leak guarantee is structural rather than a\npromise about what the router happens to return. A duplicate suggestion and\na brand-new one produce byte-identical bodies, so the endpoint cannot be\nused to probe whether a business is already in the outreach queue; and\nthere is no field here that could ever carry a lead id or the suggester's\nemail.\n\n# DO NOT add fields to this model — every addition is a disclosure on an\n#        unauthenticated endpoint (MEH-2633).",
+        "properties": {
+          "ok": {
+            "default": true,
+            "title": "Ok",
+            "type": "boolean"
+          }
+        },
+        "title": "BusinessSuggestionAck",
+        "type": "object"
+      },
+      "BusinessSuggestionCreate": {
+        "description": "Public body for POST /business-suggestions (MEH-2633).\n\nA visitor suggesting a business that is not on Mehamakor yet. The row it\nproduces is an ordinary OutreachLead with source=\"community\" — nothing is\npublished, and the business still registers itself and passes manual\napproval + the licence check.\n\nField rules worth stating, because each one is a decision:\n\n- `city` is REQUIRED. REUSES `clean_display_city` (:259), so it gets the\n  same bleach + >=1-letter floor as the registration form's city; \"בת ים\"\n  and \"לוד\" clear a 1-letter floor where the >=3 used for names would not.\n- `instagram` / `phone` / `website`: at least ONE is required, enforced by\n  `_require_one_contact` below — without a way to reach the business the\n  suggestion is unactionable, which is the whole point of the queue. The\n  error text is the approved `<hebrew_copy>` string verbatim.\n- `company` is a HONEYPOT. No human sees it (Chunk B hides it from sighted\n  users AND from screen readers), so any value at all means a bot. The\n  router answers 201 and stores nothing — never a 4xx, which would tell\n  the bot what tripped it.\n- `suggester_email` is optional PII. It is normalised through\n  `_normalize_contact_email` (:342) so a cleared field arrives as None\n  rather than 422-ing, and capped at 254 to match the column. It is NEVER\n  echoed back: see BusinessSuggestionAck.\n\n`Field(max_length=…)` sits at field level on `instagram` / `suggester_name`\n/ `reason`, whose separate `@field_validator`s may return None. That is\nsafe, and deliberately NOT the Annotated form: an `AfterValidator` inside\nthe annotation would have the cap applied to the validator's OUTPUT and\nblow up with \"Unable to apply constraint 'max_length' to supplied value\nNone\" (the trap documented at :640-652). `suggester_email` carries no\nfield-level cap for the same reason in reverse — its validator is\nmode=\"before\", so a cap would land after it.",
+        "properties": {
+          "city": {
+            "maxLength": 100,
+            "title": "City",
+            "type": "string"
+          },
+          "company": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company"
+          },
+          "instagram": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Instagram"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "maxLength": 30,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "suggester_email": {
+            "anyOf": [
+              {
+                "format": "email",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggester Email"
+          },
+          "suggester_name": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggester Name"
+          },
+          "wants_update": {
+            "default": false,
+            "title": "Wants Update",
+            "type": "boolean"
+          },
+          "website": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Website"
+          }
+        },
+        "required": [
+          "name",
+          "city"
+        ],
+        "title": "BusinessSuggestionCreate",
+        "type": "object"
+      },
       "CategoryHit": {
         "properties": {
           "emoji": {
@@ -4264,6 +4387,56 @@
             "title": "Status",
             "type": "string"
           },
+          "suggested_by_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggested By Email"
+          },
+          "suggested_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggested By Name"
+          },
+          "suggester_thanked_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggester Thanked At"
+          },
+          "suggester_wants_update": {
+            "default": false,
+            "title": "Suggester Wants Update",
+            "type": "boolean"
+          },
+          "suggestion_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggestion Reason"
+          },
           "updated_at": {
             "format": "date-time",
             "title": "Updated At",
@@ -5856,6 +6029,17 @@
               }
             ],
             "title": "Contact Name"
+          },
+          "coverage_cta_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coverage Cta Enabled"
           },
           "custom_questions": {
             "anyOf": [
@@ -10530,6 +10714,17 @@
             ],
             "title": "Contact Name"
           },
+          "coverage_cta_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coverage Cta Enabled"
+          },
           "custom_questions": {
             "anyOf": [
               {
@@ -14127,7 +14322,7 @@
     },
     "/admin/outreach": {
       "get": {
-        "description": "List leads, newest first. Optional filters: status, city\n(case-insensitive contains).",
+        "description": "List leads, newest first. Optional filters: status, city\n(case-insensitive contains), source (MEH-2633, exact).",
         "operationId": "list_leads_admin_outreach_get",
         "parameters": [
           {
@@ -14160,6 +14355,22 @@
                 }
               ],
               "title": "City"
+            }
+          },
+          {
+            "in": "query",
+            "name": "source",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Source"
             }
           }
         ],
@@ -14247,7 +14458,7 @@
     },
     "/admin/outreach/metrics/summary": {
       "get": {
-        "description": "Counters for the admin outreach page header.\n\nNaming maps to the spec wording:\n  total      = all leads\n  contacted  = פניתי\n  replied    = ענו\n  registered = נרשמו",
+        "description": "Counters for the admin outreach page header.\n\nNaming maps to the spec wording:\n  total      = all leads\n  contacted  = פניתי\n  replied    = ענו\n  registered = נרשמו\n  community  = המלצות קהילה (source, not status — MEH-2633)",
         "operationId": "metrics_summary_admin_outreach_metrics_summary_get",
         "responses": {
           "200": {
@@ -14411,6 +14622,55 @@
           }
         ],
         "summary": "Mint Prefill Token",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/outreach/{lead_id}/thank-suggester": {
+      "post": {
+        "description": "Email the person who suggested this business that it has joined.\n\nFour separate 409s rather than one, each with its own Hebrew detail, so the\nadmin UI can say WHY the button is unavailable instead of just greying it\nout — and so a test can tell the four rules apart (a single shared message\nwould make any of the four pass a test written for another).\n\nIdempotent through `suggester_thanked_at`: the second call takes the\nalready-thanked branch and sends nothing. The stamp is written AFTER\nsend_email returns, but note what that can and cannot promise —\n`send_email` is fail-open by contract (services/email.py:139, returns None\non every path and raises nothing), so the stamp means \"we handed this to\nResend\", never \"it was delivered\". A swallowed failure is reported to\nSentry by that module (MEH-1613), which is where a missing thank-you is\ndiagnosed from; it is deliberately not re-derived here, because retrying\non a signal we do not have would send duplicates.",
+        "operationId": "thank_suggester_admin_outreach__lead_id__thank_suggester_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "lead_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Lead Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OutreachLeadOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Thank Suggester",
         "tags": [
           "admin"
         ]
@@ -17359,6 +17619,53 @@
         "summary": "Verify Email",
         "tags": [
           "auth"
+        ]
+      }
+    },
+    "/business-suggestions": {
+      "post": {
+        "description": "Accept a community suggestion.\n\nEvery path answers the SAME body, `{\"ok\": true}` (BusinessSuggestionAck):\na new lead, a duplicate, and a bot caught by the honeypot are\nindistinguishable from outside. That is deliberate — a different status or\nbody for the duplicate case would turn this endpoint into an oracle for\n\"is this business already in your outreach queue?\", which is private\ncommercial information about businesses that have not agreed to anything.\n\n`request` is required by slowapi, which reads it via introspection.",
+        "operationId": "submit_business_suggestion_business_suggestions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BusinessSuggestionCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessSuggestionAck"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Submit Business Suggestion",
+        "tags": [
+          "business-suggestions"
         ]
       }
     },

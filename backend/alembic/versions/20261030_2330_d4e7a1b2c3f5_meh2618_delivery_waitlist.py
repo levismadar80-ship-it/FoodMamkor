@@ -1,7 +1,7 @@
 """meh2618_delivery_waitlist
 
 Revision ID: d4e7a1b2c3f5
-Revises: 4b7e1d2c9a60
+Revises: d7a511246b14
 Create Date: 2026-10-30 23:30:00.000000+00:00
 
 MEH-2618: adds the `delivery_waitlist` table — «תודיעו לי כשתגיעו ל{עיר}».
@@ -26,7 +26,8 @@ Adds one table → EXPECTED_TABLES 43 -> 44 (pr-checks.yml — Sapir's edit).
 downgrade() drops the table — every pending «תודיעו לי» request is
 forgotten, which is the pre-MEH-2618 state.
 
-Chained on 9c534d477f2b (MEH-2556, staging head on 30/10), so
+Chained on d7a511246b14 (MEH-2633, staging head on 04/11; re-chained twice as
+staging moved — 9c534d477f2b → 4b7e1d2c9a60 → d7a511246b14), so
 `alembic heads` stays at one head.
 
 # DO NOT create this table anywhere else — Alembic is the sole schema
@@ -41,7 +42,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = "d4e7a1b2c3f5"
-down_revision: Union[str, None] = "4b7e1d2c9a60"
+down_revision: Union[str, None] = "d7a511246b14"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

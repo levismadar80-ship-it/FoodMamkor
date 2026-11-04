@@ -42,6 +42,11 @@ const RESERVED = new Set([
   "business-gone",
   // MEH-2618: the delivery-waitlist unsubscribe page.
   "delivery-waitlist",
+  // MEH-2633: the community-suggestion form. Reserved for the same reason as
+  // every entry above — a business whose slug is "recommend" would otherwise
+  // collide with the page, and this is the gate that also decides whether the
+  // site chrome unmounts.
+  "recommend",
 ]);
 
 // Real slugs are produced by backend _slugify

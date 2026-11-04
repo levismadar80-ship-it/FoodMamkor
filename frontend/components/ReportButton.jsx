@@ -36,13 +36,13 @@ export default function ReportButton({ producerId }) {
     <>
       <button
         onClick={() => setShowModal(true)}
-        className="text-sm text-red-500 hover:text-red-700 transition flex items-center gap-1"
+        className="text-sm text-error hover:text-red-700 transition flex items-center gap-1"
       >
         {t("trigger")}
       </button>
 
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9000] p-4">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[9000] p-4">
           <div
             role="dialog"
             aria-modal="true"
@@ -71,7 +71,7 @@ export default function ReportButton({ producerId }) {
                   maxLength={500}
                   required
                 />
-                {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
+                {error && <p className="text-error text-sm mb-3">{error}</p>}
                 <div className="flex gap-3">
                   <button type="submit" className="bg-red-500 text-white px-6 py-2 rounded-md hover:bg-red-600">
                     {t("submit")}

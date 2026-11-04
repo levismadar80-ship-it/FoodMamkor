@@ -413,9 +413,15 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
             WRAPPED siblings safe too (at 4-col desktop widths the TrustBadge
             "מובילת קהילה" wraps onto a second line directly under the +N chip,
             which is the overlap Sapir's QA screenshot caught). */}
+        {/* MEH-1508 chunk 3ב-2: row gap gap-y-2.5 (10px) = the +N's -m-2.5
+            pull-back below. When a long first-row badge («100% צמחוני») wraps
+            the +N onto a second line, its 44px hit area reaches 10px upward;
+            with the old 4px gap it covered «חדש» down to 41.5×19.3 (axe
+            target-size, CI mobile /producers). At 10px it touches the row
+            above and covers nothing. Single-row strips are unchanged. */}
         <div
           ref={badgeStripRef}
-          className="absolute bottom-3 start-3 flex flex-wrap items-center gap-1"
+          className="absolute bottom-3 start-3 flex flex-wrap items-center gap-x-1 gap-y-2.5"
         >
           <BadgeRow producer={producer} limit={2} surface="card" avoidRef={badgeStripRef} />
           {badgeCount(producer) > 2 && (

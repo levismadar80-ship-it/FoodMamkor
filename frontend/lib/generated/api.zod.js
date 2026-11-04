@@ -589,11 +589,12 @@ export const ReviewNameChangeRequestAdminNameChangeRequestsRequestIdPatchRespons
 
 /**
  * List leads, newest first. Optional filters: status, city
- * (case-insensitive contains).
+ * (case-insensitive contains), source (MEH-2633, exact).
  * @summary List Leads
  */
 export const listLeadsAdminOutreachGetResponseSourceDefault = `manual`;
 export const listLeadsAdminOutreachGetResponseStatusDefault = `new`;
+export const listLeadsAdminOutreachGetResponseSuggesterWantsUpdateDefault = false;
 
 export const ListLeadsAdminOutreachGetResponseItem = /*#__PURE__*/ zod.object({
   "category": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -608,6 +609,11 @@ export const ListLeadsAdminOutreachGetResponseItem = /*#__PURE__*/ zod.object({
   "prefill_token_expires_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "source": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listLeadsAdminOutreachGetResponseSourceDefault),
   "status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listLeadsAdminOutreachGetResponseStatusDefault),
+  "suggested_by_email": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "suggested_by_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "suggester_thanked_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "suggester_wants_update": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listLeadsAdminOutreachGetResponseSuggesterWantsUpdateDefault),
+  "suggestion_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "updated_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
   "website": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })
@@ -622,6 +628,7 @@ export const ListLeadsAdminOutreachGetResponse = /*#__PURE__*/ zod.array(ListLea
  */
 export const createLeadAdminOutreachPostResponseSourceDefault = `manual`;
 export const createLeadAdminOutreachPostResponseStatusDefault = `new`;
+export const createLeadAdminOutreachPostResponseSuggesterWantsUpdateDefault = false;
 
 export const CreateLeadAdminOutreachPostResponse = /*#__PURE__*/ zod.object({
   "category": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -636,6 +643,11 @@ export const CreateLeadAdminOutreachPostResponse = /*#__PURE__*/ zod.object({
   "prefill_token_expires_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "source": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), createLeadAdminOutreachPostResponseSourceDefault),
   "status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), createLeadAdminOutreachPostResponseStatusDefault),
+  "suggested_by_email": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "suggested_by_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "suggester_thanked_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "suggester_wants_update": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), createLeadAdminOutreachPostResponseSuggesterWantsUpdateDefault),
+  "suggestion_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "updated_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
   "website": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })
@@ -649,6 +661,7 @@ export const CreateLeadAdminOutreachPostResponse = /*#__PURE__*/ zod.object({
  *   contacted  = פניתי
  *   replied    = ענו
  *   registered = נרשמו
+ *   community  = המלצות קהילה (source, not status — MEH-2633)
  * @summary Metrics Summary
  */
 export const MetricsSummaryAdminOutreachMetricsSummaryGetResponse = /*#__PURE__*/ zod.unknown()
@@ -665,6 +678,7 @@ export const DeleteLeadAdminOutreachLeadIdDeleteResponse = /*#__PURE__*/ zod.voi
  */
 export const updateLeadAdminOutreachLeadIdPatchResponseSourceDefault = `manual`;
 export const updateLeadAdminOutreachLeadIdPatchResponseStatusDefault = `new`;
+export const updateLeadAdminOutreachLeadIdPatchResponseSuggesterWantsUpdateDefault = false;
 
 export const UpdateLeadAdminOutreachLeadIdPatchResponse = /*#__PURE__*/ zod.object({
   "category": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -679,6 +693,11 @@ export const UpdateLeadAdminOutreachLeadIdPatchResponse = /*#__PURE__*/ zod.obje
   "prefill_token_expires_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "source": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), updateLeadAdminOutreachLeadIdPatchResponseSourceDefault),
   "status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), updateLeadAdminOutreachLeadIdPatchResponseStatusDefault),
+  "suggested_by_email": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "suggested_by_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "suggester_thanked_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "suggester_wants_update": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), updateLeadAdminOutreachLeadIdPatchResponseSuggesterWantsUpdateDefault),
+  "suggestion_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "updated_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
   "website": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })
@@ -691,6 +710,7 @@ export const UpdateLeadAdminOutreachLeadIdPatchResponse = /*#__PURE__*/ zod.obje
  */
 export const mintPrefillTokenAdminOutreachLeadIdPrefillTokenPostResponseSourceDefault = `manual`;
 export const mintPrefillTokenAdminOutreachLeadIdPrefillTokenPostResponseStatusDefault = `new`;
+export const mintPrefillTokenAdminOutreachLeadIdPrefillTokenPostResponseSuggesterWantsUpdateDefault = false;
 
 export const MintPrefillTokenAdminOutreachLeadIdPrefillTokenPostResponse = /*#__PURE__*/ zod.object({
   "category": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -705,6 +725,57 @@ export const MintPrefillTokenAdminOutreachLeadIdPrefillTokenPostResponse = /*#__
   "prefill_token_expires_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "source": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), mintPrefillTokenAdminOutreachLeadIdPrefillTokenPostResponseSourceDefault),
   "status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), mintPrefillTokenAdminOutreachLeadIdPrefillTokenPostResponseStatusDefault),
+  "suggested_by_email": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "suggested_by_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "suggester_thanked_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "suggester_wants_update": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), mintPrefillTokenAdminOutreachLeadIdPrefillTokenPostResponseSuggesterWantsUpdateDefault),
+  "suggestion_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "updated_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "website": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
+})
+
+
+/**
+ * Email the person who suggested this business that it has joined.
+ *
+ * Four separate 409s rather than one, each with its own Hebrew detail, so the
+ * admin UI can say WHY the button is unavailable instead of just greying it
+ * out — and so a test can tell the four rules apart (a single shared message
+ * would make any of the four pass a test written for another).
+ *
+ * Idempotent through `suggester_thanked_at`: the second call takes the
+ * already-thanked branch and sends nothing. The stamp is written AFTER
+ * send_email returns, but note what that can and cannot promise —
+ * `send_email` is fail-open by contract (services/email.py:139, returns None
+ * on every path and raises nothing), so the stamp means "we handed this to
+ * Resend", never "it was delivered". A swallowed failure is reported to
+ * Sentry by that module (MEH-1613), which is where a missing thank-you is
+ * diagnosed from; it is deliberately not re-derived here, because retrying
+ * on a signal we do not have would send duplicates.
+ * @summary Thank Suggester
+ */
+export const thankSuggesterAdminOutreachLeadIdThankSuggesterPostResponseSourceDefault = `manual`;
+export const thankSuggesterAdminOutreachLeadIdThankSuggesterPostResponseStatusDefault = `new`;
+export const thankSuggesterAdminOutreachLeadIdThankSuggesterPostResponseSuggesterWantsUpdateDefault = false;
+
+export const ThankSuggesterAdminOutreachLeadIdThankSuggesterPostResponse = /*#__PURE__*/ zod.object({
+  "category": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "city": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "instagram": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "name": /*#__PURE__*/ zod.string(),
+  "notes": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "prefill_token": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "prefill_token_expires_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "source": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), thankSuggesterAdminOutreachLeadIdThankSuggesterPostResponseSourceDefault),
+  "status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), thankSuggesterAdminOutreachLeadIdThankSuggesterPostResponseStatusDefault),
+  "suggested_by_email": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "suggested_by_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "suggester_thanked_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "suggester_wants_update": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), thankSuggesterAdminOutreachLeadIdThankSuggesterPostResponseSuggesterWantsUpdateDefault),
+  "suggestion_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "updated_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
   "website": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()]))
 })
@@ -2680,6 +2751,26 @@ export const ResetPasswordAuthResetPasswordPostResponse = /*#__PURE__*/ zod.unkn
  * @summary Verify Email
  */
 export const VerifyEmailAuthVerifyEmailGetResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
+ * Accept a community suggestion.
+ *
+ * Every path answers the SAME body, `{"ok": true}` (BusinessSuggestionAck):
+ * a new lead, a duplicate, and a bot caught by the honeypot are
+ * indistinguishable from outside. That is deliberate — a different status or
+ * body for the duplicate case would turn this endpoint into an oracle for
+ * "is this business already in your outreach queue?", which is private
+ * commercial information about businesses that have not agreed to anything.
+ *
+ * `request` is required by slowapi, which reads it via introspection.
+ * @summary Submit Business Suggestion
+ */
+export const submitBusinessSuggestionBusinessSuggestionsPostResponseOkDefault = true;
+
+export const SubmitBusinessSuggestionBusinessSuggestionsPostResponse = /*#__PURE__*/ zod.object({
+  "ok": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), submitBusinessSuggestionBusinessSuggestionsPostResponseOkDefault)
+}).check(/*#__PURE__*/ zod.describe('The ENTIRE public response to POST \/business-suggestions: `{\"ok\": true}`.\n\nThis model exists so the no-leak guarantee is structural rather than a\npromise about what the router happens to return. A duplicate suggestion and\na brand-new one produce byte-identical bodies, so the endpoint cannot be\nused to probe whether a business is already in the outreach queue; and\nthere is no field here that could ever carry a lead id or the suggester\'s\nemail.\n\n# DO NOT add fields to this model — every addition is a disclosure on an\n#        unauthenticated endpoint (MEH-2633).'))
 
 
 /**

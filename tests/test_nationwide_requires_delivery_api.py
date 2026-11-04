@@ -46,7 +46,9 @@ def _detail_text(resp) -> str:
     """The DECODED message, not the wire text.
 
     Two response shapes reach here and both must be readable:
-      HTTPException(422, detail=str)  -> {"detail": "<msg>"}          (the routers)
+      HTTPException(422, detail=obj)  -> {"detail": {"code", "message", "params"}}
+                                         (the routers, since MEH-1943 chunk 3;
+                                         `message` is the same sentence)
       Pydantic ValueError            -> {"detail": [{"msg": "Value error, <msg>"}]}
 
     Decoding matters and is not defensive tidying: the copy contains ASCII
@@ -59,6 +61,8 @@ def _detail_text(resp) -> str:
     detail = body.get("detail")
     if isinstance(detail, str):
         return detail
+    if isinstance(detail, dict):
+        return detail.get("message", "")
     return " ".join(item.get("msg", "") for item in detail)
 
 
