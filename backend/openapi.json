@@ -2578,6 +2578,19 @@
             ],
             "title": "Max Participants"
           },
+          "participants_count": {
+            "anyOf": [
+              {
+                "maximum": 500.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Participants Count"
+          },
           "price_per_person": {
             "anyOf": [
               {
@@ -11314,6 +11327,21 @@
       },
       "ProductCreate": {
         "properties": {
+          "allergens": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 50,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allergens"
+          },
           "description": {
             "anyOf": [
               {
@@ -11336,6 +11364,17 @@
               }
             ],
             "title": "Image Url"
+          },
+          "ingredients": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ingredients"
           },
           "is_gluten_free": {
             "default": false,
@@ -11473,6 +11512,20 @@
       },
       "ProductOut": {
         "properties": {
+          "allergens": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allergens"
+          },
           "description": {
             "anyOf": [
               {
@@ -11499,6 +11552,17 @@
               }
             ],
             "title": "Image Url"
+          },
+          "ingredients": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ingredients"
           },
           "is_gluten_free": {
             "default": false,
@@ -11577,6 +11641,21 @@
       },
       "ProductUpdate": {
         "properties": {
+          "allergens": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 50,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allergens"
+          },
           "description": {
             "anyOf": [
               {
@@ -11599,6 +11678,17 @@
               }
             ],
             "title": "Image Url"
+          },
+          "ingredients": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ingredients"
           },
           "is_gluten_free": {
             "anyOf": [

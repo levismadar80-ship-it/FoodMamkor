@@ -993,24 +993,22 @@ test.describe("manual › hero search placeholders (MEH-1800)", () => {
 
 // ════════════════════════════════════════════════════════════════════════════
 test.describe("manual › chat launcher on mobile (MEH-2499)", () => {
-  // The launcher is back on phones above the BottomNav pill and steps aside on
-  // scroll-down, returning on scroll-up. Desktop never hides (unit-tested).
-  test("mobile: visible at the top, hidden after scrolling down, back after scrolling up", async ({ page }, info) => {
-    mobileOnly(info, "the hide-on-scroll behavior is mobile-only");
+  // The launcher sits above the BottomNav pill and stays put through scrolling
+  // (it hid on scroll-down until 4/11 — on a phone that read as broken).
+  test("mobile: visible at the top, after scrolling down, and after scrolling up", async ({ page }, info) => {
+    mobileOnly(info, "the launcher position above the BottomNav is mobile-only");
     await consent(page);
     await stubTiles(page);
     await mockApi(page);
     await gotoHome(page);
     const launcher = page.getByTestId("chat-launcher");
     await expect(launcher).toBeVisible(FIRST_PAINT);
-    await expect(launcher).toHaveAttribute("data-hidden", "false");
-    await page.evaluate(() => window.scrollTo(0, 900));
-    await expect(launcher).toHaveAttribute("data-hidden", "true");
-    // The attribute alone could flip with no visual change — pin the effect.
-    await expect(launcher).toHaveCSS("pointer-events", "none");
-    await expect(launcher).toHaveCSS("opacity", "0");
-    await page.evaluate(() => window.scrollTo(0, 600));
-    await expect(launcher).toHaveAttribute("data-hidden", "false");
+    for (const y of [900, 600]) {
+      await page.evaluate((top) => window.scrollTo(0, top), y);
+      await expect(launcher).toBeVisible();
+      await expect(launcher).toHaveCSS("opacity", "1");
+      await expect(launcher).toHaveCSS("pointer-events", "auto");
+    }
   });
 });
 

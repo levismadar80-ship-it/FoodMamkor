@@ -211,9 +211,11 @@
       "precision"
     ],
     "ProducerDetailOut.products": [
+      "allergens",
       "description",
       "id",
       "image_url",
+      "ingredients",
       "is_gluten_free",
       "is_lactose_free",
       "is_low_carb",

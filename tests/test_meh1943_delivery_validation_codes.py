@@ -23,7 +23,7 @@ EXCLUDED_DETAIL = {
 }
 NATIONWIDE_DETAIL = {
     "code": "nationwide_requires_delivery",
-    "message": '"לכל הארץ" מסומן, אבל "משלוחים" לא. סמני "משלוחים", או בטלי את "לכל הארץ".',
+    "message": '"לכל הארץ" מסומן, אבל "משלוחים" לא. סמנו "משלוחים", או בטלו את "לכל הארץ".',
     "params": {},
 }
 

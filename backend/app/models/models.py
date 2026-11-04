@@ -1088,6 +1088,11 @@ class Product(Base):
     is_low_carb = Column(
         Boolean, default=False, nullable=False, server_default=text("false")
     )
+    # MEH-2662: owner-declared, optional — free-text ingredient list and
+    # allergen codes from the closed list in app/allergens.py. NULL = not
+    # filled (the sheet shows nothing), never "contains none".
+    ingredients = Column(Text, nullable=True)
+    allergens: Column[list[str]] = Column(ARRAY(Text), nullable=True)
 
     # MEH-2137: the other half of the same disambiguation — see the comment on
     # Producer.products. Without it this side raises the same error.

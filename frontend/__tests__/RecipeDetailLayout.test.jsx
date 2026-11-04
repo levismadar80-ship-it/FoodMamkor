@@ -147,3 +147,39 @@ describe("RecipeDetail business row", () => {
     expect(row.textContent).toContain("מאפיית רוח השדה");
   });
 });
+
+// MEH-2654 (Sapir 31/10): «המוצרים שלנו במתכון» rows were dead <li>s and read
+// only the legacy price_range, so a product priced via price_min had no price.
+describe("RecipeDetail related products (MEH-2654)", () => {
+  const withProducts = (products) =>
+    render(<RecipeDetail recipe={base} producer={producer} relatedProducts={products} />);
+
+  it("renders no products section when there are none", () => {
+    withProducts([]);
+    expect(screen.queryAllByTestId("recipe-product-link")).toHaveLength(0);
+  });
+
+  it("one product: links to its sheet on the business page and shows the numeric price", () => {
+    withProducts([{ id: "p-1", name: "לחם מחמצת", price_min: 32, price_max: null }]);
+    const links = screen.getAllByTestId("recipe-product-link");
+    expect(links).toHaveLength(1);
+    expect(links[0].getAttribute("href")).toBe("/ruach-hasadeh?product=p-1");
+    expect(links[0].textContent).toContain("32₪");
+  });
+
+  it("many products: each row links to its own product; legacy price_range still shows", () => {
+    withProducts([
+      { id: "p-1", name: "לחם", price_min: 38, price_max: 45 },
+      { id: "p-2", name: "גבינה", price_min: null, price_range: "מ-40₪ למארז" },
+      { id: "p-3", name: "עוגיות", price_min: null },
+    ]);
+    const hrefs = screen.getAllByTestId("recipe-product-link").map((a) => a.getAttribute("href"));
+    expect(hrefs).toEqual([
+      "/ruach-hasadeh?product=p-1",
+      "/ruach-hasadeh?product=p-2",
+      "/ruach-hasadeh?product=p-3",
+    ]);
+    expect(screen.getByText("38₪–45₪")).toBeTruthy();
+    expect(screen.getByText("מ-40₪ למארז")).toBeTruthy();
+  });
+});

@@ -106,7 +106,7 @@ def test_copy_and_palette_untouched():
     """MEH-2164 is a layout fix. Anything else changing is scope creep."""
     html = _render()
     for fragment in (
-        "ברוכה הבאה למהמקור",
+        "ברוכים הבאים למהמקור",
         # MEH-2611 replaced the weekly/Monday promise (nothing sends weekly)
         # with copy Sapir approved 30/10; this pins the new line instead.
         "נכתוב לך כשיש משהו ששווה לספר: בית עסק חדש, אירוע קרוב או מתכון של העונה.",

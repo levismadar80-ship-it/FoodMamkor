@@ -15,6 +15,7 @@ from pydantic import (
     model_validator,
 )
 
+from app.allergens import normalize_allergens
 from app.schemas.password import PasswordField
 from app.services.sanitization import sanitize_text
 from app.utils.clock import israel_today
@@ -1144,7 +1145,7 @@ class ProducerRegister(BaseModel):
             raise ValueError("לא ניתן לבחור גם משלוחים לכל הארץ וגם ערים ספציפיות")
         if self.delivery_nationwide and not self.offers_delivery:
             raise ValueError(
-                '"לכל הארץ" מסומן, אבל "משלוחים" לא. סמני "משלוחים", או בטלי את "לכל הארץ".'
+                '"לכל הארץ" מסומן, אבל "משלוחים" לא. סמנו "משלוחים", או בטלו את "לכל הארץ".'
             )
         return self
 
@@ -1703,6 +1704,16 @@ class ProductCreate(BaseModel):
     # scope; no implication from any other flag, so no defaulting-from.
     is_no_added_sugar: bool = False
     is_low_carb: bool = False
+    # MEH-2662: optional, owner-declared.
+    ingredients: SanitizedDescriptionField | None = None  # capped at 2000 by the type
+    allergens: list[str] | None = Field(
+        None, max_length=50
+    )  # 14 codes + headroom for dupes
+
+    @field_validator("allergens")
+    @classmethod
+    def _validate_allergens(cls, v):
+        return normalize_allergens(v)
 
     @field_validator("image_url", mode="before")
     @classmethod
@@ -1737,6 +1748,16 @@ class ProductUpdate(BaseModel):
     is_lactose_free: bool | None = None
     is_no_added_sugar: bool | None = None  # MEH-1934
     is_low_carb: bool | None = None  # MEH-1934
+    # MEH-2662: exclude_unset → unsent stays put; an explicit null clears.
+    ingredients: SanitizedDescriptionField | None = None  # capped at 2000 by the type
+    allergens: list[str] | None = Field(
+        None, max_length=50
+    )  # 14 codes + headroom for dupes
+
+    @field_validator("allergens")
+    @classmethod
+    def _validate_allergens(cls, v):
+        return normalize_allergens(v)
 
     @field_validator("image_url", mode="before")
     @classmethod
@@ -1775,6 +1796,8 @@ class ProductOut(BaseModel):
     is_lactose_free: bool = False
     is_no_added_sugar: bool = False  # MEH-1934
     is_low_carb: bool = False  # MEH-1934
+    ingredients: str | None = None  # MEH-2662
+    allergens: list[str] | None = None  # MEH-2662
 
     model_config = {"from_attributes": True}
 
@@ -1972,7 +1995,7 @@ class ProducerAdminCreate(BaseModel):
         # delivery_nationwide would otherwise reach the DB and 500.
         if self.delivery_nationwide and not self.offers_delivery:
             raise ValueError(
-                '"לכל הארץ" מסומן, אבל "משלוחים" לא. סמני "משלוחים", או בטלי את "לכל הארץ".'
+                '"לכל הארץ" מסומן, אבל "משלוחים" לא. סמנו "משלוחים", או בטלו את "לכל הארץ".'
             )
         return self
 
@@ -2375,7 +2398,7 @@ class ProducerUpdate(BaseModel):
         # (services/delivery_validation.py), not this one.
         if dn and od is False:
             raise ValueError(
-                '"לכל הארץ" מסומן, אבל "משלוחים" לא. סמני "משלוחים", או בטלי את "לכל הארץ".'
+                '"לכל הארץ" מסומן, אבל "משלוחים" לא. סמנו "משלוחים", או בטלו את "לכל הארץ".'
             )
         return self
 
@@ -3780,6 +3803,9 @@ class ExperienceUpdate(BaseModel):
     is_recurring: bool | None = None
     recurring_schedule: str | None = None
     is_active: bool | None = None  # MEH-1419: reversible cancel — mirrors EventUpdate
+    # MEH-2663: sign-up happens on WhatsApp, so the host reports the count.
+    # Bookkeeping, not content — the router keeps it out of moderation.
+    participants_count: int | None = Field(None, ge=0, le=500)
 
     @field_validator("title")
     @classmethod
