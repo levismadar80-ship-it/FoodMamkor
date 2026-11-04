@@ -62,6 +62,7 @@ const EMPTY = {
   lng: null,
   price_per_person: "",
   max_participants: "",
+  min_participants: "",
   requirements: "",
   is_recurring: false,
   recurring_schedule: "",
@@ -88,6 +89,7 @@ function seed(initial) {
     lng: initial.lng ?? null,
     price_per_person: str(initial.price_per_person),
     max_participants: str(initial.max_participants),
+    min_participants: str(initial.min_participants),
     requirements: initial.requirements ?? "",
     is_recurring: Boolean(initial.is_recurring),
     recurring_schedule: initial.recurring_schedule ?? "",
@@ -111,6 +113,7 @@ const EXPERIENCE_FIELD_ORDER = [
   "city",
   "price_per_person",
   "max_participants",
+  "min_participants",
 ];
 
 const EXPERIENCE_FIELD_ID = {
@@ -125,6 +128,7 @@ const EXPERIENCE_FIELD_ID = {
   city: "experience-city",
   price_per_person: "experience-price",
   max_participants: "experience-max-participants",
+  min_participants: "experience-min-participants",
 };
 
 // MEH-2012: the `isNativeValidUrl` guard that lived here was REMOVED with the
@@ -170,6 +174,15 @@ function validateExperienceForm(f, t) {
     const m = Number(f.max_participants);
     if (m < 1) errors.max_participants = t("error_max_participants_min");
     else if (!isWholeNumber(m)) errors.max_participants = t("error_whole_number");
+  }
+  // MEH-2665: optional minimum to run it; the server rejects min > max too.
+  if (f.min_participants !== "") {
+    const n = Number(f.min_participants);
+    if (n < 1) errors.min_participants = t("error_max_participants_min");
+    else if (!isWholeNumber(n)) errors.min_participants = t("error_whole_number");
+    else if (f.max_participants !== "" && n > Number(f.max_participants)) {
+      errors.min_participants = t("error_min_above_max");
+    }
   }
   return errors;
 }
@@ -347,6 +360,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
       lng: form.lng ?? null,
       price_per_person: form.price_per_person ? Number(form.price_per_person) : null,
       max_participants: form.max_participants ? Number(form.max_participants) : null,
+      min_participants: form.min_participants ? Number(form.min_participants) : null,
       requirements: form.requirements || null,
       is_recurring: form.is_recurring,
       recurring_schedule: form.is_recurring ? form.recurring_schedule || null : null,
@@ -675,6 +689,17 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
           onChange={setField("max_participants")}
           placeholder={t("field_max_participants_placeholder")}
           error={fieldErrors.max_participants}
+        />
+        <Input
+          id="experience-min-participants"
+          label={t("field_min_participants")}
+          type="number"
+          min="1"
+          value={form.min_participants}
+          onChange={setField("min_participants")}
+          placeholder={t("field_min_participants_placeholder")}
+          helperText={t("field_min_participants_hint")}
+          error={fieldErrors.min_participants}
         />
       </div>
 

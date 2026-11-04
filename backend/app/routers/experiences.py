@@ -91,6 +91,7 @@ def _serialize_list(ex: Experience) -> dict:
         "location_type": ex.location_type,
         "city": ex.city,
         "max_participants": ex.max_participants,
+        "min_participants": ex.min_participants,
         "participants_count": ex.participants_count or 0,
         "spots_left": _compute_spots_left(ex),
         "price_per_person": ex.price_per_person,
@@ -366,6 +367,9 @@ def submit_experience(
       3. APPROVED / FLAGGED → persist as status=pending, admin will review
       4. moderation_status is stored so admins see Claude's signal
     """
+    if _min_above_max(data.min_participants, data.max_participants):
+        raise HTTPException(status_code=422, detail=_MIN_ABOVE_MAX_DETAIL)
+
     verdict = validate_experience(data.model_dump(mode="json"))
     if verdict["status"] == "REJECTED":
         raise HTTPException(
@@ -391,6 +395,7 @@ def submit_experience(
         lat=data.lat,
         lng=data.lng,
         max_participants=data.max_participants,
+        min_participants=data.min_participants,
         participants_count=0,
         price_per_person=data.price_per_person,
         requirements=data.requirements,
@@ -429,6 +434,13 @@ def submit_experience(
 
 _NON_CONTENT_FIELDS = frozenset({"is_active", "participants_count"})
 
+# MEH-2665: the form blocks it first; this is the write-boundary twin.
+_MIN_ABOVE_MAX_DETAIL = "המינימום לא יכול להיות גדול מהמקסימום"
+
+
+def _min_above_max(min_p: int | None, max_p: int | None) -> bool:
+    return min_p is not None and max_p is not None and min_p > max_p
+
 
 @router.put("/{experience_id}", response_model=ExperienceDetailOut)
 def update_experience(
@@ -447,6 +459,10 @@ def update_experience(
         raise HTTPException(status_code=404, detail="Experience not found")
 
     payload = data.model_dump(exclude_unset=True)
+    new_min = payload.get("min_participants", ex.min_participants)
+    new_max = payload.get("max_participants", ex.max_participants)
+    if _min_above_max(new_min, new_max):
+        raise HTTPException(status_code=422, detail=_MIN_ABOVE_MAX_DETAIL)
     for field, value in payload.items():
         setattr(ex, field, value)
 

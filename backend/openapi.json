@@ -1785,6 +1785,19 @@
             ],
             "title": "Max Participants"
           },
+          "min_participants": {
+            "anyOf": [
+              {
+                "maximum": 500.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Participants"
+          },
           "price_per_person": {
             "anyOf": [
               {
@@ -1994,6 +2007,17 @@
               }
             ],
             "title": "Max Participants"
+          },
+          "min_participants": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Participants"
           },
           "moderation_reason": {
             "anyOf": [
@@ -2281,6 +2305,17 @@
             ],
             "title": "Max Participants"
           },
+          "min_participants": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Participants"
+          },
           "participants_count": {
             "default": 0,
             "title": "Participants Count",
@@ -2522,6 +2557,19 @@
               }
             ],
             "title": "Max Participants"
+          },
+          "min_participants": {
+            "anyOf": [
+              {
+                "maximum": 500.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Participants"
           },
           "participants_count": {
             "anyOf": [
@@ -12434,6 +12482,17 @@
               }
             ],
             "title": "Max Participants"
+          },
+          "min_participants": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Participants"
           },
           "participants_count": {
             "default": 0,

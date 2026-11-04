@@ -266,6 +266,8 @@ erDiagram
         int duration_minutes
         numeric price
         int capacity
+        int participants_count "host-reported sign-ups (MEH-2663)"
+        int min_participants "nullable; minimum to run (MEH-2665)"
         string status "pending|changes_requested|approved|rejected"
         boolean is_active "MEH-1419: reversible host cancel; public list filters true"
         text moderation_notes "Claude Haiku pre-check output"

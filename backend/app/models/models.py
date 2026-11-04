@@ -1783,6 +1783,9 @@ class Experience(Base):
 
     # Capacity + pricing
     max_participants = Column(Integer, nullable=True)
+    # MEH-2665: optional minimum to run it; the page reads it against the
+    # host-reported participants_count («נפתחת ב-N נרשמים לפחות»).
+    min_participants = Column(Integer, nullable=True)
     participants_count = Column(Integer, default=0)
     price_per_person = Column(Numeric(10, 2), nullable=True)  # NULL / 0 = free
 

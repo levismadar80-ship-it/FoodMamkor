@@ -3730,6 +3730,8 @@ class ExperienceCreate(BaseModel):
     lat: float | None = None
     lng: float | None = None
     max_participants: int | None = Field(None, ge=1, le=500)
+    # MEH-2665: optional minimum to run it; ≤ max is checked in the router.
+    min_participants: int | None = Field(None, ge=1, le=500)
     price_per_person: Decimal | None = None  # NULL / 0 = free
     requirements: str | None = None
     is_recurring: bool = False
@@ -3798,6 +3800,7 @@ class ExperienceUpdate(BaseModel):
     lat: float | None = None
     lng: float | None = None
     max_participants: int | None = Field(None, ge=1, le=500)
+    min_participants: int | None = Field(None, ge=1, le=500)  # MEH-2665
     price_per_person: Decimal | None = None
     requirements: str | None = None
     is_recurring: bool | None = None
@@ -3900,6 +3903,7 @@ class ExperienceListOut(BaseModel):
     location_type: str
     city: str | None = None
     max_participants: int | None = None
+    min_participants: int | None = None  # MEH-2665
     participants_count: int = 0
     spots_left: int | None = None
     price_per_person: Decimal | None = None
