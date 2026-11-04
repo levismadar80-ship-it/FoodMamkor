@@ -1088,6 +1088,38 @@ class TestExperienceSignupCount:
         )
         assert resp.status_code == 422
 
+    def test_count_above_cap_is_clamped_to_cap(self, client, db, monkeypatch):
+        # The dashboard clamps too; a direct PUT must not store 12 of 8.
+        _mock_moderation(monkeypatch, status="APPROVED")
+        host = _make_host(db)
+        ex = _make_experience(db, host, status="approved", max_participants=8)
+        resp = client.put(
+            f"/experiences/{ex.id}",
+            json={"participants_count": 12},
+            headers=auth_header(host),
+        )
+        assert resp.status_code == 200, resp.text
+        assert resp.json()["participants_count"] == 8
+        assert resp.json()["spots_left"] == 0
+        db.refresh(ex)
+        assert ex.participants_count == 8
+
+    def test_explicit_null_count_stores_zero(self, client, db, monkeypatch):
+        _mock_moderation(monkeypatch, status="APPROVED")
+        host = _make_host(db)
+        ex = _make_experience(db, host, status="approved", max_participants=8)
+        ex.participants_count = 5
+        db.commit()
+        resp = client.put(
+            f"/experiences/{ex.id}",
+            json={"participants_count": None},
+            headers=auth_header(host),
+        )
+        assert resp.status_code == 200, resp.text
+        db.refresh(ex)
+        assert ex.participants_count == 0
+        assert ex.status == "approved"
+
     def test_stranger_cannot_set_count(self, client, db):
         host = _make_host(db)
         stranger = make_user(db)

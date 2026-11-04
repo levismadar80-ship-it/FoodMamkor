@@ -2648,7 +2648,7 @@
       "host_label": "מארחת:",
       "free": "חינם",
       "sold_out": "הסדנה מלאה",
-      "spots_left_few": "{n, plural, one {נשאר מקום אחרון} other {נשארו # מקומות}}",
+      "spots_left_few": "{n, plural, one {נשאר מקום אחרון} two {נשארו # מקומות} other {נשארו # מקומות}}",
       "waitlist_cta": "לרשימת ההמתנה ב-WhatsApp",
       "waitlist_message": "היי! אשמח להיכנס לרשימת ההמתנה של \"{title}\"",
       "spots_count": "{spots} מתוך {max}",

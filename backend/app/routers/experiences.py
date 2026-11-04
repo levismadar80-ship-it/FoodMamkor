@@ -450,6 +450,14 @@ def update_experience(
     for field, value in payload.items():
         setattr(ex, field, value)
 
+    # MEH-2663: the sign-up tally is a counter, never NULL, and never above
+    # the cap — the dashboard clamps, and a direct PUT is clamped the same way.
+    if "participants_count" in payload or "max_participants" in payload:
+        if ex.participants_count is None:
+            ex.participants_count = 0
+        if ex.max_participants is not None and ex.participants_count > ex.max_participants:
+            ex.participants_count = ex.max_participants
+
     # MEH-1419: a pure cancel/reactivate toggle (is_active only) must NOT
     # re-trigger moderation or reset the experience to `pending` —
     # cancelling is a reversible host action, not a content edit, so a
