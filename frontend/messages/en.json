@@ -2652,7 +2652,10 @@
       "whatsapp_message": "Hi! I'd like to register for \"{title}\"",
       "host_label": "Host:",
       "free": "Free",
-      "sold_out": "Sold out",
+      "sold_out": "This workshop is full",
+      "spots_left_few": "{n, plural, one {Last spot left} other {# spots left}}",
+      "waitlist_cta": "Join the waitlist on WhatsApp",
+      "waitlist_message": "Hi! I'd like to join the waitlist for \"{title}\"",
       "spots_count": "{spots} of {max}",
       "breadcrumb_home": "Home",
       "breadcrumb_experiences": "Experiences",
@@ -4856,7 +4859,9 @@
         "status_approved": "Approved",
         "status_rejected": "Rejected",
         "status_changes_requested": "Changes requested",
-        "badge_past": "Ended"
+        "badge_past": "Ended",
+        "signed_up_label": "Signed up so far",
+        "signed_up_hint": "Shown on the experience page when 3 spots or fewer are left"
       },
       "name_change": {
         "heading": "Change business name",
