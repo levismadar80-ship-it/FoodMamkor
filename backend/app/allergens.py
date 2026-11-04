@@ -27,13 +27,18 @@ _ALLOWED = frozenset(ALLERGEN_CODES)
 
 
 def normalize_allergens(value):
-    """None stays None. A list is de-duplicated and returned in canonical
-    order; an unknown code raises ValueError (→ 422), so a typo can never be
-    stored as a claim about the food."""
-    if value is None:
+    """None stays None, and so does an empty list: NULL means "the owner
+    filled nothing", and storing [] could later be read as "contains no
+    allergens", which is a food-safety claim nobody made. A non-empty list is
+    de-duplicated and returned in canonical order; an unknown code raises
+    ValueError (→ 422), so a typo can never be stored as a claim about the
+    food."""
+    if not value:
         return None
     unknown = [c for c in value if c not in _ALLOWED]
     if unknown:
-        raise ValueError(f"unknown allergen code(s): {', '.join(sorted(set(map(str, unknown))))}")
+        raise ValueError(
+            f"unknown allergen code(s): {', '.join(sorted(set(map(str, unknown))))}"
+        )
     present = set(value)
     return [c for c in ALLERGEN_CODES if c in present]

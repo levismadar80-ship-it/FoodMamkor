@@ -71,6 +71,18 @@ def test_many_allergens_are_deduped_into_canonical_order(client, db):
     assert r.json()["allergens"] == ["gluten", "milk", "sesame"]
 
 
+def test_empty_allergen_list_and_blank_ingredients_are_stored_as_null(client, db):
+    # [] must not become a stored "contains no allergens" claim, and a blank
+    # ingredients box must not become a non-NULL empty string.
+    user, _ = _owner(db)
+    r = _create(client, user, ingredients="   ", allergens=[])
+    assert r.status_code == 201, r.text
+    db.expire_all()
+    row = db.query(Product).filter(Product.id == r.json()["id"]).one()
+    assert row.allergens is None
+    assert row.ingredients is None
+
+
 def test_unknown_allergen_code_is_422_and_nothing_is_written(client, db):
     user, producer = _owner(db)
     r = _create(client, user, allergens=["gluten", "pineapple"])

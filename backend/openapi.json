@@ -11299,7 +11299,6 @@
           "ingredients": {
             "anyOf": [
               {
-                "maxLength": 2000,
                 "type": "string"
               },
               {
@@ -11613,7 +11612,6 @@
           "ingredients": {
             "anyOf": [
               {
-                "maxLength": 2000,
                 "type": "string"
               },
               {

@@ -1705,7 +1705,7 @@ class ProductCreate(BaseModel):
     is_no_added_sugar: bool = False
     is_low_carb: bool = False
     # MEH-2662: optional, owner-declared.
-    ingredients: SanitizedDescriptionField | None = Field(None, max_length=2000)
+    ingredients: SanitizedDescriptionField | None = None  # capped at 2000 by the type
     allergens: list[str] | None = None
 
     @field_validator("allergens")
@@ -1747,7 +1747,7 @@ class ProductUpdate(BaseModel):
     is_no_added_sugar: bool | None = None  # MEH-1934
     is_low_carb: bool | None = None  # MEH-1934
     # MEH-2662: exclude_unset → unsent stays put; an explicit null clears.
-    ingredients: SanitizedDescriptionField | None = Field(None, max_length=2000)
+    ingredients: SanitizedDescriptionField | None = None  # capped at 2000 by the type
     allergens: list[str] | None = None
 
     @field_validator("allergens")
