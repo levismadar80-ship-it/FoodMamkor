@@ -1272,6 +1272,54 @@ GET  /cities                     public — canonical cities table (data.gov.il 
                                  list only as unseeded-env fallback (MEH-1349)
 ```
 
+### Community business suggestions (`app/routers/business_suggestions.py` — MEH-2633)
+
+```
+POST /business-suggestions       public — { name, city, instagram|phone|website (≥1),
+                                 reason?, suggester_name?, suggester_email?,
+                                 wants_update?, company? } → an outreach_leads row
+                                 with source="community". Nothing is published.
+                                 rate-limited 5/hour per IP
+                                 RESPONSE IS ALWAYS {"ok": true} — no id, no echo.
+                                 A new suggestion, a duplicate and a honeypot hit
+                                 are byte-identical from outside, so the endpoint
+                                 cannot be used to probe whether a business is
+                                 already in the outreach queue.
+                                 company = honeypot: any value → 201, nothing
+                                 stored, no admin ping.
+                                 duplicate (lower(name), lower(city)) → the reason
+                                 is appended to the existing lead's notes
+                                 ("המלצה נוספת: …"); the first suggester is kept,
+                                 except where the slot is empty (an admin-typed
+                                 lead), which is filled so the person can still be
+                                 thanked. `source` is never rewritten.
+                                 logged-in caller: suggester_email is prefilled
+                                 from the account ONLY when the field is empty.
+```
+
+`outreach_leads` gains five columns (revision `d7a511246b14`, no new table):
+`suggested_by_name` VARCHAR(100) NULL · `suggested_by_email` VARCHAR(254) NULL ·
+`suggester_wants_update` BOOLEAN NOT NULL DEFAULT false ·
+`suggestion_reason` TEXT NULL · `suggester_thanked_at` TIMESTAMP NULL.
+**`suggested_by_email` is admin-only** — the single reader is `OutreachLeadOut`,
+behind `require_admin`; no public endpoint returns it and it is never logged
+unmasked (`services/email.py:47` `_mask`). Retention is MEH-2638.
+
+```
+GET  /admin/outreach?source=     admin — new optional filter, exact, validated
+                                 against {manual, community} (400 otherwise).
+                                 COALESCEs a NULL source to "manual".
+POST /admin/outreach/{id}/thank-suggester
+                                 admin — emails the suggester that the business
+                                 joined; stamps suggester_thanked_at, which is the
+                                 idempotency key. Four distinct 409s: no
+                                 suggester email · no opt-in · already thanked ·
+                                 status != "registered".
+GET  /admin/outreach/metrics/summary
+                                 admin — gains "community" (a SOURCE count, not a
+                                 status); still ONE grouped SELECT (MEH-2553).
+```
+
 ### Search (`app/routers/search.py` — MEH-99)
 
 ```
