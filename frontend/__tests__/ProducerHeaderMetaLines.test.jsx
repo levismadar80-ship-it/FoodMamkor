@@ -218,6 +218,24 @@ describe("ProducerHeader status line + tags row (MEH-2592)", () => {
   });
 });
 
+// PR #3974: with products, the facility sentence moves to the products section.
+describe("ProducerHeader gluten facility line — products present vs none", () => {
+  it("no products: the header shows it", () => {
+    render(<ProducerHeader producer={{ ...baseProducer, products: [], gluten_free_facility: "shared" }} primaryCategory={category} hasImages />);
+    expect(screen.getByTestId("gluten-facility-shared")).toBeInTheDocument();
+  });
+  it("one product or more: the header does not", () => {
+    render(
+      <ProducerHeader
+        producer={{ ...baseProducer, products: [{ id: 1, name: "לחם" }], gluten_free_facility: "shared" }}
+        primaryCategory={category}
+        hasImages
+      />,
+    );
+    expect(screen.queryByTestId("gluten-facility-shared")).toBeNull();
+  });
+});
+
 // MEH-2518: the generic «כשר» fallback (no badge codes) shares the strip's
 // expiry gate. It used to read kashrut_verified_at only, so a lapsed
 // certificate still said «כשר». Cells: (current) · (lapsed) · (legacy NULL expiry).

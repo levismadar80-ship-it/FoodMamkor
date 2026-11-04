@@ -15,6 +15,7 @@ from pydantic import (
     model_validator,
 )
 
+from app.allergens import normalize_allergens
 from app.schemas.password import PasswordField
 from app.services.sanitization import sanitize_text
 from app.utils.clock import israel_today
@@ -1703,6 +1704,16 @@ class ProductCreate(BaseModel):
     # scope; no implication from any other flag, so no defaulting-from.
     is_no_added_sugar: bool = False
     is_low_carb: bool = False
+    # MEH-2662: optional, owner-declared.
+    ingredients: SanitizedDescriptionField | None = None  # capped at 2000 by the type
+    allergens: list[str] | None = Field(
+        None, max_length=50
+    )  # 14 codes + headroom for dupes
+
+    @field_validator("allergens")
+    @classmethod
+    def _validate_allergens(cls, v):
+        return normalize_allergens(v)
 
     @field_validator("image_url", mode="before")
     @classmethod
@@ -1737,6 +1748,16 @@ class ProductUpdate(BaseModel):
     is_lactose_free: bool | None = None
     is_no_added_sugar: bool | None = None  # MEH-1934
     is_low_carb: bool | None = None  # MEH-1934
+    # MEH-2662: exclude_unset → unsent stays put; an explicit null clears.
+    ingredients: SanitizedDescriptionField | None = None  # capped at 2000 by the type
+    allergens: list[str] | None = Field(
+        None, max_length=50
+    )  # 14 codes + headroom for dupes
+
+    @field_validator("allergens")
+    @classmethod
+    def _validate_allergens(cls, v):
+        return normalize_allergens(v)
 
     @field_validator("image_url", mode="before")
     @classmethod
@@ -1775,6 +1796,8 @@ class ProductOut(BaseModel):
     is_lactose_free: bool = False
     is_no_added_sugar: bool = False  # MEH-1934
     is_low_carb: bool = False  # MEH-1934
+    ingredients: str | None = None  # MEH-2662
+    allergens: list[str] | None = None  # MEH-2662
 
     model_config = {"from_attributes": True}
 
