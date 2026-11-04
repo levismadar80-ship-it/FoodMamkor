@@ -4,6 +4,17 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-04 23:40 — drain ג': אפס PRs פתוחים חוץ מסלי ההצלה ו-#3975
+
+**‏שורה אחת:** ‏#3923, ‏#3951, ‏#3952, ‏#3953, ‏#3959, ‏#3960, ‏#3967, ‏#3979 ו-#3990 מוזגו. ‏#3927, ‏#3928 ו-#3956 נסגרו עם נימוק. ‏#3966, ‏#3968 ו-#3969 מוזגו לתוך הענף של #3963, כך שסלי ההצלה נוחתים ב-PR אחד.
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏#3963 (סלי הצלה, chunks 1+2+4+5): ‏`a1c9f3e8d204` משורשר על `c4d8e1f05a27`, ראש יחיד `b2e6d4a17c93`, ‏48 טבלאות מ-DB נקי. ממתין לקומיט של ספיר `EXPECTED_TABLES` 44→48 (פרומפט כרום ב-project files). הפיצ'ר כבוי עד שהשדה `rescue_bags_enabled` נכנס ל-`config.py` (חסום ל-CC; ה-patch בגוף ה-PR).
+- ‏SQLAlchemy מוחזק ב-2.0.55. מעבר ל-2.1 דורש `postgresql+psycopg2://` או psycopg v3. כדאי כלל ignore ב-dependabot.yml (‏`.github`, של ספיר).
+- ‏Next 16.4 (קבוצת npm) נסגר עד אחרי ההשקה.
+
+**‏לא עכשיו / מחכה לספיר:** פרומפט ה-EXPECTED_TABLES של #3963 · ‏`config.py` + שני משתני ה-env של סלי ההצלה כשתרצי להדליק את הפיילוט.
+
 ## 2026-11-04 22:45 — ‏#3908 מוזג: רשימת המתנה לפי עיר (#3908)
 
 **‏שורה אחת:** ‏#3908 מוזג ל-staging (squash `1e6601e`) אחרי שהקומיט של ספיר `EXPECTED_TABLES=44` (03965b8, דרך כרום) נכנס לענף. הכרטיס MEH-2618 Done; ‏MEH-1676 (#3904) היה Done מ-03/11.
