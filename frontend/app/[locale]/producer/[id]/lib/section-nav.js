@@ -31,7 +31,7 @@ export function getSectionNavItems(producer, t) {
       label: t("producer.detail.tabs.products"),
       // ProducerSections: `producer.products?.length > 0 || hasSignature`
       // (hasSignature = top_product_name || a price_range with a digit —
-      // MEH-2654: «₪₪» alone renders nothing, so it opens no tab).
+      // PR #3971: «₪₪» alone renders nothing, so it opens no tab).
       show: !!(
         producer.products?.length > 0 ||
         producer.top_product_name ||

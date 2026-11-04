@@ -178,7 +178,7 @@ export default function ProducerSections({
   // MEH-1855: price_range is the ONLY price-label field. Chunk 1 read it
   // first with a fallback to the legacy alias; chunk 2 dropped the alias
   // column (revision 9849fab1637a), so there is nothing to fall back to.
-  // MEH-2654: a digit-less label («₪₪») is not a price — it neither renders
+  // PR #3971: a digit-less label («₪₪») is not a price — it neither renders
   // nor, on its own, makes the signature block appear.
   const producerPriceLabel = isPriceLabel(producer.price_range) ? producer.price_range : null;
   const hasSignature = !!(producer.top_product_name || producerPriceLabel);
@@ -259,7 +259,7 @@ export default function ProducerSections({
   // the producer-level price_range (MEH-1855: the single price-label field)
   // is not set, surface the matched product's own price/description on the
   // highlight card so the info the dedup removed isn't lost.
-  // MEH-2654: the product's OWN price now wins over the business-level
+  // PR #3971: the product's OWN price now wins over the business-level
   // price_range («מחיר התחלתי»). MEH-1463 had it the other way, which put a
   // business-wide label on one product's card while the sheet for that same
   // product showed its real price (Sapir 31/10: card «₪₪», sheet 32₪). The
