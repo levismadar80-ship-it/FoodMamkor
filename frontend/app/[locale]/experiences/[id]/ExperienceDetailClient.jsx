@@ -180,6 +180,10 @@ export default function ExperienceDetailClient() {
   // A host-cancelled experience drops from the feed but its link still opens;
   // it must not offer sign-up or a waitlist.
   const showCta = isApproved && !isPast && ex.is_active !== false;
+  // A minimum of 1 opens on any sign-up, so there is nothing to say (and
+  // «ב-1 נרשמים» would read wrong).
+  const showMin = ex.min_participants != null && ex.min_participants > 1 && !isPast;
+  const minReached = showMin && (ex.participants_count ?? 0) >= ex.min_participants;
   const canCalendar = isApproved && !ex.is_recurring && !isPast;
   const icsEvent = {
     id: `experience-${ex.id}`,
@@ -355,22 +359,37 @@ export default function ExperienceDetailClient() {
               <span className={infoIcon}><CurrencyCircleDollar size={18} aria-hidden="true" /></span>
               <p className="font-semibold text-accent">{priceDisplay(ex.price_per_person)}</p>
             </div>
-            {ex.max_participants != null && (
+            {(ex.max_participants != null || showMin) && (
               <div className={`${infoRow} border-t border-border`}>
                 <span className={infoIcon}><Users size={18} aria-hidden="true" /></span>
-                {/* Sign-up is on WhatsApp; the host reports the count from her
-                    dashboard. The page names the spots only when few are left
-                    (Airbnb / Eventbrite do the same) and otherwise the cap. */}
-                <p
-                  className={`text-text ${isFull || fewLeft ? "font-semibold" : ""}`}
-                  data-testid="experience-capacity"
-                >
-                  {isFull
-                    ? t("sold_out")
-                    : fewLeft
-                      ? t("spots_left_few", { n: ex.spots_left })
-                      : tEv("participants_limit", { n: ex.max_participants })}
-                </p>
+                <div>
+                  {/* Sign-up is on WhatsApp; the host reports the count from her
+                      dashboard. The page names the spots only when few are left
+                      (Airbnb / Eventbrite do the same) and otherwise the cap. */}
+                  {ex.max_participants != null && (
+                    <p
+                      className={`text-text ${isFull || fewLeft ? "font-semibold" : ""}`}
+                      data-testid="experience-capacity"
+                    >
+                      {isFull
+                        ? t("sold_out")
+                        : fewLeft
+                          ? t("spots_left_few", { n: ex.spots_left })
+                          : tEv("participants_limit", { n: ex.max_participants })}
+                    </p>
+                  )}
+                  {/* Stage B: the host's minimum to run it, read against the
+                      count she reports. Small-workshop sites (ClassBento and
+                      the like) show the same pair of states. */}
+                  {showMin && (
+                    <p
+                      className={`text-sm ${minReached ? "font-semibold text-primary" : "text-fg-muted"}`}
+                      data-testid="experience-min"
+                    >
+                      {minReached ? t("min_reached") : t("min_to_open", { n: ex.min_participants })}
+                    </p>
+                  )}
+                </div>
               </div>
             )}
             {isApproved && (

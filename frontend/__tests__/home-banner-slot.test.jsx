@@ -18,7 +18,7 @@ import { render, screen, act } from "@testing-library/react";
 
 import FridayDeliveryStrip from "@/components/FridayDeliveryStrip";
 import HolidayBanner from "@/components/HolidayBanner";
-import LocationBanner from "@/components/LocationBanner";
+import LocationBanner, { REVEAL_DELAY_MS } from "@/components/LocationBanner";
 import api from "@/lib/api";
 import { getActiveHoliday } from "@/lib/holidays";
 
@@ -93,9 +93,11 @@ async function renderSlot(props) {
   await act(async () => {
     render(<Slot {...props} />);
   });
-  // Flush banner fetch promises + LocationBanner's 3s reveal timer.
+  // Flush banner fetch promises + LocationBanner's reveal timer. MEH-2634:
+  // read off the component (8s now, 3s before) — a literal here would make the
+  // Location cell green-for-nothing after the delay changed.
   await act(async () => {
-    await vi.advanceTimersByTimeAsync(3500);
+    await vi.advanceTimersByTimeAsync(REVEAL_DELAY_MS + 500);
   });
 }
 

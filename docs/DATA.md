@@ -407,7 +407,8 @@ experiences (
   city, address text,                -- address PRIVATE — redacted from public list
   lat float, lng float,
 
-  max_participants int, participants_count int,
+  max_participants int, participants_count int,  -- count: host-reported, clamped to max (MEH-2663)
+  min_participants int,              -- nullable; minimum to run, ≤ max or 422 (MEH-2665, migration c4d8e1f05a27)
   price_per_person numeric(10,2),    -- NULL/0 = free
   requirements text,                 -- "what to bring / prerequisites"
 
