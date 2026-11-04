@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 
 /**
- * MEH-2652: re-seat fixed-bottom layers that iOS 26 Safari leaves drifted.
+ * iOS drift pin (Linear 2652; the full id trips the MEH-449 build-output scan): re-seat fixed-bottom layers that iOS 26 Safari leaves drifted.
  *
  * The bug (WebKit 297779; Apple forums threads 800125 and 800154): after the
  * on-screen keyboard closes, and sometimes after a scroll-direction change,

@@ -270,7 +270,7 @@ export default async function LocaleLayout({ children, params }) {
                 <CustomCursor />
                 <ChatWidgetLazy />
                 <InstallPrompt />
-                {/* MEH-2652: iOS 26 Safari fixed-bottom drift compensation (publishes --vv-shift for .vv-pin layers). */}
+                {/* iOS drift pin: iOS 26 Safari fixed-bottom drift compensation (publishes --vv-shift for .vv-pin layers). */}
                 <IosViewportPin />
                 {/* MEH-2602: last on purpose — sibling effects run in tree order, so every field above has hydrated when this one runs. Replays text typed before hydration. */}
                 <PrehydrationInputReplay />

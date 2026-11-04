@@ -280,7 +280,7 @@ export default function BottomNav() {
   // The producer-detail gate is NOT in this set: its StickyContactBar is a
   // bottom layer, and the fallback is what keeps content clear of it.
   const noBottomChrome = isAdminRoute(pathname) || isOwnerDashboardRoute(pathname);
-  // MEH-2652: the clearance is the SHELL's own height (pill + safe-area + 16px
+  // iOS drift pin: the clearance is the SHELL's own height (pill + safe-area + 16px
   // gutter), not `innerHeight - pill.top`. The two are equal while the pill sits
   // where CSS puts it — but iOS 26 Safari can leave every fixed-bottom layer
   // parked hundreds of px above the viewport bottom after the keyboard closes
@@ -402,7 +402,7 @@ export default function BottomNav() {
           none + one auto suffices. pointer-events only — no visual/layout/z
           change. onFocusCapture still fires: pointer-events-none does not block
           focus events (keyboard/programmatic), only pointer hit-testing. */}
-      {/* MEH-2652: vv-pin (globals.css) re-seats the shell on the screen
+      {/* iOS drift pin: vv-pin (globals.css) re-seats the shell on the screen
           bottom when iOS 26 leaves fixed layers drifted (IosViewportPin.jsx). */}
       <div
         ref={shellRef}

@@ -231,7 +231,7 @@ html {
   scroll-padding-bottom: var(--bottom-inset);
 }
 
-/* MEH-2652: fixed-bottom layers that opt in follow the visual viewport when
+/* iOS drift pin: fixed-bottom layers that opt in follow the visual viewport when
    iOS 26 Safari leaves them drifted above the screen bottom. --vv-shift is
    published only on iOS, only while drifted (IosViewportPin.jsx); everywhere
    else it is absent. NO fallback on purpose: with the var absent the
