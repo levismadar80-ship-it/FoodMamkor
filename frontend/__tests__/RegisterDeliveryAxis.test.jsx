@@ -6,7 +6,21 @@ import RegisterProducerClient from "@/app/[locale]/register/producer/RegisterPro
 import api from "@/lib/api";
 
 /**
- * MEH-1838 chunk B — the delivery axis on producer registration.
+ * MEH-1838 chunk B — the delivery axis on producer registration,
+ * as MEH-2640 reshaped it.
+ *
+ * MEH-2640 REPLACED the four controls (two checkboxes, a nationwide toggle and
+ * a city picker) with ONE required radio: מגיעים אלינו / משלוחים / גם וגם. The
+ * nationwide flag and the city list are no longer collected at registration at
+ * all — the dashboard owns delivery areas (dashboard/edit/cards.jsx:1572,
+ * covered by EditTabDeliveryCard.test.jsx), and ProducerRegister defaults both
+ * (schemas.py:959-960).
+ *
+ * So the cells that asserted nationwide/city-list payload shapes and the
+ * "delivery with neither nationwide nor cities" gate are gone with the
+ * controls they drove. What survives, and is what this file now pins, is the
+ * part that still exists and still matters: the ONE question maps to the right
+ * pair of booleans in the POST body, and it is required.
  *
  * Chunk A (#2959) added the four fields to `ProducerRegister`
  * (schemas.py:701-704). The form never sent them, and **Pydantic drops unknown
@@ -125,7 +139,6 @@ vi.mock("@/components/CitiesAutocomplete", () => ({
 }));
 
 const K = "auth.register.producer";
-const A = "admin.producers.form.fields";
 const ph = (key) => screen.getByPlaceholderText(`${K}.fields.${key}`);
 const nextBtn = () => screen.getByText(`${K}.actions.next`);
 
@@ -161,7 +174,6 @@ function fillDetailsFields() {
   fireEvent.change(ph("producer_name"), { target: { value: "העסק שלי" } });
   fireEvent.change(ph("phone"), { target: { value: "0501234567" } });
   fireEvent.change(screen.getByTestId("city"), { target: { value: "תל אביב" } });
-  fireEvent.change(ph("address"), { target: { value: "הרצל 1" } });
 }
 
 // DETAILS → CATEGORY → STORY → submit. Assumes the axis is already valid.
@@ -179,216 +191,103 @@ async function advanceAndSubmit() {
   return api.post.mock.calls[0][1];
 }
 
-describe("MEH-1838 chunk B — the axis reaches the POST body (control)", () => {
-  it("physical-only: the three flags are SENT, and delivery_cities is absent", async () => {
+describe("MEH-2640 — one question, the right two booleans in the POST body", () => {
+  // Still reading the POST body rather than the form, for MEH-1838's original
+  // reason: Pydantic drops unknown fields silently, so a form that captures
+  // nothing still returns 200. A rendered radio proves nothing on its own.
+  it.each([
+    ["onsite", { has_physical_location: true, offers_delivery: false }],
+    ["delivery", { has_physical_location: false, offers_delivery: true }],
+    ["both", { has_physical_location: true, offers_delivery: true }],
+  ])("«%s» posts the matching pair", async (option, expected) => {
     await renderWizard();
     await fillAccountToDetails();
     fillDetailsFields();
+    fireEvent.click(screen.getByTestId(`register-fulfilment-${option}`));
     const body = await advanceAndSubmit();
+    expect(body).toMatchObject(expected);
+  });
 
-    // The control. Each of these is `undefined` if the payload block in
-    // handleSubmit is removed — which is the exact state this ticket found.
-    expect(body).toHaveProperty("has_physical_location", true);
-    expect(body).toHaveProperty("offers_delivery", false);
-    expect(body).toHaveProperty("delivery_nationwide", false);
-
-    // The card's acceptance criterion: physical-only sends no empty array.
+  it("posts no delivery_nationwide and no delivery_cities — the dashboard owns those", async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    fillDetailsFields();
+    fireEvent.click(screen.getByTestId("register-fulfilment-delivery"));
+    const body = await advanceAndSubmit();
+    // Explicitly absent, not merely falsy: sending `false`/`[]` from here
+    // would re-create the registration-time ownership this ticket removed.
+    expect(body).not.toHaveProperty("delivery_nationwide");
     expect(body).not.toHaveProperty("delivery_cities");
   });
 
-  it("nationwide: offers_delivery + delivery_nationwide true, still no city array", async () => {
+  it("the three options are mutually exclusive — the last pick wins", async () => {
     await renderWizard();
     await fillAccountToDetails();
     fillDetailsFields();
-    fireEvent.click(screen.getByTestId("register-offers-delivery"));
-    fireEvent.click(screen.getByTestId("register-delivery-nationwide"));
+    fireEvent.click(screen.getByTestId("register-fulfilment-delivery"));
+    fireEvent.click(screen.getByTestId("register-fulfilment-onsite"));
     const body = await advanceAndSubmit();
-
-    expect(body).toHaveProperty("offers_delivery", true);
-    expect(body).toHaveProperty("delivery_nationwide", true);
-    expect(body).not.toHaveProperty("delivery_cities");
-  });
-
-  it("city list: the cities are carried as DATA, in order, with nationwide false", async () => {
-    await renderWizard();
-    await fillAccountToDetails();
-    fillDetailsFields();
-    fireEvent.click(screen.getByTestId("register-offers-delivery"));
-    fireEvent.click(screen.getByTestId("add-two-cities"));
-    const body = await advanceAndSubmit();
-
-    expect(body).toHaveProperty("offers_delivery", true);
-    expect(body).toHaveProperty("delivery_nationwide", false);
-    // Asserting the VALUES, not just that the key exists — a payload that
-    // forwards `true` or `[]` would pass a presence-only check.
-    expect(body.delivery_cities).toEqual(["חיפה", "זכרון יעקב"]);
-  });
-
-  it("physical-only + delivery together is a valid shape and both flags survive", async () => {
-    await renderWizard();
-    await fillAccountToDetails();
-    fillDetailsFields();
-    // has_physical_location defaults true; add delivery on top of it.
-    fireEvent.click(screen.getByTestId("register-offers-delivery"));
-    fireEvent.click(screen.getByTestId("register-delivery-nationwide"));
-    const body = await advanceAndSubmit();
-
-    expect(body).toHaveProperty("has_physical_location", true);
-    expect(body).toHaveProperty("offers_delivery", true);
+    expect(body).toMatchObject({ has_physical_location: true, offers_delivery: false });
   });
 });
 
-describe("MEH-1838 chunk B — the client-side gate mirrors the server validator", () => {
-  it("neither physical nor delivery: the advance is BLOCKED and the error shows", async () => {
+describe("MEH-2640 — the question is required, and the gate can actually fire", () => {
+  it("unanswered → the advance is BLOCKED with «בחרו אפשרות אחת»", async () => {
     await renderWizard();
     await fillAccountToDetails();
     fillDetailsFields();
-    fireEvent.click(screen.getByTestId("register-has-physical-location")); // untick → neither
-
     fireEvent.click(nextBtn());
-
-    // Still on DETAILS — a blocked advance is the point (schemas.py:857+ would
-    // otherwise 422 two frames later, naming a field no longer on screen).
-    expect(screen.getByText(`${K}.steps.business.title`)).toBeInTheDocument();
-    expect(screen.getByTestId("register-delivery-axis-error")).toHaveTextContent(
-      `${A}.type_validation`,
+    // This is the cell the first implementation could never have failed: the
+    // form's defaults (has_physical_location:true + offers_delivery:false)
+    // already spell "onsite", so a value DERIVED from them is never empty and
+    // the radio arrives pre-lit. The answer is stored separately for exactly
+    // this reason.
+    expect(screen.getByTestId("register-frame-details")).toBeInTheDocument();
+    expect(screen.queryByTestId("register-frame-category")).not.toBeInTheDocument();
+    expect(screen.getByTestId("register-fulfilment-error")).toHaveTextContent(
+      `${K}.fields.fulfilment.required`,
     );
-    expect(api.post).not.toHaveBeenCalled();
   });
 
-  it("delivery with neither nationwide nor cities: BLOCKED", async () => {
+  it("no radio is pre-selected before she answers", async () => {
     await renderWizard();
     await fillAccountToDetails();
     fillDetailsFields();
-    fireEvent.click(screen.getByTestId("register-offers-delivery")); // no nationwide, no cities
-
-    fireEvent.click(nextBtn());
-
-    expect(screen.getByText(`${K}.steps.business.title`)).toBeInTheDocument();
-    // The inline error renders under exactly this condition, so assert it too —
-    // otherwise a refactor that drops the error element while keeping the
-    // advance-block still passes, and the seller is left with a button that
-    // silently does nothing. The sibling test above asserts its own error for
-    // the same reason.
-    expect(screen.getByTestId("register-delivery-cities-error")).toBeInTheDocument();
-    expect(api.post).not.toHaveBeenCalled();
-  });
-
-  it("MEH-2602: ticking delivery shows no cities error until «הבא» is pressed", async () => {
-    await renderWizard();
-    await fillAccountToDetails();
-    fillDetailsFields();
-    fireEvent.click(screen.getByTestId("register-offers-delivery"));
-
-    expect(screen.queryByTestId("register-delivery-cities-error")).toBeNull();
-    fireEvent.click(nextBtn());
-    expect(screen.getByTestId("register-delivery-cities-error")).toBeInTheDocument();
-  });
-
-  it("the happy default (physical-only) is NOT blocked — the gate discriminates", async () => {
-    await renderWizard();
-    await fillAccountToDetails();
-    fillDetailsFields();
-    fireEvent.click(nextBtn());
-    // Reaching CATEGORY proves the gate blocks the two bad shapes above for
-    // their own reason, not because it blocks everything.
-    expect(await screen.findByTestId("pick-category")).toBeInTheDocument();
-  });
-});
-
-describe("MEH-1838 chunk B — unticking delivery clears what its block owned (MEH-1879)", () => {
-  it("nationwide and cities are reset when offers_delivery goes off", async () => {
-    await renderWizard();
-    await fillAccountToDetails();
-    fillDetailsFields();
-
-    fireEvent.click(screen.getByTestId("register-offers-delivery"));
-    fireEvent.click(screen.getByTestId("register-delivery-nationwide"));
-    expect(screen.getByTestId("register-delivery-nationwide")).toBeChecked();
-
-    fireEvent.click(screen.getByTestId("register-offers-delivery")); // untick
-    // The block is unmounted; its state must not survive into the payload.
-    expect(screen.queryByTestId("register-delivery-nationwide")).not.toBeInTheDocument();
-
-    const body = await advanceAndSubmit();
-    // Without the reset this posts delivery_nationwide=true with
-    // offers_delivery=false — rejected by the validator, and a 500 at the DB
-    // CHECK (MEH-1849) on the manual-approval path.
-    expect(body).toHaveProperty("offers_delivery", false);
-    expect(body).toHaveProperty("delivery_nationwide", false);
-  });
-
-  it("a city list does not survive unticking delivery", async () => {
-    await renderWizard();
-    await fillAccountToDetails();
-    fillDetailsFields();
-
-    fireEvent.click(screen.getByTestId("register-offers-delivery"));
-    fireEvent.click(screen.getByTestId("add-city"));
-    expect(screen.getByTestId("cities-value")).toHaveTextContent("חיפה");
-
-    fireEvent.click(screen.getByTestId("register-offers-delivery")); // untick
-    const body = await advanceAndSubmit();
-
-    // Leaving them would write delivery_areas rows for a business declaring no
-    // delivery — a cross-table contradiction no DB CHECK can express.
-    expect(body).not.toHaveProperty("delivery_cities");
-  });
-});
-
-describe("MEH-1838 chunk B — the i18n keys actually resolve", () => {
-  /**
-   * The `next-intl` mock above returns the key path for ANY key, so a component
-   * asking for a nonexistent key looks identical to one asking for a real one.
-   * Every assertion in this file would therefore pass against a wrong namespace.
-   *
-   * That is not hypothetical: the admin form reaches these strings as
-   * `producers.form.fields.*` only because it scopes `useTranslations("admin")`
-   * (ProducerForm.jsx:57). A top-level `producers` key ALSO exists and does not
-   * contain them — copying the admin call into this unscoped component renders
-   * the key name to the seller. This block is the only thing that catches it.
-   */
-  const KEYS = [
-    "has_physical_location",
-    "offers_delivery",
-    "delivery_nationwide",
-    "type_validation",
-    "delivery_cities_label",
-    "delivery_cities_required",
-  ];
-
-  const load = (locale) =>
-    JSON.parse(
-      fs.readFileSync(path.join(process.cwd(), "messages", `${locale}.json`), "utf8"),
-    );
-
-  it.each(["he", "en"])("%s: every key the component asks for is a non-empty string", (locale) => {
-    const fields = load(locale)?.admin?.producers?.form?.fields;
-    expect(fields, `admin.producers.form.fields missing from ${locale}.json`).toBeTruthy();
-
-    for (const key of KEYS) {
-      expect(typeof fields[key], `${locale}: ${key} is not a string`).toBe("string");
-      expect(fields[key].trim().length, `${locale}: ${key} is empty`).toBeGreaterThan(0);
+    for (const option of ["onsite", "delivery", "both"]) {
+      expect(screen.getByTestId(`register-fulfilment-${option}`)).not.toBeChecked();
     }
-    // A `KEYS.filter(k => k in fields)` length check stood here and was removed:
-    // it was ENTAILED by the loop above (a missing key already fails
-    // `toBe("string")` on `typeof undefined`), so it read as coverage while
-    // being underivable from anything the loop had not already proven. Its
-    // comment claimed it guarded against a stale count literal — there was no
-    // literal. Deleted rather than reformulated, per testing.md; the
-    // reformulation of an entailed assertion tends to be entailed too.
   });
 
-  it("the wrong namespace really is wrong — the trap this guards is live", () => {
-    // Control: proves the assertion above discriminates. If `producers.form.
-    // fields` ever DID carry these, the test above would pass for the wrong
-    // reason and this line tells us the ground shifted.
-    const he = load("he");
-    const wrong = he?.producers?.form?.fields;
-    const wrongHasThem = KEYS.every((k) => typeof wrong?.[k] === "string");
-    expect(
-      wrongHasThem,
-      "producers.form.fields now carries these too — re-check which namespace the component should use",
-    ).toBe(false);
+  it("answering clears the error and lets her through", async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    fillDetailsFields();
+    fireEvent.click(nextBtn());
+    expect(screen.getByTestId("register-fulfilment-error")).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("register-fulfilment-both"));
+    expect(screen.queryByTestId("register-fulfilment-error")).toBeNull();
+    fireEvent.click(nextBtn());
+    expect(await screen.findByTestId("register-frame-category")).toBeInTheDocument();
+  });
+
+  it("step 2 no longer renders the four controls it replaced", async () => {
+    await renderWizard();
+    await fillAccountToDetails();
+    for (const gone of [
+      "register-delivery-axis",
+      "register-has-physical-location",
+      "register-offers-delivery",
+      "register-delivery-nationwide",
+      "register-delivery-cities",
+      "register-multi-location-toggle",
+      "register-organizer-option",
+      "register-details-address",
+    ]) {
+      expect(screen.queryByTestId(gone), gone).toBeNull();
+    }
+    // …and the pointer to where delivery areas now live IS there.
+    expect(screen.getByTestId("register-delivery-note")).toHaveTextContent(
+      `${K}.fields.fulfilment.areas_note`,
+    );
   });
 });
