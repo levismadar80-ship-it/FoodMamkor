@@ -1,7 +1,7 @@
 """meh2665_experience_min_participants
 
 Revision ID: c4d8e1f05a27
-Revises: b3e9f2a71c45
+Revises: d4e7a1b2c3f5
 Create Date: 2026-11-04 21:40:00.000000+00:00
 
 MEH-2665 (experiences stage B): an optional minimum number of sign-ups for
@@ -16,7 +16,7 @@ No new table → EXPECTED_TABLES unchanged.
 
 downgrade() drops the column; any minimum a host set since is lost.
 
-Chained on b3e9f2a71c45 (MEH-2662, staging head on 04/11), so `alembic heads`
+Chained on d4e7a1b2c3f5 (MEH-2618, staging head on 04/11; re-chained from b3e9f2a71c45), so `alembic heads`
 stays at one head.
 """
 
@@ -27,7 +27,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "c4d8e1f05a27"
-down_revision: Union[str, None] = "b3e9f2a71c45"
+down_revision: Union[str, None] = "d4e7a1b2c3f5"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

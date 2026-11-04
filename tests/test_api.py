@@ -4232,6 +4232,13 @@ class TestUploadGoogleAvatarOrNone:
         monkeypatch.setattr(settings, "cloudinary_cloud_name", "test-cloud")
         monkeypatch.setattr(settings, "cloudinary_api_key", "key")
         monkeypatch.setattr(settings, "cloudinary_api_secret", "secret")
+        # Import cloudinary.uploader BEFORE patching cloudinary.config: the
+        # module builds its HTTP pool at import time from config().api_proxy,
+        # and a MagicMock config makes that a ProxyManager(MagicMock) ->
+        # TypeError. Under xdist the import order is whatever the worker ran
+        # first, so this test must not depend on a sibling importing it (#3908).
+        import cloudinary.uploader  # noqa: F401
+
         cm = self._fake_stream_cm([b"\xff\xd8\xff" + b"\x00" * 100])
         expected = "https://res.cloudinary.com/test-cloud/image/upload/mehamakor/avatars/abc.jpg"
         with patch("httpx.stream", return_value=cm):
@@ -4253,6 +4260,13 @@ class TestUploadGoogleAvatarOrNone:
         monkeypatch.setattr(settings, "cloudinary_api_secret", "secret")
         # Build chunks that exceed MAX_AVATAR_BYTES (1 MB). Two chunks
         # of 600 KiB each = 1.2 MB total — second chunk trips the cap.
+        # Import cloudinary.uploader BEFORE patching cloudinary.config: the
+        # module builds its HTTP pool at import time from config().api_proxy,
+        # and a MagicMock config makes that a ProxyManager(MagicMock) ->
+        # TypeError. Under xdist the import order is whatever the worker ran
+        # first, so this test must not depend on a sibling importing it (#3908).
+        import cloudinary.uploader  # noqa: F401
+
         big = b"\x00" * (600 * 1024)
         cm = self._fake_stream_cm([big, big])
         upload_called = {"n": 0}

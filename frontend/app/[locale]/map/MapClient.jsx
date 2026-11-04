@@ -43,6 +43,10 @@ import { useProducersFeed } from "./state/useProducersFeed";
 const NEAR_ME_RADIUS_KM = 25;
 const NEAR_ME_DEFAULT_CENTER = [32.4, 34.95];
 const NEAR_ME_DEFAULT_ZOOM = 8;
+// MEH-2639: the zoom a city flyTo lands on. Same value handleGpsClick already
+// uses for a GPS fix (:~470), so "the map moved to where I said I am" looks
+// the same whether the visitor typed a town or allowed location.
+const CITY_FLY_ZOOM = 13;
 
 // MEH-1009: SSR/first-paint fallback for the desktop shell's top offset —
 // matches the 64px the height calc always hardcoded; corrected by a live
@@ -113,6 +117,10 @@ export default function MapPage() {
   const [cityOriginPending, setCityOriginPending] = useState(false);
   // Monotonic id of the newest city lookup — see handleMapCitySelected.
   const cityOriginRequestRef = useRef(0);
+  // MEH-2639: "near me found nothing within 25km" is a STATE, not an event —
+  // it stays true until the visitor does something that could change it, so
+  // the sheet can keep explaining the zoomed-out map it produced.
+  const [nearMeEmpty, setNearMeEmpty] = useState(false);
   // MEH-1864: the auto default is now read from two places (here and the
   // rating-data fallback below), so it is named once instead of spelled twice.
   const autoSort = userLoc ? "nearest" : "newest";
@@ -354,63 +362,91 @@ export default function MapPage() {
   // file:line citation in the comment matches the source body.
   // ============================================================
 
-  // Was MapClient.jsx:171-180 — handleMapCitySelected
-  const handleMapCitySelected = useCallback((city) => {
-    userCityCtx.setCity(city);
-    filters.setCityFilter(city);
-    // MEH-2602: same city semantics as the city search (useMapFilters
-    // buildParams) — near_city, or delivery_city when the משלוח chip is on.
-    feed.loadProducers(filters.buildParams(undefined, {}, city));
-    // NOTE: deliberately no flyTo here. The initial view must stay anchored at
-    // the MEH-932 producer-band default ([32.4, 34.95] zoom 8, set in
-    // MapComponent.jsx:297-305) — LocationModal only filters
-    // the producer list by delivery_city, it doesn't pan the map. Users who
-    // want to zoom into their city use the "קרוב אליי" (goToMyLocation)
-    // button or pan manually.
-
-    // MEH-2014 PR 2: the chosen city also becomes the sort origin, which is
-    // what makes "מרחק" usable with GPS denied. This is LocationModal's
-    // onSelectCity and LocationModal is the "where are you?" modal — every
-    // path that opens it (the crosshair's denial, the sort trigger's denial,
-    // the near-me pill's denial) is a user establishing her location, so
-    // treating the pick as an origin is the same intent, not a second meaning.
-    //
-    // The filter above is deliberately NOT awaited on this: a geocode failure
-    // must leave the city filter working exactly as it did before PR 2.
-    // Stale-resolution guard: the modal closes on pick, so a second pick needs
-    // another denial — but that is a user action, not a lock, and a slow first
-    // lookup can land AFTER a fast second one. Without the token the stored
-    // origin would be the city the user replaced while the filter shows the one
-    // she chose, and the label would confidently name the wrong one. Only the
-    // newest request may write.
-    const token = ++cityOriginRequestRef.current;
-    setCityOriginPending(true);
-    geocodeCity(city)
-      .then((coords) => {
-        if (token !== cityOriginRequestRef.current) return;
-        if (!coords) {
+  // MEH-2639: ONE geocode for every path that establishes a city, extracted
+  // from handleMapCitySelected so the search box and the LocationModal share
+  // it (the AC's "reuse the geocode") and so the flyTo decision lives in one
+  // place rather than two that can drift apart.
+  //
+  // THIS REVERSES A DOCUMENTED DECISION, deliberately (Sapir, 03/11). The note
+  // that stood here said "deliberately no flyTo here — LocationModal only
+  // filters the producer list by delivery_city, it doesn't pan the map". The
+  // reasoning that replaces it: a visitor who picks a city in the "where are
+  // you?" modal is declaring a location, which is the same intent as typing
+  // one into the search box — and that is already the stated reason the pick
+  // becomes a sort origin (MEH-2014 PR 2, below). Panning is the same answer
+  // to the same intent, so the two paths stop disagreeing.
+  // The MEH-932 producer-band default ([32.4, 34.95] zoom 8,
+  // MapComponent.jsx:297-305) still governs the INITIAL view; it is only
+  // displaced once the visitor has said where she is.
+  // A GPS origin is NOT touched here: handleGpsClick and goToMyLocation
+  // already fly to the fix, and a city flyTo must never override one.
+  const applyCityOrigin = useCallback(
+    (city) => {
+      // MEH-2014 PR 2: the chosen city also becomes the sort origin, which is
+      // what makes "מרחק" usable with GPS denied.
+      //
+      // Stale-resolution guard: a slow first lookup can land AFTER a fast
+      // second one. Without the token the stored origin would be the city the
+      // user replaced while the filter shows the one she chose, and the label
+      // would confidently name the wrong one. Only the newest request may
+      // write — and, since MEH-2639, only the newest may pan.
+      // Asking about a city answers the near-me question differently; the
+      // old notice must not outlive it.
+      setNearMeEmpty(false);
+      const token = ++cityOriginRequestRef.current;
+      setCityOriginPending(true);
+      geocodeCity(city)
+        .then((coords) => {
+          if (token !== cityOriginRequestRef.current) return;
+          if (!coords) {
+            showToast.info(t("map.client.sort.city_origin_failed"));
+            return;
+          }
+          // Replaces any GPS fix — one key, so mutual exclusion is structural.
+          setUserLocation(coords.lat, coords.lng, { source: SOURCE_CITY, city });
+          setSortBy("nearest");
+          sync.mapApiRef.current
+            ?.getMap()
+            ?.flyTo([coords.lat, coords.lng], CITY_FLY_ZOOM, { duration: 1.2 });
+        })
+        .catch(() => {
+          if (token !== cityOriginRequestRef.current) return;
+          // ProviderError (MEH-1766) or a network failure. Same user-facing
+          // outcome: no origin, no pan, and the copy says a city could not be
+          // located rather than blaming the city the user picked.
           showToast.info(t("map.client.sort.city_origin_failed"));
-          return;
-        }
-        // Replaces any GPS fix — one key, so mutual exclusion is structural.
-        setUserLocation(coords.lat, coords.lng, { source: SOURCE_CITY, city });
-        setSortBy("nearest");
-      })
-      .catch(() => {
-        if (token !== cityOriginRequestRef.current) return;
-        // ProviderError (MEH-1766) or a network failure. Same user-facing
-        // outcome: no origin, and the copy says a city could not be located
-        // rather than blaming the city the user picked.
-        showToast.info(t("map.client.sort.city_origin_failed"));
-      })
-      .finally(() => {
-        // The pending flag belongs to the newest request only; an outrun
-        // lookup must not clear the spinner the live one is showing.
-        if (token === cityOriginRequestRef.current) setCityOriginPending(false);
-      });
-  }, [userCityCtx, filters, feed, t]);
+        })
+        .finally(() => {
+          if (token === cityOriginRequestRef.current) setCityOriginPending(false);
+        });
+    },
+    [sync.mapApiRef, t]
+  );
 
-  // Was MapClient.jsx:430-455 — handleGpsClick
+  // Was MapClient.jsx:171-180 — handleMapCitySelected
+  const handleMapCitySelected = useCallback(
+    (city) => {
+      userCityCtx.setCity(city);
+      filters.setCityFilter(city);
+      // MEH-2602: same city semantics as the city search (useMapFilters
+      // buildParams) — near_city, or delivery_city when the משלוח chip is on.
+      feed.loadProducers(filters.buildParams(undefined, {}, city));
+      // The filter above is deliberately NOT awaited on this: a geocode
+      // failure must leave the city filter working exactly as it did before.
+      applyCityOrigin(city);
+    },
+    [userCityCtx, filters, feed, applyCityOrigin]
+  );
+
+  // MEH-2639: the city SEARCH box. `handleCityFilter` keeps doing exactly what
+  // it did (reload the list, drop the stale committed bounds) — list filtering
+  // behaviour is unchanged by this ticket — and the geocode/origin/pan rides
+  // alongside it, on the same shared helper the modal uses.
+  const handleCitySearchSubmit = useCallback(() => {
+    const city = filters.cityFilter.trim();
+    filters.handleCityFilter();
+    if (city) applyCityOrigin(city);
+  }, [filters, applyCityOrigin]);
   const handleGpsClick = useCallback(() => {
     if (gpsLoading) return;
     if (!navigator.geolocation) {
@@ -504,6 +540,8 @@ export default function MapPage() {
   // be the (invisible) exit, and this is the visible one that replaces it.
   const handleClearLocation = useCallback(() => {
     clearUserLocation();
+    // MEH-2639: the notice described a location that no longer exists.
+    setNearMeEmpty(false);
     // Drop an explicit "nearest" too. Leaving it would sort by a location that
     // no longer exists, which sortProducers renders as the unchanged input
     // order — a list that silently stops meaning what its label says. `null`
@@ -531,15 +569,18 @@ export default function MapPage() {
             (pt) => haversineKm(lat, lng, pt.lat, pt.lng) <= NEAR_ME_RADIUS_KM
           )
         );
+        // MEH-2639: was `showToast.info(...)`. A toast is gone in four seconds
+        // and the visitor is left looking at a zoomed-out map with no idea why
+        // it moved; the explanation has to persist as long as the state does.
+        setNearMeEmpty(!hasNearby);
         if (!hasNearby) {
-          showToast.info(t("map.near_me_pill.empty"));
           sync.mapApiRef.current
             ?.getMap()
             ?.flyTo(NEAR_ME_DEFAULT_CENTER, NEAR_ME_DEFAULT_ZOOM, { duration: 1.2 });
         }
       }
     );
-  }, [sync.mapApiRef, feed.allProducers, t]);
+  }, [sync.mapApiRef, feed.allProducers]);
 
   // MEH-970: the 800ms first-visit auto-open of LocationModal was removed
   // here — /map now renders immediately on the MEH-932 producer-band default
@@ -727,9 +768,33 @@ export default function MapPage() {
   // Client-side ordering of the visible list (pure helper in useMapFilters —
   // unit-tested there). Applied to the card list ONLY: the count, markers and
   // legend keep reading filters.visibleProducers (order-insensitive consumers).
+  // MEH-2639: a city with no businesses is a QUESTION WITH A USEFUL ANSWER,
+  // not an empty result. The condition is city-only on purpose — with a chip
+  // also on, "the filters did this" is the true story and MEH-2425's
+  // filtered-zero row (with its way out) is the right one.
+  const cityZero =
+    !feed.loading &&
+    filters.cityFilter.trim() !== "" &&
+    !filters.hasNonCityFilters &&
+    filters.visibleProducers.length === 0 &&
+    (feed.catalogSnapshot?.length ?? 0) > 0;
+
+  // The fallback source is `catalogSnapshot`, NOT `allProducers`.
+  // `loadProducers` REPLACES allProducers with each query's response, so by
+  // the time a city has answered "nothing here" allProducers is itself empty
+  // and there is no list left to fall back to — measured: 0 cards rendered
+  // before this was changed. catalogSnapshot is the mount catalog, "the only
+  // request that is both unfiltered and not viewport-bounded ... never
+  // overwritten" (useProducersFeed.js:33-39), which is exactly the set this
+  // state wants.
+  // It needs no second sort path: applyCityOrigin has already put the origin
+  // on the city centroid and switched the sort to "nearest", so "sorted by
+  // distance to the city centroid" is what sortProducers already produces.
+  const listSource = cityZero ? feed.catalogSnapshot : filters.visibleProducers;
+
   const sortedProducers = useMemo(
-    () => sortProducers(filters.visibleProducers, effectiveSort, userLoc),
-    [filters.visibleProducers, effectiveSort, userLoc],
+    () => sortProducers(listSource, effectiveSort, userLoc),
+    [listSource, effectiveSort, userLoc],
   );
 
   const cardList = (
@@ -747,7 +812,10 @@ export default function MapPage() {
       onCardMouseLeave={sync.handleCardMouseLeave}
       onCardClick={sync.handleCardClick}
       onResetAll={resetEverything}
-      filtered={filters.hasActiveFilters}
+      // MEH-2639: in the city-zero state the list is NOT filtered down — it is
+      // the full set, deliberately. Telling MapCardList otherwise would arm an
+      // empty state for a list that is not empty.
+      filtered={cityZero ? false : filters.hasActiveFilters}
     />
   );
 
@@ -776,7 +844,7 @@ export default function MapPage() {
           </div>
           <div className="px-4 pb-3 shrink-0">
             <div className="mb-3">
-              <CitySearch id="map-city-search-desktop" label={t("map.client.city_search.label")} value={filters.cityFilter} onChange={filters.setCityFilter} onSubmit={filters.handleCityFilter} placeholder={t("map.client.city_search.placeholder")} />
+              <CitySearch id="map-city-search-desktop" label={t("map.client.city_search.label")} value={filters.cityFilter} onChange={filters.setCityFilter} onSubmit={handleCitySearchSubmit} placeholder={t("map.client.city_search.placeholder")} />
             </div>
             {renderFilterChipsBar()}
           </div>
@@ -936,7 +1004,7 @@ export default function MapPage() {
               reflows to full width. goToMyLocation wiring + empty-near-me
               fallback live on the pill via handleGoToMyLocation. */}
           <div className="mb-2">
-            <CitySearch id="map-city-search-mobile" label={t("map.client.city_search.label")} value={filters.cityFilter} onChange={filters.setCityFilter} onSubmit={filters.handleCityFilter} placeholder={t("map.client.city_search.placeholder")} />
+            <CitySearch id="map-city-search-mobile" label={t("map.client.city_search.label")} value={filters.cityFilter} onChange={filters.setCityFilter} onSubmit={handleCitySearchSubmit} placeholder={t("map.client.city_search.placeholder")} />
           </div>
           {/* MEH-2014: the mobile half of the clear affordance. There is no sort
               <select> on this shell, but the NearMePill writes a location here,
@@ -997,7 +1065,19 @@ export default function MapPage() {
         {/* Bottom sheet. MEH-1054 (MAP-16): loading rides the feed's initial
             fetch so the sheet shows a list skeleton instead of flashing an
             empty "0" state before the first /producers response lands. */}
-        <MapBottomSheet snap={hints.sheetSnap} onSnapChange={hints.setSheetSnap} count={filters.visibleProducers.length} loading={feed.loading} filtered={filters.hasActiveFilters} onResetFilters={resetEverything}>
+        <MapBottomSheet
+          snap={hints.sheetSnap}
+          onSnapChange={hints.setSheetSnap}
+          // MEH-2639: in the city-zero state the row below the count is the
+          // FULL list, so the number has to match what is rendered.
+          count={cityZero ? sortedProducers.length : filters.visibleProducers.length}
+          loading={feed.loading}
+          filtered={filters.hasActiveFilters}
+          onResetFilters={resetEverything}
+          zeroCity={cityZero ? filters.cityFilter.trim() : ""}
+          nearMeEmpty={nearMeEmpty}
+          hasOrigin={!!userLoc || filters.cityFilter.trim() !== ""}
+        >
           <MobileSheetSelectedCard
             selectedProducer={filters.selectedProducer}
             selectedLocation={sync.selectedLocation}
