@@ -4158,6 +4158,15 @@ class TestUploadGoogleAvatarOrNone:
     Login must never be blocked regardless of Cloudinary / network state.
     """
 
+    @pytest.fixture(autouse=True)
+    def _import_uploader_unmocked(self):
+        # Import the uploader BEFORE a test mocks cloudinary.config: its
+        # module-level setup reads config().api_proxy, and a first import
+        # under the mock hands urllib3 a MagicMock proxy URL. Two tests here
+        # passed only when an earlier test in the same xdist worker had
+        # already imported it.
+        import cloudinary.uploader  # noqa: F401
+
     def test_none_input_returns_none(self):
         from app.routers.auth import _upload_google_avatar_or_none
         assert _upload_google_avatar_or_none(None) is None
