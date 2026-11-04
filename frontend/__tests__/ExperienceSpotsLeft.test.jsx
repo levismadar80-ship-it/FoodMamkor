@@ -81,6 +81,11 @@ describe("experience page — spots", () => {
     expect(decodeURIComponent(cta.getAttribute("href"))).toContain('היי! אשמח להיכנס לרשימת ההמתנה של "סדנת מחמצת"');
   });
 
+  it("host-cancelled → no sign-up or waitlist CTA", async () => {
+    await page({ is_active: false, spots_left: 0 });
+    expect(screen.queryByTestId("experience-whatsapp-cta")).not.toBeInTheDocument();
+  });
+
   it("past and full → no CTA at all", async () => {
     await page({ event_date: "2020-01-01", spots_left: 0 });
     expect(screen.queryByTestId("experience-whatsapp-cta")).not.toBeInTheDocument();

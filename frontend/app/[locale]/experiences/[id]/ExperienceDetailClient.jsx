@@ -174,7 +174,9 @@ export default function ExperienceDetailClient() {
   // A full experience swaps the sign-up CTA for a WhatsApp waitlist message.
   const isFull = ex.max_participants != null && ex.spots_left === 0;
   const fewLeft = !isFull && ex.max_participants != null && ex.spots_left != null && ex.spots_left <= FEW_SPOTS;
-  const showCta = isApproved && !isPast;
+  // A host-cancelled experience drops from the feed but its link still opens;
+  // it must not offer sign-up or a waitlist.
+  const showCta = isApproved && !isPast && ex.is_active !== false;
   const canCalendar = isApproved && !ex.is_recurring && !isPast;
   const icsEvent = {
     id: `experience-${ex.id}`,
