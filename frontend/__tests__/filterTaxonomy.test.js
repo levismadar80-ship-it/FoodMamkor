@@ -69,7 +69,10 @@ describe("MEH-2130 — axis declarations are complete and well-formed", () => {
 
   it("labels stay text-only — no emoji, no glyphs (Emoji-LOCK v2, MEH-657)", () => {
     for (const key of ALL_KEYS) {
-      expect(FILTER_AXES[key].label, key).toMatch(/^[֐-׿ ]+$/);
+      // MEH-1508 chunk 3ב-2: exactly the locked "100% " prefix is allowed
+      // («100% טבעוני» / «100% צמחוני», card §6.4) — digits and % are not
+      // glyphs, and an emoji anywhere in a label still reds.
+      expect(FILTER_AXES[key].label, key).toMatch(/^(100% )?[֐-׿ ]+$/);
     }
   });
 

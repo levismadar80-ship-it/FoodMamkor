@@ -70,7 +70,7 @@ describe("MEH-2527 trust copy", () => {
   it("business FAQ: saving to favourites alone sends no update", () => {
     const a = he.about_business.faq.repeat_customers.a;
     expect(a).not.toContain("מקבלת עדכון אוטומטי");
-    expect(a).toContain("יכולות להפעיל התראות");
+    expect(a).toContain("יכולים להפעיל התראות");
   });
 
   it("business FAQ + showcase: no claim of a registry cross-check", () => {
@@ -80,7 +80,7 @@ describe("MEH-2527 trust copy", () => {
   });
 
   it("dashboard FAQ: cities come only from signed-in visitors", () => {
-    expect(he.about_business.faq.analytics.a).toContain("המבקרות שמחוברות לאתר");
+    expect(he.about_business.faq.analytics.a).toContain("המבקרים שמחוברים לאתר");
   });
 
   it("grass-fed tooltip states it is the business's own declaration", () => {
