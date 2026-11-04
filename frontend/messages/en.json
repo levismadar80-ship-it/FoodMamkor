@@ -404,7 +404,7 @@
           "whatsapp_warning": "Didn't get a WhatsApp message? The phone number may be incorrect, or you can continue and complete the profile directly from the dashboard.",
           "next_heading": "What's next?",
           "next_step1": "Personal review",
-          "next_step2": "Personal review",
+          "next_step2": "WhatsApp message",
           "next_step3": "Your page goes live",
           "dashboard_cta": "Go to my dashboard →",
           "share_msg": "Hi, I just joined Mehamakor — local food businesses across Israel, all in one place. Come join: https://mehamakor.co.il/register/producer",
@@ -454,8 +454,6 @@
     "hero": {
       "title": "Real Food, Straight From the Source",
       "subtitle": "Straight from the source. Businesses we've already vetted for you.",
-      "cta_primary": "Discover businesses",
-      "how_it_works": "How it works",
       "friday_subtitle": "Friday is here What's on the Shabbat table?",
       "main_label": "Home — discover local businesses",
       "search_area_label": "Search businesses",
@@ -464,10 +462,7 @@
       "delivery_cta_city": "Deliveries to {city}",
       "surprise_me": "Surprise me",
       "searching": "Searching...",
-      "scroll_down_label": "Scroll to business listing",
-      "geo_failure": "We couldn't detect your location — you can pick a city manually",
-      "chips_prefix": "Popular now:",
-      "trust_line": "Every business is checked and approved by hand"
+      "geo_failure": "We couldn't detect your location — you can pick a city manually"
     },
     "search": {
       "placeholder": "Search fresh veggies, grass-fed beef...",
@@ -506,7 +501,6 @@
       "map_link": "View on map",
       "filter_prefix": "Showing: businesses with",
       "counter": "Showing {shown} of {total}",
-      "hint_favorites": "Tap the heart to save businesses you love",
       "filter_showing": "Showing:",
       "clear_filter": "Clear filter",
       "empty_heading": "No businesses found in this area — yet",
@@ -722,6 +716,7 @@
       "verified_tooltip_license": "License submitted and reviewed on {date}",
       "verified_tooltip_exemption": "Exemption approval submitted and reviewed on {date}",
       "verified_tooltip_cosmetics": "Cosmetics registration submitted and reviewed on {date}",
+      "declared_trigger": "No verified badge · what does that mean?",
       "declared_explainer": "No 'Verified' badge? It doesn't mean less. Some categories are legally exempt from licensing — there's no document to show, simply because none is required. The business signed a binding declaration that it operates lawfully, and went through the same personal introduction as everyone else.",
       "verified_label": "Verified",
       "aria_verified": "Verified business. {tooltip}",
@@ -836,7 +831,7 @@
         "vacation_back_soon": "Back soon",
         "since_prefix": "Since",
         "status": {
-          "open": "Open for orders",
+          "open": "Accepting orders",
           "closed": "Not taking orders right now",
           "vacation": "On break · back on {date}",
           "vacation_no_date": "On break",
@@ -2823,7 +2818,8 @@
     "consumer": {
       "hero": {
         "heading": "You used to need to know who to ask. Not anymore",
-        "subheading": "Food from local businesses we've personally chosen — close to you, without searching for hours."
+        "subheading": "Food from local businesses we've personally chosen — close to you, without searching for hours.",
+        "cta_map": "Discover businesses near you"
       },
       "story": {
         "image_aria": "Photo of Sapir, founder of Mehamakor",
@@ -3184,16 +3180,8 @@
     "empty": {
       "no_match_search": "We couldn't find any businesses for \"{q}\"",
       "no_match_filters": "No businesses match this filter",
-      "search_hint": "Try another word or browse by category",
+      "search_hint": "Try another word, or pick a category:",
       "filters_hint": "Try removing one of the filters",
-      "category_chips": {
-        "beef": "Beef",
-        "cheese": "Cheese",
-        "bread": "Bread",
-        "vegetables": "Vegetables",
-        "oil": "Oil",
-        "honey": "Honey"
-      },
       "clear_all_show_all": "Clear all and show everything"
     },
     "catalog_empty": {
@@ -5437,8 +5425,7 @@
     "cta": {
       "h2": "Have a business that deserves a home?",
       "intro": "Tell us about it. We'll read it, get back to you, and start getting to know you.",
-      "submit": "Tell us about the business",
-      "secondary": "Continue to the registration form"
+      "submit": "To business registration"
     }
   },
   "filters": {

@@ -88,18 +88,13 @@ function sortRequestParams(sort, loc) {
   return { sort };
 }
 
-// Display axis = i18n key for the translated label.
-// Data axis = `q` value sent to /producers — must stay Hebrew because the
-// backend search matches against Hebrew producer name/description columns.
-// Translating `q` per locale would zero-match on /en/.
-const EMPTY_CATEGORY_CHIPS = [
-  { key: "beef", q: "בשר" },
-  { key: "cheese", q: "גבינה" },
-  { key: "bread", q: "לחם" },
-  { key: "vegetables", q: "ירקות" },
-  { key: "oil", q: "שמן" },
-  { key: "honey", q: "דבש" },
-];
+// MEH-2634: the six hardcoded escape chips (בשר/גבינה/לחם/ירקות/שמן/דבש) are
+// gone. They were a free-text `?q=` guess, so a chip could lead to a SECOND
+// empty state — "בשר" matched nothing while the catalog had a live בשר
+// category — and the set never moved when the catalog did. The empty state now
+// offers the page's own live `categoryChips`, which are built from the
+// categories the API returned, and links `?category=<id>` (the canonical axis,
+// MEH-1081) instead of a search string.
 
 function initChipsFromParams(searchParams) {
   const result = { ...CHIPS_DEFAULT };
@@ -1128,7 +1123,7 @@ export default function ProducersClient({
       {loading ? (
         <SkeletonProducerGrid count={8} />
       ) : showFilterEmpty ? (
-        <FilterEmptyState onClear={clearAll} searchQ={searchQ} />
+        <FilterEmptyState onClear={clearAll} searchQ={searchQ} categories={categories} />
       ) : showPageOverflow ? (
         <PageOverflowState />
       ) : showCatalogEmpty ? (
@@ -1187,8 +1182,16 @@ export default function ProducersClient({
   );
 }
 
-function FilterEmptyState({ onClear, searchQ }) {
+function FilterEmptyState({ onClear, searchQ, categories = [] }) {
   const t = useTranslations("producers");
+  // MEH-2634: ALL live categories, deliberately NOT the `visibleCategories` /
+  // `categoryChips` subset the filter row uses. That subset is data-gated on
+  // what the CURRENT result set loaded (`loadedCategoryIds`), and this state
+  // renders precisely when the result set is EMPTY — so the gated list is
+  // empty too and the escape hatch would offer nothing at all. Measured: 0
+  // chips rendered before this was changed. The gate is right for a chip row
+  // that filters the results in place; it is wrong for a way out of them.
+  const escapeChips = categories;
   return (
     <div className="text-center py-16" data-testid="producers-filter-empty">
       <div
@@ -1207,15 +1210,15 @@ function FilterEmptyState({ onClear, searchQ }) {
       <p className="text-fg-muted text-sm mb-6">
         {searchQ ? t("empty.search_hint") : t("empty.filters_hint")}
       </p>
-      {searchQ && (
+      {searchQ && escapeChips.length > 0 && (
         <div className="flex flex-wrap justify-center gap-2 mb-6">
-          {EMPTY_CATEGORY_CHIPS.map(({ key, q }) => (
+          {escapeChips.map((c) => (
             <Link
-              key={key}
-              href={`/producers?q=${encodeURIComponent(q)}`}
+              key={c.id}
+              href={`/producers?category=${encodeURIComponent(String(c.id))}`}
               className="bg-white border border-border text-text rounded-full px-4 py-1.5 text-sm hover:border-primary hover:text-primary transition"
             >
-              {t(`empty.category_chips.${key}`)}
+              {c.name}
             </Link>
           ))}
         </div>

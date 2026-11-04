@@ -62,7 +62,7 @@ vi.mock("@phosphor-icons/react", () => {
   return { CaretDown: Stub, ChatCircle: Stub };
 });
 
-import WhatsAppQuestionChips from "@/components/WhatsAppQuestionChips";
+import WhatsAppQuestionChips, { WA_SUFFIX } from "@/components/WhatsAppQuestionChips";
 import { pingWhatsAppBeacon, markWhatsAppClickedLocal } from "@/lib/contact-tracking";
 
 const PHONE = "0501234567";
@@ -150,7 +150,7 @@ describe("whatsapp-primary — byte-identical to the pre-MEH-2154 behaviour", ()
     const { container } = render(
       <WhatsAppQuestionChips producer={{ ...wa, custom_questions: ["יש חלה לשבת?"] }} />,
     );
-    const href = screen.getByText("יש חלה לשבת?").closest("a").getAttribute("href");
+    const href = screen.getByText(`יש חלה לשבת?${WA_SUFFIX}`).closest("a").getAttribute("href");
     expect(decodeURIComponent(href)).toBe(
       `https://wa.me/${WA_DIGITS}?text=שלום חוות השקמה, יש חלה לשבת?\n\nהגעתי דרך מהמקור`,
     );
@@ -188,7 +188,7 @@ describe("whatsapp-primary — byte-identical to the pre-MEH-2154 behaviour", ()
     render(
       <WhatsAppQuestionChips producer={{ ...noMethod, custom_questions: ["יש חלה לשבת?"] }} />,
     );
-    expect(screen.getByText("יש חלה לשבת?").closest("a").getAttribute("href")).toContain("wa.me");
+    expect(screen.getByText(`יש חלה לשבת?${WA_SUFFIX}`).closest("a").getAttribute("href")).toContain("wa.me");
     expect(screen.getByTestId("escalation-link").getAttribute("href")).toContain("wa.me");
   });
 });

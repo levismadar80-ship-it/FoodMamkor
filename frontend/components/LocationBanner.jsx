@@ -7,6 +7,16 @@ import { COOKIE_CONSENT_EVENT, hasCookieConsent } from "@/lib/cookie-consent";
 
 const DISMISS_KEY = "location_banner_dismissed";
 
+// MEH-2634: 3s → 8s. At 3s the city prompt still landed on a visitor who was
+// reading the hero for the first time: cookie consent is usually answered in
+// the first second or two, so the gate below passed almost immediately and the
+// banner opened while the hero was still being read.
+// Exported so the specs spend a timer budget DERIVED from this value instead
+// of restating it — a test that hardcodes 3500ms against an 8000ms reveal goes
+// green for the wrong reason (nothing rendered because the clock never reached
+// the timer), which is exactly how this change was first caught.
+export const REVEAL_DELAY_MS = 8000;
+
 export default function LocationBanner({ hasCity, onOpenModal, suppressed = false }) {
   const t = useTranslations("location.banner");
   const [visible, setVisible] = useState(false);
@@ -24,7 +34,7 @@ export default function LocationBanner({ hasCity, onOpenModal, suppressed = fals
     if (sessionStorage.getItem(DISMISS_KEY)) return;
     let timer;
     const arm = () => {
-      timer = setTimeout(() => setVisible(true), 3000);
+      timer = setTimeout(() => setVisible(true), REVEAL_DELAY_MS);
     };
     if (hasCookieConsent()) arm();
     else window.addEventListener(COOKIE_CONSENT_EVENT, arm, { once: true });
