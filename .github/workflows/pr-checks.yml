@@ -465,7 +465,8 @@ jobs:
           # MEH-2392/2393: producer_followers + referral_clicks dropped — 43 -> 41.
           # MEH-2528: retired_slugs (tombstones for deleted/renamed business URLs) — 41 -> 42.
           # MEH-2556: saved_items (saved recipes/events/experiences) — 42 -> 43.
-          EXPECTED_TABLES=43
+          # MEH-2618: delivery_waitlist («תודיעו לי כשתגיעו ל{עיר}» per-city waitlist) — 43 -> 44.
+          EXPECTED_TABLES=44
 
           TABLE_COUNT=$(psql -h localhost -U postgres -d mehamakor_test -tAc \
             "SELECT COUNT(*) FROM information_schema.tables
