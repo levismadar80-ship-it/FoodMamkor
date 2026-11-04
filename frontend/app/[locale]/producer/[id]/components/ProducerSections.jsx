@@ -245,6 +245,13 @@ export default function ProducerSections({
   // previously-focused element every time it runs. An inline arrow would hand
   // it a fresh identity on every parent render, so paging would re-run it and
   // pull focus off the chevron the reader is clicking.
+  const closeSheet = useCallback(() => setOpenIndex(null), []);
+  const goPrevProduct = useCallback(() => setOpenIndex((i) => (i > 0 ? i - 1 : i)), []);
+  const goNextProduct = useCallback(
+    () => setOpenIndex((i) => (i < sheetTotal - 1 ? i + 1 : i)),
+    [sheetTotal],
+  );
+
   // PR #3972: a deep link `?product=<id>` (the recipe page's product rows)
   // opens that product's sheet on arrival. Read once per producer from
   // window.location — not useSearchParams, which would force a Suspense
@@ -258,12 +265,6 @@ export default function ProducerSections({
     const i = productIds.split(",").indexOf(wanted);
     if (i >= 0) setOpenIndex(i);
   }, [productIds]);
-  const closeSheet = useCallback(() => setOpenIndex(null), []);
-  const goPrevProduct = useCallback(() => setOpenIndex((i) => (i > 0 ? i - 1 : i)), []);
-  const goNextProduct = useCallback(
-    () => setOpenIndex((i) => (i < sheetTotal - 1 ? i + 1 : i)),
-    [sheetTotal],
-  );
 
   // MEH-1463: when the signature product was deduped out of the grid and
   // the producer-level price_range (MEH-1855: the single price-label field)
