@@ -1134,6 +1134,128 @@ class TestExperienceSignupCount:
         assert (ex.participants_count or 0) == 0
 
 
+class TestExperienceMinParticipants:
+    """Stage B: an optional minimum to run the experience. It must be stored,
+    read back on the public detail, and never exceed the max."""
+
+    def test_submit_stores_min_and_detail_returns_it(self, client, db, monkeypatch):
+        _mock_moderation(monkeypatch, status="APPROVED")
+        host = make_user(db, role="producer", email="minp@test.com")
+        resp = client.post(
+            "/experiences",
+            json=_payload(min_participants=4, max_participants=10),
+            headers=auth_header(host),
+        )
+        assert resp.status_code == 201, resp.text
+        assert resp.json()["min_participants"] == 4
+
+    def test_submit_min_above_max_rejected(self, client, db, monkeypatch):
+        _mock_moderation(monkeypatch, status="APPROVED")
+        host = make_user(db, role="producer", email="minp@test.com")
+        resp = client.post(
+            "/experiences",
+            json=_payload(min_participants=12, max_participants=10),
+            headers=auth_header(host),
+        )
+        assert resp.status_code == 422
+        assert resp.json()["detail"] == "המינימום לא יכול להיות גדול מהמקסימום"
+
+    def test_public_list_carries_min(self, client, db):
+        host = _make_host(db)
+        _make_experience(db, host, status="approved", min_participants=3)
+        rows = client.get("/experiences").json()
+        assert [r["min_participants"] for r in rows] == [3]
+
+    def test_update_min_above_existing_max_rejected(self, client, db, monkeypatch):
+        _mock_moderation(monkeypatch, status="APPROVED")
+        host = _make_host(db)
+        ex = _make_experience(db, host, status="approved", max_participants=8)
+        resp = client.put(
+            f"/experiences/{ex.id}",
+            json={"min_participants": 9},
+            headers=auth_header(host),
+        )
+        assert resp.status_code == 422
+        db.refresh(ex)
+        assert ex.min_participants is None
+
+    def test_update_lowering_max_below_min_rejected(self, client, db, monkeypatch):
+        _mock_moderation(monkeypatch, status="APPROVED")
+        host = _make_host(db)
+        ex = _make_experience(db, host, max_participants=8, min_participants=5)
+        resp = client.put(
+            f"/experiences/{ex.id}",
+            json={"max_participants": 4},
+            headers=auth_header(host),
+        )
+        assert resp.status_code == 422
+        db.refresh(ex)
+        assert ex.max_participants == 8
+
+    def test_update_clearing_min_stores_null(self, client, db, monkeypatch):
+        _mock_moderation(monkeypatch, status="APPROVED")
+        host = _make_host(db)
+        ex = _make_experience(db, host, max_participants=8, min_participants=5)
+        resp = client.put(
+            f"/experiences/{ex.id}",
+            json={"min_participants": None},
+            headers=auth_header(host),
+        )
+        assert resp.status_code == 200, resp.text
+        db.refresh(ex)
+        assert ex.min_participants is None
+
+    def test_unrelated_edit_not_blocked_by_inverted_stored_pair(
+        self, client, db, monkeypatch
+    ):
+        _mock_moderation(monkeypatch, status="APPROVED")
+        host = _make_host(db)
+        ex = _make_experience(db, host, max_participants=4, min_participants=6)
+        resp = client.put(
+            f"/experiences/{ex.id}",
+            json={"participants_count": 2},
+            headers=auth_header(host),
+        )
+        assert resp.status_code == 200, resp.text
+        db.refresh(ex)
+        assert ex.participants_count == 2
+
+    def test_editing_min_alone_keeps_approved_without_moderation(
+        self, client, db, monkeypatch
+    ):
+        calls = []
+
+        def _boom(*a, **k):
+            calls.append(1)
+            raise AssertionError("moderation must not run on a min-only edit")
+
+        import app.routers.experiences as router_mod
+
+        monkeypatch.setattr(router_mod, "validate_experience", _boom)
+        host = _make_host(db)
+        ex = _make_experience(db, host, status="approved", max_participants=8)
+        resp = client.put(
+            f"/experiences/{ex.id}",
+            json={"min_participants": 4},
+            headers=auth_header(host),
+        )
+        assert resp.status_code == 200, resp.text
+        db.refresh(ex)
+        assert ex.min_participants == 4
+        assert ex.status == "approved"
+        assert calls == []
+
+    def test_min_zero_rejected(self, client, db, monkeypatch):
+        _mock_moderation(monkeypatch, status="APPROVED")
+        host = make_user(db, role="producer", email="minp@test.com")
+        resp = client.post(
+            "/experiences",
+            json=_payload(min_participants=0),
+            headers=auth_header(host),
+        )
+        assert resp.status_code == 422
+
+
 # ---------- Location-pin privacy (MEH-1417) ----------
 
 
