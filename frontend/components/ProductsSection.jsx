@@ -545,7 +545,7 @@ export default function ProductsSection({
         </p>
       )}
 
-      {error && <p className="text-sm text-red-500 mb-3">{error}</p>}
+      {error && <p className="text-sm text-error mb-3">{error}</p>}
 
       {/* MEH-1261 F1: load failure gets its own state — never the EmptyState
           (which invites adding a product to a catalog that may already exist). */}
@@ -808,7 +808,7 @@ export default function ProductsSection({
                 onClick={() => { setError(""); setConfirmDelete({ id: product.id, name: product.name }); }}
                 disabled={deletingId === product.id}
                 aria-label={t("card.delete_aria_template", { name: product.name })}
-                className="p-1.5 rounded-[6px] text-fg-muted hover:text-red-500 hover:bg-red-50 transition disabled:opacity-40"
+                className="p-1.5 rounded-[6px] text-fg-muted hover:text-error hover:bg-red-50 transition disabled:opacity-40"
               >
                 <Trash size={16} aria-hidden="true" />
               </button>
@@ -1154,7 +1154,7 @@ function UploadZone({ imageUrl, uploading, onUpload, onRemove, tForm }) {
             disabled={uploading}
           />
         </label>
-        <button type="button" onClick={onRemove} className="text-sm text-red-500 hover:underline">
+        <button type="button" onClick={onRemove} className="text-sm text-error hover:underline">
           {tForm("image_remove")}
         </button>
       </div>
