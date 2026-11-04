@@ -258,7 +258,9 @@ async function fillDetailsToStory() {
   fireEvent.change(ph("producer_name"), { target: { value: "העסק שלי" } });
   fireEvent.change(ph("phone"), { target: { value: "0501234567" } }); // valid IL
   fireEvent.change(screen.getByTestId("city"), { target: { value: "תל אביב" } });
-  fireEvent.change(ph("address"), { target: { value: "הרצל 1" } });
+  // MEH-2640: step 2's one question is required and starts unanswered, so a
+  // traversal that does not answer it no longer leaves DETAILS.
+  fireEvent.click(screen.getByTestId("register-fulfilment-onsite"));
   fireEvent.click(nextBtn()); // → CATEGORY
   fireEvent.click(await screen.findByTestId("pick-category")); // select category id 1
   fireEvent.click(nextBtn()); // → STORY
@@ -274,6 +276,18 @@ function selectReferral(value = "instagram") {
     target: { value },
   });
 }
+
+// MEH-2640: four describe blocks left this file with the UI they tested —
+// «address location confirmation» (MEH-1808), «draggable confirmation pin»
+// (MEH-2182), «address/city mismatch notice» (MEH-2181) and «multi-location
+// intake toggle» (MEH-1422), 20 cells in all.
+//
+// They are DELETED, not relaxed, and not moved: step 2 no longer collects an
+// address or a second sales point, so there is nothing here left to assert.
+// The behaviour itself did not disappear — it has one owner now, the dashboard
+// editor, which carries its own coverage: LocationsEditor.test.jsx (32 cells)
+// and AddressSearch.test.jsx (14). Checked before deleting; had that coverage
+// been absent, this would have been a capability dropped rather than moved.
 
 describe("RegisterProducerClient — wizard nav + submit body (MEH-866)", () => {
   it("ACCOUNT validation gates the first advance (invalid email blocks)", async () => {
@@ -312,7 +326,7 @@ describe("RegisterProducerClient — wizard nav + submit body (MEH-866)", () => 
     expect(screen.getByText("5/160")).toBeInTheDocument();
   });
 
-  it("submit body carries city, address, short_description (+ producer_name, category_ids, declaration_accepted) on the new-registration path", async () => {
+  it("submit body carries city, fulfilment booleans, short_description (+ producer_name, category_ids, declaration_accepted) on the new-registration path", async () => {
     await renderWizard();
     await fillAccountToDetails();
     await fillDetailsToStory();
@@ -332,7 +346,11 @@ describe("RegisterProducerClient — wizard nav + submit body (MEH-866)", () => 
     expect(body).toMatchObject({
       producer_name: "העסק שלי",
       city: "תל אביב",
-      address: "הרצל 1",
+      // MEH-2640: `address` is no longer collected at registration, so it is
+      // no longer asserted here. The fulfilment pair that REPLACED the four
+      // delivery controls is asserted instead — the helper picks "onsite".
+      has_physical_location: true,
+      offers_delivery: false,
       short_description: "הכי טרי שיש",
       category_ids: [1],
       // MEH-1471: attribution key rides along; no free text (not "other").
@@ -591,65 +609,6 @@ describe("RegisterProducerClient — didUpgrade CONFIRM split (MEH-328 chunk D)"
 //
 // MEH-1768 changed WHEN the helper renders: always, not only on "yes". Behind
 // the tick it answered a question the owner had already decided.
-describe("RegisterProducerClient — multi-location intake toggle (MEH-1422)", () => {
-  // The behaviour change itself. Against the pre-MEH-1768 render this first
-  // assertion is the one that goes red: the helper was absent until the box was
-  // ticked, which is exactly the state a hesitating owner is in.
-  it("shows the helper with the box UNCHECKED, and keeps it shown when ticked", async () => {
-    await renderWizard();
-    await fillAccountToDetails();
-    const toggle = screen.getByTestId("register-multi-location-toggle");
-    expect(toggle).not.toBeChecked();
-    expect(screen.getByText(`${K}.fields.multi_location_label`)).toBeInTheDocument();
-
-    expect(screen.getByTestId("register-multi-location-copy")).toHaveTextContent(
-      `${K}.fields.multi_location_hint`,
-    );
-
-    // Permanence, in both directions — a helper that vanished on tick, or on
-    // un-tick, would still satisfy a single unchecked-state assertion.
-    fireEvent.click(toggle);
-    expect(toggle).toBeChecked();
-    expect(screen.getByTestId("register-multi-location-copy")).toBeInTheDocument();
-    fireEvent.click(toggle);
-    expect(toggle).not.toBeChecked();
-    expect(screen.getByTestId("register-multi-location-copy")).toBeInTheDocument();
-  });
-
-  // "Exactly once, never twice" is an acceptance criterion in its own right:
-  // keeping the old conditional line ALONGSIDE the permanent one would pass
-  // every assertion above and double the copy on tick. Counted, not presence-
-  // checked — a presence assertion cannot see a duplicate.
-  it("renders the copy exactly once in both toggle states, and drops the old key", async () => {
-    await renderWizard();
-    await fillAccountToDetails();
-    const toggle = screen.getByTestId("register-multi-location-toggle");
-
-    expect(screen.queryAllByTestId("register-multi-location-copy")).toHaveLength(1);
-    fireEvent.click(toggle);
-    expect(screen.queryAllByTestId("register-multi-location-copy")).toHaveLength(1);
-
-    // The retired key must not render anywhere — the mock echoes key paths, so
-    // its presence would be visible text if the old branch survived.
-    expect(screen.queryByText(`${K}.fields.multi_location_yes_copy`)).toBeNull();
-  });
-
-  it("is informational only — its value is NOT in the submit payload", async () => {
-    await renderWizard();
-    await fillAccountToDetails();
-    fireEvent.click(screen.getByTestId("register-multi-location-toggle")); // yes
-    await fillDetailsToStory();
-    fireEvent.change(screen.getByPlaceholderText(`${K}.fields.tagline_placeholder`), {
-      target: { value: "הכי טרי שיש" },
-    });
-    selectReferral(); // MEH-1471: required field on STORY
-    screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
-    fireEvent.click(screen.getByText(`${K}.actions.submit`));
-    await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
-    const [, body] = api.post.mock.calls[0];
-    expect(Object.keys(body).some((k) => k.toLowerCase().includes("multi"))).toBe(false);
-  });
-});
 
 // MEH-1471: self-reported attribution ("מאיפה שמעת עלינו?") — a dropdown on the
 // final (STORY) step, directly above the ToS checkbox. Default has no
@@ -793,8 +752,9 @@ describe("RegisterProducerClient — license-required error placement (MEH-952)"
     fireEvent.change(ph("producer_name"), { target: { value: "העסק שלי" } });
     fireEvent.change(ph("phone"), { target: { value: "0501234567" } });
     fireEvent.change(screen.getByTestId("city"), { target: { value: "תל אביב" } });
-    fireEvent.change(ph("address"), { target: { value: "הרצל 1" } });
-    fireEvent.click(nextBtn()); // → CATEGORY
+      // MEH-2640: answer step 2's one required question.
+      fireEvent.click(screen.getByTestId("register-fulfilment-onsite"));
+      fireEvent.click(nextBtn()); // → CATEGORY
     fireEvent.click(await screen.findByTestId("pick-category")); // license-required id 1
   }
 
@@ -917,6 +877,9 @@ describe("RegisterProducerClient — cross-step validation (MEH-1807)", () => {
     fireEvent.change(nameInput, { target: { value: "העסק שלי" } });
     expect(nameInput).not.toHaveAttribute("aria-invalid");
     // and the advance now succeeds
+    // MEH-2640: answer step 2's one required question, so this cell's own
+    // subject is what decides the advance.
+    fireEvent.click(screen.getByTestId("register-fulfilment-onsite"));
     fireEvent.click(screen.getByTestId("register-details-next"));
     expect(await screen.findByTestId("register-frame-category")).toBeInTheDocument();
   });
@@ -930,6 +893,9 @@ describe("RegisterProducerClient — cross-step validation (MEH-1807)", () => {
     // so this test's own subject (the CATEGORY selector) is what blocks the
     // advance, not an unrelated empty city.
     fireEvent.change(screen.getByTestId("city"), { target: { value: "תל אביב" } });
+    // MEH-2640: answer step 2's one required question, so this cell's own
+    // subject (the CATEGORY selector) is what blocks the advance.
+    fireEvent.click(screen.getByTestId("register-fulfilment-onsite"));
     fireEvent.click(screen.getByTestId("register-details-next"));
     await screen.findByTestId("register-frame-category");
     // advance with zero categories picked
@@ -1138,305 +1104,8 @@ describe("RegisterProducerClient — logged-in producer/admin gate (MEH-1489)", 
 //   • drop `setPinAdjusted(false)` from the address onChange       → 1 red (reset)
 //   • render the confirmed line without the `pinAdjusted` branch   → 1 red (swap)
 //   • delete the drag-hint paragraph                                → 1 red (hint)
-describe("RegisterProducerClient — draggable confirmation pin (MEH-2182)", () => {
-  // DETAILS is filled COMPLETELY (name + phone too), because the payload test
-  // below has to advance past this step — and the pick comes LAST, since typing
-  // into the address field nulls the coordinates by design (MEH-1808).
-  async function reachConfirmedAddress() {
-    await renderWizard();
-    await fillAccountToDetails();
-    fireEvent.change(ph("producer_name"), { target: { value: "העסק שלי" } });
-    fireEvent.change(ph("phone"), { target: { value: "0501234567" } });
-    fireEvent.change(screen.getByTestId("city"), { target: { value: "זכרון יעקב" } });
-    fireEvent.click(screen.getByTestId("address-pick"));
-    await screen.findByTestId("register-address-confirm");
-  }
 
-  it("opts the confirmation map into a draggable marker, and shows the hint", async () => {
-    await reachConfirmedAddress();
-    expect(screen.getByTestId("mini-map").dataset.draggableMarker).toBe("true");
-    expect(screen.getByTestId("register-pin-drag-hint")).toHaveTextContent(
-      `${K}.fields.address_pin_drag_hint`,
-    );
-  });
 
-  it("a drag writes the new coordinates and swaps the confirmation line", async () => {
-    await reachConfirmedAddress();
-    const map = screen.getByTestId("mini-map");
-    expect(map.dataset.lat).toBe("32.5731");
-
-    fireEvent.click(screen.getByTestId("mini-map-drag-pin"));
-
-    expect(screen.getByTestId("mini-map").dataset.lat).toBe("32.1111");
-    expect(screen.getByTestId("mini-map").dataset.lng).toBe("34.2222");
-    expect(screen.getByTestId("register-address-confirm")).toHaveTextContent(
-      `${K}.fields.address_pin_adjusted`,
-    );
-  });
-
-  it("the drag does NOT rewrite the address text", async () => {
-    await reachConfirmedAddress();
-    const before = screen.getByTestId("register-details-address").value;
-    fireEvent.click(screen.getByTestId("mini-map-drag-pin"));
-    expect(screen.getByTestId("register-details-address")).toHaveValue(before);
-  });
-
-  it("typing over the address resets the adjusted state along with the coordinates", async () => {
-    await reachConfirmedAddress();
-    fireEvent.click(screen.getByTestId("mini-map-drag-pin"));
-    await screen.findByTestId("register-address-confirm");
-
-    fireEvent.change(screen.getByTestId("register-details-address"), {
-      target: { value: "רחוב אחר 9" },
-    });
-    // The coordinates went (MEH-1808), so the whole confirm block goes with them.
-    expect(screen.queryByTestId("register-address-confirm")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("mini-map")).not.toBeInTheDocument();
-
-    // ...and re-picking shows the ORIGINAL line again, not the adjusted one —
-    // which is what proves the flag actually reset rather than merely unmounting.
-    fireEvent.click(screen.getByTestId("address-pick"));
-    const confirm = await screen.findByTestId("register-address-confirm");
-    expect(confirm).toHaveTextContent(`${K}.fields.address_confirmed`);
-    expect(confirm).not.toHaveTextContent(`${K}.fields.address_pin_adjusted`);
-  });
-
-  it("adds nothing to the submit payload", async () => {
-    await reachConfirmedAddress();
-    fireEvent.click(screen.getByTestId("mini-map-drag-pin"));
-
-    fireEvent.click(nextBtn());
-    fireEvent.click(await screen.findByTestId("pick-category"));
-    fireEvent.click(nextBtn());
-    await screen.findByPlaceholderText(`${K}.fields.tagline_placeholder`);
-    selectReferral();
-    screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
-    fireEvent.click(screen.getByText(`${K}.actions.submit`));
-
-    await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
-    const [, body] = api.post.mock.calls[0];
-    // The dragged point rides in lat/lng, which already existed...
-    expect(body.lat).toBe(32.1111);
-    expect(body.lng).toBe(34.2222);
-    // ...and the UI-only flag does not ride at all, under any spelling.
-    expect(body).not.toHaveProperty("pinAdjusted");
-    expect(body).not.toHaveProperty("pin_adjusted");
-    expect(body).not.toHaveProperty("location_precision");
-  });
-});
-
-describe("RegisterProducerClient — address/city mismatch notice (MEH-2181)", () => {
-  async function reachDetails() {
-    await renderWizard();
-    await fillAccountToDetails();
-  }
-
-  it("opts AddressSearch into city-scoped lookup with the chosen city", async () => {
-    await reachDetails();
-    fireEvent.change(screen.getByTestId("city"), { target: { value: "תל אביב" } });
-    expect(screen.getByTestId("address-search-mock").dataset.city).toBe("תל אביב");
-  });
-
-  it("shows the notice when the picked address resolves to a DIFFERENT town", async () => {
-    await reachDetails();
-    fireEvent.change(screen.getByTestId("city"), { target: { value: "תל אביב" } });
-    fireEvent.click(screen.getByTestId("address-pick-other-town")); // resolves חיפה
-    await screen.findByTestId("register-address-confirm");
-
-    const notice = screen.getByTestId("register-address-city-mismatch");
-    expect(notice).toHaveTextContent(`${K}.fields.address_city_mismatch`);
-    // Not error-styled: the gold token, never a red one.
-    expect(notice).toHaveClass("text-accent"); // MEH-1687 B: was inline #8B6914
-    // ...and no auto-correct affordance (MEH-213).
-    expect(notice.querySelector("button")).toBeNull();
-  });
-
-  it("stays absent when the picked address agrees with the chosen town", async () => {
-    await reachDetails();
-    fireEvent.change(screen.getByTestId("city"), { target: { value: "זכרון יעקב" } });
-    fireEvent.click(screen.getByTestId("address-pick")); // resolves זכרון יעקב
-    await screen.findByTestId("register-address-confirm");
-    expect(
-      screen.queryByTestId("register-address-city-mismatch"),
-    ).not.toBeInTheDocument();
-  });
-
-  it("stays absent before any pick — a typed address has no resolved town to disagree with", async () => {
-    await reachDetails();
-    fireEvent.change(screen.getByTestId("city"), { target: { value: "תל אביב" } });
-    fireEvent.change(screen.getByTestId("register-details-address"), {
-      target: { value: "דרך שרה 5" },
-    });
-    expect(
-      screen.queryByTestId("register-address-city-mismatch"),
-    ).not.toBeInTheDocument();
-  });
-
-  it("disappears again once the seller types over the picked address", async () => {
-    await reachDetails();
-    fireEvent.change(screen.getByTestId("city"), { target: { value: "תל אביב" } });
-    fireEvent.click(screen.getByTestId("address-pick-other-town"));
-    await screen.findByTestId("register-address-city-mismatch");
-    // Typing invalidates the point (MEH-1808), so the notice loses its subject.
-    fireEvent.change(screen.getByTestId("register-details-address"), {
-      target: { value: "משהו אחר" },
-    });
-    expect(
-      screen.queryByTestId("register-address-city-mismatch"),
-    ).not.toBeInTheDocument();
-  });
-});
-
-describe("RegisterProducerClient — address location confirmation (MEH-1808)", () => {
-  async function reachDetails() {
-    await renderWizard();
-    await fillAccountToDetails();
-  }
-
-  it("picking a suggestion shows the friendly confirmation line + a street-zoom map", async () => {
-    await reachDetails();
-    // nothing before a pick
-    expect(screen.queryByTestId("register-address-confirm")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("mini-map")).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByTestId("address-pick"));
-
-    const confirm = await screen.findByTestId("register-address-confirm");
-    // the CITY the picker resolved is named, not coordinates (MEH-1242 is the
-    // admin pattern this deliberately does not copy)
-    expect(confirm).toHaveTextContent("זכרון יעקב");
-    expect(confirm).toHaveTextContent("דרך שרה");
-    const map = screen.getByTestId("mini-map");
-    expect(map.dataset.lat).toBe("32.5731");
-    expect(map.dataset.lng).toBe("34.9512");
-    expect(map.dataset.zoom).toBe("16"); // street level, not MiniMap's default 14
-    expect(map.dataset.showNavigation).toBe("false"); // no "navigate to yourself"
-    // the no-pick nudge is the OTHER state — never both at once
-    expect(screen.queryByTestId("register-address-no-pick-hint")).not.toBeInTheDocument();
-  });
-
-  it("typed text with no pick shows a soft, non-blocking nudge and never blocks the step", async () => {
-    await reachDetails();
-    fireEvent.change(screen.getByTestId("register-details-address"), {
-      target: { value: "דרך שרה" },
-    });
-    const hint = screen.getByTestId("register-address-no-pick-hint");
-    expect(hint).toBeInTheDocument();
-    // soft: not an alert, not error-red — the address is optional
-    expect(hint).not.toHaveAttribute("role", "alert");
-    expect(hint.className).not.toMatch(/text-error|text-red/);
-    expect(screen.queryByTestId("register-address-confirm")).not.toBeInTheDocument();
-
-    // and the step still advances with the address left unpicked (the
-    // MEH-1807/MEH-2015 chunk B gate covers producer_name + phone + city —
-    // address is NOT required)
-    fireEvent.change(ph("producer_name"), { target: { value: "העסק שלי" } });
-    fireEvent.change(ph("phone"), { target: { value: "0501234567" } });
-    fireEvent.change(screen.getByTestId("city"), { target: { value: "תל אביב" } });
-    fireEvent.click(screen.getByTestId("register-details-next"));
-    expect(await screen.findByTestId("register-frame-category")).toBeInTheDocument();
-  });
-
-  it("typing over a confirmed address retires the confirmation (stale coords never survive)", async () => {
-    await reachDetails();
-    fireEvent.click(screen.getByTestId("address-pick"));
-    expect(await screen.findByTestId("register-address-confirm")).toBeInTheDocument();
-
-    fireEvent.change(screen.getByTestId("register-details-address"), {
-      target: { value: "רחוב אחר לגמרי" },
-    });
-    // the pin must NOT keep pointing at the previous place
-    expect(screen.queryByTestId("register-address-confirm")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("mini-map")).not.toBeInTheDocument();
-    expect(screen.getByTestId("register-address-no-pick-hint")).toBeInTheDocument();
-  });
-
-  it("the selected coordinates reach the submit payload", async () => {
-    await reachDetails();
-    // Fill the rest of DETAILS FIRST and pick last: fillDetailsToStory() types
-    // into the address field, and typing correctly nulls the coordinates, so
-    // picking before it would be testing the clear-on-type path by accident.
-    fireEvent.change(ph("producer_name"), { target: { value: "העסק שלי" } });
-    fireEvent.change(ph("phone"), { target: { value: "0501234567" } });
-    fireEvent.change(screen.getByTestId("city"), { target: { value: "תל אביב" } });
-    fireEvent.click(screen.getByTestId("address-pick"));
-    await screen.findByTestId("register-address-confirm");
-    fireEvent.click(nextBtn()); // → CATEGORY
-    fireEvent.click(await screen.findByTestId("pick-category"));
-    fireEvent.click(nextBtn()); // → STORY
-    await screen.findByPlaceholderText(`${K}.fields.tagline_placeholder`);
-    selectReferral();
-    screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
-    fireEvent.click(screen.getByText(`${K}.actions.submit`));
-
-    await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
-    const [, body] = api.post.mock.calls[0];
-    expect(body).toMatchObject({ lat: 32.5731, lng: 34.9512 });
-  });
-
-  it("sends null coordinates when the seller never picked one", async () => {
-    await reachDetails();
-    fireEvent.change(screen.getByTestId("register-details-address"), {
-      target: { value: "דרך שרה" },
-    });
-    await fillDetailsToStory();
-    selectReferral();
-    screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
-    fireEvent.click(screen.getByText(`${K}.actions.submit`));
-
-    await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
-    const [, body] = api.post.mock.calls[0];
-    expect(body.lat).toBeNull();
-    expect(body.lng).toBeNull();
-  });
-
-  // Found by the browser self-QA, not by the unit tests — the first version
-  // wrote the picked town into `form.city` with `prev.city || picked.city`, so
-  // a SECOND pick in a different town kept the FIRST town's name and the line
-  // confirmed a place the pin was no longer on. Failing-by-construction:
-  // restore that `prev.city ||` form and this test reds on "זכרון יעקב"
-  // surviving a Haifa pick.
-  it("a second pick in another town replaces the town in the confirmation", async () => {
-    await reachDetails();
-    fireEvent.click(screen.getByTestId("address-pick"));
-    expect(await screen.findByTestId("register-address-confirm")).toHaveTextContent(
-      "זכרון יעקב",
-    );
-
-    fireEvent.click(screen.getByTestId("address-pick-other-town"));
-    const confirm = screen.getByTestId("register-address-confirm");
-    expect(confirm).toHaveTextContent("חיפה");
-    expect(confirm).not.toHaveTextContent("זכרון יעקב");
-    const map = screen.getByTestId("mini-map");
-    expect(map.dataset.lat).toBe("32.794");
-    expect(map.dataset.lng).toBe("34.9896");
-  });
-
-  // MEH-213 forbids free-text towns — `city` is CitySearch's canonical value and
-  // a raw Nominatim string must never land in it (nor in the payload).
-  it("picking an address never overwrites the canonical city field", async () => {
-    await reachDetails();
-    fireEvent.change(screen.getByTestId("city"), { target: { value: "תל אביב" } });
-    fireEvent.click(screen.getByTestId("address-pick-other-town")); // resolves חיפה
-    await screen.findByTestId("register-address-confirm");
-    expect(screen.getByTestId("city")).toHaveValue("תל אביב");
-
-    fireEvent.change(ph("producer_name"), { target: { value: "העסק שלי" } });
-    fireEvent.change(ph("phone"), { target: { value: "0501234567" } });
-    fireEvent.click(nextBtn());
-    fireEvent.click(await screen.findByTestId("pick-category"));
-    fireEvent.click(nextBtn());
-    await screen.findByPlaceholderText(`${K}.fields.tagline_placeholder`);
-    selectReferral();
-    screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
-    fireEvent.click(screen.getByText(`${K}.actions.submit`));
-
-    await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
-    const [, body] = api.post.mock.calls[0];
-    expect(body.city).toBe("תל אביב");
-    expect(body).not.toHaveProperty("address_city");
-  });
-});
 
 // MEH-1815: draft lifecycle across the two response shapes.
 //
@@ -1680,6 +1349,9 @@ describe("MEH-2241 chunk B — a typed town CitySearch could not match is as mis
   it("B — a town CitySearch vouches for advances (control)", async () => {
     await reachDetailsFilledExceptCity();
     fireEvent.change(screen.getByTestId("city"), { target: { value: "תל אביב" } });
+    // MEH-2640: answer step 2's one required question, so this cell's own
+    // subject is what decides the advance.
+    fireEvent.click(screen.getByTestId("register-fulfilment-onsite"));
     fireEvent.click(screen.getByTestId("register-details-next"));
     expect(await screen.findByTestId("register-frame-category")).toBeInTheDocument();
   });
@@ -1709,6 +1381,9 @@ describe("MEH-2241 chunk B — a typed town CitySearch could not match is as mis
     // a late /cities response says the value IS a town after all
     expect(cityInput).toHaveAttribute("data-has-known-change", "1");
     fireEvent.blur(cityInput);
+    // MEH-2640: answer step 2's one required question, so this cell's own
+    // subject is what decides the advance.
+    fireEvent.click(screen.getByTestId("register-fulfilment-onsite"));
     fireEvent.click(screen.getByTestId("register-details-next"));
     expect(await screen.findByTestId("register-frame-category")).toBeInTheDocument();
   });
@@ -1760,6 +1435,9 @@ describe("MEH-2241 chunk B — a typed town CitySearch could not match is as mis
 
   it("draft round-trip — a restored list-picked town passes the gate", async () => {
     await restoreDraftWithCity(true);
+    // MEH-2640: answer step 2's one required question, so this cell's own
+    // subject is what decides the advance.
+    fireEvent.click(screen.getByTestId("register-fulfilment-onsite"));
     fireEvent.click(screen.getByTestId("register-details-next"));
     expect(await screen.findByTestId("register-frame-category")).toBeInTheDocument();
   });

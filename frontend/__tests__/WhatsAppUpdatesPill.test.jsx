@@ -27,6 +27,7 @@ vi.mock("@phosphor-icons/react", () => {
   const Stub = () => <span />;
   return {
     ArrowUpLeft: Stub,
+    BellRinging: Stub, // MEH-2618: DeliveryWaitlistForm mounts under a "no" verdict
     CaretDown: Stub,
     CaretUp: Stub,
     ChatCircle: Stub,

@@ -4,6 +4,17 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-04 22:45 — ‏#3908 מוזג: רשימת המתנה לפי עיר (#3908)
+
+**‏שורה אחת:** ‏#3908 מוזג ל-staging (squash `1e6601e`) אחרי שהקומיט של ספיר `EXPECTED_TABLES=44` (03965b8, דרך כרום) נכנס לענף. הכרטיס MEH-2618 Done; ‏MEH-1676 (#3904) היה Done מ-03/11.
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏ראש Alembic על staging: `d4e7a1b2c3f5` (אחרי `b3e9f2a71c45` של #3978). 44 טבלאות מ-DB נקי. המיגרציה הבאה (#3963, שקי חילוץ) משתרשרת אחריה, וה-`EXPECTED_TABLES` שלה נגזר מספירה טרייה.
+- ‏`tests/test_api.py::TestUploadGoogleAvatarOrNone`: שני הטסטים מייבאים עכשיו `cloudinary.uploader` לפני ה-patch של `cloudinary.config`. בלי זה הם ירוקים רק כשטסט אחר באותו worker ייבא את המודול קודם, וכל שינוי במספר הטסטים מערבב את ה-workers.
+- ‏הטסט `WhatsAppUpdatesPill.test.jsx` (MEH-2626) מרנדר את `DeliveryChecker` במצב «לא», שמעכשיו מעלה גם את `DeliveryWaitlistForm`; mock של Phosphor שם צריך לכלול כל אייקון שהטופס משתמש בו (`BellRinging` נוסף).
+
+**‏לא עכשיו / מחכה לספיר:** 6 ממצאי הסוקר שמעבר לתקרת הסבבים (תגובה ב-MEH-2618) · אישור תבנית WhatsApp בחשבון Meta של הייצור · smoke של הטופס על staging (MEH-2090).
+
 ## 2026-11-04 12:10 — drain 04/11 ב': חמישה PRs מוזגו (#3949, #3964, #3965, #3945, #3962)
 
 **‏שורה אחת:** ‏#3949 (צ'יפי 100% ו-rename התזונה) · ‏#3964 (WCAG 2.5.3: השם הנגיש של כפתורי שמירה/שיתוף מתחיל בטקסט הנראה) · ‏#3965 (‏MEH-1943 chunk 3, ‏`delivery_validation`) · ‏#3945 (טוקני צבע) · ‏#3962 (docs). כולם עברו E2E עם 0 כשלים חדשים.
