@@ -375,8 +375,10 @@ export default function ProducerHeader({
           so it stays plain text under the tags, not a tag: no badge / icon /
           checkmark (MEH-1259 self-declaration pattern, NOT the MEH-1087
           verified pattern — a checkmark would imply a certificate). Renders
-          ONLY for shared / dedicated; 'unknown' shows nothing. §6.4. */}
-      {producer.gluten_free_facility === "shared" && (
+          ONLY for shared / dedicated; 'unknown' shows nothing. §6.4.
+          PR #3974: with products, the line moves to the products section
+          (ProducerSections) — here only for a business with no products. */}
+      {!(producer.products?.length > 0) && producer.gluten_free_facility === "shared" && (
         <p
           className="text-xs text-fg-muted leading-relaxed max-w-prose mt-2"
           data-testid="gluten-facility-shared"
@@ -384,7 +386,7 @@ export default function ProducerHeader({
           {t("producer.detail.header.gluten_facility.shared")}
         </p>
       )}
-      {producer.gluten_free_facility === "dedicated" && (
+      {!(producer.products?.length > 0) && producer.gluten_free_facility === "dedicated" && (
         <p
           className="text-xs text-fg-muted leading-relaxed max-w-prose mt-2"
           data-testid="gluten-facility-dedicated"
