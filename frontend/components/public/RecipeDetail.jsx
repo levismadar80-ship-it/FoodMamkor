@@ -29,7 +29,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Leaf, Clock, CookingPot, Users, Check } from "@phosphor-icons/react";
+import { Leaf, Clock, CookingPot, Users, Check, CaretLeft } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation"; // MEH-2543: next/link dropped the /en prefix
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
@@ -39,6 +39,7 @@ import PrimaryContactButton from "@/components/PrimaryContactButton";
 import SaveButton from "@/components/SaveButton"; // MEH-2558
 import ShareButton from "@/components/ShareButton";
 import { splitRecipeLines } from "@/lib/recipe-lines"; // MEH-2540
+import { formatPriceRange } from "@/lib/utils";
 
 const LINK_FOCUS =
   "rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40";
@@ -256,10 +257,21 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
                   {t("related_products_heading")}
                 </h2>
                 <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {relatedProducts.map((p) => (
-                    <li
-                      key={p.id}
-                      className="bg-white rounded-md border border-border p-3 flex items-center gap-3"
+                  {/* PR #3972 (Sapir 31/10: «קישור לרכישת המוצרים»): each row
+                      opens that product's sheet on the business page, where the
+                      price, photos and the per-product contact button live.
+                      Before, the row was a dead <li> and the price read only the
+                      legacy price_range, so any product priced via price_min
+                      showed no price at all. */}
+                  {relatedProducts.map((p) => {
+                    const numericPrice =
+                      p.price_min != null ? formatPriceRange(p.price_min, p.price_max) : null;
+                    return (
+                    <li key={p.id}>
+                    <Link
+                      href={`/${producer.slug}?product=${encodeURIComponent(p.id)}`}
+                      data-testid="recipe-product-link"
+                      className={`bg-white rounded-md border border-border p-3 flex items-center gap-3 min-h-11 hover:border-primary transition-colors ${LINK_FOCUS}`}
                     >
                       {p.image_url ? (
                         // MEH-1229: helper-routed square crop + graceful fallback.
@@ -282,12 +294,17 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
                       )}
                       <div className="min-w-0">
                         <p className="font-medium text-text truncate">{p.name}</p>
-                        {p.price_range && (
+                        {numericPrice ? (
+                          <p className="text-sm text-accent font-medium"><span dir="ltr">{numericPrice}</span></p>
+                        ) : p.price_range ? (
                           <p className="text-xs text-fg-muted">{p.price_range}</p>
-                        )}
+                        ) : null}
                       </div>
+                      <CaretLeft size={14} className="ms-auto shrink-0 text-fg-muted" aria-hidden="true" />
+                    </Link>
                     </li>
-                  ))}
+                    );
+                  })}
                 </ul>
               </section>
             )}
