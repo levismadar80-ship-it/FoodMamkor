@@ -776,7 +776,6 @@
         "events": {
           "heading": "אירועים קרובים",
           "free": "חינם",
-          "register": "הרשמה לאירוע ←",
           "show_all_count": "הצגת כל האירועים"
         },
         "products": {
@@ -803,10 +802,6 @@
         },
         "group_buys": {
           "heading": "רכישות קבוצתיות פתוחות"
-        },
-        "experiences": {
-          "heading": "חוויות קרובות",
-          "free": "חינם"
         }
       },
       "header": {

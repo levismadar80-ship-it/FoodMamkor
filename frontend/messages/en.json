@@ -776,7 +776,6 @@
         "events": {
           "heading": "Upcoming events",
           "free": "Free",
-          "register": "Register for event →",
           "show_all_count": "Show all events"
         },
         "products": {
@@ -803,10 +802,6 @@
         },
         "group_buys": {
           "heading": "Open group buys"
-        },
-        "experiences": {
-          "heading": "Upcoming experiences",
-          "free": "Free"
         }
       },
       "header": {
