@@ -238,7 +238,8 @@ export default function HomepageMiniMap() {
           <h2 className="text-xl md:text-2xl font-semibold text-text">
             {t("dot_caption")}
           </h2>
-          <p className="text-sm text-fg-muted mt-1">{t("dot_subtitle")}</p>
+          {/* MEH-2635: the «גלו בתי עסק לפי מיקום» subtitle is gone — it said
+              the same thing as the heading above it in different words. */}
         </header>
 
         <div className="rounded-md overflow-hidden border border-border h-[320px] md:h-[420px] relative">

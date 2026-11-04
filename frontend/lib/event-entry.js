@@ -19,8 +19,10 @@ export function toEventEntry(row, tab, t) {
     date: row.event_date,
     time: row.event_time,
     endTime: row.end_time ?? null, // MEH-2469
+    // MEH-2666: the experience page names the host's business (MEH-2476);
+    // the list row matches it and falls back to her name only without one.
     who: isExp
-      ? row.host?.name
+      ? row.host?.producer_name || row.host?.name
       : isOrganizerEvent
         ? t("organizer_line", { name: row.producer_name })
         : row.producer_name,
