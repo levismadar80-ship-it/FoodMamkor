@@ -42,7 +42,12 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
-from app.auth import get_current_user, require_admin, require_verified_producer
+from app.auth import (
+    get_current_user,
+    require_admin,
+    require_producer,
+    require_verified_producer,
+)
 from app.config import settings
 from app.data.cities import canonical_city
 from app.database import get_db
@@ -63,15 +68,23 @@ from app.schemas.rescue import (
     RescueOfferOut,
     RescueOfferPublicOut,
     RescueOrderCreate,
+    RescueMetricsOut,
     RescueOrderCreatedOut,
     RescueOrderOut,
+    RescueOwnerOrderOut,
     RescueReviewCreate,
     RescueReviewOut,
+    RescueTypicalItemsIn,
+    RescueTypicalItemsOut,
 )
 from app.utils.clock import israel_today, utc_now
 
 router = APIRouter(prefix="/rescue", tags=["rescue"])
 admin_router = APIRouter(prefix="/admin/rescue", tags=["admin-rescue"])
+# The business's own view lives under /producers/me, beside
+# /producers/me/group-buys (MEH-2437), so it needs a router without the
+# /rescue prefix.
+me_router = APIRouter(tags=["rescue"])
 
 # The pilot's no-show rule: the SECOND no-show inside this window blocks new
 # reservations. Both numbers are here rather than inline so the test asserts
@@ -101,6 +114,31 @@ def rescue_bags_enabled() -> bool:
     the absence of the field can never read as "enabled".
     """
     return bool(getattr(settings, "rescue_bags_enabled", False))
+
+
+def rescue_cities() -> tuple[str, ...]:
+    """The towns the pilot is open in.
+
+    `RESCUE_BAGS_CITIES` is a comma-separated list and **empty means no town**,
+    not every town. That default is the safe direction: the switch that opens
+    the pilot and the switch that chooses where are separate, and a missing
+    value must not silently open it everywhere.
+
+    Read through `getattr` for the same reason as the flag — `config.py` is
+    denied to Claude Code, so Sapir adds the field (patch in the PR body).
+    """
+    raw = getattr(settings, "rescue_bags_cities", "") or ""
+    return tuple(
+        canonical_city(part.strip()) or part.strip()
+        for part in raw.split(",")
+        if part.strip()
+    )
+
+
+def city_in_pilot(city: str | None) -> bool:
+    if not city:
+        return False
+    return (canonical_city(city) or city) in rescue_cities()
 
 
 def require_rescue_enabled() -> None:
@@ -311,6 +349,15 @@ def create_offer(
             detail="נקודת האיסוף צריכה כתובת מדויקת כדי לפרסם שקית",
         )
 
+    # The per-city pilot gate. A business outside the pilot towns gets a clear
+    # refusal rather than a bag nobody can see: the public list filters by the
+    # same set, so publishing there would produce an offer with no readers.
+    if not city_in_pilot(location.city):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="סלי הצלה עדיין לא פתוחים ביישוב הזה",
+        )
+
     if body.date < israel_today():
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -389,10 +436,20 @@ def list_offers(
             Producer.status == "approved",
         )
     )
+    # Only pilot towns are listed, whatever is asked for. Without this an
+    # offer published before a town was removed from the list would keep
+    # showing; the gate belongs on the read as well as the write.
+    pilot = rescue_cities()
+    if not pilot:
+        return []
+    q = q.filter(ProducerLocation.city.in_(pilot))
+
     if city:
         # The PICKUP point's town, not the business's registered city — a
         # branch in another town is where the buyer actually walks.
         canonical = canonical_city(city)
+        if canonical not in pilot:
+            return []
         q = q.filter(ProducerLocation.city == canonical)
 
     offers = q.order_by(RescueOffer.pickup_start.asc()).all()
@@ -765,4 +822,186 @@ def clear_no_show_block(
         "active_no_shows": active,
         "block_cleared_at": user.rescue_block_cleared_at,
         "blocked": active >= NO_SHOW_BLOCK_AT,
+    }
+
+
+@me_router.get(
+    "/producers/me/rescue/orders",
+    response_model=list[RescueOwnerOrderOut],
+    dependencies=[Depends(require_rescue_enabled)],
+)
+@limiter.limit("120/minute")
+def list_my_orders(
+    request: Request,
+    current_user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+):
+    """Today's reservations across this business's pickup points.
+
+    Today only, by the Israel clock: the dashboard is a counter tool, and a
+    bag from last week is not something anyone hands over. Cancelled rows are
+    included — a business that sees four codes and three people should be able
+    to tell which one cancelled rather than wonder.
+
+    No buyer identity is returned; see RescueOwnerOrderOut for why.
+    """
+    if not current_user.producer_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="אין בית עסק מקושר"
+        )
+
+    rows = (
+        db.query(RescueOrder, RescueOffer)
+        .join(RescueOffer, RescueOrder.offer_id == RescueOffer.id)
+        .join(
+            ProducerLocation,
+            RescueOffer.producer_location_id == ProducerLocation.id,
+        )
+        .filter(
+            ProducerLocation.producer_id == current_user.producer_id,
+            RescueOffer.date == israel_today(),
+        )
+        .order_by(RescueOrder.created_at.asc())
+        .all()
+    )
+    return [
+        {
+            "id": order.id,
+            "offer_id": order.offer_id,
+            "qty": order.qty,
+            "pickup_code": order.pickup_code,
+            "status": order.status,
+            "handed_at": order.handed_at,
+            "cancelled_at": order.cancelled_at,
+            "created_at": order.created_at,
+            "pickup_start": offer.pickup_start,
+            "pickup_end": offer.pickup_end,
+        }
+        for order, offer in rows
+    ]
+
+
+@admin_router.get(
+    "/metrics",
+    response_model=RescueMetricsOut,
+    dependencies=[Depends(require_rescue_enabled)],
+)
+@limiter.limit("30/minute")
+def pilot_metrics(
+    request: Request,
+    days: int = Query(default=30, ge=1, le=365),
+    _admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """The pilot's four numbers, read-only.
+
+    Rates come back as fractions, and as None when their denominator is zero:
+    a pilot with no bags published yet has no sell-through, and reporting 0%
+    would read as "nothing sold" rather than "nothing offered". That
+    distinction is the whole point of a pilot metric.
+    """
+    since = israel_today() - timedelta(days=days)
+
+    offers = db.query(RescueOffer).filter(RescueOffer.date >= since).all()
+    offers_total = len(offers)
+    bags_offered = sum(o.qty_total for o in offers)
+    bags_left = sum(o.qty_left for o in offers)
+    bags_reserved = bags_offered - bags_left
+
+    offer_ids = [o.id for o in offers]
+    orders = (
+        db.query(RescueOrder).filter(RescueOrder.offer_id.in_(offer_ids)).all()
+        if offer_ids
+        else []
+    )
+    orders_total = len(orders)
+    no_shows = sum(1 for o in orders if o.status == "no_show")
+
+    # "Repeat" means a buyer with more than one reservation in the window —
+    # the number the pilot is actually asking about (did anyone come back?).
+    per_buyer: dict[UUID, int] = {}
+    for order in orders:
+        per_buyer[order.user_id] = per_buyer.get(order.user_id, 0) + 1
+
+    return {
+        "days": days,
+        "offers_total": offers_total,
+        "offers_per_day": round(offers_total / days, 2),
+        "bags_offered": bags_offered,
+        "bags_reserved": bags_reserved,
+        "sell_through": (
+            round(bags_reserved / bags_offered, 4) if bags_offered else None
+        ),
+        "orders_total": orders_total,
+        "no_shows": no_shows,
+        "no_show_rate": round(no_shows / orders_total, 4) if orders_total else None,
+        "buyers_total": len(per_buyer),
+        "repeat_buyers": sum(1 for n in per_buyer.values() if n > 1),
+    }
+
+
+@me_router.get(
+    "/producers/me/rescue/typical-items",
+    response_model=RescueTypicalItemsOut,
+    dependencies=[Depends(require_rescue_enabled)],
+)
+@limiter.limit("60/minute")
+def get_typical_items(
+    request: Request,
+    current_user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+):
+    """«בדרך כלל: …» as it stands. An empty list when never set — the read
+    never has to distinguish "no row" from "empty", only the first."""
+    if not current_user.producer_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="אין בית עסק מקושר"
+        )
+    row = (
+        db.query(RescueTypicalItems)
+        .filter(RescueTypicalItems.producer_id == current_user.producer_id)
+        .first()
+    )
+    return {
+        "producer_id": current_user.producer_id,
+        "items": list(row.items or []) if row else [],
+        "updated_at": row.updated_at if row else utc_now(),
+    }
+
+
+@me_router.put(
+    "/producers/me/rescue/typical-items",
+    response_model=RescueTypicalItemsOut,
+    dependencies=[Depends(require_rescue_enabled)],
+)
+@limiter.limit("30/minute")
+def set_typical_items(
+    request: Request,
+    body: RescueTypicalItemsIn,
+    current_user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+):
+    """Upsert the list. One row per business (uq_rescue_typical_items_producer),
+    so this writes the existing row rather than racing a second insert."""
+    if not current_user.producer_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="אין בית עסק מקושר"
+        )
+    cleaned = [item.strip() for item in body.items if item and item.strip()]
+    row = (
+        db.query(RescueTypicalItems)
+        .filter(RescueTypicalItems.producer_id == current_user.producer_id)
+        .first()
+    )
+    if row:
+        row.items = cleaned
+    else:
+        row = RescueTypicalItems(producer_id=current_user.producer_id, items=cleaned)
+        db.add(row)
+    db.commit()
+    db.refresh(row)
+    return {
+        "producer_id": row.producer_id,
+        "items": list(row.items or []),
+        "updated_at": row.updated_at,
     }

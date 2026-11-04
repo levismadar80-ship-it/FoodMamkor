@@ -221,7 +221,19 @@ graph LR
     Counter --> NoShow[POST /rescue/orders/:id/no_show<br/>👤 owner or admin, only after pickup_end<br/>increments users.rescue_no_show_count]
 
     Admin[admin] --> ClearBlock[POST /admin/rescue/users/:id/clear-block<br/>🛡️ stamps users.rescue_block_cleared_at<br/>the no_show rows stay for the chunk-5 metrics]
+
+    Dash --> MyOrders[GET /producers/me/rescue/orders<br/>👤 today's codes for this business, Israel clock<br/>NO buyer identity — four digits is the whole job<br/>carries pickup_end so «לא הגיע» can be gated client-side]
+    Dash --> Typical[GET · PUT /producers/me/rescue/typical-items<br/>👤 «בדרך כלל: …», one row per business, upsert in place<br/>bounded at 12 so the line stays one line on a phone]
+    Admin --> Metrics[GET /admin/rescue/metrics?days=<br/>🛡️ offers/day · sell-through · no-show rate · repeat buyers<br/>rates are NULL not 0 when the denominator is zero]
 ```
+
+> **The per-town gate (MEH-2649).** `RESCUE_BAGS_CITIES` is comma separated and
+> **empty means NO town, not every town** — the value a missing env var
+> produces must not open the pilot nationwide. Names run through
+> `canonical_city`, so «תל אביב» matches rows stored as «תל אביב-יפו». It is
+> enforced on the **read** as well as the write: without that, an offer
+> published while a town was listed keeps being served after the town is
+> removed.
 
 > **What blocks a buyer, precisely.** The 422 gate counts no-shows from
 > `rescue_orders` whose offer's `pickup_end` falls inside 30 days **and** after

@@ -237,3 +237,53 @@ class RescueNoShowStateOut(BaseModel):
     active_no_shows: int
     block_cleared_at: datetime | None = None
     blocked: bool
+
+
+class RescueOwnerOrderOut(BaseModel):
+    """One of today's reservations, as the business's own dashboard sees it.
+
+    Carries `pickup_code` — the business has to read it back against what the
+    buyer says at the counter — and the offer's `pickup_end`, because the
+    «לא הגיע» control is only legal after that moment and the dashboard must
+    decide that without a second request.
+
+    Deliberately NOT the buyer's name, email or phone: handing over a bag
+    needs four digits, and a list of today's customers on a dashboard screen
+    is more personal data than the job requires.
+    """
+
+    id: UUID
+    offer_id: UUID
+    qty: int
+    pickup_code: str
+    status: RescueOrderStatus
+    handed_at: datetime | None = None
+    cancelled_at: datetime | None = None
+    created_at: datetime
+    pickup_start: datetime
+    pickup_end: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class RescueMetricsOut(BaseModel):
+    """The pilot's read-only numbers (chunk 5).
+
+    `sell_through` and `no_show_rate` are fractions 0..1, not percentages, so
+    the UI decides how to render them and nothing is rounded twice. Both are
+    None when their denominator is zero — a pilot with no bags yet has no
+    sell-through, and reporting 0% would read as "nothing sold" rather than
+    "nothing published".
+    """
+
+    days: int
+    offers_total: int
+    offers_per_day: float
+    bags_offered: int
+    bags_reserved: int
+    sell_through: float | None = None
+    orders_total: int
+    no_shows: int
+    no_show_rate: float | None = None
+    buyers_total: int
+    repeat_buyers: int
