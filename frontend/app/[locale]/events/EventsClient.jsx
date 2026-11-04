@@ -246,7 +246,7 @@ export default function EventsPage({ initialTab = "events" }) {
 
   return (
     <div>
-      {/* MEH-2653: no breadcrumb on this list page — no other top-level list
+      {/* no breadcrumb on this list page — no other top-level list
           (/producers, /group-buys) carries one, and «בית › חוויות» on a
           first-level page only repeats the bottom nav. Detail pages keep theirs. */}
 

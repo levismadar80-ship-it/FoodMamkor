@@ -153,7 +153,7 @@ export default function ExperienceDetailClient() {
   // gold — cover + date tile, host byline, one details card with share +
   // calendar, then description / requirements / host card.
   const pageUrl = typeof window === "undefined" ? "" : `${window.location.origin}${window.location.pathname}`;
-  // MEH-2653: older rows store the English key («workshop») — resolve both
+  // older rows store the English key («workshop») — resolve both
   // forms to the registry entry, so the chip and its icon read in Hebrew.
   const cat = findExperienceCategory(ex.category);
   const CatIcon = CATEGORY_ICON[cat?.key ?? ex.category] ?? CalendarBlank;
@@ -347,7 +347,7 @@ export default function ExperienceDetailClient() {
             {ex.max_participants != null && (
               <div className={`${infoRow} border-t border-border`}>
                 <span className={infoIcon}><Users size={18} aria-hidden="true" /></span>
-                {/* MEH-2653: sign-up happens on WhatsApp, so participants_count
+                {/* sign-up happens on WhatsApp, so participants_count
                     never moves and «8 מתוך 8» read as either full or empty.
                     The cap is the one fact the site knows — the event page's
                     «עד N משתתפים». */}

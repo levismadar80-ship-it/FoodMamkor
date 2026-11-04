@@ -58,7 +58,7 @@ export function withAll(categories) {
   return [{ key: "", labelKey: "all" }, ...categories];
 }
 
-// MEH-2653: an experience's stored category is the Hebrew value, but older
+// an experience's stored category is the Hebrew value, but older
 // rows carry the English wire key («workshop»). Resolve either to its
 // registry entry ({key, labelKey}) so the page never prints a raw key; null
 // for an empty or unknown value.
