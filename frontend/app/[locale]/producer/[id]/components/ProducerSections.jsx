@@ -105,7 +105,7 @@ function SignatureShell({ product, onOpen, ariaLabel, children }) {
   );
 }
 
-// MEH-2654 (Sapir 31/10): the listing card shows «צמחוני +4», and the page
+// PR #3974 (Sapir 31/10): the listing card shows «צמחוני +4», and the page
 // never said WHICH products carry them. Each product names its own flags —
 // icon + the same label as the sheet (MEH-2584 icon+word). Renders nothing for
 // a product with no flags (or no product at all, e.g. a free-text signature).
@@ -488,7 +488,7 @@ export default function ProducerSections({
                       {freeTextPrice && (
                         <p className="text-accent font-medium mt-1">{freeTextPrice}</p>
                       )}
-                      {/* MEH-2654 (Sapir 31/10): the card on the listing shows
+                      {/* PR #3974 (Sapir 31/10): the card on the listing shows
                           «צמחוני +4», and the page never said WHICH products
                           carry them. Each row now names its own flags — icon +
                           the same label as the sheet (MEH-2584 icon+word). */}
@@ -502,7 +502,7 @@ export default function ProducerSections({
             </div>
           )}
 
-          {/* MEH-2654: the gluten production-facility sentence lives with the
+          {/* PR #3974: the gluten production-facility sentence lives with the
               products it qualifies (was in the header, under the kashrut chip,
               where it read as a note about the whole business page). Same
               string and plain-text styling (MEH-1508 ch2: no badge/icon). The

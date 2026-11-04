@@ -376,7 +376,7 @@ export default function ProducerHeader({
           checkmark (MEH-1259 self-declaration pattern, NOT the MEH-1087
           verified pattern — a checkmark would imply a certificate). Renders
           ONLY for shared / dedicated; 'unknown' shows nothing. §6.4.
-          MEH-2654: with products, the line moves to the products section
+          PR #3974: with products, the line moves to the products section
           (ProducerSections) — here only for a business with no products. */}
       {!(producer.products?.length > 0) && producer.gluten_free_facility === "shared" && (
         <p

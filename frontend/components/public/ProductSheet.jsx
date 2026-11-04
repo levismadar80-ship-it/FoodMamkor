@@ -89,7 +89,7 @@ const DIET_FLAGS = [
   { field: "is_no_added_sugar", key: "no_added_sugar" },
 ];
 
-// MEH-2654: the same per-product flags, as a list of i18n keys — shared by
+// PR #3974: the same per-product flags, as a list of i18n keys — shared by
 // the sheet and the product rows so both say the same thing. A vegan product
 // is vegetarian by definition (MEH-1438), so «צמחוני» is dropped next to
 // «טבעוני»: two pills for one claim is the noise Sapir flagged.
@@ -578,7 +578,7 @@ export default function ProductSheet({
               </ul>
             )}
 
-            {/* MEH-2654: a «ללא גלוטן» product made in a shared facility is
+            {/* PR #3974: a «ללא גלוטן» product made in a shared facility is
                 exactly where a celiac buyer needs the facility sentence — on
                 the product, not only up in the business header. Same string,
                 same self-declaration styling (plain text, no icon). */}
