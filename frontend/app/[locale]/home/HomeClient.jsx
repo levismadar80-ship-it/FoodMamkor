@@ -99,12 +99,36 @@ export default function HomeClient({
         userCity={userCity}
       />
 
-      {/* MEH-538 + MEH-604: mini-map preview sits IMMEDIATELY after the hero
-          (section #2) so the country-shape of producer distribution is
-          visible within ~2s of FCP. Skeleton above (dynamic({ loading }))
-          reserves height on first paint; Leaflet bundle eval is deferred
-          200ms post-FCP via setTimeout + rIC inside the component. */}
-      <HomepageMiniMap />
+      {/* MEH-2635: below `md` this wrapper is a flex column and the mini-map
+          carries `order-last`, so it renders AFTER HomeProducersGrid — the
+          first scroll on a phone lands on business cards, not on a 320px map
+          with four dots. At `md` and up the wrapper is `display:block` again,
+          which is a div's default, so `order` stops applying and the desktop
+          DOM order (map → … → grid) renders exactly as before this ticket.
+          Scoping the flex to THIS span is what makes `order-last` mean "after
+          the grid" rather than "at the end of the page": the sections below
+          (MeetAProducer, events, …) stay outside it.
+          Two flex-specific traps, both measured rather than reasoned about:
+          (1) `w-full` + `min-w-0` on the children. Several of these sections
+          centre themselves with `mx-auto`, and an auto margin on the cross
+          axis TURNS OFF `align-items: stretch` — so they sized to their
+          content instead of to the wrapper and the page scrolled sideways
+          (measured at 375: HomeCategoryGrid 1280px wide,
+          documentElement.scrollWidth 1280 vs clientWidth 375). `min-w-0` alone
+          did NOT fix it — that was measured too, and it is why both are here.
+          Scoped to `max-md` with everything else.
+          (2) margin collapsing is off inside a flex container, so mobile
+          spacing is verified in qa-artifacts rather than assumed; desktop
+          cannot move, since no flex context exists there at all.
+          MEH-538 + MEH-604 (unchanged on desktop): the mini-map sits
+          IMMEDIATELY after the hero so the country-shape of producer
+          distribution is visible within ~2s of FCP. The skeleton
+          (dynamic({ loading })) reserves height on first paint; Leaflet bundle
+          eval is deferred 200ms post-FCP via setTimeout + rIC. */}
+      <div className="flex flex-col md:block max-md:[&>*]:w-full max-md:[&>*]:min-w-0">
+        <div className="order-last md:order-none" data-testid="home-minimap-slot">
+          <HomepageMiniMap />
+        </div>
 
       {/* MEH-2648: rescue-bags module. Renders null while
           NEXT_PUBLIC_RESCUE_BAGS_ENABLED is off, which is its default, so the
@@ -200,7 +224,13 @@ export default function HomeClient({
       {/* MEH-41: location banner — appears after 3s if no city saved.
           MEH-879: lowest banner precedence — suppressed when Friday or Holiday
           is showing. */}
-      <div className="mt-6">
+      {/* MEH-2635: `empty:hidden`. In block flow an empty wrapper's margin
+          collapsed away; inside the mobile flex column above it paints as a
+          real 24px gap even when the banner renders null (measured: this slot
+          plus the holiday one below added 40px of blank page at 375px).
+          Same idiom as ProducersClient.jsx's day-panel host, scoped to
+          `max-md` so desktop keeps its exact pre-ticket spacing. */}
+      <div className="mt-6 max-md:empty:hidden">
         <LocationBanner
           hasCity={!!userCity}
           onOpenModal={() => setLocationModalOpen(true)}
@@ -218,7 +248,8 @@ export default function HomeClient({
       {/* MEH-55: holiday banner — visible 7 days before and during a holiday.
           MEH-879: 2nd banner precedence — reports visibility (so Location
           yields) and is suppressed when the Friday strip is showing. */}
-      <div className="mt-4">
+      {/* MEH-2635: `empty:hidden` — see the location banner slot above. */}
+      <div className="mt-4 max-md:empty:hidden">
         <HolidayBanner
           suppressed={fridayMode && fridayVisible}
           onVisibilityChange={setHolidayVisible}
@@ -259,6 +290,9 @@ export default function HomeClient({
         geoEmptyNotice={geoEmptyNotice}
         regionFallback={regionFallback}
       />
+      </div>
+      {/* ^ MEH-2635: end of the mobile-reorder wrapper opened above the
+          mini-map. The mini-map's `order-last` is relative to THIS span. */}
 
       {/* =========================
           MEET A PRODUCER (P5 §10 · MEH-542) — fed by the first is_recommended

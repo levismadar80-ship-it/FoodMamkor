@@ -1,9 +1,10 @@
 /**
  * OfferBadge — MEH-1823 chunk 3.
  *
- * Purpose:  Render a business's single active offer, in two sizes: a `badge`
- *           above the delivery block on the business page, and a short `chip`
- *           on ProducerCard.
+ * Purpose:  Render a business's single active offer: a `line` under the
+ *           status in the business-page header (MEH #2659; it was a `badge`
+ *           above the delivery block until then), a short `chip` on
+ *           ProducerCard, and the framed `badge` (default).
  * Does NOT: decide whether the offer is live. The server already did — an
  *           offer outside its window is filtered out server-side
  *           (Producer.active_offer, models.py) and never reaches the client.
@@ -164,6 +165,29 @@ export default function OfferBadge({ offer, variant = "badge", className = "" })
         <Gift size={12} weight="fill" aria-hidden="true" className="shrink-0" />
         <span className="min-w-0 truncate">{content}</span>
       </span>
+    );
+  }
+
+  // MEH #2659: `line` — the business page shows the offer in its header, right
+  // under the status line (Sapir, 04/11: Wolt / Uber Eats / Etsy put a store's
+  // offer by its name, where the visitor decides). No frame and no fill, so it
+  // reads as a fact of the business and not as an ad (ADR-027).
+  if (variant === "line") {
+    return (
+      <p
+        data-testid="offer-line"
+        className={`flex items-start gap-1.5 text-sm text-primary ${className}`}
+      >
+        <Gift size={16} weight="fill" aria-hidden="true" className="shrink-0 mt-0.5" />
+        <span>
+          <span className="font-semibold">{content}</span>
+          {!isCustom && offer.headline ? (
+            <span className="block text-fg-muted text-xs mt-0.5" data-testid="offer-headline">
+              {offer.headline}
+            </span>
+          ) : null}
+        </span>
+      </p>
     );
   }
 

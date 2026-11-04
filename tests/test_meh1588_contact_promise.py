@@ -27,7 +27,7 @@ from app.routers import marketing
 
 # The exact string the endpoint must return. Locked by the MEH-1588 spec —
 # if this test needs editing to pass, the copy changed and that needs sign-off.
-EXPECTED_DETAIL = "תודה! נחזור אלייך תוך 3 ימי עסקים"
+EXPECTED_DETAIL = "תודה! נחזור אליכם תוך 3 ימי עסקים"
 
 
 def _payload(**overrides):
@@ -62,9 +62,9 @@ def test_success_detail_has_no_vague_timeframe_and_no_emoji(client):
 
     # Vague-vs-numeric: the frontend commits to a number, so the backend must.
     assert "בקרוב" not in detail
-    # Feminine singular (ADR-014), not plural.
-    assert "אלייך" in detail
-    assert "אליכם" not in detail
+    # Neutral plural (04/11/2026), never the feminine "אלייך".
+    assert "אליכם" in detail
+    assert "אלייך" not in detail
     # Emoji LOCK v2 — this renders as a UI toast, not an email body.
     assert not any(ord(ch) > 0x2100 for ch in detail), (
         f"emoji/pictograph found in toast copy: {detail!r}"

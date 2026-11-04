@@ -316,7 +316,7 @@ test.describe("/register/producer — the licence field on CATEGORY", () => {
     await nextBtn(page).click();
     const alert = page.getByRole("alert").filter({ hasText: LICENCE_422 });
     await expect(alert).toBeVisible();
-    await expect(alert).toHaveClass(/text-red-500/);
+    await expect(alert).toHaveClass(/text-error/);
     await expect(page.getByTestId("register-frame-category"), "still on CATEGORY").toBeVisible();
     await expect(licenceField(page)).toBeFocused();
     expect(stub.unstubbed.filter((u) => u.startsWith("POST")), "nothing was posted — the gate is client-side").toEqual([]);

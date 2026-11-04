@@ -55,6 +55,13 @@ const CHIP_ICON_COMPONENTS = {
   // controls and a nonexistent name as the negative one — the card required a
   // STOP if either were absent, so the probe had to be able to answer "absent".
   vegetarian: Carrot,
+  // MEH-1508 chunk 3ב-2: the 100% pair reuses its partial twin's glyph — same
+  // diet, different scope, and the scope is carried by the label. Deliberately
+  // NOT SealCheck or any tick: a self-declaration must not look certified
+  // (card §6.4 — the MEH-1259 pattern). Also lights the badge glyph
+  // (badgeIcon reads this map by the same key).
+  vegan_all: Leaf,
+  vegetarian_all: Carrot,
   gluten_free: GrainsSlash,
   grass_fed: Barn,
   lactose_free: DropSlash,

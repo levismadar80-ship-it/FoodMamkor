@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Link } from "@/i18n/navigation";
-import { ShoppingCart, Clock, MapPin } from "@phosphor-icons/react";
+import { ShoppingCart, Clock, MapPin, Truck } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import Image from "next/image";
@@ -26,7 +26,7 @@ const HERO_BG = optimizeCloudinary(
 // and the pickup line as trust cues. The whole card is the link. The photo is
 // the business's first image (producer_image_url) — a group buy has none of
 // its own; none, or one that fails to load → the cart on green-50.
-export function GroupBuyCard({ gb }) {
+function GroupBuyCard({ gb }) {
   const t = useTranslations("group_buys.card");
   const td = useTranslations("group_buys.detail");
   const funded = gb.status === "funded";
@@ -119,12 +119,22 @@ export function GroupBuyCard({ gb }) {
             <Clock size={16} aria-hidden="true" className="shrink-0" />
             {daysLeft > 0 ? t("days_left", { days: daysLeft }) : t("expired")}
           </span>
-          {gb.fulfillment_note && (
-            <span className="inline-flex items-center gap-1.5 min-w-0">
-              <MapPin size={16} aria-hidden="true" className="shrink-0" />
-              <span className="truncate">{gb.fulfillment_note}</span>
-            </span>
-          )}
+          {/* MEH-2621 split (UI): one short line per answer (pickup / delivery); a group
+              made before the split shows its single note as before. */}
+          {(gb.pickup_note || gb.delivery_note
+            ? [
+                ["pickup", MapPin, gb.pickup_note],
+                ["delivery", Truck, gb.delivery_note],
+              ]
+            : [["fulfillment", MapPin, gb.fulfillment_note]]
+          )
+            .filter(([, , note]) => note)
+            .map(([kind, Icon, note]) => (
+              <span key={kind} className="inline-flex items-center gap-1.5 min-w-0" data-testid={`group-buy-card-${kind}`}>
+                <Icon size={16} aria-hidden="true" className="shrink-0" />
+                <span className="truncate">{note}</span>
+              </span>
+            ))}
         </div>
       </div>
     </Link>

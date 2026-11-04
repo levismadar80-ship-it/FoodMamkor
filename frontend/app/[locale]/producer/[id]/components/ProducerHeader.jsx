@@ -7,6 +7,7 @@ import AlertPrefsPanel from "@/components/AlertPrefsPanel";
 import BadgeRow from "@/components/BadgeRow";
 import FavoriteButton from "@/components/FavoriteButton";
 import KashrutBadgeStrip from "@/components/KashrutBadgeStrip";
+import OfferBadge from "@/components/OfferBadge";
 import ProducerUpdatesButton from "@/components/ProducerUpdatesButton";
 import ShareButton from "@/components/ShareButton";
 import { useAuth } from "@/lib/auth-context";
@@ -335,6 +336,13 @@ export default function ProducerHeader({
         </span>
       </p>
 
+      {/* MEH #2659: the active offer, right under the status (it used to sit
+          above the delivery block, two scrolls down). Renders nothing when
+          there is no live offer, so no gap. */}
+      {producer.active_offer && (
+        <OfferBadge offer={producer.active_offer} variant="line" className="mt-2" />
+      )}
+
       {/* Tags row — the fact tags under the status: today the kosher chip,
           tomorrow whatever else earns a tag. Kosher renders ONCE and as ONE
           chip however many certificates it lists (up to 8 codes): a chip per
@@ -375,8 +383,10 @@ export default function ProducerHeader({
           so it stays plain text under the tags, not a tag: no badge / icon /
           checkmark (MEH-1259 self-declaration pattern, NOT the MEH-1087
           verified pattern — a checkmark would imply a certificate). Renders
-          ONLY for shared / dedicated; 'unknown' shows nothing. §6.4. */}
-      {producer.gluten_free_facility === "shared" && (
+          ONLY for shared / dedicated; 'unknown' shows nothing. §6.4.
+          PR #3974: with products, the line moves to the products section
+          (ProducerSections) — here only for a business with no products. */}
+      {!(producer.products?.length > 0) && producer.gluten_free_facility === "shared" && (
         <p
           className="text-xs text-fg-muted leading-relaxed max-w-prose mt-2"
           data-testid="gluten-facility-shared"
@@ -384,7 +394,7 @@ export default function ProducerHeader({
           {t("producer.detail.header.gluten_facility.shared")}
         </p>
       )}
-      {producer.gluten_free_facility === "dedicated" && (
+      {!(producer.products?.length > 0) && producer.gluten_free_facility === "dedicated" && (
         <p
           className="text-xs text-fg-muted leading-relaxed max-w-prose mt-2"
           data-testid="gluten-facility-dedicated"

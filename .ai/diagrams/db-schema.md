@@ -125,6 +125,8 @@ erDiagram
         boolean is_lactose_free "MEH-293/MEH-479: single source of truth"
         boolean is_no_added_sugar "MEH-1934: 5th dietary axis; no backfill — nothing implies it"
         boolean is_low_carb "MEH-1934: 6th dietary axis; independent of every other flag"
+        text ingredients "MEH-2662: owner-declared, nullable"
+        text_array allergens "MEH-2662: codes from app/allergens.py, nullable"
     }
 
     delivery_areas {

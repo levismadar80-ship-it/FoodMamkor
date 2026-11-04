@@ -17,6 +17,8 @@ vi.mock("next-intl", () => ({
 vi.mock("next/image", () => ({ default: (p) => <img alt={p.alt} src={p.src} /> }));
 vi.mock("next/dynamic", () => ({ default: () => () => <div data-testid="minimap" /> }));
 vi.mock("@/lib/api", () => ({ default: { get: vi.fn(() => new Promise(() => {})) } }));
+// MEH-2659: ProducerActivities (events + group buys) has its own test file.
+vi.mock("@/app/[locale]/producer/[id]/components/ProducerActivities", () => ({ default: () => null }));
 vi.mock("@/lib/cloudinary", async (importOriginal) => ({
   ...(await importOriginal()),
   optimizeCloudinary: (u) => u,
@@ -24,6 +26,16 @@ vi.mock("@/lib/cloudinary", async (importOriginal) => ({
 // Hand-enumerated: every glyph ProducerSections + its children + the nav load.
 vi.mock("@phosphor-icons/react", () => ({
   Leaf: () => <span />,
+  // MEH-2654: ProducerSections now loads lib/chip-icons (diet glyphs on rows).
+  SealCheck: () => <span />,
+  Certificate: () => <span />,
+  Carrot: () => <span />,
+  GrainsSlash: () => <span />,
+  Barn: () => <span />,
+  DropSlash: () => <span />,
+  Cube: () => <span />,
+  Clock: () => <span />,
+  Storefront: () => <span />,
   CaretLeft: () => <span />,
   MapPin: () => <span />,
   WhatsappLogo: () => <span />,

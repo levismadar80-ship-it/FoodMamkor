@@ -14,6 +14,8 @@ vi.mock("next/image", () => ({ default: (p) => <img alt={p.alt} src={p.src} /> }
 // next/dynamic → the MiniMap marker.
 vi.mock("next/dynamic", () => ({ default: () => () => <div data-testid="minimap" /> }));
 vi.mock("@/lib/api", () => ({ default: { get: vi.fn(() => new Promise(() => {})) } }));
+// MEH-2659: ProducerActivities (events + group buys) has its own test file.
+vi.mock("@/app/[locale]/producer/[id]/components/ProducerActivities", () => ({ default: () => null }));
 vi.mock("@/lib/cloudinary", async (importOriginal) => ({
   ...(await importOriginal()), // keep real IMAGE_RATIOS
   optimizeCloudinary: (u) => u,
@@ -22,6 +24,18 @@ vi.mock("@/lib/cloudinary", async (importOriginal) => ({
 // carry a forward chevron (LEFT in RTL) now that they open the detail sheet.
 vi.mock("@phosphor-icons/react", () => ({
   Leaf: () => <span />,
+  // MEH-2654: ProducerSections now loads lib/chip-icons (diet glyphs on rows).
+  SealCheck: () => <span />,
+  Truck: () => <span />,
+  Package: () => <span />,
+  Certificate: () => <span />,
+  Carrot: () => <span />,
+  GrainsSlash: () => <span />,
+  Barn: () => <span />,
+  DropSlash: () => <span />,
+  Cube: () => <span />,
+  Clock: () => <span />,
+  Storefront: () => <span />,
   CaretLeft: () => <span />,
   MapPin: () => <span />,
   WhatsappLogo: () => <span />,

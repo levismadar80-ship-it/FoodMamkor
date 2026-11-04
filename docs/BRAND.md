@@ -72,14 +72,14 @@ The **tagline** is specced for: footer brand line, meta description, OpenGraph c
 - ❌ UI / ICU / brand-guidance / editorial surfaces → 0 emojis
 - ✅ WhatsApp outbound + share strings + email body → emojis allowed (warmth + Meta template cost)
 
-## 4 · Voice (full rules in ADR-014, refined by ADR-024)
+## 4 · Voice (full rules in ADR-014, refined by ADR-024, reader address set by ADR-037)
 
 Hybrid Hebrew policy — surface determines grammatical form:
 
 - **UI strings** (buttons, loading, errors, hero H1 + subtitle): gerund (`"טעינה"`) or plural (`"גלו"`, `"הוסיפו"`)
-- **Brand voice** (`/about` narrative, founder letter, below-the-fold editorial): feminine (`"גלי"`, `"צרי"`) allowed
+- **Brand voice** (`/about` narrative, founder letter, below-the-fold editorial): reader address is neutral too (ADR-037, 04/11/2026). Feminine stays only in the founder's first-person voice (`"אנחנו מכירות"`) and on admin screens
 - **Forbidden across all surfaces:** slash form (`"טוענ/ת"`), pure masculine (`"המשתמש שלך"`), `"יצרן"`/`"יצרנית"`
-- **Surface-function taxonomy (ADR-024):** the split is by surface-function, not audience — functional UI → plural, brand narrative + warmth → feminine. הבהרה: "pure masculine" forbidden = פנייה זכרית לקוראת (`"המשתמש שלך"`), NOT the owner noun (`"בעלי עסקים"` is permitted — סתמי/unmarked)
+- **Surface-function taxonomy (ADR-024, amended by ADR-037):** every reader-facing surface → neutral (plural / verbal noun / impersonal; masculine plural as unmarked). הבהרה: "pure masculine" forbidden = פנייה זכרית לקוראת (`"המשתמש שלך"`), NOT the owner noun (`"בעלי עסקים"` is permitted — סתמי/unmarked)
 
 ### Two voice rules from PR #682 precedent
 
@@ -211,7 +211,7 @@ Canonical home of the address-form rule. The Drive copy `03-Brand-Hub/07a-langua
 **שלוש שכבות, לפי סדר עדיפות:**
 
 1. **ברירת מחדל בכל קופי: ניסוח ניטרלי.** ציוויי רבים ("הגיעו", "קחו", "בחרו"), שמות פועל ("אפשר להזמין", "כדאי להגיע"), משפטים בלי כינוי ממוגדר.
-2. **קופי צרכני (דף בית, מדריכים, תוכן מגזיני):** כשנדרש כינוי מסומן — **נקבה** ("אליכן", "שלכן"). בחירה מותגית מודעת: קהל היעד המוגדר הוא נשים 28-45, ומחקר (כריכלי-כץ & רגב, אונ' ת"א) מצא שברירת מחדל זכרית פוגעת בביצועי נשים.
+2. ~~**קופי צרכני (דף בית, מדריכים, תוכן מגזיני):** כשנדרש כינוי מסומן — **נקבה** ("אליכן", "שלכן"). בחירה מותגית מודעת: קהל היעד המוגדר הוא נשים 28-45, ומחקר (כריכלי-כץ & רגב, אונ' ת"א) מצא שברירת מחדל זכרית פוגעת בביצועי נשים.~~ **בוטל 04/11/2026 (ADR-037, MEH-2661):** גם כאן ניטרלי; כשנדרש כינוי — רבים סתמי ("אליכם", "ברוכים הבאים"). נקבה רק בקול של ספיר בגוף ראשון ובמסכי האדמין.
 3. **ממשקי בעלי עסק (dashboard, טפסי הרשמה, מיילים תפעוליים):** ניטרלי מלא בלבד; כשיש שם איש/אשת קשר — פנייה אישית בשמם. לא נקבה כפויה — יש גם בעלי עסק גברים.
 
 **אסור:** לוכסנים ונקודות (א.נשים, לקוחות/ים, בעל/ת) בכל קופי עריכתי או שיווקי — שובר את קול המגזין. חריג יחיד: טקסט משפטי (תקנון/פרטיות) אם אין ניסוח ניטרלי סביר.

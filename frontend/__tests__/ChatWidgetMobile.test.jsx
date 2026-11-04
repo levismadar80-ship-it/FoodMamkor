@@ -5,8 +5,8 @@ import he from "../messages/he.json";
 import en from "../messages/en.json";
 
 // ChatWidget renders on every viewport (MEH-2499; it was desktop-only under
-// MEH-1410, 21/07–28/10). The mobile block below pins the launcher and its
-// hide-on-scroll-down behavior; desktop pins the pill/aria states.
+// MEH-1410, 21/07–28/10). The mobile block below pins the launcher, which stays
+// put through scrolling (4/11; MEH-2499 hid it on scroll-down); desktop pins the pill/aria states.
 // The widget imports `@/lib/api`; stub it so these render-only tests stay
 // offline and deterministic.
 //
@@ -64,9 +64,8 @@ afterEach(() => {
 });
 
 // MEH-2499 — reverses MEH-1410: the launcher is back on mobile (< 768px) as an
-// icon-only circle above the BottomNav pill, and it steps aside while the
-// reader scrolls DOWN (Material: a FAB stacked over bottom navigation hides on
-// scroll) and returns on scroll UP. Desktop is unchanged.
+// icon-only circle above the BottomNav pill. It hid on scroll-down until 4/11;
+// it now stays put (see "stays visible" below).
 // DISCRIMINATION: on the MEH-1410 code the first case reds (empty DOM), and
 // the scroll cases red because there is no launcher to query at all.
 function setScrollY(y) {
@@ -120,51 +119,40 @@ describe("ChatWidget on mobile (MEH-2499, was desktop-only MEH-1410)", () => {
     expect(screen.getByTestId("chat-launcher")).toBeInTheDocument();
   });
 
-  it("hides on scroll down and comes back on scroll up", () => {
-    mockMatchMedia(false);
+  // Sapir 4/11: the launcher stays put on phones. The MEH-2499 hide-on-scroll
+  // read as a button that "does not stay in place" — it is now always shown.
+  const expectShown = (btn) => {
+    expect(btn).not.toHaveAttribute("aria-hidden");
+    expect(btn).not.toHaveAttribute("tabindex");
+    expect(btn.style.opacity).not.toBe("0");
+    expect(btn.style.pointerEvents).not.toBe("none");
+  };
+
+  it.each([
+    ["mobile", false],
+    ["desktop", true],
+  ])("%s: stays visible through a scroll down and back up", (_label, desktop) => {
+    mockMatchMedia(desktop);
     renderWidget();
     const btn = () => screen.getByTestId("chat-launcher");
-    expect(btn()).toHaveAttribute("data-hidden", "false");
+    expectShown(btn());
     act(() => setScrollY(400));
-    expect(btn()).toHaveAttribute("data-hidden", "true");
-    expect(btn()).toHaveAttribute("tabindex", "-1");
+    expectShown(btn());
+    act(() => setScrollY(900));
+    expectShown(btn());
     act(() => setScrollY(250));
-    expect(btn()).toHaveAttribute("data-hidden", "false");
-    expect(btn()).not.toHaveAttribute("tabindex");
+    expectShown(btn());
   });
 
-  it("never hides on desktop, whatever the scroll direction", () => {
-    mockMatchMedia(true);
-    renderWidget();
-    act(() => setScrollY(400));
-    expect(screen.getByTestId("chat-launcher")).toHaveAttribute("data-hidden", "false");
-  });
-
-  it("does not hide while the launcher has keyboard focus", () => {
-    mockMatchMedia(false);
-    renderWidget();
-    screen.getByTestId("chat-launcher").focus();
-    act(() => setScrollY(400));
-    expect(screen.getByTestId("chat-launcher")).toHaveAttribute("data-hidden", "false");
-  });
-
-  it("comes back when the panel closes after a scroll while it was open", () => {
+  it("stays visible while the panel is open and after it closes", () => {
     mockMatchMedia(false);
     renderWidget();
     const btn = () => screen.getByTestId("chat-launcher");
     fireEvent.click(btn());
     act(() => setScrollY(400));
+    expectShown(btn());
     fireEvent.click(btn());
-    btn().blur();
-    expect(btn()).toHaveAttribute("data-hidden", "false");
-  });
-
-  it("stays visible while the panel is open", () => {
-    mockMatchMedia(false);
-    renderWidget();
-    fireEvent.click(screen.getByRole("button", { name: he.chat.launcher_open_label }));
-    act(() => setScrollY(400));
-    expect(screen.getByTestId("chat-launcher")).toHaveAttribute("data-hidden", "false");
+    expectShown(btn());
   });
 
   it("renders the launcher FAB on desktop (>= 768px)", () => {
