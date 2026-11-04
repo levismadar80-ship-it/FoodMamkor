@@ -7,6 +7,7 @@ import AlertPrefsPanel from "@/components/AlertPrefsPanel";
 import BadgeRow from "@/components/BadgeRow";
 import FavoriteButton from "@/components/FavoriteButton";
 import KashrutBadgeStrip from "@/components/KashrutBadgeStrip";
+import OfferBadge from "@/components/OfferBadge";
 import ProducerUpdatesButton from "@/components/ProducerUpdatesButton";
 import ShareButton from "@/components/ShareButton";
 import Popover from "@/components/ui/Popover";
@@ -335,6 +336,13 @@ export default function ProducerHeader({
           {statusLabel}
         </span>
       </p>
+
+      {/* MEH #2659: the active offer, right under the status (it used to sit
+          above the delivery block, two scrolls down). Renders nothing when
+          there is no live offer, so no gap. */}
+      {producer.active_offer && (
+        <OfferBadge offer={producer.active_offer} variant="line" className="mt-2" />
+      )}
 
       {/* Tags row — the fact tags under the status: today the kosher chip,
           tomorrow whatever else earns a tag. Kosher renders ONCE and as ONE

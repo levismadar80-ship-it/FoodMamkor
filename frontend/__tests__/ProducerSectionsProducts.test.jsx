@@ -26,6 +26,8 @@ vi.mock("next/dynamic", () => ({
 vi.mock("@/lib/api", () => ({
   default: { get: vi.fn(() => new Promise(() => {})) },
 }));
+// MEH-2659: ProducerActivities (events + group buys) has its own test file.
+vi.mock("@/app/[locale]/producer/[id]/components/ProducerActivities", () => ({ default: () => null }));
 
 vi.mock("@/lib/cloudinary", async (importOriginal) => ({
   ...(await importOriginal()), // keep real IMAGE_RATIOS
