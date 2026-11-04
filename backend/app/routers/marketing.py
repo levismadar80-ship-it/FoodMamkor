@@ -168,7 +168,7 @@ def _send_newsletter_welcome(email: str) -> None:
           <tr>
             <td style="text-align:right;direction:rtl;">
               <p style="font-size:13px;color:#2e6853;margin:0 0 8px;font-weight:bold;">מהמקור 🌿</p>
-              <h1 style="font-size:20px;color:#1C1A17;margin:0 0 16px;">ברוכה הבאה למהמקור</h1>
+              <h1 style="font-size:20px;color:#1C1A17;margin:0 0 16px;">ברוכים הבאים למהמקור</h1>
               <p style="color:#3a3a3a;font-size:15px;line-height:1.8;margin:0 0 20px;">תודה שהצטרפת.</p>
               <p style="color:#3a3a3a;font-size:15px;line-height:1.8;margin:0 0 24px;">
                 נכתוב לך כשיש משהו ששווה לספר: בית עסק חדש, אירוע קרוב או מתכון של העונה. בלי ספאם, ואפשר לבטל בכל רגע.
@@ -190,7 +190,7 @@ def _send_newsletter_welcome(email: str) -> None:
 </body>
 </html>"""
     plain = (
-        "ברוכה הבאה למהמקור!\n\n"
+        "ברוכים הבאים למהמקור!\n\n"
         "תודה שהצטרפת.\n\n"
         "נכתוב לך כשיש משהו ששווה לספר: בית עסק חדש, אירוע קרוב או מתכון של העונה. "
         "בלי ספאם, ואפשר לבטל בכל רגע.\n\n"
@@ -198,7 +198,7 @@ def _send_newsletter_welcome(email: str) -> None:
         f"לבטל הרשמה: {unsubscribe_url}\n"
         "מהמקור — בתי עסק מקומיים, כולם במקום אחד."
     )
-    send_email(email, "ברוכה הבאה למהמקור 🌿", plain, html=html_body)
+    send_email(email, "ברוכים הבאים למהמקור 🌿", plain, html=html_body)
 
 
 @router.post("/newsletter/unsubscribe", status_code=200)
@@ -292,7 +292,7 @@ def submit_contact(request: Request, data: ContactIn, db: Session = Depends(get_
     # No en variant exists because the backend has NO i18n mechanism at all
     # (nothing reads Accept-Language); every response string is hardcoded and
     # the locale split lives entirely in the frontend dictionaries.
-    return {"detail": "תודה! נחזור אלייך תוך 3 ימי עסקים"}
+    return {"detail": "תודה! נחזור אליכם תוך 3 ימי עסקים"}
 
 
 def _send_contact_email(msg: ContactMessage, label: str) -> None:

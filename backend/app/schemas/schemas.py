@@ -1145,7 +1145,7 @@ class ProducerRegister(BaseModel):
             raise ValueError("לא ניתן לבחור גם משלוחים לכל הארץ וגם ערים ספציפיות")
         if self.delivery_nationwide and not self.offers_delivery:
             raise ValueError(
-                '"לכל הארץ" מסומן, אבל "משלוחים" לא. סמני "משלוחים", או בטלי את "לכל הארץ".'
+                '"לכל הארץ" מסומן, אבל "משלוחים" לא. סמנו "משלוחים", או בטלו את "לכל הארץ".'
             )
         return self
 
@@ -1995,7 +1995,7 @@ class ProducerAdminCreate(BaseModel):
         # delivery_nationwide would otherwise reach the DB and 500.
         if self.delivery_nationwide and not self.offers_delivery:
             raise ValueError(
-                '"לכל הארץ" מסומן, אבל "משלוחים" לא. סמני "משלוחים", או בטלי את "לכל הארץ".'
+                '"לכל הארץ" מסומן, אבל "משלוחים" לא. סמנו "משלוחים", או בטלו את "לכל הארץ".'
             )
         return self
 
@@ -2398,7 +2398,7 @@ class ProducerUpdate(BaseModel):
         # (services/delivery_validation.py), not this one.
         if dn and od is False:
             raise ValueError(
-                '"לכל הארץ" מסומן, אבל "משלוחים" לא. סמני "משלוחים", או בטלי את "לכל הארץ".'
+                '"לכל הארץ" מסומן, אבל "משלוחים" לא. סמנו "משלוחים", או בטלו את "לכל הארץ".'
             )
         return self
 

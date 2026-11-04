@@ -34,7 +34,7 @@ from tests.conftest import auth_header, make_producer, make_user
 # The contradiction's message, from services/delivery_validation.py and the two
 # schema validators. Asserted as a substring so the three stay honest about
 # being one invariant with one wording.
-MSG = '"לכל הארץ" מסומן, אבל "משלוחים" לא. סמני "משלוחים", או בטלי את "לכל הארץ".'
+MSG = '"לכל הארץ" מסומן, אבל "משלוחים" לא. סמנו "משלוחים", או בטלו את "לכל הארץ".'
 
 
 @pytest.fixture
