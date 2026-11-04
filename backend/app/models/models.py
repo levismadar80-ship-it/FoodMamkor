@@ -828,6 +828,11 @@ class User(Base):
     rescue_no_show_count = Column(
         Integer, default=0, nullable=False, server_default="0"
     )
+    # MEH-2646: when an admin released this buyer's rescue-bag block. The 422
+    # gate counts only no-shows whose offer `pickup_end` falls AFTER this
+    # moment, so one write releases a buyer without deleting the no-show
+    # history the chunk-5 metrics read. NULL = never cleared.
+    rescue_block_cleared_at = Column(DateTime, nullable=True)
 
     producer = relationship("Producer")
     favorites = relationship(

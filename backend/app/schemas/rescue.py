@@ -162,3 +162,78 @@ class RescueTypicalItemsOut(BaseModel):
     updated_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class RescueProducerSummary(BaseModel):
+    """The business fields the public bag list needs, and no more.
+
+    Deliberately NOT `ProducerListOut`: a bag row shows a name, a photo, a
+    town and a pickup point, and nothing on this list should carry the badge
+    block, the rating aggregate or the contact details — chunk 4's row has no
+    place to put them and serializing them would publish more than the screen
+    needs.
+    """
+
+    id: UUID
+    name: str
+    slug: str | None = None
+    city: str | None = None
+    image_url: str | None = None
+    # The pickup point itself. `address` is only ever filled for a location
+    # whose precision is `exact` (the MEH-829 carve-out that lets a full
+    # address show while a bag is live); an approximate point cannot host an
+    # offer at all, so there is no case where this leaks a fuzzy address.
+    location_city: str | None = None
+    location_address: str | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class RescueOfferPublicOut(BaseModel):
+    """One row of `GET /rescue/offers` — the offer, who is selling it, what is
+    usually in it, and how far away it is.
+
+    `distance_km` is None unless the caller sent lat/lng; chunk 4 renders it
+    only when present rather than inventing a zero.
+    """
+
+    id: UUID
+    date: date_type
+    qty_left: int
+    qty_total: int
+    price_agorot: int
+    value_min_agorot: int | None = None
+    value_max_agorot: int | None = None
+    pickup_start: datetime
+    pickup_end: datetime
+    cancel_until: datetime
+    producer: RescueProducerSummary
+    typical_items: list[str] = Field(default_factory=list)
+    distance_km: float | None = None
+
+
+class RescueOrderCreatedOut(RescueOrderOut):
+    """What a successful reservation returns. Same shape as RescueOrderOut
+    plus the two numbers the confirmation screen shows without a second
+    request — the price to pay at the counter and when the free cancel ends.
+    """
+
+    price_agorot: int
+    cancel_until: datetime
+    pickup_start: datetime
+    pickup_end: datetime
+
+
+class RescueNoShowStateOut(BaseModel):
+    """What the admin reset returns, so the operator can see the effect.
+
+    `active_no_shows` is the windowed count the 422 gate actually reads — not
+    the lifetime `no_show_count`. After a reset it is 0 by construction, and
+    showing both is what makes the reset verifiable rather than hopeful.
+    """
+
+    user_id: UUID
+    no_show_count: int
+    active_no_shows: int
+    block_cleared_at: datetime | None = None
+    blocked: bool
