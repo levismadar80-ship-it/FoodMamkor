@@ -7,6 +7,13 @@
  * two siblings that describe the same act elsewhere in the app — the /join SEO
  * description and the /join "four steps" copy.
  *
+ * MEH-2640 moved the figure from «כ־3 דקות» to «כ־5 דקות» (the 03/11 ruling:
+ * step 2 got shorter but the honest whole-journey figure is five) and added
+ * the business FAQ to the locked set — it answered "כמה זמן זה דורש ממני?"
+ * with "טופס קצר" and NO number at all, which is how a sixth surface drifts
+ * without ever contradicting anything. The lock is unchanged in kind: one
+ * journey, one number, now across six keys instead of five.
+ *
  * Same class as RegisterSuccessCopyLock (MEH-2136): a contradiction nothing in
  * CI could see, because each string was individually correct.
  *
@@ -29,6 +36,9 @@ const DURATION_KEYS = [
   "auth.register.producer.steps.account.duration_hint",
   "seo.join.og_description",
   "join.how.step1_text",
+  // MEH-2640: was unnumbered prose ("טופס קצר"), so it could never disagree
+  // and could never be checked either.
+  "about_business.faq.time.a",
 ];
 
 const read = (messages, path) =>
@@ -42,15 +52,15 @@ describe("registration duration copy is one number (MEH-2185)", () => {
     }
   });
 
-  it.each(DURATION_KEYS)("he «%s» quotes כ־3 דקות and no other figure", (path) => {
+  it.each(DURATION_KEYS)("he «%s» quotes כ־5 דקות and no other figure", (path) => {
     const value = read(he, path);
-    expect(value).toContain("כ־3 דקות");
+    expect(value).toContain("כ־5 דקות");
     expect(value, `${path} still quotes the old figure`).not.toMatch(/10 דקות/);
   });
 
-  it.each(DURATION_KEYS)("en «%s» quotes 3 minutes and no other figure", (path) => {
+  it.each(DURATION_KEYS)("en «%s» quotes 5 minutes and no other figure", (path) => {
     const value = read(en, path);
-    expect(value).toMatch(/\b3 minutes\b/i);
+    expect(value).toMatch(/\b5 minutes\b/i);
     expect(value, `${path} still quotes the old figure`).not.toMatch(/10 minutes/i);
   });
 
@@ -76,7 +86,7 @@ describe("registration duration copy is one number (MEH-2185)", () => {
       // The figure itself, not "some number" — a sweep that rewrote these to
       // «כ־3 דקות» would still contain a number and pass a looser assertion.
       expect(read(he, path), `${path} should still read «${figure}»`).toContain(figure);
-      expect(read(he, path), `${path} was swept by mistake`).not.toContain("כ־3 דקות");
+      expect(read(he, path), `${path} was swept by mistake`).not.toContain("כ־5 דקות");
     }
   });
 });

@@ -240,9 +240,15 @@ beforeEach(() => {
 // MEH-994: the wizard now opens on the pre-flight screen. Real click-through
 // of "מתחילים" (not an auto-skip-under-test flag) so every walk exercises the
 // production entry path before reaching frame 01.
-async function renderWizard() {
+// MEH-2640: the organizer entry MOVED. It was a checkbox in the middle of
+// step 2 — which asked every bakery owner to consider a path that is not hers
+// — and it is now a secondary line under the preflight's main CTA (Sapir,
+// 03/11). Same wizard, same kind="organizer", different door. So these cases
+// now choose the door at render time instead of ticking a box mid-form.
+async function renderWizard({ as = "producer" } = {}) {
   render(<RegisterProducerClient />);
-  fireEvent.click(await screen.findByTestId("register-preflight-start"));
+  const entry = as === "organizer" ? "register-preflight-organizer" : "register-preflight-start";
+  fireEvent.click(await screen.findByTestId(entry));
 }
 
 // Fill ACCOUNT and walk to a target frame. Returns once the target marker shows.
@@ -269,127 +275,101 @@ function fillDetailsFields() {
 
 const STORY_MARKER = `${K}.fields.tagline_placeholder`;
 
-describe("MEH-2460 — register as a markets / events organizer", () => {
-  it("off by default: option rendered with the approved copy keys, delivery axis shown", async () => {
-    await renderWizard();
-    await fillAccountToDetails();
-    const toggle = screen.getByTestId("register-organizer-toggle");
-    expect(toggle).not.toBeChecked();
-    expect(screen.getByText(`${K}.fields.organizer_label`)).toBeInTheDocument();
-    expect(screen.getByText(`${K}.fields.organizer_hint`)).toBeInTheDocument();
-    expect(screen.getByTestId("register-delivery-axis")).toBeInTheDocument();
+describe("MEH-2460 / MEH-2640 — registering as a markets / events organizer", () => {
+  // MEH-2640 deleted five cells with the control they drove. The organizer
+  // choice is no longer a checkbox that can be toggled on and off in the
+  // middle of step 2, so "on → off restores the business path", "a category
+  // picked BEFORE switching is not sent", "an address typed BEFORE switching
+  // is not sent", "the delivery axis is shown/hidden by the toggle" and "the
+  // address field is hidden when it is ticked" no longer describe anything
+  // that can happen: the door is chosen before the wizard starts, and step 2
+  // has neither an address field nor a delivery axis for either path.
+  // What survives is the part that still decides behaviour — which door was
+  // used, and what that does to the steps and to the POST body.
+
+  it("the preflight offers the organizer door, with the approved copy key", async () => {
+    render(<RegisterProducerClient />);
+    const link = await screen.findByTestId("register-preflight-organizer");
+    expect(link).toHaveTextContent(`${K}.preflight.organizer_entry`);
+    // It is secondary to the main CTA, not a replacement for it.
+    expect(screen.getByTestId("register-preflight-start")).toBeInTheDocument();
   });
 
-  it("on: delivery axis hidden, DETAILS goes straight to STORY (no CATEGORY), stepper drops CATEGORY", async () => {
-    await renderWizard();
+  it("organizer door: DETAILS goes straight to STORY, and the stepper drops CATEGORY", async () => {
+    await renderWizard({ as: "organizer" });
     await fillAccountToDetails();
-    fireEvent.click(screen.getByTestId("register-organizer-toggle"));
-    expect(screen.queryByTestId("register-delivery-axis")).not.toBeInTheDocument();
-    expect(screen.queryByText(`${K}.step_captions.category`)).not.toBeInTheDocument();
     fillDetailsFields();
     fireEvent.click(nextBtn());
     await screen.findByPlaceholderText(STORY_MARKER);
-    expect(screen.queryByTestId("pick-category")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("register-frame-category")).toBeNull();
   });
 
-  it("on: back from STORY returns to DETAILS, not CATEGORY", async () => {
+  it("business door: DETAILS goes to CATEGORY as before", async () => {
+    // The control. Without it, an organizer-only assertion would pass against
+    // a wizard that had lost the CATEGORY step for everyone.
     await renderWizard();
     await fillAccountToDetails();
-    fireEvent.click(screen.getByTestId("register-organizer-toggle"));
+    fillDetailsFields();
+    fireEvent.click(screen.getByTestId("register-fulfilment-onsite"));
+    fireEvent.click(nextBtn());
+    expect(await screen.findByTestId("register-frame-category")).toBeInTheDocument();
+  });
+
+  it("organizer door: back from STORY returns to DETAILS, not CATEGORY", async () => {
+    await renderWizard({ as: "organizer" });
+    await fillAccountToDetails();
     fillDetailsFields();
     fireEvent.click(nextBtn());
     await screen.findByPlaceholderText(STORY_MARKER);
     fireEvent.click(screen.getByTestId("register-story-back"));
-    expect(await screen.findByText(`${K}.steps.business.title`)).toBeInTheDocument();
-    expect(screen.queryByTestId("pick-category")).not.toBeInTheDocument();
+    expect(await screen.findByTestId("register-frame-details")).toBeInTheDocument();
+    expect(screen.queryByTestId("register-frame-category")).toBeNull();
   });
 
-  it("on → off: the business path is restored (delivery axis back, DETAILS → CATEGORY)", async () => {
-    await renderWizard();
+  it("organizer door: the submit body carries kind='organizer' and no categories", async () => {
+    await renderWizard({ as: "organizer" });
     await fillAccountToDetails();
-    const toggle = screen.getByTestId("register-organizer-toggle");
-    fireEvent.click(toggle);
-    fireEvent.click(toggle);
-    expect(screen.getByTestId("register-delivery-axis")).toBeInTheDocument();
-    fillDetailsFields();
-    fireEvent.click(nextBtn());
-    expect(await screen.findByTestId("pick-category")).toBeInTheDocument();
-  });
-
-  it("submit body carries kind='organizer' and no categories", async () => {
-    await renderWizard();
-    await fillAccountToDetails();
-    fireEvent.click(screen.getByTestId("register-organizer-toggle"));
     fillDetailsFields();
     fireEvent.click(nextBtn());
     await screen.findByPlaceholderText(STORY_MARKER);
+    fireEvent.change(screen.getByTestId("register-referral-source"), {
+      target: { value: "instagram" },
+    });
     screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
     fireEvent.click(screen.getByText(`${K}.actions.submit`));
     await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
-    const [url, body] = api.post.mock.calls[0];
-    expect(url).toBe("/auth/register/producer");
+    const body = api.post.mock.calls[0][1];
     expect(body.kind).toBe("organizer");
     expect(body.category_ids).toEqual([]);
   });
 
-  it("on: the address field and the map copy are hidden (review #3711 F5)", async () => {
-    await renderWizard();
-    await fillAccountToDetails();
-    expect(ph("address")).toBeInTheDocument();
-    fireEvent.click(screen.getByTestId("register-organizer-toggle"));
-    expect(screen.queryByPlaceholderText(`${K}.fields.address`)).not.toBeInTheDocument();
-    expect(screen.queryByTestId("register-multi-location-toggle")).not.toBeInTheDocument();
-  });
-
-  it("a category picked before switching to organizer is not sent (review #3711 F7)", async () => {
+  it("business door: the submit body still carries kind='producer'", async () => {
     await renderWizard();
     await fillAccountToDetails();
     fillDetailsFields();
-    fireEvent.click(nextBtn());
-    fireEvent.click(await screen.findByTestId("pick-category"));
-    fireEvent.click(screen.getByTestId("register-category-back"));
-    await screen.findByText(`${K}.steps.business.title`);
-    fireEvent.click(screen.getByTestId("register-organizer-toggle"));
-    fireEvent.click(nextBtn());
-    await screen.findByPlaceholderText(STORY_MARKER);
-    screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
-    fireEvent.click(screen.getByText(`${K}.actions.submit`));
-    await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
-    const [, body] = api.post.mock.calls[0];
-    expect(body.kind).toBe("organizer");
-    expect(body.category_ids).toEqual([]);
-  });
-
-  it("an address typed before switching to organizer is not sent (review #3711 R2-5)", async () => {
-    await renderWizard();
-    await fillAccountToDetails();
-    fireEvent.change(ph("address"), { target: { value: "---" } });
-    fireEvent.click(screen.getByTestId("register-organizer-toggle"));
-    fillDetailsFields();
-    fireEvent.click(nextBtn());
-    await screen.findByPlaceholderText(STORY_MARKER);
-    screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
-    fireEvent.click(screen.getByText(`${K}.actions.submit`));
-    await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
-    const [, body] = api.post.mock.calls[0];
-    expect(body.address).toBeNull();
-    expect(body.lat).toBeNull();
-    expect(body.lng).toBeNull();
-  });
-
-  it("a business submit still carries kind='producer'", async () => {
-    await renderWizard();
-    await fillAccountToDetails();
-    fillDetailsFields();
+    fireEvent.click(screen.getByTestId("register-fulfilment-onsite"));
     fireEvent.click(nextBtn());
     fireEvent.click(await screen.findByTestId("pick-category"));
     fireEvent.click(nextBtn());
     await screen.findByPlaceholderText(STORY_MARKER);
+    fireEvent.change(screen.getByTestId("register-referral-source"), {
+      target: { value: "instagram" },
+    });
     screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
     fireEvent.click(screen.getByText(`${K}.actions.submit`));
     await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
-    const [, body] = api.post.mock.calls[0];
-    expect(body.kind).toBe("producer");
-    expect(body.category_ids).toEqual([1]);
+    expect(api.post.mock.calls[0][1].kind).toBe("producer");
+  });
+
+  it("the organizer path never asks the fulfilment question", async () => {
+    // MEH-2640: "איך קונים אצלכם?" is a business question. An organizer runs
+    // markets; she has no counter and no deliveries, and the gate must not
+    // stop her.
+    await renderWizard({ as: "organizer" });
+    await fillAccountToDetails();
+    fillDetailsFields();
+    expect(screen.queryByTestId("register-fulfilment")).toBeNull();
+    fireEvent.click(nextBtn());
+    await screen.findByPlaceholderText(STORY_MARKER);
   });
 });
