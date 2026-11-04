@@ -575,7 +575,7 @@ export const CoordSchema = z.object({
 // before she has exact coordinates (manual entry, no geocoding this chunk).
 export const LocationInputSchema = z.object({
   kind: z.enum(["branch", "pickup", "market_stand"], {
-    error: "בחרי סוג מיקום",
+    error: "בחרו סוג מיקום",
   }),
   label: z.string().trim().max(200).nullable().optional(),
   city: z.string().trim().max(100).nullable().optional(),

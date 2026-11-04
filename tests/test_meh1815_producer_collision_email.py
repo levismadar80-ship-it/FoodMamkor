@@ -39,10 +39,10 @@ class TestProducerVariant:
         # The whole point of the ticket: say the details were NOT saved.
         assert "פרטי העסק שמולאו בטופס לא נשמרו" in body
         # And give the exact next step, not a bare login link.
-        assert "היכנסי לחשבון ומלאי את הטופס" in body
+        assert "צריך להיכנס לחשבון ולמלא את הטופס" in body
         assert "/login?redirect=/register/producer" in body
-        assert "את כבר רשומה אצלנו עם סיסמה" in body
-        assert "סיסמתך לא נחשפה ולא דרושה פעולה" in body
+        assert "כבר יש לך חשבון אצלנו עם סיסמה" in body
+        assert "הסיסמה לא נחשפה ולא דרושה פעולה" in body
 
     @pytest.mark.parametrize(
         "provider,label",
@@ -53,14 +53,14 @@ class TestProducerVariant:
             "galya@example.com", "גליה", provider, flow="producer"
         )
         body = sent["body"]
-        assert f"את כבר רשומה אצלנו דרך {label}" in body
+        assert f"כבר יש לך חשבון אצלנו דרך {label}" in body
         # Same body as the password variant apart from the identity line
         # and the closing reassurance.
         assert "פרטי העסק שמולאו בטופס לא נשמרו" in body
         assert "/login?redirect=/register/producer" in body
-        assert "חשבונך לא נפגע ולא דרושה פעולה" in body
+        assert "החשבון לא נפגע ולא דרושה פעולה" in body
         # The password-specific reassurance must NOT leak into the OAuth copy.
-        assert "סיסמתך לא נחשפה" not in body
+        assert "הסיסמה לא נחשפה" not in body
 
     def test_producer_subject_differs_from_consumer(self, sent):
         auth_emails.send_duplicate_attempt_email(
@@ -82,10 +82,10 @@ class TestConsumerVariantUnchanged:
         auth_emails.send_duplicate_attempt_email(
             "noa@example.com", "נועה", "password"
         )
-        assert sent["subject"] == "ניסיון רישום במהמקור — את כבר רשומה"
+        assert sent["subject"] == "ניסיון רישום במהמקור — יש לך כבר חשבון"
         body = sent["body"]
         assert "מישהו ניסה להירשם למהמקור עם הכתובת שלך" in body
-        assert "את כבר רשומה אצלנו עם סיסמה — אם זו את, היכנסי כאן" in body
+        assert "כבר יש לך חשבון אצלנו עם סיסמה. אם זה היה ניסיון שלך, אפשר להיכנס כאן" in body
         # The consumer flow must never mention a business at all.
         assert "עסק" not in body
         assert "redirect=/register/producer" not in body
