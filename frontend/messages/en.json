@@ -4652,7 +4652,11 @@
         "save_cta": "Save",
         "saving": "Saving…",
         "saved": "Saved",
-        "save_error": "Save failed. Please try again."
+        "save_error": "Save failed. Please try again.",
+        "errors": {
+          "excluded_requires_nationwide": "Excluded cities are only possible with nationwide delivery",
+          "nationwide_requires_delivery": "\"Nationwide\" is ticked but \"Delivery\" is not. Tick \"Delivery\", or untick \"Nationwide\"."
+        }
       },
       "order_window": {
         "heading": "When you take orders",
