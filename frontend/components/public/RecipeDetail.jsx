@@ -257,7 +257,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
                   {t("related_products_heading")}
                 </h2>
                 <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {/* MEH-2654 (Sapir 31/10: «קישור לרכישת המוצרים»): each row
+                  {/* PR #3972 (Sapir 31/10: «קישור לרכישת המוצרים»): each row
                       opens that product's sheet on the business page, where the
                       price, photos and the per-product contact button live.
                       Before, the row was a dead <li> and the price read only the

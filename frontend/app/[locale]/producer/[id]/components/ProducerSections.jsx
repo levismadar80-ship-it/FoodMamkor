@@ -245,7 +245,7 @@ export default function ProducerSections({
   // previously-focused element every time it runs. An inline arrow would hand
   // it a fresh identity on every parent render, so paging would re-run it and
   // pull focus off the chevron the reader is clicking.
-  // MEH-2654: a deep link `?product=<id>` (the recipe page's product rows)
+  // PR #3972: a deep link `?product=<id>` (the recipe page's product rows)
   // opens that product's sheet on arrival. Read once per producer from
   // window.location — not useSearchParams, which would force a Suspense
   // boundary onto a server-rendered page for a one-shot read. An id that
