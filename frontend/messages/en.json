@@ -790,6 +790,11 @@
             "no_added_sugar": "No added sugar"
           },
           "sheet_open_aria": "Details about {name}",
+          "facts": {
+            "ingredients_heading": "Ingredients",
+            "allergens_heading": "Allergens",
+            "declared_by_business": "As declared by the business"
+          },
           "sheet_close_aria": "Close product details",
           "sheet_prev_aria": "Previous product",
           "sheet_next_aria": "Next product",

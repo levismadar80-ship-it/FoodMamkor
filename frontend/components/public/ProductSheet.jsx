@@ -15,6 +15,7 @@ import {
   CaretRight,
 } from "@phosphor-icons/react";
 import { useLocale, useTranslations } from "next-intl";
+import { ALLERGEN_CODES } from "@/lib/allergens";
 
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import {
@@ -336,6 +337,11 @@ export default function ProductSheet({
   const chevronY = hasPhoto ? "top-1/2 -translate-y-1/2" : "bottom-2";
 
   const dietKeys = productDietKeys(product);
+  // MEH-2662: unknown codes (a list newer than this bundle) are dropped rather
+  // than rendered as a raw key.
+  const allergenCodes = (product.allergens || []).filter((c) => ALLERGEN_CODES.includes(c));
+  const hasAllergens = allergenCodes.length > 0;
+  const hasIngredients = typeof product.ingredients === "string" && product.ingredients.trim() !== "";
 
   // MEH-1305 F, verbatim: a numeric price goes through the canonical
   // formatPriceRange (MEH-1140) and is bidi-isolated with dir="ltr"; a
@@ -598,6 +604,43 @@ export default function ProductSheet({
               >
                 {product.description}
               </p>
+            )}
+
+            {/* MEH-2662: what the owner declared about the food. Plain text,
+                no icons or pills (pills here mean diet tags); the allergen list
+                is a sentence so it never reads as a filterable badge row. One
+                «לפי הצהרת בית העסק» line under whichever block(s) render. */}
+            {(hasIngredients || hasAllergens) && (
+              <div className="space-y-2" data-testid="product-sheet-facts">
+                {hasIngredients && (
+                  <div>
+                    <h3 className="text-xs font-medium text-fg-muted">
+                      {t("producer.detail.sections.products.facts.ingredients_heading")}
+                    </h3>
+                    <p
+                      className="whitespace-pre-line text-sm leading-relaxed text-text"
+                      data-testid="product-sheet-ingredients"
+                    >
+                      {product.ingredients}
+                    </p>
+                  </div>
+                )}
+                {hasAllergens && (
+                  <div>
+                    <h3 className="text-xs font-medium text-fg-muted">
+                      {t("producer.detail.sections.products.facts.allergens_heading")}
+                    </h3>
+                    <p className="text-sm text-text" data-testid="product-sheet-allergens">
+                      {allergenCodes
+                        .map((code) => t(`settings.products.form.allergen_${code}`))
+                        .join(", ")}
+                    </p>
+                  </div>
+                )}
+                <p className="text-xs text-fg-muted" data-testid="product-sheet-facts-declared">
+                  {t("producer.detail.sections.products.facts.declared_by_business")}
+                </p>
+              </div>
             )}
 
             {numericPrice && (

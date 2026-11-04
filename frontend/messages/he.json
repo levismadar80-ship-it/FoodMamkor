@@ -790,6 +790,11 @@
             "no_added_sugar": "ללא סוכר מוסף"
           },
           "sheet_open_aria": "פרטים על {name}",
+          "facts": {
+            "ingredients_heading": "רכיבים",
+            "allergens_heading": "אלרגנים",
+            "declared_by_business": "לפי הצהרת בית העסק"
+          },
           "sheet_close_aria": "סגירת פרטי המוצר",
           "sheet_prev_aria": "המוצר הקודם",
           "sheet_next_aria": "המוצר הבא",
