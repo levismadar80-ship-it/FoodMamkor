@@ -30,6 +30,7 @@ import KashrutBadgeStrip, { CODE_TO_KEY } from "@/components/KashrutBadgeStrip";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import { detailToMessage } from "@/lib/errors";
+import { makeDeliveryCodeResolver } from "@/lib/delivery-errors";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import { MIN_ESTABLISHED_YEAR, currentIsraelYear } from "@/lib/established-year";
 import {
@@ -1753,7 +1754,12 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
-      setErrorMsg(detailToMessage(err?.response?.data?.detail) || t("save_error"));
+      // MEH-1943 chunk 3: the delivery_validation.py 422s carry a `code`;
+      // unknown codes fall back to the server `message`.
+      setErrorMsg(
+        detailToMessage(err?.response?.data?.detail, makeDeliveryCodeResolver(t)) ||
+          t("save_error"),
+      );
     } finally {
       setSaving(false);
     }
