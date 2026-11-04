@@ -9,7 +9,7 @@ import api from "@/lib/api";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import ImageWithFallback from "@/components/ImageWithFallback";
 // MEH-1140: canonical shekel format — amount then ₪ ("35₪"), one owner in lib/utils.
-import { formatPrice, formatPriceRange } from "@/lib/utils";
+import { formatPrice, formatPriceRange, isPriceLabel } from "@/lib/utils";
 import { formatEventDate } from "@/lib/format-date";
 import DeliveryBlock from "@/components/DeliveryBlock";
 import OfferBadge from "@/components/OfferBadge";
@@ -178,7 +178,10 @@ export default function ProducerSections({
   // MEH-1855: price_range is the ONLY price-label field. Chunk 1 read it
   // first with a fallback to the legacy alias; chunk 2 dropped the alias
   // column (revision 9849fab1637a), so there is nothing to fall back to.
-  const hasSignature = !!(producer.top_product_name || producer.price_range);
+  // PR #3971: a digit-less label («₪₪») is not a price — it neither renders
+  // nor, on its own, makes the signature block appear.
+  const producerPriceLabel = isPriceLabel(producer.price_range) ? producer.price_range : null;
+  const hasSignature = !!(producer.top_product_name || producerPriceLabel);
   // MEH-1233 B4: the signature product (top_product_name) is a free-text DB
   // label. When it names a product that ALSO has a grid entry, feature that
   // entry's photo in the highlight and DROP it from the grid below (fixes the
@@ -269,18 +272,23 @@ export default function ProducerSections({
   // MEH-1463: when the signature product was deduped out of the grid and
   // the producer-level price_range (MEH-1855: the single price-label field)
   // is not set, surface the matched product's own price/description on the
-  // highlight card so the info the dedup removed isn't lost. price_range
-  // keeps priority when present (unchanged). Numeric price → canonical
-  // formatPriceRange (MEH-1140) with dir="ltr" bidi isolation; free-text
-  // price_range is DATA (MEH-1305 F) rendered in natural direction.
+  // highlight card so the info the dedup removed isn't lost.
+  // PR #3971: the product's OWN price now wins over the business-level
+  // price_range («מחיר התחלתי»). MEH-1463 had it the other way, which put a
+  // business-wide label on one product's card while the sheet for that same
+  // product showed its real price (Sapir 31/10: card «₪₪», sheet 32₪). The
+  // business label is the fallback for a free-text signature with no priced
+  // product. Numeric price → canonical formatPriceRange (MEH-1140) with
+  // dir="ltr" bidi isolation; free-text labels are DATA (MEH-1305 F) rendered
+  // in natural direction.
   const signatureNumericPrice =
-    !producer.price_range && signatureProduct?.price_min != null
+    signatureProduct?.price_min != null
       ? formatPriceRange(signatureProduct.price_min, signatureProduct.price_max)
       : null;
-  const signatureFreeTextPrice =
-    !producer.price_range && !signatureNumericPrice
-      ? signatureProduct?.price_range || null
-      : null;
+  const signatureFreeTextPrice = signatureNumericPrice
+    ? null
+    : (isPriceLabel(signatureProduct?.price_range) ? signatureProduct.price_range : null) ||
+      producerPriceLabel;
 
   return (
     <>
@@ -373,11 +381,7 @@ export default function ProducerSections({
                 {signatureProduct?.description && (
                   <p className="text-sm text-fg-muted mt-0.5 line-clamp-2">{signatureProduct.description}</p>
                 )}
-                {producer.price_range ? (
-                  <p className="text-gold-deep font-bold mt-1">
-                    {producer.price_range}
-                  </p>
-                ) : signatureNumericPrice ? (
+                {signatureNumericPrice ? (
                   <p className="text-gold-deep font-bold mt-1"><span dir="ltr">{signatureNumericPrice}</span></p>
                 ) : signatureFreeTextPrice ? (
                   <p className="text-gold-deep font-bold mt-1">{signatureFreeTextPrice}</p>
