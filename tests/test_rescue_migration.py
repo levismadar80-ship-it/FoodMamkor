@@ -97,7 +97,7 @@ def rev():
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     assert mod.revision == "a1c9f3e8d204"
-    assert mod.down_revision == "4b7e1d2c9a60"
+    assert mod.down_revision == "d7a511246b14"
     return mod
 
 

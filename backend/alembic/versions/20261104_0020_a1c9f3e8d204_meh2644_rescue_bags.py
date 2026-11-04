@@ -1,7 +1,7 @@
 """meh2644_rescue_bags
 
 Revision ID: a1c9f3e8d204
-Revises: 4b7e1d2c9a60
+Revises: d7a511246b14
 Create Date: 2026-11-04 00:20:00.000000+00:00
 
 MEH-2644 (chunk 1/4 of the rescue-bags pilot, parent MEH-2643): the four tables a rescue bag
@@ -67,10 +67,14 @@ downgrade() drops all four tables and the column — every reservation, code and
 review is forgotten, which is the pre-MEH-2644 state. Nothing outside these
 four tables and that one column is touched.
 
-Chained on 4b7e1d2c9a60 (MEH-2612, the staging head on 03/11 — verified by
-grepping every revision file for a child, and it has none). PR #3908 carries
-d4e7a1b2c3f5 on the same parent; whichever merges second must be re-chained
-onto the other, or `alembic heads` returns two heads and CI reds.
+Chained on d7a511246b14 (MEH-2633, the staging head on 04/11). It was first
+written against 4b7e1d2c9a60 (MEH-2612); MEH-2633 merged onto that same parent
+while this chunk sat at its approval gate, which put two heads in the tree —
+`scripts/checks/alembic-head-guard.sh` caught it on the pre-push staging merge.
+Re-chained linearly rather than with `alembic merge heads`: the two revisions
+touch disjoint tables, so there is nothing to reconcile and an empty merge
+revision would only add a node. MEH-2633 adds no table, so the table count
+below is unaffected (re-measured after the merge, not carried over).
 
 # DO NOT create these tables anywhere else — Alembic is the sole schema
 #        authority since MEH-267.
@@ -84,7 +88,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = "a1c9f3e8d204"
-down_revision: Union[str, None] = "4b7e1d2c9a60"
+down_revision: Union[str, None] = "d7a511246b14"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
