@@ -250,6 +250,21 @@ class RescueOrderCreatedOut(RescueOrderOut):
     pickup_end: UtcDatetimeOut
 
 
+class RescueMyOrderOut(RescueOrderCreatedOut):
+    """One of the caller's own reservations for today, read back (MEH-2680).
+
+    The confirmation lived only in component state, so a reload lost the code
+    the buyer must say at the counter, and the review — offered once the order
+    is «handed» — could never appear. `reviewed` says whether to offer it.
+    """
+
+    reviewed: bool = False
+    # The business the bag belongs to. The public list drops a sold-out offer,
+    # so the buyer of the last bag cannot find her order through `offer_id`
+    # alone — the business page matches on this instead.
+    producer_id: UUID
+
+
 class RescueNoShowStateOut(BaseModel):
     """What the admin reset returns, so the operator can see the effect.
 
