@@ -15,6 +15,7 @@ import {
   CancelOrderRescueOrdersOrderIdCancelPostResponse,
   CreateOrderRescueOrdersPostResponse,
   CreateReviewRescueOrdersOrderIdReviewPostResponse,
+  ListMyReservationsRescueOrdersMineGetResponse,
   ListOffersRescueOffersGetResponse,
 } from "@/lib/generated/api.zod";
 
@@ -124,6 +125,28 @@ export async function reserveBag({ offerId, qty = 1 }) {
   const res = await api.post("/rescue/orders", { offer_id: offerId, qty });
   const parsed = CreateOrderRescueOrdersPostResponse.safeParse(res.data);
   if (!parsed.success) throw new Error("rescue:unparsable-order");
+  return parsed.data;
+}
+
+/**
+ * The signed-in buyer's own reservations on today's bags (MEH-2680).
+ *
+ * The confirmation used to live only in component state, so a reload lost the
+ * pickup code and the review never appeared. The business page reads this
+ * back on mount. Call it only with a signed-in user: a guest's 401 would go
+ * through the refresh interceptor and end in the "session expired" toast. A
+ * 404 (flag off) is an ordinary [] like `fetchOffers`.
+ */
+export async function fetchMyOrders() {
+  let res;
+  try {
+    res = await api.get("/rescue/orders/mine");
+  } catch (err) {
+    if (err?.response?.status === HTTP_NOT_FOUND) return [];
+    throw err;
+  }
+  const parsed = ListMyReservationsRescueOrdersMineGetResponse.safeParse(res.data);
+  if (!parsed.success) throw new RescueShapeError(parsed.error.issues);
   return parsed.data;
 }
 
