@@ -42,6 +42,10 @@ vi.mock("next-intl", () => ({
     if (key === "group_buys.delivery.fee") return `משלוח: ${values.amount}`;
     if (key === "group_buys.delivery.fee_free") return "משלוח חינם";
     if (key === "group_buys.delivery.fee_from") return `משלוח מ-${values.amount}`;
+    // MEH-2676: card delivery row folds a free-delivery threshold in.
+    if (key === "producer.offer.card_free_above") return `חינם מעל ${values.amount}`;
+    if (key === "producer.offer.card_free_above_alone") return `משלוח חינם מעל ${values.amount}`;
+    if (key === "producer.offer.unit_amount.kg") return `${values.count} ק"ג`;
     return key;
   },
   // MEH-1301: ProducerCard reads useLocale() to pick the distance unit
@@ -143,6 +147,8 @@ vi.mock("@phosphor-icons/react", () => ({
   Note: (props) => <span data-testid="icon-note" {...props} />,
   // MEH-1459: Truck glyph in the "משלוחים בלבד" card badge (replaces 🚚).
   Truck: (props) => <span data-testid="icon-truck" {...props} />,
+  // MEH-2676: OfferBadge chip glyph, asserted when the chip must stay.
+  Gift: (props) => <span data-testid="icon-gift" {...props} />,
   // MEH-2584: BadgeRow now imports lib/chip-icons.js (badge glyphs).
   Package: () => null,
   Storefront: () => null, // MEH-2598: chip-icons on_site
@@ -933,5 +939,70 @@ describe("ProducerCard — badge overflow chip (MEH-991)", () => {
       // ...and the description is still the kosher tooltip.
       expect(panel).toHaveTextContent(BADGE_CONFIG.kosher.tooltip);
     });
+  });
+});
+
+// MEH-2676: «משלוח חינם בהזמנה מעל …» truncated before the amount on a 375
+// card. A thresholded free-delivery offer now joins the delivery row.
+describe("ProducerCard — free-delivery threshold in the delivery row (MEH-2676)", () => {
+  const freeOffer = {
+    offer_type: "free_delivery_above",
+    threshold_value: 150,
+    threshold_unit: "ils",
+    starts_at: null,
+    expires_at: null,
+  };
+
+  it("appends «חינם מעל 150₪» to the fee and drops the chip", () => {
+    render(<ProducerCard producer={{ ...fullProducer, delivery_fee: 20, active_offer: freeOffer }} />);
+    expect(screen.getByTestId("card-delivery-fee")).toHaveTextContent("משלוח: 20₪ · חינם מעל 150₪");
+    expect(screen.queryByTestId("offer-chip")).not.toBeInTheDocument();
+  });
+
+  it("states «משלוח חינם מעל 150₪» alone when no fee is stated", () => {
+    render(<ProducerCard producer={{ ...fullProducer, delivery_fee: null, active_offer: freeOffer }} />);
+    expect(screen.getByTestId("card-delivery-fee")).toHaveTextContent("משלוח חינם מעל 150₪");
+    expect(screen.queryByTestId("offer-chip")).not.toBeInTheDocument();
+  });
+
+  it("uses the offer's unit when the threshold is not shekels", () => {
+    render(
+      <ProducerCard
+        producer={{ ...fullProducer, delivery_fee: null, active_offer: { ...freeOffer, threshold_value: 3, threshold_unit: "kg" } }}
+      />,
+    );
+    expect(screen.getByTestId("card-free-above")).toHaveTextContent('משלוח חינם מעל 3 ק"ג');
+  });
+
+  it("keeps the chip for a free-delivery offer without a threshold", () => {
+    render(
+      <ProducerCard
+        producer={{ ...fullProducer, delivery_fee: 20, active_offer: { ...freeOffer, threshold_value: null, threshold_unit: null } }}
+      />,
+    );
+    expect(screen.getByTestId("offer-chip")).toBeInTheDocument();
+    expect(screen.queryByTestId("card-free-above")).not.toBeInTheDocument();
+  });
+
+  it("keeps the chip for other offer types", () => {
+    render(
+      <ProducerCard producer={{ ...fullProducer, delivery_fee: 20, active_offer: { ...freeOffer, offer_type: "gift_above" } }} />,
+    );
+    expect(screen.getByTestId("offer-chip")).toBeInTheDocument();
+    expect(screen.queryByTestId("card-free-above")).not.toBeInTheDocument();
+  });
+
+  it("shows no threshold for an expired offer", () => {
+    render(
+      <ProducerCard producer={{ ...fullProducer, delivery_fee: null, active_offer: { ...freeOffer, expires_at: "2000-01-01" } }} />,
+    );
+    expect(screen.queryByTestId("card-delivery-fee")).not.toBeInTheDocument();
+  });
+
+  it("says just «משלוח חינם» when delivery is always free", () => {
+    render(<ProducerCard producer={{ ...fullProducer, delivery_fee: 0, active_offer: freeOffer }} />);
+    const row = screen.getByTestId("card-delivery-fee");
+    expect(row).toHaveTextContent("משלוח חינם");
+    expect(row).not.toHaveTextContent("מעל");
   });
 });
