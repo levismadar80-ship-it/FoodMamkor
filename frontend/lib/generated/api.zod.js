@@ -5843,6 +5843,42 @@ export const CreateOrderRescueOrdersPostResponse = /*#__PURE__*/ zod.object({
 
 
 /**
+ * The caller's own live reservations on today's bags (MEH-2680).
+ *
+ * Only the caller's rows, only today's offers (Israel date), only
+ * `reserved` / `handed` — a cancelled or no-show order has no code left to
+ * say and nothing to review. Carries the same fields as the reservation
+ * response, so the confirmation renders from either without a second shape.
+ * @summary List My Reservations
+ */
+export const listMyReservationsRescueOrdersMineGetResponsePickupCodeMin = 4;
+export const listMyReservationsRescueOrdersMineGetResponsePickupCodeMax = 4;
+
+
+export const listMyReservationsRescueOrdersMineGetResponsePickupCodeRegExp = new RegExp('^[0-9]{4}$');
+export const listMyReservationsRescueOrdersMineGetResponseReviewedDefault = false;
+
+export const ListMyReservationsRescueOrdersMineGetResponseItem = /*#__PURE__*/ zod.object({
+  "cancel_until": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "cancelled_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "handed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "offer_id": /*#__PURE__*/ zod.uuid(),
+  "pickup_code": /*#__PURE__*/ zod.string().check(/*#__PURE__*/ zod.minLength(listMyReservationsRescueOrdersMineGetResponsePickupCodeMin)).check(/*#__PURE__*/ zod.maxLength(listMyReservationsRescueOrdersMineGetResponsePickupCodeMax)).check(/*#__PURE__*/ zod.regex(listMyReservationsRescueOrdersMineGetResponsePickupCodeRegExp)),
+  "pickup_end": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "pickup_start": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "price_agorot": /*#__PURE__*/ zod.int(),
+  "producer_id": /*#__PURE__*/ zod.uuid(),
+  "qty": /*#__PURE__*/ zod.int(),
+  "reviewed": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.boolean(), listMyReservationsRescueOrdersMineGetResponseReviewedDefault),
+  "status": /*#__PURE__*/ zod.enum(['reserved', 'handed', 'no_show', 'cancelled']),
+  "user_id": /*#__PURE__*/ zod.uuid()
+}).check(/*#__PURE__*/ zod.describe('One of the caller\'s own reservations for today, read back (MEH-2680).\n\nThe confirmation lived only in component state, so a reload lost the code\nthe buyer must say at the counter, and the review — offered once the order\nis «handed» — could never appear. `reviewed` says whether to offer it.'))
+export const ListMyReservationsRescueOrdersMineGetResponse = /*#__PURE__*/ zod.array(ListMyReservationsRescueOrdersMineGetResponseItem)
+
+
+/**
  * The buyer cancels, free, until the offer's `cancel_until`.
  * @summary Cancel Order
  */

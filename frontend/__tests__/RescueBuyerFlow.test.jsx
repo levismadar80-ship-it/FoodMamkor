@@ -52,7 +52,13 @@ const fetchOffers = vi.fn();
 const reserveBag = vi.fn();
 const cancelOrder = vi.fn();
 const submitReview = vi.fn();
+const fetchMyOrders = vi.fn();
 let flagOn = true;
+let authUser = null;
+
+vi.mock("@/lib/auth-context", () => ({
+  useOptionalAuth: () => ({ user: authUser }),
+}));
 
 vi.mock("@/lib/rescue", async (importOriginal) => {
   const actual = await importOriginal();
@@ -63,6 +69,7 @@ vi.mock("@/lib/rescue", async (importOriginal) => {
     reserveBag: (...a) => reserveBag(...a),
     cancelOrder: (...a) => cancelOrder(...a),
     submitReview: (...a) => submitReview(...a),
+    fetchMyOrders: (...a) => fetchMyOrders(...a),
   };
 });
 
@@ -138,6 +145,8 @@ let RescueConfirmation;
 beforeEach(async () => {
   vi.clearAllMocks();
   flagOn = true;
+  authUser = null;
+  fetchMyOrders.mockResolvedValue([]);
   fetchOffers.mockResolvedValue([offer()]);
   ({ default: RescueSection } = await import("@/components/rescue/RescueSection"));
   ({ default: RescueList } = await import("@/components/rescue/RescueList"));
@@ -409,5 +418,66 @@ describe("the review", () => {
     const submit = screen.getByTestId("rescue-review-submit");
     // Node.compareDocumentPosition: 4 = submit FOLLOWS problem.
     expect(problem.compareDocumentPosition(submit) & 4).toBeTruthy();
+  });
+});
+
+describe("a reload keeps the order (MEH-2680)", () => {
+  const mine = (over = {}) => ({ ...order(over), producer_id: PRODUCER.id, reviewed: false, ...over });
+
+  it("a guest is never asked for their orders — a 401 would toast 'session expired'", async () => {
+    render(<RescueSection producer={PRODUCER} />);
+    await screen.findByTestId("rescue-reserve");
+    expect(fetchMyOrders).not.toHaveBeenCalled();
+  });
+
+  it("a signed-in buyer sees her code again after a reload", async () => {
+    authUser = { id: "u1" };
+    fetchMyOrders.mockResolvedValue([mine({ status: "reserved" })]);
+    render(<RescueSection producer={PRODUCER} />);
+    expect(await screen.findByTestId("rescue-confirmation")).toBeTruthy();
+    expect(screen.queryByTestId("rescue-reserve")).toBeNull();
+  });
+
+  it("the last bag sold — offer gone from the list — still restores her order", async () => {
+    authUser = { id: "u1" };
+    fetchOffers.mockResolvedValue([]);
+    fetchMyOrders.mockResolvedValue([mine({ status: "reserved" })]);
+    render(<RescueSection producer={PRODUCER} />);
+    expect(await screen.findByTestId("rescue-confirmation")).toBeTruthy();
+  });
+
+  it("an order at another business is not shown here", async () => {
+    authUser = { id: "u1" };
+    fetchMyOrders.mockResolvedValue([mine({ producer_id: "someone-else" })]);
+    render(<RescueSection producer={PRODUCER} />);
+    await screen.findByTestId("rescue-reserve");
+    await waitFor(() => expect(fetchMyOrders).toHaveBeenCalled());
+    expect(screen.queryByTestId("rescue-confirmation")).toBeNull();
+  });
+
+  it("handed and not yet reviewed brings up the review", async () => {
+    authUser = { id: "u1" };
+    fetchMyOrders.mockResolvedValue([mine({ status: "handed" })]);
+    render(<RescueSection producer={PRODUCER} />);
+    expect(await screen.findByTestId("rescue-review")).toBeTruthy();
+  });
+
+  it("handed and already reviewed does not ask again", async () => {
+    authUser = { id: "u1" };
+    fetchMyOrders.mockResolvedValue([mine({ status: "handed", reviewed: true })]);
+    render(<RescueSection producer={PRODUCER} />);
+    expect(await screen.findByTestId("rescue-review-thanks")).toBeTruthy();
+    expect(screen.queryByTestId("rescue-review")).toBeNull();
+  });
+
+  it("coming back to the tab re-reads, so 'handed' shows without a reload", async () => {
+    authUser = { id: "u1" };
+    fetchMyOrders.mockResolvedValueOnce([mine({ status: "reserved" })]);
+    render(<RescueSection producer={PRODUCER} />);
+    await screen.findByTestId("rescue-confirmation");
+    expect(screen.queryByTestId("rescue-review")).toBeNull();
+    fetchMyOrders.mockResolvedValueOnce([mine({ status: "handed" })]);
+    window.dispatchEvent(new Event("focus"));
+    expect(await screen.findByTestId("rescue-review")).toBeTruthy();
   });
 });
