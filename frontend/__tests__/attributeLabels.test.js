@@ -67,12 +67,10 @@ describe("unified attribute labels (MEH-1082)", () => {
   it("the unified attribute labels carry no emoji/glyph (MEH-657)", () => {
     // Text-only invariant: no chars outside the Hebrew block + spaces.
     // MEH-1507: entries are objects now — assert on the `label` field.
-    // MEH-1508 chunk 3ב-2: the ONE non-Hebrew run allowed is the literal
-    // "100% " prefix of the card-§6.4-locked «100% טבעוני» / «100% צמחוני».
-    // Digits and % are not glyphs; the exemption is the exact prefix, not a
-    // widened character class, so an emoji anywhere still reds.
+    // MEH-2677: the "100% " prefix exemption (MEH-1508) went with the
+    // prefix — «צמחוני» / «טבעוני» are plain Hebrew, so no exemption remains.
     for (const entry of Object.values(ATTRIBUTE_LABELS)) {
-      expect(entry.label).toMatch(/^(100% )?[֐-׿ ]+$/);
+      expect(entry.label).toMatch(/^[֐-׿ ]+$/);
     }
   });
 });
