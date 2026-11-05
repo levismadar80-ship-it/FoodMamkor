@@ -91,7 +91,7 @@ export default function RescueList({ initialCity = "", limit = null, heading = n
           <ul className="border-t border-border" data-testid="rescue-list-rows">
             {shown.map((offer) => (
               <li key={offer.id}>
-                <BagRow offer={offer} />
+                <BagRow offer={offer} headingTag={heading ? "h3" : "h2"} />
               </li>
             ))}
           </ul>

@@ -308,6 +308,15 @@ describe("the row", () => {
     expect(bdi.getAttribute("dir")).toBe("ltr");
     expect(bdi.textContent).toBe("0.8");
     expect(distance.textContent).toContain(lookup("rescue.row.km"));
+    expect(distance.textContent).toContain("בערך");
+  });
+
+  it("the row heading is h2 on /rescue (under its h1) and h3 under the home block's h2", async () => {
+    const { unmount } = render(<RescueList />);
+    expect((await screen.findByTestId("rescue-row-name")).tagName).toBe("H2");
+    unmount();
+    render(<RescueHomeModule city="חיפה" />);
+    expect((await screen.findByTestId("rescue-row-name")).tagName).toBe("H3");
   });
 
   it("leads with the pickup time and says until when", async () => {

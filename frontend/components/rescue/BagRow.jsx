@@ -6,7 +6,7 @@ import { Basket } from "@phosphor-icons/react";
 
 import { cssUrl } from "@/lib/css-url";
 import { optimizeCloudinary } from "@/lib/cloudinary";
-import { israelTime, shekels } from "@/lib/rescue";
+import { israelTime, shekels, walkingMinutes } from "@/lib/rescue";
 
 // "עוד שעה" lights up when the pickup window opens within this many ms.
 const SOON_MS = 3_600_000;
@@ -41,7 +41,7 @@ function worthAgorot(offer) {
  *           render this), lib/rescue.js (every unit it formats)
  * History:  MEH-2648 (creation) · rescue-home redesign (events-row language)
  */
-export default function BagRow({ offer }) {
+export default function BagRow({ offer, headingTag = "h3" }) {
   const t = useTranslations("rescue");
   const producer = offer?.producer;
   if (!producer) return null;
@@ -51,11 +51,14 @@ export default function BagRow({ offer }) {
   const from = israelTime(offer.pickup_start);
   const until = israelTime(offer.pickup_end);
   const soon = startsSoon(offer.pickup_start);
+  const minutes = walkingMinutes(offer.distance_km);
   const items = (offer.typical_items || []).filter(Boolean).join(", ");
   const hasDistance = offer.distance_km !== null && offer.distance_km !== undefined;
   const where = producer.location_address || producer.location_city || producer.city || "";
   const image = producer.image_url ? optimizeCloudinary(producer.image_url, { aspectRatio: "1:1", width: 160 }) : null;
 
+  // h3 under the home block's h2; h2 on /rescue, whose only heading is the h1.
+  const Heading = headingTag;
   const thumbBg = image ? { backgroundImage: cssUrl(image) } : undefined;
 
   return (
@@ -89,9 +92,9 @@ export default function BagRow({ offer }) {
       </div>
 
       <div className="py-4 ps-3 pe-4 min-w-0">
-        <h3 className="font-headline-md text-lg font-bold text-text leading-snug truncate" data-testid="rescue-row-name">
+        <Heading className="font-headline-md text-lg font-bold text-text leading-snug truncate" data-testid="rescue-row-name">
           {producer.name}
-        </h3>
+        </Heading>
         <p className="text-sm text-fg-muted mt-1 truncate" data-testid="rescue-row-where">
           {items}
           {items && (hasDistance || where) ? " · " : null}
@@ -99,6 +102,7 @@ export default function BagRow({ offer }) {
             <span data-testid="rescue-row-distance">
               {/* A km figure is LTR inside RTL text, or "2.4" renders reversed. */}
               <bdi dir="ltr">{offer.distance_km}</bdi> {t("row.km")}
+              {minutes !== null ? ` · ${t("row.walk", { minutes })}` : null}
             </span>
           ) : (
             where
