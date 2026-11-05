@@ -16,10 +16,10 @@ import { allBadges } from "@/lib/badges";
  * Related:  ProducerSections.jsx (both mount points), ReservistOwnedCard.jsx.
  */
 export default function ReservistBadgeLine({ producer, className = "" }) {
+  if (producer?.reservist_owned !== true) return null;
   const hideKeys = allBadges(producer)
     .map((b) => b.key)
     .filter((k) => k !== "reservist_owned");
-  if (producer?.reservist_owned !== true) return null;
   return (
     <div className={className} data-testid="reservist-badge-line">
       <BadgeRow producer={producer} hideKeys={hideKeys} />

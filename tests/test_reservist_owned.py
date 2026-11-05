@@ -70,3 +70,15 @@ def test_public_payloads_serve_reservist_owned(client, db):
     assert listing.status_code == 200, listing.text
     rows = {str(p["id"]): p for p in listing.json()}
     assert rows[str(producer.id)]["reservist_owned"] is True
+
+
+def test_admin_put_can_set_reservist_owned(client, db):
+    """Admin PUT shares ProducerUpdate (bulk setattr): it may correct the flag."""
+    producer = make_producer(db, name="משק אדמין מילואים")
+    admin = make_user(db, role="admin")
+    resp = client.put(
+        f"/admin/producers/{producer.id}", json={"reservist_owned": True}, headers=auth_header(admin)
+    )
+    assert resp.status_code == 200, resp.text
+    db.refresh(producer)
+    assert producer.reservist_owned is True
