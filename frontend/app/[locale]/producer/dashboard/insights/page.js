@@ -24,6 +24,7 @@
  */
 
 import { useRouter, Link as LocaleLink } from "@/i18n/navigation";
+import { z } from "zod";
 import { useEffect, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { Eye, MagnifyingGlass, ChatCircle, Phone, Leaf, Star } from "@phosphor-icons/react";
@@ -172,6 +173,8 @@ function DeepAnalyticsSection({ analytics, profile }) {
     top_cities,
     // MEH-1676: absent on a cached pre-MEH-1676 payload → empty state, not a crash.
     coverage_requests = [],
+    // MEH-2674: same defence for a pre-MEH-2673 payload.
+    pickup_hosts = [],
   } = analytics;
 
   return (
@@ -290,6 +293,57 @@ function DeepAnalyticsSection({ analytics, profile }) {
           data has been captured since MEH-1677 (city on a coverage-request
           click); this is the first screen that reads it. */}
       <CoverageRequestsCard data={coverage_requests} />
+      {/* MEH-2674: the people behind that demand who offered to host a
+          pickup point — only those who clicked the confirmation mail. */}
+      <PickupHostsCard data={pickup_hosts} />
+    </div>
+  );
+}
+
+/**
+ * MEH-2674 — «מוכנים לארח נקודת מסירה»: confirmed hosts for THIS business,
+ * newest confirmation first (server order, capped at 50). Count states per
+ * the 5-state rule: 0 → the card is not rendered at all (no approved empty
+ * copy, and an empty "hosts" card under an empty "demand" card is two
+ * apologies in a row); 1 and many → one row per host, email as a mailto:
+ * link + her city. No open/closed state. Rows are validated before they are
+ * trusted (rule 19); a payload of another shape renders as 0.
+ */
+const PickupHostRow = z.object({ email: z.string(), city: z.string() });
+
+function PickupHostsCard({ data }) {
+  const t = useTranslations("dashboard.producer.analytics.pickup_hosts");
+  const rows = (Array.isArray(data) ? data : [])
+    .map((row) => PickupHostRow.safeParse(row))
+    .filter((p) => p.success)
+    .map((p) => p.data);
+  if (rows.length === 0) return null;
+  return (
+    <div
+      className="bg-white border border-border rounded-[16px] p-5"
+      data-testid="pickup-hosts-card"
+    >
+      <h2 className="font-headline-md text-lg font-bold mb-1">{t("title")}</h2>
+      <p className="text-xs text-fg-muted mb-3">{t("sub")}</p>
+      <ul className="space-y-2">
+        {rows.map((row) => (
+          <li
+            key={`${row.email}|${row.city}`}
+            className="text-sm text-text flex flex-wrap items-baseline gap-x-2"
+            data-testid="pickup-host-row"
+          >
+            <a
+              href={`mailto:${row.email}`}
+              dir="ltr"
+              className="text-primary underline-offset-2 hover:underline break-all"
+            >
+              {row.email}
+            </a>
+            <span className="text-fg-muted">·</span>
+            <span>{row.city}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
