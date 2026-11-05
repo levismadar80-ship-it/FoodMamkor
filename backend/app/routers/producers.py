@@ -700,21 +700,25 @@ def join_delivery_waitlist(
         # MEH-2673: a repeat signup that ticks «אשמח לארח» (re)sends the
         # confirmation link; the row turns True only from that link. An
         # unticked repeat changes nothing — never a silent withdrawal.
-        if (
-            data.wants_to_host
-            and not existing.wants_to_host
-            and delivery_waitlist.claim_host_confirm_send(db, existing)
-        ):
-            db.commit()
-            background_tasks.add_task(
-                delivery_waitlist.send_host_confirmation,
-                existing.id,
-                existing.email,
-                existing.city,
-                producer.name,
-            )
+        host_confirm = None
+        if data.wants_to_host:
+            if existing.wants_to_host:
+                host_confirm = "confirmed"
+            elif delivery_waitlist.claim_host_confirm_send(db, existing):
+                db.commit()
+                host_confirm = "sent"
+                background_tasks.add_task(
+                    delivery_waitlist.send_host_confirmation,
+                    existing.id,
+                    existing.email,
+                    existing.city,
+                    producer.name,
+                )
+            else:
+                db.rollback()  # releases the advisory lock, nothing to write
+                host_confirm = "already_sent"
         response.status_code = 200
-        return DeliveryWaitlistOut(status="exists")
+        return DeliveryWaitlistOut(status="exists", host_confirm=host_confirm)
     entry = delivery_waitlist.add_entry(
         db, producer, email=data.email, city=data.city, user=current_user
     )
@@ -732,10 +736,12 @@ def join_delivery_waitlist(
         db.rollback()
         response.status_code = 200
         return DeliveryWaitlistOut(status="exists")
+    host_confirm = None
     if send_host_mail:
         # MEH-2673: the box alone shares nothing. The row stays
         # wants_to_host=False until the address itself clicks the link —
         # otherwise anyone could hand a stranger's email to a business.
+        host_confirm = "sent"
         background_tasks.add_task(
             delivery_waitlist.send_host_confirmation,
             entry.id,
@@ -743,7 +749,9 @@ def join_delivery_waitlist(
             entry.city,
             producer.name,
         )
-    return DeliveryWaitlistOut(status="added")
+    elif data.wants_to_host:
+        host_confirm = "already_sent"
+    return DeliveryWaitlistOut(status="added", host_confirm=host_confirm)
 
 
 @router.post("/delivery-waitlist/host-confirm", status_code=200)
@@ -755,9 +763,13 @@ def confirm_delivery_waitlist_host(
 ):
     """MEH-2673: «מאשרים, אפשר להעביר» — the signed link from the host
     confirmation email. Turns the entry's wants_to_host on, so the business
-    sees this email in its pickup_hosts list. Idempotent. 400 on a token that
-    does not verify or an entry that no longer exists (unsubscribed)."""
-    entry_id = delivery_waitlist.decode_host_confirm_token(data.token)
+    sees this email in its pickup_hosts list. Idempotent. 410 on an expired
+    token (the page offers a fresh link — the double-opt-in norm, no dead
+    end); 400 on a token that does not verify or an entry that no longer
+    exists (unsubscribed)."""
+    entry_id, state = delivery_waitlist.inspect_host_confirm_token(data.token)
+    if state == "expired":
+        raise HTTPException(status_code=410, detail="הקישור לא תקין או שפג תוקפו")
     entry = db.get(DeliveryWaitlistEntry, entry_id) if entry_id else None
     if entry is None:
         raise HTTPException(status_code=400, detail="הקישור לא תקין או שפג תוקפו")

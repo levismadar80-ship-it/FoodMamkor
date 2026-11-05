@@ -14,9 +14,10 @@ the per-entry resend cooldown for that mail. The form checkbox ships in the
 frontend follow-up (MEH-2674).
 
 Expand-only per ADR-007: one NOT NULL boolean with a server default of
-false, and one nullable timestamp. Existing rows were never asked, so false is the truth for them, and
-the previous container (which never names the column) inserts through the
-server default. No new table → EXPECTED_TABLES unchanged.
+false, one nullable timestamp and one index. Existing rows were never asked,
+so false is the truth for them, and the previous container (which never names
+the column) inserts through the server default. No new table →
+EXPECTED_TABLES unchanged.
 
 downgrade() drops the column; any host opt-ins collected since are lost.
 
@@ -51,8 +52,16 @@ def upgrade() -> None:
         "delivery_waitlist",
         sa.Column("host_confirm_sent_at", sa.DateTime(), nullable=True),
     )
+    # The cooldown is per address across every business and city, so the
+    # lookup is by email — without this it is a table scan on each signup.
+    op.create_index(
+        "ix_delivery_waitlist_email_host_sent",
+        "delivery_waitlist",
+        ["email", "host_confirm_sent_at"],
+    )
 
 
 def downgrade() -> None:
+    op.drop_index("ix_delivery_waitlist_email_host_sent", table_name="delivery_waitlist")
     op.drop_column("delivery_waitlist", "host_confirm_sent_at")
     op.drop_column("delivery_waitlist", "wants_to_host")

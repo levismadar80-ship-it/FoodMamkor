@@ -494,13 +494,14 @@ class TestHostConfirmAbuseGuards:
         client.post(f"/producers/{p.id}/delivery-waitlist", json=body)
         assert len(sent) == 2
 
-    def test_expired_link_is_400(self, client, db):
+    def test_expired_link_is_410_not_400(self, client, db):
+        # Expired is told apart from garbage so the page can offer a new link.
         p = make_producer(db)
         entry = svc.add_entry(db, p, email="dana@example.com", city="חיפה", user=None)
         db.commit()
         token = svc._encode(entry.id, svc._HOST_CONFIRM_SCOPE, timedelta(seconds=-1))
         r = client.post("/delivery-waitlist/host-confirm", json={"token": token})
-        assert r.status_code == 400
+        assert r.status_code == 410
         db.expire_all()
         assert _entries(db, p.id)[0].wants_to_host is False
 
@@ -533,3 +534,49 @@ class TestHostConfirmAbuseGuards:
                 json={"email": "dana@example.com", "city": city, "wants_to_host": True},
             )
         assert len(sent) == 1
+
+
+class TestHostConfirmStatus:
+    """The form must never say «we sent you a mail» when nothing was sent."""
+
+    def test_new_row_with_box_says_sent(self, client, db, monkeypatch):
+        _capture_mail(monkeypatch)
+        p = make_producer(db)
+        r = client.post(
+            f"/producers/{p.id}/delivery-waitlist",
+            json={"email": "dana@example.com", "city": "חיפה", "wants_to_host": True},
+        )
+        assert r.json() == {"status": "added", "host_confirm": "sent"}
+
+    def test_without_box_has_no_host_status(self, client, db):
+        p = make_producer(db)
+        r = client.post(
+            f"/producers/{p.id}/delivery-waitlist",
+            json={"email": "dana@example.com", "city": "חיפה"},
+        )
+        assert r.json() == {"status": "added", "host_confirm": None}
+
+    def test_inside_cooldown_says_already_sent(self, client, db, monkeypatch):
+        _capture_mail(monkeypatch)
+        p = make_producer(db)
+        body = {"email": "dana@example.com", "city": "חיפה", "wants_to_host": True}
+        client.post(f"/producers/{p.id}/delivery-waitlist", json=body)
+        # Same row again → exists + already_sent.
+        r = client.post(f"/producers/{p.id}/delivery-waitlist", json=body)
+        assert r.json() == {"status": "exists", "host_confirm": "already_sent"}
+        # A NEW row for the same address (other city) → added + already_sent.
+        r = client.post(
+            f"/producers/{p.id}/delivery-waitlist", json={**body, "city": "חדרה"}
+        )
+        assert r.json() == {"status": "added", "host_confirm": "already_sent"}
+
+    def test_confirmed_row_says_confirmed(self, client, db, monkeypatch):
+        p = make_producer(db)
+        _signup_and_confirm(client, monkeypatch, p.id, "dana@example.com", "חיפה")
+        sent = _capture_mail(monkeypatch)
+        r = client.post(
+            f"/producers/{p.id}/delivery-waitlist",
+            json={"email": "dana@example.com", "city": "חיפה", "wants_to_host": True},
+        )
+        assert r.json() == {"status": "exists", "host_confirm": "confirmed"}
+        assert sent == []

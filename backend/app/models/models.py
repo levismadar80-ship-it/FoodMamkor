@@ -1542,6 +1542,8 @@ class DeliveryWaitlistEntry(Base):
             "producer_id", "city_key", "email", name="uq_delivery_waitlist_city_email"
         ),
         Index("ix_delivery_waitlist_producer_city", "producer_id", "city_key"),
+        # MEH-2673: the per-address resend cooldown looks up by email.
+        Index("ix_delivery_waitlist_email_host_sent", "email", "host_confirm_sent_at"),
     )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

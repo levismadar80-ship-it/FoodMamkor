@@ -26,6 +26,7 @@ from uuid import UUID
 from joserfc import jwt as jose_jwt
 from joserfc.errors import JoseError
 from joserfc.jwk import OctKey
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -44,6 +45,7 @@ __all__ = [
     "create_unsubscribe_token",
     "decode_host_confirm_token",
     "decode_unsubscribe_token",
+    "inspect_host_confirm_token",
     "claim_host_confirm_send",
     "send_host_confirmation",
     "find_entry",
@@ -68,8 +70,10 @@ def _key() -> OctKey:
 # confirmation link can never delete the row.
 _HOST_CONFIRM_SCOPE = "delivery_waitlist_host_confirm"
 # Unlike the unsubscribe link, a consent link expires: an old mail found
-# months later should not still hand the address to a business.
-HOST_CONFIRM_TTL = timedelta(days=14)
+# months later should not still hand the address to a business. 7 days is the
+# upper end of the double-opt-in norm (48–72 h for account access, up to a
+# week when no access is granted — customer.io / suped guidance, 05/11).
+HOST_CONFIRM_TTL = timedelta(days=7)
 # One confirmation mail per entry per window, whatever the per-IP limit lets
 # through — a stranger re-submitting the form cannot flood the address.
 HOST_CONFIRM_RESEND_COOLDOWN = timedelta(hours=24)
@@ -93,33 +97,44 @@ def create_host_confirm_token(entry_id: UUID) -> str:
 def decode_unsubscribe_token(token: str) -> UUID | None:
     """Entry id for a valid token, else None. Never raises (mirrors
     marketing.decode_unsubscribe_token)."""
-    return _decode(token, _UNSUBSCRIBE_SCOPE)
+    entry_id, _ = _decode(token, _UNSUBSCRIBE_SCOPE)
+    return entry_id
 
 
 def decode_host_confirm_token(token: str) -> UUID | None:
     """MEH-2673: entry id for a valid host-confirmation token, else None."""
+    entry_id, _ = inspect_host_confirm_token(token)
+    return entry_id
+
+
+def inspect_host_confirm_token(token: str) -> tuple[UUID | None, str]:
+    """MEH-2673: (entry id, "ok") · (None, "expired") · (None, "invalid").
+    The expired case is told apart so the page can offer a fresh link
+    instead of a dead end (the double-opt-in UX norm)."""
     return _decode(token, _HOST_CONFIRM_SCOPE)
 
 
-def _decode(token: str, scope: str) -> UUID | None:
+def _decode(token: str, scope: str) -> tuple[UUID | None, str]:
     try:
         token_obj = jose_jwt.decode(token, _key(), algorithms=[settings.algorithm])
     except (JoseError, ValueError):
-        return None
+        return None, "invalid"
     if token_obj.claims.get("scope") != scope:
-        return None
+        return None, "invalid"
     # joserfc's decode does not check `exp`; a token that carries one is
     # checked here (unsubscribe tokens carry none and never expire).
     exp = token_obj.claims.get("exp")
     if exp is not None:
         now = utc_now().replace(tzinfo=UTC).timestamp()
-        if not isinstance(exp, int | float) or exp < now:
-            return None
+        if not isinstance(exp, int | float):
+            return None, "invalid"
+        if exp < now:
+            return None, "expired"
     sub = token_obj.claims.get("sub")
     try:
-        return UUID(str(sub))
+        return UUID(str(sub)), "ok"
     except (ValueError, TypeError):
-        return None
+        return None, "invalid"
 
 
 def normalize_email(email: str) -> str:
@@ -277,7 +292,15 @@ def claim_host_confirm_send(db: Session, entry: DeliveryWaitlistEntry) -> bool:
     out now; False inside the resend cooldown. The cooldown is per ADDRESS,
     across every business and city: one entry per (business, city, email)
     would otherwise let a stranger mail the same inbox once per combination.
-    The caller commits."""
+    The caller commits.
+
+    Serialised per address with a transaction-scoped advisory lock, so two
+    simultaneous submits cannot both read "no recent send" and both mail —
+    the lock is released at the caller's commit/rollback."""
+    db.execute(
+        text("SELECT pg_advisory_xact_lock(hashtext(:email))"),
+        {"email": entry.email},
+    )
     now = utc_now()
     recent = (
         db.query(DeliveryWaitlistEntry.id)

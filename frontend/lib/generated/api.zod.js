@@ -2892,8 +2892,10 @@ export const SubmitContactContactPostResponse = /*#__PURE__*/ zod.unknown()
 /**
  * MEH-2673: «מאשרים, אפשר להעביר» — the signed link from the host
  * confirmation email. Turns the entry's wants_to_host on, so the business
- * sees this email in its pickup_hosts list. Idempotent. 400 on a token that
- * does not verify or an entry that no longer exists (unsubscribed).
+ * sees this email in its pickup_hosts list. Idempotent. 410 on an expired
+ * token (the page offers a fresh link — the double-opt-in norm, no dead
+ * end); 400 on a token that does not verify or an entry that no longer
+ * exists (unsubscribed).
  * @summary Confirm Delivery Waitlist Host
  */
 export const ConfirmDeliveryWaitlistHostDeliveryWaitlistHostConfirmPostResponse = /*#__PURE__*/ zod.unknown()
@@ -5528,8 +5530,9 @@ export const RecordContactClickProducersProducerIdContactClickPostResponse = /*#
  * @summary Join Delivery Waitlist
  */
 export const JoinDeliveryWaitlistProducersProducerIdDeliveryWaitlistPostResponse = /*#__PURE__*/ zod.object({
+  "host_confirm": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['sent', 'already_sent', 'confirmed']),/*#__PURE__*/ zod.null()])),
   "status": /*#__PURE__*/ zod.enum(['added', 'exists'])
-}).check(/*#__PURE__*/ zod.describe('MEH-2618: `added` (201) on a new row, `exists` (200) when the same\nemail already waits for the same business + city — the form shows the\nsame calm confirmation for both.'))
+}).check(/*#__PURE__*/ zod.describe('MEH-2618: `added` (201) on a new row, `exists` (200) when the same\nemail already waits for the same business + city — the form shows the\nsame calm confirmation for both.\n\nMEH-2673 `host_confirm` — only when the request ticked «אשמח לארח»:\n`sent` = a confirmation mail went out now · `already_sent` = one went to\nthis address within the last 24 h, nothing new was sent (the form says\n«check your inbox» instead of a false «we sent») · `confirmed` = this row\nis already a host. None when the box was not ticked.'))
 
 
 /**

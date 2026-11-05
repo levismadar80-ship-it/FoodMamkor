@@ -5272,9 +5272,16 @@ class DeliveryWaitlistIn(BaseModel):
 class DeliveryWaitlistOut(BaseModel):
     """MEH-2618: `added` (201) on a new row, `exists` (200) when the same
     email already waits for the same business + city — the form shows the
-    same calm confirmation for both."""
+    same calm confirmation for both.
+
+    MEH-2673 `host_confirm` — only when the request ticked «אשמח לארח»:
+    `sent` = a confirmation mail went out now · `already_sent` = one went to
+    this address within the last 24 h, nothing new was sent (the form says
+    «check your inbox» instead of a false «we sent») · `confirmed` = this row
+    is already a host. None when the box was not ticked."""
 
     status: Literal["added", "exists"]
+    host_confirm: Literal["sent", "already_sent", "confirmed"] | None = None
 
 
 class DeliveryWaitlistUnsubscribeIn(BaseModel):
