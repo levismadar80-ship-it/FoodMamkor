@@ -118,11 +118,6 @@ export const DIET_GATED_KEYS = [
   // MEH-2598: not a diet axis, but gated by the same snapshot count — a new
   // axis starts gated (producer-filters.js GATED_DIET_KEYS note).
   "on_site",
-  // MEH-1508 chunk 3ב-2: the 100% pair, gated at SCOPE_ALL_CHIP_MIN (1) on the
-  // declaration column — the predicate and threshold come from
-  // producer-filters.js so /map and the listing surfaces cannot disagree.
-  "vegan_all",
-  "vegetarian_all",
 ];
 
 // ProducerListOut boolean per axis (lib/schemas.js:215-222) — the same
@@ -151,8 +146,7 @@ const DIET_FIELD = {
  *   visitor is never stranded with a filter she can see and cannot switch
  *   off — the same carve-out /producers makes.
  * - Otherwise a diet chip renders iff >= DIET_CHIP_MIN snapshot businesses
- *   carry its product flag — or, for the two 100% axes (MEH-1508 chunk 3ב-2),
- *   iff >= SCOPE_ALL_CHIP_MIN (1) declared `*_scope === "all"`.
+ *   carry its product flag.
  *
  * Pure: same snapshot + same chipState => same array, which is what keeps
  * the sheet stable across toggles and area searches.

@@ -13,7 +13,7 @@ import { allBadges } from "../../../lib/badges.js";
 // @ts-expect-error TS7016 — JS lib, no .d.ts
 import { FILTER_AXES } from "../../../lib/filter-taxonomy.js";
 // @ts-expect-error TS7016 — JS lib, no .d.ts
-import { GATED_DIET_KEYS, gatedChipMin } from "../../../lib/producer-filters.js";
+import { GATED_DIET_KEYS } from "../../../lib/producer-filters.js";
 
 /**
  * Spec:     manual/producers
@@ -154,11 +154,10 @@ const DIET_KEYS_ON_PRODUCERS = Object.keys(AXES).filter(
 /** The four ungated diet chips, in LISTING_CHIP_ORDER — the MEH-1438 row-2 order. */
 const UNGATED_DIET_ORDER = ["vegan", "vegetarian", "gluten_free", "lactose_free"] as const;
 /**
- * MEH-1508 chunk 3ב-2 — the business-scope 100% pair. Gated (GATED_DIET_KEYS,
- * threshold gatedChipMin = 1 on `*_scope === "all"`) and rendered by the sheet
- * AFTER the any-product pills and their scope line, in this order.
+ * MEH-1508 chunk 3ב-2 — the business-scope pair. MEH-2677 (Sapir 05/11) took it
+ * out of the sheet (one chip per diet); it lives on as the card badge only.
  */
-const SCOPE_ALL_DIET_ORDER = ["vegan_all", "vegetarian_all"] as const;
+const SCOPE_ALL_KEYS = ["vegan_all", "vegetarian_all"] as const;
 
 /** Minimal ICU plural resolver for the `{count, plural, …}` strings in he.json. */
 function icu(msg: string, count: number): string {
@@ -263,25 +262,15 @@ test.beforeAll(() => {
   // Guards on the fixture's own premises, so a later edit cannot silently
   // move the +N count or the diet order the rows below assert.
   if (HIDDEN_BADGES.length !== 3) throw new Error(`P_BADGES must fold 3 badges, got ${HIDDEN_BADGES.length}`);
-  // MEH-1508 chunk 3ב-2 interleaved the gated 100% pair into the declaration
-  // order (vegan, vegetarian, vegan_all, vegetarian_all, …), so the four
-  // ungated axes are no longer a prefix. Pinned instead: the UNGATED diet axes,
-  // in declaration order, are exactly the four; the business-scope diet axes
-  // are exactly the 100% pair, both gated and both un-gated by the fixture.
+  // Pinned: the UNGATED diet axes, in declaration order, are exactly the four,
+  // and no business-scope diet axis is offered on /producers (MEH-2677).
   const ungated = DIET_KEYS_ON_PRODUCERS.filter((k) => !GATED_DIET_KEYS.includes(k));
   if (ungated.join() !== UNGATED_DIET_ORDER.join()) {
     throw new Error(`diet order drifted: ${DIET_KEYS_ON_PRODUCERS.join(",")}`);
   }
   const businessScope = DIET_KEYS_ON_PRODUCERS.filter((k) => AXES[k].scope !== "any-product");
-  if (businessScope.join() !== SCOPE_ALL_DIET_ORDER.join()) {
-    throw new Error(`business-scope diet axes drifted: ${businessScope.join(",")}`);
-  }
-  for (const key of SCOPE_ALL_DIET_ORDER) {
-    if (!GATED_DIET_KEYS.includes(key)) throw new Error(`${key} is no longer gated — the fixture census below is moot`);
-    const field = key === "vegan_all" ? "vegan_scope" : "vegetarian_scope";
-    const declared = PRODUCERS.filter((p) => p[field] === "all").length;
-    if (declared < gatedChipMin(key))
-      throw new Error(`${gatedChipMin(key)} business(es) declaring ${field}=all needed to un-gate ${key}, got ${declared}`);
+  if (businessScope.length !== 0) {
+    throw new Error(`a business-scope diet axis is back on /producers: ${businessScope.join(",")}`);
   }
   if (PRODUCERS.some((p) => p.has_no_added_sugar_products))
     throw new Error("no fixture row may declare no_added_sugar — the sheet's diet order below is pinned without it");
@@ -597,11 +586,10 @@ test.describe("manual › vegetarian axis (MEH-1438)", () => {
   //   gated fifth diet chip (no_added_sugar, MEH-1934) may or may not render —
   //   it is declared AFTER these four, so only the leading four are pinned.
   //   MEH-1508 chunk 3ב-2 renamed the partial pair «מתאים לטבעונים» /
-  //   «מתאים לצמחונים» (card §6.6, read from FILTER_AXES) and added the 100%
-  //   pair, which the sheet renders AFTER the any-product pills — so the fixture
-  //   (which un-gates both and declares no no_added_sugar) pins the whole diet
-  //   run, and each 100% pill's ⓘ.
-  test("the filter sheet's diet group offers «מתאים לצמחונים» second, in the locked order, then the 100% pair", async ({ page }) => {
+  //   «מתאים לצמחונים» (card §6.6, read from FILTER_AXES). The 100% pair it
+  //   added left the sheet in MEH-2677 — the fixture still declares it (one
+  //   row), so its absence here is a real assertion, not an empty catalog.
+  test("the filter sheet's diet group offers «מתאים לצמחונים» second, in the locked order, and no whole-business pill", async ({ page }) => {
     await gotoFiltered(page);
     await scope(page).getByTestId("producers-filters-button").click();
     const panel = page.locator("#filter-sheet-panel");
@@ -611,11 +599,10 @@ test.describe("manual › vegetarian axis (MEH-1438)", () => {
     const ids = (await switches.evaluateAll((els) => els.map((e) => e.getAttribute("data-testid") ?? "")))
       .map((id) => id.replace(/^chip-/, ""))
       .filter((k) => DIET_KEYS_ON_PRODUCERS.includes(k));
-    expect(ids).toEqual([...UNGATED_DIET_ORDER, ...SCOPE_ALL_DIET_ORDER]);
+    expect(ids).toEqual([...UNGATED_DIET_ORDER]);
     await expect(panel.getByTestId("chip-vegetarian")).toHaveText(AXES.vegetarian.label);
-    for (const key of SCOPE_ALL_DIET_ORDER) {
-      await expect(panel.getByTestId(`chip-${key}`)).toHaveText(AXES[key].label);
-      await expect(panel.getByTestId(`chip-info-${key}`)).toHaveAttribute("aria-label", String(AXES[key].subtext));
+    for (const key of SCOPE_ALL_KEYS) {
+      await expect(panel.getByTestId(`chip-${key}`)).toHaveCount(0);
     }
     await page.keyboard.press("Escape");
     await expect(panel).toHaveCount(0);

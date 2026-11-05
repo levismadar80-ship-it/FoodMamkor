@@ -257,7 +257,7 @@ export const FILTER_AXES = {
     evidence: "self-declared",
     subtext: "לפי הצהרת בית העסק",
     group: "diet",
-    surfaces: ["home", "producers", "map"],
+    surfaces: [], // MEH-2677 (Sapir 05/11): one filter chip per diet — card badge only
   },
   vegetarian_all: {
     // MEH-2677: was «100% צמחוני».
@@ -266,7 +266,7 @@ export const FILTER_AXES = {
     evidence: "self-declared",
     subtext: "לפי הצהרת בית העסק",
     group: "diet",
-    surfaces: ["home", "producers", "map"],
+    surfaces: [], // MEH-2677 (Sapir 05/11): one filter chip per diet — card badge only
   },
   gluten_free: {
     label: "ללא גלוטן",
@@ -333,9 +333,7 @@ export const MAP_CHIP_ORDER = [
   "kosher",
   "grass_fed",
   "vegan",
-  "vegan_all", // MEH-1508 chunk 3ב-2: each 100% chip right after its partial twin
   "vegetarian",
-  "vegetarian_all",
   "gluten_free",
   "lactose_free",
   "no_added_sugar",
@@ -357,9 +355,7 @@ export const MAP_CHIP_ORDER = [
 export const LISTING_CHIP_ORDER = [
   "kosher",
   "vegan",
-  "vegan_all", // MEH-1508 chunk 3ב-2: each 100% chip right after its partial twin
   "vegetarian",
-  "vegetarian_all",
   "gluten_free",
   "lactose_free",
   "no_added_sugar",

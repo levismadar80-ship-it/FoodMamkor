@@ -48,6 +48,8 @@ const GROUPS = ["diet", "quality", "service"];
 describe("MEH-2130 — axis declarations are complete and well-formed", () => {
   it("every axis declares label, scope, evidence, group and surfaces", () => {
     expect(ALL_KEYS.length).toBeGreaterThan(0);
+    const BADGE_ONLY = ["vegan_all", "vegetarian_all"];
+    for (const key of BADGE_ONLY) expect(FILTER_AXES[key].surfaces, key).toEqual([]);
     for (const key of ALL_KEYS) {
       const axis = FILTER_AXES[key];
       expect(typeof axis.label, `${key}.label`).toBe("string");
@@ -56,7 +58,10 @@ describe("MEH-2130 — axis declarations are complete and well-formed", () => {
       expect(EVIDENCE, `${key}.evidence`).toContain(axis.evidence);
       expect(GROUPS, `${key}.group`).toContain(axis.group);
       expect(Array.isArray(axis.surfaces), `${key}.surfaces`).toBe(true);
-      expect(axis.surfaces.length, `${key} offered on no surface`).toBeGreaterThan(0);
+      // MEH-2677: the two whole-business diet axes are badge-only (no chip).
+      if (!BADGE_ONLY.includes(key)) {
+        expect(axis.surfaces.length, `${key} offered on no surface`).toBeGreaterThan(0);
+      }
       for (const s of axis.surfaces) expect(SURFACES, `${key}.surfaces`).toContain(s);
       // subtext is either null (FilterSheet falls back to a BADGE_CONFIG
       // tooltip) or a non-empty string — never undefined, never "".

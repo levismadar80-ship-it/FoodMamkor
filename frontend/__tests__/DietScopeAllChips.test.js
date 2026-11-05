@@ -3,6 +3,7 @@
  *
  * Two halves the card rules inseparable (§5 "Chunk 3"):
  *
+ *  MEH-2677: (א) is now badge-only — the chip left every filter surface.
  *  (א) «טבעוני» / «צמחוני» — a filter chip on home, /producers and
  *      /map wired to the backend's standalone `?vegan_all` / `?vegetarian_all`
  *      (PR #3448, producer_listing._SCOPE_ALL_FILTERS), and a badge on the card
@@ -24,13 +25,11 @@ import { FILTER_AXES, LISTING_CHIP_ORDER, MAP_CHIP_ORDER } from "@/lib/filter-ta
 import {
   CHIPS_CONFIG,
   PRODUCERS_CHIPS_CONFIG,
-  buildChipParams,
   visibleGatedDietKeys,
 } from "@/lib/producer-filters";
-import { TOGGLE_CHIPS, chipStateToParams, visibleMapToggleChips } from "@/lib/map-chips";
-import { chipsFromQuery, chipsToQuery } from "@/lib/filter-url";
+import { TOGGLE_CHIPS, visibleMapToggleChips } from "@/lib/map-chips";
 import { BADGE_CONFIG, allBadges } from "@/lib/badges";
-import { badgeIcon, chipIcon } from "@/lib/chip-icons";
+import { badgeIcon } from "@/lib/chip-icons";
 import { ProducerSchema } from "@/lib/schemas";
 
 const LOCKED = {
@@ -65,98 +64,49 @@ describe("§6.6 — the exposed diet chips carry their scope in the term", () =>
   });
 });
 
-describe("§6.4 — the 100% chips", () => {
-  it.each(SCOPE_ALL)("%s is a business-scope self-declaration with the locked copy", (key) => {
+describe("MEH-2677 — the whole-business axes are a card badge, not a filter chip", () => {
+  // Sapir 05/11: «מתאים לצמחונים» + «צמחוני» side by side in the sheet read as
+  // a duplicate. One chip per diet (the Uber Eats pattern); the declaration
+  // stays visible as the card badge below.
+  it.each(SCOPE_ALL)("%s keeps its declaration (label, scope, evidence) for the badge pairing", (key) => {
     const axis = FILTER_AXES[key];
     expect(axis, `FILTER_AXES.${key}`).toBeDefined();
     expect(axis.label).toBe(LOCKED[key]);
     expect(axis.scope).toBe("business");
     expect(axis.evidence).toBe("self-declared");
     expect(axis.subtext).toBe(DECLARED);
-    expect(axis.group).toBe("diet");
-    expect([...axis.surfaces].sort()).toEqual(["home", "map", "producers"]);
+    expect(axis.surfaces).toEqual([]);
   });
 
-  it.each(SCOPE_ALL)("%s is offered on home, /producers and /map", (key) => {
-    expect(CHIPS_CONFIG.map((c) => c.key)).toContain(key);
-    expect(PRODUCERS_CHIPS_CONFIG.map((c) => c.key)).toContain(key);
-    expect(TOGGLE_CHIPS.map((c) => c.key)).toContain(key);
+  it.each(SCOPE_ALL)("%s is offered on no filter surface", (key) => {
+    expect(CHIPS_CONFIG.map((c) => c.key)).not.toContain(key);
+    expect(PRODUCERS_CHIPS_CONFIG.map((c) => c.key)).not.toContain(key);
+    expect(TOGGLE_CHIPS.map((c) => c.key)).not.toContain(key);
+    expect(LISTING_CHIP_ORDER).not.toContain(key);
+    expect(MAP_CHIP_ORDER).not.toContain(key);
   });
 
-  it("each 100% chip sits directly after its partial twin on every surface", () => {
-    for (const order of [LISTING_CHIP_ORDER, MAP_CHIP_ORDER]) {
-      expect(order.indexOf("vegan_all")).toBe(order.indexOf("vegan") + 1);
-      expect(order.indexOf("vegetarian_all")).toBe(order.indexOf("vegetarian") + 1);
+  it("the partial chips are still offered everywhere, with their locked copy", () => {
+    for (const key of ["vegan", "vegetarian"]) {
+      expect(CHIPS_CONFIG.map((c) => c.key)).toContain(key);
+      expect(PRODUCERS_CHIPS_CONFIG.map((c) => c.key)).toContain(key);
+      expect(TOGGLE_CHIPS.map((c) => c.key)).toContain(key);
     }
   });
 
-  it("emits the backend's own param name on every surface (PR #3448)", () => {
-    expect(buildChipParams({ vegan_all: true, vegetarian_all: true })).toEqual({
-      vegan_all: true,
-      vegetarian_all: true,
-    });
-    expect(chipStateToParams({ vegan_all: true }, [])).toEqual({ vegan_all: true });
-    expect(chipStateToParams({ vegetarian_all: true }, [])).toEqual({ vegetarian_all: true });
-    // The list↔map handoff carries it and reads it back.
-    expect(chipsToQuery({ vegan_all: true })).toBe("?vegan_all=1");
-    expect(chipsFromQuery(new URLSearchParams("vegetarian_all=1"), SCOPE_ALL)).toEqual({
-      vegetarian_all: true,
-    });
+  it("is never data-gated any more (no chip to gate)", () => {
+    const declared = Array.from({ length: 3 }, (_, i) => ({ id: i, vegan_scope: "all", vegetarian_scope: "all" }));
+    expect(visibleGatedDietKeys(declared, {})).not.toContain("vegan_all");
+    expect(visibleGatedDietKeys(declared, {})).not.toContain("vegetarian_all");
+    const map = visibleMapToggleChips({ catalogSnapshot: declared }).map((c) => c.key);
+    expect(map).not.toContain("vegan_all");
+    expect(map).not.toContain("vegetarian_all");
   });
 
-  it("does not turn the partial filter into the 100% one (distinct params)", () => {
-    expect(buildChipParams({ vegan: true })).toEqual({ vegan: true });
-    expect(chipStateToParams({ vegetarian: true }, [])).toEqual({ vegetarian: true });
-  });
-
-  it("carries a glyph that is not a checkmark", () => {
-    expect(chipIcon("vegan_all")?.type).toBe(Leaf);
-    expect(chipIcon("vegetarian_all")?.type).toBe(Carrot);
-    for (const key of SCOPE_ALL) {
-      expect(chipIcon(key)?.type).not.toBe(SealCheck);
-      expect(LOCKED[key]).not.toMatch(/[✓✔☑]/u);
-    }
-  });
-});
-
-describe("data gate — threshold 1 (06/09), absent rather than disabled", () => {
-  const declared = (field, n, value = "all") =>
-    Array.from({ length: n }, (_, i) => ({ id: i, [field]: value }));
-
-  it("shows the chip as soon as ONE business declared 100%", () => {
-    const shown = visibleGatedDietKeys(declared("vegan_scope", 1), {});
-    expect(shown).toContain("vegan_all");
-    expect(shown).not.toContain("vegetarian_all");
-    expect(visibleGatedDietKeys(declared("vegetarian_scope", 1), {})).toContain("vegetarian_all");
-  });
-
-  it("hides it at zero, and `some` / `unknown` do not count", () => {
-    expect(visibleGatedDietKeys([], {})).not.toContain("vegan_all");
-    const partial = [
-      ...declared("vegan_scope", 4, "some"),
-      ...declared("vegan_scope", 4, "unknown"),
-      // a business with vegan PRODUCTS but no declaration: the partial axis,
-      // never the 100% one.
-      { id: 99, has_vegan_products: true },
-    ];
-    expect(visibleGatedDietKeys(partial, {})).not.toContain("vegan_all");
-  });
-
-  it("an active 100% filter keeps its chip at zero (no stranded deep link)", () => {
-    expect(visibleGatedDietKeys([], { vegetarian_all: true })).toContain("vegetarian_all");
-  });
-
-  it("/map gates the same way, from the mount snapshot", () => {
-    const keys = (chips) => chips.map((c) => c.key);
-    const one = keys(visibleMapToggleChips({ catalogSnapshot: declared("vegan_scope", 1) }));
-    expect(one).toContain("vegan_all");
-    expect(one).not.toContain("vegetarian_all");
-    const none = keys(visibleMapToggleChips({ catalogSnapshot: declared("vegan_scope", 3, "some") }));
-    expect(none).not.toContain("vegan_all");
-    const active = keys(
-      visibleMapToggleChips({ catalogSnapshot: [], chipState: { vegetarian_all: true } }),
-    );
-    expect(active).toContain("vegetarian_all");
+  it("the badge keeps a glyph that is not a checkmark", () => {
+    expect(badgeIcon("vegan_all")?.type).toBe(Leaf);
+    expect(badgeIcon("vegetarian_all")?.type).toBe(Carrot);
+    for (const key of SCOPE_ALL) expect(badgeIcon(key)?.type).not.toBe(SealCheck);
   });
 });
 
