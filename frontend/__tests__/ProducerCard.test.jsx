@@ -684,6 +684,10 @@ describe("ProducerCard — heart (Phase C)", () => {
     render(<ProducerCard producer={fullProducer} />);
     const heart = screen.getByTestId("card-heart");
     expect(heart).toHaveAttribute("aria-pressed", "false");
+    // MEH-2671: the inline-END corner (top-left in RTL), both densities.
+    expect(heart.className).toMatch(/\bend-2\b/);
+    expect(heart.className).toMatch(/\bsm:end-3\b/);
+    expect(heart.className).not.toMatch(/\bstart-[23]\b/);
     const icon = heart.querySelector('[data-testid="icon-heart"]');
     expect(icon).toHaveAttribute("data-weight", "regular");
   });

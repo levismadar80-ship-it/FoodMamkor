@@ -27,10 +27,11 @@ function expectBesideHeart() {
   expect(cluster.contains(screen.getByTestId("share-overlay"))).toBe(true);
   // Mobile-only: on desktop the quiet bell lives in the header actions row.
   expect(cluster.className).toMatch(/(^|\s)lg:hidden(\s|$)/);
-  // Order: share · heart · bell (the bell follows the heart it depends on).
+  // MEH-2671: order heart · share · bell — the desktop row's order
+  // (שמירה · שיתוף · עדכונים), cluster pinned to the inline-end corner.
   expect([...cluster.children].map((el) => el.dataset.testid)).toEqual([
-    "share-overlay",
     "fav-overlay",
+    "share-overlay",
     "updates-bell",
   ]);
 }
