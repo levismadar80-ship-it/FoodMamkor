@@ -522,10 +522,15 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         if (producerId) {
           // MEH-2699: reservist_owned rides the EDIT payload only — the admin
           // PUT accepts it (ProducerUpdate) while ProducerAdminCreate has no
-          // such field, and the checkbox renders on edit only.
+          // such field, and the checkbox renders on edit only. It is sent only
+          // when the admin changed it: the owner can flip it from the
+          // dashboard while this form is open, and an unrelated admin save
+          // must not overwrite that with the value loaded at page open.
+          const reservistChanged =
+            !!form.reservist_owned !== !!initial?.reservist_owned;
           await api.put(`/admin/producers/${producerId}`, {
             ...payload,
-            reservist_owned: !!form.reservist_owned,
+            ...(reservistChanged && { reservist_owned: !!form.reservist_owned }),
           });
         } else if (asDraft) {
           // MEH-2325: land on the draft's edit page, where the claim-link

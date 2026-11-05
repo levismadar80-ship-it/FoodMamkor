@@ -82,7 +82,10 @@ export default function ReservistOwnedCard({ profile, onSave }) {
           aria-checked={checked}
           aria-labelledby="reservist-owned-label"
           aria-describedby="reservist-owned-helper"
-          disabled={saving}
+          // aria-disabled, not disabled: a disabled button drops keyboard /
+          // screen-reader focus for the length of the PUT; toggle() already
+          // ignores clicks while saving.
+          aria-disabled={saving}
           onClick={toggle}
           data-testid="reservist-owned-switch"
           className="group relative shrink-0 inline-flex items-center justify-center min-h-[44px] min-w-[44px] -my-2.5 focus-visible:outline-none"

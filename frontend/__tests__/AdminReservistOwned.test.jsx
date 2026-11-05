@@ -55,6 +55,16 @@ describe("Admin ProducerForm — reservist_owned (MEH-2699)", () => {
     expect(api.put.mock.calls[0][1].reservist_owned).toBe(false);
   });
 
+  it("edit: an unrelated save does not send reservist_owned (owner may have flipped it meanwhile)", async () => {
+    renderForm({ producerId: "p-1", initial: { name: "עסק לבדיקה", reservist_owned: true } });
+    await screen.findByRole("checkbox", { name: F.reservist_owned });
+    fireEvent.submit(
+      screen.getByRole("button", { name: he.admin.producers.form.submit_update }).closest("form"),
+    );
+    await waitFor(() => expect(api.put).toHaveBeenCalled());
+    expect(api.put.mock.calls[0][1]).not.toHaveProperty("reservist_owned");
+  });
+
   it("create: no reservist checkbox (the create schema has no such field)", async () => {
     renderForm({});
     await screen.findByRole("checkbox", { name: F.grass_fed });
