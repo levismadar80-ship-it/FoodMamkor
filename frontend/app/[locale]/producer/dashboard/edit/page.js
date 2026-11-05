@@ -77,6 +77,7 @@ import EditAccordionCard, {
 import EditHubCard from "@/components/EditHubCard";
 import Input from "@/components/ui/Input";
 import { detailToMessage } from "@/lib/errors";
+import { BADGE_CONFIG } from "@/lib/badges";
 import ProductsSection from "@/components/ProductsSection";
 import LocationsEditor from "./LocationsEditor";
 import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, PricingCard, DeliveryCard, OffersCard, LicenseCard, KashrutCard, BusinessNameCard, ViewOnPageLink } from "./cards";
@@ -852,35 +853,37 @@ function EditPageInner() {
         <EditAccordionCard
           anchorId="owner-story"
           title={t("owner_story.heading")}
-          summary={
+          summary={[
             (profile.owner_bio || "").trim() || profile.owner_photo_url
               ? tAcc("owner_present")
-              : tAcc("owner_missing")
-          }
+              : tAcc("owner_missing"),
+            // MEH-2699: the closed card says when the reservist claim is on —
+            // the badge's own label, no new copy.
+            profile.reservist_owned ? BADGE_CONFIG.reservist_owned.label : null,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
           open={openKey === "ownerStory"}
           onToggle={() => toggleKey("ownerStory")}
         >
-          <OwnerStoryCard
-            profile={profile}
-            onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-            reportDirty={reportDirty}
-          />
-        </EditAccordionCard>
-
-        {/* MEH-2693 «עסק של מילואימניקים» — a claim about the OWNERS, so it
-            sits beside the owner story, not with the catalog claims.
-            Self-declared, badge only (never ranking). */}
-        <EditAccordionCard
-          anchorId="reservist-owned"
-          title={t("reservistOwned.heading")}
-          open={openKey === "reservistOwned"}
-          onToggle={() => toggleKey("reservistOwned")}
-        >
-          <ReservistOwnedCard
-            profile={profile}
-            onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-            reportDirty={reportDirty}
-          />
+          <div className="space-y-4">
+            <OwnerStoryCard
+              profile={profile}
+              onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+              reportDirty={reportDirty}
+            />
+            {/* MEH-2699 «עסק של מילואימניקים» — a claim about the OWNERS, so it
+                lives inside «מאחורי העסק» as one switch that saves on toggle
+                (Google/Yelp: one row in an identity group, never its own card).
+                The #reservist-owned deep link still lands here — see
+                lib/dashboard-edit-anchors.js. */}
+            <div id="reservist-owned" className="scroll-mt-24">
+              <ReservistOwnedCard
+                profile={profile}
+                onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+              />
+            </div>
+          </div>
         </EditAccordionCard>
 
         {/* MEH-2063: business-name editor moved LAST in the group — renaming

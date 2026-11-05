@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { ArrowSquareOut, Cow, X } from "@phosphor-icons/react";
+import { ArrowSquareOut, Cow, Medal, X } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { HEALTH_MINISTRY_FOOD_REGISTRY_URL } from "@/lib/official-registries";
 import { useAdminAction } from "@/lib/use-admin-action";
@@ -179,6 +179,9 @@ const EMPTY = {
   // columns stay; the payload simply omits the keys, and the admin PUT is
   // exclude_unset, so an edit never clears a stored value.
   grass_fed: false,
+  // MEH-2699: owner-declared «עסק של מילואימניקים». The admin sees it and can
+  // correct a false claim; `...initial` seeds it on edit.
+  reservist_owned: false,
   // MEH-1508 ch2: business-level dietary scope (admin cross-check selects).
   // `...initial` overrides these from ProducerAdminOut on edit; defaults here
   // cover the admin-create path.
@@ -517,7 +520,18 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       "producer-save",
       async () => {
         if (producerId) {
-          await api.put(`/admin/producers/${producerId}`, payload);
+          // MEH-2699: reservist_owned rides the EDIT payload only — the admin
+          // PUT accepts it (ProducerUpdate) while ProducerAdminCreate has no
+          // such field, and the checkbox renders on edit only. It is sent only
+          // when the admin changed it: the owner can flip it from the
+          // dashboard while this form is open, and an unrelated admin save
+          // must not overwrite that with the value loaded at page open.
+          const reservistChanged =
+            !!form.reservist_owned !== !!initial?.reservist_owned;
+          await api.put(`/admin/producers/${producerId}`, {
+            ...payload,
+            ...(reservistChanged && { reservist_owned: !!form.reservist_owned }),
+          });
         } else if (asDraft) {
           // MEH-2325: land on the draft's edit page, where the claim-link
           // panel lives — the next thing the admin does is mint the link.
@@ -822,6 +836,20 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             />
             <Cow size={16} className="inline align-[-2px] text-primary" aria-hidden="true" /> {t("producers.form.fields.grass_fed")}
           </label>
+          {/* MEH-2699: owner-declared reservist claim — shown on edit so the
+              admin can see it and correct a false declaration. */}
+          {producerId && (
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                name="reservist_owned"
+                checked={!!form.reservist_owned}
+                onChange={(e) => update("reservist_owned", e.target.checked)}
+                className="w-4 h-4 accent-primary"
+              />
+              <Medal size={16} className="inline align-[-2px] text-primary" aria-hidden="true" /> {t("producers.form.fields.reservist_owned")}
+            </label>
+          )}
           {/* MEH-293: dietary checkboxes (gluten_free / vegan / lactose_free) moved to per-product. */}
           {/* MEH-766 ch3: "verified" checkbox removed — verification is the
               admin doc-grant flow (grant-verified → verified_at), not a free toggle. */}
