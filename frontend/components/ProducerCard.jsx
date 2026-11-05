@@ -8,7 +8,7 @@ import Image from "next/image";
 import { HeartStraight, Star, Truck } from "@phosphor-icons/react";
 import BadgeRow, { resolveBadgeLabel } from "./BadgeRow";
 import TrustBadge from "./TrustBadge";
-import OfferBadge from "./OfferBadge";
+import OfferBadge, { freeDeliveryThreshold } from "./OfferBadge";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import { highlightMatch } from "@/lib/highlightMatch";
 import { getOrderWindowStatus } from "@/lib/orderWindow";
@@ -51,6 +51,30 @@ const AMOUNT_SENTINEL = "\u0000";
 function splitAroundAmount(text) {
   const [before, after = ""] = text.split(AMOUNT_SENTINEL);
   return { before, after };
+}
+
+// MEH-2676: «חינם מעל ₪150» / «משלוח חינם מעל ₪150» on the card's delivery
+// row. Shekels use formatPrice so the threshold reads exactly like the fee
+// beside it; other units reuse the offer's own plural-aware amount strings.
+function FreeAboveText({ t, freeAbove, keyName, nowrap = false }) {
+  const amount =
+    freeAbove.unit === "ils"
+      ? formatPrice(freeAbove.value)
+      : t(`producer.offer.unit_amount.${freeAbove.unit}`, { count: freeAbove.value });
+  const { before, after } = splitAroundAmount(t(keyName, { amount: AMOUNT_SENTINEL }));
+  // The word before the amount («מעל») stays on the amount's line: at 375 the
+  // row wraps, and «מעל» alone at a line end with «₪150» below reads broken.
+  const [, lead = "", lastWord = before] = before.match(/^(.*\s)?(\S+\s*)$/) || [];
+  return (
+    <span className={`font-semibold text-primary ${nowrap ? "whitespace-nowrap" : ""}`} data-testid="card-free-above">
+      {lead}
+      <span className="whitespace-nowrap">
+        {lastWord}
+        <bdi>{amount}</bdi>
+        {after}
+      </span>
+    </span>
+  );
 }
 
 // MEH-643 (Assembly v2): availability dot is fully tokenized — no raw hex.
@@ -187,6 +211,11 @@ function CardHeart({ producer, onCountChange }) {
 export default function ProducerCard({ producer, active, onClick, referrer, fridayMode = false, highlightQuery = null }) {
   const t = useTranslations();
   const cardFee = resolveDeliveryFee(producer.delivery_fee, producer.delivery_areas);
+  // MEH-2676: a free-delivery offer with a threshold joins the delivery row
+  // («משלוח מ-₪20 · חינם מעל ₪150») instead of a chip. The full sentence did
+  // not fit a 375 card and truncated right before the amount (Sapir, 5/11).
+  const freeAbove = freeDeliveryThreshold(producer.active_offer);
+  const alwaysFree = cardFee.fee === 0 && !cardFee.from;
   // Same namespace BadgeRow.jsx and KashrutBadgeStrip.jsx:115 use, so the
   // overflow rows read the identical `kashrut.badges.*.label` strings the
   // visible pills and the detail page read.
@@ -681,7 +710,9 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
         {/* MEH-1823: the active offer, as a short chip. OfferBadge returns null
             when active_offer is absent, so a business without an offer renders
             byte-identically to before — no wrapper, no gap, no flow change. */}
-        <OfferBadge offer={producer.active_offer} variant="chip" />
+        {/* MEH-2676: a thresholded free-delivery offer renders in the
+            delivery row below instead — one delivery item, amount visible. */}
+        {!freeAbove && <OfferBadge offer={producer.active_offer} variant="chip" />}
         {/* /MEH-1823 */}
 
         {localFavCount >= 5 && (
@@ -714,27 +745,37 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
             when delivery_fee is null/undefined — no "no delivery" row. */}
         {/* MEH-2602: the same resolver as DeliveryBlock's top line — per-area
             overrides included — so card and page state one price. */}
-        {cardFee.fee != null && (
-          <p className="flex items-center gap-1 text-[12px] text-fg-muted" data-testid="card-delivery-fee">
-            <Truck size={14} className="shrink-0" aria-hidden="true" />
-            {cardFee.fee === 0 && !cardFee.from ? (
-              t("group_buys.delivery.fee_free")
-            ) : (
-              (() => {
-                const { before, after } = splitAroundAmount(
-                  t(cardFee.from ? "group_buys.delivery.fee_from" : "group_buys.delivery.fee", {
-                    amount: AMOUNT_SENTINEL,
-                  }),
-                );
-                return (
-                  <>
-                    {before}
-                    <bdi>{formatPrice(cardFee.fee)}</bdi>
-                    {after}
-                  </>
-                );
-              })()
-            )}
+        {(cardFee.fee != null || freeAbove) && (
+          <p className="flex items-start gap-1 text-[12px] text-fg-muted" data-testid="card-delivery-fee">
+            <Truck size={14} className="shrink-0 mt-[1px]" aria-hidden="true" />
+            <span className="min-w-0">
+              {alwaysFree ? (
+                t("group_buys.delivery.fee_free")
+              ) : cardFee.fee != null ? (
+                (() => {
+                  const { before, after } = splitAroundAmount(
+                    t(cardFee.from ? "group_buys.delivery.fee_from" : "group_buys.delivery.fee", {
+                      amount: AMOUNT_SENTINEL,
+                    }),
+                  );
+                  return (
+                    <>
+                      {before}
+                      <bdi>{formatPrice(cardFee.fee)}</bdi>
+                      {after}
+                      {freeAbove && (
+                        <>
+                          {" · "}
+                          <FreeAboveText t={t} freeAbove={freeAbove} keyName="producer.offer.card_free_above" nowrap />
+                        </>
+                      )}
+                    </>
+                  );
+                })()
+              ) : (
+                <FreeAboveText t={t} freeAbove={freeAbove} keyName="producer.offer.card_free_above_alone" />
+              )}
+            </span>
           </p>
         )}
 
