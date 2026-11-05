@@ -140,7 +140,9 @@ class TestNoCoordinatesNoRow:
         consumer = make_user(db, email="nocoords@example.com", role="consumer")
         resp = client.post(
             "/auth/register/producer",
-            json=_body(db, email="nocoords@example.com", city="תל אביב"),
+            # MEH-2669: a town the coordinates file does not know — a known one
+            # now gets an approximate pin (MEH-2480), pinned in its own suite.
+            json=_body(db, email="nocoords@example.com", city="כפר שאינו בשום רשימה"),
             headers=auth_header(consumer),
         )
         assert resp.status_code == 200, resp.json()
@@ -155,7 +157,9 @@ class TestNoCoordinatesNoRow:
         consumer = make_user(db, email="partial@example.com", role="consumer")
         resp = client.post(
             "/auth/register/producer",
-            json=_body(db, email="partial@example.com", city="חיפה", lat=32.79),
+            json=_body(
+                db, email="partial@example.com", city="כפר שאינו בשום רשימה", lat=32.79
+            ),
             headers=auth_header(consumer),
         )
         assert resp.status_code == 200, resp.json()
