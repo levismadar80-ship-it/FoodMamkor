@@ -50,11 +50,12 @@ export function rescueBagsEnabled() {
  * pickup point's `city` exactly as the API returns it.
  */
 export const RESCUE_LEFTOVER_GROUP_NATIONAL = "https://www.facebook.com/groups/freefood/";
-export const RESCUE_LEFTOVER_GROUPS = Object.freeze({});
+const RESCUE_LEFTOVER_GROUPS = Object.freeze({});
 
 export function leftoverGroupUrl(city, groups = RESCUE_LEFTOVER_GROUPS) {
   const key = typeof city === "string" ? city.trim() : "";
-  return (key && groups[key]) || RESCUE_LEFTOVER_GROUP_NATIONAL;
+  // Own keys only: a town named "constructor" must not resolve to Object.prototype.
+  return (key && Object.hasOwn(groups, key) && groups[key]) || RESCUE_LEFTOVER_GROUP_NATIONAL;
 }
 
 /** Walking minutes, the way the spec defines them: haversine × 1.3 at 5 km/h. */

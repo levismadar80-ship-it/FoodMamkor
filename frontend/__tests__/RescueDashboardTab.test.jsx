@@ -335,5 +335,8 @@ describe("leftoverGroupUrl", () => {
     expect(leftoverGroupUrl(" חדרה ", groups)).toBe("https://example.org/hadera");
     expect(leftoverGroupUrl("בנימינה", groups)).toBe(RESCUE_LEFTOVER_GROUP_NATIONAL);
     expect(leftoverGroupUrl(undefined, groups)).toBe(RESCUE_LEFTOVER_GROUP_NATIONAL);
+    // An inherited property is not a group: a plain lookup returned a function here.
+    expect(leftoverGroupUrl("constructor", groups)).toBe(RESCUE_LEFTOVER_GROUP_NATIONAL);
+    expect(leftoverGroupUrl("toString")).toBe(RESCUE_LEFTOVER_GROUP_NATIONAL);
   });
 });
