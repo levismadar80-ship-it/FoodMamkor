@@ -247,7 +247,10 @@ export const FILTER_AXES = {
   // producer-filters.js. Gluten / lactose have NO 100% axis: their business
   // layer is a facility question (§2, §6.3), not a catalog one.
   vegan_all: {
-    label: "100% טבעוני",
+    // MEH-2677 (Sapir 05/11): was «100% טבעוני» — readers did not parse the
+    // percent. Deliveroo / Uber Eats / Yelp: one word for the whole business,
+    // "… friendly" for partial (ours: «מתאים לטבעונים»).
+    label: "טבעוני",
     scope: "business",
     evidence: "self-declared",
     subtext: "לפי הצהרת בית העסק",
@@ -255,7 +258,8 @@ export const FILTER_AXES = {
     surfaces: ["home", "producers", "map"],
   },
   vegetarian_all: {
-    label: "100% צמחוני",
+    // MEH-2677: was «100% צמחוני».
+    label: "צמחוני",
     scope: "business",
     evidence: "self-declared",
     subtext: "לפי הצהרת בית העסק",

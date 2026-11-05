@@ -218,7 +218,10 @@ export const BADGE_CONFIG = {
     key: "vegan_all",
     scope: "business",
     evidence: "self-declared",
-    label: "100% טבעוני",
+    // MEH-2677 (Sapir 05/11): was «100% טבעוני» — readers did not parse the
+    // percent. Deliveroo / Uber Eats / Yelp: one word for the whole business,
+    // "… friendly" for partial (ours: «מתאים לטבעונים»).
+    label: "טבעוני",
     tooltip: "לפי הצהרת בית העסק",
     color: "muted",
   },
@@ -226,7 +229,8 @@ export const BADGE_CONFIG = {
     key: "vegetarian_all",
     scope: "business",
     evidence: "self-declared",
-    label: "100% צמחוני",
+    // MEH-2677: was «100% צמחוני».
+    label: "צמחוני",
     tooltip: "לפי הצהרת בית העסק",
     color: "muted",
   },

@@ -82,9 +82,9 @@ describe("FilterSheet (MEH-1075)", () => {
       // diet — pills (MEH-2169). MEH-1508 chunk 3ב-2: the §6.6 rename, plus
       // the two 100% axes beside their partial twins.
       "מתאים לטבעונים",
-      "100% טבעוני",
+      "טבעוני",
       "מתאים לצמחונים",
-      "100% צמחוני",
+      "צמחוני",
       "ללא גלוטן",
       "ללא לקטוז",
       "ללא סוכר מוסף",

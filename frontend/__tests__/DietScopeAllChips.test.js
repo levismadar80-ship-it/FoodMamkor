@@ -35,8 +35,8 @@ import { ProducerSchema } from "@/lib/schemas";
 const LOCKED = {
   vegan: "מתאים לטבעונים",
   vegetarian: "מתאים לצמחונים",
-  vegan_all: "100% טבעוני",
-  vegetarian_all: "100% צמחוני",
+  vegan_all: "טבעוני",
+  vegetarian_all: "צמחוני",
 };
 const DECLARED = "לפי הצהרת בית העסק";
 const SCOPE_ALL = ["vegan_all", "vegetarian_all"];

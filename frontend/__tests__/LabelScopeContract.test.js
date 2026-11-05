@@ -252,14 +252,14 @@ describe("MEH-1507 Label Scope Contract — every label declares scope + evidenc
       // tooltip names who stands behind the claim.
       vegan_all: {
         key: "vegan_all",
-        label: "100% טבעוני",
+        label: "טבעוני",
         tooltip: "לפי הצהרת בית העסק",
         color: "muted",
         aboutHref: null,
       },
       vegetarian_all: {
         key: "vegetarian_all",
-        label: "100% צמחוני",
+        label: "צמחוני",
         tooltip: "לפי הצהרת בית העסק",
         color: "muted",
         aboutHref: null,
