@@ -72,6 +72,10 @@ describe("RecipeDetail hero actions (MEH-2558)", () => {
     const actions = screen.getByTestId("recipe-hero-actions");
     expect(actions.querySelector('[data-testid="share-recipe"]')).toBeTruthy();
     expect(actions.querySelector('[data-testid="save-recipe"][data-id="r1"]')).toBeTruthy();
+    // MEH-2671: the inline-END corner (top-left in RTL), heart first.
+    expect(actions.className).toMatch(/\bend-3\b/);
+    expect(actions.className).not.toMatch(/\bstart-3\b/);
+    expect(actions.firstElementChild.getAttribute("data-testid")).toBe("save-recipe");
   });
   it("keeps them on the no-photo strip", () => {
     renderRecipe();

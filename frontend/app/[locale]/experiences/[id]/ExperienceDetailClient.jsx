@@ -206,7 +206,7 @@ export default function ExperienceDetailClient() {
         {/* MEH-2559: the save heart on the cover's corner — the corner the recipe
             and business pages use. Not in the share/calendar row: a third
             button there wraps «הוספה ליומן» onto two lines below 375px. */}
-        <div className="absolute top-3 start-3 lg:top-9 lg:start-7 z-10" data-testid="experience-cover-actions">
+        <div className="absolute top-3 end-3 lg:top-9 lg:end-7 z-10" data-testid="experience-cover-actions">
           <SaveButton itemType="experience" itemId={ex.id} />
         </div>
         {ex.image_url ? (
