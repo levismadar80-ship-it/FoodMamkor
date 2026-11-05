@@ -145,7 +145,9 @@ let RescueConfirmation;
 beforeEach(async () => {
   vi.clearAllMocks();
   flagOn = true;
-  authUser = null;
+  // Signed in by default: the reserve flow is a signed-in flow. Guest cases
+  // set it to null themselves.
+  authUser = { id: "u1" };
   fetchMyOrders.mockResolvedValue([]);
   fetchOffers.mockResolvedValue([offer()]);
   ({ default: RescueSection } = await import("@/components/rescue/RescueSection"));
@@ -564,6 +566,7 @@ describe("a reload keeps the order (MEH-2680)", () => {
   const mine = (over = {}) => ({ ...order(over), producer_id: PRODUCER.id, reviewed: false, ...over });
 
   it("a guest is never asked for their orders — a 401 would toast 'session expired'", async () => {
+    authUser = null;
     render(<RescueSection producer={PRODUCER} />);
     await screen.findByTestId("rescue-reserve");
     expect(fetchMyOrders).not.toHaveBeenCalled();
@@ -657,5 +660,16 @@ describe("the confirmation after the counter or the cutoff (MEH-2694)", () => {
     render(<RescueConfirmation order={order()} onCancel={() => {}} />);
     expect(screen.getByTestId("rescue-confirmation-cancel")).toBeTruthy();
     expect(screen.getByTestId("rescue-confirmation-step-done").className).not.toContain("font-semibold");
+  });
+});
+
+describe("a guest taps reserve (MEH-2700)", () => {
+  it("gets the sign-in line and no request is sent, so no 'session expired' toast", async () => {
+    authUser = null;
+    render(<RescueSection producer={PRODUCER} />);
+    fireEvent.click(await screen.findByTestId("rescue-reserve"));
+    const err = await screen.findByTestId("rescue-section-error");
+    expect(err.textContent).toBe(lookup("rescue.errors.sign_in"));
+    expect(reserveBag).not.toHaveBeenCalled();
   });
 });
