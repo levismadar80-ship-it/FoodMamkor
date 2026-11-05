@@ -1542,6 +1542,8 @@ class DeliveryWaitlistEntry(Base):
             "producer_id", "city_key", "email", name="uq_delivery_waitlist_city_email"
         ),
         Index("ix_delivery_waitlist_producer_city", "producer_id", "city_key"),
+        # MEH-2673: the per-address resend cooldown looks up by email.
+        Index("ix_delivery_waitlist_email_host_sent", "email", "host_confirm_sent_at"),
     )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -1560,6 +1562,20 @@ class DeliveryWaitlistEntry(Base):
     )
     created_at = Column(DateTime, default=utc_now, nullable=False)
     notified_at = Column(DateTime, nullable=True)
+    # MEH-2673: «אשמח לארח נקודת מסירה ב{עיר}». True = she ticked the box AND
+    # clicked the confirmation link mailed to this address — consent for THIS
+    # business to see her email; the owner reads it on /producers/me/analytics
+    # → pickup_hosts. Set only by POST /delivery-waitlist/host-confirm; a later
+    # plain signup does not flip it back (the unsubscribe link removes the row).
+    wants_to_host = Column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
+    # MEH-2673: when the last host-confirmation mail went out — the per-entry
+    # resend cooldown (services/delivery_waitlist.claim_host_confirm_send).
+    host_confirm_sent_at = Column(DateTime, nullable=True)
+    # MEH-2673: when the link was clicked — the consent record behind
+    # wants_to_host (Privacy Law amendment 13: who consented to what, when).
+    host_confirmed_at = Column(DateTime, nullable=True)
 
     producer = relationship("Producer")
 

@@ -20,11 +20,14 @@ History:  MEH-2618 (creation). Plan: claude.ai/artifact/2W4LNWVVxUDBSu8gMQQWsW.
 from __future__ import annotations
 
 import logging
+from datetime import UTC, timedelta
+from typing import Literal
 from uuid import UUID
 
 from joserfc import jwt as jose_jwt
 from joserfc.errors import JoseError
 from joserfc.jwk import OctKey
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -39,8 +42,12 @@ logger = logging.getLogger(__name__)
 __all__ = [
     "add_entry",
     "city_key",
+    "create_host_confirm_token",
     "create_unsubscribe_token",
     "decode_unsubscribe_token",
+    "inspect_host_confirm_token",
+    "claim_host_confirm_send",
+    "send_host_confirmation",
     "find_entry",
     "normalize_email",
     "notify_cities",
@@ -58,25 +65,77 @@ def _key() -> OctKey:
     return OctKey.import_key(settings.secret_key.encode())
 
 
-def create_unsubscribe_token(entry_id: UUID) -> str:
-    payload = {"sub": str(entry_id), "scope": _UNSUBSCRIBE_SCOPE}
+# MEH-2673: the «אשמח לארח נקודת מסירה» confirmation link. Same token shape,
+# its own scope, so an unsubscribe link can never confirm hosting and a
+# confirmation link can never delete the row.
+_HOST_CONFIRM_SCOPE = "delivery_waitlist_host_confirm"
+# Unlike the unsubscribe link, a consent link expires: an old mail found
+# months later should not still hand the address to a business. 7 days is the
+# upper end of the double-opt-in norm (48–72 h for account access, up to a
+# week when no access is granted — customer.io / suped guidance, 05/11).
+HOST_CONFIRM_TTL = timedelta(days=7)
+# One confirmation mail per entry per window, whatever the per-IP limit lets
+# through — a stranger re-submitting the form cannot flood the address.
+HOST_CONFIRM_RESEND_COOLDOWN = timedelta(hours=24)
+# MEH-2673: at most this many confirmation mails per ADDRESS per cooldown
+# window, across every business and city. The per-entry cooldown above
+# stops a re-submitted form from re-mailing one link; this cap stops a
+# stranger from mailing the same inbox once per (business, city) combination.
+HOST_CONFIRM_ADDRESS_CAP = 3
+
+
+def _encode(entry_id: UUID, scope: str, ttl: timedelta | None = None) -> str:
+    payload = {"sub": str(entry_id), "scope": scope}
+    if ttl is not None:
+        payload["exp"] = int((utc_now() + ttl).replace(tzinfo=UTC).timestamp())
     return jose_jwt.encode({"alg": settings.algorithm}, payload, _key())
+
+
+def create_unsubscribe_token(entry_id: UUID) -> str:
+    return _encode(entry_id, _UNSUBSCRIBE_SCOPE)
+
+
+def create_host_confirm_token(entry_id: UUID) -> str:
+    return _encode(entry_id, _HOST_CONFIRM_SCOPE, HOST_CONFIRM_TTL)
 
 
 def decode_unsubscribe_token(token: str) -> UUID | None:
     """Entry id for a valid token, else None. Never raises (mirrors
     marketing.decode_unsubscribe_token)."""
+    entry_id, _ = _decode(token, _UNSUBSCRIBE_SCOPE)
+    return entry_id
+
+
+def inspect_host_confirm_token(token: str) -> tuple[UUID | None, str]:
+    """MEH-2673: (entry id, "ok") · (entry id, "expired") · (None, "invalid").
+    The expired case keeps the entry id, so the endpoint can mail a fresh
+    link instead of a dead end (the double-opt-in UX norm); it never counts
+    as consent."""
+    return _decode(token, _HOST_CONFIRM_SCOPE)
+
+
+def _decode(token: str, scope: str) -> tuple[UUID | None, str]:
     try:
         token_obj = jose_jwt.decode(token, _key(), algorithms=[settings.algorithm])
     except (JoseError, ValueError):
-        return None
-    if token_obj.claims.get("scope") != _UNSUBSCRIBE_SCOPE:
-        return None
+        return None, "invalid"
+    if token_obj.claims.get("scope") != scope:
+        return None, "invalid"
+    # joserfc's decode does not check `exp`; a token that carries one is
+    # checked here (unsubscribe tokens carry none and never expire).
     sub = token_obj.claims.get("sub")
     try:
-        return UUID(str(sub))
+        entry_id = UUID(str(sub))
     except (ValueError, TypeError):
-        return None
+        return None, "invalid"
+    exp = token_obj.claims.get("exp")
+    if exp is not None:
+        # bool is an int subclass: `exp: true` is garbage, not "expired".
+        if isinstance(exp, bool) or not isinstance(exp, int | float):
+            return None, "invalid"
+        if exp < utc_now().replace(tzinfo=UTC).timestamp():
+            return entry_id, "expired"
+    return entry_id, "ok"
 
 
 def normalize_email(email: str) -> str:
@@ -193,3 +252,91 @@ def notify_cities(db: Session, producer_id: UUID, cities: list[str]) -> None:
             continue
         entry.notified_at = utc_now()
         db.commit()
+
+
+def _host_confirm_url(entry_id: UUID) -> str:
+    return (
+        f"{settings.frontend_url}/delivery-waitlist/host-confirm"
+        f"?token={create_host_confirm_token(entry_id)}"
+    )
+
+
+def _host_confirm_copy(producer_name: str, city: str, entry_id: UUID):
+    # MEH-2673 — copy approved word for word by Sapir 05/11 («מאשרת», thread
+    # «בדיקת פתרון לניהול נקודות איסוף לבתי עסק»). Neutral reader address
+    # per ADR-037.
+    subject = f"אישור: נקודת מסירה של {producer_name} ב{city}"
+    body = (
+        f"קיבלנו בקשה לארח נקודת מסירה של {producer_name} ב{city}. "
+        f"אם זה אתם, אשרו בלחיצה, והמייל שלכם יועבר ל{producer_name} "
+        f"כדי לתאם איתכם. אם לא ביקשתם, אפשר להתעלם מהמייל הזה.\n\n"
+        f"מאשרים, אפשר להעביר: {_host_confirm_url(entry_id)}\n\n"
+        "מהמקור — בתי עסק מקומיים, כולם במקום אחד."
+    )
+    return subject, body
+
+
+def send_host_confirmation(
+    entry_id: UUID, email: str, city: str, producer_name: str
+) -> None:
+    """MEH-2673: mail the «אשמח לארח» confirmation link to the address that
+    ticked the box. Until the link is clicked `wants_to_host` stays False, so
+    an address typed by someone else never reaches the business. Runs as a
+    BackgroundTask and reads nothing from the DB — the caller passes what the
+    copy needs. Fail-open like every mail (send_email never raises)."""
+    subject, body = _host_confirm_copy(producer_name, city, entry_id)
+    send_email(email, subject, body)
+
+
+HostConfirmVerdict = Literal["send", "already_sent", "limit_reached"]
+
+
+def claim_host_confirm_send(
+    db: Session, entry: DeliveryWaitlistEntry
+) -> HostConfirmVerdict:
+    """MEH-2673: "send" (and stamps the entry) when a confirmation mail may
+    go out now. Two guards, both per cooldown window, each with its own
+    verdict so the form never says «check your inbox» for a mail that never
+    went: "already_sent" = THIS entry was mailed within the window (a
+    re-submitted form does not re-mail the same link — the link is in the
+    inbox); "limit_reached" = the ADDRESS hit HOST_CONFIRM_ADDRESS_CAP across
+    every business and city (one row per (business, city, email) would
+    otherwise let a stranger mail the same inbox once per combination —
+    nothing was sent for this entry). Each link confirms one entry only, so
+    a second business within the window still gets its own mail. The caller
+    commits.
+
+    Serialised per address with a transaction-scoped advisory lock, so two
+    simultaneous submits cannot both read "under the cap" and both mail —
+    the lock is released at the caller's commit/rollback.
+
+    Accepted limits (reviewed 05/11, MEH-2673): (a) a third party who knows
+    an address can burn its cap with three other business/city combos, so
+    the real request answers "limit_reached" for up to 24 h — the cost is a
+    one-day delay on an opt-in, not data exposure, and the route's per-IP
+    limit makes it manual work; (b) the key is the normalised string, so
+    Gmail `+tag` / dot aliases count as separate addresses — the per-IP
+    limit is the backstop for that inbox-flood shape."""
+    db.execute(
+        text("SELECT pg_advisory_xact_lock(hashtext(:email))"),
+        {"email": entry.email},
+    )
+    now = utc_now()
+    window_start = now - HOST_CONFIRM_RESEND_COOLDOWN
+    if (
+        entry.host_confirm_sent_at is not None
+        and entry.host_confirm_sent_at > window_start
+    ):
+        return "already_sent"
+    sent_to_address = (
+        db.query(DeliveryWaitlistEntry.id)
+        .filter(
+            DeliveryWaitlistEntry.email == entry.email,
+            DeliveryWaitlistEntry.host_confirm_sent_at > window_start,
+        )
+        .count()
+    )
+    if sent_to_address >= HOST_CONFIRM_ADDRESS_CAP:
+        return "limit_reached"
+    entry.host_confirm_sent_at = now
+    return "send"
