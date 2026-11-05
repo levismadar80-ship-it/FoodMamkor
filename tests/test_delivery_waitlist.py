@@ -295,8 +295,34 @@ def _owner(db, producer, email):
     return user
 
 
+def _capture_mail(monkeypatch):
+    sent = []
+    monkeypatch.setattr(
+        "app.services.delivery_waitlist.send_email",
+        lambda to, subject, body, **kw: sent.append((to, subject, body)),
+    )
+    return sent
+
+
+def _token_from(body):
+    return body.split("host-confirm?token=")[1].split()[0]
+
+
+def _signup_and_confirm(client, monkeypatch, producer_id, email, city):
+    sent = _capture_mail(monkeypatch)
+    client.post(
+        f"/producers/{producer_id}/delivery-waitlist",
+        json={"email": email, "city": city, "wants_to_host": True},
+    )
+    r = client.post(
+        "/delivery-waitlist/host-confirm", json={"token": _token_from(sent[-1][2])}
+    )
+    assert r.status_code == 200, r.text
+
+
 class TestWantsToHost:
-    def test_default_is_not_a_host(self, client, db):
+    def test_default_is_not_a_host_and_sends_nothing(self, client, db, monkeypatch):
+        sent = _capture_mail(monkeypatch)
         p = make_producer(db)
         r = client.post(
             f"/producers/{p.id}/delivery-waitlist",
@@ -304,17 +330,74 @@ class TestWantsToHost:
         )
         assert r.status_code == 201, r.text
         assert _entries(db, p.id)[0].wants_to_host is False
+        assert sent == []
 
-    def test_checked_box_is_stored(self, client, db):
-        p = make_producer(db)
+    def test_box_alone_shares_nothing_until_link_clicked(self, client, db, monkeypatch):
+        # The anti-impersonation property: ticking the box with someone
+        # else's address must not make that address visible to the business.
+        sent = _capture_mail(monkeypatch)
+        p = make_producer(db, name="סנדרה פירות")
         r = client.post(
             f"/producers/{p.id}/delivery-waitlist",
-            json={"email": "dana@example.com", "city": "חיפה", "wants_to_host": True},
+            json={"email": "dana@example.com", "city": "חדרה", "wants_to_host": True},
         )
         assert r.status_code == 201, r.text
+        assert _entries(db, p.id)[0].wants_to_host is False
+        assert len(sent) == 1
+        to, subject, body = sent[0]
+        assert to == "dana@example.com"
+        assert "סנדרה פירות" in subject and "חדרה" in subject
+        r = client.post(
+            "/delivery-waitlist/host-confirm", json={"token": _token_from(body)}
+        )
+        assert r.status_code == 200
+        assert r.json() == {"producer_name": "סנדרה פירות"}
+        db.expire_all()
         assert _entries(db, p.id)[0].wants_to_host is True
 
-    def test_repeat_signup_with_box_upgrades_existing_row(self, client, db):
+    def test_confirm_is_idempotent(self, client, db, monkeypatch):
+        p = make_producer(db)
+        _signup_and_confirm(client, monkeypatch, p.id, "dana@example.com", "חיפה")
+        sent = _capture_mail(monkeypatch)
+        entry = _entries(db, p.id)[0]
+        token = svc.create_host_confirm_token(entry.id)
+        assert (
+            client.post(
+                "/delivery-waitlist/host-confirm", json={"token": token}
+            ).status_code
+            == 200
+        )
+        assert sent == []
+
+    def test_unsubscribe_token_cannot_confirm(self, client, db):
+        p = make_producer(db)
+        entry = svc.add_entry(db, p, email="dana@example.com", city="חיפה", user=None)
+        db.commit()
+        r = client.post(
+            "/delivery-waitlist/host-confirm",
+            json={"token": svc.create_unsubscribe_token(entry.id)},
+        )
+        assert r.status_code == 400
+        db.expire_all()
+        assert _entries(db, p.id)[0].wants_to_host is False
+
+    def test_confirm_token_cannot_unsubscribe(self, client, db):
+        p = make_producer(db)
+        entry = svc.add_entry(db, p, email="dana@example.com", city="חיפה", user=None)
+        db.commit()
+        r = client.post(
+            "/delivery-waitlist/unsubscribe",
+            json={"token": svc.create_host_confirm_token(entry.id)},
+        )
+        assert r.status_code == 400
+        assert len(_entries(db, p.id)) == 1
+
+    def test_garbage_token_is_400(self, client, db):
+        r = client.post("/delivery-waitlist/host-confirm", json={"token": "nope"})
+        assert r.status_code == 400
+
+    def test_repeat_signup_with_box_resends_link(self, client, db, monkeypatch):
+        sent = _capture_mail(monkeypatch)
         p = make_producer(db)
         url = f"/producers/{p.id}/delivery-waitlist"
         client.post(url, json={"email": "dana@example.com", "city": "חיפה"})
@@ -324,20 +407,19 @@ class TestWantsToHost:
         )
         assert r.status_code == 200
         assert r.json()["status"] == "exists"
-        rows = _entries(db, p.id)
-        assert len(rows) == 1
-        assert rows[0].wants_to_host is True
+        assert len(sent) == 1
+        assert _entries(db, p.id)[0].wants_to_host is False
 
-    def test_repeat_signup_without_box_never_withdraws_consent(self, client, db):
-        # Unticking is not a withdrawal path (the unsubscribe link is); a
-        # second plain signup must not silently flip an earlier yes to no.
+    def test_repeat_signup_without_box_never_withdraws_consent(
+        self, client, db, monkeypatch
+    ):
         p = make_producer(db)
-        url = f"/producers/{p.id}/delivery-waitlist"
+        _signup_and_confirm(client, monkeypatch, p.id, "dana@example.com", "חיפה")
         client.post(
-            url,
-            json={"email": "dana@example.com", "city": "חיפה", "wants_to_host": True},
+            f"/producers/{p.id}/delivery-waitlist",
+            json={"email": "dana@example.com", "city": "חיפה"},
         )
-        client.post(url, json={"email": "dana@example.com", "city": "חיפה"})
+        db.expire_all()
         assert _entries(db, p.id)[0].wants_to_host is True
 
 
@@ -347,40 +429,40 @@ class TestPickupHostsOnAnalytics:
         assert r.status_code == 200, r.text
         return r.json()["pickup_hosts"]
 
-    def test_zero_hosts_is_empty_list(self, client, db):
+    def test_zero_hosts_is_empty_list(self, client, db, monkeypatch):
         p = make_producer(db)
         owner = _owner(db, p, "owner-h0@test.com")
-        # A plain waitlist signup is demand, not a host — it must not leak
-        # its email into the owner's host list.
+        _capture_mail(monkeypatch)
+        # A plain signup is demand, not a host; a ticked but UNCONFIRMED
+        # signup is not a host either. Neither may leak its email.
+        url = f"/producers/{p.id}/delivery-waitlist"
+        client.post(url, json={"email": "plain@example.com", "city": "חיפה"})
         client.post(
-            f"/producers/{p.id}/delivery-waitlist",
-            json={"email": "plain@example.com", "city": "חיפה"},
+            url,
+            json={
+                "email": "unconfirmed@example.com",
+                "city": "חיפה",
+                "wants_to_host": True,
+            },
         )
         assert self._hosts(client, owner) == []
 
-    def test_one_host(self, client, db):
+    def test_one_host(self, client, db, monkeypatch):
         p = make_producer(db)
         owner = _owner(db, p, "owner-h1@test.com")
-        client.post(
-            f"/producers/{p.id}/delivery-waitlist",
-            json={"email": "host@example.com", "city": "חדרה", "wants_to_host": True},
-        )
+        _signup_and_confirm(client, monkeypatch, p.id, "host@example.com", "חדרה")
         assert self._hosts(client, owner) == [
             {"email": "host@example.com", "city": "חדרה"}
         ]
 
-    def test_many_hosts_and_only_own_business(self, client, db):
+    def test_many_hosts_and_only_own_business(self, client, db, monkeypatch):
         p = make_producer(db)
         other = make_producer(db, name="עסק אחר")
         owner = _owner(db, p, "owner-hn@test.com")
-        url = f"/producers/{p.id}/delivery-waitlist"
-        for email, city in (("a@example.com", "חדרה"), ("b@example.com", "בנימינה")):
-            client.post(url, json={"email": email, "city": city, "wants_to_host": True})
-        # Same person volunteering for ANOTHER business: consent was given to
-        # that business only, so it must not reach this owner.
-        client.post(
-            f"/producers/{other.id}/delivery-waitlist",
-            json={"email": "c@example.com", "city": "חדרה", "wants_to_host": True},
-        )
+        _signup_and_confirm(client, monkeypatch, p.id, "a@example.com", "חדרה")
+        _signup_and_confirm(client, monkeypatch, p.id, "b@example.com", "בנימינה")
+        # Same flow for ANOTHER business: consent was given to that business
+        # only, so it must not reach this owner.
+        _signup_and_confirm(client, monkeypatch, other.id, "c@example.com", "חדרה")
         hosts = self._hosts(client, owner)
         assert sorted(h["email"] for h in hosts) == ["a@example.com", "b@example.com"]

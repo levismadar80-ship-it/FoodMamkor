@@ -1545,11 +1545,11 @@ class DeliveryWaitlistEntry(Base):
     )
     created_at = Column(DateTime, default=utc_now, nullable=False)
     notified_at = Column(DateTime, nullable=True)
-    # MEH-2673: «אשמח לארח נקודת מסירה ב{עיר}». True = she consented to THIS
-    # business seeing her email to arrange a pickup point; the owner reads it
-    # on /producers/me/analytics → pickup_hosts. Only ever set to True by the
-    # form — a later plain signup does not flip it back (the unsubscribe link
-    # removes the whole row).
+    # MEH-2673: «אשמח לארח נקודת מסירה ב{עיר}». True = she ticked the box AND
+    # clicked the confirmation link mailed to this address — consent for THIS
+    # business to see her email; the owner reads it on /producers/me/analytics
+    # → pickup_hosts. Set only by POST /delivery-waitlist/host-confirm; a later
+    # plain signup does not flip it back (the unsubscribe link removes the row).
     wants_to_host = Column(
         Boolean, nullable=False, default=False, server_default=text("false")
     )

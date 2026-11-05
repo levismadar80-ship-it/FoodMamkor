@@ -18024,6 +18024,46 @@
         ]
       }
     },
+    "/delivery-waitlist/host-confirm": {
+      "post": {
+        "description": "MEH-2673: «מאשרים, אפשר להעביר» — the signed link from the host\nconfirmation email. Turns the entry's wants_to_host on, so the business\nsees this email in its pickup_hosts list. Idempotent. 400 on a token that\ndoes not verify or an entry that no longer exists (unsubscribed).",
+        "operationId": "confirm_delivery_waitlist_host_delivery_waitlist_host_confirm_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeliveryWaitlistUnsubscribeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Confirm Delivery Waitlist Host",
+        "tags": [
+          "producers"
+        ]
+      }
+    },
     "/delivery-waitlist/unsubscribe": {
       "post": {
         "description": "Remove one delivery-waitlist entry via the signed token from its email.\n\nIdempotent: an already-removed entry is still 200. 400 on a token that\ndoes not verify.",

@@ -39,8 +39,11 @@ logger = logging.getLogger(__name__)
 __all__ = [
     "add_entry",
     "city_key",
+    "create_host_confirm_token",
     "create_unsubscribe_token",
+    "decode_host_confirm_token",
     "decode_unsubscribe_token",
+    "send_host_confirmation",
     "find_entry",
     "normalize_email",
     "notify_cities",
@@ -58,19 +61,42 @@ def _key() -> OctKey:
     return OctKey.import_key(settings.secret_key.encode())
 
 
-def create_unsubscribe_token(entry_id: UUID) -> str:
-    payload = {"sub": str(entry_id), "scope": _UNSUBSCRIBE_SCOPE}
+# MEH-2673: the «אשמח לארח נקודת מסירה» confirmation link. Same token shape,
+# its own scope, so an unsubscribe link can never confirm hosting and a
+# confirmation link can never delete the row.
+_HOST_CONFIRM_SCOPE = "delivery_waitlist_host_confirm"
+
+
+def _encode(entry_id: UUID, scope: str) -> str:
+    payload = {"sub": str(entry_id), "scope": scope}
     return jose_jwt.encode({"alg": settings.algorithm}, payload, _key())
+
+
+def create_unsubscribe_token(entry_id: UUID) -> str:
+    return _encode(entry_id, _UNSUBSCRIBE_SCOPE)
+
+
+def create_host_confirm_token(entry_id: UUID) -> str:
+    return _encode(entry_id, _HOST_CONFIRM_SCOPE)
 
 
 def decode_unsubscribe_token(token: str) -> UUID | None:
     """Entry id for a valid token, else None. Never raises (mirrors
     marketing.decode_unsubscribe_token)."""
+    return _decode(token, _UNSUBSCRIBE_SCOPE)
+
+
+def decode_host_confirm_token(token: str) -> UUID | None:
+    """MEH-2673: entry id for a valid host-confirmation token, else None."""
+    return _decode(token, _HOST_CONFIRM_SCOPE)
+
+
+def _decode(token: str, scope: str) -> UUID | None:
     try:
         token_obj = jose_jwt.decode(token, _key(), algorithms=[settings.algorithm])
     except (JoseError, ValueError):
         return None
-    if token_obj.claims.get("scope") != _UNSUBSCRIBE_SCOPE:
+    if token_obj.claims.get("scope") != scope:
         return None
     sub = token_obj.claims.get("sub")
     try:
@@ -193,3 +219,37 @@ def notify_cities(db: Session, producer_id: UUID, cities: list[str]) -> None:
             continue
         entry.notified_at = utc_now()
         db.commit()
+
+
+def _host_confirm_url(entry_id: UUID) -> str:
+    return (
+        f"{settings.frontend_url}/delivery-waitlist/host-confirm"
+        f"?token={create_host_confirm_token(entry_id)}"
+    )
+
+
+def _host_confirm_copy(producer_name: str, city: str, entry_id: UUID):
+    # MEH-2673 — copy pending Sapir's word-for-word approval (thread
+    # «בדיקת פתרון לניהול נקודות איסוף לבתי עסק», 05/11). Neutral reader
+    # address per ADR-037.
+    subject = f"אישור: נקודת מסירה של {producer_name} ב{city}"
+    body = (
+        f"קיבלנו בקשה לארח נקודת מסירה של {producer_name} ב{city}. "
+        f"אם זה אתם, אשרו בלחיצה, והמייל שלכם יועבר ל{producer_name} "
+        f"כדי לתאם איתכם. אם לא ביקשתם, אפשר להתעלם מהמייל הזה.\n\n"
+        f"מאשרים, אפשר להעביר: {_host_confirm_url(entry_id)}\n\n"
+        "מהמקור — בתי עסק מקומיים, כולם במקום אחד."
+    )
+    return subject, body
+
+
+def send_host_confirmation(
+    entry_id: UUID, email: str, city: str, producer_name: str
+) -> None:
+    """MEH-2673: mail the «אשמח לארח» confirmation link to the address that
+    ticked the box. Until the link is clicked `wants_to_host` stays False, so
+    an address typed by someone else never reaches the business. Runs as a
+    BackgroundTask and reads nothing from the DB — the caller passes what the
+    copy needs. Fail-open like every mail (send_email never raises)."""
+    subject, body = _host_confirm_copy(producer_name, city, entry_id)
+    send_email(email, subject, body)

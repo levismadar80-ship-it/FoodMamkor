@@ -2848,6 +2848,16 @@ export const SubmitContactContactPostResponse = /*#__PURE__*/ zod.unknown()
 
 
 /**
+ * MEH-2673: «מאשרים, אפשר להעביר» — the signed link from the host
+ * confirmation email. Turns the entry's wants_to_host on, so the business
+ * sees this email in its pickup_hosts list. Idempotent. 400 on a token that
+ * does not verify or an entry that no longer exists (unsubscribed).
+ * @summary Confirm Delivery Waitlist Host
+ */
+export const ConfirmDeliveryWaitlistHostDeliveryWaitlistHostConfirmPostResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
  * Remove one delivery-waitlist entry via the signed token from its email.
  *
  * Idempotent: an already-removed entry is still 200. 400 on a token that

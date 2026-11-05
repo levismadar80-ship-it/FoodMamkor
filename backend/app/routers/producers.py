@@ -3,7 +3,15 @@ from uuid import UUID
 
 import httpx
 import structlog
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    Query,
+    Request,
+    Response,
+)
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload, selectinload
@@ -662,6 +670,7 @@ def record_contact_click(
 def join_delivery_waitlist(
     request: Request,
     response: Response,
+    background_tasks: BackgroundTasks,
     producer_id: UUID,
     data: DeliveryWaitlistIn,
     db: Session = Depends(get_db),
@@ -687,20 +696,22 @@ def join_delivery_waitlist(
         db, producer.id, city=data.city, email=data.email
     )
     if existing is not None:
-        # MEH-2673: a repeat signup that ticks «אשמח לארח» upgrades the row.
-        # Only ever False → True: an unticked repeat is not a withdrawal (the
-        # unsubscribe link is), so an earlier yes is never silently erased.
+        # MEH-2673: a repeat signup that ticks «אשמח לארח» (re)sends the
+        # confirmation link; the row turns True only from that link. An
+        # unticked repeat changes nothing — never a silent withdrawal.
         if data.wants_to_host and not existing.wants_to_host:
-            existing.wants_to_host = True
-            db.commit()
+            background_tasks.add_task(
+                delivery_waitlist.send_host_confirmation,
+                existing.id,
+                existing.email,
+                existing.city,
+                producer.name,
+            )
         response.status_code = 200
         return DeliveryWaitlistOut(status="exists")
     entry = delivery_waitlist.add_entry(
         db, producer, email=data.email, city=data.city, user=current_user
     )
-    # MEH-2673: «אשמח לארח נקודת מסירה» — set here, not as a 6th add_entry
-    # argument (PLR0913); the row is not flushed yet, so it lands in one INSERT.
-    entry.wants_to_host = data.wants_to_host
     try:
         db.commit()
     except IntegrityError:
@@ -710,7 +721,39 @@ def join_delivery_waitlist(
         db.rollback()
         response.status_code = 200
         return DeliveryWaitlistOut(status="exists")
+    if data.wants_to_host:
+        # MEH-2673: the box alone shares nothing. The row stays
+        # wants_to_host=False until the address itself clicks the link —
+        # otherwise anyone could hand a stranger's email to a business.
+        background_tasks.add_task(
+            delivery_waitlist.send_host_confirmation,
+            entry.id,
+            entry.email,
+            entry.city,
+            producer.name,
+        )
     return DeliveryWaitlistOut(status="added")
+
+
+@router.post("/delivery-waitlist/host-confirm", status_code=200)
+@limiter.limit("10/minute")
+def confirm_delivery_waitlist_host(
+    request: Request,
+    data: DeliveryWaitlistUnsubscribeIn,
+    db: Session = Depends(get_db),
+):
+    """MEH-2673: «מאשרים, אפשר להעביר» — the signed link from the host
+    confirmation email. Turns the entry's wants_to_host on, so the business
+    sees this email in its pickup_hosts list. Idempotent. 400 on a token that
+    does not verify or an entry that no longer exists (unsubscribed)."""
+    entry_id = delivery_waitlist.decode_host_confirm_token(data.token)
+    entry = db.get(DeliveryWaitlistEntry, entry_id) if entry_id else None
+    if entry is None:
+        raise HTTPException(status_code=400, detail="הקישור לא תקין או שפג תוקפו")
+    if not entry.wants_to_host:
+        entry.wants_to_host = True
+        db.commit()
+    return {"producer_name": entry.producer.name}
 
 
 @router.post("/delivery-waitlist/unsubscribe", status_code=200)
