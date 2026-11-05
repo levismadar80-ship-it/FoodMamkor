@@ -687,10 +687,21 @@ def join_delivery_waitlist(
         db, producer.id, city=data.city, email=data.email
     )
     if existing is not None:
+        # MEH-2673: a repeat signup that ticks «אשמח לארח» upgrades the row.
+        # Only ever False → True: an unticked repeat is not a withdrawal (the
+        # unsubscribe link is), so an earlier yes is never silently erased.
+        if data.wants_to_host and not existing.wants_to_host:
+            existing.wants_to_host = True
+            db.commit()
         response.status_code = 200
         return DeliveryWaitlistOut(status="exists")
     delivery_waitlist.add_entry(
-        db, producer, email=data.email, city=data.city, user=current_user
+        db,
+        producer,
+        email=data.email,
+        city=data.city,
+        user=current_user,
+        wants_to_host=data.wants_to_host,
     )
     try:
         db.commit()

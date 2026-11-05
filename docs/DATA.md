@@ -566,10 +566,11 @@ saved_items            (id uuid PK, user_id uuid FK→users CASCADE,
 delivery_waitlist      (id uuid PK, producer_id uuid FK→producers CASCADE,
                         city varchar(60), city_key varchar(60), email varchar(200),
                         user_id uuid FK→users SET NULL nullable, created_at, notified_at nullable,
+                        wants_to_host bool NOT NULL DEFAULT false,  -- MEH-2673
                         UNIQUE(producer_id,city_key,email), INDEX(producer_id,city_key))  -- MEH-2618
 ```
 
-> **MEH-2618 — `delivery_waitlist` (30/10/2026):** «תודיעו לי כשתגיעו ל{עיר}». A visitor whose city the business does not deliver to leaves an **email + city** under the delivery checker's negative verdict — no account needed (Oddbox-style waitlist). `city` is her own spelling (used in her email); `city_key` is `app.data.cities.city_key`, the ONE comparison form (MEH-2456). `user_id` is set when she was signed in, and her empty profile `users.city` is filled from the form (never overwritten). `notified_at` is the once-only guard: when `PUT /producers/me` adds a city to `delivery_area_cities`, `services/delivery_waitlist.notify_cities` runs as a BackgroundTask (the same hop as the `delivery_area` favorite alert), mails every un-notified entry whose `city_key` matches, and stamps it; a send that raises leaves the row un-notified so the next add retries. Nothing is sent for a non-live business (`is_business()`, MEH-2513). Unsubscribe = a signed stateless token (`sub` = entry id, scope `delivery_waitlist_unsubscribe`, same pattern as the newsletter's) → `/delivery-waitlist/unsubscribe?token=` → `POST /delivery-waitlist/unsubscribe` deletes the row. Migration `d4e7a1b2c3f5`; **`EXPECTED_TABLES` 43 → 44**. The sibling for signed-in users stays `favorite_alerts.notify_delivery_area` (+ `whatsapp_opt_in`); the form points a signed-in visitor there for WhatsApp.
+> **MEH-2618 — `delivery_waitlist` (30/10/2026):** «תודיעו לי כשתגיעו ל{עיר}». A visitor whose city the business does not deliver to leaves an **email + city** under the delivery checker's negative verdict — no account needed (Oddbox-style waitlist). `city` is her own spelling (used in her email); `city_key` is `app.data.cities.city_key`, the ONE comparison form (MEH-2456). `user_id` is set when she was signed in, and her empty profile `users.city` is filled from the form (never overwritten). `notified_at` is the once-only guard: when `PUT /producers/me` adds a city to `delivery_area_cities`, `services/delivery_waitlist.notify_cities` runs as a BackgroundTask (the same hop as the `delivery_area` favorite alert), mails every un-notified entry whose `city_key` matches, and stamps it; a send that raises leaves the row un-notified so the next add retries. Nothing is sent for a non-live business (`is_business()`, MEH-2513). Unsubscribe = a signed stateless token (`sub` = entry id, scope `delivery_waitlist_unsubscribe`, same pattern as the newsletter's) → `/delivery-waitlist/unsubscribe?token=` → `POST /delivery-waitlist/unsubscribe` deletes the row. Migration `d4e7a1b2c3f5`; **`EXPECTED_TABLES` 43 → 44**. **MEH-2673 (05/11/2026):** `wants_to_host` = she ticked «אשמח לארח נקודת מסירה ב{עיר}» — consent for THIS business to see her email (stated under the box). Only ever False → True (a repeat signup with the box upgrades the row; an unticked repeat never clears it). The owner reads the list as `pickup_hosts` on `GET /producers/me/analytics`. Migration `e5a9c3d17b28` (additive column, `EXPECTED_TABLES` unchanged). The sibling for signed-in users stays `favorite_alerts.notify_delivery_area` (+ `whatsapp_opt_in`); the form points a signed-in visitor there for WhatsApp.
 
 > **MEH-2528 — `retired_slugs` (28/10/2026):** tombstones for public business URLs. A business delete is a hard delete, so its UNIQUE `producers.slug` used to be free at once and the next business with the same name inherited every `/p/<slug>` link. Now admin delete, owner account delete and an admin slug change/clear write a row (`services/retired_slugs.py`, the only writer), and `_ensure_unique_slug` (`routers/admin.py`) treats a retired slug as taken (`-2`…). A business may take back a slug it retired itself (the row is then removed). Drafts are not retired — never public. `producer_id` = owner of a renamed slug (for a future redirect), NULL for a deleted business. Migration `c3d8e2f1a9b4`; **`EXPECTED_TABLES` 41 → 42**. A deleted business's URL answers **410** and renders the «בית העסק הזה כבר לא במהמקור» page (MEH-2534). Not yet: a 301 from a renamed slug.
 
@@ -904,7 +905,9 @@ GET    /producers/me/analytics                    producer  — feature/producer
                                                               series); top_cities (top 5, excludes NULL city);
                                                               coverage_requests (MEH-1676: [{city, count}], top 5,
                                                               last 30 days, from producer_whatsapp_clicks rows whose
-                                                              city IS NOT NULL — i.e. «לא מגיעים ל{עיר}?» clicks only)
+                                                              city IS NOT NULL — i.e. «לא מגיעים ל{עיר}?» clicks only);
+                                                              pickup_hosts (MEH-2673: [{email, city}], this business's
+                                                              delivery_waitlist rows with wants_to_host, newest first, max 50)
 
 # Producer detail — public (tracked, anonymous)
 GET    /producers/{id}?from=search|map|...        public    — GET that also logs a producer_page_views row
@@ -923,7 +926,9 @@ POST   /producers/{id}/whatsapp-click             public    — anonymous, rate-
                                                               the coverage CTA sends one, via
                                                               fetch(keepalive)
 POST   /producers/{id}/delivery-waitlist          public    — MEH-2618 «תודיעו לי כשתגיעו ל{עיר}».
-                                                              { email, city } → delivery_waitlist row.
+                                                              { email, city, wants_to_host? } → delivery_waitlist row.
+                                                              wants_to_host (MEH-2673, default false) on an existing
+                                                              row upgrades it False → True; never back.
                                                               201 {status:"added"} · 200 {status:"exists"}
                                                               (same email+city already waiting) · 422 bad
                                                               email or a city without letters (MEH-555) ·

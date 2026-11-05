@@ -1545,6 +1545,14 @@ class DeliveryWaitlistEntry(Base):
     )
     created_at = Column(DateTime, default=utc_now, nullable=False)
     notified_at = Column(DateTime, nullable=True)
+    # MEH-2673: «אשמח לארח נקודת מסירה ב{עיר}». True = she consented to THIS
+    # business seeing her email to arrange a pickup point; the owner reads it
+    # on /producers/me/analytics → pickup_hosts. Only ever set to True by the
+    # form — a later plain signup does not flip it back (the unsubscribe link
+    # removes the whole row).
+    wants_to_host = Column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
 
     producer = relationship("Producer")
 

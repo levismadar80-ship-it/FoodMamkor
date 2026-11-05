@@ -1146,6 +1146,11 @@
             "format": "email",
             "title": "Email",
             "type": "string"
+          },
+          "wants_to_host": {
+            "default": false,
+            "title": "Wants To Host",
+            "type": "boolean"
           }
         },
         "required": [
@@ -20300,7 +20305,7 @@
     },
     "/producers/me/analytics": {
       "get": {
-        "description": "Rich analytics for the producer dashboard.\n\nReturns:\n  - profile_views / search_appearances / whatsapp_clicks as {last_7d, last_30d, total}\n  - follower_count + new_followers_this_week\n  - average_rating + total_reviews (from the producers.avg_rating aggregate)\n  - home_products_count (active only, scoped to the owning user)\n  - views_by_day: 30-entry zero-filled daily series for the line chart\n  - top_cities: top 5 cities the views come from (NULL excluded)",
+        "description": "Rich analytics for the producer dashboard.\n\nReturns:\n  - profile_views / search_appearances / whatsapp_clicks as {last_7d, last_30d, total}\n  - follower_count + new_followers_this_week\n  - average_rating + total_reviews (from the producers.avg_rating aggregate)\n  - home_products_count (active only, scoped to the owning user)\n  - views_by_day: 30-entry zero-filled daily series for the line chart\n  - top_cities: top 5 cities the views come from (NULL excluded)\n  - pickup_hosts: [{email, city}] waitlist visitors who offered to host a\n    pickup point for THIS business (MEH-2673), newest first, max 50",
         "operationId": "producer_analytics_producers_me_analytics_get",
         "responses": {
           "200": {

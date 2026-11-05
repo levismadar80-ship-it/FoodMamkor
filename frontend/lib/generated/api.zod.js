@@ -4654,6 +4654,8 @@ export const UpdateMyProducerProducersMePutResponse = /*#__PURE__*/ zod.object({
  *   - home_products_count (active only, scoped to the owning user)
  *   - views_by_day: 30-entry zero-filled daily series for the line chart
  *   - top_cities: top 5 cities the views come from (NULL excluded)
+ *   - pickup_hosts: [{email, city}] waitlist visitors who offered to host a
+ *     pickup point for THIS business (MEH-2673), newest first, max 50
  * @summary Producer Analytics
  */
 export const ProducerAnalyticsProducersMeAnalyticsGetResponse = /*#__PURE__*/ zod.unknown()

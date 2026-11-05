@@ -280,3 +280,107 @@ class TestTrigger:
         )
         assert r.status_code == 200, r.text
         assert calls == [(p.id, ["תל אביב-יפו"])]
+
+
+# ---------------------------------------------------------------------------
+# MEH-2673 — «אשמח לארח נקודת מסירה»: the opt-in host flag on a waitlist row
+# and the owner-only list of willing hosts on GET /producers/me/analytics.
+# ---------------------------------------------------------------------------
+
+
+def _owner(db, producer, email):
+    user = make_user(db, email=email, role="producer")
+    user.producer_id = producer.id
+    db.commit()
+    return user
+
+
+class TestWantsToHost:
+    def test_default_is_not_a_host(self, client, db):
+        p = make_producer(db)
+        r = client.post(
+            f"/producers/{p.id}/delivery-waitlist",
+            json={"email": "dana@example.com", "city": "חיפה"},
+        )
+        assert r.status_code == 201, r.text
+        assert _entries(db, p.id)[0].wants_to_host is False
+
+    def test_checked_box_is_stored(self, client, db):
+        p = make_producer(db)
+        r = client.post(
+            f"/producers/{p.id}/delivery-waitlist",
+            json={"email": "dana@example.com", "city": "חיפה", "wants_to_host": True},
+        )
+        assert r.status_code == 201, r.text
+        assert _entries(db, p.id)[0].wants_to_host is True
+
+    def test_repeat_signup_with_box_upgrades_existing_row(self, client, db):
+        p = make_producer(db)
+        url = f"/producers/{p.id}/delivery-waitlist"
+        client.post(url, json={"email": "dana@example.com", "city": "חיפה"})
+        r = client.post(
+            url,
+            json={"email": "dana@example.com", "city": "חיפה", "wants_to_host": True},
+        )
+        assert r.status_code == 200
+        assert r.json()["status"] == "exists"
+        rows = _entries(db, p.id)
+        assert len(rows) == 1
+        assert rows[0].wants_to_host is True
+
+    def test_repeat_signup_without_box_never_withdraws_consent(self, client, db):
+        # Unticking is not a withdrawal path (the unsubscribe link is); a
+        # second plain signup must not silently flip an earlier yes to no.
+        p = make_producer(db)
+        url = f"/producers/{p.id}/delivery-waitlist"
+        client.post(
+            url,
+            json={"email": "dana@example.com", "city": "חיפה", "wants_to_host": True},
+        )
+        client.post(url, json={"email": "dana@example.com", "city": "חיפה"})
+        assert _entries(db, p.id)[0].wants_to_host is True
+
+
+class TestPickupHostsOnAnalytics:
+    def _hosts(self, client, user):
+        r = client.get("/producers/me/analytics", headers=auth_header(user))
+        assert r.status_code == 200, r.text
+        return r.json()["pickup_hosts"]
+
+    def test_zero_hosts_is_empty_list(self, client, db):
+        p = make_producer(db)
+        owner = _owner(db, p, "owner-h0@test.com")
+        # A plain waitlist signup is demand, not a host — it must not leak
+        # its email into the owner's host list.
+        client.post(
+            f"/producers/{p.id}/delivery-waitlist",
+            json={"email": "plain@example.com", "city": "חיפה"},
+        )
+        assert self._hosts(client, owner) == []
+
+    def test_one_host(self, client, db):
+        p = make_producer(db)
+        owner = _owner(db, p, "owner-h1@test.com")
+        client.post(
+            f"/producers/{p.id}/delivery-waitlist",
+            json={"email": "host@example.com", "city": "חדרה", "wants_to_host": True},
+        )
+        assert self._hosts(client, owner) == [
+            {"email": "host@example.com", "city": "חדרה"}
+        ]
+
+    def test_many_hosts_and_only_own_business(self, client, db):
+        p = make_producer(db)
+        other = make_producer(db, name="עסק אחר")
+        owner = _owner(db, p, "owner-hn@test.com")
+        url = f"/producers/{p.id}/delivery-waitlist"
+        for email, city in (("a@example.com", "חדרה"), ("b@example.com", "בנימינה")):
+            client.post(url, json={"email": email, "city": city, "wants_to_host": True})
+        # Same person volunteering for ANOTHER business: consent was given to
+        # that business only, so it must not reach this owner.
+        client.post(
+            f"/producers/{other.id}/delivery-waitlist",
+            json={"email": "c@example.com", "city": "חדרה", "wants_to_host": True},
+        )
+        hosts = self._hosts(client, owner)
+        assert sorted(h["email"] for h in hosts) == ["a@example.com", "b@example.com"]

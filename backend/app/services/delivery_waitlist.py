@@ -98,7 +98,13 @@ def find_entry(
 
 
 def add_entry(
-    db: Session, producer: Producer, *, email: str, city: str, user: User | None
+    db: Session,
+    producer: Producer,
+    *,
+    email: str,
+    city: str,
+    user: User | None,
+    wants_to_host: bool = False,
 ) -> DeliveryWaitlistEntry:
     """Add (not commit) one waitlist row. The caller checks for the duplicate
     first (find_entry) so it can answer 200/exists instead of 201 — the UNIQUE
@@ -115,6 +121,7 @@ def add_entry(
         city_key=city_key(city),
         email=normalize_email(email),
         user_id=user.id if user is not None else None,
+        wants_to_host=wants_to_host,
     )
     db.add(entry)
     if user is not None and not (user.city or "").strip():

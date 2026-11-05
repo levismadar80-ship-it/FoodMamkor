@@ -5244,6 +5244,9 @@ class DeliveryWaitlistIn(BaseModel):
 
     email: EmailStr
     city: str = Field(..., min_length=1, max_length=COVERAGE_CITY_MAX_LENGTH)
+    # MEH-2673: «אשמח לארח נקודת מסירה ב{עיר}» — optional, absent = False, so
+    # the pre-MEH-2673 form keeps working unchanged.
+    wants_to_host: bool = False
 
     @field_validator("email", mode="after")
     @classmethod
