@@ -712,14 +712,18 @@ def join_delivery_waitlist(
             else:
                 verdict = delivery_waitlist.claim_host_confirm_send(db, existing)
                 if verdict == "send":
-                    db.commit()
-                    host_confirm = "sent"
-                    background_tasks.add_task(
-                        delivery_waitlist.send_host_confirmation,
+                    # Captured before the commit: expire_on_commit would
+                    # otherwise refresh the row just to read three columns.
+                    mail_args = (
                         existing.id,
                         existing.email,
                         existing.city,
                         producer.name,
+                    )
+                    db.commit()
+                    host_confirm = "sent"
+                    background_tasks.add_task(
+                        delivery_waitlist.send_host_confirmation, *mail_args
                     )
                 else:
                     db.rollback()  # releases the advisory lock, nothing to write
@@ -740,6 +744,7 @@ def join_delivery_waitlist(
             # Stamped before the commit so this mail counts toward the
             # per-address cap; the mail itself is queued after the commit.
             new_verdict = delivery_waitlist.claim_host_confirm_send(db, entry)
+        mail_args = (entry.id, entry.email, entry.city, producer.name)
         db.commit()
     except IntegrityError:
         # Two identical POSTs in flight (double-tap): both passed find_entry,
@@ -754,13 +759,7 @@ def join_delivery_waitlist(
         # wants_to_host=False until the address itself clicks the link —
         # otherwise anyone could hand a stranger's email to a business.
         host_confirm = "sent"
-        background_tasks.add_task(
-            delivery_waitlist.send_host_confirmation,
-            entry.id,
-            entry.email,
-            entry.city,
-            producer.name,
-        )
+        background_tasks.add_task(delivery_waitlist.send_host_confirmation, *mail_args)
     return DeliveryWaitlistOut(status="added", host_confirm=host_confirm)
 
 
@@ -791,14 +790,11 @@ def confirm_delivery_waitlist_host(
         # idempotent 200 below: the consent is on record, no error page.
         resent = False
         if delivery_waitlist.claim_host_confirm_send(db, entry) == "send":
+            mail_args = (entry.id, entry.email, entry.city, entry.producer.name)
             db.commit()
             resent = True
             background_tasks.add_task(
-                delivery_waitlist.send_host_confirmation,
-                entry.id,
-                entry.email,
-                entry.city,
-                entry.producer.name,
+                delivery_waitlist.send_host_confirmation, *mail_args
             )
         else:
             db.rollback()  # releases the advisory lock, nothing to write

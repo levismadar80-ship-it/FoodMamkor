@@ -308,7 +308,15 @@ def claim_host_confirm_send(
 
     Serialised per address with a transaction-scoped advisory lock, so two
     simultaneous submits cannot both read "under the cap" and both mail —
-    the lock is released at the caller's commit/rollback."""
+    the lock is released at the caller's commit/rollback.
+
+    Accepted limits (reviewed 05/11, MEH-2673): (a) a third party who knows
+    an address can burn its cap with three other business/city combos, so
+    the real request answers "limit_reached" for up to 24 h — the cost is a
+    one-day delay on an opt-in, not data exposure, and the route's per-IP
+    limit makes it manual work; (b) the key is the normalised string, so
+    Gmail `+tag` / dot aliases count as separate addresses — the per-IP
+    limit is the backstop for that inbox-flood shape."""
     db.execute(
         text("SELECT pg_advisory_xact_lock(hashtext(:email))"),
         {"email": entry.email},
