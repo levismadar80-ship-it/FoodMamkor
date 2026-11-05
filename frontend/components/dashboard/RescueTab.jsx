@@ -332,18 +332,18 @@ export default function RescueTab() {
 
       {/* No exact point → no bags can be published, so nothing can be left over. */}
       {exactLocation && (
-      <p className="border border-border rounded-md px-4 py-3 font-body-sm text-sm text-fg-muted" data-testid="rescue-leftover-hint">
-        {t("leftover_hint")}{" "}
-        <a
-          href={leftoverHref}
-          target="_blank"
-          rel="noopener noreferrer"
-          data-testid="rescue-leftover-link"
-          className="text-primary underline underline-offset-2"
-        >
-          {t("leftover_link")}
-        </a>
-      </p>
+        <p className="border border-border rounded-md px-4 py-3 font-body-sm text-sm text-fg-muted" data-testid="rescue-leftover-hint">
+          {t("leftover_hint")}{" "}
+          <a
+            href={leftoverHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-testid="rescue-leftover-link"
+            className="text-primary underline underline-offset-2"
+          >
+            {t("leftover_link")}
+          </a>
+        </p>
       )}
     </div>
   );
