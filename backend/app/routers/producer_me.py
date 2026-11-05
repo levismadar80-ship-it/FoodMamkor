@@ -1475,14 +1475,18 @@ def producer_analytics(
     # the form says so under the box — so the filter is this producer's rows
     # only (`pid` is the caller's own business, require_producer above), and
     # a plain waitlist signup (wants_to_host False) never appears. Newest
-    # first; capped so a popular business gets a readable card, not a dump.
+    # CONFIRMATION first (not signup — a late click on an old signup is still
+    # news); capped so a popular business gets a readable card, not a dump.
     host_rows = (
         db.query(DeliveryWaitlistEntry.email, DeliveryWaitlistEntry.city)
         .filter(
             DeliveryWaitlistEntry.producer_id == pid,
             DeliveryWaitlistEntry.wants_to_host.is_(True),
         )
-        .order_by(DeliveryWaitlistEntry.created_at.desc())
+        .order_by(
+            DeliveryWaitlistEntry.host_confirmed_at.desc().nulls_last(),
+            DeliveryWaitlistEntry.created_at.desc(),
+        )
         .limit(50)
         .all()
     )

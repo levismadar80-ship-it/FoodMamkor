@@ -786,12 +786,11 @@ def confirm_delivery_waitlist_host(
     entry = db.get(DeliveryWaitlistEntry, entry_id) if entry_id else None
     if entry is None:
         raise HTTPException(status_code=400, detail="הקישור לא תקין או שפג תוקפו")
-    if state == "expired":
+    if state == "expired" and not entry.wants_to_host:
+        # An expired link on an already-confirmed entry falls through to the
+        # idempotent 200 below: the consent is on record, no error page.
         resent = False
-        if (
-            not entry.wants_to_host
-            and delivery_waitlist.claim_host_confirm_send(db, entry) == "send"
-        ):
+        if delivery_waitlist.claim_host_confirm_send(db, entry) == "send":
             db.commit()
             resent = True
             background_tasks.add_task(

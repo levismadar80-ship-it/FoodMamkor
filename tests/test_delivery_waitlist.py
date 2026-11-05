@@ -469,6 +469,27 @@ class TestPickupHostsOnAnalytics:
         hosts = self._hosts(client, owner)
         assert sorted(h["email"] for h in hosts) == ["a@example.com", "b@example.com"]
 
+    def test_newest_confirmation_first_not_newest_signup(self, client, db, monkeypatch):
+        # A late click on an old signup is the newest news for the owner.
+        p = make_producer(db)
+        owner = _owner(db, p, "owner-ord@test.com")
+        sent = _capture_mail(monkeypatch)
+        for email in ("old@example.com", "new@example.com"):
+            client.post(
+                f"/producers/{p.id}/delivery-waitlist",
+                json={"email": email, "city": "חדרה", "wants_to_host": True},
+            )
+        tokens = {to: _token_from(body) for to, _subj, body in sent}
+        for email in ("new@example.com", "old@example.com"):
+            r = client.post(
+                "/delivery-waitlist/host-confirm", json={"token": tokens[email]}
+            )
+            assert r.status_code == 200, r.text
+        assert [h["email"] for h in self._hosts(client, owner)] == [
+            "old@example.com",
+            "new@example.com",
+        ]
+
 
 class TestHostConfirmAbuseGuards:
     def test_resend_is_capped_by_cooldown(self, client, db, monkeypatch):
@@ -621,16 +642,19 @@ class TestHostConfirmAbuseGuards:
         db.expire_all()
         assert _entries(db, p.id)[0].wants_to_host is True
 
-    def test_expired_link_for_confirmed_entry_sends_nothing(
+    def test_expired_link_for_confirmed_entry_is_idempotent_200(
         self, client, db, monkeypatch
     ):
+        # Re-opening the old mail after 7 days, already confirmed: the
+        # consent is on record, so 200 like any repeat click — no error
+        # page, no new mail.
         p = make_producer(db)
         _signup_and_confirm(client, monkeypatch, p.id, "dana@example.com", "חיפה")
         sent = _capture_mail(monkeypatch)
         entry = _entries(db, p.id)[0]
         stale = svc._encode(entry.id, svc._HOST_CONFIRM_SCOPE, timedelta(seconds=-1))
         r = client.post("/delivery-waitlist/host-confirm", json={"token": stale})
-        assert (r.status_code, r.json()["resent"]) == (410, False)
+        assert (r.status_code, r.json()) == (200, {"producer_name": p.name})
         assert sent == []
 
     def test_non_numeric_exp_is_invalid_not_expired(self, db):

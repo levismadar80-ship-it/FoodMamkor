@@ -44,7 +44,6 @@ __all__ = [
     "city_key",
     "create_host_confirm_token",
     "create_unsubscribe_token",
-    "decode_host_confirm_token",
     "decode_unsubscribe_token",
     "inspect_host_confirm_token",
     "claim_host_confirm_send",
@@ -104,12 +103,6 @@ def decode_unsubscribe_token(token: str) -> UUID | None:
     """Entry id for a valid token, else None. Never raises (mirrors
     marketing.decode_unsubscribe_token)."""
     entry_id, _ = _decode(token, _UNSUBSCRIBE_SCOPE)
-    return entry_id
-
-
-def decode_host_confirm_token(token: str) -> UUID | None:
-    """MEH-2673: entry id for a valid host-confirmation token, else None."""
-    entry_id, _ = inspect_host_confirm_token(token)
     return entry_id
 
 
