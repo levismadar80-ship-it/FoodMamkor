@@ -104,6 +104,7 @@ async function gotoCategory(page: Page) {
   const city = page.getByTestId("register-details-city");
   await city.getByRole("combobox").fill(CITY_QUERY);
   await city.getByRole("option").first().click();
+  await page.getByTestId("register-fulfilment-onsite").check(); // MEH-2640: the one required question on DETAILS
   await page.getByTestId("register-details-next").click();
   await expect(page.getByTestId("register-frame-category")).toBeVisible();
 }
@@ -265,22 +266,16 @@ test.describe("/register/producer — MANUAL_TESTING conversion (MEH-1249 chunk 
   });
 
   // MT:Registration-forms-RTL:10 — the surviving half. The item says «שלב 3 —
-  // שדות "עיר משלוח" ו-"יום משלוח"»; the delivery block is on DETAILS (step 2)
-  // and there is no delivery-DAY field anywhere in the wizard. See the chunk-9
-  // drift table in docs/qa/conversion-progress.md.
-  test("DETAILS: the delivery-cities combobox is RTL once delivery is declared", async ({ page }) => {
+  // שדות "עיר משלוח" ו-"יום משלוח"». MEH-2640 (#3960) moved the delivery-cities
+  // picker off the wizard to the dashboard (EditTabDeliveryCard owns it), and
+  // there never was a delivery-DAY field. What DETAILS asks instead is the one
+  // «איך קונים אצלכם?» question — its direction is asserted where it is.
+  test("DETAILS: the «איך קונים אצלכם?» question is RTL", async ({ page }) => {
     await gotoDetails(page);
-
-    // Establish the state the row is about instead of assuming it: the block is
-    // conditionally rendered on `offers_delivery` (RegisterProducerClient.jsx:1440),
-    // and on `!delivery_nationwide` under it.
+    const question = page.getByTestId("register-fulfilment");
+    await expect(question).toBeVisible();
+    expect(await directionOf(question)).toBe("rtl");
     await expect(page.getByTestId("register-delivery-cities")).toHaveCount(0);
-    await page.getByTestId("register-offers-delivery").check();
-    await expect(page.getByTestId("register-delivery-nationwide")).not.toBeChecked();
-
-    const cities = page.getByTestId("register-delivery-cities");
-    await expect(cities).toBeVisible();
-    expect(await directionOf(cities.getByRole("combobox"))).toBe("rtl");
   });
 
   // MT:Registration-forms-RTL:8 — «textarea תיאור העסק — RTL». The item places

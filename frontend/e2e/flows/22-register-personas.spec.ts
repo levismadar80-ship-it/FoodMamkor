@@ -134,7 +134,7 @@ test.describe("P1 — wizard → approve → public → login → dashboard (MEH
         .getByRole("combobox")
         .fill("תל אביב");
       await page.getByTestId("register-details-city").getByRole("option", { name: "תל אביב" }).first().click(); // MEH-2241 chunk B: the gate needs a picked town, not typed text
-      await page.getByTestId("register-details-address").fill("הרצל 1");
+      await page.getByTestId("register-fulfilment-onsite").check(); // MEH-2640: the address left DETAILS; the one required question took its place
       await page.getByTestId("register-details-next").click();
 
       // CATEGORY — pick the live category; fill the license iff the field is

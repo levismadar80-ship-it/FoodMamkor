@@ -39,6 +39,9 @@ async function reachDetails(page: Page) {
   await expect(page.getByTestId("register-frame-details")).toBeVisible();
   await page.getByTestId("register-details-name").fill("העסק שלי");
   await page.getByTestId("register-details-phone").fill("0501234567");
+  // MEH-2640: answer the one required question up front, so the city gate is
+  // the ONLY thing that can block the advance in this spec.
+  await page.getByTestId("register-fulfilment-onsite").check();
 }
 
 test.describe("MEH-2241 chunk B — the city gate refuses a typed town the picker could not match", () => {
