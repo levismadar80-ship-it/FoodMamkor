@@ -41,7 +41,7 @@ import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 // instead of dropping an /en session onto the default-locale page.
 // MEH-1408: usePathname feeds router.push({pathname, query:{group}}) for the
 // hub↔group nav; useSearchParams (next/navigation) reads the active ?group.
-import { useRouter, usePathname } from "@/i18n/navigation";
+import { useRouter, usePathname, Link } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 // MEH-1158: per-channel glyphs feed the header previews below.
@@ -1013,6 +1013,23 @@ function EditPageInner() {
             reportDirty={reportDirty}
           />
         </EditAccordionCard>
+
+        {/* MEH-2695 — a business that needs a tag we don't offer writes to us
+            through the existing contact page (same target as
+            DashboardFooter.jsx:50). No request form before launch, on purpose:
+            tags stay an editorial call. Copy approved word-for-word 05/11. */}
+        <p
+          data-testid="badge-request-line"
+          className="text-sm text-fg-muted px-1"
+        >
+          {t("badge_request.prompt")}{" "}
+          <Link
+            href="/about#contact"
+            className="inline-flex items-center min-h-[44px] font-medium text-primary underline underline-offset-2"
+          >
+            {t("badge_request.link")}
+          </Link>
+        </p>
       </div>
 
       {/* ===== GROUP: location — locations, delivery, order window, special
