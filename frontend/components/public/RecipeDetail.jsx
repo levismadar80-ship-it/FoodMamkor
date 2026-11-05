@@ -112,12 +112,15 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
           empty box. */}
       <div className="relative md:px-4 md:pt-6">
         {/* MEH-2558: share + save, the business page's hero pair
-            (ImageGallery) — same corner, same circles. Sits on the no-photo
+            (ImageGallery) — same corner, same circles. MEH-2671: that corner
+            is inline-END (top-left in RTL) and the heart leads, per the
+            Apple/Material bidi rule (actions trail). Sits on the no-photo
             strip too, so the actions never depend on the photo. */}
         <div
-          className="absolute top-3 start-3 md:top-9 md:start-7 z-10 flex items-center gap-2"
+          className="absolute top-3 end-3 md:top-9 md:end-7 z-10 flex items-center gap-2"
           data-testid="recipe-hero-actions"
         >
+          <SaveButton itemType="recipe" itemId={recipe.id} />
           <ShareButton
             variant="overlay"
             subject="recipe"
@@ -125,7 +128,6 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
             title={recipe.title}
             description={recipe.description}
           />
-          <SaveButton itemType="recipe" itemId={recipe.id} />
         </div>
         {showPhoto ? (
           <div className="relative aspect-[4/3] md:aspect-[21/9] bg-green-50 md:rounded-[16px] overflow-hidden">
