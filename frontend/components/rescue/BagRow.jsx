@@ -12,7 +12,7 @@ import { israelTime, shekels } from "@/lib/rescue";
 const SOON_MS = 3_600_000;
 
 /** True when pickup starts within the next hour (and has not started yet). */
-export function startsSoon(iso, now = Date.now()) {
+function startsSoon(iso, now = Date.now()) {
   if (!iso) return false;
   const start = new Date(iso).getTime();
   if (Number.isNaN(start)) return false;
@@ -22,7 +22,7 @@ export function startsSoon(iso, now = Date.now()) {
 
 /** The struck-through "worth" figure: the business's own LOW estimate, and
  *  only when it is actually above the price — never a made-up discount. */
-export function worthAgorot(offer) {
+function worthAgorot(offer) {
   const v = offer?.value_min_agorot;
   if (typeof v !== "number" || typeof offer?.price_agorot !== "number") return null;
   return v > offer.price_agorot ? v : null;

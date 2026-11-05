@@ -324,6 +324,12 @@ describe("the row", () => {
     expect(screen.getByTestId("rescue-row-stock").textContent).toBe("נשארו 3");
   });
 
+  it("two bags left use the Hebrew dual branch: «נשארו 2»", async () => {
+    fetchOffers.mockResolvedValue([offer({ qty_left: 2 })]);
+    render(<RescueList />);
+    expect((await screen.findByTestId("rescue-row-stock")).textContent).toBe("נשארו 2");
+  });
+
   it("one bag left reads «נשאר 1»", async () => {
     fetchOffers.mockResolvedValue([offer({ qty_left: 1 })]);
     render(<RescueList />);

@@ -5680,7 +5680,7 @@
       "pickup_label": "איסוף",
       "until": "עד {time}",
       "soon": "עוד שעה",
-      "left_short": "{count, plural, one {נשאר 1} other {נשארו #}}"
+      "left_short": "{count, plural, one {נשאר 1} two {נשארו 2} other {נשארו #}}"
     },
     "section": {
       "title": "סל הצלה",
