@@ -128,7 +128,7 @@ test.describe("products card — mount and add", () => {
     await stubEdit(page, [product({ id: 1, name: "חלה" })]);
     await openProducts(page);
     await expect(card(page)).toContainText("מוצרים");
-    await expect(body(page).getByText("המוצרים יוצגו ברשימה בעמוד שלך — עם השם, התיאור והמחיר שתמלאי כאן.")).toBeVisible();
+    await expect(body(page).getByText("המוצרים יוצגו ברשימה בעמוד שלך — עם השם, התיאור והמחיר שממלאים כאן.")).toBeVisible();
     await expect(rowOf(page, "חלה")).toBeVisible();
   });
 

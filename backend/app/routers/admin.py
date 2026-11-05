@@ -258,7 +258,7 @@ def _assert_approvable(
     if needs_license and not overrides.without_license:
         raise HTTPException(
             status_code=422,
-            detail="לא ניתן לאשר בית עסק בקטגוריה הדורשת רישיון יצרן ללא מספר רישיון. אמתי את הרישיון, או אשרי עם דריסה מפורשת.",
+            detail="לא ניתן לאשר בית עסק בקטגוריה הדורשת רישיון ייצור ללא מספר רישיון. אמתי את הרישיון, או אשרי עם דריסה מפורשת.",
         )
     if needs_license and overrides.without_license:
         # Audit trail: an admin bypassed the license guard — visible in Railway logs.

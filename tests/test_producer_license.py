@@ -27,7 +27,7 @@ VEGGIES = "ירקות"
 # צו הפיקוח, תשל"ז-1977, olive-oil-only does not.
 HONEY = "דבש"
 OILS = "שמנים"
-LICENSE_REQUIRED_HE = "מספר רישיון יצרן חובה לקטגוריה זו"
+LICENSE_REQUIRED_HE = "מספר רישיון ייצור חובה לקטגוריה זו"
 
 
 def _register_payload(

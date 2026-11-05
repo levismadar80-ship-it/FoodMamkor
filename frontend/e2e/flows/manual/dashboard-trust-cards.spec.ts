@@ -146,9 +146,9 @@ const saveBtn = (page: Page, anchor: string) => body(page, anchor).getByRole("bu
 // ── MT:MEH-1258 — the licence card ─────────────────────────────────────────
 
 test.describe("licence card", () => {
-  const field = (page: Page) => body(page, "license").getByLabel("מספר רישיון יצרן (משרד הבריאות)");
-  const WARNING = "מספר רישיון יצרן הוא 7-10 ספרות";
-  const HINT = "אחת הקטגוריות שבחרתם דורשת רישיון יצרן. מילוי המספר נדרש לאישור העסק.";
+  const field = (page: Page) => body(page, "license").getByLabel("מספר רישיון ייצור (משרד הבריאות)");
+  const WARNING = "מספר רישיון ייצור הוא 7-10 ספרות";
+  const HINT = "אחת הקטגוריות שבחרתם דורשת רישיון ייצור. מילוי המספר נדרש לאישור העסק.";
 
   // MT:MEH-1258:1 — a valid number saves, confirms, and re-seeds after a reload.
   test("a 7-10 digit number saves, confirms, and comes back after a reload", async ({ page }) => {

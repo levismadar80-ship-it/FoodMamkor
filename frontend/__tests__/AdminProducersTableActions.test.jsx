@@ -76,7 +76,7 @@ describe("approveGateReason — 422 detail → chip mapping (MEH-1011)", () => {
   it("maps the MEH-971 license-gate detail to 'license'", () => {
     expect(
       approveGateReason(
-        "לא ניתן לאשר בית עסק בקטגוריה הדורשת רישיון יצרן ללא מספר רישיון."
+        "לא ניתן לאשר בית עסק בקטגוריה הדורשת רישיון ייצור ללא מספר רישיון."
       )
     ).toBe("license");
   });
