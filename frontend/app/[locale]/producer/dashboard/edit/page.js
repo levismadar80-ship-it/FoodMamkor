@@ -77,6 +77,7 @@ import EditAccordionCard, {
 import EditHubCard from "@/components/EditHubCard";
 import Input from "@/components/ui/Input";
 import { detailToMessage } from "@/lib/errors";
+import { BADGE_CONFIG } from "@/lib/badges";
 import ProductsSection from "@/components/ProductsSection";
 import LocationsEditor from "./LocationsEditor";
 import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, PricingCard, DeliveryCard, OffersCard, LicenseCard, KashrutCard, BusinessNameCard, ViewOnPageLink } from "./cards";
@@ -89,7 +90,6 @@ import DietaryScopeCard from "./DietaryScopeCard";
 import GrassFedCard from "./GrassFedCard";
 // «עסק של מילואימניקים» (MEH-2693): owner-declared reservist_owned (own file, same reason).
 import ReservistOwnedCard from "./ReservistOwnedCard";
-import { BADGE_CONFIG } from "@/lib/badges";
 // MEH-1544: weekly order-acceptance window (own file, same reason as above —
 // imported directly rather than via a cards.jsx passthrough wrapper).
 import OrderWindowEditor from "./OrderWindowEditor";

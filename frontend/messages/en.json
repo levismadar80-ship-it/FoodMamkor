@@ -4638,7 +4638,6 @@
         "scope_helper": "Adds the grass-fed chip to your business on the map page. Shown as your own declaration."
       },
       "reservistOwned": {
-        "heading": "Reservist-owned business",
         "label": "One of the owners serves in the reserves",
         "scope_helper": "Will appear as a badge on your card and business page"
       },
