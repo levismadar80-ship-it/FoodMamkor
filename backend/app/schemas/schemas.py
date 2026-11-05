@@ -2087,6 +2087,9 @@ class ProducerUpdate(BaseModel):
     opening_hours: str | None = None
     grass_fed: bool | None = None
     organic_certified: bool | None = None
+    # «עסק של מילואימניקים» — owner-declared. NOT NULL column: an explicit null
+    # is rejected below (an omitted field is dropped by exclude_unset).
+    reservist_owned: bool | None = None
     # MEH-1508 ch2: business-level dietary scope — owner declares, admin
     # cross-checks. Shared by the owner PUT (producer_me.py, gated by
     # _PRODUCER_WRITABLE_FIELDS) and the admin PUT (admin.py bulk setattr).
@@ -2277,6 +2280,13 @@ class ProducerUpdate(BaseModel):
         allowed = {"unknown", "some", "all"}
         if v not in allowed:
             raise ValueError(f"scope חייב להיות אחד מ: {', '.join(sorted(allowed))}")
+        return v
+
+    @field_validator("reservist_owned")
+    @classmethod
+    def _reject_null_reservist_owned(cls, v):
+        if v is None:
+            raise ValueError("reservist_owned חייב להיות true או false")
         return v
 
     @field_validator("gluten_free_facility", "lactose_free_facility")
@@ -2540,6 +2550,8 @@ class ProducerListOut(BaseModel):
     price_range: str | None = None
     grass_fed: bool = False
     organic_certified: bool = False
+    # «עסק של מילואימניקים» — owner-declared, badge input only (never ranking).
+    reservist_owned: bool = False
     # MEH-1508 ch2: business-level dietary scope (owner-declared, admin
     # cross-checked). NOT NULL cols (server_default 'unknown') → always a value;
     # the default here is a from_attributes fallback. ProducerDetailOut inherits.

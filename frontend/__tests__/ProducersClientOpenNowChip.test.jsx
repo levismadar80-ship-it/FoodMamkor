@@ -71,6 +71,7 @@ vi.mock("@phosphor-icons/react", () => ({
   Certificate: (p) => <span {...p} />,
   GrainsSlash: (p) => <span {...p} />,
   Barn: (p) => <span {...p} />,
+  Medal: (p) => <span {...p} />,
   DropSlash: (p) => <span {...p} />,
   FlowerTulip: (p) => <span {...p} />,
 }));

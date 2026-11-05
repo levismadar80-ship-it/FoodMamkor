@@ -22,6 +22,7 @@ import { primaryPoint } from "@/lib/producerPoints";
 import OwnerSectionEditLink from "@/components/OwnerSectionEditLink";
 // MEH-1334 chunk 3: "מאחורי העסק" — data-gated owner card (Z4).
 import OwnerCard from "./OwnerCard";
+import ReservistBadgeLine from "./ReservistBadgeLine";
 import ProducerActivities from "./ProducerActivities";
 // MEH-1875: the weekly order-window schedule as a headed Info block. Lives in
 // OrderWindowStrip.jsx beside OrderWindowCtaNote (ContactCard's consumer).
@@ -324,6 +325,9 @@ export default function ProducerSections({
           <p className="text-text/85 leading-relaxed whitespace-pre-line">
             {producer.description}
           </p>
+          {/* MEH-2693: «עסק של מילואימניקים» — a claim about the owners, so
+              it sits in «אודות», right above «מאחורי העסק». */}
+          <ReservistBadgeLine producer={producer} className="mt-4" />
           {/* MEH-2592: «מאחורי העסק» lives inside «אודות» — who the business
               is and who is behind it, read as one story. */}
           <OwnerCard producer={producer} nested />
@@ -334,6 +338,9 @@ export default function ProducerSections({
           «אודות» above; without one there is no «אודות» to sit in, so it keeps
           its own section here, in the same place. Self-gates: null only when
           there is no contact_name, owner_bio or owner_photo_url (MEH-2471). */}
+      {/* MEH-2693: no «אודות» section → the reservist pill stands on its own
+          in the same place (self-gates to null when not declared). */}
+      {!producer.description && <ReservistBadgeLine producer={producer} className="mt-8" />}
       {!producer.description && <OwnerCard producer={producer} />}
 
       {/* MEH-2648: the rescue bag sits after the header/bio and BEFORE
