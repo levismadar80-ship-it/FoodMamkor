@@ -3,7 +3,16 @@ from uuid import UUID
 
 import httpx
 import structlog
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    Query,
+    Request,
+    Response,
+)
+from fastapi.responses import JSONResponse
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload, selectinload
@@ -32,6 +41,7 @@ from app.schemas.schemas import (
     DELIVERY_DAYS,
     DeliveryWaitlistIn,
     DeliveryWaitlistOut,
+    DeliveryWaitlistHostConfirmIn,
     DeliveryWaitlistUnsubscribeIn,
     KashrutCertRef,
     ProducerCityOut,
@@ -662,6 +672,7 @@ def record_contact_click(
 def join_delivery_waitlist(
     request: Request,
     response: Response,
+    background_tasks: BackgroundTasks,
     producer_id: UUID,
     data: DeliveryWaitlistIn,
     db: Session = Depends(get_db),
@@ -670,7 +681,11 @@ def join_delivery_waitlist(
     """«תודיעו לי כשתגיעו ל{עיר}» — join a business's per-city delivery waitlist.
 
     No account needed: email + city. Returns 201 `added`, or 200 `exists`
-    when this email already waits for this business and city. 404 for an
+    when this email already waits for this business and city. Known and
+    accepted: `exists` and `host_confirm` tell an anonymous caller whether an
+    address is on this list / already a host — the same disclosure the
+    waitlist made since MEH-2618, kept so the form can be honest about
+    whether a mail went out (double-opt-in UX norm). 404 for an
     unknown or not-yet-live business. When the business later adds the
     city to its delivery areas, one email goes out (see
     services/delivery_waitlist). Rate-limited 10/minute per IP.
@@ -687,12 +702,49 @@ def join_delivery_waitlist(
         db, producer.id, city=data.city, email=data.email
     )
     if existing is not None:
+        # MEH-2673: a repeat signup that ticks «אשמח לארח» (re)sends the
+        # confirmation link; the row turns True only from that link. An
+        # unticked repeat changes nothing — never a silent withdrawal.
+        host_confirm = None
+        if data.wants_to_host:
+            if existing.wants_to_host:
+                host_confirm = "confirmed"
+            else:
+                verdict = delivery_waitlist.claim_host_confirm_send(db, existing)
+                if verdict == "send":
+                    # Captured before the commit: expire_on_commit would
+                    # otherwise refresh the row just to read three columns.
+                    mail_args = (
+                        existing.id,
+                        existing.email,
+                        existing.city,
+                        producer.name,
+                    )
+                    db.commit()
+                    host_confirm = "sent"
+                    background_tasks.add_task(
+                        delivery_waitlist.send_host_confirmation, *mail_args
+                    )
+                else:
+                    db.rollback()  # releases the advisory lock, nothing to write
+                    host_confirm = verdict
         response.status_code = 200
-        return DeliveryWaitlistOut(status="exists")
-    delivery_waitlist.add_entry(
+        return DeliveryWaitlistOut(status="exists", host_confirm=host_confirm)
+    entry = delivery_waitlist.add_entry(
         db, producer, email=data.email, city=data.city, user=current_user
     )
+    new_verdict: delivery_waitlist.HostConfirmVerdict | None = None
     try:
+        # The INSERT is flushed here, inside the except below, BEFORE the
+        # claim takes the per-address lock — so a double-tap (two first-time
+        # POSTs for the same row in flight) trips the unique constraint
+        # here, not as an unhandled 500 out of the claim's own statements.
+        db.flush()
+        if data.wants_to_host:
+            # Stamped before the commit so this mail counts toward the
+            # per-address cap; the mail itself is queued after the commit.
+            new_verdict = delivery_waitlist.claim_host_confirm_send(db, entry)
+        mail_args = (entry.id, entry.email, entry.city, producer.name)
         db.commit()
     except IntegrityError:
         # Two identical POSTs in flight (double-tap): both passed find_entry,
@@ -701,7 +753,60 @@ def join_delivery_waitlist(
         db.rollback()
         response.status_code = 200
         return DeliveryWaitlistOut(status="exists")
-    return DeliveryWaitlistOut(status="added")
+    host_confirm = new_verdict
+    if new_verdict == "send":
+        # MEH-2673: the box alone shares nothing. The row stays
+        # wants_to_host=False until the address itself clicks the link —
+        # otherwise anyone could hand a stranger's email to a business.
+        host_confirm = "sent"
+        background_tasks.add_task(delivery_waitlist.send_host_confirmation, *mail_args)
+    return DeliveryWaitlistOut(status="added", host_confirm=host_confirm)
+
+
+@router.post("/delivery-waitlist/host-confirm", status_code=200)
+@limiter.limit("10/minute")
+def confirm_delivery_waitlist_host(
+    request: Request,
+    data: DeliveryWaitlistHostConfirmIn,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
+    """MEH-2673: «מאשרים, אפשר להעביר» — the signed link from the host
+    confirmation email. Turns the entry's wants_to_host on, so the business
+    sees this email in its pickup_hosts list. Idempotent. 400 on a token
+    that does not verify or an entry that no longer exists (unsubscribed).
+
+    410 on an expired token — and, because the token still names the entry,
+    a FRESH link is mailed to the same address right here (under the usual
+    cooldown/cap), so the page is never a dead end (the double-opt-in norm:
+    an expired link offers a new one). The body carries `resent` so the page
+    can say whether to look in the inbox. An expired link never confirms."""
+    entry_id, state = delivery_waitlist.inspect_host_confirm_token(data.token)
+    entry = db.get(DeliveryWaitlistEntry, entry_id) if entry_id else None
+    if entry is None:
+        raise HTTPException(status_code=400, detail="הקישור לא תקין או שפג תוקפו")
+    if state == "expired" and not entry.wants_to_host:
+        # An expired link on an already-confirmed entry falls through to the
+        # idempotent 200 below: the consent is on record, no error page.
+        resent = False
+        if delivery_waitlist.claim_host_confirm_send(db, entry) == "send":
+            mail_args = (entry.id, entry.email, entry.city, entry.producer.name)
+            db.commit()
+            resent = True
+            background_tasks.add_task(
+                delivery_waitlist.send_host_confirmation, *mail_args
+            )
+        else:
+            db.rollback()  # releases the advisory lock, nothing to write
+        return JSONResponse(
+            status_code=410,
+            content={"detail": "הקישור לא תקין או שפג תוקפו", "resent": resent},
+        )
+    if not entry.wants_to_host:
+        entry.wants_to_host = True
+        entry.host_confirmed_at = utc_now()
+        db.commit()
+    return {"producer_name": entry.producer.name}
 
 
 @router.post("/delivery-waitlist/unsubscribe", status_code=200)

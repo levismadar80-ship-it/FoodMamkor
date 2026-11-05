@@ -2890,6 +2890,22 @@ export const SubmitContactContactPostResponse = /*#__PURE__*/ zod.unknown()
 
 
 /**
+ * MEH-2673: «מאשרים, אפשר להעביר» — the signed link from the host
+ * confirmation email. Turns the entry's wants_to_host on, so the business
+ * sees this email in its pickup_hosts list. Idempotent. 400 on a token
+ * that does not verify or an entry that no longer exists (unsubscribed).
+ *
+ * 410 on an expired token — and, because the token still names the entry,
+ * a FRESH link is mailed to the same address right here (under the usual
+ * cooldown/cap), so the page is never a dead end (the double-opt-in norm:
+ * an expired link offers a new one). The body carries `resent` so the page
+ * can say whether to look in the inbox. An expired link never confirms.
+ * @summary Confirm Delivery Waitlist Host
+ */
+export const ConfirmDeliveryWaitlistHostDeliveryWaitlistHostConfirmPostResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
  * Remove one delivery-waitlist entry via the signed token from its email.
  *
  * Idempotent: an already-removed entry is still 200. 400 on a token that
@@ -4696,6 +4712,8 @@ export const UpdateMyProducerProducersMePutResponse = /*#__PURE__*/ zod.object({
  *   - home_products_count (active only, scoped to the owning user)
  *   - views_by_day: 30-entry zero-filled daily series for the line chart
  *   - top_cities: top 5 cities the views come from (NULL excluded)
+ *   - pickup_hosts: [{email, city}] waitlist visitors who offered to host a
+ *     pickup point for THIS business (MEH-2673), newest first, max 50
  * @summary Producer Analytics
  */
 export const ProducerAnalyticsProducersMeAnalyticsGetResponse = /*#__PURE__*/ zod.unknown()
@@ -5509,15 +5527,20 @@ export const RecordContactClickProducersProducerIdContactClickPostResponse = /*#
  * «תודיעו לי כשתגיעו ל{עיר}» — join a business's per-city delivery waitlist.
  *
  * No account needed: email + city. Returns 201 `added`, or 200 `exists`
- * when this email already waits for this business and city. 404 for an
+ * when this email already waits for this business and city. Known and
+ * accepted: `exists` and `host_confirm` tell an anonymous caller whether an
+ * address is on this list / already a host — the same disclosure the
+ * waitlist made since MEH-2618, kept so the form can be honest about
+ * whether a mail went out (double-opt-in UX norm). 404 for an
  * unknown or not-yet-live business. When the business later adds the
  * city to its delivery areas, one email goes out (see
  * services/delivery_waitlist). Rate-limited 10/minute per IP.
  * @summary Join Delivery Waitlist
  */
 export const JoinDeliveryWaitlistProducersProducerIdDeliveryWaitlistPostResponse = /*#__PURE__*/ zod.object({
+  "host_confirm": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['sent', 'already_sent', 'limit_reached', 'confirmed']),/*#__PURE__*/ zod.null()])),
   "status": /*#__PURE__*/ zod.enum(['added', 'exists'])
-}).check(/*#__PURE__*/ zod.describe('MEH-2618: `added` (201) on a new row, `exists` (200) when the same\nemail already waits for the same business + city — the form shows the\nsame calm confirmation for both.'))
+}).check(/*#__PURE__*/ zod.describe('MEH-2618: `added` (201) on a new row, `exists` (200) when the same\nemail already waits for the same business + city — the form shows the\nsame calm confirmation for both.\n\nMEH-2673 `host_confirm` — only when the request ticked «אשמח לארח»:\n`sent` = a confirmation mail went out now · `already_sent` = THIS\nbusiness+city\'s link already went to the address within the last 24 h,\nnothing new was sent (the form says «check your inbox» instead of a false\n«we sent») · `limit_reached` = the address hit its daily cap of\nconfirmation mails across businesses\/cities, nothing was sent for this\none (the form says «try again tomorrow», never «check your inbox») ·\n`confirmed` = this row is already a host. None when the box was not\nticked.'))
 
 
 /**

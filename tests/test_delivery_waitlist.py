@@ -13,6 +13,8 @@ Covers:
 
 from __future__ import annotations
 
+from datetime import timedelta
+
 from conftest import auth_header, make_producer, make_user
 
 from app.models import DeliveryWaitlistEntry
@@ -280,3 +282,457 @@ class TestTrigger:
         )
         assert r.status_code == 200, r.text
         assert calls == [(p.id, ["תל אביב-יפו"])]
+
+
+# ---------------------------------------------------------------------------
+# MEH-2673 — «אשמח לארח נקודת מסירה»: the opt-in host flag on a waitlist row
+# and the owner-only list of willing hosts on GET /producers/me/analytics.
+# ---------------------------------------------------------------------------
+
+
+def _owner(db, producer, email):
+    user = make_user(db, email=email, role="producer")
+    user.producer_id = producer.id
+    db.commit()
+    return user
+
+
+def _capture_mail(monkeypatch):
+    sent = []
+    monkeypatch.setattr(
+        "app.services.delivery_waitlist.send_email",
+        lambda to, subject, body, **kw: sent.append((to, subject, body)),
+    )
+    return sent
+
+
+def _token_from(body):
+    return body.split("host-confirm?token=")[1].split()[0]
+
+
+def _signup_and_confirm(client, monkeypatch, producer_id, email, city):
+    sent = _capture_mail(monkeypatch)
+    client.post(
+        f"/producers/{producer_id}/delivery-waitlist",
+        json={"email": email, "city": city, "wants_to_host": True},
+    )
+    r = client.post(
+        "/delivery-waitlist/host-confirm", json={"token": _token_from(sent[-1][2])}
+    )
+    assert r.status_code == 200, r.text
+
+
+class TestWantsToHost:
+    def test_default_is_not_a_host_and_sends_nothing(self, client, db, monkeypatch):
+        sent = _capture_mail(monkeypatch)
+        p = make_producer(db)
+        r = client.post(
+            f"/producers/{p.id}/delivery-waitlist",
+            json={"email": "dana@example.com", "city": "חיפה"},
+        )
+        assert r.status_code == 201, r.text
+        assert _entries(db, p.id)[0].wants_to_host is False
+        assert sent == []
+
+    def test_box_alone_shares_nothing_until_link_clicked(self, client, db, monkeypatch):
+        # The anti-impersonation property: ticking the box with someone
+        # else's address must not make that address visible to the business.
+        sent = _capture_mail(monkeypatch)
+        p = make_producer(db, name="סנדרה פירות")
+        r = client.post(
+            f"/producers/{p.id}/delivery-waitlist",
+            json={"email": "dana@example.com", "city": "חדרה", "wants_to_host": True},
+        )
+        assert r.status_code == 201, r.text
+        assert _entries(db, p.id)[0].wants_to_host is False
+        assert len(sent) == 1
+        to, subject, body = sent[0]
+        assert to == "dana@example.com"
+        assert "סנדרה פירות" in subject and "חדרה" in subject
+        r = client.post(
+            "/delivery-waitlist/host-confirm", json={"token": _token_from(body)}
+        )
+        assert r.status_code == 200
+        assert r.json() == {"producer_name": "סנדרה פירות"}
+        db.expire_all()
+        assert _entries(db, p.id)[0].wants_to_host is True
+
+    def test_confirm_is_idempotent(self, client, db, monkeypatch):
+        p = make_producer(db)
+        _signup_and_confirm(client, monkeypatch, p.id, "dana@example.com", "חיפה")
+        sent = _capture_mail(monkeypatch)
+        entry = _entries(db, p.id)[0]
+        token = svc.create_host_confirm_token(entry.id)
+        assert (
+            client.post(
+                "/delivery-waitlist/host-confirm", json={"token": token}
+            ).status_code
+            == 200
+        )
+        assert sent == []
+
+    def test_unsubscribe_token_cannot_confirm(self, client, db):
+        p = make_producer(db)
+        entry = svc.add_entry(db, p, email="dana@example.com", city="חיפה", user=None)
+        db.commit()
+        r = client.post(
+            "/delivery-waitlist/host-confirm",
+            json={"token": svc.create_unsubscribe_token(entry.id)},
+        )
+        assert r.status_code == 400
+        db.expire_all()
+        assert _entries(db, p.id)[0].wants_to_host is False
+
+    def test_confirm_token_cannot_unsubscribe(self, client, db):
+        p = make_producer(db)
+        entry = svc.add_entry(db, p, email="dana@example.com", city="חיפה", user=None)
+        db.commit()
+        r = client.post(
+            "/delivery-waitlist/unsubscribe",
+            json={"token": svc.create_host_confirm_token(entry.id)},
+        )
+        assert r.status_code == 400
+        assert len(_entries(db, p.id)) == 1
+
+    def test_garbage_token_is_400(self, client, db):
+        r = client.post("/delivery-waitlist/host-confirm", json={"token": "nope"})
+        assert r.status_code == 400
+
+    def test_repeat_signup_with_box_resends_link(self, client, db, monkeypatch):
+        sent = _capture_mail(monkeypatch)
+        p = make_producer(db)
+        url = f"/producers/{p.id}/delivery-waitlist"
+        client.post(url, json={"email": "dana@example.com", "city": "חיפה"})
+        r = client.post(
+            url,
+            json={"email": "dana@example.com", "city": "חיפה", "wants_to_host": True},
+        )
+        assert r.status_code == 200
+        assert r.json()["status"] == "exists"
+        assert len(sent) == 1
+        assert _entries(db, p.id)[0].wants_to_host is False
+
+    def test_repeat_signup_without_box_never_withdraws_consent(
+        self, client, db, monkeypatch
+    ):
+        p = make_producer(db)
+        _signup_and_confirm(client, monkeypatch, p.id, "dana@example.com", "חיפה")
+        client.post(
+            f"/producers/{p.id}/delivery-waitlist",
+            json={"email": "dana@example.com", "city": "חיפה"},
+        )
+        db.expire_all()
+        assert _entries(db, p.id)[0].wants_to_host is True
+
+
+class TestPickupHostsOnAnalytics:
+    def _hosts(self, client, user):
+        r = client.get("/producers/me/analytics", headers=auth_header(user))
+        assert r.status_code == 200, r.text
+        return r.json()["pickup_hosts"]
+
+    def test_zero_hosts_is_empty_list(self, client, db, monkeypatch):
+        p = make_producer(db)
+        owner = _owner(db, p, "owner-h0@test.com")
+        _capture_mail(monkeypatch)
+        # A plain signup is demand, not a host; a ticked but UNCONFIRMED
+        # signup is not a host either. Neither may leak its email.
+        url = f"/producers/{p.id}/delivery-waitlist"
+        client.post(url, json={"email": "plain@example.com", "city": "חיפה"})
+        client.post(
+            url,
+            json={
+                "email": "unconfirmed@example.com",
+                "city": "חיפה",
+                "wants_to_host": True,
+            },
+        )
+        assert self._hosts(client, owner) == []
+
+    def test_one_host(self, client, db, monkeypatch):
+        p = make_producer(db)
+        owner = _owner(db, p, "owner-h1@test.com")
+        _signup_and_confirm(client, monkeypatch, p.id, "host@example.com", "חדרה")
+        assert self._hosts(client, owner) == [
+            {"email": "host@example.com", "city": "חדרה"}
+        ]
+
+    def test_many_hosts_and_only_own_business(self, client, db, monkeypatch):
+        p = make_producer(db)
+        other = make_producer(db, name="עסק אחר")
+        owner = _owner(db, p, "owner-hn@test.com")
+        _signup_and_confirm(client, monkeypatch, p.id, "a@example.com", "חדרה")
+        _signup_and_confirm(client, monkeypatch, p.id, "b@example.com", "בנימינה")
+        # Same flow for ANOTHER business: consent was given to that business
+        # only, so it must not reach this owner.
+        _signup_and_confirm(client, monkeypatch, other.id, "c@example.com", "חדרה")
+        hosts = self._hosts(client, owner)
+        assert sorted(h["email"] for h in hosts) == ["a@example.com", "b@example.com"]
+
+    def test_newest_confirmation_first_not_newest_signup(self, client, db, monkeypatch):
+        # A late click on an old signup is the newest news for the owner.
+        p = make_producer(db)
+        owner = _owner(db, p, "owner-ord@test.com")
+        sent = _capture_mail(monkeypatch)
+        for email in ("old@example.com", "new@example.com"):
+            client.post(
+                f"/producers/{p.id}/delivery-waitlist",
+                json={"email": email, "city": "חדרה", "wants_to_host": True},
+            )
+        tokens = {to: _token_from(body) for to, _subj, body in sent}
+        for email in ("new@example.com", "old@example.com"):
+            r = client.post(
+                "/delivery-waitlist/host-confirm", json={"token": tokens[email]}
+            )
+            assert r.status_code == 200, r.text
+        assert [h["email"] for h in self._hosts(client, owner)] == [
+            "old@example.com",
+            "new@example.com",
+        ]
+
+
+class TestHostConfirmAbuseGuards:
+    def test_resend_is_capped_by_cooldown(self, client, db, monkeypatch):
+        # A stranger re-submitting the form with someone's address gets at
+        # most one confirmation mail into that inbox per cooldown window.
+        sent = _capture_mail(monkeypatch)
+        p = make_producer(db)
+        body = {"email": "dana@example.com", "city": "חיפה", "wants_to_host": True}
+        for _ in range(3):
+            client.post(f"/producers/{p.id}/delivery-waitlist", json=body)
+        assert len(sent) == 1
+
+    def test_resend_after_cooldown(self, client, db, monkeypatch):
+        sent = _capture_mail(monkeypatch)
+        p = make_producer(db)
+        body = {"email": "dana@example.com", "city": "חיפה", "wants_to_host": True}
+        client.post(f"/producers/{p.id}/delivery-waitlist", json=body)
+        entry = _entries(db, p.id)[0]
+        entry.host_confirm_sent_at = entry.host_confirm_sent_at - (
+            svc.HOST_CONFIRM_RESEND_COOLDOWN + timedelta(minutes=1)
+        )
+        db.commit()
+        client.post(f"/producers/{p.id}/delivery-waitlist", json=body)
+        assert len(sent) == 2
+
+    def test_expired_link_is_410_not_400(self, client, db):
+        # Expired is told apart from garbage so the page can offer a new link.
+        p = make_producer(db)
+        entry = svc.add_entry(db, p, email="dana@example.com", city="חיפה", user=None)
+        db.commit()
+        token = svc._encode(entry.id, svc._HOST_CONFIRM_SCOPE, timedelta(seconds=-1))
+        r = client.post("/delivery-waitlist/host-confirm", json={"token": token})
+        assert r.status_code == 410
+        db.expire_all()
+        assert _entries(db, p.id)[0].wants_to_host is False
+
+    def test_confirm_after_unsubscribe_is_400(self, client, db):
+        p = make_producer(db)
+        entry = svc.add_entry(db, p, email="dana@example.com", city="חיפה", user=None)
+        db.commit()
+        confirm = svc.create_host_confirm_token(entry.id)
+        unsub = svc.create_unsubscribe_token(entry.id)
+        assert (
+            client.post(
+                "/delivery-waitlist/unsubscribe", json={"token": unsub}
+            ).status_code
+            == 200
+        )
+        r = client.post("/delivery-waitlist/host-confirm", json={"token": confirm})
+        assert r.status_code == 400
+
+    def test_second_business_within_window_gets_its_own_mail(
+        self, client, db, monkeypatch
+    ):
+        # Each link confirms ONE entry, so a visitor who ticks the box for two
+        # businesses (or two cities) in one day must get two mails — the
+        # cooldown is per entry, not per address.
+        sent = _capture_mail(monkeypatch)
+        p1 = make_producer(db)
+        p2 = make_producer(db, name="עסק שני")
+        r1 = client.post(
+            f"/producers/{p1.id}/delivery-waitlist",
+            json={"email": "dana@example.com", "city": "חיפה", "wants_to_host": True},
+        )
+        r2 = client.post(
+            f"/producers/{p2.id}/delivery-waitlist",
+            json={"email": "dana@example.com", "city": "חיפה", "wants_to_host": True},
+        )
+        assert (r1.json()["host_confirm"], r2.json()["host_confirm"]) == (
+            "sent",
+            "sent",
+        )
+        assert len(sent) == 2
+        assert "עסק שני" in sent[1][1]
+        # Each mail's link confirms the entry it was sent for, and only it.
+        client.post(
+            "/delivery-waitlist/host-confirm", json={"token": _token_from(sent[1][2])}
+        )
+        db.expire_all()
+        assert _entries(db, p1.id)[0].wants_to_host is False
+        assert _entries(db, p2.id)[0].wants_to_host is True
+
+    def test_address_cap_across_cities_and_businesses(self, client, db, monkeypatch):
+        # One row per (business, city, email): without a per-address cap a
+        # stranger could mail the same inbox once per combination.
+        sent = _capture_mail(monkeypatch)
+        p1 = make_producer(db)
+        p2 = make_producer(db, name="עסק שני")
+        combos = [(p1.id, "חיפה"), (p1.id, "חדרה"), (p2.id, "חיפה"), (p2.id, "חדרה")]
+        assert len(combos) == svc.HOST_CONFIRM_ADDRESS_CAP + 1
+        statuses = [
+            client.post(
+                f"/producers/{pid}/delivery-waitlist",
+                json={"email": "dana@example.com", "city": city, "wants_to_host": True},
+            ).json()["host_confirm"]
+            for pid, city in combos
+        ]
+        # The 4th is told the truth — nothing was sent for it — not «check
+        # your inbox», which is what already_sent means.
+        assert statuses == ["sent"] * svc.HOST_CONFIRM_ADDRESS_CAP + ["limit_reached"]
+        assert len(sent) == svc.HOST_CONFIRM_ADDRESS_CAP
+
+    def test_double_tap_with_box_is_exists_not_500(self, client, db, monkeypatch):
+        # Two first-time POSTs for the same row in flight: both pass
+        # find_entry, the second trips the unique constraint. Simulated by
+        # blinding find_entry for the second call; the INSERT must fail
+        # inside the handled block, not out of the claim's statements.
+        sent = _capture_mail(monkeypatch)
+        p = make_producer(db)
+        body = {"email": "dana@example.com", "city": "חיפה", "wants_to_host": True}
+        assert client.post(
+            f"/producers/{p.id}/delivery-waitlist", json=body
+        ).json() == {
+            "status": "added",
+            "host_confirm": "sent",
+        }
+        monkeypatch.setattr(
+            "app.routers.producers.delivery_waitlist.find_entry",
+            lambda *a, **k: None,
+        )
+        r = client.post(f"/producers/{p.id}/delivery-waitlist", json=body)
+        assert r.status_code == 200, r.text
+        assert r.json() == {"status": "exists", "host_confirm": None}
+        assert len(sent) == 1
+        assert len(_entries(db, p.id)) == 1
+
+    def test_expired_link_mails_a_fresh_one(self, client, db, monkeypatch):
+        # The 410 is not a dead end: the expired token still names the entry,
+        # so a new link goes to the same address (once per cooldown window).
+        sent = _capture_mail(monkeypatch)
+        p = make_producer(db)
+        entry = svc.add_entry(db, p, email="dana@example.com", city="חיפה", user=None)
+        db.commit()
+        stale = svc._encode(entry.id, svc._HOST_CONFIRM_SCOPE, timedelta(seconds=-1))
+        r = client.post("/delivery-waitlist/host-confirm", json={"token": stale})
+        assert r.status_code == 410
+        assert r.json()["resent"] is True
+        assert len(sent) == 1
+        # The fresh link works; the stale one still does not.
+        r = client.post("/delivery-waitlist/host-confirm", json={"token": stale})
+        assert (r.status_code, r.json()["resent"]) == (410, False)
+        assert len(sent) == 1
+        fresh = _token_from(sent[0][2])
+        assert (
+            client.post(
+                "/delivery-waitlist/host-confirm", json={"token": fresh}
+            ).status_code
+            == 200
+        )
+        db.expire_all()
+        assert _entries(db, p.id)[0].wants_to_host is True
+
+    def test_expired_link_for_confirmed_entry_is_idempotent_200(
+        self, client, db, monkeypatch
+    ):
+        # Re-opening the old mail after 7 days, already confirmed: the
+        # consent is on record, so 200 like any repeat click — no error
+        # page, no new mail.
+        p = make_producer(db)
+        _signup_and_confirm(client, monkeypatch, p.id, "dana@example.com", "חיפה")
+        sent = _capture_mail(monkeypatch)
+        entry = _entries(db, p.id)[0]
+        stale = svc._encode(entry.id, svc._HOST_CONFIRM_SCOPE, timedelta(seconds=-1))
+        r = client.post("/delivery-waitlist/host-confirm", json={"token": stale})
+        assert (r.status_code, r.json()) == (200, {"producer_name": p.name})
+        assert sent == []
+
+    def test_non_numeric_exp_is_invalid_not_expired(self, db):
+        p = make_producer(db)
+        entry = svc.add_entry(db, p, email="dana@example.com", city="חיפה", user=None)
+        db.commit()
+        from joserfc import jwt as jose_jwt
+
+        for bad_exp in (True, "soon"):
+            token = jose_jwt.encode(
+                {"alg": svc.settings.algorithm},
+                {
+                    "sub": str(entry.id),
+                    "scope": svc._HOST_CONFIRM_SCOPE,
+                    "exp": bad_exp,
+                },
+                svc._key(),
+            )
+            assert svc.inspect_host_confirm_token(token) == (None, "invalid")
+
+
+class TestHostConfirmStatus:
+    """The form must never say «we sent you a mail» when nothing was sent."""
+
+    def test_new_row_with_box_says_sent(self, client, db, monkeypatch):
+        _capture_mail(monkeypatch)
+        p = make_producer(db)
+        r = client.post(
+            f"/producers/{p.id}/delivery-waitlist",
+            json={"email": "dana@example.com", "city": "חיפה", "wants_to_host": True},
+        )
+        assert r.json() == {"status": "added", "host_confirm": "sent"}
+
+    def test_without_box_has_no_host_status(self, client, db):
+        p = make_producer(db)
+        r = client.post(
+            f"/producers/{p.id}/delivery-waitlist",
+            json={"email": "dana@example.com", "city": "חיפה"},
+        )
+        assert r.json() == {"status": "added", "host_confirm": None}
+
+    def test_inside_cooldown_says_already_sent(self, client, db, monkeypatch):
+        _capture_mail(monkeypatch)
+        p = make_producer(db)
+        body = {"email": "dana@example.com", "city": "חיפה", "wants_to_host": True}
+        client.post(f"/producers/{p.id}/delivery-waitlist", json=body)
+        # Same row again → exists + already_sent.
+        r = client.post(f"/producers/{p.id}/delivery-waitlist", json=body)
+        assert r.json() == {"status": "exists", "host_confirm": "already_sent"}
+        # A NEW row for the same address (other city) is its own entry with
+        # its own link → added + sent.
+        r = client.post(
+            f"/producers/{p.id}/delivery-waitlist", json={**body, "city": "חדרה"}
+        )
+        assert r.json() == {"status": "added", "host_confirm": "sent"}
+
+    def test_confirmed_row_says_confirmed(self, client, db, monkeypatch):
+        p = make_producer(db)
+        _signup_and_confirm(client, monkeypatch, p.id, "dana@example.com", "חיפה")
+        sent = _capture_mail(monkeypatch)
+        r = client.post(
+            f"/producers/{p.id}/delivery-waitlist",
+            json={"email": "dana@example.com", "city": "חיפה", "wants_to_host": True},
+        )
+        assert r.json() == {"status": "exists", "host_confirm": "confirmed"}
+        assert sent == []
+
+    def test_confirm_stamps_consent_time(self, client, db, monkeypatch):
+        p = make_producer(db)
+        entry = svc.add_entry(db, p, email="dana@example.com", city="חיפה", user=None)
+        db.commit()
+        assert entry.host_confirmed_at is None
+        token = svc.create_host_confirm_token(entry.id)
+        assert (
+            client.post(
+                "/delivery-waitlist/host-confirm", json={"token": token}
+            ).status_code
+            == 200
+        )
+        db.expire_all()
+        assert _entries(db, p.id)[0].host_confirmed_at is not None
