@@ -32,6 +32,7 @@ import EventEntryRow, { CATEGORY_ICON } from "@/components/EventEntryRow";
 import { toEventEntry } from "@/lib/event-entry";
 import { eventWhen, addressNavLinks } from "@/lib/event-when";
 import { AddressNavLinks } from "@/components/NavAppGlyphs";
+import { EVENT_CATEGORIES } from "@/lib/event-categories";
 import { downloadIcs } from "@/lib/event-ics";
 
 // MEH-1404: reuse the producer-detail static map + Waze/Gmaps block on events
@@ -222,12 +223,24 @@ export default function EventDetailClient() {
             ]}
             className="mb-3"
           />
-          {event.category && (
-            <span className="inline-flex items-center gap-1 bg-green-50 text-primary text-xs px-3 py-1 rounded-full mb-3">
+          {/* MEH-2675: a known category opens the events list filtered to it
+              (?category= deep link, EventsClient.jsx); a legacy value outside
+              EVENT_CATEGORIES would filter to nothing, so it stays plain. */}
+          {event.category && (EVENT_CATEGORIES.some((c) => c.key === event.category) ? (
+            <Link
+              href={`/events?category=${encodeURIComponent(event.category)}`}
+              data-testid="event-category"
+              className="inline-flex items-center gap-1 bg-green-50 text-primary text-xs px-3 py-1 rounded-full mb-3 hover:underline focus-visible:outline-2 focus-visible:outline-primary"
+            >
+              <CatIcon size={12} weight="bold" aria-hidden="true" />
+              {event.category}
+            </Link>
+          ) : (
+            <span data-testid="event-category" className="inline-flex items-center gap-1 bg-green-50 text-primary text-xs px-3 py-1 rounded-full mb-3">
               <CatIcon size={12} weight="bold" aria-hidden="true" />
               {event.category}
             </span>
-          )}
+          ))}
           <h1 className="font-headline-display text-4xl md:text-5xl font-black text-text mb-3">
             {event.title}
           </h1>

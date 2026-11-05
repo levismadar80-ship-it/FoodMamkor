@@ -21,6 +21,7 @@ graph LR
     App --> Producers[producers.router<br/>/producers/*]
     App --> ProducerMe[producer_me.router<br/>/producers/me/*]
     App --> ProducerClaim[producer_claim.router<br/>/admin/producers/:id/claim-link · /producer-claim/preview · /producer-claim<br/>MEH-2322 owner-claim link: 14-day HS256 scope=producer_claim, draft + ownerless only,<br/>claim stamps her declaration + terms, status stays draft]
+    App --> Rescue[rescue.router · rescue.admin_router<br/>/rescue/* · /admin/rescue/*<br/>MEH-2646 rescue-bags pilot — EVERY route 404s while RESCUE_BAGS_ENABLED is off (its default).<br/>No payment anywhere: the buyer pays at the counter]
     App --> NameRequests[producer_name_requests.router<br/>/producers/me/name-change-requests<br/>/admin/name-change-requests]
     App --> Favorites[favorites.router<br/>/users/me/favorites/*]
     App --> Saved[saved_items.router<br/>/users/me/saved/* MEH-2557]
@@ -200,6 +201,57 @@ graph LR
     ChatQA --> ChatRouter[chat_intent_router<br/>Haiku structured output: db_query | freeform]
     ChatRouter -->|db_query, 5/min per IP| ChatTools[chat_db_tools<br/>4 bounded SELECTs as mcp_reader<br/>READ ONLY · 5s timeout · fail-open]
 ```
+
+## 6b. Rescue bags — pilot, flag-gated (MEH-2646)
+
+Every route below answers **404** unless `RESCUE_BAGS_ENABLED` is true, which is
+not its default. 404 and not 403, so the feature's existence is not advertised
+before launch. **There is no payment endpoint and no amount field anywhere** —
+the buyer pays the business at the counter (03/11 pilot ruling).
+
+```mermaid
+graph LR
+    Dash[business dashboard · chunk 5] --> Publish[POST /rescue/offers<br/>✅👤 approved business only<br/>pickup point must be location_precision=exact MEH-829<br/>qty_total 1..20 · one active bag per point per day → 409]
+    Dash --> OfferCancel[POST /rescue/offers/:id/cancel<br/>👤 owner or admin<br/>cancels every open reservation with it<br/>NO message to buyers yet — needs a Meta-approved template]
+
+    List[/rescue list · chunk 4] --> Browse[GET /rescue/offers?city=&lat=&lng=<br/>🌐 today's active bags with stock<br/>distance is to THE pickup point, not the nearest branch<br/>+ producer summary + typical_items]
+
+    Buyer[buyer] --> Reserve[POST /rescue/orders<br/>🔑 qty 1..2 · SELECT … FOR UPDATE on the offer MEH-773<br/>returns a 4-digit pickup_code, UNIQUE per offer<br/>422 when 2 no-shows in 30 days are on record]
+    Buyer --> BuyerCancel[POST /rescue/orders/:id/cancel<br/>🔑 own order, only before cancel_until<br/>returns the bag to qty_left under the same lock]
+    Buyer --> Review[POST /rescue/orders/:id/review<br/>🔑 own order, only after handed, once<br/>uq_rescue_reviews_order]
+
+    Counter[at the counter] --> Handed[POST /rescue/orders/:id/handed<br/>👤 owner or admin<br/>second call → 409 naming handed_at, never a silent 200]
+    Counter --> NoShow[POST /rescue/orders/:id/no_show<br/>👤 owner or admin, only after pickup_end<br/>increments users.rescue_no_show_count]
+
+    Admin[admin] --> ClearBlock[POST /admin/rescue/users/:id/clear-block<br/>🛡️ stamps users.rescue_block_cleared_at<br/>the no_show rows stay for the chunk-5 metrics]
+
+    Dash --> MyOrders[GET /producers/me/rescue/orders<br/>👤 today's codes for this business, Israel clock<br/>NO buyer identity — four digits is the whole job<br/>carries pickup_end so «לא הגיע» can be gated client-side]
+    Dash --> Typical[GET · PUT /producers/me/rescue/typical-items<br/>👤 «בדרך כלל: …», one row per business, upsert in place<br/>bounded at 12 so the line stays one line on a phone]
+    Admin --> Metrics[GET /admin/rescue/metrics?days=<br/>🛡️ offers/day · sell-through · no-show rate · repeat buyers<br/>rates are NULL not 0 when the denominator is zero]
+```
+
+> **The per-town gate (MEH-2649).** `RESCUE_BAGS_CITIES` is comma separated and
+> **empty means NO town, not every town** — the value a missing env var
+> produces must not open the pilot nationwide. Names run through
+> `canonical_city`, so «תל אביב» matches rows stored as «תל אביב-יפו». It is
+> enforced on the **read** as well as the write: without that, an offer
+> published while a town was listed keeps being served after the town is
+> removed.
+
+> **What blocks a buyer, precisely.** The 422 gate counts no-shows from
+> `rescue_orders` whose offer's `pickup_end` falls inside 30 days **and** after
+> `users.rescue_block_cleared_at`. `users.rescue_no_show_count` is a lifetime
+> counter for display and metrics and is deliberately NOT the gate — it carries
+> no window, so gating on it would ban a buyer whose two no-shows were a year
+> apart (`tests/test_rescue.py::test_two_no_shows_outside_the_window_do_not_block`
+> is that case).
+
+> **Not built in chunk 2, by decision not omission:** the `pickup_start` WhatsApp
+> digest of the day's codes to the business. `fire_alerts` is the wrong
+> mechanism — it fans out to CONSUMERS who opted in via `FavoriteAlert` columns,
+> from inside a request rather than on a clock. It needs a scheduler job in the
+> `services/pending_nudge.py` shape plus an idempotency stamp; MEH-2646 carries
+> the choice.
 
 ## 7. Health probes (no page — platform + operators)
 

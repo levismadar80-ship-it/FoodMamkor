@@ -1,3 +1,4 @@
+import RescueSection from "@/components/rescue/RescueSection";
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import { CaretLeft, Leaf, MapPin } from "@phosphor-icons/react";
@@ -334,6 +335,12 @@ export default function ProducerSections({
           its own section here, in the same place. Self-gates: null only when
           there is no contact_name, owner_bio or owner_photo_url (MEH-2471). */}
       {!producer.description && <OwnerCard producer={producer} />}
+
+      {/* MEH-2648: the rescue bag sits after the header/bio and BEFORE
+          products, per the chunk-4 spec — it is tonight's thing and expires,
+          the catalogue does not. OUTSIDE the products gate below on purpose:
+          a business with a bag and no catalogue must still show the bag. */}
+      <RescueSection producer={producer} />
 
       {/* Products (premium only) + the signature product at the top.
           MEH-1146 chunk B: the section also renders when only the signature
