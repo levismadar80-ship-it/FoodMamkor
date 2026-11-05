@@ -139,6 +139,18 @@ describe("MEH-2476 — experience details", () => {
     expect(screen.getByTestId("experience-category").textContent).toBe(label);
   });
 
+  // MEH-2675: the chip links to the list filtered by its Hebrew wire key —
+  // also for an older row that stores the English key.
+  it.each([
+    ["סיור אוכל", "סיור אוכל"],
+    ["food_tour", "סיור אוכל"],
+  ])("category %s → chip links to /experiences?category=%s", async (category, key) => {
+    await renderWith({ category });
+    const chip = screen.getByTestId("experience-category");
+    expect(chip.tagName).toBe("A");
+    expect(chip.getAttribute("href")).toBe(`/experiences?category=${encodeURIComponent(key)}`);
+  });
+
   it("an unknown category → no chip, never a raw key", async () => {
     await renderWith({ category: "zzz" });
     expect(screen.queryByTestId("experience-category")).not.toBeInTheDocument();
