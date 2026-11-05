@@ -3,10 +3,13 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 
+import { useOptionalAuth } from "@/lib/auth-context";
+
 import RescueConfirmation from "@/components/rescue/RescueConfirmation";
 import RescueReview from "@/components/rescue/RescueReview";
 import {
   cancelOrder,
+  fetchMyOrders,
   fetchOffers,
   israelTime,
   rescueBagsEnabled,
@@ -52,6 +55,43 @@ export default function RescueSection({ producer }) {
       alive = false;
     };
   }, [producer?.id, producer?.city]);
+
+  // MEH-2680: a reload must not lose the code. Read the buyer's own order on
+  // this business's bag back from the server — matched on the producer, not
+  // the offer, because the public list drops a sold-out offer and the buyer of
+  // the last bag would otherwise lose hers. Re-read on focus so a bag the
+  // business just marked handed brings up the review without a reload.
+  // Guests are skipped: their 401 would end in the "session expired" toast.
+  const userId = useOptionalAuth()?.user?.id;
+  useEffect(() => {
+    if (!rescueBagsEnabled() || !userId || !producer?.id) return undefined;
+    let alive = true;
+    async function restore() {
+      try {
+        const mine = await fetchMyOrders();
+        if (!alive) return;
+        // A buyer may hold two bags of one offer (the cap is per buyer per
+        // offer, summed), e.g. one already handed and a newer one reserved:
+        // the reserved one wins, because its code is what she still needs.
+        const here = mine.filter((row) => row.producer_id === producer.id);
+        const hit = here.find((row) => row.status === "reserved") || here[here.length - 1];
+        if (hit) {
+          setOrder(hit);
+          // Never un-review: a read that left before a just-sent review must
+          // not bring the form back.
+          setReviewed((was) => was || hit.reviewed);
+        }
+      } catch {
+        // A failed read-back leaves whatever the page already shows.
+      }
+    }
+    restore();
+    window.addEventListener("focus", restore);
+    return () => {
+      alive = false;
+      window.removeEventListener("focus", restore);
+    };
+  }, [userId, producer?.id]);
 
   if (!rescueBagsEnabled()) return null;
   // No bag today is the ordinary case for most businesses most days, and it

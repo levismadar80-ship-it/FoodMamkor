@@ -69,6 +69,7 @@ from app.schemas.rescue import (
     RescueOfferPublicOut,
     RescueOrderCreate,
     RescueMetricsOut,
+    RescueMyOrderOut,
     RescueOrderCreatedOut,
     RescueOrderOut,
     RescueOwnerOrderOut,
@@ -543,6 +544,61 @@ def cancel_offer(
     db.commit()
     db.refresh(offer)
     return offer
+
+
+@router.get(
+    "/orders/mine",
+    response_model=list[RescueMyOrderOut],
+    dependencies=[Depends(require_rescue_enabled)],
+)
+@limiter.limit("120/minute")
+def list_my_reservations(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """The caller's own live reservations on today's bags (MEH-2680).
+
+    Only the caller's rows, only today's offers (Israel date), only
+    `reserved` / `handed` — a cancelled or no-show order has no code left to
+    say and nothing to review. Carries the same fields as the reservation
+    response, so the confirmation renders from either without a second shape.
+    """
+    rows = (
+        db.query(RescueOrder)
+        .join(RescueOffer, RescueOrder.offer_id == RescueOffer.id)
+        .options(
+            selectinload(RescueOrder.offer).selectinload(RescueOffer.location),
+            selectinload(RescueOrder.review),
+        )
+        .filter(
+            RescueOrder.user_id == current_user.id,
+            RescueOrder.status.in_(("reserved", "handed")),
+            RescueOffer.date == israel_today(),
+        )
+        .order_by(RescueOrder.created_at.asc())
+        .all()
+    )
+    return [
+        {
+            "id": o.id,
+            "offer_id": o.offer_id,
+            "user_id": o.user_id,
+            "qty": o.qty,
+            "pickup_code": o.pickup_code,
+            "status": o.status,
+            "handed_at": o.handed_at,
+            "cancelled_at": o.cancelled_at,
+            "created_at": o.created_at,
+            "price_agorot": o.offer.price_agorot,
+            "cancel_until": o.offer.cancel_until,
+            "pickup_start": o.offer.pickup_start,
+            "pickup_end": o.offer.pickup_end,
+            "reviewed": o.review is not None,
+            "producer_id": o.offer.location.producer_id,
+        }
+        for o in rows
+    ]
 
 
 @router.post(
