@@ -5680,7 +5680,9 @@
     "home": {
       "title": "מה נשאר היום",
       "title_city": "מה נשאר היום ב{city}",
-      "all": "לכל הסלים"
+      "all": "לכל הסלים",
+      "all_count": "לכל {count} הסלים ←",
+      "lead": "סלים של מה שלא נמכר היום, במחיר מוזל. איסוף עצמי."
     },
     "list": {
       "city_label": "עיר",
@@ -5696,7 +5698,11 @@
       "pickup": "איסוף {from}–{until}",
       "price": "{price} ₪",
       "km": "ק\"מ",
-      "walk": "בערך {minutes} דק׳ הליכה"
+      "walk": "בערך {minutes} דק׳ הליכה",
+      "pickup_label": "איסוף",
+      "until": "עד {time}",
+      "soon": "עוד שעה",
+      "left_short": "{count, plural, one {נשאר 1} two {נשארו 2} other {נשארו #}}"
     },
     "section": {
       "title": "סל הצלה",
