@@ -136,6 +136,13 @@ describe("ImageGallery empty state — Tinted Masthead (MEH-815)", () => {
       screen.getByTestId("share-overlay").parentElement
     );
     expect(hearts[0].parentElement.className).toMatch(/lg:hidden/);
+    // MEH-2671: inline-END corner (top-left in RTL), heart first; the
+    // «מ·ה» mark moved to the start corner so the two never overlap.
+    expect(hearts[0].parentElement.className).toMatch(/\bend-3\b/);
+    expect(hearts[0].parentElement.className).not.toMatch(/\bstart-3\b/);
+    expect(hearts[0].parentElement.firstElementChild).toBe(hearts[0]);
+    const mark = document.querySelector("svg.select-none");
+    expect(mark.getAttribute("class")).toMatch(/\bstart-3\b/);
   });
 
   it("omits BOTH hero controls when no producerId", () => {
