@@ -187,9 +187,6 @@ export default function AboutPage() {
   // attempt — two identical repeat errors share a message string but must
   // still re-announce to screen readers.
   const [submitCount, setSubmitCount] = useState(0);
-  // MEH-2416: every tip starts closed so the reader scans all three questions
-  // first (NN/g accordion guidance). Was useState(0): the eggs answer arrived
-  // pre-opened.
   const [imgFailed, setImgFailed] = useState(false);
 
   const handleContact = async (event) => {
