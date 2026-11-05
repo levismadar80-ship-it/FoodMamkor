@@ -18,7 +18,12 @@ import { israelTime, shekels } from "@/lib/rescue";
  */
 const MAX_QTY = 20;
 
-export default function RescueTab({ locations = [] }) {
+// The calendar date in Israel, YYYY-MM-DD. `toISOString()` is UTC, which is
+// still yesterday between midnight and 02:00/03:00 Israel time, and the server
+// refuses a bag dated in the past (MEH-2678).
+const ISRAEL_DATE = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jerusalem" });
+
+export default function RescueTab() {
   const t = useTranslations("rescue.dashboard");
   const [orders, setOrders] = useState(null);
   const [code, setCode] = useState("");
@@ -26,6 +31,10 @@ export default function RescueTab({ locations = [] }) {
   const [notice, setNotice] = useState(null);
   const [items, setItems] = useState("");
   const [form, setForm] = useState({ qty_total: 4, price: 15, from: "18:00", to: "20:00" });
+  // MEH-2678: the tab loads its own pickup points. It used to take them as a
+  // prop that the only page rendering it never passed, so every publish
+  // answered «צריך נקודת איסוף». The API lists the primary first.
+  const [locations, setLocations] = useState([]);
 
   const load = useCallback(async () => {
     try {
@@ -38,6 +47,10 @@ export default function RescueTab({ locations = [] }) {
 
   useEffect(() => {
     load();
+    api
+      .get("/producers/me/locations")
+      .then((r) => setLocations(Array.isArray(r.data) ? r.data : []))
+      .catch(() => setLocations([]));
     api
       .get("/producers/me/rescue/typical-items")
       .then((r) => setItems((r.data?.items || []).join(", ")))
@@ -91,7 +104,9 @@ export default function RescueTab({ locations = [] }) {
   }
 
   async function publish(dayOffset = 0) {
-    const location = locations[0];
+    // A bag publishes the full address, so the server accepts only a point
+    // marked exact; an approximate one would be refused with a 422.
+    const location = locations.find((l) => l.location_precision === "exact");
     if (!location) {
       setNotice(t("no_location"));
       return;
@@ -108,7 +123,7 @@ export default function RescueTab({ locations = [] }) {
     try {
       await api.post("/rescue/offers", {
         producer_location_id: location.id,
-        date: day.toISOString().slice(0, 10),
+        date: ISRAEL_DATE.format(day),
         qty_total: Number(form.qty_total),
         price_agorot: Number(form.price) * 100,
         pickup_start: iso(form.from),
