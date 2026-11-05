@@ -235,9 +235,7 @@ def _offer_for_update(db: Session, offer_id: UUID) -> RescueOffer:
         .first()
     )
     if not offer:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="הסל לא נמצא"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="הסל לא נמצא")
     return offer
 
 
@@ -530,9 +528,7 @@ def cancel_offer(
     offer = _offer_for_update(db, offer_id)
     _require_offer_owner(current_user, offer)
     if offer.status != "active":
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="הסל כבר בוטל"
-        )
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="הסל כבר בוטל")
 
     offer.status = "cancelled"
     now = utc_now()
