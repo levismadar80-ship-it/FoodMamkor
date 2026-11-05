@@ -82,15 +82,16 @@ test.describe("Calendar view on /events", () => {
 // measured this exact element at 20×20 on /events at 375 and 1440. Both
 // Playwright projects (desktop 1440, mobile Pixel 5 at 393) run this spec, so both
 // widths are measured on every CI run.
-test.describe("Breadcrumb target size on /events (MEH-2400)", () => {
-  test.beforeEach(async ({ page }) => {
-    await page.route("**/api/events**", (route) =>
-      route.fulfill({ contentType: "application/json", body: "[]" })
-    );
-  });
+// MEH-2668: #3973 (MEH-2653) removed the breadcrumb from the /events LIST on
+// purpose, so the guard moved to /favorites — a page that still renders the
+// shared <Breadcrumb> and needs no fixture data, only a signed-in consumer.
+test.describe("Breadcrumb target size (MEH-2400) — on /favorites", () => {
+  test.use({ storageState: "e2e/.auth/consumer.json" });
 
   test("the first crumb renders at least 24×24", async ({ page }) => {
-    await page.goto("/events");
+    await page.goto("/favorites");
+    // A missing/expired consumer session redirects to /login; name that, not the crumb size.
+    await expect(page, "still on /favorites — the consumer session is live").toHaveURL(/\/favorites(?:[/?#]|$)/);
     const crumb = page.getByTestId("breadcrumb-nav").getByRole("link").first();
     await expect(crumb).toBeVisible({ timeout: 20_000 });
     const box = await crumb.boundingBox();

@@ -124,7 +124,7 @@ await page.getByTestId("register-account-next").click();
 await page.getByTestId("register-details-name").fill("העסק שלי");
 await page.getByTestId("register-details-phone").fill("0501234567");
 await page.getByTestId("register-details-city").getByRole("combobox").fill(CITY);
-await page.getByTestId("register-details-address").fill("הנדיב 12");
+await page.getByTestId("register-fulfilment-onsite").check(); // MEH-2640: the address left step 2
 // The suggestion is awaited by its own visibility rather than by a fixed pause.
 // The pause conflated two DIFFERENT failures into one `false`: "the provider
 // stub never produced a row" and "the confirmation block did not render" are

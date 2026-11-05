@@ -405,7 +405,7 @@ test.describe("checklist editor — /admin/settings", () => {
 test.describe("licence expiry — /admin/producers/[id]/edit", () => {
   const expiry = (page: Page) => page.getByLabel("תוקף רישיון (מהמסמך)");
   const number = (page: Page) => page.locator("#admin-producer-license");
-  const toggle = (page: Page) => page.getByRole("button", { name: "יש לי רישיון יצרן ↓" });
+  const toggle = (page: Page) => page.getByRole("button", { name: "יש לי רישיון ייצור ↓" });
   const save = (page: Page) => page.getByRole("button", { name: "שמרו שינויים" });
 
   // MT:MEH-2072:1 — with a licence number the date field renders, with its hint. (D4: below, not beside.)
@@ -421,7 +421,7 @@ test.describe("licence expiry — /admin/producers/[id]/edit", () => {
   });
 
   // MT:MEH-2072:2 — no number and no date: both hide behind the toggle, and the toggle reveals both.
-  test("with neither number nor date the fields hide behind «יש לי רישיון יצרן ↓», which reveals both", async ({ page }) => {
+  test("with neither number nor date the fields hide behind «יש לי רישיון ייצור ↓», which reveals both", async ({ page }) => {
     await stubAdmin(page, { profile: producer({ categories: NO_LICENCE_CATEGORY }) });
     await openEdit(page);
     await expect(toggle(page)).toBeVisible();

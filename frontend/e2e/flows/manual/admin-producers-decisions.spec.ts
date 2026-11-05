@@ -504,7 +504,7 @@ test.describe("review checklist", () => {
   // MT:MEH-1396:6 — the hard 422 gates are untouched: the decision modal opens with the matching chip preselected.
   for (const c of [
     { gate: "photo" as const, radio: "תמונה ראשית חסרה", text: "חסרה תמונה — יש להעלות לפחות תמונה אחת" },
-    { gate: "license" as const, radio: "מסמכים חסרים / לא קריאים", text: "חסר מספר רישיון יצרן" },
+    { gate: "license" as const, radio: "מסמכים חסרים / לא קריאים", text: "חסר מספר רישיון ייצור" },
   ]) {
     test(`a 422 from the ${c.gate} gate opens the decision modal with «${c.radio}» preselected and the chip text prefilled`, async ({ page }) => {
       const writes: Rec[] = [];

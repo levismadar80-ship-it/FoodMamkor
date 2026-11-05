@@ -129,7 +129,7 @@ const form = (page: Page) => page.getByTestId("location-form");
 const formError = (page: Page) => page.getByTestId("location-form-error");
 const saveBtn = (page: Page) => page.getByTestId("location-save");
 const labelInput = (page: Page) => page.getByTestId("location-label");
-const ACTION = "כדי שהלקוחות יבדילו ביניהם, תני למיקום הזה שם — לפחות שלוש אותיות.";
+const ACTION = "כדי שהלקוחות יבדילו ביניהם, תנו למיקום הזה שם — לפחות שלוש אותיות.";
 
 async function openLocations(page: Page): Promise<void> {
   await page.goto("/producer/dashboard/edit#locations");
