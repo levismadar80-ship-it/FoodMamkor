@@ -74,6 +74,8 @@ export const ANCHOR_TO_KEY = {
   // card in the products group, so each gets an entry in all three maps.
   "dietary-scope": "dietaryScope",
   "grass-fed": "grassFed",
+  // MEH-2693: «עסק של מילואימניקים» — profile group, beside owner-story.
+  "reservist-owned": "reservistOwned",
   // MEH-2475: an organizer's city (she has no locations editor).
   "organizer-city": "organizerCity",
 };
@@ -113,6 +115,7 @@ export const KEY_TO_ANCHOR = {
   offer: "offer",
   dietaryScope: "dietary-scope",
   grassFed: "grass-fed",
+  reservistOwned: "reservist-owned",
   organizerCity: "organizer-city",
 };
 
@@ -126,6 +129,9 @@ export const KEY_TO_GROUP = {
   categories: "profile",
   bio: "profile",
   ownerStory: "profile",
+  // MEH-2693: owner-declared, so it joins the owner story — NOT a GROUP_MEMBERS
+  // completion step (an optional claim, like grassFed).
+  reservistOwned: "profile",
   // MEH-2433: products + pricing left the profile group for their own
   // «מוצרים ומחירים» group (owner-dashboard audit 27/10, finding 12 — the most
   // edited, required card sat fourth inside «הפרופיל שלך»). The offer and the

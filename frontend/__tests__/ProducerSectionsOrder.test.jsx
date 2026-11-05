@@ -32,6 +32,7 @@ vi.mock("@phosphor-icons/react", () => ({
   Carrot: () => <span />,
   GrainsSlash: () => <span />,
   Barn: () => <span />,
+  Medal: () => <span />,
   DropSlash: () => <span />,
   Cube: () => <span />,
   Clock: () => <span />,
@@ -249,6 +250,36 @@ describe("ProducerSections — owner card placement (MEH-2592)", () => {
     const cards = screen.getAllByTestId("owner-card");
     expect(cards).toHaveLength(1);
     expect(cards[0].dataset.nested).toBeUndefined();
+  });
+
+  // MEH-2693: the «עסק של מילואימניקים» line at both mount points.
+  it("reservist: with a description, the line sits inside #section-bio, before the owner card", () => {
+    const { container } = render(
+      <ProducerSections {...props({ description: "תיאור", reservist_owned: true })} />,
+    );
+    const lines = screen.getAllByTestId("reservist-badge-line");
+    expect(lines).toHaveLength(1);
+    expect(container.querySelector("#section-bio")).toContainElement(lines[0]);
+    const owner = screen.getByTestId("owner-card");
+    expect(lines[0].compareDocumentPosition(owner) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("reservist: without a description AND without an owner card, the line still renders once", () => {
+    render(
+      <ProducerSections
+        {...props({ description: "", contact_name: "", owner_bio: "", owner_photo_url: "", reservist_owned: true })}
+      />,
+    );
+    expect(screen.queryByTestId("owner-card")).toBeNull();
+    expect(screen.getAllByTestId("reservist-badge-line")).toHaveLength(1);
+  });
+
+  it("reservist: not declared → no line in either layout", () => {
+    const { unmount } = render(<ProducerSections {...props({ description: "תיאור" })} />);
+    expect(screen.queryByTestId("reservist-badge-line")).toBeNull();
+    unmount();
+    render(<ProducerSections {...props({ description: "" })} />);
+    expect(screen.queryByTestId("reservist-badge-line")).toBeNull();
   });
 });
 

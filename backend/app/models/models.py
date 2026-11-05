@@ -295,6 +295,13 @@ class Producer(Base):
     # price_range is the single price-label field; do not re-add an alias.
     price_range = Column(String(100), nullable=True)  # "מ-₪20" / "מ-₪65/ק״ג"
     grass_fed = Column(Boolean, default=False)
+    # «עסק של מילואימניקים»: the owner declares that one of the owners serves
+    # in the IDF reserves. Self-declared (no document is collected or stored),
+    # drives a badge only, never ranking (ADR-027/030). NOT NULL + server
+    # default false: nobody is marked without opting in.
+    reservist_owned = Column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
     organic_certified = Column(Boolean, default=False)
     # MEH-1508 chunk 1 (schema only): business-level dietary scope — distinguishes
     # "one tagged product" (product-level flags, below) from "the whole catalog".

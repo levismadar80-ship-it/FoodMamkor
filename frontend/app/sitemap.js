@@ -59,6 +59,8 @@ export default async function sitemap() {
     { path: "/about/for-businesses", priority: 0.5, changeFrequency: "monthly" },
     // MEH-1289: reader-facing "why local" editorial page.
     { path: "/about/why-local", priority: 0.5, changeFrequency: "monthly" },
+    // MEH-2701: badges explainer («מה אומרים התגים»).
+    { path: "/about/badges", priority: 0.4, changeFrequency: "monthly" },
     { path: "/register/producer", priority: 0.7, changeFrequency: "monthly" },
     // MEH-803: /register, /login, /contact intentionally NOT listed (/search
     // itself is gone — it 308s to /producers since MEH-819) —
