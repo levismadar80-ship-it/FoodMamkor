@@ -666,6 +666,8 @@ def update_my_producer(
         "owner_bio",
         "owner_photo_url",
         "grass_fed",
+        # «עסק של מילואימניקים»: owner declares; editor = ReservistOwnedCard.jsx.
+        "reservist_owned",
         # MEH-1508 ch2: owner declares business-level dietary scope. Values are
         # enum-validated in ProducerUpdate (schemas.py); this opens the write path.
         "vegan_scope",

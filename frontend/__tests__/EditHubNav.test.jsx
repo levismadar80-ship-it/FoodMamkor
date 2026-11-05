@@ -226,7 +226,7 @@ describe("Edit hub-and-spoke navigation (MEH-1408)", () => {
   // MEH-2433: which cards each group holds, in order. Every group is listed,
   // so a card that lands in the wrong group (or in two) fails here by name.
   it.each([
-    ["profile", ["images", "categories", "bio", "owner-story", "business-name"]],
+    ["profile", ["images", "categories", "bio", "owner-story", "reservist-owned", "business-name"]],
     ["products", ["products", "pricing", "offer", "dietary-scope", "grass-fed"]],
     ["location", ["locations", "delivery", "order-window", "special-hours"]],
     ["contact", ["contact-channels", "questions"]],
