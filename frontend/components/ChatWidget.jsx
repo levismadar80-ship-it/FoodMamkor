@@ -211,6 +211,40 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
 
   const handleSubmit = (e) => { e.preventDefault(); sendMessage(input); };
 
+  // 05/11 (About-page review): on phones the launcher sat on top of body text
+  // while reading. It now fades out while the reader scrolls DOWN and returns
+  // on any scroll up or near the top. Opacity only, never position — the old
+  // slide-off hide on the BottomNav caused the iOS rubber-band flicker MEH-1014
+  // removed, so nothing here moves. Same hysteresis numbers as BottomNav
+  // (24px down to hide, 8px up to show, always shown in the top 60px).
+  const [scrollHidden, setScrollHidden] = useState(false);
+  const launcherScrollRef = useRef({ y: 0, down: 0, up: 0, raf: null });
+  useEffect(() => {
+    if (isDesktop) return undefined; // launcherHidden already ignores scrollHidden on desktop
+    const st = launcherScrollRef.current;
+    const clampY = () => Math.max(0, Math.min(window.scrollY, document.documentElement.scrollHeight - window.innerHeight));
+    const onScroll = () => {
+      if (st.raf) return;
+      st.raf = window.requestAnimationFrame(() => {
+        const y = clampY();
+        const dy = y - st.y;
+        if (y < 60) { st.down = 0; st.up = 0; setScrollHidden(false); }
+        else if (dy > 0) { st.up = 0; st.down += dy; if (st.down >= 24) setScrollHidden(true); }
+        else if (dy < 0) { st.down = 0; st.up += -dy; if (st.up >= 8) setScrollHidden(false); }
+        st.y = y;
+        st.raf = null;
+      });
+    };
+    st.y = clampY();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (st.raf) window.cancelAnimationFrame(st.raf);
+      st.raf = null;
+    };
+  }, [isDesktop]);
+  const launcherHidden = scrollHidden && !open && !isDesktop;
+
   // ── Positioning (all inline — no Tailwind specificity fights) ──
   // MEH-850: mobile bottom = safe-area + pill-clearance(72px) + 16px gap +
   // var(--cookie-banner-h, 0px). The var is published by CookieBanner while it's
@@ -261,7 +295,14 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
       <button
         type="button"
         onClick={open ? () => setOpen(false) : handleOpen}
-        style={launcherStyle}
+        style={{
+          ...launcherStyle,
+          opacity: launcherHidden ? 0 : 1,
+          pointerEvents: launcherHidden ? "none" : undefined,
+          transition: "opacity 200ms ease, background-color 150ms ease",
+        }}
+        tabIndex={launcherHidden ? -1 : undefined}
+        aria-hidden={launcherHidden || undefined}
         data-testid="chat-launcher"
         className={[
           "vv-pin flex items-center justify-center bg-primary text-white rounded-full shadow-[0_4px_24px_rgba(46,104,83,0.25)] hover:bg-primary-dark transition focus-visible:ring-2 focus-visible:ring-primary/40",

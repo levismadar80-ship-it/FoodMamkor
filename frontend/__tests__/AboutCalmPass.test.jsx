@@ -100,18 +100,6 @@ describe("MEH-2439 — /about", () => {
       expect(classes(a), a.getAttribute("href")).not.toContain("focus-visible:ring-primary/40");
     }
   });
-
-  it("tip questions are start-aligned", () => {
-    render(<AboutClient />);
-    const btns = screen
-      .getAllByRole("button")
-      .filter((b) => (b.getAttribute("aria-controls") || "").startsWith("tip-panel-"));
-    expect(btns).toHaveLength(3);
-    for (const b of btns) {
-      const q = [...b.querySelectorAll("span")].find((s) => s.textContent.includes(".question"));
-      expect(classes(q)).toContain("text-start");
-    }
-  });
 });
 
 describe("MEH-2439 — /about/process", () => {

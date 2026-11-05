@@ -31,7 +31,6 @@ const MIRRORS = [
   ["chapter.2.label", "comparison.eyebrow", "02 Comparison"],
   ["chapter.3.label", "consumer.benefits.heading", "03 Benefits"],
   ["chapter.4.label", "consumer.values.eyebrow", "04 Values"],
-  ["chapter.5.label", "consumer.tips.eyebrow", "05 Tips"],
 ];
 
 const read = (bundle, path) =>

@@ -5,7 +5,7 @@
  * AboutClient — consumer /about page.
  * S8 Direction D "Feature Standfirst": editorial cream longread —
  * hero · founder story (portrait standfirst) · cream pull-quote ·
- * 3-pillar benefits (gold numerals) · tips accordion · testimonials
+ * 3-pillar benefits (gold numerals) · testimonials
  * invitation band · values (bordered box) · CTA · contact form.
  * Visual restyle only — every string resolves from about.consumer.* keys.
  * History: MEH-100 (founder portrait); MEH-135 (S8 Direction D port).
@@ -24,7 +24,7 @@ import Image from "next/image";
 import { useState, useEffect } from "react";
 // MEH-1113: prefill the contact-form topic from ?topic= (whitelist-guarded).
 import { useSearchParams } from "next/navigation";
-import { CaretDown, ArrowLeft, PaperPlaneTilt } from "@phosphor-icons/react";
+import { ArrowLeft, PaperPlaneTilt } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import Input from "@/components/ui/Input";
 import api from "@/lib/api";
@@ -83,14 +83,13 @@ const SHOW_VERIFICATION = true;
 // keys). "general" is the default; labels resolve from contact.topic_options.*.
 const CONTACT_TOPICS = ["general", "business", "correction", "other"];
 
-const TIP_KEYS = ["eggs", "grass_fed", "honey"];
 // MEH-2439: the decorative 01–04 numerals were removed — they numbered
 // nothing a reader acts on, and "01/02/03" on every block is the generic
 // template tell this pass set out to remove.
 const BENEFITS = [{ key: "local" }, { key: "trust" }, { key: "community" }];
 const VALUES = [{ key: "transparency" }, { key: "proximity" }, { key: "quality" }, { key: "safety" }];
-// MEH-841: 3-stop comparison path (gold-dot spine). Order is the locked
-// editorial order — do not re-sort.
+// MEH-841: the three comparison rows (two-column table since 05/11). Order is
+// the locked editorial order — do not re-sort.
 const COMPARE_STOPS = ["row1", "row2", "row3"];
 
 // MEH-1130: the chapter mark that replaces the plain eyebrow on the
@@ -143,7 +142,7 @@ function Chapter({ label, as: Tag = "p" }) {
 // Defined at MODULE scope, not inside AboutPage. Declaring it in the body gives
 // React a brand-new component type on every render of the page, and AboutPage
 // re-renders on every keystroke in the contact form (it holds form,
-// contactStatus, contactMsg, submitCount, openTip and imgFailed state). Each of
+// contactStatus, contactMsg, submitCount and imgFailed state). Each of
 // those re-renders would unmount and remount all three links, throwing away the
 // IntersectionObserver registrations next/link uses to prefetch. Caught by the
 // CI adversarial reviewer on #3123.
@@ -191,7 +190,6 @@ export default function AboutPage() {
   // MEH-2416: every tip starts closed so the reader scans all three questions
   // first (NN/g accordion guidance). Was useState(0): the eggs answer arrived
   // pre-opened.
-  const [openTip, setOpenTip] = useState(null);
   const [imgFailed, setImgFailed] = useState(false);
 
   const handleContact = async (event) => {
@@ -421,7 +419,7 @@ export default function AboutPage() {
         </div>
       </FadeInSection>
 
-      {/* ======== Chapter 02 — the difference (3-stop gold-dot path) · MEH-841 ========
+      {/* ======== Chapter 02 — the difference (two-column table) · MEH-841 ========
           MEH-2211 folds the pull-quote into this chapter instead of leaving it
           as a section of its own. Once the choose block and the bread band came
           out, the quote was left hanging between two chapters belonging to
@@ -439,39 +437,46 @@ export default function AboutPage() {
              classes are IDENTICAL to chapter 01's h2 (`about-story-h2`), which
              is what makes the two chapters read as one rank; the QA harness
              asserts the two class strings are equal rather than eyeballing it.
-          2. «מה שמשתנה בדרך» was this section's <h2>. It is now a LEAD
-             PARAGRAPH — one h2 per chapter, and two headings in a row would
-             have made the quote look like a kicker over the real title. The
-             string is unchanged on both locales. */}
+          2. «מה שמשתנה בדרך» was this section's <h2>, then a lead paragraph;
+             it was removed on 05/11 with the spine — the table's column heads
+             say what is compared. */}
       <FadeInSection as="section" data-testid="about-comparison" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
         <div className="max-w-3xl mx-auto px-4 md:px-12">
           <Chapter label={tAbout("chapter.2.label")} />
           <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight !mb-6">
             {t("parallax.quote")}
           </h2>
-          <p className="font-body-md text-[17px] font-semibold text-text leading-snug mb-8 md:mb-10">
-            {tCompare("heading")}
-          </p>
-          {/* vertical gold-dot spine — hairline border on the start edge; dots are CSS, no icons */}
-          <ol className="relative ms-1 border-s border-border space-y-8 md:space-y-10">
-            {COMPARE_STOPS.map((row) => (
-              <li key={row} className="relative ps-6 md:ps-8">
-                <span
-                  aria-hidden="true"
-                  className="absolute start-0 top-1.5 -ms-[5px] block w-2.5 h-2.5 rounded-full bg-accent"
-                />
-                <p className="font-headline-md font-bold text-primary-dark text-[21px] md:text-2xl leading-snug">
-                  {tCompare(`${row}_brand`)}
-                </p>
-                <p className="font-body-md text-fg-muted text-base leading-relaxed mt-1.5">
-                  {tCompare(`${row}_super`)}
-                </p>
-              </li>
-            ))}
-          </ol>
-          <ExitLink href="/about/process" testId="about-exit-comparison">
-            {tAbout("exit.comparison")}
-          </ExitLink>
+          {/* 05/11 (Sapir, option A): a two-column table replaced the gold-dot
+              spine. The spine read as a timeline (step 1 → 2 → 3) while the
+              content is an unordered comparison, and the «בסופר —» prefix on
+              every row hid the other side of it. Column heads now carry the
+              two sides; «מה שמשתנה בדרך» was dropped with the spine. The
+              /about/process exit link that sat here was dropped too: the
+              verification section and the closing band already link there. */}
+          <table className="w-full border-collapse table-fixed">
+            <thead>
+              <tr>
+                <th scope="col" className="pb-2.5 text-start align-bottom font-body-md text-[13px] md:text-sm font-semibold text-primary-dark border-b border-text">
+                  {tCompare("col_brand")}
+                </th>
+                <th scope="col" className="pb-2.5 text-start align-bottom font-body-md text-[13px] md:text-sm font-semibold text-fg-muted border-b border-text">
+                  {tCompare("col_super")}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {COMPARE_STOPS.map((row) => (
+                <tr key={row} className="border-b border-border">
+                  <th scope="row" className="py-4 md:py-5 pe-4 md:pe-8 text-start align-top font-headline-md font-bold text-primary-dark text-[18px] md:text-2xl leading-snug">
+                    {tCompare(`${row}_brand`)}
+                  </th>
+                  <td className="py-4 md:py-5 align-top font-body-md text-fg-muted text-[15px] md:text-lg leading-relaxed">
+                    {tCompare(`${row}_super`)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </FadeInSection>
 
@@ -631,46 +636,6 @@ export default function AboutPage() {
         </div>
       </FadeInSection>
 
-      {/* ======== 05 — Tips accordion ======== */}
-      <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
-        <div className="max-w-3xl mx-auto px-4 md:px-12">
-          <Chapter label={tAbout("chapter.5.label")} />
-          <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight">
-            {t("tips.heading")}
-          </h2>
-          <div className="mt-8 border-t border-border">
-            {TIP_KEYS.map((key, i) => (
-              <div key={key} className="border-b border-border">
-                <button
-                  type="button"
-                  onClick={() => setOpenTip(openTip === i ? null : i)}
-                  className="w-full flex items-center justify-between gap-4 py-5 font-headline-md font-bold text-lg text-text rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-                  aria-expanded={openTip === i}
-                  aria-controls={`tip-panel-${i}`}
-                >
-                  <span className="text-start">{t(`tips.${key}.question`)}</span>
-                  <CaretDown
-                    size={20}
-                    weight="bold"
-                    aria-hidden="true"
-                    className={`text-accent shrink-0 transition-transform duration-base ease-quart ${
-                      openTip === i ? "rotate-180" : ""
-                    }`}
-                  />
-                </button>
-                <div
-                  id={`tip-panel-${i}`}
-                  hidden={openTip !== i}
-                  className="pb-6 font-body-md text-base text-fg-muted leading-relaxed max-w-[58ch]"
-                >
-                  {t(`tips.${key}.answer`)}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </FadeInSection>
-
       {/* ======== 06 — Testimonials (slim invitation band) — MEH-1112 render-gated ======== */}
       {SHOW_TESTIMONIALS && (
         <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
@@ -714,15 +679,18 @@ export default function AboutPage() {
           </p>
           {/* MEH-1112: two secondary actions (business hub + MEH-534 acceptance-process
               cross-link) demoted to one quiet muted row — small, underlined, non-bold —
-              so only "גלו עסקים קרובים" reads as the primary CTA (per MEH-1049/MEH-907). */}
-          <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 font-body-md text-sm text-background/90">
+              so only "גלו בתי עסק קרובים" reads as the primary CTA (per MEH-1049/MEH-907). */}
+          {/* 05/11: the three links don't fit one line at 375, and a wrap left a
+              «·» alone on the second line. Below md they stack as a column and
+              the dots are hidden; md+ keeps the one dotted row. */}
+          <div className="mt-3 flex flex-col md:flex-row md:flex-wrap items-center justify-center gap-x-4 gap-y-2 font-body-md text-sm text-background/90">
             <Link
               href="/about/for-businesses"
               className="underline underline-offset-4 hover:text-background rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-on-dark"
             >
               {t("cta.register")}
             </Link>
-            <span aria-hidden="true" className="text-gold-on-dark">·</span>
+            <span aria-hidden="true" className="hidden md:inline text-gold-on-dark">·</span>
             <Link
               href="/about/process"
               data-testid="about-close-process-link"
@@ -731,7 +699,7 @@ export default function AboutPage() {
               {tProcess("crosslink_from_about")}
             </Link>
             {/* MEH-1289: reader-facing "why local" editorial cross-link. */}
-            <span aria-hidden="true" className="text-gold-on-dark">·</span>
+            <span aria-hidden="true" className="hidden md:inline text-gold-on-dark">·</span>
             <Link
               href="/about/why-local"
               data-testid="about-close-why-local-link"
