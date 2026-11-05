@@ -493,3 +493,25 @@ describe("a reload keeps the order (MEH-2680)", () => {
     expect(await screen.findByTestId("rescue-review")).toBeTruthy();
   });
 });
+
+describe("the confirmation after the counter or the cutoff (MEH-2694)", () => {
+  it("a handed bag offers no cancel and no cancel terms, and marks the last step", () => {
+    render(<RescueConfirmation order={order({ status: "handed" })} onCancel={() => {}} />);
+    expect(screen.queryByTestId("rescue-confirmation-cancel")).toBeNull();
+    expect(screen.queryByTestId("rescue-confirmation-terms")).toBeNull();
+    expect(screen.getByTestId("rescue-confirmation-step-done").className).toContain("font-semibold");
+  });
+
+  it("past the cancel cutoff the button is gone, the code stays", () => {
+    const past = new Date(Date.now() - 60_000).toISOString();
+    render(<RescueConfirmation order={order({ cancel_until: past })} onCancel={() => {}} />);
+    expect(screen.queryByTestId("rescue-confirmation-cancel")).toBeNull();
+    expect(screen.getByTestId("rescue-confirmation-code").textContent).toBe("0431");
+  });
+
+  it("before the cutoff a reserved bag can still be cancelled", () => {
+    render(<RescueConfirmation order={order()} onCancel={() => {}} />);
+    expect(screen.getByTestId("rescue-confirmation-cancel")).toBeTruthy();
+    expect(screen.getByTestId("rescue-confirmation-step-done").className).not.toContain("font-semibold");
+  });
+});

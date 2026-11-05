@@ -26,6 +26,12 @@ export default function RescueConfirmation({ order, onCancel, cancelling = false
   const from = israelTime(order.pickup_start);
   const until = israelTime(order.pickup_end);
   const started = order.pickup_start ? new Date(order.pickup_start) <= new Date() : false;
+  // MEH-2694: once the bag is handed, or the cancel cutoff has passed, the API
+  // refuses a cancel (409), so the button would be a tap that can only fail.
+  const handed = order.status === "handed";
+  const cancellable =
+    !handed &&
+    (!order.cancel_until || new Date(order.cancel_until) > new Date());
 
   return (
     <div
@@ -62,7 +68,7 @@ export default function RescueConfirmation({ order, onCancel, cancelling = false
         </p>
       )}
 
-      {cancelUntil && (
+      {cancelUntil && !handed && (
         <p className="font-body-sm text-sm text-fg-muted mt-2" data-testid="rescue-confirmation-terms">
           {t("confirm.terms", { cancel_until: cancelUntil })}
         </p>
@@ -73,12 +79,14 @@ export default function RescueConfirmation({ order, onCancel, cancelling = false
       <ol className="flex items-center justify-center gap-2 mt-4 font-body-sm text-sm" data-testid="rescue-confirmation-steps">
         <li className="text-text font-semibold">{t("confirm.step_reserved")}</li>
         <li aria-hidden="true" className="text-fg-muted">·</li>
-        <li className={started ? "text-text font-semibold" : "text-fg-muted"}>{t("confirm.step_collect")}</li>
+        <li className={started || handed ? "text-text font-semibold" : "text-fg-muted"}>{t("confirm.step_collect")}</li>
         <li aria-hidden="true" className="text-fg-muted">·</li>
-        <li className="text-fg-muted">{t("confirm.step_done")}</li>
+        <li className={handed ? "text-text font-semibold" : "text-fg-muted"} data-testid="rescue-confirmation-step-done">
+          {t("confirm.step_done")}
+        </li>
       </ol>
 
-      {onCancel && (
+      {onCancel && cancellable && (
         <button
           type="button"
           onClick={onCancel}
