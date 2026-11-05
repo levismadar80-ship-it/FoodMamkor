@@ -220,3 +220,19 @@ describe("MEH-2559 — save heart", () => {
     expect(screen.getByTestId("event-cover-actions").querySelector('[data-testid="save-event"]')).toBeTruthy();
   });
 });
+
+describe("MEH-2675 — category chip", () => {
+  it("a known category → link to the events list filtered by it", async () => {
+    await renderEvent();
+    const chip = screen.getByTestId("event-category");
+    expect(chip.tagName).toBe("A");
+    expect(chip.getAttribute("href")).toBe(`/events?category=${encodeURIComponent("שוק")}`);
+  });
+
+  it("a legacy category outside the list → plain chip, no dead filter link", async () => {
+    await renderEvent({ category: "סדנה" });
+    const chip = screen.getByTestId("event-category");
+    expect(chip.tagName).toBe("SPAN");
+    expect(chip.textContent).toBe("סדנה");
+  });
+});

@@ -271,10 +271,17 @@ export default function ExperienceDetailClient() {
           )}
 
           {cat && (
-            <span data-testid="experience-category" className="inline-flex items-center gap-1 bg-surface-card text-accent text-xs px-3 py-1 rounded-full mb-3">
+            // MEH-2675: the chip opens the experiences list filtered to its
+            // type (?category= is the list's deep link, EventsClient.jsx).
+            // Always the Hebrew wire key — an older row may store "food_tour".
+            <Link
+              href={`/experiences?category=${encodeURIComponent(cat.key)}`}
+              data-testid="experience-category"
+              className="inline-flex items-center gap-1 bg-surface-card text-accent text-xs px-3 py-1 rounded-full mb-3 hover:underline focus-visible:outline-2 focus-visible:outline-primary"
+            >
               <CatIcon size={12} weight="bold" aria-hidden="true" />
               {tCat(cat.labelKey)}
-            </span>
+            </Link>
           )}
 
           <h1 className="font-headline-display text-4xl md:text-5xl font-bold text-text mb-3">

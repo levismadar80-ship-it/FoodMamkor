@@ -4,6 +4,17 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-05 13:55 — ‏#3963 מוזג: פיילוט סלי ההצלה ב-staging (כבוי)
+
+**‏שורה אחת:** ‏#3963 (chunks 1+2+4+5 של MEH-2643) מוזג ל-staging (squash `c61a9dd`) אחרי הקומיט של ספיר `EXPECTED_TABLES=48` (`d807472`, דרך כרום).
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏ראש Alembic על staging: `b2e6d4a17c93`. ‏48 טבלאות מ-DB נקי. המיגרציה הבאה משורשרת עליו, ו-`EXPECTED_TABLES` עולה מ-48.
+- ‏ארבעה שערים שלא הגיעו לענף קודם נדלקו אחרי ה-48 ותוקנו (`349792d`): הרחבה דינמית ל-`POST /rescue/orders/{id}/{handed|no_show}` ב-`check_api_contract.py` · ארבע טבלאות `rescue_*` ב-`EXEMPT_TABLES` של כיסוי ה-seed · ‏`NEXT_PUBLIC_RESCUE_BAGS_ENABLED` מתועד ב-`frontend/.env.example` · ‏baseline של Knip ל-`api.zod.js` ‏1049→1058.
+- ‏קומיט מכרום חסר `Builder-Model:` ולכן Repo guards אדום עד קומיט רגיל אחריו.
+
+**‏לא עכשיו / מחכה לספיר:** הפיצ'ר כבוי עד `rescue_bags_enabled` ב-`config.py` (חסום ל-CC) ומשתני ה-env (`RESCUE_BAGS_ENABLED`, `NEXT_PUBLIC_RESCUE_BAGS_ENABLED`, `RESCUE_BAGS_CITIES`).
+
 ## 2026-11-04 23:40 — drain ג': אפס PRs פתוחים חוץ מסלי ההצלה ו-#3975
 
 **‏שורה אחת:** ‏#3923, ‏#3951, ‏#3952, ‏#3953, ‏#3959, ‏#3960, ‏#3967, ‏#3979 ו-#3990 מוזגו. ‏#3927, ‏#3928 ו-#3956 נסגרו עם נימוק. ‏#3966, ‏#3968 ו-#3969 מוזגו לתוך הענף של #3963, כך שסלי ההצלה נוחתים ב-PR אחד.

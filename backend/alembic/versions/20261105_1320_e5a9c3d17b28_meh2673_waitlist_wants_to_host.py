@@ -1,7 +1,7 @@
 """meh2673_waitlist_wants_to_host
 
 Revision ID: e5a9c3d17b28
-Revises: c4d8e1f05a27
+Revises: b2e6d4a17c93
 Create Date: 2026-11-05 13:20:00.000000+00:00
 
 MEH-2673: «אשמח לארח נקודת מסירה» — a visitor joining a business's per-city
@@ -20,7 +20,7 @@ server default. No new table → EXPECTED_TABLES unchanged.
 
 downgrade() drops the column; any host opt-ins collected since are lost.
 
-Chained on c4d8e1f05a27 (MEH-2665, staging head on 05/11).
+Chained on b2e6d4a17c93 (MEH-2646 rescue bags, staging head on 05/11 after #3963; re-chained from c4d8e1f05a27).
 """
 
 from typing import Sequence, Union
@@ -30,7 +30,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "e5a9c3d17b28"
-down_revision: Union[str, None] = "c4d8e1f05a27"
+down_revision: Union[str, None] = "b2e6d4a17c93"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

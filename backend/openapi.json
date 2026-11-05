@@ -12015,6 +12015,952 @@
         "title": "RequestChangesIn",
         "type": "object"
       },
+      "RescueMetricsOut": {
+        "description": "The pilot's read-only numbers (chunk 5).\n\n`sell_through` and `no_show_rate` are fractions 0..1, not percentages, so\nthe UI decides how to render them and nothing is rounded twice. Both are\nNone when their denominator is zero — a pilot with no bags yet has no\nsell-through, and reporting 0% would read as \"nothing sold\" rather than\n\"nothing published\".",
+        "properties": {
+          "bags_offered": {
+            "title": "Bags Offered",
+            "type": "integer"
+          },
+          "bags_reserved": {
+            "title": "Bags Reserved",
+            "type": "integer"
+          },
+          "buyers_total": {
+            "title": "Buyers Total",
+            "type": "integer"
+          },
+          "days": {
+            "title": "Days",
+            "type": "integer"
+          },
+          "no_show_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "No Show Rate"
+          },
+          "no_shows": {
+            "title": "No Shows",
+            "type": "integer"
+          },
+          "offers_per_day": {
+            "title": "Offers Per Day",
+            "type": "number"
+          },
+          "offers_total": {
+            "title": "Offers Total",
+            "type": "integer"
+          },
+          "orders_total": {
+            "title": "Orders Total",
+            "type": "integer"
+          },
+          "repeat_buyers": {
+            "title": "Repeat Buyers",
+            "type": "integer"
+          },
+          "sell_through": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sell Through"
+          }
+        },
+        "required": [
+          "days",
+          "offers_total",
+          "offers_per_day",
+          "bags_offered",
+          "bags_reserved",
+          "orders_total",
+          "no_shows",
+          "buyers_total",
+          "repeat_buyers"
+        ],
+        "title": "RescueMetricsOut",
+        "type": "object"
+      },
+      "RescueNoShowStateOut": {
+        "description": "What the admin reset returns, so the operator can see the effect.\n\n`active_no_shows` is the windowed count the 422 gate actually reads — not\nthe lifetime `no_show_count`. After a reset it is 0 by construction, and\nshowing both is what makes the reset verifiable rather than hopeful.",
+        "properties": {
+          "active_no_shows": {
+            "title": "Active No Shows",
+            "type": "integer"
+          },
+          "block_cleared_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Block Cleared At"
+          },
+          "blocked": {
+            "title": "Blocked",
+            "type": "boolean"
+          },
+          "no_show_count": {
+            "title": "No Show Count",
+            "type": "integer"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "no_show_count",
+          "active_no_shows",
+          "blocked"
+        ],
+        "title": "RescueNoShowStateOut",
+        "type": "object"
+      },
+      "RescueOfferCreate": {
+        "description": "What a verified business POSTs to publish one day's bags.\n\n`qty_left` is not accepted: it is initialised to `qty_total` server-side,\nso a client cannot publish an offer that is already half sold. `status` is\nnot accepted either — a new offer is always `active`.",
+        "properties": {
+          "cancel_until": {
+            "format": "date-time",
+            "title": "Cancel Until",
+            "type": "string"
+          },
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "pickup_end": {
+            "format": "date-time",
+            "title": "Pickup End",
+            "type": "string"
+          },
+          "pickup_start": {
+            "format": "date-time",
+            "title": "Pickup Start",
+            "type": "string"
+          },
+          "price_agorot": {
+            "minimum": 0.0,
+            "title": "Price Agorot",
+            "type": "integer"
+          },
+          "producer_location_id": {
+            "format": "uuid",
+            "title": "Producer Location Id",
+            "type": "string"
+          },
+          "qty_total": {
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Qty Total",
+            "type": "integer"
+          },
+          "value_max_agorot": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value Max Agorot"
+          },
+          "value_min_agorot": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value Min Agorot"
+          }
+        },
+        "required": [
+          "producer_location_id",
+          "date",
+          "qty_total",
+          "price_agorot",
+          "pickup_start",
+          "pickup_end",
+          "cancel_until"
+        ],
+        "title": "RescueOfferCreate",
+        "type": "object"
+      },
+      "RescueOfferOut": {
+        "description": "One offer as the public list and the dashboard both serialize it.\n\n`qty_left` is the only stock number published: `qty_total` is included so\nthe UI can say \"נותרו 2 מתוך 6\", and nothing here reveals who reserved.",
+        "properties": {
+          "cancel_until": {
+            "format": "date-time",
+            "title": "Cancel Until",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "pickup_end": {
+            "format": "date-time",
+            "title": "Pickup End",
+            "type": "string"
+          },
+          "pickup_start": {
+            "format": "date-time",
+            "title": "Pickup Start",
+            "type": "string"
+          },
+          "price_agorot": {
+            "title": "Price Agorot",
+            "type": "integer"
+          },
+          "producer_location_id": {
+            "format": "uuid",
+            "title": "Producer Location Id",
+            "type": "string"
+          },
+          "qty_left": {
+            "title": "Qty Left",
+            "type": "integer"
+          },
+          "qty_total": {
+            "title": "Qty Total",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "active",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "value_max_agorot": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value Max Agorot"
+          },
+          "value_min_agorot": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value Min Agorot"
+          }
+        },
+        "required": [
+          "id",
+          "producer_location_id",
+          "date",
+          "qty_total",
+          "qty_left",
+          "price_agorot",
+          "pickup_start",
+          "pickup_end",
+          "cancel_until",
+          "status",
+          "created_at"
+        ],
+        "title": "RescueOfferOut",
+        "type": "object"
+      },
+      "RescueOfferPublicOut": {
+        "description": "One row of `GET /rescue/offers` — the offer, who is selling it, what is\nusually in it, and how far away it is.\n\n`distance_km` is None unless the caller sent lat/lng; chunk 4 renders it\nonly when present rather than inventing a zero.",
+        "properties": {
+          "cancel_until": {
+            "format": "date-time",
+            "title": "Cancel Until",
+            "type": "string"
+          },
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "distance_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Distance Km"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "pickup_end": {
+            "format": "date-time",
+            "title": "Pickup End",
+            "type": "string"
+          },
+          "pickup_start": {
+            "format": "date-time",
+            "title": "Pickup Start",
+            "type": "string"
+          },
+          "price_agorot": {
+            "title": "Price Agorot",
+            "type": "integer"
+          },
+          "producer": {
+            "$ref": "#/components/schemas/RescueProducerSummary"
+          },
+          "qty_left": {
+            "title": "Qty Left",
+            "type": "integer"
+          },
+          "qty_total": {
+            "title": "Qty Total",
+            "type": "integer"
+          },
+          "typical_items": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Typical Items",
+            "type": "array"
+          },
+          "value_max_agorot": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value Max Agorot"
+          },
+          "value_min_agorot": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value Min Agorot"
+          }
+        },
+        "required": [
+          "id",
+          "date",
+          "qty_left",
+          "qty_total",
+          "price_agorot",
+          "pickup_start",
+          "pickup_end",
+          "cancel_until",
+          "producer"
+        ],
+        "title": "RescueOfferPublicOut",
+        "type": "object"
+      },
+      "RescueOrderCreate": {
+        "description": "What a logged-in buyer POSTs to reserve. `qty` is capped at the pilot's\ntwo bags per order — the same bound as rescue_orders_qty_check.",
+        "properties": {
+          "offer_id": {
+            "format": "uuid",
+            "title": "Offer Id",
+            "type": "string"
+          },
+          "qty": {
+            "default": 1,
+            "maximum": 2.0,
+            "minimum": 1.0,
+            "title": "Qty",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "offer_id"
+        ],
+        "title": "RescueOrderCreate",
+        "type": "object"
+      },
+      "RescueOrderCreatedOut": {
+        "description": "What a successful reservation returns. Same shape as RescueOrderOut\nplus the two numbers the confirmation screen shows without a second\nrequest — the price to pay at the counter and when the free cancel ends.",
+        "properties": {
+          "cancel_until": {
+            "format": "date-time",
+            "title": "Cancel Until",
+            "type": "string"
+          },
+          "cancelled_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelled At"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "handed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Handed At"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "offer_id": {
+            "format": "uuid",
+            "title": "Offer Id",
+            "type": "string"
+          },
+          "pickup_code": {
+            "maxLength": 4,
+            "minLength": 4,
+            "pattern": "^[0-9]{4}$",
+            "title": "Pickup Code",
+            "type": "string"
+          },
+          "pickup_end": {
+            "format": "date-time",
+            "title": "Pickup End",
+            "type": "string"
+          },
+          "pickup_start": {
+            "format": "date-time",
+            "title": "Pickup Start",
+            "type": "string"
+          },
+          "price_agorot": {
+            "title": "Price Agorot",
+            "type": "integer"
+          },
+          "qty": {
+            "title": "Qty",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "reserved",
+              "handed",
+              "no_show",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "offer_id",
+          "user_id",
+          "qty",
+          "pickup_code",
+          "status",
+          "created_at",
+          "price_agorot",
+          "cancel_until",
+          "pickup_start",
+          "pickup_end"
+        ],
+        "title": "RescueOrderCreatedOut",
+        "type": "object"
+      },
+      "RescueOrderOut": {
+        "description": "One reservation, as returned to its own buyer.\n\n`pickup_code` IS included: the buyer has to read it aloud at the counter,\nand chunk 4 renders it at 56px. The business sees the same field for its\nown offers' orders; nobody else can reach either route (chunk 2).",
+        "properties": {
+          "cancelled_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelled At"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "handed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Handed At"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "offer_id": {
+            "format": "uuid",
+            "title": "Offer Id",
+            "type": "string"
+          },
+          "pickup_code": {
+            "maxLength": 4,
+            "minLength": 4,
+            "pattern": "^[0-9]{4}$",
+            "title": "Pickup Code",
+            "type": "string"
+          },
+          "qty": {
+            "title": "Qty",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "reserved",
+              "handed",
+              "no_show",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "offer_id",
+          "user_id",
+          "qty",
+          "pickup_code",
+          "status",
+          "created_at"
+        ],
+        "title": "RescueOrderOut",
+        "type": "object"
+      },
+      "RescueOwnerOrderOut": {
+        "description": "One of today's reservations, as the business's own dashboard sees it.\n\nCarries `pickup_code` — the business has to read it back against what the\nbuyer says at the counter — and the offer's `pickup_end`, because the\n«לא הגיע» control is only legal after that moment and the dashboard must\ndecide that without a second request.\n\nDeliberately NOT the buyer's name, email or phone: handing over a bag\nneeds four digits, and a list of today's customers on a dashboard screen\nis more personal data than the job requires.",
+        "properties": {
+          "cancelled_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelled At"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "handed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Handed At"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "offer_id": {
+            "format": "uuid",
+            "title": "Offer Id",
+            "type": "string"
+          },
+          "pickup_code": {
+            "title": "Pickup Code",
+            "type": "string"
+          },
+          "pickup_end": {
+            "format": "date-time",
+            "title": "Pickup End",
+            "type": "string"
+          },
+          "pickup_start": {
+            "format": "date-time",
+            "title": "Pickup Start",
+            "type": "string"
+          },
+          "qty": {
+            "title": "Qty",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "reserved",
+              "handed",
+              "no_show",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "offer_id",
+          "qty",
+          "pickup_code",
+          "status",
+          "created_at",
+          "pickup_start",
+          "pickup_end"
+        ],
+        "title": "RescueOwnerOrderOut",
+        "type": "object"
+      },
+      "RescueProducerSummary": {
+        "description": "The business fields the public bag list needs, and no more.\n\nDeliberately NOT `ProducerListOut`: a bag row shows a name, a photo, a\ntown and a pickup point, and nothing on this list should carry the badge\nblock, the rating aggregate or the contact details — chunk 4's row has no\nplace to put them and serializing them would publish more than the screen\nneeds.",
+        "properties": {
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Url"
+          },
+          "location_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Address"
+          },
+          "location_city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location City"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "RescueProducerSummary",
+        "type": "object"
+      },
+      "RescueReviewCreate": {
+        "description": "The buyer's review of a collected bag. Every field but `rating` is\noptional — chunk 4's screen submits one star row and nothing else.",
+        "properties": {
+          "comment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment"
+          },
+          "contents_tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contents Tags"
+          },
+          "highlight_tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Highlight Tags"
+          },
+          "photo_url": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Photo Url"
+          },
+          "rating": {
+            "maximum": 5.0,
+            "minimum": 1.0,
+            "title": "Rating",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "rating"
+        ],
+        "title": "RescueReviewCreate",
+        "type": "object"
+      },
+      "RescueReviewOut": {
+        "properties": {
+          "comment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment"
+          },
+          "contents_tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contents Tags"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "highlight_tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Highlight Tags"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "order_id": {
+            "format": "uuid",
+            "title": "Order Id",
+            "type": "string"
+          },
+          "photo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Photo Url"
+          },
+          "rating": {
+            "title": "Rating",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "order_id",
+          "rating",
+          "created_at"
+        ],
+        "title": "RescueReviewOut",
+        "type": "object"
+      },
+      "RescueTypicalItemsIn": {
+        "description": "«בדרך כלל: …» — the list a business edits once. Bounded so the line\nstays one line on a phone.",
+        "properties": {
+          "items": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 12,
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "title": "RescueTypicalItemsIn",
+        "type": "object"
+      },
+      "RescueTypicalItemsOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "producer_id": {
+            "format": "uuid",
+            "title": "Producer Id",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "producer_id",
+          "items",
+          "updated_at"
+        ],
+        "title": "RescueTypicalItemsOut",
+        "type": "object"
+      },
       "ResetPasswordRequest": {
         "properties": {
           "new_password": {
@@ -16543,6 +17489,106 @@
         "summary": "Resolve Report",
         "tags": [
           "reports"
+        ]
+      }
+    },
+    "/admin/rescue/metrics": {
+      "get": {
+        "description": "The pilot's four numbers, read-only.\n\nRates come back as fractions, and as None when their denominator is zero:\na pilot with no bags published yet has no sell-through, and reporting 0%\nwould read as \"nothing sold\" rather than \"nothing offered\". That\ndistinction is the whole point of a pilot metric.",
+        "operationId": "pilot_metrics_admin_rescue_metrics_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "days",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "maximum": 365,
+              "minimum": 1,
+              "title": "Days",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RescueMetricsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Pilot Metrics",
+        "tags": [
+          "admin-rescue"
+        ]
+      }
+    },
+    "/admin/rescue/users/{user_id}/clear-block": {
+      "post": {
+        "description": "Release a buyer's no-show block.\n\nWrites `rescue_block_cleared_at` instead of zeroing the counter, so the\nno-show rows stay in the history for the chunk-5 metrics while stopping\ncounting against the buyer. Returns both numbers, because a reset whose\neffect you cannot see is a reset you have to trust.",
+        "operationId": "clear_no_show_block_admin_rescue_users__user_id__clear_block_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RescueNoShowStateOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Clear No Show Block",
+        "tags": [
+          "admin-rescue"
         ]
       }
     },
@@ -21341,6 +22387,109 @@
         ]
       }
     },
+    "/producers/me/rescue/orders": {
+      "get": {
+        "description": "Today's reservations across this business's pickup points.\n\nToday only, by the Israel clock: the dashboard is a counter tool, and a\nbag from last week is not something anyone hands over. Cancelled rows are\nincluded — a business that sees four codes and three people should be able\nto tell which one cancelled rather than wonder.\n\nNo buyer identity is returned; see RescueOwnerOrderOut for why.",
+        "operationId": "list_my_orders_producers_me_rescue_orders_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RescueOwnerOrderOut"
+                  },
+                  "title": "Response List My Orders Producers Me Rescue Orders Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List My Orders",
+        "tags": [
+          "rescue"
+        ]
+      }
+    },
+    "/producers/me/rescue/typical-items": {
+      "get": {
+        "description": "«בדרך כלל: …» as it stands. An empty list when never set — the read\nnever has to distinguish \"no row\" from \"empty\", only the first.",
+        "operationId": "get_typical_items_producers_me_rescue_typical_items_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RescueTypicalItemsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Get Typical Items",
+        "tags": [
+          "rescue"
+        ]
+      },
+      "put": {
+        "description": "Upsert the list. One row per business (uq_rescue_typical_items_producer),\nso this writes the existing row rather than racing a second insert.",
+        "operationId": "set_typical_items_producers_me_rescue_typical_items_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RescueTypicalItemsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RescueTypicalItemsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Set Typical Items",
+        "tags": [
+          "rescue"
+        ]
+      }
+    },
     "/producers/me/review-link": {
       "get": {
         "description": "The owner's shareable \"request a review\" URL.\n\nApproved producers only: the public page the link opens exists only once\nthe business is live, and a pending/draft business has no customers to\nask yet. The token is a 30-day HS256 JWT bound to THIS producer (auth.py\ncreate_review_invite_token) — not single-use, so one link serves every\ncustomer the owner sends it to; a fresh call re-mints it, which is how a\nlink is \"renewed\" after expiry. No DB write.\n\nURL shape: `{frontend_url}/p/{slug}?rt=<token>` when the business has a\ncustom slug, else `{frontend_url}/producer/{id}?rt=<token>` — both are\nthe live public routes (frontend/app/[locale]/p/[slug], .../producer/[id]).",
@@ -22212,6 +23361,443 @@
         "summary": "Report Producer Info",
         "tags": [
           "reports"
+        ]
+      }
+    },
+    "/rescue/offers": {
+      "get": {
+        "description": "Today's bags that still have stock. Public — no auth.\n\nSold-out and cancelled offers are omitted rather than greyed out: the list\nis \"what you can still get tonight\", and chunk 4 has no empty-stock state.",
+        "operationId": "list_offers_rescue_offers_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "city",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "City"
+            }
+          },
+          {
+            "in": "query",
+            "name": "lat",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 90,
+                  "minimum": -90,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Lat"
+            }
+          },
+          {
+            "in": "query",
+            "name": "lng",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 180,
+                  "minimum": -180,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Lng"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RescueOfferPublicOut"
+                  },
+                  "title": "Response List Offers Rescue Offers Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Offers",
+        "tags": [
+          "rescue"
+        ]
+      },
+      "post": {
+        "description": "Publish today's bags at one pickup point.\n\nNOT VALIDATED, and it is worth knowing why: the spec asks that\n`pickup_end` be at least 15 minutes before the business closes. There is\nnothing to compute that against. `opening_hours` is unbounded free text on\nboth producers and locations, which the repo has already ruled is not\ncomputable (models.py:443-446), and `order_window` is a different fact —\nwhen ORDERS are accepted, not when the door shuts. Validating against it\nwould enforce the wrong rule convincingly. MEH-2646 carries the decision.",
+        "operationId": "create_offer_rescue_offers_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RescueOfferCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RescueOfferOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Create Offer",
+        "tags": [
+          "rescue"
+        ]
+      }
+    },
+    "/rescue/offers/{offer_id}/cancel": {
+      "post": {
+        "description": "The business pulls the whole bag offer. Every open reservation on it is\ncancelled with it.\n\nNo refund, because nothing was paid. No message either, yet: telling the\nbuyers needs a Meta-approved WhatsApp template and none exists for rescue\n(see this module's \"Does NOT\"). Until one does, the buyers learn from the\napp — which is a real gap, recorded on MEH-2646 rather than papered over\nwith a send that would silently fail outside the 24h window.",
+        "operationId": "cancel_offer_rescue_offers__offer_id__cancel_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "offer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Offer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RescueOfferOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Cancel Offer",
+        "tags": [
+          "rescue"
+        ]
+      }
+    },
+    "/rescue/orders": {
+      "post": {
+        "description": "Reserve bags and get the 4-digit code read out at the counter.",
+        "operationId": "create_order_rescue_orders_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RescueOrderCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RescueOrderCreatedOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Create Order",
+        "tags": [
+          "rescue"
+        ]
+      }
+    },
+    "/rescue/orders/{order_id}/cancel": {
+      "post": {
+        "description": "The buyer cancels, free, until the offer's `cancel_until`.",
+        "operationId": "cancel_order_rescue_orders__order_id__cancel_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Order Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RescueOrderOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Cancel Order",
+        "tags": [
+          "rescue"
+        ]
+      }
+    },
+    "/rescue/orders/{order_id}/handed": {
+      "post": {
+        "description": "The business hands the bag over against the code.\n\nA second call is a 409 naming `handed_at`, not a silent success: at the\ncounter a repeated tap usually means the first one was not seen, and the\nhonest answer is \"already done at 18:42\".",
+        "operationId": "mark_handed_rescue_orders__order_id__handed_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Order Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RescueOrderOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Mark Handed",
+        "tags": [
+          "rescue"
+        ]
+      }
+    },
+    "/rescue/orders/{order_id}/no_show": {
+      "post": {
+        "description": "The business records that nobody came for the bag.\n\nOnly after `pickup_end` — before that the buyer may still be on their way,\nand a no-show is what blocks them from reserving again.",
+        "operationId": "mark_no_show_rescue_orders__order_id__no_show_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Order Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RescueOrderOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Mark No Show",
+        "tags": [
+          "rescue"
+        ]
+      }
+    },
+    "/rescue/orders/{order_id}/review": {
+      "post": {
+        "description": "The buyer reviews a bag they actually collected. Once.",
+        "operationId": "create_review_rescue_orders__order_id__review_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Order Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RescueReviewCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RescueReviewOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Create Review",
+        "tags": [
+          "rescue"
         ]
       }
     },
