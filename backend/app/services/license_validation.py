@@ -24,7 +24,7 @@ from app.models.models import Category
 # MEH-530: shared Hebrew copy for the 422 message — keep both router-level
 # and any future client surface in sync via this constant rather than
 # inlining the string at 4 call sites.
-LICENSE_REQUIRED_ERROR_HE = "מספר רישיון יצרן חובה לקטגוריה זו"
+LICENSE_REQUIRED_ERROR_HE = "מספר רישיון ייצור חובה לקטגוריה זו"
 
 
 def _normalize_license(value: str | None) -> str | None:

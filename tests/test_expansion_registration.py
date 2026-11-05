@@ -13,7 +13,7 @@ Backend tests — CI Postgres is the healer.
 from tests.conftest import make_category
 
 BAKERY = "לחמים ואפייה"  # license-required category
-LICENSE_REQUIRED_HE = "מספר רישיון יצרן חובה לקטגוריה זו"
+LICENSE_REQUIRED_HE = "מספר רישיון ייצור חובה לקטגוריה זו"
 DECLARATION_REQUIRED_HE = "יש לאשר את הצהרת הרישוי כדי להמשיך"
 
 
