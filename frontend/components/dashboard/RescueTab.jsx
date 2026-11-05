@@ -330,6 +330,8 @@ export default function RescueTab() {
         </button>
       </section>
 
+      {/* No exact point → no bags can be published, so nothing can be left over. */}
+      {exactLocation && (
       <p className="border border-border rounded-md px-4 py-3 font-body-sm text-sm text-fg-muted" data-testid="rescue-leftover-hint">
         {t("leftover_hint")}{" "}
         <a
@@ -342,6 +344,7 @@ export default function RescueTab() {
           {t("leftover_link")}
         </a>
       </p>
+      )}
     </div>
   );
 }

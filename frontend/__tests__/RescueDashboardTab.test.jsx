@@ -346,6 +346,13 @@ describe("the leftover-bags line", () => {
     expect(leftoverSpy.fn).toHaveBeenLastCalledWith("חדרה");
     expect(leftoverSpy.fn).not.toHaveBeenCalledWith("בנימינה");
   });
+
+  it("is hidden when the business has no exact pickup point (no bags can be published)", async () => {
+    locs = [{ id: "loc0", location_precision: "approximate", is_primary: true, city: "בנימינה" }];
+    render(<RescueTab />);
+    await pointsLoaded();
+    expect(screen.queryByTestId("rescue-leftover-hint")).toBeNull();
+  });
 });
 
 describe("leftoverGroupUrl", () => {
