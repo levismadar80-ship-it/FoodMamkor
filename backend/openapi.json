@@ -1176,7 +1176,7 @@
         "type": "object"
       },
       "DeliveryWaitlistOut": {
-        "description": "MEH-2618: `added` (201) on a new row, `exists` (200) when the same\nemail already waits for the same business + city — the form shows the\nsame calm confirmation for both.\n\nMEH-2673 `host_confirm` — only when the request ticked «אשמח לארח»:\n`sent` = a confirmation mail went out now · `already_sent` = one went to\nthis address within the last 24 h, nothing new was sent (the form says\n«check your inbox» instead of a false «we sent») · `confirmed` = this row\nis already a host. None when the box was not ticked.",
+        "description": "MEH-2618: `added` (201) on a new row, `exists` (200) when the same\nemail already waits for the same business + city — the form shows the\nsame calm confirmation for both.\n\nMEH-2673 `host_confirm` — only when the request ticked «אשמח לארח»:\n`sent` = a confirmation mail went out now · `already_sent` = THIS\nbusiness+city's link already went to the address within the last 24 h,\nnothing new was sent (the form says «check your inbox» instead of a false\n«we sent») · `limit_reached` = the address hit its daily cap of\nconfirmation mails across businesses/cities, nothing was sent for this\none (the form says «try again tomorrow», never «check your inbox») ·\n`confirmed` = this row is already a host. None when the box was not\nticked.",
         "properties": {
           "host_confirm": {
             "anyOf": [
@@ -1184,6 +1184,7 @@
                 "enum": [
                   "sent",
                   "already_sent",
+                  "limit_reached",
                   "confirmed"
                 ],
                 "type": "string"

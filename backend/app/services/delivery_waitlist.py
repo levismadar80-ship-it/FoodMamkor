@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import logging
 from datetime import UTC, timedelta
+from typing import Literal
 from uuid import UUID
 
 from joserfc import jwt as jose_jwt
@@ -294,15 +295,23 @@ def send_host_confirmation(
     send_email(email, subject, body)
 
 
-def claim_host_confirm_send(db: Session, entry: DeliveryWaitlistEntry) -> bool:
-    """MEH-2673: True (and stamps the entry) when a confirmation mail may go
-    out now; False when it may not. Two guards, both per cooldown window:
-    the ENTRY was not mailed yet (a re-submitted form does not re-mail the
-    same link), and the ADDRESS is under HOST_CONFIRM_ADDRESS_CAP across
+HostConfirmVerdict = Literal["send", "already_sent", "limit_reached"]
+
+
+def claim_host_confirm_send(
+    db: Session, entry: DeliveryWaitlistEntry
+) -> HostConfirmVerdict:
+    """MEH-2673: "send" (and stamps the entry) when a confirmation mail may
+    go out now. Two guards, both per cooldown window, each with its own
+    verdict so the form never says «check your inbox» for a mail that never
+    went: "already_sent" = THIS entry was mailed within the window (a
+    re-submitted form does not re-mail the same link — the link is in the
+    inbox); "limit_reached" = the ADDRESS hit HOST_CONFIRM_ADDRESS_CAP across
     every business and city (one row per (business, city, email) would
-    otherwise let a stranger mail the same inbox once per combination).
-    Each link confirms one entry only, so a second business within the
-    window still gets its own mail. The caller commits.
+    otherwise let a stranger mail the same inbox once per combination —
+    nothing was sent for this entry). Each link confirms one entry only, so
+    a second business within the window still gets its own mail. The caller
+    commits.
 
     Serialised per address with a transaction-scoped advisory lock, so two
     simultaneous submits cannot both read "under the cap" and both mail —
@@ -317,7 +326,7 @@ def claim_host_confirm_send(db: Session, entry: DeliveryWaitlistEntry) -> bool:
         entry.host_confirm_sent_at is not None
         and entry.host_confirm_sent_at > window_start
     ):
-        return False
+        return "already_sent"
     sent_to_address = (
         db.query(DeliveryWaitlistEntry.id)
         .filter(
@@ -327,6 +336,6 @@ def claim_host_confirm_send(db: Session, entry: DeliveryWaitlistEntry) -> bool:
         .count()
     )
     if sent_to_address >= HOST_CONFIRM_ADDRESS_CAP:
-        return False
+        return "limit_reached"
     entry.host_confirm_sent_at = now
-    return True
+    return "send"

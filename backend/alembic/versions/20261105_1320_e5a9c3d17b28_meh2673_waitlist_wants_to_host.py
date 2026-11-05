@@ -10,8 +10,8 @@ point in that city. Ticking it is her consent for this ONE business to see
 her email; it only counts after she clicks the confirmation link mailed to
 that address (POST /delivery-waitlist/host-confirm). The owner reads the list
 on GET /producers/me/analytics → `pickup_hosts`. `host_confirm_sent_at` is
-the per-entry resend cooldown for that mail (plus a per-address cap). The form checkbox ships in the
-frontend follow-up (MEH-2674).
+the per-entry resend cooldown for that mail (plus a per-address cap). The
+form checkbox ships in the frontend follow-up (MEH-2674).
 
 Expand-only per ADR-007: one NOT NULL boolean with a server default of
 false, two nullable timestamps and one index. Existing rows were never asked,
@@ -44,7 +44,7 @@ def upgrade() -> None:
             "wants_to_host",
             sa.Boolean(),
             nullable=False,
-            server_default=sa.false(),
+            server_default=sa.text("false"),  # same idiom as the model
         ),
     )
     # When the last host-confirmation mail went out: a per-entry resend

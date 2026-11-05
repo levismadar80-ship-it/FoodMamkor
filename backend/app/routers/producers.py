@@ -709,30 +709,37 @@ def join_delivery_waitlist(
         if data.wants_to_host:
             if existing.wants_to_host:
                 host_confirm = "confirmed"
-            elif delivery_waitlist.claim_host_confirm_send(db, existing):
-                db.commit()
-                host_confirm = "sent"
-                background_tasks.add_task(
-                    delivery_waitlist.send_host_confirmation,
-                    existing.id,
-                    existing.email,
-                    existing.city,
-                    producer.name,
-                )
             else:
-                db.rollback()  # releases the advisory lock, nothing to write
-                host_confirm = "already_sent"
+                verdict = delivery_waitlist.claim_host_confirm_send(db, existing)
+                if verdict == "send":
+                    db.commit()
+                    host_confirm = "sent"
+                    background_tasks.add_task(
+                        delivery_waitlist.send_host_confirmation,
+                        existing.id,
+                        existing.email,
+                        existing.city,
+                        producer.name,
+                    )
+                else:
+                    db.rollback()  # releases the advisory lock, nothing to write
+                    host_confirm = verdict
         response.status_code = 200
         return DeliveryWaitlistOut(status="exists", host_confirm=host_confirm)
     entry = delivery_waitlist.add_entry(
         db, producer, email=data.email, city=data.city, user=current_user
     )
-    # Stamped before the INSERT so this mail counts toward the per-address
-    # cooldown; the mail itself is queued after the commit below.
-    send_host_mail = data.wants_to_host and delivery_waitlist.claim_host_confirm_send(
-        db, entry
-    )
+    new_verdict: delivery_waitlist.HostConfirmVerdict | None = None
     try:
+        # The INSERT is flushed here, inside the except below, BEFORE the
+        # claim takes the per-address lock — so a double-tap (two first-time
+        # POSTs for the same row in flight) trips the unique constraint
+        # here, not as an unhandled 500 out of the claim's own statements.
+        db.flush()
+        if data.wants_to_host:
+            # Stamped before the commit so this mail counts toward the
+            # per-address cap; the mail itself is queued after the commit.
+            new_verdict = delivery_waitlist.claim_host_confirm_send(db, entry)
         db.commit()
     except IntegrityError:
         # Two identical POSTs in flight (double-tap): both passed find_entry,
@@ -741,8 +748,8 @@ def join_delivery_waitlist(
         db.rollback()
         response.status_code = 200
         return DeliveryWaitlistOut(status="exists")
-    host_confirm = None
-    if send_host_mail:
+    host_confirm = new_verdict
+    if new_verdict == "send":
         # MEH-2673: the box alone shares nothing. The row stays
         # wants_to_host=False until the address itself clicks the link —
         # otherwise anyone could hand a stranger's email to a business.
@@ -754,8 +761,6 @@ def join_delivery_waitlist(
             entry.city,
             producer.name,
         )
-    elif data.wants_to_host:
-        host_confirm = "already_sent"
     return DeliveryWaitlistOut(status="added", host_confirm=host_confirm)
 
 
@@ -783,8 +788,9 @@ def confirm_delivery_waitlist_host(
         raise HTTPException(status_code=400, detail="הקישור לא תקין או שפג תוקפו")
     if state == "expired":
         resent = False
-        if not entry.wants_to_host and delivery_waitlist.claim_host_confirm_send(
-            db, entry
+        if (
+            not entry.wants_to_host
+            and delivery_waitlist.claim_host_confirm_send(db, entry) == "send"
         ):
             db.commit()
             resent = True

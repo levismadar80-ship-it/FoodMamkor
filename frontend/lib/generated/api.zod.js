@@ -5538,9 +5538,9 @@ export const RecordContactClickProducersProducerIdContactClickPostResponse = /*#
  * @summary Join Delivery Waitlist
  */
 export const JoinDeliveryWaitlistProducersProducerIdDeliveryWaitlistPostResponse = /*#__PURE__*/ zod.object({
-  "host_confirm": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['sent', 'already_sent', 'confirmed']),/*#__PURE__*/ zod.null()])),
+  "host_confirm": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.enum(['sent', 'already_sent', 'limit_reached', 'confirmed']),/*#__PURE__*/ zod.null()])),
   "status": /*#__PURE__*/ zod.enum(['added', 'exists'])
-}).check(/*#__PURE__*/ zod.describe('MEH-2618: `added` (201) on a new row, `exists` (200) when the same\nemail already waits for the same business + city — the form shows the\nsame calm confirmation for both.\n\nMEH-2673 `host_confirm` — only when the request ticked «אשמח לארח»:\n`sent` = a confirmation mail went out now · `already_sent` = one went to\nthis address within the last 24 h, nothing new was sent (the form says\n«check your inbox» instead of a false «we sent») · `confirmed` = this row\nis already a host. None when the box was not ticked.'))
+}).check(/*#__PURE__*/ zod.describe('MEH-2618: `added` (201) on a new row, `exists` (200) when the same\nemail already waits for the same business + city — the form shows the\nsame calm confirmation for both.\n\nMEH-2673 `host_confirm` — only when the request ticked «אשמח לארח»:\n`sent` = a confirmation mail went out now · `already_sent` = THIS\nbusiness+city\'s link already went to the address within the last 24 h,\nnothing new was sent (the form says «check your inbox» instead of a false\n«we sent») · `limit_reached` = the address hit its daily cap of\nconfirmation mails across businesses\/cities, nothing was sent for this\none (the form says «try again tomorrow», never «check your inbox») ·\n`confirmed` = this row is already a host. None when the box was not\nticked.'))
 
 
 /**

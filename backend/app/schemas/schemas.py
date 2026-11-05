@@ -5275,13 +5275,19 @@ class DeliveryWaitlistOut(BaseModel):
     same calm confirmation for both.
 
     MEH-2673 `host_confirm` — only when the request ticked «אשמח לארח»:
-    `sent` = a confirmation mail went out now · `already_sent` = one went to
-    this address within the last 24 h, nothing new was sent (the form says
-    «check your inbox» instead of a false «we sent») · `confirmed` = this row
-    is already a host. None when the box was not ticked."""
+    `sent` = a confirmation mail went out now · `already_sent` = THIS
+    business+city's link already went to the address within the last 24 h,
+    nothing new was sent (the form says «check your inbox» instead of a false
+    «we sent») · `limit_reached` = the address hit its daily cap of
+    confirmation mails across businesses/cities, nothing was sent for this
+    one (the form says «try again tomorrow», never «check your inbox») ·
+    `confirmed` = this row is already a host. None when the box was not
+    ticked."""
 
     status: Literal["added", "exists"]
-    host_confirm: Literal["sent", "already_sent", "confirmed"] | None = None
+    host_confirm: (
+        Literal["sent", "already_sent", "limit_reached", "confirmed"] | None
+    ) = None
 
 
 class DeliveryWaitlistUnsubscribeIn(BaseModel):

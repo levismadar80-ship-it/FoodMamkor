@@ -566,8 +566,34 @@ class TestHostConfirmAbuseGuards:
             ).json()["host_confirm"]
             for pid, city in combos
         ]
-        assert statuses == ["sent"] * svc.HOST_CONFIRM_ADDRESS_CAP + ["already_sent"]
+        # The 4th is told the truth — nothing was sent for it — not «check
+        # your inbox», which is what already_sent means.
+        assert statuses == ["sent"] * svc.HOST_CONFIRM_ADDRESS_CAP + ["limit_reached"]
         assert len(sent) == svc.HOST_CONFIRM_ADDRESS_CAP
+
+    def test_double_tap_with_box_is_exists_not_500(self, client, db, monkeypatch):
+        # Two first-time POSTs for the same row in flight: both pass
+        # find_entry, the second trips the unique constraint. Simulated by
+        # blinding find_entry for the second call; the INSERT must fail
+        # inside the handled block, not out of the claim's statements.
+        sent = _capture_mail(monkeypatch)
+        p = make_producer(db)
+        body = {"email": "dana@example.com", "city": "חיפה", "wants_to_host": True}
+        assert client.post(
+            f"/producers/{p.id}/delivery-waitlist", json=body
+        ).json() == {
+            "status": "added",
+            "host_confirm": "sent",
+        }
+        monkeypatch.setattr(
+            "app.routers.producers.delivery_waitlist.find_entry",
+            lambda *a, **k: None,
+        )
+        r = client.post(f"/producers/{p.id}/delivery-waitlist", json=body)
+        assert r.status_code == 200, r.text
+        assert r.json() == {"status": "exists", "host_confirm": None}
+        assert len(sent) == 1
+        assert len(_entries(db, p.id)) == 1
 
     def test_expired_link_mails_a_fresh_one(self, client, db, monkeypatch):
         # The 410 is not a dead end: the expired token still names the entry,
