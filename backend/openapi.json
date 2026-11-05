@@ -1133,6 +1133,21 @@
         "title": "DeliveryAreaOut",
         "type": "object"
       },
+      "DeliveryWaitlistHostConfirmIn": {
+        "description": "MEH-2673: the signed token from the «אשמח לארח» confirmation link.\nIts own model so a change to the unsubscribe input never changes this\nendpoint.",
+        "properties": {
+          "token": {
+            "minLength": 1,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "title": "DeliveryWaitlistHostConfirmIn",
+        "type": "object"
+      },
       "DeliveryWaitlistIn": {
         "description": "MEH-2618: body of POST /producers/{id}/delivery-waitlist.\n\nUnlike WhatsAppClickIn above, `city` is REQUIRED and RAISES: this is a\nform the visitor fills on purpose, not a beacon — a junk city here would\nmake a promise («נודיע לך כשיגיעו ל???») that can never be kept. Same\nletter floor as the siblings (MEH-555), same 60-char cap as\nproducer_whatsapp_clicks.city so the dashboard's demand row can one day\ncount both sources on one key.",
         "properties": {
@@ -18032,7 +18047,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/DeliveryWaitlistUnsubscribeIn"
+                "$ref": "#/components/schemas/DeliveryWaitlistHostConfirmIn"
               }
             }
           },

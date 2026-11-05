@@ -40,6 +40,7 @@ from app.schemas.schemas import (
     DELIVERY_DAYS,
     DeliveryWaitlistIn,
     DeliveryWaitlistOut,
+    DeliveryWaitlistHostConfirmIn,
     DeliveryWaitlistUnsubscribeIn,
     KashrutCertRef,
     ProducerCityOut,
@@ -699,7 +700,12 @@ def join_delivery_waitlist(
         # MEH-2673: a repeat signup that ticks «אשמח לארח» (re)sends the
         # confirmation link; the row turns True only from that link. An
         # unticked repeat changes nothing — never a silent withdrawal.
-        if data.wants_to_host and not existing.wants_to_host:
+        if (
+            data.wants_to_host
+            and not existing.wants_to_host
+            and delivery_waitlist.claim_host_confirm_send(existing)
+        ):
+            db.commit()
             background_tasks.add_task(
                 delivery_waitlist.send_host_confirmation,
                 existing.id,
@@ -712,6 +718,10 @@ def join_delivery_waitlist(
     entry = delivery_waitlist.add_entry(
         db, producer, email=data.email, city=data.city, user=current_user
     )
+    if data.wants_to_host:
+        # Stamped before the INSERT so the first mail counts toward the
+        # resend cooldown; the mail itself is queued after the commit below.
+        delivery_waitlist.claim_host_confirm_send(entry)
     try:
         db.commit()
     except IntegrityError:
@@ -739,7 +749,7 @@ def join_delivery_waitlist(
 @limiter.limit("10/minute")
 def confirm_delivery_waitlist_host(
     request: Request,
-    data: DeliveryWaitlistUnsubscribeIn,
+    data: DeliveryWaitlistHostConfirmIn,
     db: Session = Depends(get_db),
 ):
     """MEH-2673: «מאשרים, אפשר להעביר» — the signed link from the host

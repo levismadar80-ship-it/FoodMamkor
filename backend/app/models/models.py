@@ -1553,6 +1553,9 @@ class DeliveryWaitlistEntry(Base):
     wants_to_host = Column(
         Boolean, nullable=False, default=False, server_default=text("false")
     )
+    # MEH-2673: when the last host-confirmation mail went out — the per-entry
+    # resend cooldown (services/delivery_waitlist.claim_host_confirm_send).
+    host_confirm_sent_at = Column(DateTime, nullable=True)
 
     producer = relationship("Producer")
 

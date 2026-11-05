@@ -5283,6 +5283,14 @@ class DeliveryWaitlistUnsubscribeIn(BaseModel):
     token: str = Field(..., min_length=1)
 
 
+class DeliveryWaitlistHostConfirmIn(BaseModel):
+    """MEH-2673: the signed token from the «אשמח לארח» confirmation link.
+    Its own model so a change to the unsubscribe input never changes this
+    endpoint."""
+
+    token: str = Field(..., min_length=1)
+
+
 class ProducerViewIn(BaseModel):
     """MEH-2159: body of POST /producers/{id}/view.
 

@@ -7,11 +7,14 @@ Create Date: 2026-11-05 13:20:00.000000+00:00
 MEH-2673: «אשמח לארח נקודת מסירה» — a visitor joining a business's per-city
 delivery waitlist (MEH-2618) can also say she is willing to host a pickup
 point in that city. Ticking it is her consent for this ONE business to see
-her email (the form says so under the box); the owner reads the list on
-GET /producers/me/analytics → `pickup_hosts`.
+her email; it only counts after she clicks the confirmation link mailed to
+that address (POST /delivery-waitlist/host-confirm). The owner reads the list
+on GET /producers/me/analytics → `pickup_hosts`. `host_confirm_sent_at` is
+the per-entry resend cooldown for that mail. The form checkbox ships in the
+frontend follow-up (MEH-2674).
 
 Expand-only per ADR-007: one NOT NULL boolean with a server default of
-false. Existing rows were never asked, so false is the truth for them, and
+false, and one nullable timestamp. Existing rows were never asked, so false is the truth for them, and
 the previous container (which never names the column) inserts through the
 server default. No new table → EXPECTED_TABLES unchanged.
 
@@ -42,7 +45,14 @@ def upgrade() -> None:
             server_default=sa.false(),
         ),
     )
+    # When the last host-confirmation mail went out: a per-entry resend
+    # cooldown, so re-submitting the form cannot flood the address.
+    op.add_column(
+        "delivery_waitlist",
+        sa.Column("host_confirm_sent_at", sa.DateTime(), nullable=True),
+    )
 
 
 def downgrade() -> None:
+    op.drop_column("delivery_waitlist", "host_confirm_sent_at")
     op.drop_column("delivery_waitlist", "wants_to_host")

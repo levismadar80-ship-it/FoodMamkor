@@ -20,6 +20,7 @@ History:  MEH-2618 (creation). Plan: claude.ai/artifact/2W4LNWVVxUDBSu8gMQQWsW.
 from __future__ import annotations
 
 import logging
+from datetime import UTC, timedelta
 from uuid import UUID
 
 from joserfc import jwt as jose_jwt
@@ -43,6 +44,7 @@ __all__ = [
     "create_unsubscribe_token",
     "decode_host_confirm_token",
     "decode_unsubscribe_token",
+    "claim_host_confirm_send",
     "send_host_confirmation",
     "find_entry",
     "normalize_email",
@@ -65,10 +67,18 @@ def _key() -> OctKey:
 # its own scope, so an unsubscribe link can never confirm hosting and a
 # confirmation link can never delete the row.
 _HOST_CONFIRM_SCOPE = "delivery_waitlist_host_confirm"
+# Unlike the unsubscribe link, a consent link expires: an old mail found
+# months later should not still hand the address to a business.
+HOST_CONFIRM_TTL = timedelta(days=14)
+# One confirmation mail per entry per window, whatever the per-IP limit lets
+# through — a stranger re-submitting the form cannot flood the address.
+HOST_CONFIRM_RESEND_COOLDOWN = timedelta(hours=24)
 
 
-def _encode(entry_id: UUID, scope: str) -> str:
+def _encode(entry_id: UUID, scope: str, ttl: timedelta | None = None) -> str:
     payload = {"sub": str(entry_id), "scope": scope}
+    if ttl is not None:
+        payload["exp"] = int((utc_now() + ttl).replace(tzinfo=UTC).timestamp())
     return jose_jwt.encode({"alg": settings.algorithm}, payload, _key())
 
 
@@ -77,7 +87,7 @@ def create_unsubscribe_token(entry_id: UUID) -> str:
 
 
 def create_host_confirm_token(entry_id: UUID) -> str:
-    return _encode(entry_id, _HOST_CONFIRM_SCOPE)
+    return _encode(entry_id, _HOST_CONFIRM_SCOPE, HOST_CONFIRM_TTL)
 
 
 def decode_unsubscribe_token(token: str) -> UUID | None:
@@ -98,6 +108,13 @@ def _decode(token: str, scope: str) -> UUID | None:
         return None
     if token_obj.claims.get("scope") != scope:
         return None
+    # joserfc's decode does not check `exp`; a token that carries one is
+    # checked here (unsubscribe tokens carry none and never expire).
+    exp = token_obj.claims.get("exp")
+    if exp is not None:
+        now = utc_now().replace(tzinfo=UTC).timestamp()
+        if not isinstance(exp, int | float) or exp < now:
+            return None
     sub = token_obj.claims.get("sub")
     try:
         return UUID(str(sub))
@@ -253,3 +270,14 @@ def send_host_confirmation(
     copy needs. Fail-open like every mail (send_email never raises)."""
     subject, body = _host_confirm_copy(producer_name, city, entry_id)
     send_email(email, subject, body)
+
+
+def claim_host_confirm_send(entry: DeliveryWaitlistEntry) -> bool:
+    """MEH-2673: True (and stamps the entry) when a confirmation mail may go
+    out now; False inside the resend cooldown. The caller commits."""
+    now = utc_now()
+    last = entry.host_confirm_sent_at
+    if last is not None and now - last < HOST_CONFIRM_RESEND_COOLDOWN:
+        return False
+    entry.host_confirm_sent_at = now
+    return True

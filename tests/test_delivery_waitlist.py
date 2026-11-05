@@ -13,6 +13,8 @@ Covers:
 
 from __future__ import annotations
 
+from datetime import timedelta
+
 from conftest import auth_header, make_producer, make_user
 
 from app.models import DeliveryWaitlistEntry
@@ -466,3 +468,53 @@ class TestPickupHostsOnAnalytics:
         _signup_and_confirm(client, monkeypatch, other.id, "c@example.com", "חדרה")
         hosts = self._hosts(client, owner)
         assert sorted(h["email"] for h in hosts) == ["a@example.com", "b@example.com"]
+
+
+class TestHostConfirmAbuseGuards:
+    def test_resend_is_capped_by_cooldown(self, client, db, monkeypatch):
+        # A stranger re-submitting the form with someone's address gets at
+        # most one confirmation mail into that inbox per cooldown window.
+        sent = _capture_mail(monkeypatch)
+        p = make_producer(db)
+        body = {"email": "dana@example.com", "city": "חיפה", "wants_to_host": True}
+        for _ in range(3):
+            client.post(f"/producers/{p.id}/delivery-waitlist", json=body)
+        assert len(sent) == 1
+
+    def test_resend_after_cooldown(self, client, db, monkeypatch):
+        sent = _capture_mail(monkeypatch)
+        p = make_producer(db)
+        body = {"email": "dana@example.com", "city": "חיפה", "wants_to_host": True}
+        client.post(f"/producers/{p.id}/delivery-waitlist", json=body)
+        entry = _entries(db, p.id)[0]
+        entry.host_confirm_sent_at = entry.host_confirm_sent_at - (
+            svc.HOST_CONFIRM_RESEND_COOLDOWN + timedelta(minutes=1)
+        )
+        db.commit()
+        client.post(f"/producers/{p.id}/delivery-waitlist", json=body)
+        assert len(sent) == 2
+
+    def test_expired_link_is_400(self, client, db):
+        p = make_producer(db)
+        entry = svc.add_entry(db, p, email="dana@example.com", city="חיפה", user=None)
+        db.commit()
+        token = svc._encode(entry.id, svc._HOST_CONFIRM_SCOPE, timedelta(seconds=-1))
+        r = client.post("/delivery-waitlist/host-confirm", json={"token": token})
+        assert r.status_code == 400
+        db.expire_all()
+        assert _entries(db, p.id)[0].wants_to_host is False
+
+    def test_confirm_after_unsubscribe_is_400(self, client, db):
+        p = make_producer(db)
+        entry = svc.add_entry(db, p, email="dana@example.com", city="חיפה", user=None)
+        db.commit()
+        confirm = svc.create_host_confirm_token(entry.id)
+        unsub = svc.create_unsubscribe_token(entry.id)
+        assert (
+            client.post(
+                "/delivery-waitlist/unsubscribe", json={"token": unsub}
+            ).status_code
+            == 200
+        )
+        r = client.post("/delivery-waitlist/host-confirm", json={"token": confirm})
+        assert r.status_code == 400

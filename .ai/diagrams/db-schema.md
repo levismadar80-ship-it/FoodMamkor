@@ -426,7 +426,8 @@ erDiagram
         uuid user_id FK "SET NULL — set when signed in"
         timestamp created_at
         timestamp notified_at "once-only guard; NULL = still waiting"
-        bool wants_to_host "MEH-2673 — consent to share email with this business as a pickup host"
+        bool wants_to_host "MEH-2673 — confirmed by email: share the address with this business as a pickup host"
+        timestamp host_confirm_sent_at "MEH-2673 — 24h resend cooldown for the confirmation mail"
     }
 
     inbound_messages {
