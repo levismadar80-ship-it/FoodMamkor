@@ -5662,7 +5662,9 @@
     "home": {
       "title": "Left today",
       "title_city": "Left today in {city}",
-      "all": "All bags"
+      "all": "All bags",
+      "all_count": "All {count} bags →",
+      "lead": "Bags of what didn't sell today, at a reduced price. Self pickup."
     },
     "list": {
       "city_label": "City",
@@ -5678,7 +5680,11 @@
       "pickup": "Pickup {from}–{until}",
       "price": "{price} ₪",
       "km": "km",
-      "walk": "about {minutes} min walk"
+      "walk": "about {minutes} min walk",
+      "pickup_label": "Pickup",
+      "until": "until {time}",
+      "soon": "within the hour",
+      "left_short": "{count, plural, one {1 left} other {# left}}"
     },
     "section": {
       "title": "Rescue bag",

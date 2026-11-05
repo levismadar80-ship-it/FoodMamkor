@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import CitySearch from "@/components/CitySearch";
@@ -19,17 +19,25 @@ import { fetchOffers } from "@/lib/rescue";
  */
 export default function RescueList({ initialCity = "", limit = null, heading = null }) {
   const t = useTranslations("rescue");
-  const [city, setCity] = useState(initialCity);
+  const [city, setCity] = useState(initialCity || "");
   const [offers, setOffers] = useState(null); // null = not loaded yet
   const [failed, setFailed] = useState(false);
+  // Every load gets a number; only the latest one may write state. Without it
+  // a slow town-less request that answers after the town's own request paints
+  // another town's bags under this town's name (seen on staging 5/11: heading
+  // «תל אביב-יפו», a Zichron bag below it).
+  const latest = useRef(0);
 
   const load = useCallback(async (nextCity) => {
+    const ticket = ++latest.current;
     setFailed(false);
     setOffers(null);
     try {
       const rows = await fetchOffers({ city: nextCity || undefined });
+      if (ticket !== latest.current) return;
       setOffers(rows);
     } catch {
+      if (ticket !== latest.current) return;
       // A failed fetch is NOT an empty list: "nothing tonight" and "we could
       // not ask" are different facts and get different copy.
       setFailed(true);
@@ -38,6 +46,10 @@ export default function RescueList({ initialCity = "", limit = null, heading = n
   }, []);
 
   useEffect(() => {
+    // The town can arrive after first render (it is read from localStorage in
+    // an effect), so the field follows it — or it shows the placeholder while
+    // the list is filtered by a town the field does not name.
+    setCity(initialCity || "");
     load(initialCity);
   }, [load, initialCity]);
 
@@ -76,7 +88,7 @@ export default function RescueList({ initialCity = "", limit = null, heading = n
 
       {shown && shown.length > 0 && (
         <>
-          <ul className="space-y-3" data-testid="rescue-list-rows">
+          <ul className="border-t border-border" data-testid="rescue-list-rows">
             {shown.map((offer) => (
               <li key={offer.id}>
                 <BagRow offer={offer} />

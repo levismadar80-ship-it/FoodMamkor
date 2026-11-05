@@ -130,13 +130,6 @@ export default function HomeClient({
           <HomepageMiniMap />
         </div>
 
-      {/* MEH-2648: rescue-bags module. Renders null while
-          NEXT_PUBLIC_RESCUE_BAGS_ENABLED is off, which is its default, so the
-          home page is byte-identical until the pilot is switched on.
-          NOTE for the merge: PR #3952 (MEH-2635) reorders this same range on
-          mobile. Whichever lands second resolves by hand. */}
-      <RescueHomeModule city={userCity} />
-
       {/* MEH-50: שוק שישי strip — shown Thu 18:00 → Fri 14:00 only.
           MEH-879: highest banner precedence — reports visibility so Holiday +
           Location yield to it. */}
@@ -290,6 +283,13 @@ export default function HomeClient({
         geoEmptyNotice={geoEmptyNotice}
         regionFallback={regionFallback}
       />
+
+      {/* MEH-2648: rescue-bags module, AFTER the businesses grid (Sapir 5/11:
+          «אחרי בתי העסק» — the directory leads, a one-town pilot does not
+          take the slot under the hero). Renders null while the pilot is off,
+          with no town, or when the town has no bags today. Inside the mobile
+          wrapper so it sits before the mini-map's `order-last` on phones. */}
+      <RescueHomeModule city={userCity} />
       </div>
       {/* ^ MEH-2635: end of the mobile-reorder wrapper opened above the
           mini-map. The mini-map's `order-last` is relative to THIS span. */}
