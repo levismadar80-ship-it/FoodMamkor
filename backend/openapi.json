@@ -22750,7 +22750,7 @@
     },
     "/producers/{producer_id}/delivery-waitlist": {
       "post": {
-        "description": "«תודיעו לי כשתגיעו ל{עיר}» — join a business's per-city delivery waitlist.\n\nNo account needed: email + city. Returns 201 `added`, or 200 `exists`\nwhen this email already waits for this business and city. 404 for an\nunknown or not-yet-live business. When the business later adds the\ncity to its delivery areas, one email goes out (see\nservices/delivery_waitlist). Rate-limited 10/minute per IP.",
+        "description": "«תודיעו לי כשתגיעו ל{עיר}» — join a business's per-city delivery waitlist.\n\nNo account needed: email + city. Returns 201 `added`, or 200 `exists`\nwhen this email already waits for this business and city. Known and\naccepted: `exists` and `host_confirm` tell an anonymous caller whether an\naddress is on this list / already a host — the same disclosure the\nwaitlist made since MEH-2618, kept so the form can be honest about\nwhether a mail went out (double-opt-in UX norm). 404 for an\nunknown or not-yet-live business. When the business later adds the\ncity to its delivery areas, one email goes out (see\nservices/delivery_waitlist). Rate-limited 10/minute per IP.",
         "operationId": "join_delivery_waitlist_producers__producer_id__delivery_waitlist_post",
         "parameters": [
           {

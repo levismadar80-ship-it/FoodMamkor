@@ -1573,6 +1573,9 @@ class DeliveryWaitlistEntry(Base):
     # MEH-2673: when the last host-confirmation mail went out — the per-entry
     # resend cooldown (services/delivery_waitlist.claim_host_confirm_send).
     host_confirm_sent_at = Column(DateTime, nullable=True)
+    # MEH-2673: when the link was clicked — the consent record behind
+    # wants_to_host (Privacy Law amendment 13: who consented to what, when).
+    host_confirmed_at = Column(DateTime, nullable=True)
 
     producer = relationship("Producer")
 

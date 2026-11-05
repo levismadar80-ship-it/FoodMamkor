@@ -5523,7 +5523,11 @@ export const RecordContactClickProducersProducerIdContactClickPostResponse = /*#
  * «תודיעו לי כשתגיעו ל{עיר}» — join a business's per-city delivery waitlist.
  *
  * No account needed: email + city. Returns 201 `added`, or 200 `exists`
- * when this email already waits for this business and city. 404 for an
+ * when this email already waits for this business and city. Known and
+ * accepted: `exists` and `host_confirm` tell an anonymous caller whether an
+ * address is on this list / already a host — the same disclosure the
+ * waitlist made since MEH-2618, kept so the form can be honest about
+ * whether a mail went out (double-opt-in UX norm). 404 for an
  * unknown or not-yet-live business. When the business later adds the
  * city to its delivery areas, one email goes out (see
  * services/delivery_waitlist). Rate-limited 10/minute per IP.

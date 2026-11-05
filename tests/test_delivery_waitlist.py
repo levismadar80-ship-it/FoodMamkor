@@ -580,3 +580,18 @@ class TestHostConfirmStatus:
         )
         assert r.json() == {"status": "exists", "host_confirm": "confirmed"}
         assert sent == []
+
+    def test_confirm_stamps_consent_time(self, client, db, monkeypatch):
+        p = make_producer(db)
+        entry = svc.add_entry(db, p, email="dana@example.com", city="חיפה", user=None)
+        db.commit()
+        assert entry.host_confirmed_at is None
+        token = svc.create_host_confirm_token(entry.id)
+        assert (
+            client.post(
+                "/delivery-waitlist/host-confirm", json={"token": token}
+            ).status_code
+            == 200
+        )
+        db.expire_all()
+        assert _entries(db, p.id)[0].host_confirmed_at is not None
