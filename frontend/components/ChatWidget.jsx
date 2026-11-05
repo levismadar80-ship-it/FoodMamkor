@@ -264,7 +264,7 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
         style={launcherStyle}
         data-testid="chat-launcher"
         className={[
-          "flex items-center justify-center bg-primary text-white rounded-full shadow-[0_4px_24px_rgba(46,104,83,0.25)] hover:bg-primary-dark transition focus-visible:ring-2 focus-visible:ring-primary/40",
+          "vv-pin flex items-center justify-center bg-primary text-white rounded-full shadow-[0_4px_24px_rgba(46,104,83,0.25)] hover:bg-primary-dark transition focus-visible:ring-2 focus-visible:ring-primary/40",
           showPillText ? "gap-2 px-4 py-3" : "w-12 h-12",
         ].join(" ")}
         // MEH-2308: when the pill text is showing it IS the accessible name. An
@@ -284,7 +284,7 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
       {open && (
         <div
           style={panelStyle}
-          className="flex flex-col bg-background border border-border shadow-[0_8px_32px_rgba(46,104,83,0.18)] overflow-hidden"
+          className="vv-pin flex flex-col bg-background border border-border shadow-[0_8px_32px_rgba(46,104,83,0.18)] overflow-hidden"
           role="dialog"
           aria-modal="false"
           aria-label={t("panel_label")}

@@ -100,7 +100,7 @@ export default function BackToTop() {
       onClick={handleClick}
       aria-label="חזרה לראש העמוד"
       data-testid="back-to-top"
-      className="fixed end-4 z-[1000] flex items-center justify-center w-12 h-12 rounded-full bg-background text-primary border border-border shadow-lg hover:bg-green-50 transition-colors focus-ring"
+      className="vv-pin fixed end-4 z-[1000] flex items-center justify-center w-12 h-12 rounded-full bg-background text-primary border border-border shadow-lg hover:bg-green-50 transition-colors focus-ring"
       style={{ bottom: isDesktop ? BOTTOM_DESKTOP : BOTTOM_MOBILE }}
     >
       <ArrowUp size={22} weight="bold" aria-hidden="true" />

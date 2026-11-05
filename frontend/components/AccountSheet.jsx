@@ -124,7 +124,7 @@ export default function AccountSheet({ open, onClose, user, logout }) {
         // MEH-868: clear the floating pill AND the safe-area inset (the pill
         // itself rides above safe-area via calc(env(safe-area-inset-bottom)+16px),
         // so a flat 88px overlapped it on notched devices).
-        className="fixed inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+88px)] z-[1002] rounded-[20px] bg-green-900 border border-white/10 p-[22px] shadow-[0_12px_40px_rgba(20,50,40,0.45)]"
+        className="vv-pin fixed inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+88px)] z-[1002] rounded-[20px] bg-green-900 border border-white/10 p-[22px] shadow-[0_12px_40px_rgba(20,50,40,0.45)]"
       >
         {/* Head — avatar · name · state */}
         <div className="flex items-center gap-3 pb-4 border-b border-white/10">

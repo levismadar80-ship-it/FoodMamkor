@@ -67,7 +67,7 @@ export default function CookieBanner() {
   return (
     <div
       ref={bannerRef}
-      className="cookie-banner fixed bottom-[calc(var(--bottom-nav-clearance,calc(env(safe-area-inset-bottom)+72px))+8px)] md:bottom-0 inset-x-0 z-[1100] bg-primary-dark text-green-50 shadow-[0_-2px_12px_rgba(0,0,0,0.15)]"
+      className="cookie-banner vv-pin fixed bottom-[calc(var(--bottom-nav-clearance,calc(env(safe-area-inset-bottom)+72px))+8px)] md:bottom-0 inset-x-0 z-[1100] bg-primary-dark text-green-50 shadow-[0_-2px_12px_rgba(0,0,0,0.15)]"
       role="region"
       data-testid="cookie-banner"
       aria-label={t("aria_label")}
