@@ -4,7 +4,7 @@ import { cloneElement } from "react";
 import { useTranslations } from "next-intl";
 import { CaretLeft, SealCheck } from "@phosphor-icons/react";
 import { Link as LocaleLink } from "@/i18n/navigation";
-import { allBadges, topBadges } from "@/lib/badges";
+import { allBadges, topBadges, badgeExplainerHref } from "@/lib/badges";
 import { CODE_TO_KEY } from "@/components/KashrutBadgeStrip";
 import Popover from "@/components/ui/Popover";
 import { badgeIcon } from "@/lib/chip-icons";
@@ -129,7 +129,7 @@ export default function BadgeRow({ producer, limit, surface = "hero", hideKeys, 
 // (white = 5.08:1 ✓). Neutral chips move green-50 → surface-card with
 // green-700 ink (v4 --bg-card / --green-dark; green-700 is the closest
 // existing token — no third green per ADR-019).
-const COLOR_CLASSES = {
+export const COLOR_CLASSES = {
   primary: "bg-primary text-background",
   accent: "bg-accent text-white",
   secondary: "bg-primary text-background",
@@ -330,10 +330,13 @@ function Badge({ badge, surface = "hero", avoidRef = null }) {
   // copy. `recommended` still points at the /about#editors-pick anchor — that
   // section has no standalone page, so the retarget did NOT apply to it.
   // Card surfaces keep the compact plain-text tooltip (never mount a locale link).
-  const linkOut = badge.aboutHref && surface === "hero";
+  // MEH-2701: every other hero badge links to its group on /about/badges, so
+  // the short tooltip always leads to the full explanation of who stands behind
+  // the claim. An explicit aboutHref (recommended) still wins.
+  const linkOut = surface === "hero";
   const popoverBody = linkOut ? (
     <LocaleLink
-      href={badge.aboutHref}
+      href={badge.aboutHref ?? badgeExplainerHref(badge)}
       className="inline-flex items-start gap-1 font-medium text-primary hover:text-primary-dark"
     >
       <span>{badge.tooltip}</span>

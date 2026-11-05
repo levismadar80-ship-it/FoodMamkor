@@ -312,5 +312,19 @@ describe("BadgeRow", () => {
       const link = container.querySelector('a[href="/about#editors-pick"]');
       expect(link).not.toBeNull();
     });
+
+    // MEH-2701: every other hero badge links to its evidence group on the
+    // /about/badges explainer; the card surface stays plain text.
+    it("self-declared hero badge popover links to /about/badges#self-declared", () => {
+      const { container } = render(<BadgeRow producer={{ grass_fed: true }} />);
+      fireEvent.click(screen.getByText("גראס פד"));
+      expect(container.querySelector('a[href="/about/badges#self-declared"]')).not.toBeNull();
+    });
+
+    it("card surface badge popover has no explainer link", () => {
+      const { container } = render(<BadgeRow producer={{ grass_fed: true }} surface="card" />);
+      fireEvent.click(screen.getByText("גראס פד"));
+      expect(container.querySelector('a[href^="/about/badges"]')).toBeNull();
+    });
   });
 });
