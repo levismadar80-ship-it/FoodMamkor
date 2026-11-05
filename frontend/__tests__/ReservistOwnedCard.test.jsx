@@ -1,10 +1,10 @@
 /**
- * «עסק של מילואימניקים» — ReservistOwnedCard isolation tests.
+ * «עסק של מילואימניקים» — ReservistOwnedCard isolation tests (MEH-2699 shape).
  *
- * Same harness and contract as GrassFedCard.test.jsx: real he.json, the
- * checkbox seeds from producer.reservist_owned, Save stays disabled until the
- * value changes, and the PUT carries ONLY reservist_owned (a stray key would
- * clobber a sibling card's value on the same endpoint).
+ * The claim is a switch that saves on toggle: no Save button, the PUT carries
+ * ONLY reservist_owned (a stray key would clobber a sibling field on the same
+ * endpoint), a failed PUT rolls the switch back, and the badge preview shows
+ * exactly when the switch is on.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
@@ -16,6 +16,7 @@ import ReservistOwnedCard from "@/app/[locale]/producer/dashboard/edit/Reservist
 vi.mock("@/lib/api", () => ({
   default: { get: vi.fn(), put: vi.fn(), post: vi.fn() },
 }));
+vi.mock("@/lib/chip-icons", () => ({ badgeIcon: () => null }));
 
 const R = he.dashboard.producer.reservistOwned;
 const CHROME = he.dashboard.producer.pricing;
@@ -24,14 +25,14 @@ function renderCard(profile = {}) {
   const onSave = vi.fn();
   const utils = render(
     <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
-      <ReservistOwnedCard profile={profile} onSave={onSave} reportDirty={() => {}} />
+      <ReservistOwnedCard profile={profile} onSave={onSave} />
     </NextIntlClientProvider>,
   );
   return { onSave, ...utils };
 }
 
-const box = () => screen.getByRole("checkbox", { name: R.label });
-const saveBtn = () => screen.getByRole("button", { name: CHROME.save_cta });
+const toggle = () => screen.getByRole("switch", { name: R.label });
+const preview = () => screen.queryByTestId("reservist-owned-preview");
 
 describe("ReservistOwnedCard", () => {
   beforeEach(() => {
@@ -39,47 +40,50 @@ describe("ReservistOwnedCard", () => {
     api.put.mockResolvedValue({ data: {} });
   });
 
-  it("renders the approved copy word for word", () => {
+  it("renders the approved copy word for word and no Save button", () => {
     renderCard({});
     expect(R.label).toBe("אחד הבעלים משרת במילואים");
     expect(R.scope_helper).toBe("יופיע כתג בכרטיס ובדף העסק");
     expect(screen.getByText(R.scope_helper)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: CHROME.save_cta })).toBeNull();
   });
 
-  it("seeds the checkbox from producer.reservist_owned === true", () => {
-    renderCard({ reservist_owned: true });
-    expect(box()).toBeChecked();
-  });
-
-  it("seeds unchecked when reservist_owned is false or absent", () => {
-    const { unmount } = renderCard({ reservist_owned: false });
-    expect(box()).not.toBeChecked();
+  it("seeds from producer.reservist_owned, with the badge preview only when on", () => {
+    const { unmount } = renderCard({ reservist_owned: true });
+    expect(toggle()).toHaveAttribute("aria-checked", "true");
+    expect(preview()).toHaveTextContent("עסק של מילואימניקים");
     unmount();
     renderCard({});
-    expect(box()).not.toBeChecked();
+    expect(toggle()).toHaveAttribute("aria-checked", "false");
+    expect(preview()).toBeNull();
   });
 
-  it("save is disabled until the value changes, then sends only reservist_owned", async () => {
+  it("toggling on saves at once and sends only reservist_owned", async () => {
     const { onSave } = renderCard({ reservist_owned: false });
-    expect(saveBtn()).toBeDisabled();
-
-    fireEvent.click(box());
-    expect(saveBtn()).toBeEnabled();
-    fireEvent.click(saveBtn());
+    fireEvent.click(toggle());
 
     await waitFor(() => expect(api.put).toHaveBeenCalledTimes(1));
     const [url, payload] = api.put.mock.calls[0];
     expect(url).toBe("/producers/me");
-    expect(Object.keys(payload)).toEqual(["reservist_owned"]);
     expect(payload).toEqual({ reservist_owned: true });
-    expect(onSave).toHaveBeenCalledWith({ reservist_owned: true });
+    await waitFor(() => expect(onSave).toHaveBeenCalledWith({ reservist_owned: true }));
+    expect(toggle()).toHaveAttribute("aria-checked", "true");
+    expect(await screen.findByText(CHROME.saved)).toBeInTheDocument();
   });
 
-  it("unchecking sends false (the owner can remove the badge any time)", async () => {
+  it("toggling off sends false (the owner can remove the badge any time)", async () => {
     renderCard({ reservist_owned: true });
-    fireEvent.click(box());
-    fireEvent.click(saveBtn());
+    fireEvent.click(toggle());
     await waitFor(() => expect(api.put).toHaveBeenCalledTimes(1));
     expect(api.put.mock.calls[0][1]).toEqual({ reservist_owned: false });
+  });
+
+  it("a failed save rolls the switch back and shows an error", async () => {
+    api.put.mockRejectedValueOnce(new Error("boom"));
+    const { onSave } = renderCard({ reservist_owned: false });
+    fireEvent.click(toggle());
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    expect(toggle()).toHaveAttribute("aria-checked", "false");
+    expect(onSave).not.toHaveBeenCalled();
   });
 });

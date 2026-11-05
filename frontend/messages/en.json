@@ -1546,6 +1546,7 @@
         "tags": {
           "verified": "Verified",
           "grass_fed": "Grass-fed",
+          "reservist_owned": "Reservist-owned business",
           "license_pending": "License pending",
           "license_pending_title": "In a license-required category with no license number — verify before approving.",
           "organizer": "Organizer",
@@ -1698,6 +1699,7 @@
           "lat": "Latitude",
           "lng": "Longitude",
           "grass_fed": "Grass-fed",
+          "reservist_owned": "One of the owners serves in the reserves",
           "verified": "Verified",
           "recommended": "Recommended (editor's pick)",
           "recommended_note": "Editor's reason",
@@ -4636,7 +4638,6 @@
         "scope_helper": "Adds the grass-fed chip to your business on the map page. Shown as your own declaration."
       },
       "reservistOwned": {
-        "heading": "Reservist-owned business",
         "label": "One of the owners serves in the reserves",
         "scope_helper": "Will appear as a badge on your card and business page"
       },
