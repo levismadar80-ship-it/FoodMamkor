@@ -1115,7 +1115,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
           multiple
           onChange={handleImageUpload}
           disabled={isBusy("producer-images")}
-          className="text-sm"
+          className="text-sm w-full max-w-full"
         />
         {isBusy("producer-images") && <p className="text-sm text-muted mt-2">{t("producers.form.uploading")}</p>}
         {form.images?.length > 0 && (
