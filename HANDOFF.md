@@ -4,6 +4,18 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-05 18:30 — ‏#3999 + #4011 מוזגו: «אשמח לארח נקודת מסירה» ברשימת ההמתנה
+
+**‏שורה אחת:** חלק השרת (#3999, squash `ceefbce`) וחלק המסכים (#4011) של אופציית אירוח נקודת מסירה מוזגו ל-staging. ‏MEH-2673 ו-MEH-2674 Done, ‏MEH-2672 (האב) נסגר אוטומטית.
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏ראש Alembic על staging: `e5a9c3d17b28` (שלוש עמודות על `delivery_waitlist`, בלי טבלה חדשה; ‏`EXPECTED_TABLES` נשאר 48).
+- ‏מייל האישור הוא double opt-in: המייל של המארח מגיע לעסק רק אחרי לחיצה. המגבלות: קישור ל-7 ימים, מייל אחד לרשומה ב-24 שעות, 3 מיילים לכתובת ביום. הכול ב-`services/delivery_waitlist.py`.
+- ‏`ProducerAnalyticsProducersMeAnalyticsGetResponse` ב-`api.zod.js` הוא `zod.unknown()`; סכמת השורה של `pickup_hosts` יושבת inline ב-`insights/page.js` (`PickupHostRow`), וזו הבעלות היחידה.
+- ‏QA מקומי שעבד: ‏`alembic upgrade head` על DB נקי, ‏`scripts/seed_demo_business.py` עם `DEMO_OWNER_PASSWORD`, ‏uvicorn על 8000, ‏`next build && next start` (dev מפיל error boundary של Leaflet «Map container is already initialized»), ‏Playwright עם `executablePath` של Chromium המותקן נגד `http://localhost:3000` (לא `127.0.0.1`).
+
+**‏לא עכשיו / מחכה לספיר:** ‏smoke של מייל האישור על staging (MEH-2090) · פנייה לסנדרה (ליד Wave 1, בלי קוד).
+
 ## 2026-11-05 13:55 — ‏#3963 מוזג: פיילוט סלי ההצלה ב-staging (כבוי)
 
 **‏שורה אחת:** ‏#3963 (chunks 1+2+4+5 של MEH-2643) מוזג ל-staging (squash `c61a9dd`) אחרי הקומיט של ספיר `EXPECTED_TABLES=48` (`d807472`, דרך כרום).
