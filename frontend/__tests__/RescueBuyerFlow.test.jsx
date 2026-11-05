@@ -460,8 +460,8 @@ describe("the business-page section — reserve and confirm", () => {
 describe("every error the API actually returns", () => {
   const cases = [
     [422, undefined, "rescue.errors.blocked"],
-    [409, "לא נשארו מספיק שקיות", "rescue.errors.sold_out"],
-    [409, "אפשר לשריין עד שתי שקיות", "rescue.errors.max_two"],
+    [409, "לא נשארו מספיק סלים", "rescue.errors.sold_out"],
+    [409, "אפשר לשריין עד שני סלים", "rescue.errors.max_two"],
     [401, undefined, "rescue.errors.sign_in"],
     [404, undefined, "rescue.errors.gone"],
     [500, undefined, "rescue.errors.generic"],

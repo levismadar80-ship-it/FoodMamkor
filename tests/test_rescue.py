@@ -383,7 +383,7 @@ class TestHandOver:
         assert again.status_code == 409
         # The 409 names the time, so a repeated tap at the counter is answered
         # with "already done at HH:MM" rather than a bare conflict.
-        assert "כבר נמסרה" in again.json()["detail"]
+        assert "כבר נמסר" in again.json()["detail"]
 
     def test_a_stranger_cannot_mark_a_bag_handed(self, client, db, shop, rescue_on):
         _, buyer, order = self._reserved(client, db, shop, email="notowner@example.com")
