@@ -87,6 +87,8 @@ import DietaryScopeCard from "./DietaryScopeCard";
 // MEH-1851 row 23: owner-declared grass_fed (own file, same reason as above —
 // cards.jsx is already >1600 lines).
 import GrassFedCard from "./GrassFedCard";
+// «עסק של מילואימניקים» (MEH-2693): owner-declared reservist_owned (own file, same reason).
+import ReservistOwnedCard from "./ReservistOwnedCard";
 // MEH-1544: weekly order-acceptance window (own file, same reason as above —
 // imported directly rather than via a cards.jsx passthrough wrapper).
 import OrderWindowEditor from "./OrderWindowEditor";
@@ -859,6 +861,22 @@ function EditPageInner() {
           onToggle={() => toggleKey("ownerStory")}
         >
           <OwnerStoryCard
+            profile={profile}
+            onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+            reportDirty={reportDirty}
+          />
+        </EditAccordionCard>
+
+        {/* MEH-2693 «עסק של מילואימניקים» — a claim about the OWNERS, so it
+            sits beside the owner story, not with the catalog claims.
+            Self-declared, badge only (never ranking). */}
+        <EditAccordionCard
+          anchorId="reservist-owned"
+          title={t("reservistOwned.heading")}
+          open={openKey === "reservistOwned"}
+          onToggle={() => toggleKey("reservistOwned")}
+        >
+          <ReservistOwnedCard
             profile={profile}
             onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
             reportDirty={reportDirty}

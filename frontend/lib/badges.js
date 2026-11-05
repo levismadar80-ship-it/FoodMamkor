@@ -298,6 +298,20 @@ export const BADGE_CONFIG = {
     tooltip: "העסק מוסר או שולח לכתובת שלך.",
     color: "muted",
   },
+  // MEH-2693 «עסק של מילואימניקים» — the owner ticks it in the dashboard
+  // (ReservistOwnedCard). `business` scope (a claim about the owners), and
+  // `self-declared`: no document is asked for or stored, which the tooltip
+  // says in so many words (the MEH-1259 pattern — muted pill, no tick).
+  // Copy approved word-for-word by Sapir 05/11. No filter axis yet (none
+  // until ≥5 businesses carry it), so there is no FILTER_AXES twin to pair.
+  reservist_owned: {
+    key: "reservist_owned",
+    scope: "business",
+    evidence: "self-declared",
+    label: "עסק של מילואימניקים",
+    tooltip: "לפי הצהרת בית העסק, אחד הבעלים משרת במילואים.",
+    color: "muted",
+  },
   // MEH-1846: the products badge is REMOVED. It lit on products_count >= 3,
   // which is true for effectively every approved business — manual approval
   // means a business with no catalog is not live — so it differentiated
@@ -339,6 +353,9 @@ export const BADGE_PRIORITY = [
   "kosher",
   "delivery",
   // MEH-1846: products removed — see the BADGE_CONFIG note above.
+  // MEH-2693: last on purpose — an identity claim, not a product fact; it
+  // never displaces a badge a card already shows (ADR-027: no ranking either).
+  "reservist_owned",
 ];
 
 const NEW_DAYS = 30;
@@ -366,6 +383,8 @@ function earnsBadge(producer, key) {
     // (owner/admin managed) but drives NO public badge.
     case "grass_fed":
       return !!producer.grass_fed;
+    case "reservist_owned":
+      return producer.reservist_owned === true;
     case "gluten_free":
       // MEH-293/MEH-479: aggregated from products.is_gluten_free.
       return !!producer.has_gluten_free_products;

@@ -194,6 +194,7 @@ producers (
   referral_source varchar(40) nullable, referral_source_other varchar(120) nullable,
   price_range,  -- MEH-1855 chunk 2 dropped the legacy alias (9849fab1637a)
   grass_fed bool, organic_certified bool, kosher,
+  reservist_owned bool NOT NULL default false,  -- owner-declared «עסק של מילואימניקים»; badge only, never ranking (f1c7a2b9d4e6)
   has_delivery bool, pickup_points bool,
   -- MEH-213 location mode + MEH-1255 nationwide exclusion list
   has_physical_location bool, offers_delivery bool,
