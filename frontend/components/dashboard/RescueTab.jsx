@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import api from "@/lib/api";
-import { israelTime, shekels } from "@/lib/rescue";
+import { israelTime, leftoverGroupUrl, shekels } from "@/lib/rescue";
 
 /**
  * Module:   RescueTab
@@ -138,6 +138,11 @@ export default function RescueTab() {
   }
 
   const now = Date.now();
+  // MEH-2702: the group for the town of the point bags are published from
+  // (the same point publish() picks), national fallback otherwise.
+  const leftoverHref = leftoverGroupUrl(
+    locations.find((l) => l.location_precision === "exact")?.city,
+  );
 
   return (
     <div data-testid="rescue-tab" className="space-y-6">
@@ -322,6 +327,19 @@ export default function RescueTab() {
           {t("items_save")}
         </button>
       </section>
+
+      <p className="border border-border rounded-md px-4 py-3 font-body-sm text-sm text-fg-muted" data-testid="rescue-leftover-hint">
+        {t("leftover_hint")}{" "}
+        <a
+          href={leftoverHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          data-testid="rescue-leftover-link"
+          className="text-primary underline underline-offset-2"
+        >
+          {t("leftover_link")}
+        </a>
+      </p>
     </div>
   );
 }

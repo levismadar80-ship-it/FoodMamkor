@@ -5789,7 +5789,9 @@
       "items_title": "Usually in the bag",
       "items_help": "Comma separated. This is what buyers see before they reserve.",
       "items_save": "Save",
-      "items_saved": "Saved."
+      "items_saved": "Saved.",
+      "leftover_hint": "Bags left over? You can give them away free in a food-rescue group.",
+      "leftover_link": "Open the group"
     },
     "counter_card": {
       "title": "Mehamakor rescue bag",

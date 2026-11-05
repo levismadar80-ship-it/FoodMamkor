@@ -308,3 +308,32 @@ describe("the empty day", () => {
     expect(screen.getByTestId("rescue-counter-reserved").textContent).toBe("0");
   });
 });
+
+// MEH-2702 — where uncollected bags can go. The 05/11 scan found no local
+// food-rescue group in any Wave 1 town, so today every town gets the national
+// group; a town added to the map must get its own link instead.
+describe("the leftover-bags line", () => {
+  it("links the national group when the pickup town has no local group", async () => {
+    locs = [{ id: "loc1", location_precision: "exact", is_primary: true, city: "זכרון יעקב" }];
+    render(<RescueTab />);
+    await pointsLoaded();
+    expect(screen.getByTestId("rescue-leftover-hint").textContent).toContain(
+      lookup("rescue.dashboard.leftover_hint"),
+    );
+    const link = screen.getByTestId("rescue-leftover-link");
+    expect(link.getAttribute("href")).toBe("https://www.facebook.com/groups/freefood/");
+    expect(link.getAttribute("target")).toBe("_blank");
+    expect(link.getAttribute("rel")).toContain("noopener");
+  });
+});
+
+describe("leftoverGroupUrl", () => {
+  it("returns a town's own group when the map has one, the national group otherwise", async () => {
+    const { leftoverGroupUrl, RESCUE_LEFTOVER_GROUP_NATIONAL } = await import("@/lib/rescue");
+    const groups = { "חדרה": "https://example.org/hadera" };
+    expect(leftoverGroupUrl("חדרה", groups)).toBe("https://example.org/hadera");
+    expect(leftoverGroupUrl(" חדרה ", groups)).toBe("https://example.org/hadera");
+    expect(leftoverGroupUrl("בנימינה", groups)).toBe(RESCUE_LEFTOVER_GROUP_NATIONAL);
+    expect(leftoverGroupUrl(undefined, groups)).toBe(RESCUE_LEFTOVER_GROUP_NATIONAL);
+  });
+});
