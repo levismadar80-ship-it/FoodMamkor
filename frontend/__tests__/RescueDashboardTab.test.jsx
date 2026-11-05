@@ -200,11 +200,28 @@ describe("the list never shows who the buyer is", () => {
 });
 
 describe("publishing", () => {
-  it("needs a pickup point and says so when there is none", async () => {
+  it("with no pickup point, shows what is missing and links to the address editor instead of the form", async () => {
     locs = [];
     mockOrders([]);
     render(<RescueTab />);
-    fireEvent.click(await screen.findByTestId("rescue-publish-today"));
+    const box = await screen.findByTestId("rescue-needs-address");
+    expect(box.textContent).toContain(lookup("rescue.dashboard.needs_address"));
+    expect(box.textContent).toContain(lookup("rescue.dashboard.needs_address_privacy"));
+    const link = screen.getByTestId("rescue-needs-address-link");
+    expect(link.textContent).toBe(lookup("rescue.dashboard.needs_address_cta"));
+    expect(link.getAttribute("href")).toContain("/producer/dashboard/edit#locations");
+    expect(screen.queryByTestId("rescue-publish-today")).toBeNull();
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it("keeps the form (and its server-side guard) when the pickup points could not be loaded", async () => {
+    get.mockImplementation((url) =>
+      url === "/producers/me/locations" ? Promise.reject(new Error("down")) : Promise.resolve({ data: [] }),
+    );
+    render(<RescueTab />);
+    await pointsLoaded();
+    expect(screen.queryByTestId("rescue-needs-address")).toBeNull();
+    fireEvent.click(screen.getByTestId("rescue-publish-today"));
     expect(await screen.findByTestId("rescue-tab-notice")).toHaveProperty(
       "textContent",
       lookup("rescue.dashboard.no_location"),
@@ -233,16 +250,12 @@ describe("publishing", () => {
     expect(post.mock.calls[0][1].producer_location_id).toBe("exact2");
   });
 
-  it("with only an approximate point, says so instead of sending a request the server refuses", async () => {
+  it("with only an approximate point, asks for an exact address instead of offering a publish the server refuses", async () => {
     locs = [{ id: "approx", location_precision: "approximate", is_primary: true }];
     mockOrders([]);
     render(<RescueTab />);
-    await pointsLoaded();
-    fireEvent.click(screen.getByTestId("rescue-publish-today"));
-    expect(await screen.findByTestId("rescue-tab-notice")).toHaveProperty(
-      "textContent",
-      lookup("rescue.dashboard.no_location"),
-    );
+    expect(await screen.findByTestId("rescue-needs-address")).toBeTruthy();
+    expect(screen.queryByTestId("rescue-publish-today")).toBeNull();
     expect(post).not.toHaveBeenCalled();
   });
 

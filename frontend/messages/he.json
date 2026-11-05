@@ -5797,7 +5797,10 @@
       "items_save": "לשמור",
       "items_saved": "נשמר.",
       "leftover_hint": "נשארו סלים? אפשר למסור אותם בחינם בקבוצת הצלת מזון.",
-      "leftover_link": "לקבוצה"
+      "leftover_link": "לקבוצה",
+      "needs_address": "כדי לפרסם סלים צריך כתובת איסוף מדויקת.",
+      "needs_address_privacy": "את הכתובת המלאה רואים רק מי ששריינו סל.",
+      "needs_address_cta": "להוספת כתובת"
     },
     "counter_card": {
       "title": "סל הפתעה של מהמקור",

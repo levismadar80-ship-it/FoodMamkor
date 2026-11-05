@@ -5801,7 +5801,10 @@
       "items_save": "Save",
       "items_saved": "Saved.",
       "leftover_hint": "Bags left over? You can give them away free in a food-rescue group.",
-      "leftover_link": "Open the group"
+      "leftover_link": "Open the group",
+      "needs_address": "To publish bags you need an exact pickup address.",
+      "needs_address_privacy": "Only people who reserved a bag see the full address.",
+      "needs_address_cta": "Add an address"
     },
     "counter_card": {
       "title": "Mehamakor rescue bag",

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
+import { Link as LocaleLink } from "@/i18n/navigation";
 
 import api from "@/lib/api";
 import { israelTime, leftoverGroupUrl, shekels } from "@/lib/rescue";
@@ -35,6 +36,9 @@ export default function RescueTab() {
   // prop that the only page rendering it never passed, so every publish
   // answered «צריך נקודת איסוף». The API lists the primary first.
   const [locations, setLocations] = useState([]);
+  // Known only after the list answers: the "add an address" box must not
+  // flash while it loads, nor replace the form when the request failed.
+  const [locationsLoaded, setLocationsLoaded] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -49,7 +53,10 @@ export default function RescueTab() {
     load();
     api
       .get("/producers/me/locations")
-      .then((r) => setLocations(Array.isArray(r.data) ? r.data : []))
+      .then((r) => {
+        setLocations(Array.isArray(r.data) ? r.data : []);
+        setLocationsLoaded(true);
+      })
       .catch(() => setLocations([]));
     api
       .get("/producers/me/rescue/typical-items")
@@ -237,7 +244,7 @@ export default function RescueTab() {
                     </button>
                   </span>
                 ) : (
-                  <span className="font-body-sm text-sm text-fg-muted">{t(`status.${o.status}`)}</span>
+                    <span className="font-body-sm text-sm text-fg-muted">{t(`status.${o.status}`)}</span>
                 )}
               </li>
             );
@@ -245,6 +252,23 @@ export default function RescueTab() {
         </ul>
       </section>
 
+      {locationsLoaded && !exactLocation ? (
+        // MEH-2702: say what is missing up front, instead of an error after «לפרסם».
+        <section
+          className="border border-border rounded-md px-4 py-4 space-y-3"
+          data-testid="rescue-needs-address"
+        >
+          <p className="font-body-sm text-sm text-text">{t("needs_address")}</p>
+          <p className="font-body-sm text-sm text-fg-muted">{t("needs_address_privacy")}</p>
+          <LocaleLink
+            href="/producer/dashboard/edit#locations"
+            data-testid="rescue-needs-address-link"
+            className="block w-full text-center bg-primary text-white py-2 rounded-md font-medium"
+          >
+            {t("needs_address_cta")}
+          </LocaleLink>
+        </section>
+      ) : (
       <section className="border border-border rounded-md px-4 py-4 space-y-3">
         <h3 className="font-headline-md text-base font-black text-text">{t("publish_title")}</h3>
         <div className="grid grid-cols-2 gap-3">
@@ -309,6 +333,7 @@ export default function RescueTab() {
           {t("publish_tomorrow", { n: form.qty_total })}
         </button>
       </section>
+      )}
 
       <section className="border border-border rounded-md px-4 py-4 space-y-2">
         <h3 className="font-headline-md text-base font-black text-text">{t("items_title")}</h3>
