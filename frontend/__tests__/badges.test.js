@@ -30,6 +30,8 @@ describe("BADGE_PRIORITY", () => {
       "no_added_sugar",
       "kosher",
       "delivery",
+      // MEH-2693: last — never displaces a badge a card already shows.
+      "reservist_owned",
     ]);
   });
 
@@ -47,8 +49,9 @@ describe("BADGE_PRIORITY", () => {
     // either never rendered or rendered undefined. This pin caught exactly that
     // during MEH-1934, when BADGE_PRIORITY was left un-updated.
     // MEH-1508 chunk 3ב-2: 11 → 13 (vegan_all + vegetarian_all), both together.
-    expect(BADGE_PRIORITY).toHaveLength(13);
-    expect(Object.keys(BADGE_CONFIG)).toHaveLength(13);
+    // MEH-2693: 13 → 14 (reservist_owned), both together.
+    expect(BADGE_PRIORITY).toHaveLength(14);
+    expect(Object.keys(BADGE_CONFIG)).toHaveLength(14);
     // MEH-2047: absence in BOTH structures, the same pair-check the products
     // removal above uses — a count alone would pass if something else were
     // added in the same commit that removed this.
@@ -540,5 +543,34 @@ describe("badgeCount", () => {
         has_lactose_free_products: true,
       }),
     ).toBe(3);
+  });
+});
+
+// MEH-2693 «עסק של מילואימניקים» — owner-declared, LAST in priority so it never
+// displaces a badge already on a card (it reaches a card's 2 slots only when
+// the business earns at most one other badge).
+describe("reservist_owned badge (MEH-2693)", () => {
+  it("lights only on reservist_owned === true", () => {
+    expect(allBadges({ reservist_owned: true }).map((b) => b.key)).toEqual(["reservist_owned"]);
+    expect(allBadges({ reservist_owned: false }).map((b) => b.key)).toEqual([]);
+    expect(allBadges({}).map((b) => b.key)).toEqual([]);
+  });
+
+  it("is last in BADGE_PRIORITY", () => {
+    expect(BADGE_PRIORITY[BADGE_PRIORITY.length - 1]).toBe("reservist_owned");
+  });
+
+  it("falls into +N behind two higher badges on a card", () => {
+    const p = { grass_fed: true, has_gluten_free_products: true, reservist_owned: true };
+    expect(topBadges(p, 2).map((b) => b.key)).toEqual(["grass_fed", "gluten_free"]);
+    expect(allBadges(p).map((b) => b.key)).toContain("reservist_owned");
+  });
+
+  it("carries the approved copy and self-declared metadata", () => {
+    const c = BADGE_CONFIG.reservist_owned;
+    expect(c.label).toBe("עסק של מילואימניקים");
+    expect(c.tooltip).toBe("לפי הצהרת בית העסק, אחד הבעלים משרת במילואים.");
+    expect(c.scope).toBe("business");
+    expect(c.evidence).toBe("self-declared");
   });
 });

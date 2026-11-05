@@ -29,6 +29,7 @@ import {
   Carrot,
   GrainsSlash,
   Barn,
+  Medal,
   DropSlash,
   Cube,
   Clock,
@@ -64,6 +65,8 @@ const CHIP_ICON_COMPONENTS = {
   vegetarian_all: Carrot,
   gluten_free: GrainsSlash,
   grass_fed: Barn,
+  // MEH-2693: a plain medal — not MedalMilitary, not a tick (self-declared).
+  reservist_owned: Medal,
   lactose_free: DropSlash,
   no_added_sugar: Cube,
   open_for_orders_now: Clock,  // MEH-2131
