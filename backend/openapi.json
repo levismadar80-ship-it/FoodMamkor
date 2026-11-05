@@ -1133,6 +1133,21 @@
         "title": "DeliveryAreaOut",
         "type": "object"
       },
+      "DeliveryWaitlistHostConfirmIn": {
+        "description": "MEH-2673: the signed token from the «אשמח לארח» confirmation link.\nIts own model so a change to the unsubscribe input never changes this\nendpoint.",
+        "properties": {
+          "token": {
+            "minLength": 1,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "title": "DeliveryWaitlistHostConfirmIn",
+        "type": "object"
+      },
       "DeliveryWaitlistIn": {
         "description": "MEH-2618: body of POST /producers/{id}/delivery-waitlist.\n\nUnlike WhatsAppClickIn above, `city` is REQUIRED and RAISES: this is a\nform the visitor fills on purpose, not a beacon — a junk city here would\nmake a promise («נודיע לך כשיגיעו ל???») that can never be kept. Same\nletter floor as the siblings (MEH-555), same 60-char cap as\nproducer_whatsapp_clicks.city so the dashboard's demand row can one day\ncount both sources on one key.",
         "properties": {
@@ -1146,6 +1161,11 @@
             "format": "email",
             "title": "Email",
             "type": "string"
+          },
+          "wants_to_host": {
+            "default": false,
+            "title": "Wants To Host",
+            "type": "boolean"
           }
         },
         "required": [
@@ -1156,8 +1176,25 @@
         "type": "object"
       },
       "DeliveryWaitlistOut": {
-        "description": "MEH-2618: `added` (201) on a new row, `exists` (200) when the same\nemail already waits for the same business + city — the form shows the\nsame calm confirmation for both.",
+        "description": "MEH-2618: `added` (201) on a new row, `exists` (200) when the same\nemail already waits for the same business + city — the form shows the\nsame calm confirmation for both.\n\nMEH-2673 `host_confirm` — only when the request ticked «אשמח לארח»:\n`sent` = a confirmation mail went out now · `already_sent` = THIS\nbusiness+city's link already went to the address within the last 24 h,\nnothing new was sent (the form says «check your inbox» instead of a false\n«we sent») · `limit_reached` = the address hit its daily cap of\nconfirmation mails across businesses/cities, nothing was sent for this\none (the form says «try again tomorrow», never «check your inbox») ·\n`confirmed` = this row is already a host. None when the box was not\nticked.",
         "properties": {
+          "host_confirm": {
+            "anyOf": [
+              {
+                "enum": [
+                  "sent",
+                  "already_sent",
+                  "limit_reached",
+                  "confirmed"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Host Confirm"
+          },
           "status": {
             "enum": [
               "added",
@@ -19065,6 +19102,46 @@
         ]
       }
     },
+    "/delivery-waitlist/host-confirm": {
+      "post": {
+        "description": "MEH-2673: «מאשרים, אפשר להעביר» — the signed link from the host\nconfirmation email. Turns the entry's wants_to_host on, so the business\nsees this email in its pickup_hosts list. Idempotent. 400 on a token\nthat does not verify or an entry that no longer exists (unsubscribed).\n\n410 on an expired token — and, because the token still names the entry,\na FRESH link is mailed to the same address right here (under the usual\ncooldown/cap), so the page is never a dead end (the double-opt-in norm:\nan expired link offers a new one). The body carries `resent` so the page\ncan say whether to look in the inbox. An expired link never confirms.",
+        "operationId": "confirm_delivery_waitlist_host_delivery_waitlist_host_confirm_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeliveryWaitlistHostConfirmIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Confirm Delivery Waitlist Host",
+        "tags": [
+          "producers"
+        ]
+      }
+    },
     "/delivery-waitlist/unsubscribe": {
       "post": {
         "description": "Remove one delivery-waitlist entry via the signed token from its email.\n\nIdempotent: an already-removed entry is still 200. 400 on a token that\ndoes not verify.",
@@ -21346,7 +21423,7 @@
     },
     "/producers/me/analytics": {
       "get": {
-        "description": "Rich analytics for the producer dashboard.\n\nReturns:\n  - profile_views / search_appearances / whatsapp_clicks as {last_7d, last_30d, total}\n  - follower_count + new_followers_this_week\n  - average_rating + total_reviews (from the producers.avg_rating aggregate)\n  - home_products_count (active only, scoped to the owning user)\n  - views_by_day: 30-entry zero-filled daily series for the line chart\n  - top_cities: top 5 cities the views come from (NULL excluded)",
+        "description": "Rich analytics for the producer dashboard.\n\nReturns:\n  - profile_views / search_appearances / whatsapp_clicks as {last_7d, last_30d, total}\n  - follower_count + new_followers_this_week\n  - average_rating + total_reviews (from the producers.avg_rating aggregate)\n  - home_products_count (active only, scoped to the owning user)\n  - views_by_day: 30-entry zero-filled daily series for the line chart\n  - top_cities: top 5 cities the views come from (NULL excluded)\n  - pickup_hosts: [{email, city}] waitlist visitors who offered to host a\n    pickup point for THIS business (MEH-2673), newest first, max 50",
         "operationId": "producer_analytics_producers_me_analytics_get",
         "responses": {
           "200": {
@@ -22674,7 +22751,7 @@
     },
     "/producers/{producer_id}/delivery-waitlist": {
       "post": {
-        "description": "«תודיעו לי כשתגיעו ל{עיר}» — join a business's per-city delivery waitlist.\n\nNo account needed: email + city. Returns 201 `added`, or 200 `exists`\nwhen this email already waits for this business and city. 404 for an\nunknown or not-yet-live business. When the business later adds the\ncity to its delivery areas, one email goes out (see\nservices/delivery_waitlist). Rate-limited 10/minute per IP.",
+        "description": "«תודיעו לי כשתגיעו ל{עיר}» — join a business's per-city delivery waitlist.\n\nNo account needed: email + city. Returns 201 `added`, or 200 `exists`\nwhen this email already waits for this business and city. Known and\naccepted: `exists` and `host_confirm` tell an anonymous caller whether an\naddress is on this list / already a host — the same disclosure the\nwaitlist made since MEH-2618, kept so the form can be honest about\nwhether a mail went out (double-opt-in UX norm). 404 for an\nunknown or not-yet-live business. When the business later adds the\ncity to its delivery areas, one email goes out (see\nservices/delivery_waitlist). Rate-limited 10/minute per IP.",
         "operationId": "join_delivery_waitlist_producers__producer_id__delivery_waitlist_post",
         "parameters": [
           {

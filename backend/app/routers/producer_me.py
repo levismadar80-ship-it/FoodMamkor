@@ -25,6 +25,7 @@ from app.utils.clock import ISRAEL_TZ, israel_today, utc_now
 from app.models import (
     ContactClick,
     DeliveryArea,
+    DeliveryWaitlistEntry,
     Favorite,
     HomeProduct,
     Producer,
@@ -1269,6 +1270,8 @@ def producer_analytics(
       - home_products_count (active only, scoped to the owning user)
       - views_by_day: 30-entry zero-filled daily series for the line chart
       - top_cities: top 5 cities the views come from (NULL excluded)
+      - pickup_hosts: [{email, city}] waitlist visitors who offered to host a
+        pickup point for THIS business (MEH-2673), newest first, max 50
     """
     producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
     if not producer:
@@ -1467,6 +1470,28 @@ def producer_analytics(
         {"city": row.city, "count": int(row.count)} for row in coverage_rows
     ]
 
+    # MEH-2673 ── pickup_hosts: waitlist visitors who ticked «אשמח לארח נקודת
+    # מסירה ב{עיר}». Ticking is consent for THIS business to see the email —
+    # the form says so under the box — so the filter is this producer's rows
+    # only (`pid` is the caller's own business, require_producer above), and
+    # a plain waitlist signup (wants_to_host False) never appears. Newest
+    # CONFIRMATION first (not signup — a late click on an old signup is still
+    # news); capped so a popular business gets a readable card, not a dump.
+    host_rows = (
+        db.query(DeliveryWaitlistEntry.email, DeliveryWaitlistEntry.city)
+        .filter(
+            DeliveryWaitlistEntry.producer_id == pid,
+            DeliveryWaitlistEntry.wants_to_host.is_(True),
+        )
+        .order_by(
+            DeliveryWaitlistEntry.host_confirmed_at.desc().nulls_last(),
+            DeliveryWaitlistEntry.created_at.desc(),
+        )
+        .limit(50)
+        .all()
+    )
+    pickup_hosts = [{"email": row.email, "city": row.city} for row in host_rows]
+
     # MEH-57 ── conversion_rate: contact actions / profile views × 100 (30d).
     #
     # MEH-2157: the numerator is EVERY logged contact action — the WhatsApp CTA
@@ -1545,6 +1570,7 @@ def producer_analytics(
         "views_by_day": views_by_day,
         "top_cities": top_cities,
         "coverage_requests": coverage_requests,
+        "pickup_hosts": pickup_hosts,
         # MEH-2529: `rank_in_city` (a per-request city ranking query) and
         # `profile_strength` (a second completeness score beside the
         # dashboard's own, MEH-1002) were computed here and read by no screen.
