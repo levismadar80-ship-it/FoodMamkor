@@ -467,6 +467,40 @@ export function topBadges(producer, limit = 2) {
   return allBadges(producer).slice(0, Math.max(0, limit));
 }
 
+/**
+ * MEH-2701: the /about/badges explainer groups every badge by WHO established
+ * it (the `evidence` field of the Label Scope Contract). The page is generated
+ * from BADGE_CONFIG through this function, so a new badge lands on the page
+ * with no second edit. Order = strongest evidence first.
+ */
+export const BADGE_EVIDENCE_ORDER = [
+  "admin-verified",
+  "editorial",
+  "self-declared",
+  "system",
+];
+
+/** Path of the explainer section for one badge (its evidence group). */
+export function badgeExplainerHref(badge) {
+  return `/about/badges#${badge.evidence}`;
+}
+
+/**
+ * [{ evidence, badges: [config, …] }, …] in BADGE_EVIDENCE_ORDER, each group
+ * in BADGE_PRIORITY order. Empty groups are dropped.
+ */
+export function badgesByEvidence() {
+  return BADGE_EVIDENCE_ORDER.map((evidence) => ({
+    evidence,
+    badges: Object.values(BADGE_CONFIG)
+      .filter((badge) => badge.evidence === evidence)
+      .sort(
+        (left, right) =>
+          BADGE_PRIORITY.indexOf(left.key) - BADGE_PRIORITY.indexOf(right.key),
+      ),
+  })).filter((group) => group.badges.length > 0);
+}
+
 /** Total count — handy for "..." overflow indicators. */
 export function badgeCount(producer) {
   return allBadges(producer).length;
