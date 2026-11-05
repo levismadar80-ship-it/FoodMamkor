@@ -15,10 +15,12 @@ import { badgesByEvidence } from "@/lib/badges";
 import { badgeIcon } from "@/lib/chip-icons";
 import { COLOR_CLASSES } from "@/components/BadgeRow";
 
-// Optional link under a group's intro: [translation key, href].
+// Target of the <link> tag inside a group's intro, when it has one. The link
+// text lives inside the sentence (t.rich), so no locale is left with a
+// dangling lead-in.
 const GROUP_LINKS = {
-  "admin-verified": ["link_admin_verified", "/about/process"],
-  "self-declared": ["link_self_declared", "/contact"],
+  "admin-verified": "/about/process",
+  "self-declared": "/contact",
 };
 
 export default function BadgesExplainer() {
@@ -36,7 +38,7 @@ export default function BadgesExplainer() {
         </header>
 
         {groups.map(({ evidence, badges }) => {
-          const link = GROUP_LINKS[evidence];
+          const href = GROUP_LINKS[evidence];
           return (
             <section
               key={evidence}
@@ -48,15 +50,13 @@ export default function BadgesExplainer() {
                 {t(`groups.${evidence}.heading`)}
               </h2>
               <p className="mb-4 text-[16px] sm:text-[17px] leading-[1.8] text-text/90">
-                {t(`groups.${evidence}.intro`)}
-                {link && (
-                  <>
-                    {" "}
-                    <Link href={link[1]} className="underline text-primary hover:opacity-90 focus-ring rounded-sm">
-                      {t(link[0])}
+                {t.rich(`groups.${evidence}.intro`, {
+                  link: (chunks) => (
+                    <Link href={href} className="underline text-primary hover:opacity-90 focus-ring rounded-sm">
+                      {chunks}
                     </Link>
-                  </>
-                )}
+                  ),
+                })}
               </p>
               <ul className="grid gap-3">
                 {badges.map((badge) => {

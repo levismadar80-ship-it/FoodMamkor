@@ -5474,12 +5474,10 @@
     "meta_description": "What each badge on the site means, and who stands behind it.",
     "h1": "What the badges mean",
     "intro": "Some businesses show badges next to their name. Here is what each one means and who stands behind it. Badges don't affect the order businesses appear in, and they can't be bought.",
-    "link_admin_verified": "How we check",
-    "link_self_declared": "write to us",
     "groups": {
       "admin-verified": {
         "heading": "Checked by us",
-        "intro": "The business showed us a document and we checked it by hand."
+        "intro": "The business showed us a document and we checked it by hand. <link>How we check</link>"
       },
       "editorial": {
         "heading": "Editor's pick",
@@ -5487,11 +5485,11 @@
       },
       "self-declared": {
         "heading": "Declared by the business",
-        "intro": "The business marked this itself. We don't verify it against a document. If something is wrong,"
+        "intro": "The business marked this itself, and we don't verify it against a document. If something is wrong, <link>write to us</link>."
       },
       "system": {
         "heading": "Automatic",
-        "intro": "The badge appears on its own, based on activity on the site."
+        "intro": "The badge appears and disappears on its own, based on activity on the site."
       }
     }
   },

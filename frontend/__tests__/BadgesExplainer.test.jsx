@@ -68,6 +68,15 @@ describe("BadgesExplainer (MEH-2701)", () => {
     }
   });
 
+  it("renders the in-sentence links with their targets", () => {
+    renderPage();
+    const verified = screen.getByTestId("badges-group-admin-verified");
+    expect(within(verified).getByRole("link").getAttribute("href")).toBe("/about/process");
+    const declared = screen.getByTestId("badges-group-self-declared");
+    expect(within(declared).getByRole("link").getAttribute("href")).toBe("/contact");
+    expect(declared.textContent).not.toContain("<link>");
+  });
+
   it("has a heading and intro for every group in he and en", async () => {
     const en = (await import("@/messages/en.json")).default;
     for (const ev of BADGE_EVIDENCE_ORDER) {
