@@ -208,7 +208,9 @@ export const FILTER_AXES = {
   // their scope IN THE TERM — «מתאים לטבעונים» / «מתאים לצמחונים» — because
   // the 100% pair below now sits beside them, and a bare «טבעוני» next to
   // «100% טבעוני» would leave the reader to infer that the unqualified word
-  // means "partial". The card's research (HappyCow / easy / NN/g / Baymard)
+  // means "partial". MEH-2677 then gave the bare word to the whole-business
+  // axis («טבעוני» / «צמחוני»), the Deliveroo / Uber Eats pattern — which
+  // only works because the partial axes keep «מתאים ל…». The card's research (HappyCow / easy / NN/g / Baymard)
   // rejected a tooltip or a second subtext for this: scope lives in the label.
   // Subtexts are unchanged (MEH-1507 lock).
   vegan: {

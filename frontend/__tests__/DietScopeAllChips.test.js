@@ -3,14 +3,15 @@
  *
  * Two halves the card rules inseparable (§5 "Chunk 3"):
  *
- *  (א) «100% טבעוני» / «100% צמחוני» — a filter chip on home, /producers and
+ *  (א) «טבעוני» / «צמחוני» — a filter chip on home, /producers and
  *      /map wired to the backend's standalone `?vegan_all` / `?vegetarian_all`
  *      (PR #3448, producer_listing._SCOPE_ALL_FILTERS), and a badge on the card
  *      and the business page. scope `business`, evidence `self-declared`,
  *      subtext «לפי הצהרת בית העסק», no checkmark (§6.4 — the MEH-1259
  *      pattern, never MEH-1087's). Data-gated at threshold 1.
  *  (ב) the rename of the exposed chips (§6.6) — «טבעוני» → «מתאים לטבעונים»,
- *      «צמחוני» → «מתאים לצמחונים». Without it «טבעוני» and «100% טבעוני» sit
+ *      «צמחוני» → «מתאים לצמחונים». Without it the partial and the whole-business
+ *      chip (then «100% טבעוני», since MEH-2677 the bare «טבעוני») sit
  *      side by side and the reader has to infer that the bare term means
  *      "partial".
  *
@@ -192,7 +193,7 @@ describe("§6.4 — the 100% badges", () => {
     expect(allBadges({ has_vegan_products: true }).map((b) => b.key)).toEqual(["vegan"]);
   });
 
-  it("a business 100% vegan AND 100% vegetarian wears only «100% טבעוני» (vegan ⊆ vegetarian)", () => {
+  it("a business 100% vegan AND 100% vegetarian wears only «טבעוני» (vegan ⊆ vegetarian)", () => {
     const keys = allBadges({ vegan_scope: "all", vegetarian_scope: "all" }).map((b) => b.key);
     expect(keys).toContain("vegan_all");
     expect(keys).not.toContain("vegetarian_all");

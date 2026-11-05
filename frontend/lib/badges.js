@@ -377,7 +377,7 @@ function earnsBadge(producer, key) {
       return producer.vegan_scope === "all";
     case "vegetarian_all":
       // MEH-1508 chunk 3ב-2 (decision 03/11): vegan ⊆ vegetarian, so a
-      // business that declared BOTH wears only «100% טבעוני» — two 100% badges
+      // business that declared BOTH wears only «טבעוני» — two 100% badges
       // would spend both card slots on one fact. Same supersession shape as the
       // partial twins below.
       if (producer.vegan_scope === "all") return false;
@@ -385,7 +385,7 @@ function earnsBadge(producer, key) {
     case "vegetarian":
       // MEH-1438: aggregated has_vegetarian_products (is_vegetarian OR is_vegan).
       // MEH-1508 chunk 3ב-2 — specific supersedes generic (the MEH-1841 shape
-      // the delivery case below uses): a business that declared «100% צמחוני»
+      // the delivery case below uses): a business that declared «צמחוני»
       // does not also wear «מתאים לצמחונים», which says strictly less about
       // the same fact and would spend the card's second slot on a repeat.
       if (producer.vegetarian_scope === "all") return false;

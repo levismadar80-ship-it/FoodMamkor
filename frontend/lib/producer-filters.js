@@ -88,7 +88,7 @@ export const DIET_CHIP_MIN = 5;
 // DIET_CHIP_MIN.
 export const GATED_DIET_KEYS = ["no_added_sugar", "on_site", "vegan_all", "vegetarian_all"];
 
-// MEH-1508 chunk 3ב-2 (card 06/09): «100% טבעוני» / «100% צמחוני» show as soon
+// MEH-1508 chunk 3ב-2 (card 06/09): «טבעוני» / «צמחוני» show as soon
 // as ONE business qualifies, and stay absent at zero. Lower than DIET_CHIP_MIN
 // on purpose: these answer a yes/no question about a business ("does anyone
 // here sell only vegan?"), so a single honest answer is a useful result — the

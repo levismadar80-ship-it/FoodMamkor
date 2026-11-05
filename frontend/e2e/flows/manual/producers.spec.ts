@@ -242,7 +242,7 @@ const P_VACATION = producer(4, "שמן זית של סבתא", {
   order_window: { [FIXED_DAY_KEY]: [{ open: "00:00", close: "23:59" }] },
 });
 // MEH-1508 chunk 3ב-2: one filler declares BOTH 100% scopes, which un-gates
-// both pills (threshold 1). Its card wears only «100% טבעוני» (badges.js
+// both pills (threshold 1). Its card wears only «טבעוני» (badges.js
 // supersession) — one badge, no «+N», so the overflow rows below are untouched.
 const FILLERS = [5, 6, 7, 8].map((n) =>
   producer(n, `עסק לדוגמה ${n}`, n === 5 ? { vegan_scope: "all", vegetarian_scope: "all" } : {}),

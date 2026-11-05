@@ -227,7 +227,7 @@ export const ProducerListSchema = z.object({
   has_lactose_free_products: z.boolean().nullable().optional(),  // → lactose_free
   // MEH-1508 chunk 3ב-2: the owner's whole-business declaration (unknown |
   // some | all), served by ProducerListOut since chunk 2. Undeclared, z.object
-  // strips it on the two parsed feeds and the «100% טבעוני/צמחוני» badge plus
+  // strips it on the two parsed feeds and the «טבעוני/צמחוני» badge plus
   // the chip data gate never see a value. `z.string()`, not an enum — a new
   // backend value must cost a badge, never a producer (all-or-nothing parse).
   vegan_scope: z.string().nullable().optional(),             // → vegan_all

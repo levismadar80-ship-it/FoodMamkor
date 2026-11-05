@@ -368,7 +368,7 @@ const P5 = producer(5, LONG_NAME, CAT_B, {
   images: ["https://res.cloudinary.com/dfzpscjks/image/upload/fixture/long-name.jpg"],
   short_description: "תיאור ארוך מאוד של בית העסק שנועד לבדוק את קיצור השורה בכרטיס",
 });
-// MEH-1508 chunk 3ב-2: «100% טבעוני» / «100% צמחוני» are runtime-gated too —
+// MEH-1508 chunk 3ב-2: «טבעוני» / «צמחוני» are runtime-gated too —
 // at gatedChipMin (1) businesses DECLARING `*_scope === "all"`, counted on the
 // VISIBLE slice (HomeProducersGrid `visibleGatedDietKeys(visibleProducers)`),
 // so the declaring row must sit inside the first PAGE_SIZE. One row declares
@@ -1189,7 +1189,7 @@ test.describe("manual › filter chips + FilterSheet (MEH-1418 · task 12)", () 
   //                        scope line, `filters.sheet.diet_scope` (:279-283).
   //       MEH-1508 chunk 3ב-2 split that group on the contract `scope`: the
   //       any-product pills keep the shared line and carry no ⓘ; the two
-  //       business-scope pills («100% טבעוני» / «100% צמחוני») render AFTER the
+  //       business-scope pills («טבעוני» / «צמחוני») render AFTER the
   //       line, each with its own ⓘ whose Popover carries the axis `subtext`.
   //   All live shapes are asserted, derived from `FILTER_AXES[...].group/scope`.
   test("the FilterSheet gives every toggle a label, keeps every explanation reachable, and Esc closes it", async ({ page }) => {
