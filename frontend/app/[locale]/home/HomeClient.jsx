@@ -25,6 +25,7 @@ import { useHomePage } from "@/lib/use-home-page";
 // the above-the-fold slot reserves height on first paint (CLS = 0) before JS
 // hydrates. The skeleton lives in a SEPARATE file (Leaflet-free) so it can
 // be imported synchronously without dragging Leaflet into SSR.
+import RescueHomeModule from "@/components/rescue/RescueHomeModule";
 import HomepageMiniMapSkeleton from "@/components/HomepageMiniMapSkeleton";
 const HomepageMiniMap = dynamic(() => import("@/components/HomepageMiniMap"), {
   ssr: false,
@@ -128,6 +129,13 @@ export default function HomeClient({
         <div className="order-last md:order-none" data-testid="home-minimap-slot">
           <HomepageMiniMap />
         </div>
+
+      {/* MEH-2648: rescue-bags module. Renders null while
+          NEXT_PUBLIC_RESCUE_BAGS_ENABLED is off, which is its default, so the
+          home page is byte-identical until the pilot is switched on.
+          NOTE for the merge: PR #3952 (MEH-2635) reorders this same range on
+          mobile. Whichever lands second resolves by hand. */}
+      <RescueHomeModule city={userCity} />
 
       {/* MEH-50: שוק שישי strip — shown Thu 18:00 → Fri 14:00 only.
           MEH-879: highest banner precedence — reports visibility so Holiday +

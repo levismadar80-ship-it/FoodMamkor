@@ -50,6 +50,12 @@ KNOWN_DYNAMIC_EXPANSIONS: dict[tuple[str, str], list[tuple[str, str]]] = {
         ("POST", "/admin/recipes/{_}/request-changes"),
         ("POST", "/admin/recipes/{_}/reject"),
     ],
+    # frontend/components/dashboard/RescueTab.jsx:61 (MEH-2644) — `what` is
+    # "handed" or "no_show" (the two owner actions on a reserved order).
+    ("POST", "/rescue/orders/{_}/{_}"): [
+        ("POST", "/rescue/orders/{_}/handed"),
+        ("POST", "/rescue/orders/{_}/no_show"),
+    ],
 }
 
 FRONTEND_EXTS = {".js", ".jsx", ".ts", ".tsx"}
