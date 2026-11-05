@@ -130,6 +130,15 @@ test.describe("MEH-2640 — «איך קונים אצלכם?» on DETAILS", () =>
       expect(body, "the register POST must have been captured").not.toBeNull();
       expect(body.has_physical_location).toBe(EXPECTED[v].has_physical_location);
       expect(body.offers_delivery).toBe(EXPECTED[v].offers_delivery);
+      // The re-cut must not keep posting what step 2 no longer collects.
+      for (const gone of ["delivery_cities", "delivery_nationwide"]) {
+        expect(body, `step 2 no longer collects ${gone}`).not.toHaveProperty(gone);
+      }
+      // The form state still carries an empty address/lat/lng (the dashboard
+      // fills them later); whatever is sent must be empty, never a stale value.
+      for (const empty of ["address", "lat", "lng"]) {
+        expect(body[empty] ?? null, `${empty} is empty at registration`).toBeFalsy();
+      }
     });
   }
 });

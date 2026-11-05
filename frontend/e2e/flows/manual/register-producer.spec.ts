@@ -275,7 +275,8 @@ test.describe("/register/producer — MANUAL_TESTING conversion (MEH-1249 chunk 
     const question = page.getByTestId("register-fulfilment");
     await expect(question).toBeVisible();
     expect(await directionOf(question)).toBe("rtl");
-    await expect(page.getByTestId("register-delivery-cities")).toHaveCount(0);
+    // Positive: the pointer to where delivery areas went is on the same frame.
+    await expect(page.getByTestId("register-delivery-note")).toBeVisible();
   });
 
   // MT:Registration-forms-RTL:8 — «textarea תיאור העסק — RTL». The item places

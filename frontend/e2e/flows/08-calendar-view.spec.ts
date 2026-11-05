@@ -90,6 +90,8 @@ test.describe("Breadcrumb target size (MEH-2400) — on /favorites", () => {
 
   test("the first crumb renders at least 24×24", async ({ page }) => {
     await page.goto("/favorites");
+    // A missing/expired consumer session redirects to /login; name that, not the crumb size.
+    await expect(page, "still on /favorites — the consumer session is live").toHaveURL(/\/favorites(?:[/?#]|$)/);
     const crumb = page.getByTestId("breadcrumb-nav").getByRole("link").first();
     await expect(crumb).toBeVisible({ timeout: 20_000 });
     const box = await crumb.boundingBox();
