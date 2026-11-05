@@ -4659,6 +4659,10 @@
         "label": "One of the owners serves in the reserves",
         "scope_helper": "Will appear as a badge on your card and business page"
       },
+      "badge_request": {
+        "prompt": "Missing a tag that fits your business?",
+        "link": "Write to us"
+      },
       "dietaryScope": {
         "heading": "Diet",
         "helper": "We cross-check these answers against the catalog before publishing.",
