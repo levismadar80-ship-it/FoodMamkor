@@ -277,6 +277,12 @@ EXEMPT_TABLES = {
     "static_pages": "CMS content, seeded separately when it exists",
     "retired_slugs": "MEH-2528 tombstones — written only when a public business is deleted or renamed; the demo seed deletes nothing",
     "saved_items": "MEH-2556 a user's saved recipes/events/experiences — runtime user action, like favorites clicks",
+    # MEH-2644 rescue-bags pilot — dark behind rescue_bags_enabled; a seed row
+    # would show an offer/order no owner posted and no visitor reserved.
+    "rescue_offers": "MEH-2644 rescue-bags pilot — dark behind a flag; offers are posted by an owner at runtime",
+    "rescue_orders": "MEH-2644 rescue-bags pilot — a visitor's reservation, runtime only",
+    "rescue_reviews": "MEH-2644 rescue-bags pilot — written only after a handed order, runtime only",
+    "rescue_typical_items": "MEH-2644 rescue-bags pilot — child rows of rescue_offers, runtime only",
     "delivery_waitlist": "MEH-2618 «תודיעו לי כשתגיעו» entries — written only by a visitor's own form submit, like favorites clicks; the demo seed has no visitors",
     # `cities` is EMPTY after a full local seed — measured, not assumed. It is
     # owned by backend/scripts/seed_cities.py, not by seed_data.py, so it is
