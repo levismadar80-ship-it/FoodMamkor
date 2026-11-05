@@ -246,9 +246,9 @@ def _host_confirm_url(entry_id: UUID) -> str:
 
 
 def _host_confirm_copy(producer_name: str, city: str, entry_id: UUID):
-    # MEH-2673 — copy pending Sapir's word-for-word approval (thread
-    # «בדיקת פתרון לניהול נקודות איסוף לבתי עסק», 05/11). Neutral reader
-    # address per ADR-037.
+    # MEH-2673 — copy approved word for word by Sapir 05/11 («מאשרת», thread
+    # «בדיקת פתרון לניהול נקודות איסוף לבתי עסק»). Neutral reader address
+    # per ADR-037.
     subject = f"אישור: נקודת מסירה של {producer_name} ב{city}"
     body = (
         f"קיבלנו בקשה לארח נקודת מסירה של {producer_name} ב{city}. "
