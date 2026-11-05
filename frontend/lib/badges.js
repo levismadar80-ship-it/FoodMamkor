@@ -377,7 +377,7 @@ function earnsBadge(producer, key) {
       return producer.vegan_scope === "all";
     case "vegetarian_all":
       // MEH-1508 chunk 3ב-2 (decision 03/11): vegan ⊆ vegetarian, so a
-      // business that declared BOTH wears only «טבעוני» — two 100% badges
+      // business that declared BOTH wears only «טבעוני» — two whole-business badges
       // would spend both card slots on one fact. Same supersession shape as the
       // partial twins below.
       if (producer.vegan_scope === "all") return false;

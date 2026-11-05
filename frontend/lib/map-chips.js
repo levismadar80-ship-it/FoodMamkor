@@ -30,7 +30,6 @@ import {
 import {
   DIET_CHIP_MIN,
   GATED_AXIS_PREDICATES,
-  gatedChipMin,
 } from "@/lib/producer-filters";
 
 // `matches` lists every DB category.name variant the chip should resolve to.
@@ -167,7 +166,7 @@ export function visibleMapToggleChips({
     const shared = GATED_AXIS_PREDICATES[chip.key];
     if (shared) {
       const n = catalogSnapshot.filter((p) => p && shared(p)).length;
-      return n >= gatedChipMin(chip.key);
+      return n >= DIET_CHIP_MIN;
     }
     const field = DIET_FIELD[chip.key];
     const n = catalogSnapshot.filter((p) => p && p[field]).length;

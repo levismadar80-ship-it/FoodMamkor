@@ -96,11 +96,6 @@ export const GATED_AXIS_PREDICATES = {
   on_site: (p) => !!p.sells_on_site, // MEH-2598
 };
 
-/** The gate threshold for a gated axis. */
-export function gatedChipMin() {
-  return DIET_CHIP_MIN;
-}
-
 /**
  * MEH-2131 — should the "פתוחים להזמנות עכשיו" chip render at all?
  *
@@ -197,7 +192,7 @@ export function visibleGatedDietKeys(producers = [], chips = {}) {
     if (chips[key]) return true;
     const counts = GATED_AXIS_PREDICATES[key];
     const n = producers.filter((p) => p && counts(p)).length;
-    return n >= gatedChipMin(key);
+    return n >= DIET_CHIP_MIN;
   });
 }
 

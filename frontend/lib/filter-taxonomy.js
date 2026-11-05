@@ -245,8 +245,9 @@ export const FILTER_AXES = {
   // URL/param plumbing (buildChipParams · chipStateToParams · use-home-page ·
   // filter-url) carry it with no per-surface wiring.
   //
-  // Gated at threshold 1 (card 06/09) — see SCOPE_ALL_CHIP_MIN in
-  // producer-filters.js. Gluten / lactose have NO 100% axis: their business
+  // MEH-2677 (Sapir 05/11): no longer a filter chip on any surface
+  // (`surfaces: []`) — one chip per diet; the declaration shows as the card
+  // badge only. The backend param still exists. Gluten / lactose have NO 100% axis: their business
   // layer is a facility question (§2, §6.3), not a catalog one.
   vegan_all: {
     // MEH-2677 (Sapir 05/11): was «100% טבעוני» — readers did not parse the
