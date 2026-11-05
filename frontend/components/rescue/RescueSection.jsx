@@ -70,10 +70,16 @@ export default function RescueSection({ producer }) {
       try {
         const mine = await fetchMyOrders();
         if (!alive) return;
-        const hit = mine.find((row) => row.producer_id === producer.id);
+        // A buyer may hold two bags of one offer (the cap is per buyer per
+        // offer, summed), e.g. one already handed and a newer one reserved:
+        // the reserved one wins, because its code is what she still needs.
+        const here = mine.filter((row) => row.producer_id === producer.id);
+        const hit = here.find((row) => row.status === "reserved") || here[here.length - 1];
         if (hit) {
           setOrder(hit);
-          setReviewed(hit.reviewed);
+          // Never un-review: a read that left before a just-sent review must
+          // not bring the form back.
+          setReviewed((was) => was || hit.reviewed);
         }
       } catch {
         // A failed read-back leaves whatever the page already shows.

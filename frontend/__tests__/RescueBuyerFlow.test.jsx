@@ -470,6 +470,18 @@ describe("a reload keeps the order (MEH-2680)", () => {
     expect(screen.queryByTestId("rescue-review")).toBeNull();
   });
 
+  it("one bag handed and a newer one reserved: the reserved code is shown", async () => {
+    authUser = { id: "u1" };
+    fetchMyOrders.mockResolvedValue([
+      mine({ id: "old", status: "handed", pickup_code: "1111" }),
+      mine({ id: "new", status: "reserved", pickup_code: "2222" }),
+    ]);
+    render(<RescueSection producer={PRODUCER} />);
+    const box = await screen.findByTestId("rescue-confirmation");
+    expect(box.textContent).toContain("2222");
+    expect(box.textContent).not.toContain("1111");
+  });
+
   it("coming back to the tab re-reads, so 'handed' shows without a reload", async () => {
     authUser = { id: "u1" };
     fetchMyOrders.mockResolvedValueOnce([mine({ status: "reserved" })]);

@@ -100,15 +100,23 @@ class TestMine:
         yesterday = _seed_offer(
             db, shop["location"], date=israel_today() - timedelta(days=1)
         )
-        db.add(
-            RescueOrder(
-                offer_id=yesterday.id,
-                user_id=buyer.id,
-                qty=1,
-                pickup_code="9999",
-                status="reserved",
-            )
+        tomorrow = _seed_offer(
+            db, shop["location"], date=israel_today() + timedelta(days=1)
         )
+        for offer_id, code, status in (
+            (yesterday.id, "9999", "reserved"),
+            (tomorrow.id, "8888", "reserved"),
+            (today.id, "7777", "no_show"),
+        ):
+            db.add(
+                RescueOrder(
+                    offer_id=offer_id,
+                    user_id=buyer.id,
+                    qty=1,
+                    pickup_code=code,
+                    status=status,
+                )
+            )
         db.commit()
 
         rows = client.get("/rescue/orders/mine", headers=auth_header(buyer)).json()
