@@ -235,9 +235,7 @@ def _offer_for_update(db: Session, offer_id: UUID) -> RescueOffer:
         .first()
     )
     if not offer:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="השקית לא נמצאה"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="הסל לא נמצא")
     return offer
 
 
@@ -270,7 +268,7 @@ def _issue_order(
             if offer.qty_left < qty:
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
-                    detail="לא נשארו מספיק שקיות",
+                    detail="לא נשארו מספיק סלים",
                 ) from None
             continue
         return candidate, offer
@@ -329,7 +327,7 @@ def create_offer(
     if not producer or producer.status != "approved":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="רק בית עסק מאושר יכול לפרסם שקית הצלה",
+            detail="רק בית עסק מאושר יכול לפרסם סל הפתעה",
         )
 
     location = (
@@ -347,7 +345,7 @@ def create_offer(
     if location.location_precision != "exact":
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="נקודת האיסוף צריכה כתובת מדויקת כדי לפרסם שקית",
+            detail="נקודת האיסוף צריכה כתובת מדויקת כדי לפרסם סל",
         )
 
     # The per-city pilot gate. A business outside the pilot towns gets a clear
@@ -356,13 +354,13 @@ def create_offer(
     if not city_in_pilot(location.city):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="סלי הצלה עדיין לא פתוחים ביישוב הזה",
+            detail="סלי הפתעה עדיין לא פתוחים ביישוב הזה",
         )
 
     if body.date < israel_today():
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="אי אפשר לפרסם שקית לתאריך שעבר",
+            detail="אי אפשר לפרסם סל לתאריך שעבר",
         )
 
     # One active bag per point per day: `qty_left` is per OFFER, so a second
@@ -380,7 +378,7 @@ def create_offer(
     if existing:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="יש כבר שקית פעילה בנקודה הזאת בתאריך הזה",
+            detail="יש כבר סל פעיל בנקודה הזאת בתאריך הזה",
         )
 
     offer = RescueOffer(
@@ -530,9 +528,7 @@ def cancel_offer(
     offer = _offer_for_update(db, offer_id)
     _require_offer_owner(current_user, offer)
     if offer.status != "active":
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="השקית כבר בוטלה"
-        )
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="הסל כבר בוטל")
 
     offer.status = "cancelled"
     now = utc_now()
@@ -623,11 +619,11 @@ def create_order(
     offer = _offer_for_update(db, body.offer_id)
     if offer.status != "active":
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="השקית אינה פעילה"
+            status_code=status.HTTP_409_CONFLICT, detail="הסל אינו פעיל"
         )
     if offer.date != israel_today():
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="השקית אינה של היום"
+            status_code=status.HTTP_409_CONFLICT, detail="הסל אינו של היום"
         )
     if offer.pickup_end <= utc_now():
         raise HTTPException(
@@ -649,12 +645,12 @@ def create_order(
     if already + body.qty > RESCUE_MAX_QTY_PER_ORDER:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="אפשר לשריין עד שתי שקיות",
+            detail="אפשר לשריין עד שני סלים",
         )
 
     if offer.qty_left < body.qty:
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="לא נשארו מספיק שקיות"
+            status_code=status.HTTP_409_CONFLICT, detail="לא נשארו מספיק סלים"
         )
 
     order, offer = _issue_order(db, offer, current_user, body.qty)
@@ -702,9 +698,9 @@ def mark_handed(
     if order.status == "handed":
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"השקית כבר נמסרה ב-{order.handed_at:%H:%M}"
+            detail=f"הסל כבר נמסר ב-{order.handed_at:%H:%M}"
             if order.handed_at
-            else "השקית כבר נמסרה",
+            else "הסל כבר נמסר",
         )
     if order.status != "reserved":
         raise HTTPException(
@@ -818,7 +814,7 @@ def create_review(
     if order.status != "handed":
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="אפשר לדרג רק אחרי שקיבלתם את השקית",
+            detail="אפשר לדרג רק אחרי שקיבלתם את הסל",
         )
 
     review = RescueReview(
@@ -837,7 +833,7 @@ def create_review(
         # database rather than by a read-then-write race.
         db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="כבר דירגתם את השקית הזאת"
+            status_code=status.HTTP_409_CONFLICT, detail="כבר דירגתם את הסל הזה"
         ) from None
     db.refresh(review)
     return review

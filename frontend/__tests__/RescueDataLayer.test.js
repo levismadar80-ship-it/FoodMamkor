@@ -123,8 +123,8 @@ describe("the unit helpers", () => {
     expect(reserveErrorKey({ response: { status: 422 } })).toBe("errors.blocked");
     expect(reserveErrorKey({ response: { status: 401 } })).toBe("errors.sign_in");
     expect(reserveErrorKey({ response: { status: 404 } })).toBe("errors.gone");
-    expect(reserveErrorKey({ response: { status: 409, data: { detail: "לא נשארו מספיק שקיות" } } })).toBe("errors.sold_out");
-    expect(reserveErrorKey({ response: { status: 409, data: { detail: "אפשר לשריין עד שתי שקיות" } } })).toBe("errors.max_two");
+    expect(reserveErrorKey({ response: { status: 409, data: { detail: "לא נשארו מספיק סלים" } } })).toBe("errors.sold_out");
+    expect(reserveErrorKey({ response: { status: 409, data: { detail: "אפשר לשריין עד שני סלים" } } })).toBe("errors.max_two");
     expect(reserveErrorKey({})).toBe("errors.generic");
   });
 });

@@ -180,7 +180,7 @@ export function reserveErrorKey(error) {
   if (status === HTTP_NOT_FOUND) return "errors.gone";
   if (status === HTTP_UNPROCESSABLE) return "errors.blocked";
   if (status === HTTP_CONFLICT) {
-    if (typeof detail === "string" && detail.includes("שתי שקיות")) {
+    if (typeof detail === "string" && detail.includes("שני סלים")) {
       return "errors.max_two";
     }
     return "errors.sold_out";
