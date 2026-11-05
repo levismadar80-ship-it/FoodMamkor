@@ -466,7 +466,9 @@ jobs:
           # MEH-2528: retired_slugs (tombstones for deleted/renamed business URLs) — 41 -> 42.
           # MEH-2556: saved_items (saved recipes/events/experiences) — 42 -> 43.
           # MEH-2618: delivery_waitlist («תודיעו לי כשתגיעו ל{עיר}» per-city waitlist) — 43 -> 44.
-          EXPECTED_TABLES=44
+          # MEH-2644: rescue_offers + rescue_orders + rescue_reviews +
+          # rescue_typical_items (rescue-bags pilot) — 44 -> 48.
+          EXPECTED_TABLES=48
 
           TABLE_COUNT=$(psql -h localhost -U postgres -d mehamakor_test -tAc \
             "SELECT COUNT(*) FROM information_schema.tables
