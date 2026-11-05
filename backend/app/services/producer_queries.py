@@ -439,6 +439,11 @@ def create_primary_branch_location(
         # in the town centre would put it on the map as a place to walk into.
         if producer.has_physical_location is False:
             return None
+        # MEH-2669: an organizer is stored with has_physical_location=True only
+        # to satisfy the DB CHECK (schemas.py, MEH-2460) — it has no place to
+        # walk into, so it never gets a town-centre pin either.
+        if producer.kind == "organizer":
+            return None
         centroid = city_centroid(db, producer.city)
         if centroid is None:
             return None

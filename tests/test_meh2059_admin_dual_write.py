@@ -91,7 +91,11 @@ class TestAdminCreate:
         A coordinate-less row is invisible to the geo query but still counts as
         "this producer has locations" for anything measuring the collection.
         """
-        body = _create_body(db, name="עסק בלי נקודה", lat=None, lng=None)
+        # MEH-2669: a town the coordinates file does not know; a known town
+        # falls back to its centre (MEH-2480 / MEH-2669 suites).
+        body = _create_body(
+            db, name="עסק בלי נקודה", city="כפר שאינו בשום רשימה", lat=None, lng=None
+        )
         resp = client.post("/admin/producers", json=body, headers=_admin_header(db))
         assert resp.status_code == 201, resp.text
 
