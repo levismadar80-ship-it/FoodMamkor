@@ -32,6 +32,15 @@ vi.mock("@/lib/api", () => ({
   default: { get: (...a) => get(...a), post: (...a) => post(...a), put: (...a) => put(...a) },
 }));
 
+// Pass-through spy: the real map is empty today, so the only way to see the
+// component hand the pickup town to the lookup is to watch the call (MEH-2702).
+const leftoverSpy = vi.hoisted(() => ({ fn: null }));
+vi.mock("@/lib/rescue", async (importOriginal) => {
+  const real = await importOriginal();
+  leftoverSpy.fn = vi.fn(real.leftoverGroupUrl);
+  return { ...real, leftoverGroupUrl: (...a) => leftoverSpy.fn(...a) };
+});
+
 const { default: RescueTab } = await import("@/components/dashboard/RescueTab");
 
 const HOUR = 3600_000;
@@ -324,6 +333,18 @@ describe("the leftover-bags line", () => {
     expect(link.getAttribute("href")).toBe("https://www.facebook.com/groups/freefood/");
     expect(link.getAttribute("target")).toBe("_blank");
     expect(link.getAttribute("rel")).toContain("noopener");
+  });
+
+  it("looks the group up by the town of the exact pickup point, not an approximate one", async () => {
+    locs = [
+      { id: "loc0", location_precision: "approximate", is_primary: true, city: "בנימינה" },
+      { id: "loc1", location_precision: "exact", is_primary: false, city: "חדרה" },
+    ];
+    leftoverSpy.fn.mockClear();
+    render(<RescueTab />);
+    await pointsLoaded();
+    expect(leftoverSpy.fn).toHaveBeenLastCalledWith("חדרה");
+    expect(leftoverSpy.fn).not.toHaveBeenCalledWith("בנימינה");
   });
 });
 

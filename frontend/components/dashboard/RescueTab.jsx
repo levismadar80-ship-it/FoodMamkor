@@ -103,10 +103,14 @@ export default function RescueTab() {
     }
   }
 
+  // A bag publishes the full address, so the server accepts only a point
+  // marked exact; an approximate one would be refused with a 422. One lookup
+  // feeds both publish() and the leftover-group link (MEH-2702), so the link
+  // always names the town the bags are actually published from.
+  const exactLocation = locations.find((l) => l.location_precision === "exact");
+
   async function publish(dayOffset = 0) {
-    // A bag publishes the full address, so the server accepts only a point
-    // marked exact; an approximate one would be refused with a 422.
-    const location = locations.find((l) => l.location_precision === "exact");
+    const location = exactLocation;
     if (!location) {
       setNotice(t("no_location"));
       return;
@@ -138,11 +142,9 @@ export default function RescueTab() {
   }
 
   const now = Date.now();
-  // MEH-2702: the group for the town of the point bags are published from
-  // (the same point publish() picks), national fallback otherwise.
-  const leftoverHref = leftoverGroupUrl(
-    locations.find((l) => l.location_precision === "exact")?.city,
-  );
+  // MEH-2702: the group for the town of the point bags are published from,
+  // national fallback otherwise.
+  const leftoverHref = leftoverGroupUrl(exactLocation?.city);
 
   return (
     <div data-testid="rescue-tab" className="space-y-6">
