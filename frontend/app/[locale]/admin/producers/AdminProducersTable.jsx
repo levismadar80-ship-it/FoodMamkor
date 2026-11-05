@@ -3,7 +3,7 @@
 import React from "react";
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { Cow, Seal, Circle, StarOfDavid, Warning } from "@phosphor-icons/react";
+import { Cow, Medal, Seal, Circle, StarOfDavid, Warning } from "@phosphor-icons/react";
 import Pagination from "@/components/Pagination";
 import AdminLoadError from "@/components/admin/AdminLoadError";
 import StoryCardCanvas from "@/components/StoryCardCanvas";
@@ -232,6 +232,8 @@ export function ProducerTags({ producer }) {
       )}
       {producer.verification_tier === "verified" && <span title={t("producers.table.tags.verified")}><Seal size={ICON_SIZE_SM} weight="fill" className="text-primary" aria-hidden="true" /></span>}
       {producer.grass_fed && <span title={t("producers.table.tags.grass_fed")}><Cow size={ICON_SIZE_SM} className="text-primary" aria-hidden="true" /></span>}
+      {/* MEH-2699: owner-declared reservist claim, visible to the admin. */}
+      {producer.reservist_owned && <span data-testid="admin-tag-reservist" title={t("producers.table.tags.reservist_owned")}><Medal size={ICON_SIZE_SM} className="text-primary" aria-hidden="true" /></span>}
       {/* MEH-2521: the organic (Leaf), delivery (Truck) and pickup (Package)
           tags are gone — each read a column no public surface shows any more
           (MEH-1259 organic; delivery is derived from delivery areas; pickup

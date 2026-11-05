@@ -94,7 +94,7 @@ const SHARED_CLAIMS = [
   ["kosher", "kosher"],
   ["delivery", "has_delivery"],
   // MEH-1508 chunk 3ב-2: the 100% layer is one claim on two surfaces — the
-  // «100% טבעוני» / «100% צמחוני» chip (`?vegan_all` / `?vegetarian_all`) and
+  // «טבעוני» / «צמחוני» chip (`?vegan_all` / `?vegetarian_all`) and
   // the badge of the same name. Both are `business` × `self-declared`; the
   // partial twins above stay `any-product`, which is the distinction the card
   // exists to draw.
@@ -253,14 +253,14 @@ describe("MEH-1507 Label Scope Contract — every label declares scope + evidenc
       // tooltip names who stands behind the claim.
       vegan_all: {
         key: "vegan_all",
-        label: "100% טבעוני",
+        label: "טבעוני",
         tooltip: "לפי הצהרת בית העסק",
         color: "muted",
         aboutHref: null,
       },
       vegetarian_all: {
         key: "vegetarian_all",
-        label: "100% צמחוני",
+        label: "צמחוני",
         tooltip: "לפי הצהרת בית העסק",
         color: "muted",
         aboutHref: null,

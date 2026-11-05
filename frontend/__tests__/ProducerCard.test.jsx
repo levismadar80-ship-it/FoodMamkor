@@ -827,7 +827,7 @@ describe("ProducerCard — badge overflow chip (MEH-991)", () => {
   // MEH-1508 chunk 3ב-2 (axe `target-size`, CI mobile /producers): the +N keeps
   // a 44×44 hit area (min-h/min-w 44) inside a 24px layout box by pulling it
   // back with a negative margin. When the strip WRAPS the +N onto a second line
-  // (a long first-row badge such as «100% צמחוני» at 393px), that margin
+  // (a long first-row badge such as «צמחוני» at 393px), that margin
   // reaches upward into the row above; with the old 4px row gap the +N — later
   // in DOM, so painted on top — covered ~5px of «חדש» and left it 41.5×19.3,
   // below WCAG 2.2 2.5.8's 24×24. The row gap must be at least the +N's

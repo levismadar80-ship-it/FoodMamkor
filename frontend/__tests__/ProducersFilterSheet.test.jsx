@@ -289,12 +289,11 @@ describe("MEH-1862 — the /map surface is not disturbed", () => {
     const diet = grouped.filter((c) => c.group === "diet").map((c) => c.key);
     // The five diet axes are the ones a fallback would visibly swallow.
     // MEH-2047 withdrew a sixth (low_carb) with the claim itself.
-    // MEH-1508 chunk 3ב-2: + the two 100% axes, each after its partial twin.
+    // MEH-1508 chunk 3ב-2 added the two 100% axes; MEH-2677 removed them
+    // again (badge-only, one chip per diet).
     expect(diet).toEqual([
       "vegan",
-      "vegan_all",
       "vegetarian",
-      "vegetarian_all",
       "gluten_free",
       "lactose_free",
       "no_added_sugar",

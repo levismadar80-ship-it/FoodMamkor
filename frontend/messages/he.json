@@ -1546,6 +1546,7 @@
         "tags": {
           "verified": "מאומת",
           "grass_fed": "גראס פד",
+          "reservist_owned": "עסק של מילואימניקים",
           "license_pending": "רישיון ממתין",
           "license_pending_title": "בקטגוריה הדורשת רישיון, ללא מספר רישיון — יש לאמת לפני אישור.",
           "organizer": "מארגן",
@@ -1698,6 +1699,7 @@
           "lat": "Latitude",
           "lng": "Longitude",
           "grass_fed": "גראס פד",
+          "reservist_owned": "אחד הבעלים משרת במילואים",
           "verified": "מאומת",
           "recommended": "מומלץ (תגית עורכת)",
           "recommended_note": "נימוק הבחירה",
@@ -4632,7 +4634,6 @@
         "scope_helper": "מסמן את בית העסק בצ'יפ «גראס פד» בעמוד המפה. מוצג כהצהרה שלך, בלי אימות מצדנו."
       },
       "reservistOwned": {
-        "heading": "עסק של מילואימניקים",
         "label": "אחד הבעלים משרת במילואים",
         "scope_helper": "יופיע כתג בכרטיס ובדף העסק"
       },

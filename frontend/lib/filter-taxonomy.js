@@ -208,8 +208,10 @@ export const FILTER_AXES = {
   // their scope IN THE TERM — «מתאים לטבעונים» / «מתאים לצמחונים» — because
   // the 100% pair below now sits beside them, and a bare «טבעוני» next to
   // «100% טבעוני» would leave the reader to infer that the unqualified word
-  // means "partial". The card's research (HappyCow / easy / NN/g / Baymard)
-  // rejected a tooltip or a second subtext for this: scope lives in the label.
+  // means "partial". MEH-2677 then gave the bare word to the whole-business
+  // axis («טבעוני» / «צמחוני»), the Deliveroo / Uber Eats pattern — which
+  // only works because the partial axes keep «מתאים ל…». The card's research
+  // (HappyCow / easy / NN/g / Baymard) rejected a tooltip or a second subtext for this: scope lives in the label.
   // Subtexts are unchanged (MEH-1507 lock).
   vegan: {
     label: "מתאים לטבעונים",
@@ -243,24 +245,29 @@ export const FILTER_AXES = {
   // URL/param plumbing (buildChipParams · chipStateToParams · use-home-page ·
   // filter-url) carry it with no per-surface wiring.
   //
-  // Gated at threshold 1 (card 06/09) — see SCOPE_ALL_CHIP_MIN in
-  // producer-filters.js. Gluten / lactose have NO 100% axis: their business
+  // MEH-2677 (Sapir 05/11): no longer a filter chip on any surface
+  // (`surfaces: []`) — one chip per diet; the declaration shows as the card
+  // badge only. The backend param still exists. Gluten / lactose have NO 100% axis: their business
   // layer is a facility question (§2, §6.3), not a catalog one.
   vegan_all: {
-    label: "100% טבעוני",
+    // MEH-2677 (Sapir 05/11): was «100% טבעוני» — readers did not parse the
+    // percent. Deliveroo / Uber Eats / Yelp: one word for the whole business,
+    // "… friendly" for partial (ours: «מתאים לטבעונים»).
+    label: "טבעוני",
     scope: "business",
     evidence: "self-declared",
     subtext: "לפי הצהרת בית העסק",
     group: "diet",
-    surfaces: ["home", "producers", "map"],
+    surfaces: [], // MEH-2677 (Sapir 05/11): one filter chip per diet — card badge only
   },
   vegetarian_all: {
-    label: "100% צמחוני",
+    // MEH-2677: was «100% צמחוני».
+    label: "צמחוני",
     scope: "business",
     evidence: "self-declared",
     subtext: "לפי הצהרת בית העסק",
     group: "diet",
-    surfaces: ["home", "producers", "map"],
+    surfaces: [], // MEH-2677 (Sapir 05/11): one filter chip per diet — card badge only
   },
   gluten_free: {
     label: "ללא גלוטן",
@@ -327,9 +334,7 @@ export const MAP_CHIP_ORDER = [
   "kosher",
   "grass_fed",
   "vegan",
-  "vegan_all", // MEH-1508 chunk 3ב-2: each 100% chip right after its partial twin
   "vegetarian",
-  "vegetarian_all",
   "gluten_free",
   "lactose_free",
   "no_added_sugar",
@@ -351,9 +356,7 @@ export const MAP_CHIP_ORDER = [
 export const LISTING_CHIP_ORDER = [
   "kosher",
   "vegan",
-  "vegan_all", // MEH-1508 chunk 3ב-2: each 100% chip right after its partial twin
   "vegetarian",
-  "vegetarian_all",
   "gluten_free",
   "lactose_free",
   "no_added_sugar",
