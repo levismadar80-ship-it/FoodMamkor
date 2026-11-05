@@ -18,11 +18,11 @@ History:  MEH-2644 (creation, chunk 1/4 of the rescue-bags pilot)
 """
 
 from datetime import date as date_type
-from datetime import datetime
-from typing import Literal
+from datetime import datetime, timezone
+from typing import Annotated, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import AfterValidator, BaseModel, Field, model_validator
 
 from app.models.models import (
     RESCUE_MAX_QTY_PER_OFFER,
@@ -34,6 +34,32 @@ from app.models.models import (
 # and tests/test_rescue_migration.py asserts the two spellings stay equal — so
 # there is one authority (the model tuples) and a guard, not two copies drifting.
 RescueOfferStatus = Literal["active", "cancelled"]
+
+
+# MEH-2679: the rescue tables use naive `DateTime` columns holding UTC (the
+# repo convention, utils/clock.py `utc_now`). Serialised as-is they come out
+# as "2026-11-05T16:00:00" — no zone — which the generated
+# `zod.iso.datetime({offset: true})` rejects (so /rescue showed no bags at
+# all) and which `new Date()` reads as Israel local time (two hours early).
+def _as_utc(value: datetime) -> datetime:
+    """Output side: a naive value is UTC; say so, so the JSON carries `Z`."""
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
+def _to_naive_utc(value: datetime) -> datetime:
+    """Input side: whatever offset the caller wrote, store the UTC instant in
+    the naive column, and compare naive with naive (a mixed pair raises)."""
+    if value.tzinfo is None:
+        return value
+    return value.astimezone(timezone.utc).replace(tzinfo=None)
+
+
+UtcDatetimeOut = Annotated[datetime, AfterValidator(_as_utc)]
+UtcDatetimeIn = Annotated[datetime, AfterValidator(_to_naive_utc)]
+
+
 RescueOrderStatus = Literal["reserved", "handed", "no_show", "cancelled"]
 
 
@@ -51,9 +77,9 @@ class RescueOfferCreate(BaseModel):
     price_agorot: int = Field(ge=0)
     value_min_agorot: int | None = Field(default=None, ge=0)
     value_max_agorot: int | None = Field(default=None, ge=0)
-    pickup_start: datetime
-    pickup_end: datetime
-    cancel_until: datetime
+    pickup_start: UtcDatetimeIn
+    pickup_end: UtcDatetimeIn
+    cancel_until: UtcDatetimeIn
 
     @model_validator(mode="after")
     def _window_order(self) -> "RescueOfferCreate":
@@ -87,11 +113,11 @@ class RescueOfferOut(BaseModel):
     price_agorot: int
     value_min_agorot: int | None = None
     value_max_agorot: int | None = None
-    pickup_start: datetime
-    pickup_end: datetime
-    cancel_until: datetime
+    pickup_start: UtcDatetimeOut
+    pickup_end: UtcDatetimeOut
+    cancel_until: UtcDatetimeOut
     status: RescueOfferStatus
-    created_at: datetime
+    created_at: UtcDatetimeOut
 
     model_config = {"from_attributes": True}
 
@@ -118,9 +144,9 @@ class RescueOrderOut(BaseModel):
     qty: int
     pickup_code: str = Field(min_length=4, max_length=4, pattern=r"^[0-9]{4}$")
     status: RescueOrderStatus
-    handed_at: datetime | None = None
-    cancelled_at: datetime | None = None
-    created_at: datetime
+    handed_at: UtcDatetimeOut | None = None
+    cancelled_at: UtcDatetimeOut | None = None
+    created_at: UtcDatetimeOut
 
     model_config = {"from_attributes": True}
 
@@ -144,7 +170,7 @@ class RescueReviewOut(BaseModel):
     highlight_tags: list[str] | None = None
     photo_url: str | None = None
     comment: str | None = None
-    created_at: datetime
+    created_at: UtcDatetimeOut
 
     model_config = {"from_attributes": True}
 
@@ -159,7 +185,7 @@ class RescueTypicalItemsIn(BaseModel):
 class RescueTypicalItemsOut(BaseModel):
     producer_id: UUID
     items: list[str]
-    updated_at: datetime
+    updated_at: UtcDatetimeOut
 
     model_config = {"from_attributes": True}
 
@@ -204,9 +230,9 @@ class RescueOfferPublicOut(BaseModel):
     price_agorot: int
     value_min_agorot: int | None = None
     value_max_agorot: int | None = None
-    pickup_start: datetime
-    pickup_end: datetime
-    cancel_until: datetime
+    pickup_start: UtcDatetimeOut
+    pickup_end: UtcDatetimeOut
+    cancel_until: UtcDatetimeOut
     producer: RescueProducerSummary
     typical_items: list[str] = Field(default_factory=list)
     distance_km: float | None = None
@@ -219,9 +245,9 @@ class RescueOrderCreatedOut(RescueOrderOut):
     """
 
     price_agorot: int
-    cancel_until: datetime
-    pickup_start: datetime
-    pickup_end: datetime
+    cancel_until: UtcDatetimeOut
+    pickup_start: UtcDatetimeOut
+    pickup_end: UtcDatetimeOut
 
 
 class RescueNoShowStateOut(BaseModel):
@@ -235,7 +261,7 @@ class RescueNoShowStateOut(BaseModel):
     user_id: UUID
     no_show_count: int
     active_no_shows: int
-    block_cleared_at: datetime | None = None
+    block_cleared_at: UtcDatetimeOut | None = None
     blocked: bool
 
 
@@ -257,11 +283,11 @@ class RescueOwnerOrderOut(BaseModel):
     qty: int
     pickup_code: str
     status: RescueOrderStatus
-    handed_at: datetime | None = None
-    cancelled_at: datetime | None = None
-    created_at: datetime
-    pickup_start: datetime
-    pickup_end: datetime
+    handed_at: UtcDatetimeOut | None = None
+    cancelled_at: UtcDatetimeOut | None = None
+    created_at: UtcDatetimeOut
+    pickup_start: UtcDatetimeOut
+    pickup_end: UtcDatetimeOut
 
     model_config = {"from_attributes": True}
 
