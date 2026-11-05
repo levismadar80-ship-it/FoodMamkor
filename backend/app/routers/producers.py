@@ -695,14 +695,12 @@ def join_delivery_waitlist(
             db.commit()
         response.status_code = 200
         return DeliveryWaitlistOut(status="exists")
-    delivery_waitlist.add_entry(
-        db,
-        producer,
-        email=data.email,
-        city=data.city,
-        user=current_user,
-        wants_to_host=data.wants_to_host,
+    entry = delivery_waitlist.add_entry(
+        db, producer, email=data.email, city=data.city, user=current_user
     )
+    # MEH-2673: «אשמח לארח נקודת מסירה» — set here, not as a 6th add_entry
+    # argument (PLR0913); the row is not flushed yet, so it lands in one INSERT.
+    entry.wants_to_host = data.wants_to_host
     try:
         db.commit()
     except IntegrityError:
