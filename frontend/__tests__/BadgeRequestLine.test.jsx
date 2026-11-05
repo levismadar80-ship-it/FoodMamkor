@@ -24,8 +24,6 @@ vi.mock("next/navigation", () => ({
 }));
 vi.mock("@/components/ProductsSection", () => ({ default: () => null }));
 
-vi.mock("@/components/ProductsSection", () => ({ default: () => null }));
-
 // MEH-2695 — one line under the badge cards in the products group that sends a
 // business which needs a tag we don't have to the existing contact page.
 const PROFILE = {
