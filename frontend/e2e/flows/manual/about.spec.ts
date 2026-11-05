@@ -540,8 +540,9 @@ test.describe("manual › /about/process (MEH-534)", () => {
     expect(await precedes(quote, closing.getByText(PROCESS_HE.closing.attrib, { exact: true }))).toBe(true);
   });
 
-  // MT:MEH-534:9 — CTA «ספרו לנו על העסק» → /register/producer, with the secondary line.
-  test("CTA: one link to /register/producer with the copy's label and secondary line", async ({ page }) => {
+  // MT:MEH-534:9 — CTA «ספרו לנו על העסק» → /register/producer, with its intro line
+  // (MEH-2634 / #3951 replaced `cta.secondary` with `cta.intro`).
+  test("CTA: one link to /register/producer with the copy's label and intro line", async ({ page }) => {
     await gotoProcess(page);
     const cta = scope(page).getByTestId("process-cta");
     await cta.scrollIntoViewIfNeeded();
@@ -550,7 +551,7 @@ test.describe("manual › /about/process (MEH-534)", () => {
     await expect(link).toHaveCount(1);
     await expect(link).toHaveText(PROCESS_HE.cta.submit);
     await expect(link).toHaveAttribute("href", /\/register\/producer(?:[/?#]|$)/);
-    await expect(cta).toContainText(PROCESS_HE.cta.secondary);
+    await expect(cta).toContainText(PROCESS_HE.cta.intro);
   });
 
   // MT:MEH-534:10 — footer «תהליך הקבלה» → /about/process: COVERED by frontend/__tests__/FooterNavGroups.test.jsx:62 (not duplicated here).
@@ -649,13 +650,14 @@ test.describe("manual › /about/why-local (MEH-1289)", () => {
     expect(await computed(link, "color")).toBe(await computed(money.getByRole("heading", { level: 2 }), "color"));
   });
 
-  // MT:MEH-1289:3 — CTA «גלו בתי עסק באזור שלכם» → /producers (he); /en → /en/producers is asserted in the /en test.
-  test("CTA: the copy's button → /producers", async ({ page }) => {
+  // MT:MEH-1289:3 — CTA «גלו בתי עסק באזור שלכם» → /map (he); /en → /en/map is asserted in the /en test.
+  // MEH-2634 (#3951) moved it from /producers to /map: the catalog has no area axis, the map does.
+  test("CTA: the copy's button → /map", async ({ page }) => {
     await gotoWhyLocal(page);
     const cta = scope(page).getByTestId("why-local-cta");
     await cta.scrollIntoViewIfNeeded();
     await expect(cta).toHaveText(WHY_HE.cta);
-    await expect(cta).toHaveAttribute("href", /^\/producers(?:[/?#]|$)/);
+    await expect(cta).toHaveAttribute("href", /^\/map(?:[/?#]|$)/);
   });
 
   // MT:MEH-1289:4 — sources line: «מקורות:» + two live links (Sustain UK, CollectiveCrop), both target=_blank.
@@ -701,7 +703,7 @@ test.describe("manual › /about/why-local (MEH-1289)", () => {
   });
 
   // MT:MEH-1289:7 — /en/about/why-local renders the English version (short summary, not a full translation); no Hebrew leaks.
-  test("English twin: /en/about/why-local in English, LTR, no Hebrew in the article, CTA → /en/producers", async ({
+  test("English twin: /en/about/why-local in English, LTR, no Hebrew in the article, CTA → /en/map", async ({
     page,
   }) => {
     await gotoWhyLocal(page, "/en/about/why-local");
@@ -720,7 +722,7 @@ test.describe("manual › /about/why-local (MEH-1289)", () => {
     expect(text, "no Hebrew may leak into the English article").not.toMatch(/[\u0590-\u05FF]/);
     const cta = scope(page).getByTestId("why-local-cta");
     await expect(cta).toHaveText(WHY_EN.cta);
-    await expect(cta).toHaveAttribute("href", /^\/en\/producers(?:[/?#]|$)/);
+    await expect(cta).toHaveAttribute("href", /^\/en\/map(?:[/?#]|$)/);
   });
 });
 
