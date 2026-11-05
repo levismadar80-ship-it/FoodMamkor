@@ -21,6 +21,11 @@ vi.mock("next-intl", () => ({
         done: `נודיע לך כשיגיעו ל${city}`,
         error: "משהו השתבש, נסי שוב",
         whatsapp_hint: "רוצה גם בוואטסאפ?",
+        host_label: `אשמח לארח נקודת מסירה ב${city}`,
+        host_hint: "נשלח לכם מייל לאישור, ורק אחרי האישור המייל שלכם יועבר לבית העסק.",
+        host_sent: "שלחנו לכם מייל לאישור האירוח.",
+        host_already_sent: "כבר שלחנו לכם מייל לאישור האירוח. בדקו בתיבת הדואר (גם בספאם).",
+        host_limit_reached: "נשלחו היום כבר כמה מיילים לכתובת הזאת. אפשר לנסות שוב מחר.",
       };
       return map[key] ?? key;
     }
@@ -221,5 +226,92 @@ describe("DeliveryWaitlistForm on the checker's negative verdict (MEH-2618)", ()
     expect(screen.getByTestId("delivery-waitlist-cta").textContent).toBe(
       "תודיעו לי כשתגיעו לאשדוד",
     );
+  });
+});
+
+// MEH-2674: «אשמח לארח נקודת מסירה ב{עיר}». Box unticked by default and
+// absent from the payload; ticked → wants_to_host: true and ONE extra line
+// under «נודיע לך» chosen by the server's host_confirm. Each value is its own
+// case (sent / already_sent / limit_reached / confirmed / absent).
+describe("DeliveryWaitlistForm host checkbox (MEH-2674)", () => {
+  function openForm() {
+    render(<DeliveryWaitlistForm producer={PRODUCER} city="נתניה" />);
+    fireEvent.click(screen.getByTestId("delivery-waitlist-cta"));
+    fireEvent.change(screen.getByTestId("delivery-waitlist-email"), {
+      target: { value: "a@b.co" },
+    });
+  }
+  async function submitAndWaitDone() {
+    fireEvent.click(screen.getByTestId("delivery-waitlist-submit"));
+    await waitFor(() =>
+      expect(screen.getByTestId("delivery-waitlist-done")).toBeTruthy(),
+    );
+  }
+  const hostLine = () => screen.queryByTestId("delivery-waitlist-host-status");
+
+  it("unticked by default, names the city, says the mail step, sends no flag", async () => {
+    post.mockResolvedValue({ status: 201, data: { status: "added", host_confirm: null } });
+    openForm();
+    const box = screen.getByTestId("delivery-waitlist-host");
+    expect(box.checked).toBe(false);
+    expect(screen.getByText("אשמח לארח נקודת מסירה בנתניה")).toBeTruthy();
+    expect(screen.getByTestId("delivery-waitlist-host-hint").textContent).toBe(
+      "נשלח לכם מייל לאישור, ורק אחרי האישור המייל שלכם יועבר לבית העסק.",
+    );
+    await submitAndWaitDone();
+    expect(post.mock.calls[0][1]).toEqual({ email: "a@b.co", city: "נתניה" });
+    expect(hostLine()).toBeNull();
+  });
+
+  it("ticked → wants_to_host:true; `sent` adds «שלחנו לכם מייל»", async () => {
+    post.mockResolvedValue({ status: 201, data: { status: "added", host_confirm: "sent" } });
+    openForm();
+    fireEvent.click(screen.getByTestId("delivery-waitlist-host"));
+    await submitAndWaitDone();
+    expect(post.mock.calls[0][1]).toEqual({
+      email: "a@b.co",
+      city: "נתניה",
+      wants_to_host: true,
+    });
+    expect(hostLine().textContent).toBe("שלחנו לכם מייל לאישור האירוח.");
+    expect(hostLine().dataset.hostConfirm).toBe("sent");
+  });
+
+  it("`already_sent` → check your inbox, not «we sent»", async () => {
+    post.mockResolvedValue({ status: 200, data: { status: "exists", host_confirm: "already_sent" } });
+    openForm();
+    fireEvent.click(screen.getByTestId("delivery-waitlist-host"));
+    await submitAndWaitDone();
+    expect(hostLine().textContent).toBe(
+      "כבר שלחנו לכם מייל לאישור האירוח. בדקו בתיבת הדואר (גם בספאם).",
+    );
+  });
+
+  it("`limit_reached` → try again tomorrow, never «check your inbox»", async () => {
+    post.mockResolvedValue({ status: 201, data: { status: "added", host_confirm: "limit_reached" } });
+    openForm();
+    fireEvent.click(screen.getByTestId("delivery-waitlist-host"));
+    await submitAndWaitDone();
+    expect(hostLine().textContent).toBe(
+      "נשלחו היום כבר כמה מיילים לכתובת הזאת. אפשר לנסות שוב מחר.",
+    );
+    expect(hostLine().textContent).not.toContain("בדקו");
+  });
+
+  it("`confirmed` and an unknown shape both add no line", async () => {
+    post.mockResolvedValue({ status: 200, data: { status: "exists", host_confirm: "confirmed" } });
+    openForm();
+    fireEvent.click(screen.getByTestId("delivery-waitlist-host"));
+    await submitAndWaitDone();
+    expect(hostLine()).toBeNull();
+    // Unknown value from a future backend → calm line alone, no crash.
+    post.mockResolvedValue({ status: 200, data: { status: "exists", host_confirm: "something_new" } });
+    const second = render(<DeliveryWaitlistForm producer={{ id: "22222222-2222-2222-2222-222222222222" }} city="חדרה" />);
+    fireEvent.click(second.getByTestId("delivery-waitlist-cta"));
+    fireEvent.change(second.getByTestId("delivery-waitlist-email"), { target: { value: "c@d.co" } });
+    fireEvent.click(second.getByTestId("delivery-waitlist-host"));
+    fireEvent.click(second.getByTestId("delivery-waitlist-submit"));
+    await waitFor(() => expect(second.getByTestId("delivery-waitlist-done")).toBeTruthy());
+    expect(second.queryByTestId("delivery-waitlist-host-status")).toBeNull();
   });
 });
