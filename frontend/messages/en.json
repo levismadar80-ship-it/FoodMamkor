@@ -2783,7 +2783,7 @@
     }
   },
   "about": {
-    "updated_at": "Updated: August 2026",
+    "updated_at": "Updated: November 2026",
     "img": {
       "story_caption": "A farmers' market. Where it all began.",
       "story_alt": "Colourful produce in baskets at a farmers' market",
@@ -2806,27 +2806,24 @@
       },
       "4": {
         "label": "Our criteria"
-      },
-      "5": {
-        "label": "First steps"
       }
     },
     "biz_strip_lead": "Run a food business?",
     "biz_strip": "Common questions about joining",
     "exit": {
       "story": "Meet the businesses",
-      "comparison": "How we approve a business",
       "benefits": "Open the map"
     },
     "comparison": {
       "eyebrow": "The difference",
-      "heading": "What changes along the way",
+      "col_brand": "Mehamakor",
+      "col_super": "At the supermarket",
       "row1_brand": "You know exactly who's behind it",
-      "row1_super": "At the supermarket — a name on a package, if that",
+      "row1_super": "a name on a package, if that",
       "row2_brand": "Close to you, arrives fresh",
-      "row2_super": "At the supermarket — who knows from where or when",
+      "row2_super": "who knows from where or when",
       "row3_brand": "Straight from whoever makes it",
-      "row3_super": "At the supermarket — just another item in the cart"
+      "row3_super": "just another item in the cart"
     },
     "consumer": {
       "hero": {
@@ -2862,22 +2859,6 @@
         "community": {
           "title": "Local community",
           "body": "Every purchase directly supports people from the neighborhood — not a big chain, but a business owner from your area."
-        }
-      },
-      "tips": {
-        "eyebrow": "First steps",
-        "heading": "Worth knowing",
-        "eggs": {
-          "question": "Why are organic eggs worth the price?",
-          "answer": "Organic hens grow up outdoors, eating food free of pesticides and antibiotics. Their eggs contain more omega-3, vitamin E, and antioxidants. Not a dramatic difference — but less exposure to chemicals, and more humane lives for the hens."
-        },
-        "grass_fed": {
-          "question": "What is grass-fed in Israel?",
-          "answer": "At the supermarket — most cattle are fattened on corn and supplements. Grass-fed = cows that lived their whole lives in pasture, eating natural grass. In Israel it's rare and more expensive — but the meat has deeper flavor, the distinctive yellowish fat, and more omega-3. Producers like Gilis from the Golan Heights and Mireh Golan are classic examples."
-        },
-        "honey": {
-          "question": "Supermarket honey vs. unheated honey — what's the difference?",
-          "answer": "Supermarket honey is pasteurized — heating destroys enzymes, antioxidants, and pollen. Unheated honey keeps it all — richer flavor, natural antibacterial properties. How to spot it? Thicker, not completely clear, sometimes crystallizes — and that's a good sign."
         }
       },
       "testimonials": {
