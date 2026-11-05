@@ -703,7 +703,7 @@ def join_delivery_waitlist(
         if (
             data.wants_to_host
             and not existing.wants_to_host
-            and delivery_waitlist.claim_host_confirm_send(existing)
+            and delivery_waitlist.claim_host_confirm_send(db, existing)
         ):
             db.commit()
             background_tasks.add_task(
@@ -718,10 +718,11 @@ def join_delivery_waitlist(
     entry = delivery_waitlist.add_entry(
         db, producer, email=data.email, city=data.city, user=current_user
     )
-    if data.wants_to_host:
-        # Stamped before the INSERT so the first mail counts toward the
-        # resend cooldown; the mail itself is queued after the commit below.
-        delivery_waitlist.claim_host_confirm_send(entry)
+    # Stamped before the INSERT so this mail counts toward the per-address
+    # cooldown; the mail itself is queued after the commit below.
+    send_host_mail = data.wants_to_host and delivery_waitlist.claim_host_confirm_send(
+        db, entry
+    )
     try:
         db.commit()
     except IntegrityError:
@@ -731,7 +732,7 @@ def join_delivery_waitlist(
         db.rollback()
         response.status_code = 200
         return DeliveryWaitlistOut(status="exists")
-    if data.wants_to_host:
+    if send_host_mail:
         # MEH-2673: the box alone shares nothing. The row stays
         # wants_to_host=False until the address itself clicks the link —
         # otherwise anyone could hand a stranger's email to a business.

@@ -518,3 +518,18 @@ class TestHostConfirmAbuseGuards:
         )
         r = client.post("/delivery-waitlist/host-confirm", json={"token": confirm})
         assert r.status_code == 400
+
+    def test_cooldown_is_per_address_across_cities_and_businesses(
+        self, client, db, monkeypatch
+    ):
+        # One row per (business, city, email): without a per-address cap a
+        # stranger could mail the same inbox once per combination.
+        sent = _capture_mail(monkeypatch)
+        p1 = make_producer(db)
+        p2 = make_producer(db, name="עסק שני")
+        for pid, city in ((p1.id, "חיפה"), (p1.id, "חדרה"), (p2.id, "חיפה")):
+            client.post(
+                f"/producers/{pid}/delivery-waitlist",
+                json={"email": "dana@example.com", "city": city, "wants_to_host": True},
+            )
+        assert len(sent) == 1

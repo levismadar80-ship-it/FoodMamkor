@@ -272,12 +272,23 @@ def send_host_confirmation(
     send_email(email, subject, body)
 
 
-def claim_host_confirm_send(entry: DeliveryWaitlistEntry) -> bool:
+def claim_host_confirm_send(db: Session, entry: DeliveryWaitlistEntry) -> bool:
     """MEH-2673: True (and stamps the entry) when a confirmation mail may go
-    out now; False inside the resend cooldown. The caller commits."""
+    out now; False inside the resend cooldown. The cooldown is per ADDRESS,
+    across every business and city: one entry per (business, city, email)
+    would otherwise let a stranger mail the same inbox once per combination.
+    The caller commits."""
     now = utc_now()
-    last = entry.host_confirm_sent_at
-    if last is not None and now - last < HOST_CONFIRM_RESEND_COOLDOWN:
+    recent = (
+        db.query(DeliveryWaitlistEntry.id)
+        .filter(
+            DeliveryWaitlistEntry.email == entry.email,
+            DeliveryWaitlistEntry.host_confirm_sent_at
+            > now - HOST_CONFIRM_RESEND_COOLDOWN,
+        )
+        .first()
+    )
+    if recent is not None:
         return False
     entry.host_confirm_sent_at = now
     return True
