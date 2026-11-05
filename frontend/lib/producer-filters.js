@@ -83,20 +83,9 @@ export const DIET_CHIP_MIN = 5;
 // few businesses state opening hours yet, and a «קנייה במקום» chip that
 // returns nothing looks broken. Counted on the server's `sells_on_site`.
 //
-// MEH-1508 chunk 3ב-2: the two 100% axes are new axes too, so they start
-// gated — but at their OWN threshold, SCOPE_ALL_CHIP_MIN below, not at
-// DIET_CHIP_MIN.
-export const GATED_DIET_KEYS = ["no_added_sugar", "on_site", "vegan_all", "vegetarian_all"];
-
-// MEH-1508 chunk 3ב-2 (card 06/09): «100% טבעוני» / «100% צמחוני» show as soon
-// as ONE business qualifies, and stay absent at zero. Lower than DIET_CHIP_MIN
-// on purpose: these answer a yes/no question about a business ("does anyone
-// here sell only vegan?"), so a single honest answer is a useful result — the
-// zero-result dead end is what the gate exists to prevent, and threshold 1
-// prevents exactly that. Counted on the declaration column itself
-// (`vegan_scope === "all"`), the same predicate the backend filters on
-// (producer_listing._SCOPE_ALL_FILTERS), so chip and result set agree.
-const SCOPE_ALL_CHIP_MIN = 1;
+// MEH-2677 (Sapir 05/11): the two whole-business axes left the filter (one
+// chip per diet); they live on as a card badge only, so they are not gated here.
+export const GATED_DIET_KEYS = ["no_added_sugar", "on_site"];
 
 // Per gated axis: does this loaded producer count toward the gate? Read off
 // the same fields the badge layer reads, so chip visibility and badge display
@@ -105,14 +94,7 @@ const SCOPE_ALL_CHIP_MIN = 1;
 export const GATED_AXIS_PREDICATES = {
   no_added_sugar: (p) => !!p.has_no_added_sugar_products,
   on_site: (p) => !!p.sells_on_site, // MEH-2598
-  vegan_all: (p) => p.vegan_scope === "all",
-  vegetarian_all: (p) => p.vegetarian_scope === "all",
 };
-
-/** The gate threshold for a gated axis. */
-export function gatedChipMin(key) {
-  return key === "vegan_all" || key === "vegetarian_all" ? SCOPE_ALL_CHIP_MIN : DIET_CHIP_MIN;
-}
 
 /**
  * MEH-2131 — should the "פתוחים להזמנות עכשיו" chip render at all?
@@ -210,7 +192,7 @@ export function visibleGatedDietKeys(producers = [], chips = {}) {
     if (chips[key]) return true;
     const counts = GATED_AXIS_PREDICATES[key];
     const n = producers.filter((p) => p && counts(p)).length;
-    return n >= gatedChipMin(key);
+    return n >= DIET_CHIP_MIN;
   });
 }
 

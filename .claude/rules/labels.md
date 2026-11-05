@@ -124,7 +124,7 @@ There are **two** declaration sites, and they cover different surfaces:
 **Eleven claims exist on both** — ten sharing a key (`verified`, `grass_fed`,
 `gluten_free`, `vegetarian`, `vegan`, `lactose_free`, `no_added_sugar`,
 `kosher`, and — MEH-1508 chunk 3ב-2 — `vegan_all` / `vegetarian_all`, the
-«100% טבעוני/צמחוני» layer at `business` × `self-declared`) plus `delivery` ↔
+whole-business «טבעוני/צמחוני» layer (was «100% …» until MEH-2677) at `business` × `self-declared`) plus `delivery` ↔
 `has_delivery`, which are the same claim under different keys. They are **not** hand-copies: `LabelScopeContract.test.js`
 asserts each pair agrees on scope and evidence, so changing one side alone goes
 red.

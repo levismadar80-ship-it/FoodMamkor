@@ -324,7 +324,10 @@ export default function FilterSheet({
                 the 5-state 0-items branch covers the line and the heading together. */}
             {group === "diet" ? (
               <>
-                {/* MEH-1508 chunk 3ב-2 (decision 03/11) — the scope line governs
+                {/* MEH-2677: no business-scope diet axis is offered any more
+                    (the 100% pair is badge-only), so today the block below holds
+                    every diet pill; the split stays for any future one.
+                    MEH-1508 chunk 3ב-2 (decision 03/11) — the scope line governs
                     ONLY the any-product pills. «עסקים שיש להם מוצרים כאלה בקטלוג»
                     is false for the 100% pair: the backend matches ?vegan_all on
                     the declaration alone (producer_listing.py), so a business

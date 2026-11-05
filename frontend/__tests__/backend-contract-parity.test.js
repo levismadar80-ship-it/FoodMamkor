@@ -124,7 +124,7 @@ const KNOWN_UNDECLARED = {
     "status",
     "vacation_until",
     // MEH-1508 chunk 3ב-2 removed `vegan_scope` / `vegetarian_scope` — now
-    // declared on ProducerListSchema (the «100% טבעוני/צמחוני» badge + chip
+    // declared on ProducerListSchema (the «טבעוני/צמחוני» badge + chip
     // gate read them), so the baseline shrinks rather than drifts.
   ],
   // D2 — the 17 above (inherited) plus the 13 detail-only fields the Zod
