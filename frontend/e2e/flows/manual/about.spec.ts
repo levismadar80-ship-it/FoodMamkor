@@ -99,7 +99,7 @@ const NEF_URL = "https://www.sustainweb.org/blogs/jul25-what-is-local-food/";
 const COLLECTIVECROP_URL =
   "https://collectivecrop.com/guides/fresh-picked-vs-supermarket-produce-does-it-matter";
 
-/** Derived, not stated: the three comparison stops are `row1..row3` in he.json. */
+/** Derived, not stated: the three comparison rows are `row1..row3` in he.json. */
 const COMPARE_ROWS = ["row1", "row2", "row3"] as const;
 
 /** Derived: the step count is the number of `s<n>_title` keys in the copy. */
@@ -200,86 +200,83 @@ async function gotoWhyLocal(page: Page, path = "/about/why-local"): Promise<void
 
 // ════════════════════════════════════════════════════════════════════════════
 test.describe("manual › /about (MEH-841)", () => {
-  // MT:MEH-841:1 — /about comparison strip: between the pull-quote and Benefits, a vertical spine with 3 gold dots; each stop = big green line + small grey "בסופר —" line; no shadow, no icons, hairline; RTL dots on the start (right) side.
-  test("comparison strip: 3 stops on a hairline spine between the quote and Benefits, dots at the RTL start edge, no icons, no shadow", async ({
+  // MT:MEH-841:1 — /about comparison: between the pull-quote and Benefits, a two-column table
+  //   «מהמקור / בסופר» (05/11, replaced the gold-dot spine): column heads are <th scope="col">,
+  //   each of the 3 rows = a brand <th scope="row"> + a supermarket <td>; no spine, no icons, RTL.
+  test("comparison table: two column heads, three rows, between the quote and Benefits, no spine, no icons", async ({
     page,
   }) => {
     await gotoAbout(page);
     const section = scope(page).getByTestId("about-comparison");
     await section.scrollIntoViewIfNeeded(); // scroll-reveal section (opacity 0 until in view)
 
-    // Chapter mark + the section lead read from copy.
     await expect(section).toContainText(ABOUT_HE.chapter[2].label);
-    await expect(section).toContainText(COMPARE_HE.heading);
 
-    // Placement: the pull-quote is this chapter's h2 and sits ABOVE the spine;
+    // Placement: the pull-quote is this chapter's h2 and sits ABOVE the table;
     // the Benefits chapter (h2 = chapter 03's label) comes AFTER the section.
     const quote = section.getByRole("heading", { level: 2 });
     await expect(quote).toHaveCount(1);
     await expect(quote).toHaveText(he.about.consumer.parallax.quote);
-    const spine = section.locator("ol");
-    await expect(spine).toHaveCount(1);
-    expect(await precedes(quote, spine), "the quote must precede the spine").toBe(true);
+    const table = section.locator("table");
+    await expect(table).toHaveCount(1);
+    expect(await precedes(quote, table), "the quote must precede the table").toBe(true);
     const benefits = scope(page).getByRole("heading", { level: 2, name: ABOUT_HE.chapter[3].label });
     await expect(benefits).toHaveCount(1);
     expect(await precedes(section, benefits), "Benefits must follow the comparison").toBe(true);
 
-    // Three stops, each exactly two lines (brand line + supermarket line).
-    const stops = spine.locator("li");
-    await expect(stops).toHaveCount(COMPARE_ROWS.length);
-    // No icons anywhere on the spine (the dots are CSS), and no shadow on a stop.
-    await expect(spine.locator("svg")).toHaveCount(0);
-    expect(await computed(spine, "border-inline-start-width"), "hairline spine").toBe("1px");
-    expect(await computed(spine, "direction")).toBe("rtl");
+    // The spine is gone: no list, no dots, no icons.
+    await expect(section.locator("ol")).toHaveCount(0);
+    await expect(table.locator("span[aria-hidden]")).toHaveCount(0);
+    await expect(table.locator("svg")).toHaveCount(0);
+    expect(await computed(table, "direction")).toBe("rtl");
 
+    const heads = table.locator('thead th[scope="col"]');
+    await expect(heads).toHaveCount(2);
+    await expect(heads.nth(0)).toHaveText(COMPARE_HE.col_brand);
+    await expect(heads.nth(1)).toHaveText(COMPARE_HE.col_super);
+    // RTL: the brand column is the START (right) column.
+    const [brandHead, superHead] = await Promise.all([box(heads.nth(0)), box(heads.nth(1))]);
+    expect(brandHead.x, "brand column must be on the right in RTL").toBeGreaterThan(superHead.x);
+
+    const rows = table.locator("tbody tr");
+    await expect(rows).toHaveCount(COMPARE_ROWS.length);
     for (let i = 0; i < COMPARE_ROWS.length; i += 1) {
-      const stop = stops.nth(i);
-      await expect(stop.locator("p")).toHaveCount(2);
-      expect(await computed(stop, "box-shadow"), `stop ${i + 1} must cast no shadow`).toBe("none");
-      const dot = stop.locator("span[aria-hidden]").first();
-      await expect(dot).toHaveCount(1);
-      // RTL: the dot sits on the START edge, which is the RIGHT half of the stop.
-      const [stopBox, dotBox] = await Promise.all([box(stop), box(dot)]);
-      const dotCenter = dotBox.x + dotBox.width / 2;
-      const stopCenter = stopBox.x + stopBox.width / 2;
-      expect(dotCenter, `stop ${i + 1}: dot must be on the right (start) side in RTL`).toBeGreaterThan(
-        stopCenter,
-      );
-      // The brand line is the big one, the supermarket line the small one.
-      const [brand, superLine] = [stop.locator("p").nth(0), stop.locator("p").nth(1)];
+      const brand = rows.nth(i).locator('th[scope="row"]');
+      const superCell = rows.nth(i).locator("td");
+      await expect(brand).toHaveCount(1);
+      await expect(superCell).toHaveCount(1);
       const brandSize = parseFloat(await computed(brand, "font-size"));
-      const superSize = parseFloat(await computed(superLine, "font-size"));
-      expect(brandSize, `stop ${i + 1}: brand line must be the larger line`).toBeGreaterThan(superSize);
+      const superSize = parseFloat(await computed(superCell, "font-size"));
+      expect(brandSize, `row ${i + 1}: brand cell must be the larger text`).toBeGreaterThan(superSize);
     }
   });
 
-  // MT:MEH-841:2 — /about exact copy: the 3 brand/supermarket pairs, no trailing period on the brand lines.
-  test("comparison copy: three brand/supermarket pairs verbatim from he.json, brand lines without a trailing period", async ({
+  // MT:MEH-841:2 — /about exact copy: the 3 brand/supermarket pairs, no trailing period on the brand
+  //   lines, and the supermarket cells no longer repeat the «בסופר —» prefix (the column head says it).
+  test("comparison copy: three brand/supermarket pairs verbatim from he.json, no «בסופר —» prefix", async ({
     page,
   }) => {
     await gotoAbout(page);
     const section = scope(page).getByTestId("about-comparison");
     await section.scrollIntoViewIfNeeded();
-    const stops = section.locator("ol li");
-    await expect(stops).toHaveCount(COMPARE_ROWS.length);
+    const rows = section.locator("tbody tr");
+    await expect(rows).toHaveCount(COMPARE_ROWS.length);
     for (let i = 0; i < COMPARE_ROWS.length; i += 1) {
       const row = COMPARE_ROWS[i];
-      const brand = stops.nth(i).locator("p").nth(0);
-      const superLine = stops.nth(i).locator("p").nth(1);
+      const brand = rows.nth(i).locator("th");
+      const superCell = rows.nth(i).locator("td");
       await expect(brand).toHaveText(COMPARE_HE[`${row}_brand`]);
-      await expect(superLine).toHaveText(COMPARE_HE[`${row}_super`]);
-      const brandText = ((await brand.textContent()) ?? "").trim();
-      expect(brandText, `brand line ${i + 1} must not end with a period`).not.toMatch(/\.$/);
+      await expect(superCell).toHaveText(COMPARE_HE[`${row}_super`]);
+      expect(((await brand.textContent()) ?? "").trim(), `brand ${i + 1}: no trailing period`).not.toMatch(/\.$/);
+      expect(((await superCell.textContent()) ?? "").trim(), `row ${i + 1}: no «בסופר» prefix`).not.toMatch(/^בסופר/);
     }
   });
 
   // MT:MEH-841:3 — HOME teaser «ההבדל / מה שמשתנה בדרך / גלו את ההבדל» → /about, no supermarket table on `/`:
   //   NOT converted here — lives on `/` (chunk 7's route, home fixture); the teaser has no testid. Residual.
 
-  // MT:MEH-841:4 — EN mirror: /en/about (+ /en/ — residual, see above). The checklist expects a HE-mirror
-  //   ("הטקסט עדיין בעברית, TODO i18n EN"); en.json now carries real English copy for the strip, so the
-  //   LIVE expectation is English text, LTR — asserted here, drift recorded in docs/qa/conversion-progress.md.
-  test("EN twin: /en/about renders the strip in English, LTR, dots on the left (start) edge", async ({
+  // MT:MEH-841:4 — EN mirror: /en/about renders the table in English, LTR, brand column on the left.
+  test("EN twin: /en/about renders the table in English, LTR, brand column on the left (start)", async ({
     page,
   }) => {
     await gotoAbout(page, "/en/about");
@@ -288,21 +285,19 @@ test.describe("manual › /about (MEH-841)", () => {
     const section = scope(page).getByTestId("about-comparison");
     await section.scrollIntoViewIfNeeded();
     await expect(section).toContainText(ABOUT_EN.chapter[2].label);
-    await expect(section).toContainText(COMPARE_EN.heading);
-    const stops = section.locator("ol li");
-    await expect(stops).toHaveCount(COMPARE_ROWS.length);
-    expect(await computed(section.locator("ol"), "direction")).toBe("ltr");
+    const table = section.locator("table");
+    expect(await computed(table, "direction")).toBe("ltr");
+    const heads = table.locator('thead th[scope="col"]');
+    await expect(heads.nth(0)).toHaveText(COMPARE_EN.col_brand);
+    await expect(heads.nth(1)).toHaveText(COMPARE_EN.col_super);
+    const [brandHead, superHead] = await Promise.all([box(heads.nth(0)), box(heads.nth(1))]);
+    expect(brandHead.x, "brand column must be on the left in LTR").toBeLessThan(superHead.x);
+    const rows = table.locator("tbody tr");
+    await expect(rows).toHaveCount(COMPARE_ROWS.length);
     for (let i = 0; i < COMPARE_ROWS.length; i += 1) {
       const row = COMPARE_ROWS[i];
-      await expect(stops.nth(i).locator("p").nth(0)).toHaveText(COMPARE_EN[`${row}_brand`]);
-      await expect(stops.nth(i).locator("p").nth(1)).toHaveText(COMPARE_EN[`${row}_super`]);
-      const [stopBox, dotBox] = await Promise.all([
-        box(stops.nth(i)),
-        box(stops.nth(i).locator("span[aria-hidden]").first()),
-      ]);
-      expect(dotBox.x + dotBox.width / 2, `stop ${i + 1}: LTR dot on the left (start) side`).toBeLessThan(
-        stopBox.x + stopBox.width / 2,
-      );
+      await expect(rows.nth(i).locator("th")).toHaveText(COMPARE_EN[`${row}_brand`]);
+      await expect(rows.nth(i).locator("td")).toHaveText(COMPARE_EN[`${row}_super`]);
     }
   });
 });
