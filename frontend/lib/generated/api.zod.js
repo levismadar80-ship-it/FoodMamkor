@@ -2892,10 +2892,14 @@ export const SubmitContactContactPostResponse = /*#__PURE__*/ zod.unknown()
 /**
  * MEH-2673: «מאשרים, אפשר להעביר» — the signed link from the host
  * confirmation email. Turns the entry's wants_to_host on, so the business
- * sees this email in its pickup_hosts list. Idempotent. 410 on an expired
- * token (the page offers a fresh link — the double-opt-in norm, no dead
- * end); 400 on a token that does not verify or an entry that no longer
- * exists (unsubscribed).
+ * sees this email in its pickup_hosts list. Idempotent. 400 on a token
+ * that does not verify or an entry that no longer exists (unsubscribed).
+ *
+ * 410 on an expired token — and, because the token still names the entry,
+ * a FRESH link is mailed to the same address right here (under the usual
+ * cooldown/cap), so the page is never a dead end (the double-opt-in norm:
+ * an expired link offers a new one). The body carries `resent` so the page
+ * can say whether to look in the inbox. An expired link never confirms.
  * @summary Confirm Delivery Waitlist Host
  */
 export const ConfirmDeliveryWaitlistHostDeliveryWaitlistHostConfirmPostResponse = /*#__PURE__*/ zod.unknown()

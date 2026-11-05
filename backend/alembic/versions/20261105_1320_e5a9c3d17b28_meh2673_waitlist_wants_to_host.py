@@ -10,7 +10,7 @@ point in that city. Ticking it is her consent for this ONE business to see
 her email; it only counts after she clicks the confirmation link mailed to
 that address (POST /delivery-waitlist/host-confirm). The owner reads the list
 on GET /producers/me/analytics → `pickup_hosts`. `host_confirm_sent_at` is
-the per-entry resend cooldown for that mail. The form checkbox ships in the
+the per-entry resend cooldown for that mail (plus a per-address cap). The form checkbox ships in the
 frontend follow-up (MEH-2674).
 
 Expand-only per ADR-007: one NOT NULL boolean with a server default of
@@ -19,7 +19,8 @@ so false is the truth for them, and the previous container (which never names
 the column) inserts through the server default. No new table →
 EXPECTED_TABLES unchanged.
 
-downgrade() drops the column; any host opt-ins collected since are lost.
+downgrade() drops the index and all three columns; any host opt-ins and
+consent timestamps collected since are lost.
 
 Chained on b2e6d4a17c93 (MEH-2646 rescue bags, staging head on 05/11 after #3963; re-chained from c4d8e1f05a27).
 """

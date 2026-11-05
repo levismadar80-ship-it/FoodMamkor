@@ -19103,7 +19103,7 @@
     },
     "/delivery-waitlist/host-confirm": {
       "post": {
-        "description": "MEH-2673: «מאשרים, אפשר להעביר» — the signed link from the host\nconfirmation email. Turns the entry's wants_to_host on, so the business\nsees this email in its pickup_hosts list. Idempotent. 410 on an expired\ntoken (the page offers a fresh link — the double-opt-in norm, no dead\nend); 400 on a token that does not verify or an entry that no longer\nexists (unsubscribed).",
+        "description": "MEH-2673: «מאשרים, אפשר להעביר» — the signed link from the host\nconfirmation email. Turns the entry's wants_to_host on, so the business\nsees this email in its pickup_hosts list. Idempotent. 400 on a token\nthat does not verify or an entry that no longer exists (unsubscribed).\n\n410 on an expired token — and, because the token still names the entry,\na FRESH link is mailed to the same address right here (under the usual\ncooldown/cap), so the page is never a dead end (the double-opt-in norm:\nan expired link offers a new one). The body carries `resent` so the page\ncan say whether to look in the inbox. An expired link never confirms.",
         "operationId": "confirm_delivery_waitlist_host_delivery_waitlist_host_confirm_post",
         "requestBody": {
           "content": {

@@ -520,20 +520,110 @@ class TestHostConfirmAbuseGuards:
         r = client.post("/delivery-waitlist/host-confirm", json={"token": confirm})
         assert r.status_code == 400
 
-    def test_cooldown_is_per_address_across_cities_and_businesses(
+    def test_second_business_within_window_gets_its_own_mail(
         self, client, db, monkeypatch
     ):
+        # Each link confirms ONE entry, so a visitor who ticks the box for two
+        # businesses (or two cities) in one day must get two mails — the
+        # cooldown is per entry, not per address.
+        sent = _capture_mail(monkeypatch)
+        p1 = make_producer(db)
+        p2 = make_producer(db, name="עסק שני")
+        r1 = client.post(
+            f"/producers/{p1.id}/delivery-waitlist",
+            json={"email": "dana@example.com", "city": "חיפה", "wants_to_host": True},
+        )
+        r2 = client.post(
+            f"/producers/{p2.id}/delivery-waitlist",
+            json={"email": "dana@example.com", "city": "חיפה", "wants_to_host": True},
+        )
+        assert (r1.json()["host_confirm"], r2.json()["host_confirm"]) == (
+            "sent",
+            "sent",
+        )
+        assert len(sent) == 2
+        assert "עסק שני" in sent[1][1]
+        # Each mail's link confirms the entry it was sent for, and only it.
+        client.post(
+            "/delivery-waitlist/host-confirm", json={"token": _token_from(sent[1][2])}
+        )
+        db.expire_all()
+        assert _entries(db, p1.id)[0].wants_to_host is False
+        assert _entries(db, p2.id)[0].wants_to_host is True
+
+    def test_address_cap_across_cities_and_businesses(self, client, db, monkeypatch):
         # One row per (business, city, email): without a per-address cap a
         # stranger could mail the same inbox once per combination.
         sent = _capture_mail(monkeypatch)
         p1 = make_producer(db)
         p2 = make_producer(db, name="עסק שני")
-        for pid, city in ((p1.id, "חיפה"), (p1.id, "חדרה"), (p2.id, "חיפה")):
+        combos = [(p1.id, "חיפה"), (p1.id, "חדרה"), (p2.id, "חיפה"), (p2.id, "חדרה")]
+        assert len(combos) == svc.HOST_CONFIRM_ADDRESS_CAP + 1
+        statuses = [
             client.post(
                 f"/producers/{pid}/delivery-waitlist",
                 json={"email": "dana@example.com", "city": city, "wants_to_host": True},
-            )
+            ).json()["host_confirm"]
+            for pid, city in combos
+        ]
+        assert statuses == ["sent"] * svc.HOST_CONFIRM_ADDRESS_CAP + ["already_sent"]
+        assert len(sent) == svc.HOST_CONFIRM_ADDRESS_CAP
+
+    def test_expired_link_mails_a_fresh_one(self, client, db, monkeypatch):
+        # The 410 is not a dead end: the expired token still names the entry,
+        # so a new link goes to the same address (once per cooldown window).
+        sent = _capture_mail(monkeypatch)
+        p = make_producer(db)
+        entry = svc.add_entry(db, p, email="dana@example.com", city="חיפה", user=None)
+        db.commit()
+        stale = svc._encode(entry.id, svc._HOST_CONFIRM_SCOPE, timedelta(seconds=-1))
+        r = client.post("/delivery-waitlist/host-confirm", json={"token": stale})
+        assert r.status_code == 410
+        assert r.json()["resent"] is True
         assert len(sent) == 1
+        # The fresh link works; the stale one still does not.
+        r = client.post("/delivery-waitlist/host-confirm", json={"token": stale})
+        assert (r.status_code, r.json()["resent"]) == (410, False)
+        assert len(sent) == 1
+        fresh = _token_from(sent[0][2])
+        assert (
+            client.post(
+                "/delivery-waitlist/host-confirm", json={"token": fresh}
+            ).status_code
+            == 200
+        )
+        db.expire_all()
+        assert _entries(db, p.id)[0].wants_to_host is True
+
+    def test_expired_link_for_confirmed_entry_sends_nothing(
+        self, client, db, monkeypatch
+    ):
+        p = make_producer(db)
+        _signup_and_confirm(client, monkeypatch, p.id, "dana@example.com", "חיפה")
+        sent = _capture_mail(monkeypatch)
+        entry = _entries(db, p.id)[0]
+        stale = svc._encode(entry.id, svc._HOST_CONFIRM_SCOPE, timedelta(seconds=-1))
+        r = client.post("/delivery-waitlist/host-confirm", json={"token": stale})
+        assert (r.status_code, r.json()["resent"]) == (410, False)
+        assert sent == []
+
+    def test_non_numeric_exp_is_invalid_not_expired(self, db):
+        p = make_producer(db)
+        entry = svc.add_entry(db, p, email="dana@example.com", city="חיפה", user=None)
+        db.commit()
+        from joserfc import jwt as jose_jwt
+
+        for bad_exp in (True, "soon"):
+            token = jose_jwt.encode(
+                {"alg": svc.settings.algorithm},
+                {
+                    "sub": str(entry.id),
+                    "scope": svc._HOST_CONFIRM_SCOPE,
+                    "exp": bad_exp,
+                },
+                svc._key(),
+            )
+            assert svc.inspect_host_confirm_token(token) == (None, "invalid")
 
 
 class TestHostConfirmStatus:
@@ -564,11 +654,12 @@ class TestHostConfirmStatus:
         # Same row again → exists + already_sent.
         r = client.post(f"/producers/{p.id}/delivery-waitlist", json=body)
         assert r.json() == {"status": "exists", "host_confirm": "already_sent"}
-        # A NEW row for the same address (other city) → added + already_sent.
+        # A NEW row for the same address (other city) is its own entry with
+        # its own link → added + sent.
         r = client.post(
             f"/producers/{p.id}/delivery-waitlist", json={**body, "city": "חדרה"}
         )
-        assert r.json() == {"status": "added", "host_confirm": "already_sent"}
+        assert r.json() == {"status": "added", "host_confirm": "sent"}
 
     def test_confirmed_row_says_confirmed(self, client, db, monkeypatch):
         p = make_producer(db)

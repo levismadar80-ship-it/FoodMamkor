@@ -12,6 +12,7 @@ from fastapi import (
     Request,
     Response,
 )
+from fastapi.responses import JSONResponse
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload, selectinload
@@ -763,20 +764,43 @@ def join_delivery_waitlist(
 def confirm_delivery_waitlist_host(
     request: Request,
     data: DeliveryWaitlistHostConfirmIn,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ):
     """MEH-2673: «מאשרים, אפשר להעביר» — the signed link from the host
     confirmation email. Turns the entry's wants_to_host on, so the business
-    sees this email in its pickup_hosts list. Idempotent. 410 on an expired
-    token (the page offers a fresh link — the double-opt-in norm, no dead
-    end); 400 on a token that does not verify or an entry that no longer
-    exists (unsubscribed)."""
+    sees this email in its pickup_hosts list. Idempotent. 400 on a token
+    that does not verify or an entry that no longer exists (unsubscribed).
+
+    410 on an expired token — and, because the token still names the entry,
+    a FRESH link is mailed to the same address right here (under the usual
+    cooldown/cap), so the page is never a dead end (the double-opt-in norm:
+    an expired link offers a new one). The body carries `resent` so the page
+    can say whether to look in the inbox. An expired link never confirms."""
     entry_id, state = delivery_waitlist.inspect_host_confirm_token(data.token)
-    if state == "expired":
-        raise HTTPException(status_code=410, detail="הקישור לא תקין או שפג תוקפו")
     entry = db.get(DeliveryWaitlistEntry, entry_id) if entry_id else None
     if entry is None:
         raise HTTPException(status_code=400, detail="הקישור לא תקין או שפג תוקפו")
+    if state == "expired":
+        resent = False
+        if not entry.wants_to_host and delivery_waitlist.claim_host_confirm_send(
+            db, entry
+        ):
+            db.commit()
+            resent = True
+            background_tasks.add_task(
+                delivery_waitlist.send_host_confirmation,
+                entry.id,
+                entry.email,
+                entry.city,
+                entry.producer.name,
+            )
+        else:
+            db.rollback()  # releases the advisory lock, nothing to write
+        return JSONResponse(
+            status_code=410,
+            content={"detail": "הקישור לא תקין או שפג תוקפו", "resent": resent},
+        )
     if not entry.wants_to_host:
         entry.wants_to_host = True
         entry.host_confirmed_at = utc_now()

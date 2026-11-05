@@ -77,6 +77,11 @@ HOST_CONFIRM_TTL = timedelta(days=7)
 # One confirmation mail per entry per window, whatever the per-IP limit lets
 # through — a stranger re-submitting the form cannot flood the address.
 HOST_CONFIRM_RESEND_COOLDOWN = timedelta(hours=24)
+# MEH-2673: at most this many confirmation mails per ADDRESS per cooldown
+# window, across every business and city. The per-entry cooldown above
+# stops a re-submitted form from re-mailing one link; this cap stops a
+# stranger from mailing the same inbox once per (business, city) combination.
+HOST_CONFIRM_ADDRESS_CAP = 3
 
 
 def _encode(entry_id: UUID, scope: str, ttl: timedelta | None = None) -> str:
@@ -108,9 +113,10 @@ def decode_host_confirm_token(token: str) -> UUID | None:
 
 
 def inspect_host_confirm_token(token: str) -> tuple[UUID | None, str]:
-    """MEH-2673: (entry id, "ok") · (None, "expired") · (None, "invalid").
-    The expired case is told apart so the page can offer a fresh link
-    instead of a dead end (the double-opt-in UX norm)."""
+    """MEH-2673: (entry id, "ok") · (entry id, "expired") · (None, "invalid").
+    The expired case keeps the entry id, so the endpoint can mail a fresh
+    link instead of a dead end (the double-opt-in UX norm); it never counts
+    as consent."""
     return _decode(token, _HOST_CONFIRM_SCOPE)
 
 
@@ -123,18 +129,19 @@ def _decode(token: str, scope: str) -> tuple[UUID | None, str]:
         return None, "invalid"
     # joserfc's decode does not check `exp`; a token that carries one is
     # checked here (unsubscribe tokens carry none and never expire).
-    exp = token_obj.claims.get("exp")
-    if exp is not None:
-        now = utc_now().replace(tzinfo=UTC).timestamp()
-        if not isinstance(exp, int | float):
-            return None, "invalid"
-        if exp < now:
-            return None, "expired"
     sub = token_obj.claims.get("sub")
     try:
-        return UUID(str(sub)), "ok"
+        entry_id = UUID(str(sub))
     except (ValueError, TypeError):
         return None, "invalid"
+    exp = token_obj.claims.get("exp")
+    if exp is not None:
+        # bool is an int subclass: `exp: true` is garbage, not "expired".
+        if isinstance(exp, bool) or not isinstance(exp, int | float):
+            return None, "invalid"
+        if exp < utc_now().replace(tzinfo=UTC).timestamp():
+            return entry_id, "expired"
+    return entry_id, "ok"
 
 
 def normalize_email(email: str) -> str:
@@ -289,29 +296,37 @@ def send_host_confirmation(
 
 def claim_host_confirm_send(db: Session, entry: DeliveryWaitlistEntry) -> bool:
     """MEH-2673: True (and stamps the entry) when a confirmation mail may go
-    out now; False inside the resend cooldown. The cooldown is per ADDRESS,
-    across every business and city: one entry per (business, city, email)
-    would otherwise let a stranger mail the same inbox once per combination.
-    The caller commits.
+    out now; False when it may not. Two guards, both per cooldown window:
+    the ENTRY was not mailed yet (a re-submitted form does not re-mail the
+    same link), and the ADDRESS is under HOST_CONFIRM_ADDRESS_CAP across
+    every business and city (one row per (business, city, email) would
+    otherwise let a stranger mail the same inbox once per combination).
+    Each link confirms one entry only, so a second business within the
+    window still gets its own mail. The caller commits.
 
     Serialised per address with a transaction-scoped advisory lock, so two
-    simultaneous submits cannot both read "no recent send" and both mail —
+    simultaneous submits cannot both read "under the cap" and both mail —
     the lock is released at the caller's commit/rollback."""
     db.execute(
         text("SELECT pg_advisory_xact_lock(hashtext(:email))"),
         {"email": entry.email},
     )
     now = utc_now()
-    recent = (
+    window_start = now - HOST_CONFIRM_RESEND_COOLDOWN
+    if (
+        entry.host_confirm_sent_at is not None
+        and entry.host_confirm_sent_at > window_start
+    ):
+        return False
+    sent_to_address = (
         db.query(DeliveryWaitlistEntry.id)
         .filter(
             DeliveryWaitlistEntry.email == entry.email,
-            DeliveryWaitlistEntry.host_confirm_sent_at
-            > now - HOST_CONFIRM_RESEND_COOLDOWN,
+            DeliveryWaitlistEntry.host_confirm_sent_at > window_start,
         )
-        .first()
+        .count()
     )
-    if recent is not None:
+    if sent_to_address >= HOST_CONFIRM_ADDRESS_CAP:
         return False
     entry.host_confirm_sent_at = now
     return True
