@@ -71,7 +71,10 @@ class TestBundledFallback:
 class TestBundledFileShape:
     def test_every_entry_is_inside_israel(self):
         cities = json.loads(DATA.read_text(encoding="utf-8"))["cities"]
-        assert len(cities) > 1000
+        assert len(cities) == 1163, (
+            "the import's count — a truncated file must fail here"
+        )
+        assert "זכרון יעקב" in cities and "ירושלים" in cities
         outside = {
             n: v
             for n, v in cities.items()
@@ -80,16 +83,25 @@ class TestBundledFileShape:
         assert outside == {}
 
     def test_no_two_different_places_share_a_point(self):
-        # The signature of a failed geocode. Same-place pairs (איחוד/מאוחד…)
-        # are the only allowed sharing; they differ only in a parenthetical
-        # or one letter, so a shared first word is required.
+        # The signature of a failed geocode. Only these pairs — one place, two
+        # official rows — may share a point; anything else is a stacked geocode.
+        same_place = {
+            frozenset({"אשדות יעקב (איחוד)", "אשדות יעקב (מאוחד)"}),
+            frozenset({"בן שמן (כפר נוער)", "בן שמן (מושב)"}),
+            frozenset({"ח'ואלד", "ח'ואלד (שבט)"}),
+            frozenset({"כנרת (מושבה)", "כנרת (קבוצה)"}),
+            frozenset({"עין חרוד (איחוד)", "עין חרוד (מאוחד)"}),
+            frozenset({"עין הוד", "עין חוד"}),
+            frozenset({"פקיעין (בוקייעה)", "פקיעין חדשה"}),
+        }
         cities = json.loads(DATA.read_text(encoding="utf-8"))["cities"]
-        groups = defaultdict(list)
+        groups = defaultdict(set)
         for name, v in cities.items():
-            groups[tuple(v)].append(name)
-        shared = [g for g in groups.values() if len(g) > 1]
-        assert all(len(g) == 2 for g in shared), shared
-        assert all(g[0].split()[0][:3] == g[1].split()[0][:3] for g in shared), shared
+            groups[tuple(v)].add(name)
+        stacked = [
+            g for g in groups.values() if len(g) > 1 and frozenset(g) not in same_place
+        ]
+        assert stacked == []
 
 
 class TestRegistrationWithoutSeededCoordinates:

@@ -32,6 +32,7 @@ History:  MEH-2669 — the `cities` seed (data.gov.il) carries NO coordinates,
 from __future__ import annotations
 
 import json
+import logging
 import math
 from functools import lru_cache
 from pathlib import Path
@@ -42,6 +43,8 @@ from app.data.cities import city_key
 from app.models.models import City
 
 Centroid = tuple[float, float]
+
+logger = logging.getLogger(__name__)
 
 
 def _usable(value) -> bool:
@@ -71,6 +74,11 @@ def _bundled() -> tuple[dict[str, Centroid], dict[str, Centroid]]:
     try:
         raw = json.loads(_COORDS_FILE.read_text(encoding="utf-8"))["cities"]
     except (OSError, ValueError, KeyError, TypeError):
+        # Loud, once: a missing file silently re-creates the MEH-2669 bug.
+        logger.error(
+            "city_centroid: bundled %s unreadable — no town-centre fallback",
+            _COORDS_FILE,
+        )
         return {}, {}
     exact: dict[str, Centroid] = {}
     by_key: dict[str, Centroid] = {}
