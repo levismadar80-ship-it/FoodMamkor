@@ -29,8 +29,11 @@ export default function RescueConfirmation({ order, onCancel, cancelling = false
   // MEH-2694: once the bag is handed, or the cancel cutoff has passed, the API
   // refuses a cancel (409), so the button would be a tap that can only fail.
   const handed = order.status === "handed";
+  // Allow-list, not "not handed": only a reserved order can be cancelled.
+  // The terms line stays past the cutoff because it also carries the no-show
+  // rule, which still applies until the bag is collected.
   const cancellable =
-    !handed &&
+    order.status === "reserved" &&
     (!order.cancel_until || new Date(order.cancel_until) > new Date());
 
   return (

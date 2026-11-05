@@ -509,6 +509,11 @@ describe("the confirmation after the counter or the cutoff (MEH-2694)", () => {
     expect(screen.getByTestId("rescue-confirmation-code").textContent).toBe("0431");
   });
 
+  it("a no-show order offers no cancel either", () => {
+    render(<RescueConfirmation order={order({ status: "no_show" })} onCancel={() => {}} />);
+    expect(screen.queryByTestId("rescue-confirmation-cancel")).toBeNull();
+  });
+
   it("before the cutoff a reserved bag can still be cancelled", () => {
     render(<RescueConfirmation order={order()} onCancel={() => {}} />);
     expect(screen.getByTestId("rescue-confirmation-cancel")).toBeTruthy();
