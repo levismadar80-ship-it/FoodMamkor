@@ -74,6 +74,7 @@ erDiagram
         json special_hours "nullable JSONB — MEH-1889 chunk A, migration c4e81b7a2f96; per-DATE overrides keyed YYYY-MM-DD, ranges:[] = closed. ORDER-AXIS ONLY: overrides order_window (itself absent from this diagram — pre-existing drift since MEH-1543), never the free-text opening_hours; note is display-only"
         string plan "free|premium"
         boolean grass_fed
+        boolean reservist_owned "NOT NULL default false — owner-declared «עסק של מילואימניקים», badge only (migration f1c7a2b9d4e6)"
         boolean organic_certified
         string kosher
         string facebook "nullable — MEH-296, VARCHAR(200) — producer FB page/Messenger link"
