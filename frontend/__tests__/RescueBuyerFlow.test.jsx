@@ -52,7 +52,13 @@ const fetchOffers = vi.fn();
 const reserveBag = vi.fn();
 const cancelOrder = vi.fn();
 const submitReview = vi.fn();
+const fetchMyOrders = vi.fn();
 let flagOn = true;
+let authUser = null;
+
+vi.mock("@/lib/auth-context", () => ({
+  useOptionalAuth: () => ({ user: authUser }),
+}));
 
 vi.mock("@/lib/rescue", async (importOriginal) => {
   const actual = await importOriginal();
@@ -63,6 +69,7 @@ vi.mock("@/lib/rescue", async (importOriginal) => {
     reserveBag: (...a) => reserveBag(...a),
     cancelOrder: (...a) => cancelOrder(...a),
     submitReview: (...a) => submitReview(...a),
+    fetchMyOrders: (...a) => fetchMyOrders(...a),
   };
 });
 
@@ -138,6 +145,8 @@ let RescueConfirmation;
 beforeEach(async () => {
   vi.clearAllMocks();
   flagOn = true;
+  authUser = null;
+  fetchMyOrders.mockResolvedValue([]);
   fetchOffers.mockResolvedValue([offer()]);
   ({ default: RescueSection } = await import("@/components/rescue/RescueSection"));
   ({ default: RescueList } = await import("@/components/rescue/RescueList"));
@@ -218,6 +227,75 @@ describe("the list — 0 / 1 / many", () => {
   });
 });
 
+describe("the home module — only when the town has bags", () => {
+  it("renders nothing with no town, and does not ask the API", async () => {
+    const { container } = render(<RescueHomeModule city="" />);
+    await waitFor(() => expect(fetchOffers).not.toHaveBeenCalled());
+    expect(container.firstChild).toBeNull();
+  });
+
+  it("renders nothing when the town has 0 bags — no heading, no empty line", async () => {
+    fetchOffers.mockResolvedValue([]);
+    const { container } = render(<RescueHomeModule city="תל אביב-יפו" />);
+    await waitFor(() => expect(fetchOffers).toHaveBeenCalledWith({ city: "תל אביב-יפו" }));
+    expect(container.firstChild).toBeNull();
+    expect(screen.queryByTestId("rescue-list-empty")).toBeNull();
+  });
+
+  it("renders nothing when the fetch fails", async () => {
+    fetchOffers.mockRejectedValue(new Error("down"));
+    const { container } = render(<RescueHomeModule city="חיפה" />);
+    await waitFor(() => expect(fetchOffers).toHaveBeenCalled());
+    expect(container.firstChild).toBeNull();
+  });
+
+  it("1 bag: heading names the town, link says «לכל הסלים», no town field, no count line", async () => {
+    render(<RescueHomeModule city="חיפה" />);
+    expect((await screen.findByTestId("rescue-home-module")).textContent).toContain("מה נשאר היום בחיפה");
+    expect(screen.getByTestId("rescue-home-all").textContent).toBe(lookup("rescue.home.all"));
+    expect(screen.getAllByTestId("rescue-bag-row")).toHaveLength(1);
+    expect(screen.queryByTestId("city-input")).toBeNull();
+    expect(screen.queryByTestId("rescue-list-count")).toBeNull();
+  });
+
+  it("many bags: three rows, and the link counts all of them", async () => {
+    fetchOffers.mockResolvedValue(["a", "b", "c", "d", "e"].map((id) => offer({ id })));
+    render(<RescueHomeModule city="חיפה" />);
+    expect(await screen.findAllByTestId("rescue-bag-row")).toHaveLength(3);
+    expect(screen.getByTestId("rescue-home-all").textContent).toBe("לכל 5 הסלים ←");
+  });
+
+  it("a town change mid-flight: the older answer never paints", async () => {
+    let releaseOld;
+    fetchOffers
+      .mockImplementationOnce(() => new Promise((r) => { releaseOld = r; }))
+      .mockResolvedValueOnce([]);
+    const { rerender, container } = render(<RescueHomeModule city="זכרון יעקב" />);
+    rerender(<RescueHomeModule city="תל אביב-יפו" />);
+    await waitFor(() => expect(fetchOffers).toHaveBeenCalledTimes(2));
+    releaseOld([offer()]);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(container.firstChild).toBeNull();
+  });
+});
+
+describe("the full list — the town arrives late (staging 5/11)", () => {
+  it("the field follows the town, and the town-less answer cannot overwrite it", async () => {
+    let releaseTownless;
+    fetchOffers
+      .mockImplementationOnce(() => new Promise((r) => { releaseTownless = r; }))
+      .mockResolvedValueOnce([]);
+    const { rerender } = render(<RescueList initialCity="" />);
+    rerender(<RescueList initialCity="תל אביב-יפו" />);
+    expect((await screen.findByTestId("rescue-list-empty")).textContent).toContain("תל אביב-יפו");
+    expect(screen.getByTestId("city-input").value).toBe("תל אביב-יפו");
+    releaseTownless([offer()]);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(screen.queryByTestId("rescue-bag-row")).toBeNull();
+    expect(screen.getByTestId("rescue-list-empty")).toBeTruthy();
+  });
+});
+
 describe("the row", () => {
   it("prefixes the pickup window and puts km in a bdi", async () => {
     render(<RescueList />);
@@ -229,7 +307,77 @@ describe("the row", () => {
     expect(bdi).not.toBeNull();
     expect(bdi.getAttribute("dir")).toBe("ltr");
     expect(bdi.textContent).toBe("0.8");
+    expect(distance.textContent).toContain(lookup("rescue.row.km"));
     expect(distance.textContent).toContain("בערך");
+  });
+
+  it("the row heading is h2 on /rescue (under its h1) and h3 under the home block's h2", async () => {
+    const { unmount } = render(<RescueList />);
+    expect((await screen.findByTestId("rescue-row-name")).tagName).toBe("H2");
+    unmount();
+    render(<RescueHomeModule city="חיפה" />);
+    expect((await screen.findByTestId("rescue-row-name")).tagName).toBe("H3");
+  });
+
+  it("leads with the pickup time and says until when", async () => {
+    render(<RescueList />);
+    const pickup = await screen.findByTestId("rescue-row-pickup");
+    expect(pickup.textContent).toContain(lookup("rescue.row.pickup_label"));
+    expect(pickup.textContent).toMatch(/\d\d:\d\d/);
+    expect(pickup.textContent).toContain("עד ");
+  });
+
+  it("shows what is usually in the bag, and the short stock line", async () => {
+    render(<RescueList />);
+    expect((await screen.findByTestId("rescue-row-where")).textContent).toContain("לחם, חלה");
+    expect(screen.getByTestId("rescue-row-stock").textContent).toBe("נשארו 3");
+  });
+
+  it("two bags left use the Hebrew dual branch: «נשארו 2»", async () => {
+    fetchOffers.mockResolvedValue([offer({ qty_left: 2 })]);
+    render(<RescueList />);
+    expect((await screen.findByTestId("rescue-row-stock")).textContent).toBe("נשארו 2");
+  });
+
+  it("one bag left reads «נשאר 1»", async () => {
+    fetchOffers.mockResolvedValue([offer({ qty_left: 1 })]);
+    render(<RescueList />);
+    expect((await screen.findByTestId("rescue-row-stock")).textContent).toBe("נשאר 1");
+  });
+
+  it("strikes the declared worth only when it is above the price", async () => {
+    fetchOffers.mockResolvedValue([
+      offer({ id: "a", value_min_agorot: 4500, value_max_agorot: 6000 }),
+      offer({ id: "b", value_min_agorot: 1000 }),
+    ]);
+    render(<RescueList />);
+    const worth = await screen.findAllByTestId("rescue-row-worth");
+    expect(worth).toHaveLength(1);
+    expect(worth[0].tagName).toBe("S");
+    expect(worth[0].textContent).toBe("45 ₪");
+  });
+
+  it("«עוד שעה» only when pickup opens within the hour", async () => {
+    const now = Date.now();
+    fetchOffers.mockResolvedValue([
+      offer({ id: "soon", pickup_start: new Date(now + 30 * 60_000).toISOString() }),
+      offer({ id: "later", pickup_start: new Date(now + 3 * 3600_000).toISOString() }),
+      offer({ id: "open", pickup_start: new Date(now - 10 * 60_000).toISOString() }),
+    ]);
+    render(<RescueList />);
+    await screen.findAllByTestId("rescue-bag-row");
+    expect(screen.getAllByTestId("rescue-row-soon")).toHaveLength(1);
+  });
+
+  it("no photo gets a tile, never an empty box; a photo becomes the background", async () => {
+    fetchOffers.mockResolvedValue([
+      offer({ id: "a" }),
+      offer({ id: "b", producer: { ...PRODUCER, image_url: "https://res.cloudinary.com/x/image/upload/v1/p.jpg" } }),
+    ]);
+    render(<RescueList />);
+    const [noPhoto, photo] = await screen.findAllByTestId("rescue-row-image");
+    expect(noPhoto.querySelector("svg")).not.toBeNull();
+    expect(photo.style.backgroundImage).toContain("res.cloudinary.com");
   });
 
   it("links to the business page, where the only reserve button lives", async () => {
@@ -409,5 +557,105 @@ describe("the review", () => {
     const submit = screen.getByTestId("rescue-review-submit");
     // Node.compareDocumentPosition: 4 = submit FOLLOWS problem.
     expect(problem.compareDocumentPosition(submit) & 4).toBeTruthy();
+  });
+});
+
+describe("a reload keeps the order (MEH-2680)", () => {
+  const mine = (over = {}) => ({ ...order(over), producer_id: PRODUCER.id, reviewed: false, ...over });
+
+  it("a guest is never asked for their orders — a 401 would toast 'session expired'", async () => {
+    render(<RescueSection producer={PRODUCER} />);
+    await screen.findByTestId("rescue-reserve");
+    expect(fetchMyOrders).not.toHaveBeenCalled();
+  });
+
+  it("a signed-in buyer sees her code again after a reload", async () => {
+    authUser = { id: "u1" };
+    fetchMyOrders.mockResolvedValue([mine({ status: "reserved" })]);
+    render(<RescueSection producer={PRODUCER} />);
+    expect(await screen.findByTestId("rescue-confirmation")).toBeTruthy();
+    expect(screen.queryByTestId("rescue-reserve")).toBeNull();
+  });
+
+  it("the last bag sold — offer gone from the list — still restores her order", async () => {
+    authUser = { id: "u1" };
+    fetchOffers.mockResolvedValue([]);
+    fetchMyOrders.mockResolvedValue([mine({ status: "reserved" })]);
+    render(<RescueSection producer={PRODUCER} />);
+    expect(await screen.findByTestId("rescue-confirmation")).toBeTruthy();
+  });
+
+  it("an order at another business is not shown here", async () => {
+    authUser = { id: "u1" };
+    fetchMyOrders.mockResolvedValue([mine({ producer_id: "someone-else" })]);
+    render(<RescueSection producer={PRODUCER} />);
+    await screen.findByTestId("rescue-reserve");
+    await waitFor(() => expect(fetchMyOrders).toHaveBeenCalled());
+    expect(screen.queryByTestId("rescue-confirmation")).toBeNull();
+  });
+
+  it("handed and not yet reviewed brings up the review", async () => {
+    authUser = { id: "u1" };
+    fetchMyOrders.mockResolvedValue([mine({ status: "handed" })]);
+    render(<RescueSection producer={PRODUCER} />);
+    expect(await screen.findByTestId("rescue-review")).toBeTruthy();
+  });
+
+  it("handed and already reviewed does not ask again", async () => {
+    authUser = { id: "u1" };
+    fetchMyOrders.mockResolvedValue([mine({ status: "handed", reviewed: true })]);
+    render(<RescueSection producer={PRODUCER} />);
+    expect(await screen.findByTestId("rescue-review-thanks")).toBeTruthy();
+    expect(screen.queryByTestId("rescue-review")).toBeNull();
+  });
+
+  it("one bag handed and a newer one reserved: the reserved code is shown", async () => {
+    authUser = { id: "u1" };
+    fetchMyOrders.mockResolvedValue([
+      mine({ id: "old", status: "handed", pickup_code: "1111" }),
+      mine({ id: "new", status: "reserved", pickup_code: "2222" }),
+    ]);
+    render(<RescueSection producer={PRODUCER} />);
+    const box = await screen.findByTestId("rescue-confirmation");
+    expect(box.textContent).toContain("2222");
+    expect(box.textContent).not.toContain("1111");
+  });
+
+  it("coming back to the tab re-reads, so 'handed' shows without a reload", async () => {
+    authUser = { id: "u1" };
+    fetchMyOrders.mockResolvedValueOnce([mine({ status: "reserved" })]);
+    render(<RescueSection producer={PRODUCER} />);
+    await screen.findByTestId("rescue-confirmation");
+    expect(screen.queryByTestId("rescue-review")).toBeNull();
+    fetchMyOrders.mockResolvedValueOnce([mine({ status: "handed" })]);
+    window.dispatchEvent(new Event("focus"));
+    expect(await screen.findByTestId("rescue-review")).toBeTruthy();
+  });
+});
+
+describe("the confirmation after the counter or the cutoff (MEH-2694)", () => {
+  it("a handed bag offers no cancel and no cancel terms, and marks the last step", () => {
+    render(<RescueConfirmation order={order({ status: "handed" })} onCancel={() => {}} />);
+    expect(screen.queryByTestId("rescue-confirmation-cancel")).toBeNull();
+    expect(screen.queryByTestId("rescue-confirmation-terms")).toBeNull();
+    expect(screen.getByTestId("rescue-confirmation-step-done").className).toContain("font-semibold");
+  });
+
+  it("past the cancel cutoff the button is gone, the code stays", () => {
+    const past = new Date(Date.now() - 60_000).toISOString();
+    render(<RescueConfirmation order={order({ cancel_until: past })} onCancel={() => {}} />);
+    expect(screen.queryByTestId("rescue-confirmation-cancel")).toBeNull();
+    expect(screen.getByTestId("rescue-confirmation-code").textContent).toBe("0431");
+  });
+
+  it("a no-show order offers no cancel either", () => {
+    render(<RescueConfirmation order={order({ status: "no_show" })} onCancel={() => {}} />);
+    expect(screen.queryByTestId("rescue-confirmation-cancel")).toBeNull();
+  });
+
+  it("before the cutoff a reserved bag can still be cancelled", () => {
+    render(<RescueConfirmation order={order()} onCancel={() => {}} />);
+    expect(screen.getByTestId("rescue-confirmation-cancel")).toBeTruthy();
+    expect(screen.getByTestId("rescue-confirmation-step-done").className).not.toContain("font-semibold");
   });
 });

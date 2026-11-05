@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 
 import api from "@/lib/api";
 import { useOptionalAuth } from "@/lib/auth-context";
+import { JoinDeliveryWaitlistProducersProducerIdDeliveryWaitlistPostResponse as WaitlistOut } from "@/lib/generated/api.zod";
 
 /**
  * Module:   DeliveryWaitlistForm
@@ -13,7 +14,13 @@ import { useOptionalAuth } from "@/lib/auth-context";
  *           under the delivery checker's negative verdict. Email + the city the
  *           verdict is about; the business's later "add city" mails her once.
  * Touches:  POST /api/producers/{id}/delivery-waitlist (201 added / 200 exists
- *           — both land on the same calm "נודיע לך" line).
+ *           — both land on the same calm "נודיע לך" line). MEH-2674: the
+ *           optional «אשמח לארח נקודת מסירה ב{עיר}» box sends
+ *           `wants_to_host`; the response's `host_confirm` picks ONE extra
+ *           line under the confirmation — sent / already_sent /
+ *           limit_reached — and `confirmed` adds none (she is already a
+ *           host; the calm line is the whole truth). Nothing is shared
+ *           with the business until she clicks the mailed link.
  * Does NOT: decide the city or whether it is covered — both are the caller's
  *           (DeliveryChecker's "no" branch is the ONLY mount), exactly like
  *           CoverageRequestCta beside it. Does not touch favorites/WhatsApp:
@@ -22,7 +29,16 @@ import { useOptionalAuth } from "@/lib/auth-context";
  * Related:  backend/app/services/delivery_waitlist.py (the email + trigger);
  *           frontend/components/CoverageRequestCta.jsx (the WhatsApp sibling).
  * History:  MEH-2618 (creation). Plan: claude.ai/artifact/2W4LNWVVxUDBSu8gMQQWsW.
+ *           MEH-2674 (host checkbox; server side MEH-2673, PR #3999).
  */
+
+// host_confirm values that add a line under «נודיע לך». `confirmed` is
+// deliberately absent: a host who ticks again gets no second message.
+const HOST_LINES = {
+  sent: "host_sent",
+  already_sent: "host_already_sent",
+  limit_reached: "host_limit_reached",
+};
 
 // idle → open → (busy) → done; error keeps the form open with a message.
 export default function DeliveryWaitlistForm({ producer = null, city = "" }) {
@@ -34,21 +50,34 @@ export default function DeliveryWaitlistForm({ producer = null, city = "" }) {
   const [phase, setPhase] = useState("idle");
   // Prefilled for a signed-in visitor — she can still change it.
   const [email, setEmail] = useState(user?.email ?? "");
+  const [wantsToHost, setWantsToHost] = useState(false);
+  // MEH-2674: the server's word on the confirmation mail (null = box unticked
+  // or an older backend that does not answer host_confirm).
+  const [hostConfirm, setHostConfirm] = useState(null);
   const [error, setError] = useState(false);
 
   if (!producer?.id || !value) return null;
 
   const inputId = `delivery-waitlist-email-${producer.id}`;
+  const hostId = `delivery-waitlist-host-${producer.id}`;
 
   async function submit(e) {
     e.preventDefault();
     setError(false);
     setPhase("busy");
     try {
-      await api.post(`/producers/${producer.id}/delivery-waitlist`, {
-        email: email.trim(),
-        city: value,
-      });
+      const body = { email: email.trim(), city: value };
+      // Only sent when ticked: an unticked box must never read as a
+      // withdrawal on a repeat signup (the backend ignores false anyway).
+      if (wantsToHost) body.wants_to_host = true;
+      const r = await api.post(
+        `/producers/${producer.id}/delivery-waitlist`,
+        body,
+      );
+      // Rule 19: the extra line is picked from a validated payload; a shape
+      // we do not recognise falls back to the calm line alone.
+      const parsed = WaitlistOut.safeParse(r.data);
+      setHostConfirm(parsed.success ? (parsed.data.host_confirm ?? null) : null);
       setPhase("done");
     } catch {
       setError(true);
@@ -72,6 +101,15 @@ export default function DeliveryWaitlistForm({ producer = null, city = "" }) {
           />
           {t("done", { city: value })}
         </p>
+        {HOST_LINES[hostConfirm] && (
+          <p
+            className="mt-1 text-[13px] text-text"
+            data-testid="delivery-waitlist-host-status"
+            data-host-confirm={hostConfirm}
+          >
+            {t(HOST_LINES[hostConfirm])}
+          </p>
+        )}
         {/* MEH-2618 chunk 2c: WhatsApp lives in the favorite-alert panel
             (AlertPrefsPanel — whatsapp_opt_in + notify_delivery_area), so a
             signed-in visitor is pointed there instead of a second opt-in. */}
@@ -145,6 +183,28 @@ export default function DeliveryWaitlistForm({ producer = null, city = "" }) {
         >
           {busy ? t("sending") : t("submit")}
         </button>
+      </div>
+      {/* MEH-2674: opt-in to host a pickup point in this city. Unticked by
+          default; the hint under it says the mail-confirmation step out loud
+          so nobody thinks the box alone hands her email to the business. */}
+      <div className="mt-2 flex items-start gap-2">
+        <input
+          id={hostId}
+          type="checkbox"
+          checked={wantsToHost}
+          onChange={(e) => setWantsToHost(e.target.checked)}
+          data-testid="delivery-waitlist-host"
+          className="mt-1 h-4 w-4 flex-shrink-0 accent-primary"
+        />
+        <label htmlFor={hostId} className="text-[13px] text-text">
+          {t("host_label", { city: value })}
+          <span
+            className="block text-[12px] text-fg-muted"
+            data-testid="delivery-waitlist-host-hint"
+          >
+            {t("host_hint")}
+          </span>
+        </label>
       </div>
       {error && (
         <p

@@ -1261,7 +1261,12 @@
         "sending": "Sending…",
         "done": "We'll let you know when they deliver to {city}",
         "error": "Something went wrong, please try again",
-        "whatsapp_hint": "Want it on WhatsApp too? Save the business to your favorites and turn on the “delivery to my area” alert."
+        "whatsapp_hint": "Want it on WhatsApp too? Save the business to your favorites and turn on the “delivery to my area” alert.",
+        "host_label": "I'd be happy to host a pickup point in {city}",
+        "host_hint": "We'll email you to confirm; only after you confirm will your email be passed to the business.",
+        "host_sent": "We've emailed you to confirm hosting.",
+        "host_already_sent": "We already emailed you to confirm hosting. Check your inbox (and spam).",
+        "host_limit_reached": "Several emails were already sent to this address today. Please try again tomorrow."
       }
     },
     "friday_delivery": {
@@ -3254,6 +3259,15 @@
     "error_body": "The link may have expired or opened only partway. Try again from the email, or get in touch.",
     "cta_home": "Back to home"
   },
+  "delivery_waitlist_host_confirm": {
+    "meta_title": "Pickup point confirmation · Mehamakor",
+    "loading": "Confirming…",
+    "success_title": "Thanks! Your email was passed to {producer}.",
+    "expired_resent_title": "This link has expired. We've emailed you a new one.",
+    "expired_title": "This link has expired. A newer link was already sent to your email.",
+    "error_title": "This link is invalid or has expired.",
+    "cta_home": "Back to home"
+  },
   "delivery_waitlist_unsubscribe": {
     "meta_title": "Stop delivery updates · Mehamakor",
     "loading": "Removing you…",
@@ -4442,6 +4456,10 @@
           "row_many": "{count} asked for delivery to {city}",
           "empty": "No requests yet. When someone asks about a city that isn't on your list, it shows up here.",
           "scope": "Counts taps on “You can ask the business” in the last 30 days. Conversations that continued on WhatsApp aren't counted."
+        },
+        "pickup_hosts": {
+          "title": "Willing to host a pickup point",
+          "sub": "People who ticked “happy to host” when they signed up for updates. You can reach them by email."
         }
       },
       "completeness": {
@@ -4635,6 +4653,10 @@
         "heading": "Pasture raised",
         "label": "Grass-fed",
         "scope_helper": "Adds the grass-fed chip to your business on the map page. Shown as your own declaration."
+      },
+      "badge_request": {
+        "prompt": "Missing a tag that fits your business?",
+        "link": "Write to us"
       },
       "dietaryScope": {
         "heading": "Diet",
@@ -5662,7 +5684,9 @@
     "home": {
       "title": "Left today",
       "title_city": "Left today in {city}",
-      "all": "All bags"
+      "all": "All bags",
+      "all_count": "All {count} bags →",
+      "lead": "Bags of what didn't sell today, at a reduced price. Self pickup."
     },
     "list": {
       "city_label": "City",
@@ -5678,7 +5702,11 @@
       "pickup": "Pickup {from}–{until}",
       "price": "{price} ₪",
       "km": "km",
-      "walk": "about {minutes} min walk"
+      "walk": "about {minutes} min walk",
+      "pickup_label": "Pickup",
+      "until": "until {time}",
+      "soon": "within the hour",
+      "left_short": "{count, plural, one {1 left} other {# left}}"
     },
     "section": {
       "title": "Rescue bag",
