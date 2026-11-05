@@ -181,7 +181,7 @@ export default function EventDetailClient() {
         {/* MEH-2559: the save heart on the cover's corner — the corner the recipe
             and business pages use. Not in the share/calendar row: a third
             button there wraps «הוספה ליומן» onto two lines below 375px. */}
-        <div className="absolute top-3 start-3 lg:top-9 lg:start-7 z-10" data-testid="event-cover-actions">
+        <div className="absolute top-3 end-3 lg:top-9 lg:end-7 z-10" data-testid="event-cover-actions">
           <SaveButton itemType="event" itemId={event.id} />
         </div>
         {event.image_url ? (

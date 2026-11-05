@@ -206,6 +206,9 @@ describe("MEH-2559 — save heart", () => {
     const hearts = [...screen.getByTestId("event-cover-actions").querySelectorAll('[data-testid="save-event"]')];
     expect(hearts).toHaveLength(1);
     expect(hearts[0].getAttribute("data-id")).toBe("ev-1");
+    // MEH-2671: the inline-END corner (top-left in RTL).
+    expect(screen.getByTestId("event-cover-actions").className).toMatch(/\bend-3\b/);
+    expect(screen.getByTestId("event-cover-actions").className).not.toMatch(/\bstart-3\b/);
     expect(screen.getByTestId("event-actions").querySelector('[data-testid="save-event"]')).toBeNull();
   });
 

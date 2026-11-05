@@ -112,7 +112,7 @@ export default function ImageGallery({ images = [], producerId = null, producerN
               Same glyphs/font/fill; box 34x24 at the same corner (span box
               measured 33x24 before the swap). */}
           <svg
-            className="absolute top-3 end-3 select-none pointer-events-none overflow-visible"
+            className="absolute top-3 start-3 select-none pointer-events-none overflow-visible"
             width="34"
             height="24"
             viewBox="0 0 34 24"
@@ -213,14 +213,14 @@ export default function ImageGallery({ images = [], producerId = null, producerN
             reads as one control group. Mutually exclusive with that branch
             (this arm returns early), so only ONE heart mounts per render. */}
         {producerId && (
-          <div className="absolute top-3 start-3 z-10 lg:hidden flex items-center gap-2">
-            <ShareButton variant="overlay" url={shareUrl} title={producerName} />
+          <div className="absolute top-3 end-3 z-10 lg:hidden flex items-center gap-2">
             <FavoriteButton
               producerId={producerId}
               producerName={producerName}
               variant="gallery"
               onFavorited={onFavorited}
             />
+            <ShareButton variant="overlay" url={shareUrl} title={producerName} />
             {updatesButton}
           </div>
         )}
@@ -342,11 +342,11 @@ export default function ImageGallery({ images = [], producerId = null, producerN
       </button>
       {images.length > 1 && (
         <>
-          {/* MEH-1047 chunk 2: counter chip (1/N) at top-end — opposite the
-              favorite (top-start); dark scrim keeps it legible over any photo.
+          {/* MEH-1047 chunk 2: counter chip (1/N) — opposite the actions
+              cluster (MEH-2671: chip at top-start, actions at top-end); dark scrim keeps it legible over any photo.
               .numeric bidi-isolates the fraction so RTL can't flip "1/5". */}
           <div
-            className="absolute top-3 end-3 z-10 rounded-full bg-black/55 px-2.5 py-1 text-xs font-label-md text-white numeric pointer-events-none"
+            className="absolute top-3 start-3 z-10 rounded-full bg-black/55 px-2.5 py-1 text-xs font-label-md text-white numeric pointer-events-none"
             data-testid="gallery-counter"
           >
             {current + 1}/{images.length}
@@ -367,8 +367,11 @@ export default function ImageGallery({ images = [], producerId = null, producerN
         </>
       )}
     </div>
-    {/* MEH-1334: mobile overlay for the imaged state — pinned top-start
-        (right, RTL) over the hero corner. z-20 clears the counter chip /
+    {/* MEH-1334: mobile overlay for the imaged state — pinned over the hero
+        corner. MEH-2671: moved to top-END (left, RTL) with the heart leading,
+        per the Apple/Material bidi rule (actions trail; same order as the
+        desktop row: שמירה · שיתוף · עדכונים); the counter chip took the
+        start corner. z-20 clears the counter chip /
         pill (z-10).
         MEH-1693: the heart is BACK beside the share circle, reclaiming the
         MEH-1047 slot it was pulled from. MEH-1334 decision 6 removed it to
@@ -379,14 +382,14 @@ export default function ImageGallery({ images = [], producerId = null, producerN
         to mirror FavoriteButton's gallery circle, so they match by
         construction rather than by copied class strings. */}
     {producerId && (
-      <div className="absolute top-3 start-3 z-20 lg:hidden flex items-center gap-2">
-        <ShareButton variant="overlay" url={shareUrl} title={producerName} />
+      <div className="absolute top-3 end-3 z-20 lg:hidden flex items-center gap-2">
         <FavoriteButton
           producerId={producerId}
           producerName={producerName}
           variant="gallery"
           onFavorited={onFavorited}
         />
+        <ShareButton variant="overlay" url={shareUrl} title={producerName} />
         {updatesButton}
       </div>
     )}

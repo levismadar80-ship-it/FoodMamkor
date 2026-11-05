@@ -5,7 +5,7 @@ import { detailPath, openDetail, pickProducer, watchPageErrors, REQUIREMENTS } f
  * MEH-2215 — the guest login prompt must paint ABOVE the page chrome.
  *
  * The bug: `LoginPromptModal` was rendered in place, as a sibling of the
- * gallery heart inside ImageGallery's `absolute top-3 start-3 z-20 lg:hidden`
+ * gallery heart inside ImageGallery's `absolute top-3 end-3 z-20 lg:hidden`
  * wrapper (ImageGallery.jsx:375). `position` + a z token makes that wrapper a
  * stacking context, so the modal's `z-[9500]` (LoginPromptModal.jsx:98) only
  * ever ranked INSIDE it. The page's own root-level chrome — the `sticky
