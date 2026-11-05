@@ -5787,6 +5787,11 @@
             ],
             "title": "Requested Changes"
           },
+          "reservist_owned": {
+            "default": false,
+            "title": "Reservist Owned",
+            "type": "boolean"
+          },
           "resubmission_count": {
             "default": 0,
             "title": "Resubmission Count",
@@ -6591,6 +6596,17 @@
               }
             ],
             "title": "Recommended Note"
+          },
+          "reservist_owned": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reservist Owned"
           },
           "short_description": {
             "anyOf": [
@@ -7541,6 +7557,11 @@
             "title": "Report Count",
             "type": "integer"
           },
+          "reservist_owned": {
+            "default": false,
+            "title": "Reservist Owned",
+            "type": "boolean"
+          },
           "reviews_count": {
             "default": 0,
             "title": "Reviews Count",
@@ -8229,6 +8250,11 @@
             "default": 0,
             "title": "Products Count",
             "type": "integer"
+          },
+          "reservist_owned": {
+            "default": false,
+            "title": "Reservist Owned",
+            "type": "boolean"
           },
           "reviews_count": {
             "default": 0,
@@ -9739,6 +9765,11 @@
               }
             ],
             "title": "Requested Changes"
+          },
+          "reservist_owned": {
+            "default": false,
+            "title": "Reservist Owned",
+            "type": "boolean"
           },
           "resubmission_count": {
             "default": 0,
@@ -11263,6 +11294,17 @@
               }
             ],
             "title": "Recommended Note"
+          },
+          "reservist_owned": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reservist Owned"
           },
           "short_description": {
             "anyOf": [
