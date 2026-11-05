@@ -64,22 +64,21 @@ def _as_centroid(row: City | None) -> Centroid | None:
 _COORDS_FILE = Path(__file__).resolve().parent.parent / "data" / "city_coordinates.json"
 
 
-@lru_cache(maxsize=1)
-def _bundled() -> tuple[dict[str, Centroid], dict[str, Centroid]]:
-    """(by exact name, by city_key) from the bundled file; empty if unreadable.
+class _Unreadable(Exception):
+    """The bundled file could not be read; raised so lru_cache never stores it."""
 
-    Read once per process. An unreadable file degrades to "no fallback" —
-    the pre-MEH-2669 behaviour — never to an exception inside registration.
+
+@lru_cache(maxsize=1)
+def _load_bundled() -> tuple[dict[str, Centroid], dict[str, Centroid]]:
+    """(by exact name, by city_key) from the bundled file. Read once per process.
+
+    Raises _Unreadable instead of returning empties, so a transient read error
+    is retried on the next call rather than cached for the life of the process.
     """
     try:
         raw = json.loads(_COORDS_FILE.read_text(encoding="utf-8"))["cities"]
-    except (OSError, ValueError, KeyError, TypeError):
-        # Loud, once: a missing file silently re-creates the MEH-2669 bug.
-        logger.error(
-            "city_centroid: bundled %s unreadable — no town-centre fallback",
-            _COORDS_FILE,
-        )
-        return {}, {}
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        raise _Unreadable from exc
     exact: dict[str, Centroid] = {}
     by_key: dict[str, Centroid] = {}
     for name, pair in raw.items():
@@ -96,9 +95,24 @@ def _bundled() -> tuple[dict[str, Centroid], dict[str, Centroid]]:
     return exact, by_key
 
 
+def _bundled() -> tuple[dict[str, Centroid], dict[str, Centroid]]:
+    """The bundled maps, or empties when unreadable — never an exception
+    inside registration. Loud on every failed read: a missing file silently
+    re-creates the MEH-2669 bug."""
+    try:
+        return _load_bundled()
+    except _Unreadable:
+        logger.error(
+            "city_centroid: bundled %s unreadable — no town-centre fallback",
+            _COORDS_FILE,
+        )
+        return {}, {}
+
+
 def _bundled_centroid(clean: str) -> Centroid | None:
     exact, by_key = _bundled()
-    return exact.get(clean) or by_key.get(city_key(clean))
+    found = exact.get(clean)
+    return found if found is not None else by_key.get(city_key(clean))
 
 
 def city_centroid(db: Session, name: str | None) -> Centroid | None:

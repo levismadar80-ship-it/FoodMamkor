@@ -19,6 +19,7 @@ from pathlib import Path
 
 from app.models import Producer, ProducerLocation
 from app.models.models import City
+import app.services.city_centroid as cc
 from app.services.city_centroid import city_centroid
 from app.services.submission_gate import MISSING_LOCATION, submission_missing_items
 from tests.conftest import auth_header, make_category, make_user
@@ -66,6 +67,23 @@ class TestBundledFallback:
         # 85 settlements stacked on a single Negev point. No pin beats a wrong one.
         assert city_centroid(db, "עטרת") is None
         assert city_centroid(db, "אדורה") is None
+
+
+class TestUnreadableFile:
+    def test_missing_file_degrades_to_none_and_is_not_cached(
+        self, db, monkeypatch, caplog
+    ):
+        cc._load_bundled.cache_clear()
+        monkeypatch.setattr(
+            cc, "_COORDS_FILE", Path("/nonexistent/city_coordinates.json")
+        )
+        with caplog.at_level("ERROR"):
+            assert city_centroid(db, "חיפה") is None
+        assert "unreadable" in caplog.text
+        # The failure was not cached: once the file is back, the next call reads it.
+        monkeypatch.setattr(cc, "_COORDS_FILE", DATA)
+        _near(city_centroid(db, "חיפה"), 32.819, 34.998)
+        cc._load_bundled.cache_clear()
 
 
 class TestBundledFileShape:
