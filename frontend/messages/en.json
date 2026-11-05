@@ -5469,6 +5469,30 @@
     "availability": "A temporary exception — busy this week, on a break, or available today. It overrides the fixed schedule and is shown to customers on the card and the business page.",
     "order_window": "Like opening hours, but for orders. Fixed and weekly; it changes only when you change it. Shown on the business page as a status and a day strip. This schedule applies to the whole business. Branch or pickup-point hours are set separately in the location editor."
   },
+  "about_badges": {
+    "meta_title": "What the badges mean | Mehamakor",
+    "meta_description": "What each badge on the site means, and who stands behind it.",
+    "h1": "What the badges mean",
+    "intro": "Some businesses show badges next to their name. Here is what each one means and who stands behind it. Badges don't affect the order businesses appear in, and they can't be bought.",
+    "groups": {
+      "admin-verified": {
+        "heading": "Checked by us",
+        "intro": "The business showed us a document and we checked it by hand. <link>How we check</link>"
+      },
+      "editorial": {
+        "heading": "Editor's pick",
+        "intro": "A badge the editor gives on personal judgement."
+      },
+      "self-declared": {
+        "heading": "Declared by the business",
+        "intro": "The business marked this itself, and we don't verify it against a document. If something is wrong, <link>write to us</link>."
+      },
+      "system": {
+        "heading": "Automatic",
+        "intro": "The badge appears and disappears on its own, based on activity on the site."
+      }
+    }
+  },
   "about_why_local": {
     "meta_title": "Why local? — Mehamakor",
     "meta_description": "Five reasons to choose local food — taste, local economy, fairness, transparency, and the environment — and how to find local businesses on Mehamakor.",
