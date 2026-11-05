@@ -10,7 +10,7 @@
  * the shipped Hebrew says something else.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 
 import heMessages from "../messages/he.json";
 
@@ -52,15 +52,29 @@ function order(over = {}) {
   };
 }
 
+// MEH-2678: the tab loads the business's own pickup points. It used to take
+// them as a prop that the only page rendering it never passed, so every real
+// publish said «צריך נקודת איסוף» while these tests, which passed the prop,
+// stayed green.
+let locs = [{ id: "loc1", location_precision: "exact", is_primary: true }];
 function mockOrders(rows) {
   get.mockImplementation((url) => {
     if (url.includes("typical-items")) return Promise.resolve({ data: { items: ["לחם"] } });
+    if (url === "/producers/me/locations") return Promise.resolve({ data: locs });
     return Promise.resolve({ data: rows });
   });
 }
 
+// The pickup points arrive asynchronously; publishing before they have is
+// the no-location path, so the publish tests wait for them first.
+async function pointsLoaded() {
+  await waitFor(() => expect(get).toHaveBeenCalledWith("/producers/me/locations"));
+  await act(async () => {});
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
+  locs = [{ id: "loc1", location_precision: "exact", is_primary: true }];
   mockOrders([]);
   post.mockResolvedValue({ data: {} });
   put.mockResolvedValue({ data: { items: [] } });
@@ -178,7 +192,9 @@ describe("the list never shows who the buyer is", () => {
 
 describe("publishing", () => {
   it("needs a pickup point and says so when there is none", async () => {
-    render(<RescueTab locations={[]} />);
+    locs = [];
+    mockOrders([]);
+    render(<RescueTab />);
     fireEvent.click(await screen.findByTestId("rescue-publish-today"));
     expect(await screen.findByTestId("rescue-tab-notice")).toHaveProperty(
       "textContent",
@@ -187,8 +203,57 @@ describe("publishing", () => {
     expect(post).not.toHaveBeenCalled();
   });
 
+  it("loads its own pickup point and publishes at it — the page passes nothing", async () => {
+    render(<RescueTab />);
+    await pointsLoaded();
+    fireEvent.click(screen.getByTestId("rescue-publish-today"));
+    await waitFor(() => expect(post).toHaveBeenCalled());
+    expect(post.mock.calls[0][1].producer_location_id).toBe("loc1");
+  });
+
+  it("skips an approximate point (the server refuses it) and uses an exact one", async () => {
+    locs = [
+      { id: "approx", location_precision: "approximate", is_primary: true },
+      { id: "exact2", location_precision: "exact", is_primary: false },
+    ];
+    mockOrders([]);
+    render(<RescueTab />);
+    await pointsLoaded();
+    fireEvent.click(screen.getByTestId("rescue-publish-today"));
+    await waitFor(() => expect(post).toHaveBeenCalled());
+    expect(post.mock.calls[0][1].producer_location_id).toBe("exact2");
+  });
+
+  it("with only an approximate point, says so instead of sending a request the server refuses", async () => {
+    locs = [{ id: "approx", location_precision: "approximate", is_primary: true }];
+    mockOrders([]);
+    render(<RescueTab />);
+    await pointsLoaded();
+    fireEvent.click(screen.getByTestId("rescue-publish-today"));
+    expect(await screen.findByTestId("rescue-tab-notice")).toHaveProperty(
+      "textContent",
+      lookup("rescue.dashboard.no_location"),
+    );
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it("dates the bag by the Israel calendar, not UTC (00:30 in Israel is still yesterday in UTC)", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-05T22:30:00Z")); // 00:30 on 06/11 in Israel
+    try {
+      render(<RescueTab />);
+      await pointsLoaded();
+      fireEvent.click(screen.getByTestId("rescue-publish-today"));
+      await waitFor(() => expect(post).toHaveBeenCalled());
+      expect(post.mock.calls[0][1].date).toBe("2026-11-06");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("sends agorot, not shekels", async () => {
-    render(<RescueTab locations={[{ id: "loc1" }]} />);
+    render(<RescueTab />);
+    await pointsLoaded();
     fireEvent.change(screen.getByTestId("rescue-publish-price"), { target: { value: "18" } });
     fireEvent.click(screen.getByTestId("rescue-publish-today"));
     await waitFor(() => expect(post).toHaveBeenCalled());
@@ -196,7 +261,8 @@ describe("publishing", () => {
   });
 
   it("the tomorrow button publishes for the NEXT day", async () => {
-    render(<RescueTab locations={[{ id: "loc1" }]} />);
+    render(<RescueTab />);
+    await pointsLoaded();
     fireEvent.click(screen.getByTestId("rescue-publish-tomorrow"));
     await waitFor(() => expect(post).toHaveBeenCalled());
     const today = new Date().toISOString().slice(0, 10);
@@ -205,7 +271,8 @@ describe("publishing", () => {
 
   it("surfaces the server's own refusal rather than a generic message", async () => {
     post.mockRejectedValue({ response: { data: { detail: "סלי הצלה עדיין לא פתוחים ביישוב הזה" } } });
-    render(<RescueTab locations={[{ id: "loc1" }]} />);
+    render(<RescueTab />);
+    await pointsLoaded();
     fireEvent.click(screen.getByTestId("rescue-publish-today"));
     expect(await screen.findByTestId("rescue-tab-notice")).toHaveProperty(
       "textContent",
@@ -216,7 +283,7 @@ describe("publishing", () => {
 
 describe("the «בדרך כלל» editor", () => {
   it("loads what is stored and saves a trimmed list", async () => {
-    render(<RescueTab locations={[{ id: "loc1" }]} />);
+    render(<RescueTab />);
     await waitFor(() => expect(screen.getByTestId("rescue-items-input").value).toBe("לחם"));
     fireEvent.change(screen.getByTestId("rescue-items-input"), {
       target: { value: " לחם , חלה ,, בורקס " },

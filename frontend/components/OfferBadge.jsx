@@ -72,6 +72,29 @@ const AMOUNT_SLOT = "\u0001";
 // same answer and were computing it from the UTC date instead — the exact
 // mistake this helper's docstring had been warning against. One owner now.
 
+// MEH-2676: the date-window half of the guard below, shared with
+// freeDeliveryThreshold() so ProducerCard cannot show a threshold for an offer
+// this component would hide.
+function isWithinWindow(offer) {
+  const today = israelToday();
+  if (offer.expires_at && offer.expires_at < today) return false;
+  if (offer.starts_at && offer.starts_at > today) return false;
+  return true;
+}
+
+/**
+ * MEH-2676 — the free-delivery threshold a card should fold into its delivery
+ * row, or null. Returns { value, unit } only for a live `free_delivery_above`
+ * offer that carries a valid threshold. A threshold-less free-delivery offer
+ * returns null: its chip («משלוח חינם») is short and never truncates.
+ */
+export function freeDeliveryThreshold(offer) {
+  if (!offer || offer.offer_type !== "free_delivery_above") return null;
+  if (offer.threshold_value == null || !UNITS.has(offer.threshold_unit)) return null;
+  if (!isWithinWindow(offer)) return null;
+  return { value: offer.threshold_value, unit: offer.threshold_unit };
+}
+
 export default function OfferBadge({ offer, variant = "badge", className = "" }) {
   const t = useTranslations("producer.offer");
   if (!offer || !OFFER_TYPES.has(offer.offer_type)) return null;
@@ -87,13 +110,7 @@ export default function OfferBadge({ offer, variant = "badge", className = "" })
   // The leak is not reachable today (the server filters both ends), but a
   // comment promising a two-sided check over a one-sided one is what makes the
   // next reader trust a guarantee that is not there.
-  const today = israelToday();
-  if (offer.expires_at && offer.expires_at < today) {
-    return null;
-  }
-  if (offer.starts_at && offer.starts_at > today) {
-    return null;
-  }
+  if (!isWithinWindow(offer)) return null;
 
   // MEH-1898 — the `custom` branch, and the empty case it exists to catch.
   //
