@@ -100,8 +100,8 @@ export default function ImageGallery({ images = [], producerId = null, producerN
           className="relative bg-primary/[0.06] px-6 pb-6 pt-16 md:pt-20 flex items-end min-h-[120px] md:min-h-[150px]"
           data-testid="gallery-tint-layer"
         >
-          {/* Recessive brand monogram — corner mark (end side, opposite the
-              favorite control), gold, ~24px. Decorative, never dominant.
+          {/* Recessive brand monogram — corner mark (start side, opposite the
+              actions cluster — MEH-2671), gold, ~24px. Decorative, never dominant.
               MEH-2025: SVG text, not an HTML text node. axe audits every
               visible HTML text node for color-contrast (aria-hidden included)
               and the recessive 40% fill measures 1.66:1; WCAG 1.4.3 exempts
@@ -211,7 +211,8 @@ export default function ImageGallery({ images = [], producerId = null, producerN
         {/* MEH-1693: imageless masthead — same two-circle hero cluster as the
             imaged branch below. gap-2 matches the grid's own gap so the pair
             reads as one control group. Mutually exclusive with that branch
-            (this arm returns early), so only ONE heart mounts per render. */}
+            (this arm returns early), so only ONE heart mounts per render.
+            MEH-2671: top-end corner, order heart → share → bell. */}
         {producerId && (
           <div className="absolute top-3 end-3 z-10 lg:hidden flex items-center gap-2">
             <FavoriteButton
@@ -343,7 +344,8 @@ export default function ImageGallery({ images = [], producerId = null, producerN
       {images.length > 1 && (
         <>
           {/* MEH-1047 chunk 2: counter chip (1/N) — opposite the actions
-              cluster (MEH-2671: chip at top-start, actions at top-end); dark scrim keeps it legible over any photo.
+              cluster (MEH-2671: chip top-start, actions top-end); dark scrim
+              keeps it legible over any photo.
               .numeric bidi-isolates the fraction so RTL can't flip "1/5". */}
           <div
             className="absolute top-3 start-3 z-10 rounded-full bg-black/55 px-2.5 py-1 text-xs font-label-md text-white numeric pointer-events-none"

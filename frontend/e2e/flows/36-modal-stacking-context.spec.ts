@@ -6,7 +6,7 @@ import { detailPath, openDetail, pickProducer, watchPageErrors, REQUIREMENTS } f
  *
  * The bug: `LoginPromptModal` was rendered in place, as a sibling of the
  * gallery heart inside ImageGallery's `absolute top-3 end-3 z-20 lg:hidden`
- * wrapper (ImageGallery.jsx:375). `position` + a z token makes that wrapper a
+ * wrapper (the imaged-branch cluster in ImageGallery.jsx). `position` + a z token makes that wrapper a
  * stacking context, so the modal's `z-[9500]` (LoginPromptModal.jsx:98) only
  * ever ranked INSIDE it. The page's own root-level chrome — the `sticky
  * z-[1050]` Header (Header.jsx:321) and the `sticky z-30` /producer tab bar
