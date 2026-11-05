@@ -98,8 +98,8 @@ const CATEGORIES = [
   { id: 5, name: "שמנים", slug: "oil" },
 ];
 const CITIES = ["תל אביב-יפו", "תל מונד", "תל שבע", "חיפה", "ירושלים"];
-const LICENCE_422 = "מספר רישיון יצרן חובה לקטגוריה זו"; // services/license_validation.py:27
-const LICENCE_REQUIRED_HE = "מספר רישיון ייצור חובה לקטגוריה זו"; // he.json license_required — the CLIENT gate on CATEGORY (MEH-2640 renamed יצרן → ייצור; the server string above did not change)
+const LICENCE_422 = "מספר רישיון ייצור חובה לקטגוריה זו"; // services/license_validation.py:27 (MEH-2670: renamed to match the UI)
+const LICENCE_REQUIRED_HE = "מספר רישיון ייצור חובה לקטגוריה זו"; // he.json license_required — the CLIENT gate on CATEGORY (MEH-2640 renamed יצרן → ייצור; MEH-2670 aligned the server string)
 
 type Row = Record<string, unknown> & { id: number; name: string; status: string };
 function row(over: Partial<Row> = {}): Row {
