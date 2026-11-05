@@ -270,13 +270,13 @@ describe("publishing", () => {
   });
 
   it("surfaces the server's own refusal rather than a generic message", async () => {
-    post.mockRejectedValue({ response: { data: { detail: "סלי הצלה עדיין לא פתוחים ביישוב הזה" } } });
+    post.mockRejectedValue({ response: { data: { detail: "סלי הפתעה עדיין לא פתוחים ביישוב הזה" } } });
     render(<RescueTab />);
     await pointsLoaded();
     fireEvent.click(screen.getByTestId("rescue-publish-today"));
     expect(await screen.findByTestId("rescue-tab-notice")).toHaveProperty(
       "textContent",
-      "סלי הצלה עדיין לא פתוחים ביישוב הזה",
+      "סלי הפתעה עדיין לא פתוחים ביישוב הזה",
     );
   });
 });
