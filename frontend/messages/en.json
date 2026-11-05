@@ -4373,6 +4373,10 @@
         "manage_experiences": {
           "title": "My experiences",
           "sub": "Workshops and tours people sign up for"
+        },
+        "rescue": {
+          "title": "Rescue bags",
+          "sub": "Publish today's surplus and hand it over against a code"
         }
       },
       "pulse": {
@@ -5647,6 +5651,129 @@
       "email": "Email",
       "whatsapp_group": "WhatsApp group",
       "external_order": "Order form"
+    }
+  },
+  "rescue": {
+    "page": {
+      "title": "Rescue bags",
+      "lead": "Today's surplus from local businesses, at a reduced price. Pay at the counter.",
+      "description": "Mehamakor rescue bags — today's surplus from local businesses at a reduced price."
+    },
+    "home": {
+      "title": "Left today",
+      "title_city": "Left today in {city}",
+      "all": "All bags"
+    },
+    "list": {
+      "city_label": "City",
+      "city_placeholder": "e.g. Haifa",
+      "loading": "Loading today's bags…",
+      "failed": "We couldn't load the bags right now. Try refreshing.",
+      "empty": "No rescue bags today. Worth checking again this afternoon.",
+      "empty_city": "No rescue bags in {city} today. Worth checking again this afternoon.",
+      "count": "{count, plural, one {one bag} other {# bags}}"
+    },
+    "row": {
+      "left": "{count, plural, one {one left} other {# left}}",
+      "pickup": "Pickup {from}–{until}",
+      "price": "{price} ₪",
+      "km": "km",
+      "walk": "about {minutes} min walk"
+    },
+    "section": {
+      "title": "Rescue bag",
+      "cta": "Reserve · {price} ₪ at the counter",
+      "typical": "Usually: {items}",
+      "allergens": "May contain gluten, milk, nuts and sesame. Ask at the business before pickup."
+    },
+    "confirm": {
+      "title": "Your bag is reserved",
+      "say_at_counter": "Say the code at the counter",
+      "pay": "Pay at the counter: {price} ₪",
+      "terms": "Free cancellation until {cancel_until} · two no-shows = blocked",
+      "step_reserved": "Reserved",
+      "step_collect": "To collect",
+      "step_done": "Handed over",
+      "cancel": "Cancel the reservation"
+    },
+    "review": {
+      "title": "How was the bag?",
+      "star": "{n} out of 5",
+      "contents": "What was in it?",
+      "tag": {
+        "bread": "Bread",
+        "pastry": "Pastry",
+        "vegetables": "Vegetables",
+        "dairy": "Dairy",
+        "cooked": "Cooked",
+        "other": "Other"
+      },
+      "problem": "Something wrong? Write to us and we'll sort it.",
+      "submit": "Submit",
+      "failed": "We couldn't send your review. Try again.",
+      "thanks": "Thank you! Your review is saved."
+    },
+    "errors": {
+      "blocked": "Reservations are blocked after two no-shows. Please write to us.",
+      "sold_out": "That bag is gone. There are others nearby.",
+      "max_two": "You can reserve up to two bags.",
+      "sign_in": "Sign in to reserve a bag.",
+      "gone": "Rescue bags aren't active right now.",
+      "generic": "Something got stuck. Try again."
+    },
+    "dashboard": {
+      "title": "Rescue bags",
+      "lead": "Today's surplus — publish, hand over against a code, mark it.",
+      "loading": "Loading…",
+      "failed": "Something got stuck. Try again.",
+      "counter": {
+        "reserved": "Reserved",
+        "handed": "Handed over",
+        "no_show": "No-shows"
+      },
+      "code_label": "Pickup code",
+      "code_placeholder": "0000",
+      "code_not_found": "No active reservation with that code.",
+      "hand_over": "Confirm handover",
+      "no_show": "Didn't show",
+      "no_show_too_early": "Can only be marked after the pickup window closes",
+      "qty": "{qty} bags",
+      "handed_at": "✓ handed over {time}",
+      "status": {
+        "cancelled": "Cancelled",
+        "no_show": "No-show",
+        "reserved": "Reserved",
+        "handed": "Handed over"
+      },
+      "orders_title": "Today's reservations",
+      "orders_empty": "No reservations for today yet.",
+      "publish_title": "Publish bags",
+      "publish_today": "Publish for today · {price} ₪",
+      "publish_tomorrow": "Publish {n} bags for tomorrow",
+      "published": "Bags published.",
+      "no_location": "You need a pickup point with an exact address.",
+      "field": {
+        "qty": "How many bags",
+        "price": "Price (₪)",
+        "from": "Pickup from",
+        "to": "until"
+      },
+      "items_title": "Usually in the bag",
+      "items_help": "Comma separated. This is what buyers see before they reserve.",
+      "items_save": "Save",
+      "items_saved": "Saved."
+    },
+    "counter_card": {
+      "title": "Mehamakor rescue bag",
+      "subtitle": "Ask for the code, check it, hand it over, mark it",
+      "print_hint": "To print: Ctrl+P (or Print in the browser menu). The card prints at A5.",
+      "step": {
+        "ask": "Ask the buyer for the code — four digits.",
+        "check": "Check the code appears in the dashboard's reservation list.",
+        "hand": "Hand over the bag.",
+        "mark": "Mark «Confirm handover» in the dashboard. Nobody came by the end of the window — «Didn't show»."
+      },
+      "footer": "Payment at the counter, at the price on the reservation. Questions — write to us."
     }
   }
 }
