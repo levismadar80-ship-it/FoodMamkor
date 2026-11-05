@@ -143,7 +143,7 @@ const ITEMS: Item[] = (ADMIN_REVIEW_CHECKLIST as { id: string; label: string; hi
 /** The two approve-gate 422 details, verbatim from routers/admin.py:240 and :251. */
 const GATE = {
   photo: "לא ניתן לאשר בית עסק ללא תמונה. בקשי מבעלת העסק להעלות תמונה אחת לפחות.",
-  license: "לא ניתן לאשר בית עסק בקטגוריה הדורשת רישיון יצרן ללא מספר רישיון. אמתי את הרישיון, או אשרי עם דריסה מפורשת.",
+  license: "לא ניתן לאשר בית עסק בקטגוריה הדורשת רישיון ייצור ללא מספר רישיון. אמתי את הרישיון, או אשרי עם דריסה מפורשת.",
 };
 
 type Rec = { method: string; url: string; body: unknown };
