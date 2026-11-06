@@ -3,6 +3,10 @@
 
 ---
 
+## MEH-2708 — נגישות: שמות לשדות, רשימת פרטים, ניגודיות (06/11/2026)
+- [ ] סריקת axe (wcag2a/aa, critical+serious) על /producer/dashboard/experiences/new, /group-buys/<id>, /producer/dashboard/insights ו-/admin/{kashrut,outreach,producers,producers/new,settings,users,analytics} — **תוצאה מצופה:** אין select-name, label, button-name, aria-prohibited-attr, definition-list, dlitem, scrollable-region-focusable, link-in-text-block
+- [ ] /group-buys/<id> בנייד (375) — **תוצאה מצופה:** «איסוף»/«משלוח» עם האייקון מימין לכותרת, כמו קודם; כפתור «שיתוף בוואטסאפ» המתאר בירוק כהה (#16803E)
+
 ## MEH-2702 — סלי הפתעה: «נשארו סלים?» בכלי הדלפק (05/11/2026)
 - [ ] דשבורד העסק → לשונית «סלי הפתעה», גלילה לתחתית — **תוצאה מצופה:** «נשארו סלים? אפשר למסור אותם בחינם בקבוצת הצלת מזון. לקבוצה», בתוך מסגרת
 - [ ] לחיצה על «לקבוצה» — **תוצאה מצופה:** קבוצת הפייסבוק «אוכל חינם» נפתחת בלשונית חדשה (אין עדיין קבוצה מקומית לאף עיר)
@@ -46,10 +50,6 @@
 - [ ] שמירת מוצר עם «גלוטן» + «שומשום» ורשימת רכיבים, ואז עריכה — **תוצאה מצופה:** שני הכפתורים מסומנים והרכיבים ממולאים
 - [ ] בעריכה: ניקוי הרכיבים וביטול כל האלרגנים, שמירה — **תוצאה מצופה:** בפתיחה מחדש שניהם ריקים
 - [ ] בנייד (375) — **תוצאה מצופה:** הכפתורים נשברים לכמה שורות, בלי גלילה לצדדים
-
-## MEH-2708 — נגישות: שמות לשדות, רשימת פרטים, ניגודיות (06/11/2026)
-- [ ] סריקת axe (wcag2a/aa, critical+serious) על /producer/dashboard/experiences/new, /group-buys/<id>, /producer/dashboard/insights ו-/admin/{kashrut,outreach,producers,producers/new,settings,users,analytics} — **תוצאה מצופה:** אין select-name, label, button-name, aria-prohibited-attr, definition-list, dlitem, scrollable-region-focusable, link-in-text-block
-- [ ] /group-buys/<id> בנייד (375) — **תוצאה מצופה:** «איסוף»/«משלוח» עם האייקון מימין לכותרת, כמו קודם; כפתור «שיתוף בוואטסאפ» המתאר בירוק כהה (#16803E)
 
 ## MEH-2707 — מנהלת עורכת עסק בלי רישיון ייצור (06/11/2026)
 - [ ] /admin/producers ← עסק בקטגוריה «לחמים ואפייה» בלי מספר רישיון ← שינוי התיאור ושמירה — **תוצאה מצופה:** נשמר (קודם: «מספר רישיון ייצור חובה לקטגוריה זו»)
