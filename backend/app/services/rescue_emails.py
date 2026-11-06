@@ -48,7 +48,9 @@ class ReservationEmail:
     pickup_from: str
     pickup_until: str
     address: str
-    cancel_until: str
+    # None = reserved after the free-cancel cutoff: no cancel line, no button
+    # (MEH-2737, approved 6/11).
+    cancel_until: str | None
 
 
 def send_reservation_email(to: str, m: ReservationEmail) -> None:
@@ -60,13 +62,18 @@ def send_reservation_email(to: str, m: ReservationEmail) -> None:
     price = shekels(m.total_agorot)
     page_url = f"{settings.frontend_url}/producer/{m.producer_id}"
 
+    cancel_text = (
+        f"אי אפשר להגיע? אפשר לבטל בחינם עד {m.cancel_until}, "
+        f"וככה הסל יגיע למישהו אחר.\n\n"
+        f"לבטל את השריון: {page_url}\n\n"
+        if m.cancel_until
+        else "\n"
+    )
     body = (
         f"{subject}\n\n"
         f"הקוד שלכם: {m.pickup_code}. אומרים אותו בקופה ומשלמים {price} ₪.\n"
         f"איסוף היום {m.pickup_from}–{m.pickup_until}{where}.\n"
-        f"אי אפשר להגיע? אפשר לבטל בחינם עד {m.cancel_until}, "
-        f"וככה הסל יגיע למישהו אחר.\n\n"
-        f"לבטל את השריון: {page_url}\n\n"
+        f"{cancel_text}"
         f"צוות מהמקור 🌱"
     )
 
@@ -76,6 +83,18 @@ def send_reservation_email(to: str, m: ReservationEmail) -> None:
     e = html_escape
     subject_html = e(subject)
     address_html = f"<br>\n                📍&nbsp; {e(m.address)}" if m.address else ""
+    cancel_html = (
+        f"""\
+          <tr><td style="padding:14px 22px 0;text-align:right;font-size:14px;color:#5c584f;line-height:1.6;">אי אפשר להגיע? אפשר לבטל בחינם עד <b style="color:#1c1a17;">{e(m.cancel_until)}</b>, וככה הסל יגיע למישהו אחר.</td></tr>
+          <tr><td style="padding:16px 22px 24px;text-align:center;">
+            <a href="{e(page_url)}" style="display:inline-block;background:#ffffff;color:#2e6853;border:2px solid #2e6853;text-decoration:none;font-size:15px;font-weight:bold;padding:11px 28px;border-radius:10px;">לבטל את השריון</a>
+          </td></tr>
+"""
+        if m.cancel_until
+        else """\
+          <tr><td style="padding:0 0 24px;"></td></tr>
+"""
+    )
     html_body = f"""\
 <!DOCTYPE html>
 <html dir="rtl" lang="he">
@@ -100,10 +119,40 @@ def send_reservation_email(to: str, m: ReservationEmail) -> None:
               </td></tr>
             </table>
           </td></tr>
-          <tr><td style="padding:14px 22px 0;text-align:right;font-size:14px;color:#5c584f;line-height:1.6;">אי אפשר להגיע? אפשר לבטל בחינם עד <b style="color:#1c1a17;">{e(m.cancel_until)}</b>, וככה הסל יגיע למישהו אחר.</td></tr>
-          <tr><td style="padding:16px 22px 24px;text-align:center;">
-            <a href="{e(page_url)}" style="display:inline-block;background:#ffffff;color:#2e6853;border:2px solid #2e6853;text-decoration:none;font-size:15px;font-weight:bold;padding:11px 28px;border-radius:10px;">לבטל את השריון</a>
-          </td></tr>
+{cancel_html}        </table>
+      </td></tr>
+      <tr><td style="text-align:center;padding:14px 4px 0;font-size:12px;color:#8a8478;">צוות מהמקור 🌱</td></tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>"""
+    send_email(to, subject, body, html=html_body)
+
+
+def send_cancel_email(to: str, producer_name: str) -> None:
+    """MEH-2737 — the buyer cancelled; confirm it. Copy approved word for word
+    by Sapir on 6/11 (text 4). No code in it: the code is no longer valid."""
+    name = " ".join(producer_name.split())
+    subject = f"השריון ב{name} בוטל"
+    line1 = f"ביטלנו את השריון שלכם לסל ב{name}. הקוד כבר לא בתוקף ואין צורך להגיע."
+    line2 = "תודה שביטלתם בזמן, ככה הסל יגיע למישהו אחר."
+    body = f"{line1}\n{line2}\n\nצוות מהמקור 🌱"
+
+    e = html_escape
+    html_body = f"""\
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#F5F0E8;">
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#F5F0E8;padding:24px 12px;direction:rtl;font-family:Arial,Helvetica,sans-serif;">
+  <tr><td align="center">
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:520px;margin:0 auto;">
+      <tr><td style="text-align:right;padding:0 4px 14px;font-size:18px;font-weight:bold;color:#2e6853;">מהמקור</td></tr>
+      <tr><td style="background:#ffffff;border-radius:14px;border:1px solid #e5dfd3;overflow:hidden;">
+        <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+          <tr><td style="background:#2e6853;color:#ffffff;padding:18px 22px;text-align:right;font-size:19px;font-weight:bold;line-height:1.4;">{e(subject)}</td></tr>
+          <tr><td style="padding:20px 22px 24px;text-align:right;font-size:15px;color:#1c1a17;line-height:1.7;">{e(line1)}<br>{e(line2)}</td></tr>
         </table>
       </td></tr>
       <tr><td style="text-align:center;padding:14px 4px 0;font-size:12px;color:#8a8478;">צוות מהמקור 🌱</td></tr>
