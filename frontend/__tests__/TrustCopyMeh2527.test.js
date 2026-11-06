@@ -5,6 +5,7 @@
  * later copy edit that re-introduces it goes red. Wording itself is
  * Sapir-approved (28/10); these assert the claims, not the prose.
  */
+import { heBadgeCopy } from "./helpers/he-badge-copy";
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -84,7 +85,7 @@ describe("MEH-2527 trust copy", () => {
   });
 
   it("grass-fed tooltip states it is the business's own declaration", () => {
-    expect(BADGE_CONFIG.grass_fed.tooltip).toContain("לפי הצהרת בית העסק");
+    expect(heBadgeCopy(BADGE_CONFIG.grass_fed).tooltip).toContain("לפי הצהרת בית העסק");
   });
 
   it("about explains the automatic «מובילת קהילה» badge in both locales", () => {

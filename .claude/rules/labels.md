@@ -119,7 +119,7 @@ There are **two** declaration sites, and they cover different surfaces:
 | File | Governs | Consumers |
 |---|---|---|
 | `frontend/lib/filter-taxonomy.js` (`FILTER_AXES`) | **filter chips** — one declaration per axis, projected into `ATTRIBUTE_LABELS` / `CHIPS_CONFIG` / `TOGGLE_CHIPS` (MEH-2130) | home · /producers · /map filter rows, FilterSheet |
-| `frontend/lib/badges.js` (`BADGE_CONFIG`) | **badges** — the pills on a card and a detail page (MEH-1753) | ProducerCard, BadgeRow, the `+N` overflow popover |
+| `frontend/lib/badges.js` (`BADGE_CONFIG`) | **badges** — the pills on a card and a detail page (MEH-1753). Logic + metadata only; each badge's words are `badges.<key>.label` / `.tooltip` in `messages/{he,en}.json`, read via `useBadgeCopy()` (MEH-2740) | ProducerCard, BadgeRow, the `+N` overflow popover |
 
 **Eleven claims exist on both** — ten sharing a key (`verified`, `grass_fed`,
 `gluten_free`, `vegetarian`, `vegan`, `lactose_free`, `no_added_sugar`,
@@ -177,7 +177,9 @@ because the pattern the MEH-1507 spec cites, the **MEH-1472 emoji guard**
 needs an in-component explanation) to `FILTER_AXES` for a filter chip, or to
 `BADGE_CONFIG` for a badge. Omit either field → the guard fails. If the new label
 is a claim that already exists on the other surface, add the pair to
-`SHARED_CLAIMS` in the test so the two cannot drift.
+`SHARED_CLAIMS` in the test so the two cannot drift. A badge's label and tooltip
+go in `messages/{he,en}.json` under `badges.<key>` — `BadgeCopyMessages.test.jsx`
+fails on a missing one (MEH-2740).
 
 ---
 

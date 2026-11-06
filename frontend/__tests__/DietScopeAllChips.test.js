@@ -19,6 +19,7 @@
  * Every assertion runs against the REAL modules — no stubbed config, or the
  * spec would pass against any shipped value at all.
  */
+import { heBadgeCopy } from "./helpers/he-badge-copy";
 import { describe, it, expect } from "vitest";
 import { Leaf, Carrot, SealCheck } from "@phosphor-icons/react";
 import { FILTER_AXES, LISTING_CHIP_ORDER, MAP_CHIP_ORDER } from "@/lib/filter-taxonomy";
@@ -52,15 +53,15 @@ describe("§6.6 — the exposed diet chips carry their scope in the term", () =>
   });
 
   it("renames the twin badges too, so the card and the filter say the same", () => {
-    expect(BADGE_CONFIG.vegan.label).toBe(LOCKED.vegan);
-    expect(BADGE_CONFIG.vegetarian.label).toBe(LOCKED.vegetarian);
+    expect(heBadgeCopy(BADGE_CONFIG.vegan).label).toBe(LOCKED.vegan);
+    expect(heBadgeCopy(BADGE_CONFIG.vegetarian).label).toBe(LOCKED.vegetarian);
   });
 
   it("leaves gluten-free / lactose-free untouched (they have no 100% layer)", () => {
     expect(FILTER_AXES.gluten_free.label).toBe("ללא גלוטן");
     expect(FILTER_AXES.lactose_free.label).toBe("ללא לקטוז");
-    expect(BADGE_CONFIG.gluten_free.label).toBe("ללא גלוטן");
-    expect(BADGE_CONFIG.lactose_free.label).toBe("ללא לקטוז");
+    expect(heBadgeCopy(BADGE_CONFIG.gluten_free).label).toBe("ללא גלוטן");
+    expect(heBadgeCopy(BADGE_CONFIG.lactose_free).label).toBe("ללא לקטוז");
   });
 });
 
@@ -112,7 +113,7 @@ describe("MEH-2677 — the whole-business axes are a card badge, not a filter ch
 
 describe("§6.4 — the 100% badges", () => {
   it.each(SCOPE_ALL)("%s badge: locked label, declared tooltip, muted, business scope", (key) => {
-    const b = BADGE_CONFIG[key];
+    const b = heBadgeCopy(BADGE_CONFIG[key]);
     expect(b, `BADGE_CONFIG.${key}`).toBeDefined();
     expect(b.key).toBe(key);
     expect(b.label).toBe(LOCKED[key]);

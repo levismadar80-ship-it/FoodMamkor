@@ -1,3 +1,4 @@
+import { heBadgeCopy } from "./helpers/he-badge-copy";
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { ATTRIBUTE_LABELS } from "@/lib/attribute-labels";
@@ -194,7 +195,7 @@ describe("MEH-1507 Label Scope Contract — every label declares scope + evidenc
     const rendered = Object.fromEntries(
       Object.entries(BADGE_CONFIG).map(([k, v]) => [
         k,
-        { key: v.key, label: v.label, tooltip: v.tooltip, color: v.color, aboutHref: v.aboutHref ?? null },
+        { key: v.key, label: heBadgeCopy(v).label, tooltip: heBadgeCopy(v).tooltip, color: v.color, aboutHref: v.aboutHref ?? null },
       ]),
     );
     expect(rendered).toEqual({

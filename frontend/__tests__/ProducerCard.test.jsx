@@ -1,3 +1,5 @@
+import { heBadgeCopy } from "./helpers/he-badge-copy";
+import heMessages from "../messages/he.json";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import ProducerCard from "@/components/ProducerCard";
@@ -10,6 +12,7 @@ import { BADGE_CONFIG } from "@/lib/badges";
 // (Wave 3 i18n cutover). Mocked here following the Header.test.jsx
 // pattern established in MEH-471 — map only the keys ProducerCard
 // renders, plus ICU interpolation/plural for review/favorites counts.
+vi.mock("@/lib/use-badge-copy", async () => (await import("./helpers/he-badge-copy")).badgeCopyMock);
 vi.mock("next-intl", () => ({
   useTranslations: () => (key, values = {}) => {
     const flat = {
@@ -888,12 +891,12 @@ describe("ProducerCard — badge overflow chip (MEH-991)", () => {
       fireEvent.click(screen.getByTestId("badge-overflow"));
       const panel = screen.getByTestId("badge-overflow-popover");
       // Hidden badges are kosher + delivery. Label AND description for both.
-      expect(panel).toHaveTextContent(BADGE_CONFIG.delivery.label);
-      expect(panel).toHaveTextContent(BADGE_CONFIG.delivery.tooltip);
-      expect(panel).toHaveTextContent(BADGE_CONFIG.kosher.tooltip);
+      expect(panel).toHaveTextContent(heBadgeCopy(BADGE_CONFIG.delivery).label);
+      expect(panel).toHaveTextContent(heBadgeCopy(BADGE_CONFIG.delivery).tooltip);
+      expect(panel).toHaveTextContent(heBadgeCopy(BADGE_CONFIG.kosher).tooltip);
       // Asserted against the config rather than a copied literal: a paraphrase
       // in the component would pass a hardcoded string but not this.
-      expect(BADGE_CONFIG.delivery.tooltip).toBe("העסק מוסר או שולח לכתובת שלך.");
+      expect(heBadgeCopy(BADGE_CONFIG.delivery).tooltip).toBe("העסק מוסר או שולח לכתובת שלך.");
     });
 
     it("renders label only — no empty line — for a badge with no tooltip", () => {
@@ -901,13 +904,13 @@ describe("ProducerCard — badge overflow chip (MEH-991)", () => {
       // unreachable from any fixture. Removing one for the duration of this
       // test is what makes it testable at all; restored in finally so the
       // shared config cannot leak into another case.
-      const original = BADGE_CONFIG.delivery.tooltip;
+      const original = heMessages.badges.delivery.tooltip;
       try {
-        delete BADGE_CONFIG.delivery.tooltip;
+        delete heMessages.badges.delivery.tooltip;
         render(<ProducerCard producer={overflowProducer} />);
         fireEvent.click(screen.getByTestId("badge-overflow"));
         const panel = screen.getByTestId("badge-overflow-popover");
-        expect(panel).toHaveTextContent(BADGE_CONFIG.delivery.label);
+        expect(panel).toHaveTextContent(heBadgeCopy(BADGE_CONFIG.delivery).label);
         expect(panel).not.toHaveTextContent(original);
         // POSITIVE CONTROL, and it is the whole reason this case discriminates.
         // Without it the assertions above pass on a panel that renders NO
@@ -915,13 +918,13 @@ describe("ProducerCard — badge overflow chip (MEH-991)", () => {
         // would have been green for the wrong reason. The sibling row still
         // having its own description is what proves the omission is the
         // conditional doing its job rather than the feature being absent.
-        expect(panel).toHaveTextContent(BADGE_CONFIG.kosher.tooltip);
+        expect(panel).toHaveTextContent(heBadgeCopy(BADGE_CONFIG.kosher).tooltip);
         // The row itself is still there — a missing tooltip must not drop the
         // badge, only its description.
         const rows = panel.querySelectorAll('[role="listitem"]');
         expect(rows).toHaveLength(2);
       } finally {
-        BADGE_CONFIG.delivery.tooltip = original;
+        heMessages.badges.delivery.tooltip = original;
       }
     });
 
@@ -937,9 +940,9 @@ describe("ProducerCard — badge overflow chip (MEH-991)", () => {
       fireEvent.click(screen.getByTestId("badge-overflow"));
       const panel = screen.getByTestId("badge-overflow-popover");
       expect(panel).toHaveTextContent("badges.chalak.label");
-      expect(panel).not.toHaveTextContent(BADGE_CONFIG.kosher.label);
+      expect(panel).not.toHaveTextContent(heBadgeCopy(BADGE_CONFIG.kosher).label);
       // ...and the description is still the kosher tooltip.
-      expect(panel).toHaveTextContent(BADGE_CONFIG.kosher.tooltip);
+      expect(panel).toHaveTextContent(heBadgeCopy(BADGE_CONFIG.kosher).tooltip);
     });
   });
 });
