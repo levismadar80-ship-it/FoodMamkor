@@ -109,6 +109,13 @@ export default function ManageEventsPage() {
         )}
       </div>
 
+      {/* MEH-2784: events of an unapproved business are hidden from the public
+          (events.py:241), and nothing here said so. */}
+      {user?.producer_status === "pending" && (
+        <p data-testid="events-pending-note" role="status" className="text-sm text-warning-800 bg-warning-50 border border-warning-200 rounded-md px-4 py-3 mb-4">
+          {t("pending_note")}
+        </p>
+      )}
       {items === null ? (
         <SkeletonList count={4} label={t("loading")} className="py-4" />
       ) : items.length === 0 ? (
