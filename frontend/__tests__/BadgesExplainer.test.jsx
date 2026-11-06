@@ -4,7 +4,7 @@
  * evidence group; every group present in BADGE_CONFIG has a section; the
  * section ids are the anchors BadgeRow links to.
  */
-import { describe, it, expect, vi } from "vitest";
+import { afterEach, beforeEach, describe, it, expect, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import he from "@/messages/he.json";
@@ -38,6 +38,18 @@ function renderPage() {
 }
 
 describe("BadgesExplainer (MEH-2701)", () => {
+  // MEH-2716: «מצילים מזון» is listed only while the rescue pilot is on; the
+  // full-list guards below run with it on so they still cover every key.
+  beforeEach(() => vi.stubEnv("NEXT_PUBLIC_RESCUE_BAGS_ENABLED", "true"));
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("leaves «מצילים מזון» out while the rescue pilot is off, and keeps «חדש»", () => {
+    vi.stubEnv("NEXT_PUBLIC_RESCUE_BAGS_ENABLED", "false");
+    renderPage();
+    expect(screen.queryByTestId("badges-item-rescue_saving")).toBeNull();
+    expect(screen.getByTestId("badges-item-new")).toBeTruthy();
+  });
+
   it("lists every BADGE_CONFIG key once, inside its own evidence group", () => {
     renderPage();
     const keys = Object.keys(BADGE_CONFIG);

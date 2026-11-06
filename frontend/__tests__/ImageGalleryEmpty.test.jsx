@@ -64,6 +64,7 @@ vi.mock("@phosphor-icons/react", () => ({
   GrainsSlash: () => null,
   Barn: () => null,
   Medal: () => null,
+  HandHeart: () => null,
   DropSlash: () => null,
   Cube: () => null,
   Clock: () => null,
