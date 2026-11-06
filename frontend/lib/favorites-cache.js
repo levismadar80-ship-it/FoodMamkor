@@ -54,6 +54,15 @@ function syncStripHint() {
   }
 }
 
+/** MEH-2743: auth resolved to signed-out (e.g. expired token) — no placeholder next time. */
+export function clearFavoritesStripHint() {
+  try {
+    localStorage.removeItem(STRIP_HINT_KEY);
+  } catch {
+    // ignore
+  }
+}
+
 export function hadFavoritesLastVisit() {
   try {
     return localStorage.getItem(STRIP_HINT_KEY) === "1";
@@ -157,7 +166,8 @@ export function setFavoritedLocal(producerId, value) {
   if (producerId == null) return;
   if (value) ids.add(producerId);
   else ids.delete(producerId);
-  if (!loaded) pendingLocal.set(producerId, Boolean(value));
+  // Only while a load is in flight — signed out there is nothing to re-apply.
+  if (!loaded && loadingPromise) pendingLocal.set(producerId, Boolean(value));
   else syncStripHint();
   notify();
   // MEH-2724: a heart added after the load has no card row yet — re-read the
@@ -211,10 +221,6 @@ export function resetFavoritesCache() {
   generation += 1;
   loaded = false;
   loadingPromise = null;
-  try {
-    localStorage.removeItem(STRIP_HINT_KEY);
-  } catch {
-    // ignore
-  }
+  clearFavoritesStripHint();
   notify();
 }

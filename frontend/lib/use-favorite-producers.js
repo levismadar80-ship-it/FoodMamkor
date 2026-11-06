@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import {
+  clearFavoritesStripHint,
   ensureFavoritesLoaded,
   getFavoriteProducers,
   hadFavoritesLastVisit,
@@ -37,6 +38,12 @@ export function useFavoriteProducers() {
     if (!user) {
       setItems([]);
       setLoaded(false);
+      // Auth finished and nobody is signed in (expired/revoked token): drop the
+      // hint so the next visit does not hold an empty strip and then collapse.
+      if (!loading) {
+        clearFavoritesStripHint();
+        setHint(false);
+      }
       return;
     }
     let alive = true;
@@ -56,7 +63,7 @@ export function useFavoriteProducers() {
       alive = false;
       unsub();
     };
-  }, [user]);
+  }, [user, loading]);
 
   const reserve = hint && items.length === 0 && (loading || (Boolean(user) && !loaded));
   return { items, reserve };

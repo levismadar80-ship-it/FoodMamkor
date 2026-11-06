@@ -51,11 +51,18 @@ describe("useFavoriteProducers reserve", () => {
     expect(result.current.reserve).toBe(false);
   });
 
-  it("hint + auth done, signed out → no reserve", () => {
+  it("hint + auth done, signed out (expired token) → no reserve, hint cleared", () => {
     localStorage.setItem("fav_strip_hint", "1");
     auth.loading = false;
     const { result } = renderHook(() => useFavoriteProducers());
     expect(result.current.reserve).toBe(false);
+    expect(localStorage.getItem("fav_strip_hint")).toBeNull();
+  });
+
+  it("hint survives while auth is still loading", () => {
+    localStorage.setItem("fav_strip_hint", "1");
+    renderHook(() => useFavoriteProducers());
+    expect(localStorage.getItem("fav_strip_hint")).toBe("1");
   });
 
   it("hint + load returns 0 favorites → no reserve, hint cleared", async () => {

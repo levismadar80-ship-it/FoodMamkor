@@ -44,7 +44,8 @@ export function HomeRecentlyViewed({ items }) {
  * the placeholder is in the server HTML `hidden`, and an inline script right
  * after it un-hides it before the first paint when the hint (and a session
  * token) are there — measured: un-hiding it only at hydration moved the jump
- * from ~5 s to ~0.7 s instead of removing it. Capped at FAVORITES_STRIP_MAX, then «לכל המועדפים» → /favorites.
+ * from ~5 s to ~0.7 s instead of removing it.
+ * Capped at FAVORITES_STRIP_MAX, then «לכל המועדפים» → /favorites.
  */
 export const FAVORITES_STRIP_MAX = 10;
 const FAVORITES_PLACEHOLDER_CARDS = 3;
@@ -88,6 +89,13 @@ export function HomeFavoritesStrip({ items, reserve = false }) {
   );
 }
 
+// MEH-2743: the sizing classes the real card and the loading frame SHARE, so
+// a card restyle cannot change one height without the other.
+const STRIP_CARD = "shrink-0 w-[160px] bg-background border border-border rounded-md overflow-hidden";
+const STRIP_CARD_IMAGE = "w-full h-[100px] bg-green-50";
+const STRIP_CARD_NAME = "font-headline-md font-bold text-sm truncate";
+const STRIP_CARD_CITY = "text-xs truncate";
+
 function HomeProducerStrip({
   items, heading, action = null, className, testIds, placeholderCount = 0, prepaintScript = null,
 }) {
@@ -108,78 +116,78 @@ function HomeProducerStrip({
   const prepaint = placeholder && Boolean(prepaintScript);
   return (
     <>
-    <section
-      className={`max-w-7xl mx-auto px-4 ${className}`}
-      data-testid={placeholder ? testIds.placeholder : testIds.section}
-      aria-busy={placeholder || undefined}
-      hidden={prepaint || undefined}
-      suppressHydrationWarning={prepaint || undefined}
-    >
-      <div className="flex items-baseline justify-between gap-4 mb-4">
-        <h2 className="font-headline-md text-headline-md text-text">
-          {heading}
-        </h2>
-        {action}
-      </div>
-      {/* MEH-1391: relative wrapper hosts the absolute arrow pair. */}
-      <div className="relative">
-        <ScrollArrows affordance={affordance} />
-        <div
-          ref={affordance.scrollRef}
-          data-testid={testIds.rail}
-          className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide -mx-1 ps-1 after:content-[''] after:shrink-0 after:w-4"
-        >
-          {placeholder &&
-            Array.from({ length: placeholderCount }, (_, i) => (
-              <div
-                key={i}
-                aria-hidden="true"
-                className="shrink-0 w-[160px] bg-background border border-border rounded-md overflow-hidden"
-              >
-                <div className="w-full h-[100px] bg-green-50 animate-pulse" />
-                <div className="p-2.5">
-                  <p className="font-headline-md font-bold text-sm truncate invisible">&nbsp;</p>
-                  <p className="text-xs truncate invisible">&nbsp;</p>
-                </div>
-              </div>
-            ))}
-          {items.map((p) => {
-          const href = p.slug ? `/${p.slug}` : `/producer/${p.id}`;
-          const imgSrc = optimizeCloudinary(p.images?.[0], { aspectRatio: IMAGE_RATIOS.strip, width: 320 });
-          return (
-            <Link
-              key={p.id}
-              href={href}
-              data-testid={testIds.card}
-              className="shrink-0 w-[160px] bg-background border border-border rounded-md overflow-hidden transition group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40"
-            >
-              <div className="relative w-full h-[100px] bg-green-50 overflow-hidden" data-testid={testIds.image}>
-                {imgSrc && failedImgs[p.id] !== imgSrc ? (
-                  <Image
-                    src={imgSrc}
-                    alt={p.name}
-                    fill
-                    sizes="160px"
-                    className="object-cover group-hover:scale-105 transition duration-300"
-                    onError={() => setFailedImgs((prev) => ({ ...prev, [p.id]: imgSrc }))}
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-full text-primary">
-                    <Leaf size={32} aria-hidden="true" />
-                  </div>
-                )}
-              </div>
-              <div className="p-2.5">
-                <p className="font-headline-md font-bold text-sm text-text truncate">{p.name}</p>
-                <p className="text-xs text-fg-muted truncate">{p.city}</p>
-              </div>
-            </Link>
-          );
-          })}
+      <section
+        className={`max-w-7xl mx-auto px-4 ${className}`}
+        data-testid={placeholder ? testIds.placeholder : testIds.section}
+        aria-busy={placeholder || undefined}
+        hidden={prepaint || undefined}
+        suppressHydrationWarning={prepaint || undefined}
+      >
+        <div className="flex items-baseline justify-between gap-4 mb-4">
+          <h2 className="font-headline-md text-headline-md text-text">
+            {heading}
+          </h2>
+          {action}
         </div>
-      </div>
-    </section>
-    {prepaint && <script dangerouslySetInnerHTML={{ __html: prepaintScript }} />}
+        {/* MEH-1391: relative wrapper hosts the absolute arrow pair. */}
+        <div className="relative">
+          <ScrollArrows affordance={affordance} />
+          <div
+            ref={affordance.scrollRef}
+            data-testid={testIds.rail}
+            className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide -mx-1 ps-1 after:content-[''] after:shrink-0 after:w-4"
+          >
+            {placeholder &&
+              Array.from({ length: placeholderCount }, (_, i) => (
+                <div
+                  key={i}
+                  aria-hidden="true"
+                  className={STRIP_CARD}
+                >
+                  <div className={`${STRIP_CARD_IMAGE} animate-pulse`} />
+                  <div className="p-2.5">
+                    <p className={`${STRIP_CARD_NAME} invisible`}>&nbsp;</p>
+                    <p className={`${STRIP_CARD_CITY} invisible`}>&nbsp;</p>
+                  </div>
+                </div>
+              ))}
+            {items.map((p) => {
+            const href = p.slug ? `/${p.slug}` : `/producer/${p.id}`;
+            const imgSrc = optimizeCloudinary(p.images?.[0], { aspectRatio: IMAGE_RATIOS.strip, width: 320 });
+            return (
+              <Link
+                key={p.id}
+                href={href}
+                data-testid={testIds.card}
+                className={`${STRIP_CARD} transition group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40`}
+              >
+                <div className={`relative ${STRIP_CARD_IMAGE} overflow-hidden`} data-testid={testIds.image}>
+                  {imgSrc && failedImgs[p.id] !== imgSrc ? (
+                    <Image
+                      src={imgSrc}
+                      alt={p.name}
+                      fill
+                      sizes="160px"
+                      className="object-cover group-hover:scale-105 transition duration-300"
+                      onError={() => setFailedImgs((prev) => ({ ...prev, [p.id]: imgSrc }))}
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-primary">
+                      <Leaf size={32} aria-hidden="true" />
+                    </div>
+                  )}
+                </div>
+                <div className="p-2.5">
+                  <p className={`${STRIP_CARD_NAME} text-text`}>{p.name}</p>
+                  <p className={`${STRIP_CARD_CITY} text-fg-muted`}>{p.city}</p>
+                </div>
+              </Link>
+            );
+            })}
+          </div>
+        </div>
+      </section>
+      {prepaint && <script dangerouslySetInnerHTML={{ __html: prepaintScript }} />}
     </>
   );
 }
