@@ -340,10 +340,10 @@ export default function BottomNav() {
   const tabCls = (active) =>
     [
       "relative w-full min-w-[64px] flex flex-col items-center justify-center gap-[4px]",
-      isCompact ? "min-h-[40px]" : "min-h-[44px]",
+      isCompact ? "min-h-[40px]" : "min-h-touch",
       // NAV — label-clip fix: py-1.5 → py-1. The 22px icon + 4px gap + label
       // wrapper overflowed the expanded pill's inner box; trimming the tab's
-      // own vertical padding (min-h-[44px] still guarantees the ≥44px tap
+      // own vertical padding (min-h-touch still guarantees the ≥44px tap
       // target) recovers the room so all four labels sit fully inside.
       "rounded-full px-1 py-1 transition-colors duration-fast ease-quart motion-reduce:transition-none focus-ring",
       // MEH-919: inactive label darkened from fg-muted (#5c584f → 3.53 on the

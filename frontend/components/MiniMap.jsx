@@ -615,7 +615,7 @@ export default function MiniMap({
           target="_blank"
           rel="noopener noreferrer"
           aria-label={t("open_in_waze_aria")}
-          className="flex-1 flex items-center justify-center gap-2 border border-border bg-white text-text px-4 py-2 min-h-[44px] rounded-full text-sm font-medium hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="flex-1 flex items-center justify-center gap-2 border border-border bg-white text-text px-4 py-2 min-h-touch rounded-full text-sm font-medium hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40"
         >
           <WazeGlyph />
           {t("open_in_waze")}
@@ -627,7 +627,7 @@ export default function MiniMap({
           // MEH-2308: no aria-label — the visible "מפות Google" is the name.
           // The old "פתיחה במפות Google" did not contain it as a word
           // (axe label-content-name-mismatch, WCAG 2.5.3).
-          className="flex-1 flex items-center justify-center gap-2 border border-border bg-white text-text px-4 py-2 min-h-[44px] rounded-full text-sm font-medium hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="flex-1 flex items-center justify-center gap-2 border border-border bg-white text-text px-4 py-2 min-h-touch rounded-full text-sm font-medium hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40"
         >
           <GoogleMapsGlyph />
           {t("open_in_google")}

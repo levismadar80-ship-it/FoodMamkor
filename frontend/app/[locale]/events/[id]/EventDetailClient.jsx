@@ -251,7 +251,7 @@ export default function EventDetailClient() {
               <Link
                 href={ownerHref}
                 data-testid="event-byline"
-                className="inline-flex items-center gap-2 min-h-[44px] text-[15px] text-text hover:text-primary rounded transition focus-ring"
+                className="inline-flex items-center gap-2 min-h-touch text-[15px] text-text hover:text-primary rounded transition focus-ring"
               >
                 <span aria-hidden="true" className="w-7 h-7 rounded-full bg-green-50 text-primary text-sm font-bold grid place-items-center">
                   {Array.from(event.producer_name.trim())[0] ?? ""}
@@ -410,7 +410,7 @@ export default function EventDetailClient() {
             </div>
           )}
 
-          <Link href="/events" className="inline-flex items-center min-h-[44px] text-primary font-medium hover:underline">
+          <Link href="/events" className="inline-flex items-center min-h-touch text-primary font-medium hover:underline">
             {t("all_events")}
           </Link>
         </div>

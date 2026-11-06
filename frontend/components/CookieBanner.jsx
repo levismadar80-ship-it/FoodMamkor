@@ -87,7 +87,7 @@ export default function CookieBanner() {
             type="button"
             onClick={() => accept("all")}
             data-testid="cookie-accept-all"
-            className="bg-green-50 text-primary-dark font-medium text-xs px-4 py-2 rounded-full hover:bg-white transition whitespace-nowrap inline-flex items-center justify-center min-h-[44px]"
+            className="bg-green-50 text-primary-dark font-medium text-xs px-4 py-2 rounded-full hover:bg-white transition whitespace-nowrap inline-flex items-center justify-center min-h-touch"
           >
             {t("accept_all")}
           </button>
@@ -95,7 +95,7 @@ export default function CookieBanner() {
             type="button"
             onClick={() => accept("essential")}
             data-testid="cookie-essential-only"
-            className="text-green-50/80 text-xs px-4 py-2 rounded-full border border-green-50/30 hover:bg-green-50/10 transition whitespace-nowrap inline-flex items-center justify-center min-h-[44px]"
+            className="text-green-50/80 text-xs px-4 py-2 rounded-full border border-green-50/30 hover:bg-green-50/10 transition whitespace-nowrap inline-flex items-center justify-center min-h-touch"
           >
             {t("essential_only")}
           </button>

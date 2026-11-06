@@ -73,7 +73,7 @@ export default function ProducerRecipesPage() {
     <div className="max-w-3xl mx-auto px-4 py-10">
       {/* MEH-1655: min-h pins the row at CTA height so it doesn't shrink
           when the button unmounts. */}
-      <div className="flex items-center justify-between mb-6 min-h-[44px]">
+      <div className="flex items-center justify-between mb-6 min-h-touch">
         <div>
           {/* MEH-999: entered from the Tools tab (tools/page.js:101), so back
               goes to Tools — not the overview. */}
@@ -90,7 +90,7 @@ export default function ProducerRecipesPage() {
         {items !== null && !(items.length === 0 && !showForm) && (
           <button
             onClick={() => setShowForm((v) => !v)}
-            className="bg-primary text-white px-4 py-2 min-h-[44px] rounded-sm text-sm font-medium hover:bg-primary-dark transition"
+            className="bg-primary text-white px-4 py-2 min-h-touch rounded-sm text-sm font-medium hover:bg-primary-dark transition"
           >
             {showForm ? t("btn_close_form") : t("btn_open_form")}
           </button>

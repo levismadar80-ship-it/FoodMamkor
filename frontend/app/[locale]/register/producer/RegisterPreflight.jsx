@@ -93,7 +93,7 @@ export default function RegisterPreflight({ showAccountLine, onStart }) {
         type="button"
         data-testid="register-preflight-organizer"
         onClick={() => onStart("organizer")}
-        className="w-full text-sm text-primary font-medium hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 min-h-[44px]"
+        className="w-full text-sm text-primary font-medium hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 min-h-touch"
       >
         {t("organizer_entry")}
       </button>

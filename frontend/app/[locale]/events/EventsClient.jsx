@@ -309,7 +309,7 @@ export default function EventsPage({ initialTab = "events" }) {
             aria-selected={!isExp}
             tabIndex={isExp ? -1 : 0}
             onClick={() => switchTab("events")}
-            className={`pb-3 pt-2 min-h-[44px] inline-flex items-center text-sm md:text-base font-semibold border-b-2 -mb-px transition ${
+            className={`pb-3 pt-2 min-h-touch inline-flex items-center text-sm md:text-base font-semibold border-b-2 -mb-px transition ${
               !isExp ? "border-primary text-primary" : "border-transparent text-fg-muted hover:text-primary"
             }`}
           >
@@ -321,7 +321,7 @@ export default function EventsPage({ initialTab = "events" }) {
             aria-selected={isExp}
             tabIndex={isExp ? 0 : -1}
             onClick={() => switchTab("experiences")}
-            className={`pb-3 pt-2 min-h-[44px] inline-flex items-center text-sm md:text-base font-semibold border-b-2 -mb-px transition ${
+            className={`pb-3 pt-2 min-h-touch inline-flex items-center text-sm md:text-base font-semibold border-b-2 -mb-px transition ${
               isExp ? "border-primary text-primary" : "border-transparent text-fg-muted hover:text-primary"
             }`}
           >
@@ -330,7 +330,7 @@ export default function EventsPage({ initialTab = "events" }) {
           </div>
           <Link
             href={isExp ? "/producer/dashboard/experiences/new" : "/producer/dashboard/events/new"}
-            className="ms-auto min-w-0 self-center min-h-[44px] inline-flex items-center text-sm font-medium text-primary hover:underline"
+            className="ms-auto min-w-0 self-center min-h-touch inline-flex items-center text-sm font-medium text-primary hover:underline"
           >
             {isExp ? t("submit_experience") : t("add_event")}
             {/* MEH-990: raw → dingbat → Phosphor ArrowRight; rtl:rotate-180 = reading-forward in he (MEH-938 pattern) */}
@@ -371,7 +371,7 @@ export default function EventsPage({ initialTab = "events" }) {
                   // accessible name on every viewport (MEH-134 — a11y + E2E locator).
                   aria-label={t("view_list")}
                   onClick={() => setView("list")}
-                  className={`inline-flex items-center justify-center gap-1.5 px-4 py-2 min-h-[44px] text-sm font-medium transition ${
+                  className={`inline-flex items-center justify-center gap-1.5 px-4 py-2 min-h-touch text-sm font-medium transition ${
                     view === "list" ? "bg-primary text-white" : "text-fg-muted hover:text-primary"
                   }`}
                 >
@@ -385,7 +385,7 @@ export default function EventsPage({ initialTab = "events" }) {
                   tabIndex={view === "calendar" ? 0 : -1}
                   aria-label={t("view_calendar")}
                   onClick={() => setView("calendar")}
-                  className={`inline-flex items-center justify-center gap-1.5 px-4 py-2 min-h-[44px] text-sm font-medium transition ${
+                  className={`inline-flex items-center justify-center gap-1.5 px-4 py-2 min-h-touch text-sm font-medium transition ${
                     view === "calendar" ? "bg-primary text-white" : "text-fg-muted hover:text-primary"
                   }`}
                 >
@@ -485,7 +485,7 @@ function EmptyState({ tab, t }) {
         <Link
           href="/producers"
           data-testid="events-browse-producers"
-          className="min-h-[44px] inline-flex items-center text-sm font-semibold text-primary hover:underline"
+          className="min-h-touch inline-flex items-center text-sm font-semibold text-primary hover:underline"
         >
           {t("empty_browse_producers")}
         </Link>
@@ -510,7 +510,7 @@ function LoadError({ tErr, onRetry }) {
         type="button"
         onClick={onRetry}
         data-testid="events-retry"
-        className="mt-6 min-h-[44px] inline-flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold px-5 py-3 rounded-sm"
+        className="mt-6 min-h-touch inline-flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold px-5 py-3 rounded-sm"
       >
         <ArrowCounterClockwise size={18} />
         {tErr("retry")}
@@ -533,7 +533,7 @@ function NoResults({ t, onReset }) {
         type="button"
         onClick={onReset}
         data-testid="events-clear-filters"
-        className="mt-6 min-h-[44px] inline-flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold px-5 py-3 rounded-sm"
+        className="mt-6 min-h-touch inline-flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold px-5 py-3 rounded-sm"
       >
         <ArrowCounterClockwise size={18} />
         {t("no_results_cta")}

@@ -367,7 +367,7 @@ export default function ProfileCompletenessCard({ producer }) {
         <Link
           href={firstTodo ? firstTodo.href : EDIT_HUB}
           aria-label={t("cta_aria")}
-          className="inline-flex items-center justify-center gap-2 min-h-[44px] px-6 rounded-full font-medium bg-action-primary hover:bg-action-primary-hover text-white transition-colors focus-ring"
+          className="inline-flex items-center justify-center gap-2 min-h-touch px-6 rounded-full font-medium bg-action-primary hover:bg-action-primary-hover text-white transition-colors focus-ring"
         >
           {t("cta")}
           {/* MEH-990: raw → dingbat → Phosphor ArrowRight; rtl:rotate-180 = reading-forward in he (MEH-938 pattern) */}

@@ -300,7 +300,7 @@ export default function MapBottomSheet({
               type="button"
               onClick={onResetFilters}
               data-testid="sheet-reset-filters"
-              className="inline-flex items-center min-h-[44px] -my-2.5 shrink-0 text-sm font-medium text-primary hover:underline"
+              className="inline-flex items-center min-h-touch -my-2.5 shrink-0 text-sm font-medium text-primary hover:underline"
             >
               {t("reset_filters")}
             </button>
