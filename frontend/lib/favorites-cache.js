@@ -23,7 +23,7 @@ let ids = new Set();
 // MEH-2724: the full producer rows from the SAME response, newest first, for
 // the homepage «המועדפים שלך» strip. Parsed per row (one bad row costs one
 // card, as on /favorites). Filtered through `ids` on read, so a heart removed
-// anywhere drops the card at once.
+// anywhere drops the card at once. Rows with no created_at sort last.
 let rows = [];
 let loaded = false;
 let loadingPromise = null;
@@ -105,12 +105,33 @@ export function setFavoritedLocal(producerId, value) {
   if (value) ids.add(producerId);
   else ids.delete(producerId);
   notify();
+  // MEH-2724: a heart added after the load has no card row yet — re-read the
+  // list once so the homepage strip shows it too (un-hearting needs no
+  // fetch: getFavoriteProducers filters through `ids`).
+  if (value && loaded && !rows.some((p) => p.id === producerId)) refreshRows();
+}
+
+let refreshing = null;
+function refreshRows() {
+  if (refreshing) return refreshing;
+  refreshing = api
+    .get("/users/me/favorites")
+    .then((res) => {
+      rows = parseRows(res.data);
+      notify();
+    })
+    .catch(() => {})
+    .finally(() => {
+      refreshing = null;
+    });
+  return refreshing;
 }
 
 /** Called by AuthContext on logout so the next login starts clean. */
 export function resetFavoritesCache() {
   ids = new Set();
   rows = [];
+  refreshing = null;
   loaded = false;
   loadingPromise = null;
   notify();

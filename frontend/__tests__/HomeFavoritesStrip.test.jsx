@@ -91,6 +91,17 @@ describe("favorites-cache → getFavoriteProducers", () => {
     expect(getFavoriteProducers().map((p) => p.id)).toEqual(["p2", "p1"]);
   });
 
+  it("a heart added after the load re-reads the list, so the new card appears", async () => {
+    apiGet.mockResolvedValueOnce({ data: [row(1, "2026-11-01T10:00:00")] });
+    await ensureFavoritesLoaded();
+    apiGet.mockResolvedValueOnce({
+      data: [row(1, "2026-11-01T10:00:00"), row(4, "2026-11-06T10:00:00")],
+    });
+    setFavoritedLocal("p4", true);
+    await vi.waitFor(() => expect(getFavoriteProducers().map((p) => p.id)).toEqual(["p4", "p1"]));
+    expect(apiGet).toHaveBeenCalledTimes(2);
+  });
+
   it("logout (reset) clears the rows", async () => {
     apiGet.mockResolvedValue({ data: [row(1, "2026-11-01T10:00:00")] });
     await ensureFavoritesLoaded();

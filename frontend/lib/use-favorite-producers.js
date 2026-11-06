@@ -25,7 +25,13 @@ export function useFavoriteProducers() {
     }
     let alive = true;
     const read = () => {
-      if (alive) setItems(getFavoriteProducers());
+      if (!alive) return;
+      const next = getFavoriteProducers();
+      // Skip the re-render when the same cards are in the same order (every
+      // heart tap anywhere notifies).
+      setItems((prev) =>
+        prev.length === next.length && prev.every((p, i) => p.id === next[i].id) ? prev : next,
+      );
     };
     ensureFavoritesLoaded().then(read);
     const unsub = subscribeFavorites(read);

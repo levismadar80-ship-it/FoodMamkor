@@ -52,7 +52,7 @@ export function HomeFavoritesStrip({ items }) {
         <Link
           href="/favorites"
           data-testid="home-favorites-all"
-          className="text-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+          className="shrink-0 whitespace-nowrap text-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
         >
           {t("home.favorites_strip.all")}
         </Link>
