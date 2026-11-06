@@ -5727,9 +5727,10 @@
       "title": "סל הפתעה",
       "cta": "לשריין · משלמים בקופה",
       "typical": "בדרך כלל: {items}",
-      "allergens": "מכיל: ייתכנו גלוטן, חלב, אגוזים ושומשום. שאלו בבית העסק לפני האיסוף.",
       "allergens_title": "אלרגנים",
-      "cancel_until": "ביטול חינם עד {time}"
+      "cancel_until": "ביטול חינם עד {time}",
+      "allergens_declared": "מכיל: {list} · לפי הצהרת בית העסק",
+      "allergens_undeclared": "בית העסק לא ציין אלרגנים. שאלו לפני האיסוף."
     },
     "confirm": {
       "title": "שמרנו לכם סל",
@@ -5826,7 +5827,9 @@
       "leftover_donated_help": "לחצו אחרי שמסרתם, כדי שנדע כמה סלים ניצלו.",
       "leftover_qty_label": "כמה סלים נמסרו?",
       "leftover_undo": "ביטול",
-      "leftover_upcoming": "אחרי שזמן האיסוף נגמר, יופיע כאן מה שלא נאסף."
+      "leftover_upcoming": "אחרי שזמן האיסוף נגמר, יופיע כאן מה שלא נאסף.",
+      "allergens_title": "אלרגנים בסל",
+      "allergens_help": "מה שמסומן יוצג לקונים בכרטיס הסל, לצד «לפי הצהרת בית העסק»."
     },
     "counter_card": {
       "title": "סל הפתעה של מהמקור",

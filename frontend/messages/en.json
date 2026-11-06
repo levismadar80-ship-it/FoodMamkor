@@ -5731,9 +5731,10 @@
       "title": "Rescue bag",
       "cta": "Reserve · pay at the counter",
       "typical": "Usually: {items}",
-      "allergens": "May contain gluten, milk, nuts and sesame. Ask at the business before pickup.",
       "allergens_title": "Allergens",
-      "cancel_until": "Free cancellation until {time}"
+      "cancel_until": "Free cancellation until {time}",
+      "allergens_declared": "Contains: {list} · as declared by the business",
+      "allergens_undeclared": "The business didn't list allergens. Ask before pickup."
     },
     "confirm": {
       "title": "Your bag is reserved",
@@ -5830,7 +5831,9 @@
       "leftover_donated_help": "Tap after you've given them away, so we know how many bags were saved.",
       "leftover_qty_label": "How many bags were given?",
       "leftover_undo": "Undo",
-      "leftover_upcoming": "After pickup time ends, what wasn't collected will show here."
+      "leftover_upcoming": "After pickup time ends, what wasn't collected will show here.",
+      "allergens_title": "Allergens in the bag",
+      "allergens_help": "What you tick is shown to buyers on the bag card, next to «as declared by the business»."
     },
     "counter_card": {
       "title": "Mehamakor rescue bag",
