@@ -68,8 +68,10 @@ describe("unified attribute labels (MEH-1082)", () => {
     expect(TOGGLE_CHIPS.find((c) => c.key === "kosher")?.label).toBe("כשרות מאומתת");
   });
 
-  it("grass_fed stays /map-local (not in the shared map)", () => {
-    expect(ATTRIBUTE_LABELS.grass_fed).toBeUndefined();
+  // MEH-2767 (Sapir 06/11): grass_fed is on every surface now — it was a
+  // /map-local leftover of MEH-1082, not a decision.
+  it("grass_fed is shared, with the same label on /map", () => {
+    expect(ATTRIBUTE_LABELS.grass_fed).toBeDefined();
     expect(TOGGLE_CHIPS.find((c) => c.key === "grass_fed")?.label).toBe("גראס פד");
   });
 
