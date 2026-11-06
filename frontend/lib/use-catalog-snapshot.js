@@ -34,7 +34,7 @@ function fetchSnapshot() {
   if (cached && Date.now() - cachedAt > SNAPSHOT_TTL_MS) cached = null;
   if (!cached) {
     cachedAt = Date.now();
-    cached = api
+    const request = api
       .get("/producers")
       .then((response) => {
         const parsed = ProducersResponseSchema.safeParse(response.data);
@@ -44,9 +44,12 @@ function fetchSnapshot() {
         return { catalog: parsed.data, complete };
       })
       .catch((error) => {
-        cached = null;
+        // Only clear the slot if it still holds THIS request — after a TTL
+        // expiry a newer request may own it, and wiping that would refetch.
+        if (cached === request) cached = null;
         throw error;
       });
+    cached = request;
   }
   return cached;
 }

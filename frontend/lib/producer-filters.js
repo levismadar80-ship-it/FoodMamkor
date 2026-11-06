@@ -70,9 +70,8 @@ export const OPEN_NOW_CHIP_MIN = 5;
 // and punishes the businesses that joined first — so it stays OUT of the DOM
 // rather than rendering disabled.
 //
-// Deliberately NOT applied to the four older axes: they already have data and
-// gating them now would REMOVE working filters. New axes start gated; existing
-// ones are never retro-gated.
+// (MEH-1934 originally exempted the four older axes as "never retro-gated";
+// MEH-2767 below reverses that by Sapir's decision — see there.)
 //
 // MEH-2130 deliberately does NOT gate `pickup_points`: its data comes from the
 // location rows owners already create in LocationsEditor (the same rows the
@@ -218,7 +217,7 @@ export function visibleGatedDietKeys(producers = [], chips = {}) {
  * response's X-Total-Count passes `complete` explicitly (use-catalog-snapshot
  * does), so this copy of the backend constant decides nothing there.
  */
-export const CATALOG_SNAPSHOT_MAX = 100;
+const CATALOG_SNAPSHOT_MAX = 100;
 
 /**
  * MEH-2767 — THE gate. Which of `chips` a surface offers, given the unfiltered
@@ -240,9 +239,11 @@ export const CATALOG_SNAPSHOT_MAX = 100;
  *                   nothing is hidden (/map: hiding on an unknown would be the
  *                   "probe never ran" green in the other direction).
  * @param complete   is `catalog` the whole catalog? Default: shorter than
- *                   CATALOG_SNAPSHOT_MAX. Only the open-now zero-result half
- *                   reads it.
+ *                   CATALOG_SNAPSHOT_MAX. When false, neither gate may hide a
+ *                   chip on a count the missing rows could change.
  * @param fallbackCatalog  see `status`.
+ * @param fallbackComplete is `fallbackCatalog` the whole catalog? (/producers:
+ *                   `!hasMore`; home: true — it holds everything it fetched.)
  * @param chipState  an ACTIVE axis always keeps its chip, or a deep link
  *                   strands the visitor with a filter she cannot switch off.
  * @param now        Date | null — see openNowChipVisible (null through SSR
@@ -256,10 +257,18 @@ export function visibleAxisChips({
   now = null,
   complete: completeArg,
   fallbackCatalog = null,
+  fallbackComplete = false,
 }) {
   if (status === "failed") {
     if (!Array.isArray(fallbackCatalog)) return chips;
-    return visibleAxisChips({ chips, catalog: fallbackCatalog, status: "ready", chipState, now, complete: false });
+    return visibleAxisChips({
+      chips,
+      catalog: fallbackCatalog,
+      status: "ready",
+      chipState,
+      now,
+      complete: fallbackComplete,
+    });
   }
   const list = Array.isArray(catalog) ? catalog : [];
   const complete =
@@ -283,6 +292,11 @@ export function visibleAxisChips({
     // chip — rather than throw inside render on all three surfaces.
     if (typeof counts !== "function") return true;
     const n = list.filter((p) => p && counts(p)).length;
+    // A partial snapshot (catalog past one page) cannot prove "fewer than 5":
+    // the matches may sit past the page. Undecided ⇒ show, never hide a
+    // filter that may work. Pre-launch the catalog is one page, so this only
+    // starts to matter at 100+ businesses (follow-up: server-side counts).
+    if (n < DIET_CHIP_MIN && !complete) return true;
     return n >= DIET_CHIP_MIN;
   });
 }

@@ -175,6 +175,7 @@ export function HomeProducersGrid({
         // A failed snapshot gates on the feed home loaded (MEH-2131's source
         // for open-now), so no guard drops out on a network blip.
         fallbackCatalog: producers,
+        fallbackComplete: true,
         chipState: chips,
         now: openNowClock,
       }),

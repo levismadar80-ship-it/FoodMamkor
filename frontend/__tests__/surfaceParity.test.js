@@ -131,7 +131,13 @@ describe("MEH-2767 — 2. gating: the same catalog yields the same chips everywh
 describe("MEH-2767 — 2b. a failed snapshot keeps the listing guards", () => {
   it("falls back to the page's own catalog, so open-now stays gated", () => {
     const visible = sorted(
-      visibleAxisChips({ chips: PRODUCERS_CHIPS_CONFIG, status: "failed", fallbackCatalog: [], now: NOW }),
+      visibleAxisChips({
+        chips: PRODUCERS_CHIPS_CONFIG,
+        status: "failed",
+        fallbackCatalog: [],
+        fallbackComplete: true,
+        now: NOW,
+      }),
     );
     expect(visible).not.toContain("open_for_orders_now");
     expect(visible).not.toContain("vegan");
@@ -140,6 +146,12 @@ describe("MEH-2767 — 2b. a failed snapshot keeps the listing guards", () => {
 
   it("with no fallback (/map) a failed snapshot hides nothing — unknown is not zero", () => {
     expect(sorted(visibleMapToggleChips({ catalogSnapshot: null, now: NOW }))).toEqual(sorted(TOGGLE_CHIPS));
+  });
+
+  it("`complete: false` never hides a count chip on a count the missing rows could change", () => {
+    const args = { chips: PRODUCERS_CHIPS_CONFIG, catalog: [], status: "ready", now: NOW };
+    expect(sorted(visibleAxisChips({ ...args, complete: true }))).not.toContain("vegan");
+    expect(sorted(visibleAxisChips({ ...args, complete: false }))).toContain("vegan");
   });
 
   it("`complete: false` keeps open-now's zero-result half from hiding the chip", () => {
