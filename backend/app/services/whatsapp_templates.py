@@ -221,3 +221,42 @@ class KashrutExpiryReminderV1(WhatsAppTemplate):
     owner_name: str
     producer_name: str
     expires_at: str
+class RescueCodesDigestV1(WhatsAppTemplate):
+    """MEH-2756: at pickup_start, the day's pickup codes for one rescue offer,
+    sent to the BUSINESS so the counter has the list without opening the
+    dashboard.
+
+    UTILITY category, no buttons — three body params in {{n}} order:
+
+        {{1}} producer_name — the business's name
+        {{2}} window        — the pickup window, "HH:MM–HH:MM" on the Israel clock
+        {{3}} codes         — the code list, "NNNN (qty)" per order, joined
+                              with ", " — e.g. "0431 (2), 0887 (1)"
+
+    # DO NOT put a newline, a tab, or 5+ consecutive spaces in any parameter.
+    # Meta rejects the whole send (132000 / "param content has newline") and
+    # `send_template` returns False without raising, so the digest would fail
+    # silently. That is why {{3}} is comma-joined rather than one code per
+    # line, which is what it wants to be visually. `build_codes_param()` in
+    # services/rescue_digest.py is the only writer and strips them.
+    #
+    # Length: an offer caps at RESCUE_MAX_QTY_PER_OFFER = 20 bags
+    # (models.py:2781), so {{3}} is at most ~20 × 11 ≈ 220 chars — well inside
+    # the 1024-char body budget even with {{1}} and {{2}}.
+
+    Business-initiated and therefore outside the 24h customer-service window,
+    so `send_text` is not an option (it answers 131047 for a number that never
+    messaged us) — this has to be an approved template. The base
+    `to_components()` emits all three in declaration order; no override needed,
+    unlike OtpCodeV1/FavoriteAlertHeV1, because every param here is a body
+    param.
+
+    # DO NOT rename once registered with Meta — a mismatch returns error
+    # 132001 (template does not exist), and the failure is silent to the user
+    # because `send_template` returns False rather than raising.
+    """
+
+    name: ClassVar[str] = "rescue_codes_digest_v1"
+    producer_name: str
+    window: str
+    codes: str

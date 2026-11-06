@@ -2863,6 +2863,14 @@ class RescueOffer(Base):
     # the API caps it at that leftover, the CHECK only at qty_total (the
     # no-show half lives on rescue_orders, out of a row CHECK's reach).
     qty_donated = Column(Integer, nullable=False, default=0, server_default=text("0"))
+    # MEH-2756: when the pickup_start WhatsApp digest of this offer's codes was
+    # sent to the business. NULL = not sent, and it is the ONLY duplicate-send
+    # guarantee the digest has — stamped in the same transaction as the send, so
+    # a crash between the two retries rather than loses the message.
+    # DO NOT backfill: an existing offer was never digested, which is what NULL
+    # says. TIMESTAMPTZ here while pickup_start/pickup_end/created_at above are
+    # naive-UTC — deliberate, see the revision docstring and docs/DATA.md.
+    codes_sent_at = Column(DateTime(timezone=True), nullable=True)
 
     location = relationship("ProducerLocation")
     # passive_deletes defers to the DB ON DELETE CASCADE — without it a
