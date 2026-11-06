@@ -130,6 +130,23 @@ describe("dashboard — «כמה כבר נרשמו»", () => {
     expect(api.put).not.toHaveBeenCalled();
   });
 
+  it("a stored tally above today's ceiling is not lowered by focus + leave", async () => {
+    // 6 counted by hand, then 4 signed up on the site: ceiling 8 - 4 = 4.
+    await dash([{ ...BASE, registration_method: "whatsapp", participants_count: 6, registered_count: 4 }]);
+    fireEvent.blur(screen.getByLabelText(he.registration.list.offline_label));
+    expect(api.put).not.toHaveBeenCalled();
+  });
+
+  it("after a switch away from the site form, earlier sign-ups stay listed", async () => {
+    await dash([{ ...BASE, registration_method: "whatsapp", participants_count: 0, registered_count: 3 }]);
+    expect(screen.getByText(he.registration.list.summary.replace("{count}", "3"))).toBeInTheDocument();
+  });
+
+  it("no site sign-ups and another method → no list", async () => {
+    await dash([{ ...BASE, registration_method: "whatsapp", participants_count: 0, registered_count: 0 }]);
+    expect(screen.queryByText(/הרשמות באתר/)).not.toBeInTheDocument();
+  });
+
   it.each([
     ["no cap", { max_participants: null }],
     ["pending", { status: "pending" }],

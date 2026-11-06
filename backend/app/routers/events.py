@@ -354,7 +354,17 @@ def update_event(
     # an unrelated edit.
     if "registration_method" in changes and changes["registration_method"] is None:
         changes.pop("registration_method")  # NOT NULL column — null = unchanged
-    if "registration_method" in changes or "registration_url" in changes:
+    # A form re-sends both fields on every save; a value equal to the stored
+    # one is not a change (legacy rows got their method from the backfill).
+    method_changed = (
+        changes.get("registration_method", event.registration_method)
+        != event.registration_method
+    )
+    url_changed = (
+        changes.get("registration_url", event.registration_url)
+        != event.registration_url
+    )
+    if method_changed or url_changed:
         method_issue = method_problem(
             changes.get("registration_method") or event.registration_method,
             phone=_producer_phone(db, event.producer_id),

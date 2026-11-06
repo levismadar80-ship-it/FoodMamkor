@@ -34,7 +34,7 @@ from app.config import settings
 from app.database import get_db
 from app.models import Event, Experience, Producer, Registration, User
 from app.rate_limit import limiter
-from app.routers.experiences import _public_listing_query
+from app.routers.experiences import _publicly_visible_query
 from app.schemas.schemas import (
     RegistrationCancelInfoOut,
     RegistrationCreate,
@@ -77,7 +77,9 @@ def _event_for_signup(db: Session, event_id: UUID) -> Event:
 
 
 def _experience_for_signup(db: Session, experience_id: UUID) -> Experience:
-    visible = _public_listing_query(db).filter(Experience.id == experience_id).first()
+    # Visible (approved host + business) — past / cancelled are 409 below,
+    # like events, not 404: the detail page still shows them by link.
+    visible = _publicly_visible_query(db).filter(Experience.id == experience_id).first()
     if visible is None:
         raise HTTPException(status_code=404, detail="Experience not found")
     ex = (
@@ -86,6 +88,12 @@ def _experience_for_signup(db: Session, experience_id: UUID) -> Experience:
         .with_for_update()
         .first()
     )
+    # Re-check on the locked row: it can be deleted, cancelled or moved into
+    # the past between the visibility query and the lock.
+    if ex is None:
+        raise HTTPException(status_code=404, detail="Experience not found")
+    if not ex.is_active or ex.event_date < israel_today():
+        raise HTTPException(status_code=409, detail=_CLOSED)
     if ex.registration_method != "site_form":
         raise HTTPException(status_code=409, detail=_CLOSED)
     return ex
@@ -146,13 +154,15 @@ def register_for_event(
     db: Session = Depends(get_db),
 ):
     event = _event_for_signup(db, event_id)
-    if _existing(db, Registration.event_id, event.id, data.email):
-        db.rollback()
-        return RegistrationCreatedOut()
-
+    # Capacity before the duplicate check: the other order answers 201 for an
+    # email already signed up and 409 for a new one on a full item, which
+    # tells a stranger whether that address is on the list.
     taken = registered_counts(db, event_ids=[event.id]).get(event.id, 0)
     if event.max_participants is not None and taken >= event.max_participants:
         raise HTTPException(status_code=409, detail=_FULL)
+    if _existing(db, Registration.event_id, event.id, data.email):
+        db.rollback()  # releases the FOR UPDATE lock on the event row
+        return RegistrationCreatedOut()
 
     reg = _new_registration(data, event_id=event.id)
     db.add(reg)
@@ -210,15 +220,15 @@ def register_for_experience(
     db: Session = Depends(get_db),
 ):
     ex = _experience_for_signup(db, experience_id)
-    if _existing(db, Registration.experience_id, ex.id, data.email):
-        db.rollback()
-        return RegistrationCreatedOut()
-
+    # Capacity first, for the same reason as register_for_event.
     taken = registered_counts(db, experience_ids=[ex.id]).get(ex.id, 0)
     # The host's own tally (WhatsApp / phone sign-ups) shares the cap.
     occupied = (ex.participants_count or 0) + taken
     if ex.max_participants is not None and occupied >= ex.max_participants:
         raise HTTPException(status_code=409, detail=_FULL)
+    if _existing(db, Registration.experience_id, ex.id, data.email):
+        db.rollback()  # releases the FOR UPDATE lock on the experience row
+        return RegistrationCreatedOut()
 
     reg = _new_registration(data, experience_id=ex.id)
     db.add(reg)
@@ -276,7 +286,9 @@ def _is_admin(user: User) -> bool:
 @router.get(
     "/events/{event_id}/registrations", response_model=list[RegistrationOwnerOut]
 )
+@limiter.limit("30/minute")
 def list_event_registrations(
+    request: Request,
     event_id: UUID,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -300,7 +312,9 @@ def list_event_registrations(
     "/experiences/{experience_id}/registrations",
     response_model=list[RegistrationOwnerOut],
 )
+@limiter.limit("30/minute")
 def list_experience_registrations(
+    request: Request,
     experience_id: UUID,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -365,7 +379,8 @@ def cancel_registration(
         reg.cancelled_at = utc_now()
     db.commit()
 
-    if was_active:
+    # A late cancel of a past item changes nothing for the owner — no email.
+    if was_active and item.event_date >= israel_today():
         if reg.event_id:
             owner_email = _owner_email_for_event(db, item)
         else:

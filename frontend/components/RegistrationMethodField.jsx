@@ -36,7 +36,14 @@ function useBusinessPhone() {
     Promise.resolve()
       .then(() => api.get("/producers/me"))
       .then((r) => alive && setPhone(r.data?.phone || ""))
-      .catch(() => alive && setPhone(null));
+      // 403/404 = no business on this account → no phone to reach, so
+      // WhatsApp and phone are off (the server would refuse them). Any other
+      // failure stays "unknown".
+      .catch((err) => {
+        if (!alive) return;
+        const status = err?.response?.status;
+        setPhone(status === 403 || status === 404 ? "" : null);
+      });
     return () => {
       alive = false;
     };

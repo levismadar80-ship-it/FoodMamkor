@@ -198,6 +198,20 @@ class TestEventSignup:
         assert r.status_code == 422
         assert db.query(Registration).count() == 0
 
+    def test_full_event_answers_409_even_for_an_email_already_on_the_list(
+        self, client, db, sent
+    ):
+        # 201-for-a-listed-email vs 409-for-a-new-one would tell a stranger
+        # who is signed up (adversarial review, PR #4078).
+        ev = _event(db, _owner(db), max_participants=1)
+        client.post(f"/events/{ev.id}/registrations", json=_signup())
+        listed = client.post(f"/events/{ev.id}/registrations", json=_signup())
+        new = client.post(
+            f"/events/{ev.id}/registrations", json=_signup(email="noa@example.com")
+        )
+        assert (listed.status_code, new.status_code) == (409, 409)
+        assert listed.json() == new.json()
+
 
 # ---------- sign-up: experience ----------
 
@@ -255,6 +269,27 @@ class TestExperienceSignup:
             ).status_code
             == 409
         )
+
+    def test_past_and_cancelled_experiences_are_409_not_404(self, client, db, sent):
+        # Same contract as events: the detail page still shows them by link.
+        host = _owner(db)
+        past = _experience(db, host, event_date=israel_today() - timedelta(days=1))
+        off = _experience(db, host)
+        off.is_active = False
+        db.commit()
+        for ex in (past, off):
+            r = client.post(f"/experiences/{ex.id}/registrations", json=_signup())
+            assert r.status_code == 409, ex.id
+            assert r.json()["detail"]["code"] == "registration_closed"
+
+    def test_full_experience_answers_409_even_for_a_listed_email(
+        self, client, db, sent
+    ):
+        ex = _experience(db, _owner(db), max_participants=1)
+        client.post(f"/experiences/{ex.id}/registrations", json=_signup())
+        r = client.post(f"/experiences/{ex.id}/registrations", json=_signup())
+        assert r.status_code == 409
+        assert r.json()["detail"]["code"] == "registration_full"
 
 
 # ---------- owner list ----------
@@ -346,6 +381,17 @@ class TestCancel:
         assert client.get("/registrations/nope").status_code == 404
         assert client.post("/registrations/nope/cancel").status_code == 404
 
+    def test_cancel_after_the_date_sends_the_owner_nothing(self, client, db, sent):
+        owner = _owner(db, email="owner-late@example.com")
+        ev = _event(db, owner)
+        client.post(f"/events/{ev.id}/registrations", json=_signup())
+        token = db.query(Registration).one().cancel_token
+        ev.event_date = israel_today() - timedelta(days=2)
+        db.commit()
+        r = client.post(f"/registrations/{token}/cancel")
+        assert r.status_code == 200 and r.json()["status"] == "cancelled"
+        assert [x for x in sent if x[0] == "owner_cancel"] == []
+
 
 # ---------- registration_method on create / update ----------
 
@@ -431,16 +477,17 @@ class TestMethodPrerequisites:
             ).status_code
             == 200
         )
-        r = client.put(
-            f"/events/{ev.id}", json={"registration_method": "whatsapp"}, headers=h
-        )
-        assert r.status_code == 422
         assert (
             client.put(
                 f"/events/{ev.id}", json={"registration_method": "site_form"}, headers=h
             ).json()["registration_method"]
             == "site_form"
         )
+        # switching (back) to whatsapp is a change, and a landline can't take it
+        r = client.put(
+            f"/events/{ev.id}", json={"registration_method": "whatsapp"}, headers=h
+        )
+        assert r.status_code == 422
 
     def test_experience_method_change_skips_moderation(self, client, db):
         host = _owner(db)
@@ -454,6 +501,56 @@ class TestMethodPrerequisites:
         body = r.json()
         assert body["registration_method"] == "site_form"
         assert body["status"] == "approved"
+
+    def test_resending_a_stored_method_never_blocks_an_edit(self, client, db):
+        # Every legacy experience was backfilled to whatsapp, and the form
+        # re-sends the method on every save. A host whose business has only a
+        # landline must still be able to fix a typo.
+        host = _owner(db, phone=LANDLINE)
+        ex = _experience(db, host, registration_method="whatsapp")
+        r = client.put(
+            f"/experiences/{ex.id}",
+            json={
+                "title": "סדנת בישול טבעוני מעודכנת",
+                "registration_method": "whatsapp",
+                "registration_url": None,
+            },
+            headers=auth_header(host),
+        )
+        assert r.status_code == 200, r.text
+        ev = _event(db, host, registration_method="whatsapp")
+        r = client.put(
+            f"/events/{ev.id}",
+            json={"title": "יום פתוח מעודכן", "registration_method": "whatsapp"},
+            headers=auth_header(host),
+        )
+        assert r.status_code == 200, r.text
+        # an actual switch to whatsapp is still refused for a landline
+        r = client.put(
+            f"/events/{ev.id}",
+            json={"registration_method": "phone"},
+            headers=auth_header(host),
+        )
+        assert r.status_code == 200
+        r = client.put(
+            f"/events/{ev.id}",
+            json={"registration_method": "whatsapp"},
+            headers=auth_header(host),
+        )
+        assert r.status_code == 422
+
+    def test_experience_link_over_500_chars_is_422_not_500(self, client, db):
+        host = _owner(db)
+        ex = _experience(db, host)
+        r = client.put(
+            f"/experiences/{ex.id}",
+            json={
+                "registration_method": "external_url",
+                "registration_url": "https://example.com/" + "a" * 500,
+            },
+            headers=auth_header(host),
+        )
+        assert r.status_code == 422
 
 
 # ---------- purge ----------

@@ -3827,7 +3827,7 @@ class ExperienceCreate(BaseModel):
     # MEH-2763: «איך נרשמים?» — the router checks the method's prerequisite
     # (a mobile for whatsapp, a phone for phone, a URL for external_url).
     registration_method: RegistrationMethod = "site_form"
-    registration_url: str | None = None
+    registration_url: str | None = Field(None, max_length=500)  # column is 500
 
     @field_validator("registration_url")
     @classmethod
@@ -3907,7 +3907,7 @@ class ExperienceUpdate(BaseModel):
     # Bookkeeping, not content — the router keeps it out of moderation.
     participants_count: int | None = Field(None, ge=0, le=500)
     registration_method: RegistrationMethod | None = None  # MEH-2763
-    registration_url: str | None = None  # MEH-2763
+    registration_url: str | None = Field(None, max_length=500)  # MEH-2763
 
     @field_validator("registration_url")
     @classmethod
