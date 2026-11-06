@@ -4763,27 +4763,9 @@ export const ProducerAnalyticsProducersMeAnalyticsGetResponse = /*#__PURE__*/ zo
 
 
 /**
- * Toggle today's availability for the logged-in producer.
- *
- * Legacy endpoint — kept during MEH-291 7-day overlap. Mirrors the toggle to
- * `availability_state` so consumers reading the new column stay consistent.
- * @summary Toggle Availability
- */
-export const ToggleAvailabilityProducersMeAvailabilityPostResponse = /*#__PURE__*/ zod.unknown()
-
-
-/**
  * @summary Set Availability State
  */
 export const SetAvailabilityStateProducersMeAvailabilityStatePostResponse = /*#__PURE__*/ zod.unknown()
-
-
-/**
- * Legacy endpoint — kept during MEH-291 7-day overlap. Mirrors the
- * durable status to `availability_state`.
- * @summary Set Availability Status
- */
-export const SetAvailabilityStatusProducersMeAvailabilityStatusPostResponse = /*#__PURE__*/ zod.unknown()
 
 
 /**
