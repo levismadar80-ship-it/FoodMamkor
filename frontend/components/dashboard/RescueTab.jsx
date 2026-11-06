@@ -150,6 +150,7 @@ export default function RescueTab() {
   }
 
   async function saveItems() {
+    clearNotice();
     try {
       await api.put("/producers/me/rescue/typical-items", {
         items: items.split(",").map((s) => s.trim()).filter(Boolean),
@@ -167,6 +168,7 @@ export default function RescueTab() {
   const exactLocation = locations.find((l) => l.location_precision === "exact");
 
   async function publish(dayOffset = 0) {
+    clearNotice();
     const location = exactLocation;
     if (!location) {
       setNotice("publish", t("no_location"));
@@ -413,9 +415,7 @@ export default function RescueTab() {
             </label>
             <label className="font-body-sm text-sm min-w-0">
               {t("field.to")}
-              {/* MEH-2730: iOS Safari draws a time input wider than its grid
-                  column (it overflowed the card on Sapir's iPhone); min-w-0
-                  on both the grid item and the input lets it shrink. */}
+              {/* MEH-2730: min-w-0 for iOS, see the «from» field above. */}
               <input
                 type="time"
                 value={form.to}

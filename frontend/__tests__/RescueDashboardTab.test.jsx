@@ -643,6 +643,39 @@ describe("MEH-2730 each message sits next to what caused it", () => {
     expect(screen.getAllByTestId("rescue-tab-notice")).toHaveLength(1);
   });
 
+  it("a refused hand-over on an order row is shown in the orders box", async () => {
+    mockOrders([order()]);
+    post.mockRejectedValue({ response: { status: 409, data: { detail: "ההזמנה כבר נמסרה" } } });
+    render(<RescueTab />);
+    fireEvent.click(await screen.findByTestId("rescue-order-hand"));
+    const notice = await screen.findByTestId("rescue-tab-notice");
+    expect(notice.textContent).toBe("ההזמנה כבר נמסרה");
+    expect(sectionOf(notice)).toBe("orders");
+  });
+
+  it("a refused «נמסרו בחינם» is shown in the leftover box", async () => {
+    mockDay({ offers: [bag({ leftover: 3 })], points: ZICHRON });
+    put.mockRejectedValue({ response: { data: { detail: "אפשר לסמן עד 2 סלים שלא נאספו" } } });
+    render(<RescueTab />);
+    fireEvent.click(await screen.findByTestId("rescue-leftover-donated"));
+    const notice = await screen.findByTestId("rescue-tab-notice");
+    expect(sectionOf(notice)).toBe("leftover");
+  });
+
+  it("an old message clears as soon as another box starts its request", async () => {
+    let release;
+    post.mockImplementation(() => new Promise((r) => { release = r; }));
+    render(<RescueTab />);
+    await pointsLoaded();
+    fireEvent.change(screen.getByTestId("rescue-code-input"), { target: { value: "222" } });
+    fireEvent.click(screen.getByTestId("rescue-code-submit"));
+    await screen.findByTestId("rescue-tab-notice");
+    fireEvent.click(screen.getByTestId("rescue-publish-today"));
+    // The publish is still in flight: the code box's message must already be gone.
+    await waitFor(() => expect(screen.queryByTestId("rescue-tab-notice")).toBeNull());
+    await act(async () => release?.({ data: {} }));
+  });
+
   it("the time fields can shrink inside their column (iOS draws them wider)", async () => {
     render(<RescueTab />);
     await pointsLoaded();
