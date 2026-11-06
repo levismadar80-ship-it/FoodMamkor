@@ -1891,7 +1891,7 @@ Bundles F4 (copy reframe) + F10 (CLS-fixing skeleton). New copy: *"גליון {m
 
 Moves the mini-map preview from section #7 (after HolidayBanner) to section #2 (immediately after Hero). Adds an SSR-able skeleton placeholder so the slot reserves height before JS hydrates (CLS fix), and defers Leaflet bundle eval 200ms post-FCP via `setTimeout` + chained `requestIdleCallback` so it lands outside the LCP measurement window. Also adds OSM tile-shard preconnects (`a/b/c.tile.openstreetmap.org`) in the locale layout `<head>`.
 
-- ✅ → home.spec.ts (the mini-map is the second block on the page, right after the hero) — Section order — visit `/he` on mobile → scroll order is: Hero → **map** → Friday strip (if Fri) → stats → Location banner → Holiday banner → Categories. Map is the **second** visible block, not section #7.
+- ✅ → home.spec.ts (the mini-map comes right after the businesses grid, in the DOM and on screen) — SUPERSEDED by MEH-2747: the map now sits after the businesses grid on mobile and desktop; MEH-604's "second block" order is retired.
 - [ ] Skeleton on first paint — hard-reload `/he` with Network throttled to "Slow 3G" → for the first ~200ms the map slot shows the skeleton (pulsing `bg-light` + `MapTrifold` icon + "טוענת מפה..."). The slot is **the same height** as the rendered map — no layout jump when the live map appears.
 - ✅ → home.spec.ts (the document head preconnects to all three OSM tile hosts) — Tile preconnect in DOM — DevTools → Elements → `<head>` → 3 lines present: `<link rel="preconnect" href="https://a.tile.openstreetmap.org">` (also `b.`, `c.`). All have `crossOrigin="anonymous"`.
 - [ ] Leaflet load timing — DevTools → Performance → record initial page load → main thread should be free of Leaflet/`react-leaflet` script eval for the first ~200ms after FCP. Map markers appear after the defer window.
@@ -4591,7 +4591,7 @@ ROLLBACK;   -- חובה. הבדיקה היא האם ה-DELETE נכשל, לא ה�
 ## MEH-2635 — המיני-מפה יורדת מתחת לגריד בנייד (03/11/2026)
 - [ ] דף הבית ב-375, גלילה אחת מה-hero — **תוצאה מצופה:** נוחתים על רצועת האמון ואז על הקטגוריות והגריד; המפה **לא** מופיעה מיד מתחת ל-hero.
 - [ ] דף הבית ב-375, גלילה עד סוף הגריד — **תוצאה מצופה:** המיני-מפה «כל בית עסק על המפה» מופיעה אחרי הגריד, עם כפתור «פתחו מפה מלאה».
-- [ ] דף הבית ב-1440 — **תוצאה מצופה:** הסדר הישן נשמר: המפה מיד אחרי ה-hero, הגריד למטה.
+- [ ] ~~דף הבית ב-1440 — הסדר הישן נשמר~~ — הוחלף ב-MEH-2747: המפה אחרי הגריד גם ב-1440.
 - [ ] בשני הרוחבים — **תוצאה מצופה:** תת-הכותרת «גלו בתי עסק לפי מיקום» לא מופיעה (הכותרת «כל בית עסק על המפה» לבדה).
 - [ ] דף הבית ב-375, גלילה אופקית — **תוצאה מצופה:** אין. הדף לא זז הצידה בשום גובה.
 - [ ] דף הבית ב-375 בחיבור איטי — **תוצאה מצופה:** שלד המפה שומר על אותו גובה (320px) כמו המפה הטעונה; אין קפיצה כשהיא נטענת.
@@ -4751,6 +4751,10 @@ ROLLBACK;   -- חובה. הבדיקה היא האם ה-DELETE נכשל, לא ה�
 - [ ] עסק שהשרת לא מאשר לו לפרסם (למשל עוד לא אושר) ← «לפרסם להיום» — תוצאה מצופה: הסיבה מהשרת מופיעה בתוך תיבת «לפרסם סלים», מתחת לכפתורים, ולא «משהו נתקע» מתחת לתיבת הקוד.
 - [ ] חשבון שהאימייל שלו לא אומת ← «לפרסם להיום» — תוצאה מצופה: «יש לאמת את כתובת האימייל תחילה» בתוך תיבת הפרסום (לפני כן המסך לא ידע להציג את זה).
 - [ ] אייפון, 375 — תוצאה מצופה: שדות «איסוף מ-» ו«עד» בתוך הכרטיס, לא חורגים מהקצה.
+## MEH-2747 — סדר אחד לדף הבית בנייד ובמחשב (06/11/2026)
+- [ ] דף הבית ב-375 וב-1440 — תוצאה מצופה: אותו סדר: פתיחה ← אמון ← קטגוריות ← בתי עסק ← (סלי הפתעה, אם יש) ← המפה «כל בית עסק על המפה» ← היכרות.
+- [ ] אייפון עם VoiceOver, החלקה ימינה מהפתיחה — תוצאה מצופה: המפה מוקראת אחרי בתי העסק, באותו מקום שרואים אותה.
+- [ ] 1440 — תוצאה מצופה: בין «הפתיעו אותי» לכותרת המפה רווח רגיל, לא חור גדול.
 
 ## MEH-2745 — סלי הפתעה: הודעה מסודרת בשגיאת התחברות / עומס / שרת (06/11/2026)
 
