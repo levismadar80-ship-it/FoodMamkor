@@ -14,7 +14,7 @@
  * History:  MEH-1935 (creation, 2026-08-07); MEH-1941 (both attributes
  *           flipped to `backed: true` once MEH-1934 landed, 2026-08-08).
  */
-import { ATTRIBUTE_LABELS } from "@/lib/attribute-labels";
+import { axisLabel } from "@/lib/chip-copy";
 
 /**
  * MEH-1935: a diet page needs at least this many matching businesses before it
@@ -36,7 +36,7 @@ export const DIET_PAGE_MIN = 5;
  * and must not be reshuffled here, because the sibling-chip row renders it.
  *
  *  - `slug`        URL segment. English, per the project-wide route rule.
- *  - `attribute`   key into ATTRIBUTE_LABELS (the H1 / chip-label SoT).
+ *  - `attribute`   filter-axis key; its label is messages `filter_axes.<key>.label`.
  *  - `filterParam` the existing /producers query param (MEH-293 EXISTS filter).
  *  - `backed`      does the BACKEND actually implement `filterParam` today?
  *
@@ -56,23 +56,9 @@ export const DIET_PAGES = [
   { slug: "gluten-free", attribute: "gluten_free", filterParam: "gluten_free", backed: true },
   { slug: "lactose-free", attribute: "lactose_free", filterParam: "lactose_free", backed: true },
   // MEH-1934 has landed, and MEH-1941 flipped these to `backed: true`.
-  //
-  // `pendingLabel` is dead code — but NOT because of that flip, which is what
-  // an earlier draft of this comment claimed. It was unreachable from the day
-  // this file was written: dietPageLabel() only ever runs on a resolved entry,
-  // and both the route (page.js) and the sibling row filter un-backed entries
-  // out before reaching it, so the fallback had no live caller either way.
-  // What the flip changed is only that ATTRIBUTE_LABELS is now the sole
-  // resolver in fact as well as in principle (attribute-labels.js:112, :118;
-  // strings verified byte-identical to these, so no rendered copy moved).
-  // Kept because deleting it is a separate change from opening the pages.
-  {
-    slug: "no-added-sugar",
-    attribute: "no_added_sugar",
-    filterParam: "no_added_sugar",
-    backed: true,
-    pendingLabel: "ללא סוכר מוסף",
-  },
+  // MEH-2748 removed the old `pendingLabel` fallback: it never had a live
+  // caller, and the label now comes from messages like every other axis.
+  { slug: "no-added-sugar", attribute: "no_added_sugar", filterParam: "no_added_sugar", backed: true },
   // MEH-2047: the low-carb page is withdrawn with the claim itself — an
   // indexable page whose H1 states an unregulated nutrition claim is the same
   // over-claim on a louder surface. getDietPage("low-carb") now returns null,
@@ -117,10 +103,15 @@ export function isDietPageBacked(entry) {
 export const BACKED_DIET_PAGES = DIET_PAGES.filter(isDietPageBacked);
 
 /**
- * H1 / chip label. Reads ATTRIBUTE_LABELS first so the page and the filter
- * chip can never disagree (MEH-1935: "H1 = label ה-chip, לא לנסח מחדש").
+ * H1 / chip label. Reads the SAME message the filter chip renders
+ * (`filter_axes.<attribute>.label`) so the page and the chip can never
+ * disagree (MEH-1935: "H1 = label ה-chip, לא לנסח מחדש"). MEH-2748: `t` is a
+ * ROOT-namespace translator — `getTranslations({ locale })` on the server.
+ *
+ * @param {object|null} entry  a DIET_PAGES entry
+ * @param {(key: string) => string} t  required — there is no Hebrew fallback
  */
-export function dietPageLabel(entry) {
+export function dietPageLabel(entry, t) {
   if (!entry) return null;
-  return ATTRIBUTE_LABELS[entry.attribute]?.label ?? entry.pendingLabel ?? null;
+  return axisLabel(t, entry.attribute);
 }

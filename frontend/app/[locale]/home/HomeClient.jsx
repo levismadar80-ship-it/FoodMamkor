@@ -108,7 +108,7 @@ export default function HomeClient({
           separate row — the businesses grid below keeps one order for
           everyone. Self-hides when signed out or with 0 favorites. Outside
           the mobile-reorder wrapper, so it stays at the top on phones too. */}
-      <HomeFavoritesStrip items={favoriteProducers} />
+      <HomeFavoritesStrip items={favoriteProducers.items} reserve={favoriteProducers.reserve} />
 
       {/* MEH-2635: below `md` this wrapper is a flex column and the mini-map
           carries `order-last`, so it renders AFTER HomeProducersGrid — the

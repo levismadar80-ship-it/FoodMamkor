@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { Link as LocaleLink } from "@/i18n/navigation";
 
 import api from "@/lib/api";
-import { detailToMessage } from "@/lib/errors";
+import { detailToMessage, errorMessage } from "@/lib/errors";
 import { israelTime, leftoverGroupUrl, shekels } from "@/lib/rescue";
 import Button from "@/components/ui/Button";
 
@@ -39,6 +39,7 @@ const AT = { code: "code", orders: "orders", publish: "publish", items: "items",
 
 export default function RescueTab() {
   const t = useTranslations("rescue.dashboard");
+  const tError = useTranslations("error");
   const [orders, setOrders] = useState(null);
   const [code, setCode] = useState("");
   const [busyId, setBusyId] = useState(null);
@@ -51,14 +52,19 @@ export default function RescueTab() {
   // (alert), a confirmation politely (status).
   const setNotice = (at, text, error = true) => setNoticeState(text ? { at, text, error } : null);
   const clearNotice = () => setNoticeState(null);
-  // The server's own sentence when it sent one — string, {code, message}
-  // (the verified-email gate) or a 422 list; the generic line otherwise.
-  // A raw object here used to reach JSX as a child and could not render.
-  // A 5xx gets the generic line even with a detail: that text is a server or
-  // proxy message, not one written for the owner (same split as errorMessage()
-  // in lib/errors.js).
-  const reason = (err) =>
-    (err?.response?.status >= 500 ? null : detailToMessage(err?.response?.data?.detail)) || t("failed");
+  // Two paths (MEH-2745). No response, 401, 429 and 5xx get the site's own
+  // sentences (error.mapper.*, via errorMessage): the text in those comes
+  // from the auth layer, slowapi or a proxy, not written for the owner.
+  // Any other 4xx shows the server's own sentence — string, {code, message}
+  // (the verified-email gate) or a 422 list — or the generic line. A raw
+  // object here used to reach JSX as a child and could not render.
+  const reason = (err) => {
+    const status = err?.response?.status;
+    if (!err?.response || status === 401 || status === 429 || status >= 500) {
+      return errorMessage(err, tError);
+    }
+    return detailToMessage(err.response.data?.detail) || t("failed");
+  };
   const [items, setItems] = useState("");
   const [form, setForm] = useState({ qty_total: 4, price: 15, from: "18:00", to: "20:00", cancelMin: 30 });
   // MEH-2678: the tab loads its own pickup points. It used to take them as a

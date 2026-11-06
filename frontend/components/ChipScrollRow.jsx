@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Check } from "@phosphor-icons/react";
 import useScrollAffordance, { ScrollArrows } from "@/hooks/useScrollAffordance";
+import { useChipCopy } from "@/lib/use-chip-copy";
 
 // Firefox mouse wheels report deltaMode=DOM_DELTA_LINE (units = lines,
 // ~3/notch) — normalize to px or the wheel-scroll crawls. 16px/line is
@@ -108,6 +109,9 @@ export default function ChipScrollRow({
   onChipClick,
   className = "",
 }) {
+  // MEH-2748: registry chips arrive without words; a chip that already has a
+  // label (DB category, city, translated "all") passes through untouched.
+  const withChipCopy = useChipCopy();
   const t = useTranslations("map.chip_scroll");
   const chipRefs = useRef(new Map());
   // MEH-1391/MEH-1572: scrollRef + the ONE affordance signal (fades, arrows
@@ -329,7 +333,7 @@ export default function ChipScrollRow({
         // MEH-2199 chunk 1: the keyboard the role above has always declared.
         onKeyDown={onToolbarKeyDown}
       >
-        {chips.map((chip) => {
+        {chips.map(withChipCopy).map((chip) => {
           const active = isActive(chip);
           // MEH-1465 + MEH-1181-A "Direction A": a SELECTED category chip carries
           // its category colour as a ring + 12% wash with a neutral dark label

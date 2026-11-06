@@ -453,7 +453,8 @@ export function useMapFilters({
     const tags = [];
     TOGGLE_CHIPS.forEach((c) => {
       if (SERVICE_CHIP_KEYS.includes(c.key)) return;
-      if (chipState[c.key]) tags.push({ kind: "toggle", key: c.key, label: c.label });
+      // MEH-2748: no label here — FilterChipsBar attaches it via useChipCopy().
+      if (chipState[c.key]) tags.push({ kind: "toggle", key: c.key });
     });
     return tags;
   }, [chipState]);
