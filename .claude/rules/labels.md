@@ -175,11 +175,11 @@ because the pattern the MEH-1507 spec cites, the **MEH-1472 emoji guard**
 
 **Adding a new label:** add the object with `scope` + `evidence` (+ `subtext` if it
 needs an in-component explanation) to `FILTER_AXES` for a filter chip, or to
-`BADGE_CONFIG` for a badge (its label and tooltip go in `messages/{he,en}.json` under
-`badges.<key>`, both locales — `BadgeCopyMessages.test.jsx` fails on a missing one).
-Omit either field → the guard fails. If the new label
+`BADGE_CONFIG` for a badge. Omit either field → the guard fails. If the new label
 is a claim that already exists on the other surface, add the pair to
-`SHARED_CLAIMS` in the test so the two cannot drift.
+`SHARED_CLAIMS` in the test so the two cannot drift. A badge's label and tooltip
+go in `messages/{he,en}.json` under `badges.<key>` — `BadgeCopyMessages.test.jsx`
+fails on a missing one (MEH-2740).
 
 ---
 

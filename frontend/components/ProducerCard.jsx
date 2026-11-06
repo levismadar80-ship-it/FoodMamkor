@@ -530,15 +530,15 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
                   column of bare words — a badge with no explanation is a jargon
                   leak, and this is the surface where it was worst, since a badge
                   in position 3+ has no chip context around it.
-                  Copy is BADGE_CONFIG[key].tooltip VERBATIM — the honest
+                  Copy is the badge tooltip (messages `badges.<key>.tooltip`, MEH-2740) VERBATIM — the honest
                   any-product wording MEH-1439 already wrote — so this adds zero
                   new strings and inherits that copy review rather than
                   reopening it. Same visual idiom as the FilterSheet subtext
                   rows (MEH-1418/1507): muted, one step down, below the label.
                   REUSES: frontend/components/FilterSheet.jsx:248 (conditional
                   subtext line — `subtext && <p className="text-xs text-fg-muted …">`).
-                  The tooltip is read off `b`, which IS the BADGE_CONFIG entry
-                  (allBadges maps keys through it), so no extra import.
+                  The tooltip is read off `b`, the BADGE_CONFIG entry after
+                  useBadgeCopy() added its words (MEH-2740).
                   Rendered CONDITIONALLY: a key with no tooltip renders the label
                   alone rather than an empty line. Every key has one today, so
                   that branch is defensive — it exists so adding a tooltip-less

@@ -8,10 +8,15 @@
  * a badge passes it through the returned function, which adds `label` and
  * `tooltip` to a copy of the entry — the shape the renderers already read.
  */
+import { useCallback } from "react";
 import { useTranslations } from "next-intl";
 
 export function useBadgeCopy() {
   const t = useTranslations("badges");
-  return (badge) =>
-    badge ? { ...badge, label: t(`${badge.key}.label`), tooltip: t(`${badge.key}.tooltip`) } : badge;
+  // Stable per locale, so it is safe in a dependency array.
+  return useCallback(
+    (badge) =>
+      badge ? { ...badge, label: t(`${badge.key}.label`), tooltip: t(`${badge.key}.tooltip`) } : badge,
+    [t],
+  );
 }

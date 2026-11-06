@@ -92,8 +92,8 @@ export const BADGE_CONFIG = {
     scope: "business",
     evidence: "admin-verified",
     // MEH-762: ADR-022 tier-1 copy lock (terms §5.2-aligned). Replaces the
-    // pre-ADR-022 over-claim ("עבר אימות זהות ורישוי"). en gap is inherited
-    // legacy — dies when MEH-76 S12 wires the MEH-758 keys.
+    // pre-ADR-022 over-claim ("עבר אימות זהות ורישוי"). (MEH-2740: the
+    // copy now lives in messages, en included.)
     color: "primary",
   },
   recommended: {
@@ -164,7 +164,7 @@ export const BADGE_CONFIG = {
     // Matches FILTER_AXES.gluten_free. `any-product`, never `business`: the
     // badge lights on `has_gluten_free_products` — ANY marked product in the
     // catalog (MEH-479). Reading it as a whole-business property is the exact
-    // MEH-1439 over-claim, and the tooltip below is worded to prevent it.
+    // MEH-1439 over-claim, and its tooltip (messages `badges.<key>.tooltip`) is worded to prevent it.
     scope: "any-product",
     evidence: "self-declared",
     color: "muted",
@@ -177,7 +177,7 @@ export const BADGE_CONFIG = {
     // Matches FILTER_AXES.vegetarian. `any-product`, never `business`: the
     // badge lights on `has_vegetarian_products` — ANY marked product in the
     // catalog (MEH-479). Reading it as a whole-business property is the exact
-    // MEH-1439 over-claim, and the tooltip below is worded to prevent it.
+    // MEH-1439 over-claim, and its tooltip (messages `badges.<key>.tooltip`) is worded to prevent it.
     scope: "any-product",
     evidence: "self-declared",
     // MEH-1508 chunk 3ב-2 (§6.6, LOCKED): scope in the term, matching the axis.
@@ -188,7 +188,7 @@ export const BADGE_CONFIG = {
     // Matches FILTER_AXES.vegan. `any-product`, never `business`: the
     // badge lights on `has_vegan_products` — ANY marked product in the
     // catalog (MEH-479). Reading it as a whole-business property is the exact
-    // MEH-1439 over-claim, and the tooltip below is worded to prevent it.
+    // MEH-1439 over-claim, and its tooltip (messages `badges.<key>.tooltip`) is worded to prevent it.
     scope: "any-product",
     evidence: "self-declared",
     // MEH-1508 chunk 3ב-2 (§6.6, LOCKED): scope in the term, matching the axis.
@@ -223,7 +223,7 @@ export const BADGE_CONFIG = {
     // Matches FILTER_AXES.lactose_free. `any-product`, never `business`: the
     // badge lights on `has_lactose_free_products` — ANY marked product in the
     // catalog (MEH-479). Reading it as a whole-business property is the exact
-    // MEH-1439 over-claim, and the tooltip below is worded to prevent it.
+    // MEH-1439 over-claim, and its tooltip (messages `badges.<key>.tooltip`) is worded to prevent it.
     scope: "any-product",
     evidence: "self-declared",
     color: "muted",
@@ -236,7 +236,7 @@ export const BADGE_CONFIG = {
     // Matches FILTER_AXES.no_added_sugar. `any-product`, never `business`: the
     // badge lights on `has_no_added_sugar_products` — ANY marked product in the
     // catalog (MEH-479). Reading it as a whole-business property is the exact
-    // MEH-1439 over-claim, and the tooltip below is worded to prevent it.
+    // MEH-1439 over-claim, and its tooltip (messages `badges.<key>.tooltip`) is worded to prevent it.
     scope: "any-product",
     evidence: "self-declared",
     color: "muted",
@@ -262,8 +262,8 @@ export const BADGE_CONFIG = {
     // where naming a single certificate would itself be a misstatement.
     // Industry precedent: ACM/Booking.com 2024 — the objection was to the
     // self-synthesized label, and the remedy was naming the third-party
-    // certification instead. Hardcoded Hebrew matches every sibling entry in
-    // this file; no new i18n key, so the MEH-978 en-parity guard is untouched.
+    // certification instead. (MEH-2740: the words now live in messages
+    // `badges.kosher.*`, he + en.)
     color: "muted",
   },
   delivery: {
