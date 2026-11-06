@@ -107,20 +107,40 @@ export function setFavoritedLocal(producerId, value) {
   if (value && loaded && !rows.some((p) => p.id === producerId)) refreshRows();
 }
 
+// A hearted id with no card row yet. The heart flips the cache BEFORE its
+// POST commits, so the GET below can still miss it — hence the bounded retry.
+const REFRESH_RETRY_MS = 1500;
+const REFRESH_MAX_ATTEMPTS = 3;
 let refreshing = null;
-function refreshRows() {
+let generation = 0; // bumped on logout; a response from before it is dropped
+
+function missingRow() {
+  for (const id of ids) if (!rows.some((p) => p.id === id)) return true;
+  return false;
+}
+
+function refreshRows(attempt = 1) {
   if (refreshing) return refreshing;
-  refreshing = api
+  const gen = generation;
+  const req = api
     .get("/users/me/favorites")
     .then((res) => {
+      if (gen !== generation) return;
       rows = parseRows(res.data);
       notify();
     })
     .catch(() => {})
     .finally(() => {
-      refreshing = null;
+      if (refreshing === req) refreshing = null;
+      // Covers both an uncommitted POST and a second heart added mid-flight.
+      if (gen === generation && attempt < REFRESH_MAX_ATTEMPTS && missingRow()) {
+        setTimeout(() => {
+          if (gen === generation) refreshRows(attempt + 1);
+        }, REFRESH_RETRY_MS);
+      }
     });
-  return refreshing;
+  refreshing = req;
+  return req;
 }
 
 /** Called by AuthContext on logout so the next login starts clean. */
@@ -128,6 +148,7 @@ export function resetFavoritesCache() {
   ids = new Set();
   rows = [];
   refreshing = null;
+  generation += 1;
   loaded = false;
   loadingPromise = null;
   notify();

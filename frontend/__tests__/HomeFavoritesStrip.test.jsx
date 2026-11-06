@@ -102,6 +102,38 @@ describe("favorites-cache → getFavoriteProducers", () => {
     expect(apiGet).toHaveBeenCalledTimes(2);
   });
 
+  it("GET served before the POST commits → retries until the new card appears", async () => {
+    vi.useFakeTimers();
+    try {
+      apiGet.mockResolvedValueOnce({ data: [row(1, "2026-11-01T10:00:00")] });
+      await ensureFavoritesLoaded();
+      // First refresh still sees the old list (POST not committed yet).
+      apiGet.mockResolvedValueOnce({ data: [row(1, "2026-11-01T10:00:00")] });
+      apiGet.mockResolvedValueOnce({
+        data: [row(1, "2026-11-01T10:00:00"), row(5, "2026-11-06T11:00:00")],
+      });
+      setFavoritedLocal("p5", true);
+      await vi.advanceTimersByTimeAsync(2000);
+      expect(getFavoriteProducers().map((p) => p.id)).toEqual(["p5", "p1"]);
+      expect(apiGet).toHaveBeenCalledTimes(3);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("a refresh in flight at logout does not write the old user's rows", async () => {
+    apiGet.mockResolvedValueOnce({ data: [row(1, "2026-11-01T10:00:00")] });
+    await ensureFavoritesLoaded();
+    let release;
+    apiGet.mockReturnValueOnce(new Promise((r) => { release = r; }));
+    setFavoritedLocal("p6", true);
+    resetFavoritesCache();
+    release({ data: [row(1, "2026-11-01T10:00:00"), row(6, "2026-11-06T10:00:00")] });
+    await new Promise((r) => setTimeout(r, 0));
+    setFavoritedLocal("p1", true); // new session's heart, rows must be empty
+    expect(getFavoriteProducers()).toEqual([]);
+  });
+
   it("logout (reset) clears the rows", async () => {
     apiGet.mockResolvedValue({ data: [row(1, "2026-11-01T10:00:00")] });
     await ensureFavoritesLoaded();
