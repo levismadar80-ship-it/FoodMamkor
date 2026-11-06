@@ -22,9 +22,9 @@ import { showToast } from "@/lib/toast";
 // MEH-1221: silent-mailto fallback window. mailto: fails silently on desktops
 // with no mail handler (no error, no navigation). The email circle is a bare
 // mailto and shows no address (MEH-2775: only the SOLE-channel row shows it),
-// so a customer on such a desktop has NO email path at all. We race this timer against window
-// "blur" / visibilitychange (either fires when a handler grabs focus); timer
-// wins → no handler → copy the address + toast so she can paste it.
+// so a customer on such a desktop has NO email path at all. We race this
+// timer against window "blur" / visibilitychange (either fires when a handler
+// grabs focus); timer wins → no handler → copy the address + toast so she can paste it.
 // REUSES: frontend/app/[locale]/share/ShareClient.jsx:104-143 (MEH-1220/1223)
 // — same detection mechanics + MEH-1223 real-success flag (a double failure
 // shows the failure toast, never a false "copied").

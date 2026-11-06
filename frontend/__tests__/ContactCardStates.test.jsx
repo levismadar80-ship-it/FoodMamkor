@@ -252,6 +252,8 @@ describe("ContactCard degenerate states (MEH-1551)", () => {
     ["instagram (bare handle)", { instagram: "shikma" }, "@shikma", true],
     ["email", { contact_email: " hello@shikma.co.il " }, "hello@shikma.co.il", true],
     ["website", { website: "http://www.shikma.co.il/a?b=1" }, "shikma.co.il", true],
+    ["website (bare host)", { website: "shikma.co.il" }, "shikma.co.il", true],
+    ["website (caps scheme, port, query)", { website: "HTTPS://WWW.Shikma.co.il:8080?a=1" }, "Shikma.co.il:8080", true],
     ["instagram (legacy URL row)", { instagram: "https://instagram.com/shikma" }, "אינסטגרם", false],
     ["whatsapp_group", { whatsapp_group: "https://chat.whatsapp.com/AbC123" }, "producer.detail.contact_card.single.whatsapp_group", false],
     ["facebook", { facebook: "facebook.com/shikma" }, "producer.detail.contact_card.single.facebook", false],
