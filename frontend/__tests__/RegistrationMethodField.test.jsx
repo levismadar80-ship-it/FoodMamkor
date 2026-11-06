@@ -104,15 +104,23 @@ describe("RegistrationMethodField", () => {
     expect(screen.getByText(R.phone_needs_phone)).toBeInTheDocument();
   });
 
-  it("nothing is disabled while /producers/me is still loading or failed", async () => {
+  it("nothing is disabled while /producers/me is still loading or the network failed", async () => {
     let reject;
     api.get.mockReturnValue(new Promise((_, r) => (reject = r)));
     field();
     expect(radio("whatsapp")).not.toBeDisabled();
     expect(radio("phone")).not.toBeDisabled();
-    await act(async () => reject(new Error("404")));
+    await act(async () => reject(new Error("Network Error")));
     expect(radio("whatsapp")).not.toBeDisabled();
     expect(radio("phone")).not.toBeDisabled();
+  });
+
+  it("an account with no business (404) disables WhatsApp and phone and says why", async () => {
+    api.get.mockRejectedValue({ response: { status: 404 } });
+    field();
+    await waitFor(() => expect(radio("phone")).toBeDisabled());
+    expect(radio("whatsapp")).toBeDisabled();
+    expect(screen.getByText(R.phone_needs_phone)).toBeInTheDocument();
   });
 
   it("the URL box shows only for the external link", () => {

@@ -58,6 +58,9 @@ function SignupCountField({ ex, t, onSaved, label, max }) {
   const save = async () => {
     const n = Number(value);
     const current = ex.participants_count ?? 0;
+    // Focus + leave without typing is not an edit — never let the clamp below
+    // lower a stored tally that is above today's ceiling.
+    if (value === String(current)) return;
     if (value.trim() === "" || !Number.isInteger(n) || n < 0) {
       setValue(String(current));
       return;
@@ -290,15 +293,17 @@ export default function ManageExperiencesPage() {
                 <SignupCountField
                   ex={ex}
                   t={t}
-                  label={siteForm ? tReg("offline_label") : t("signed_up_label")}
-                  max={Math.max(0, ex.max_participants - (siteForm ? ex.registered_count ?? 0 : 0))}
+                  label={siteForm || (ex.registered_count ?? 0) > 0 ? tReg("offline_label") : t("signed_up_label")}
+                  max={Math.max(0, ex.max_participants - (ex.registered_count ?? 0))}
                   onSaved={(saved) =>
                     setItems((list) => list.map((e) => (e.id === ex.id ? { ...e, ...saved } : e)))
                   }
                 />
               )}
               {/* MEH-2766: «טופס הרשמה באתר» sign-ups, closed by default. */}
-              {siteForm && (
+              {/* Shown after a switch away too: earlier sign-ups still hold
+                  seats, and the owner still needs their details. */}
+              {(siteForm || (ex.registered_count ?? 0) > 0) && (
                 <RegistrationsList kind="experiences" itemId={ex.id} count={ex.registered_count ?? 0} />
               )}
             </li>

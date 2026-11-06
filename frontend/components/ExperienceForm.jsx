@@ -28,7 +28,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
-import { isUnverifiedEmailError } from "@/lib/errors";
+import { detailToMessage, isUnverifiedEmailError } from "@/lib/errors";
 import { Warning, Lightbulb, XCircle } from "@phosphor-icons/react";
 import CitySearch from "@/components/CitySearch";
 import AddressSearch from "@/components/AddressSearch";
@@ -155,11 +155,10 @@ const EXPERIENCE_FIELD_ID = {
 
 const isWholeNumber = (value) => Number.isInteger(Number(value));
 
-// Same rule as EventForm's isNativeValidUrl: what <input type=url> accepts.
+// http(s) only — the server's _url_scheme_validator refuses anything else.
 function isUrl(value) {
   try {
-    new URL(value);
-    return true;
+    return ["http:", "https:"].includes(new URL(value).protocol);
   } catch {
     return false;
   }
@@ -408,7 +407,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
       else if (typeof detail === "string") setServerError(detail);
       // MEH-2766: «איך נרשמים?» prerequisites answer {code, message}.
       else if (detail && typeof detail === "object" && detail.message) setServerError(detail.message);
-      else setServerError(t("error_generic"));
+      else setServerError(detailToMessage(detail) || t("error_generic"));
     } finally {
       setSubmitting(false);
     }

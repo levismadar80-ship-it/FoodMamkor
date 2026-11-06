@@ -195,7 +195,7 @@ export default function ManageEventsPage() {
                 </div>
               </div>
               {/* MEH-2766: «טופס הרשמה באתר» sign-ups, closed by default. */}
-              {ev.registration_method === "site_form" && (
+              {(ev.registration_method === "site_form" || (ev.registered_count ?? 0) > 0) && (
                 <RegistrationsList kind="events" itemId={ev.id} count={ev.registered_count ?? 0} />
               )}
             </li>
