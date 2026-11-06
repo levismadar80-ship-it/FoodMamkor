@@ -78,22 +78,6 @@ function FreeAboveText({ t, freeAbove, keyName, nowrap = false }) {
   );
 }
 
-// MEH-643 (Assembly v2): availability dot is fully tokenized — no raw hex.
-// available_today → primary (brand green); on_vacation / full_this_week →
-// fg-muted (recedes, no separate status color); accepting_orders → no dot.
-// Continues the MEH-717 line (eliminated the multi-color status palette);
-// v4 routes non-available states through fg-muted. Returns a token class.
-function availabilityDot(producer) {
-  // MEH-1854: enum-first via the shared helper. This chain previously omitted
-  // the legacy "full" rung, so a full-this-week business on legacy-only data
-  // fell through to accepting_orders and rendered no dot.
-  const status = deriveAvailability(producer);
-  let cls = null;
-  if (status === "available_today") cls = "bg-primary";
-  else if (status === "on_vacation" || status === "full_this_week") cls = "bg-fg-muted";
-  return { cls, status };
-}
-
 /**
  * Card-level heart. Distinct from <FavoriteButton> (producer detail):
  *   - No fetch on mount (reads from favorites-cache hydrated once).
@@ -305,23 +289,15 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
       ? rawDescription.slice(0, 80).trimEnd() + "…"
       : rawDescription;
 
-  const { cls: dotClass, status: dotStatus } = availabilityDot(producer);
-  const availabilityDotEl = dotClass ? (
-    <span
-      className={`inline-block w-2 h-2 rounded-full shrink-0 ${dotClass}`}
-      data-testid="availability-dot"
-      data-status={dotStatus}
-      aria-hidden="true"
-    />
-  ) : null;
+  // MEH-2751: the card no longer draws the availability dot (green = «זמין
+  // היום», grey = «עמוס השבוע» / «בהפסקה»). It carried no word, was hidden
+  // from screen readers, and visitors could not tell what it meant (Sapir,
+  // 6/11). The state stays on the business page. Only the vacation check
+  // below still reads it, to hide the order-window line.
+  const isOnVacation = deriveAvailability(producer) === "on_vacation";
   // MEH-2440: the line under the name holds the category, plus the distance
   // only when there is no city line to carry it. With neither, it is skipped
-  // instead of rendering an empty row (claude[bot] review on #3694). The
-  // availability dot then moves to the place line; with no city either there
-  // is no line left to carry it and it is dropped on purpose — a status dot
-  // with no text beside it is the MEH-1551 orphan circle, and the status is
-  // still on the producer page. (Registration requires a city, so this is a
-  // data-gap state, not a normal one.)
+  // instead of rendering an empty row (claude[bot] review on #3694).
   const hasLocationText = Boolean(category || (!producer.city && distanceLabel));
 
   // MEH-1880 — derived "open for orders" line.
@@ -345,9 +321,8 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
   // shout "סגור" (MEH-1652 copy-honesty — describe declared mechanics, never
   // promise on the business's behalf), and the async CTA stays either way.
   //
-  // Vacation wins, matching the page's existing precedence. `dotStatus` is
-  // reused rather than re-reading availability_state so there is one owner for
-  // "is this producer on vacation" on this card.
+  // Vacation wins, matching the page's existing precedence. `isOnVacation`
+  // is the one owner of "is this producer on vacation" on this card.
   //
   // `nextChange` is checked, not assumed. On the open branch it is always a
   // Date today — but MEH-1546's review caught the mirror of this on the CLOSED
@@ -356,7 +331,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
   // than re-derive that the open branch is safe on every future edit to
   // getOrderWindowStatus, the render is gated on the value it actually needs.
   const showOrderWindowLine =
-    dotStatus !== "on_vacation" &&
+    !isOnVacation &&
     (orderStatus?.state === "open" || orderStatus?.state === "closing_soon") &&
     orderStatus.nextChange != null;
 
@@ -602,10 +577,6 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
             name. MEH-1073 T10 / MEH-867: no uppercase, no letter-spacing. */}
         {producer.city && (
           <p className="text-xs font-semibold text-accent truncate flex items-center gap-1.5 min-w-0" data-testid="card-place">
-            {/* The location line below is skipped when it would hold no text;
-                the availability dot then rides here, so it is never lost and
-                never sits alone as an orphan circle (MEH-1551). */}
-            {!hasLocationText && availabilityDotEl}
             <span className="truncate">
               {producer.city}
               {distanceLabel && (
@@ -644,7 +615,6 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
           className="text-sm text-fg-muted truncate flex items-center gap-1.5"
           data-testid="location-line"
         >
-          {availabilityDotEl}
           <span className="truncate">
             {category}
             {/* No city → no place line above, so the distance stays here. */}
