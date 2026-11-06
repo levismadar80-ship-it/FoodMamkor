@@ -4476,7 +4476,8 @@
           "contact": "פרטי קשר (טלפון/אינסטגרם)",
           "category": "קטגוריה",
           "image": "תמונה ראשית",
-          "short_desc": "תיאור קצר"
+          "short_desc": "תיאור קצר",
+          "hours": "שעות פתיחה"
         },
         "chip_required": "חובה",
         "chip_recommended": "מומלץ"

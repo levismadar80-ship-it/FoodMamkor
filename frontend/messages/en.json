@@ -4480,7 +4480,8 @@
           "contact": "Contact details (phone/Instagram)",
           "category": "Category",
           "image": "Main photo",
-          "short_desc": "Short description"
+          "short_desc": "Short description",
+          "hours": "Opening hours"
         },
         "chip_required": "Required",
         "chip_recommended": "Recommended"
