@@ -215,7 +215,7 @@ export default function Footer() {
                       of open lists was the largest block on every page). From md:
                       up (matchMedia) the heading is plain text — no button, no
                       caret, nothing in the tab order. */}
-                  <h3 className="text-[13px] font-semibold text-green-100 md:mb-3">
+                  <h3 className="text-sm font-semibold text-green-100 md:mb-3">
                     {isDesktop ? (
                       group.heading
                     ) : (
@@ -245,7 +245,7 @@ export default function Footer() {
                             — interactive text carries no inline font sizing. */}
                         <Link
                           href={link.href}
-                          className="text-[13px] text-green-100 hover:text-white transition"
+                          className="text-sm text-green-100 hover:text-white transition"
                         >
                           {link.label}
                         </Link>
@@ -367,7 +367,7 @@ export default function Footer() {
                     (the extra hit area is vertical padding, not layout). */}
                 <Link
                   href={link.href}
-                  className="inline-flex items-center min-h-touch text-[13px] text-green-100 hover:text-white transition"
+                  className="inline-flex items-center min-h-touch text-sm text-green-100 hover:text-white transition"
                 >
                   {link.label}
                 </Link>

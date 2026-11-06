@@ -586,7 +586,7 @@ export default function ProductsSection({
             // MEH-1172: no floating decorative icon — the example card IS the
             // visual (Carbon empty-state pattern). Full opacity, slightly wider.
             <div className="w-full max-w-sm text-start">
-              <p className="text-[11px] text-fg-muted mb-1">{t("empty.sample_label")}</p>
+              <p className="text-2xs text-fg-muted mb-1">{t("empty.sample_label")}</p>
               <div className="border border-border rounded-md p-3 bg-surface-card flex items-center gap-3">
                 <div className="w-14 h-14 rounded-sm bg-green-50 flex items-center justify-center shrink-0">
                   <Package size={22} className="text-fg-muted" aria-hidden="true" />
@@ -768,7 +768,7 @@ export default function ProductsSection({
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-sm text-text truncate">{product.name}</p>
                 {isTopProduct(product) && (
-                  <p className="text-[11px] font-medium text-primary">{t("card.top_product_badge")}</p>
+                  <p className="text-2xs font-medium text-primary">{t("card.top_product_badge")}</p>
                 )}
                 {(() => {
                   if (product.price_min != null)

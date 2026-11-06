@@ -128,7 +128,7 @@ export function HomeFeaturedProducer({ featured }) {
       <div className="max-w-7xl mx-auto px-4 md:px-12 py-12 md:py-20">
         <div className="relative pt-4 mb-8">
           <span className="absolute top-0 start-0 w-10 h-[2px] bg-gold-on-dark" aria-hidden="true" />
-          <h2 className="font-headline-lg text-[26px] md:text-[34px] font-black text-background">{t("eyebrow")}</h2>
+          <h2 className="font-headline-lg text-2xl md:text-4xl font-black text-background">{t("eyebrow")}</h2>
         </div>
         {/* The column gap is in px on purpose: twelve columns carry eleven
             gaps, so a rem gap grows elevenfold with the reader's text size
@@ -155,15 +155,15 @@ export function HomeFeaturedProducer({ featured }) {
             {place && (
               // Cream, not gold: gold-on-dark on bg-primary is 4.04:1, under AA
               // for 13px text. The gold stays on the rule, quote border and link.
-              <p className="text-[13px] font-semibold text-background/90" data-testid="home-featured-place">
+              <p className="text-sm font-semibold text-background/90" data-testid="home-featured-place">
                 {place}
               </p>
             )}
             {/* h3 under the "היכרות" h2, so heading navigation reaches the business. */}
-            <h3 className="font-headline-lg font-black text-[38px] md:text-[60px] leading-none text-background [word-break:keep-all] [overflow-wrap:anywhere]">
+            <h3 className="font-headline-lg font-black text-4xl md:text-6xl leading-none text-background [word-break:keep-all] [overflow-wrap:anywhere]">
               {featured.name}
             </h3>
-            <p className="font-headline-md font-medium text-[20px] md:text-[26px] leading-snug border-s-2 border-gold-on-dark ps-4">
+            <p className="font-headline-md font-medium text-xl md:text-2xl leading-snug border-s-2 border-gold-on-dark ps-4">
               {featured.quote}
             </p>
             {featured.attribution && (

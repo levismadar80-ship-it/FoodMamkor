@@ -656,7 +656,7 @@ function Section({ title, children }) {
     <div className="py-1">
       {/* MEH-1103: uppercase/tracking-wider dropped (MEH-867 rule — Hebrew has
           no uppercase and letter-spacing harms RTL legibility). Refs MEH-1073 T10. */}
-      <div className="px-3 pt-2 pb-1 text-[11px] font-semibold text-fg-muted">
+      <div className="px-3 pt-2 pb-1 text-2xs font-semibold text-fg-muted">
         {title}
       </div>
       <ul className="py-1">{children}</ul>
