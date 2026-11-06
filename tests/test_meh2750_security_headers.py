@@ -26,7 +26,8 @@ ServerErrorMiddleware sits outside `@app.middleware("http")`, so the 500 it
 builds carries NONE of these headers (measured 06/11: a route that raises →
 500 with zero security headers). Pinning that here would assert the gap, and
 fixing it means re-ordering the middleware stack — a security-layer change
-that is Sapir's call, reported on PR #4064, not folded into a tests-only PR.
+that is Sapir's call, tracked as MEH-2761 (post-launch), not folded into a
+tests-only PR.
 429 (slowapi) is not covered either.
 """
 
@@ -45,7 +46,10 @@ EXPECTED = {
     "Permissions-Policy": "camera=(), microphone=(), geolocation=(self)",
 }
 
-ONE_YEAR_S = 365 * 24 * 3600
+# Floor = today's value (2 years, middleware.py). The comment above
+# add_security_headers calls any shortening a regression, so 2y -> 1y must
+# go red; lengthening stays green.
+HSTS_MIN_MAX_AGE_S = 63072000
 
 # (method, path, json body, expected status) — one per exit path.
 CASES = [
@@ -87,8 +91,8 @@ def test_hsts_is_long_with_subdomains_and_preload(client, method, path, body, st
     )
     m = re.search(r"max-age=(\d+)", hsts)
     assert m, f"{path}: HSTS missing or has no max-age: {hsts!r}"
-    assert int(m.group(1)) >= ONE_YEAR_S, (
-        f"{path}: HSTS max-age below one year: {hsts!r}"
+    assert int(m.group(1)) >= HSTS_MIN_MAX_AGE_S, (
+        f"{path}: HSTS max-age shortened below 2 years: {hsts!r}"
     )
     assert "includeSubDomains" in hsts, (
         f"{path}: HSTS without includeSubDomains: {hsts!r}"
