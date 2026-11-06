@@ -154,7 +154,8 @@ async function dietPageExists(slug) {
     }
     const raw = res.headers?.get?.("x-total-count") ?? null;
     const total = Number(raw);
-    if (raw === null || !Number.isFinite(total)) return true;
+    // Number("") is 0, so a blank header must be caught before it reads as zero.
+    if (raw === null || raw.trim() === "" || !Number.isFinite(total)) return true;
     return total >= DIET_PAGE_MIN;
   } catch (err) {
     report(`fetch threw for ${url} — failing open`, err);

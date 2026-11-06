@@ -111,6 +111,12 @@ describe("/producers/diet/<slug> (MEH-2706)", () => {
     backend({ total: null });
     expect(wasNotFound(await middleware(requestFor("/he/producers/diet/vegan")))).toBe(false);
   });
+  it("control: an empty or blank X-Total-Count is unknown, not zero — fails open", async () => {
+    for (const blank of ["", "  "]) {
+      backend({ total: blank });
+      expect(wasNotFound(await middleware(requestFor("/he/producers/diet/vegan")))).toBe(false);
+    }
+  });
   it("control: backend 500 fails open", async () => {
     backend({ status: 500 });
     expect(wasNotFound(await middleware(requestFor("/he/producers/diet/vegan")))).toBe(false);
