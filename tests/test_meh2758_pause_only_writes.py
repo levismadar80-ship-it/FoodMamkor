@@ -42,7 +42,10 @@ def test_state_endpoint_refuses_the_removed_states(client, db, state):
     )
     assert resp.status_code == 400, resp.text
     assert resp.json()["detail"]["code"] == "invalid_availability_state"
-    assert resp.json()["detail"]["params"]["allowed"] == ["accepting_orders", "on_vacation"]
+    assert resp.json()["detail"]["params"]["allowed"] == [
+        "accepting_orders",
+        "on_vacation",
+    ]
     db.refresh(producer)
     assert producer.availability_state == "accepting_orders"
 
@@ -59,7 +62,9 @@ def test_state_endpoint_still_pauses_and_resumes(client, db):
     assert pause.status_code == 200, pause.text
     assert pause.json()["availability_state"] == "on_vacation"
     resume = client.post(
-        "/producers/me/availability-state", json={"state": "accepting_orders"}, headers=hdr
+        "/producers/me/availability-state",
+        json={"state": "accepting_orders"},
+        headers=hdr,
     )
     assert resume.status_code == 200, resume.text
     assert resume.json()["availability_state"] == "accepting_orders"
@@ -110,13 +115,18 @@ def test_admin_put_refuses_moving_into_a_removed_state(client, db, state):
     resp = _admin_put(client, db, producer, state)
     assert resp.status_code == 422, resp.text
     assert resp.json()["detail"]["code"] == "invalid_availability_state"
-    assert resp.json()["detail"]["params"]["allowed"] == ["accepting_orders", "on_vacation"]
+    assert resp.json()["detail"]["params"]["allowed"] == [
+        "accepting_orders",
+        "on_vacation",
+    ]
     db.refresh(producer)
     assert producer.availability_state == "accepting_orders"
 
 
 @pytest.mark.parametrize("state", REMOVED)
-def test_admin_put_resubmitting_an_unchanged_legacy_state_still_saves(client, db, state):
+def test_admin_put_resubmitting_an_unchanged_legacy_state_still_saves(
+    client, db, state
+):
     """ProducerForm sends availability_state on every save. A business still on
     a legacy value must stay editable — the other half of the test above, so an
     implementation that refused the value outright fails here."""
@@ -145,7 +155,9 @@ def test_admin_put_can_move_a_legacy_row_to_accepting_orders(client, db, state):
 # ---------- the two legacy endpoints are gone ----------
 
 
-@pytest.mark.parametrize("path", ["/producers/me/availability", "/producers/me/availability-status"])
+@pytest.mark.parametrize(
+    "path", ["/producers/me/availability", "/producers/me/availability-status"]
+)
 def test_legacy_availability_endpoints_are_removed(client, db, path):
     user, producer = _owner(db)
     resp = client.post(path, json={"status": "full"}, headers=auth_header(user))
@@ -219,3 +231,28 @@ def test_admin_put_pauses_with_a_return_date(client, db):
     db.refresh(producer)
     assert producer.availability_state == "on_vacation"
     assert producer.vacation_until == back
+
+
+def test_admin_put_unrelated_edit_of_a_dateless_pause_still_saves(client, db):
+    """Reviewer on #4100: a legacy on_vacation row with no date stays editable
+    when the PUT does not touch availability."""
+    _, producer = _owner(db, state="on_vacation")
+    producer.vacation_until = None
+    db.commit()
+    admin = make_user(db, role="admin")
+    resp = client.put(
+        f"/admin/producers/{producer.id}",
+        json={"description": "תיאור חדש לבדיקה"},
+        headers=auth_header(admin),
+    )
+    assert resp.status_code == 200, resp.text
+
+
+def test_admin_put_resumes_a_dateless_pause(client, db):
+    _, producer = _owner(db, state="on_vacation")
+    producer.vacation_until = None
+    db.commit()
+    resp = _admin_put(client, db, producer, "accepting_orders")
+    assert resp.status_code == 200, resp.text
+    db.refresh(producer)
+    assert producer.availability_state == "accepting_orders"

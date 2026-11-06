@@ -849,6 +849,8 @@ def _guard_vacation_return_date(producer: Producer, payload: dict) -> None:
     """MEH-2782: a paused business always has a return date, on the admin PUT
     too — the owner endpoint has required it since AUD-039/040. The past-date
     check stays in ProducerUpdate._validate_vacation_until."""
+    if "availability_state" not in payload and "vacation_until" not in payload:
+        return  # an unrelated edit of a legacy dateless pause stays possible
     state = payload.get("availability_state", producer.availability_state)
     until = (
         payload["vacation_until"]
