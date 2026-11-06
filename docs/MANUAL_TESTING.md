@@ -44,6 +44,10 @@
 - [ ] העסק מסמן «נמסר», הקונה חוזר ללשונית — **תוצאה מצופה:** טופס הביקורת מופיע בלי רענון; אחרי שליחה ורענון — «תודה», בלי הטופס
 - [ ] אורח פותח דף עסק עם סל — **תוצאה מצופה:** אין הודעת «פג תוקף ההתחברות»
 
+## MEH-2751 — כרטיס בית עסק: בלי נקודת זמינות (06/11/2026)
+- [ ] עסק שסימן «זמין היום» / «עמוס השבוע» / «בהפסקה» — 375, דף הבית — **תוצאה מצופה:** אין נקודה צבעונית ליד הקטגוריה או ליד העיר
+- [ ] אותו עסק בדף העסק — **תוצאה מצופה:** המצב עדיין מוצג שם כמו קודם
+- [ ] עסק בחופשה עם חלון הזמנות פתוח — **תוצאה מצופה:** אין שורת «פתוח להזמנות» בכרטיס (כמו קודם)
 ## MEH-2744 — כרטיס בית עסק: שורת משלוח בשורה אחת (06/11/2026)
 - [ ] עסק עם מחיר משלוח + הטבת «משלוח חינם מעל» — 375, דף הבית — **תוצאה מצופה:** משאית ואחריה «חינם מעל 200₪» בירוק, בשורה אחת, בלי מחיר המשלוח ובלי «·»
 - [ ] עסק בלי מחיר משלוח, עם ההטבה — **תוצאה מצופה:** אותו דבר, משאית + «חינם מעל 150₪»
@@ -2919,7 +2923,7 @@ _(Desktop top-banner case is covered by the legend assertion above, MEH-1009.)_
 - [ ] **Image ratio** — resize viewport from 375→768→1280; image stays square on mobile, shifts to 4:3 at `lg` breakpoint. No letterboxing / stretching.
 - [ ] **Cloudinary smart-crop** — for a Cloudinary source image, the URL has `c_fill,g_auto,ar_4:3` injected. Portrait producer photos don't crop heads off.
 - [ ] **Rating gate** — producer with `reviews_count = 2` shows no rating; `reviews_count >= 3` shows `★ 4.5 · 12` in the name row, `dir="ltr"`.
-- [ ] **Availability dot** — `availability_state="available_today"` → green; `"on_vacation"` → orange; `"accepting_orders"` → no dot. (The legacy `is_available_today` / `availability_status` are in no API response since MEH-2272 — `curl /producers` shows neither key.)
+- [ ] **Availability dot** — removed from the card in MEH-2751 (06/11/2026): no dot in any `availability_state`. (The legacy `is_available_today` / `availability_status` are in no API response since MEH-2272 — `curl /producers` shows neither key.)
 - [ ] **Description fallback** — `short_description` shown when present; else `top_product_name`; else row hidden. Descriptions past 80 chars get a trailing `…`.
 - [ ] **BadgeRow fold** — producer with `is_verified + is_recommended + organic_certified + grass_fed` shows exactly 2 pills (verified + recommended) per the new 8-key priority.
 - [ ] **Footer** — price truncates at `max-w-[120px]`; primary-method icon switches per `primary_contact_method` (whatsapp → WhatsappLogo, phone → Phone, website → Globe, email → EnvelopeSimple).
@@ -4764,6 +4768,14 @@ ROLLBACK;   -- חובה. הבדיקה היא האם ה-DELETE נכשל, לא ה�
 
 - [ ] /about/process — איך לבדוק: לגלול לקטע «אין תג מאומת? זה לא אומר פחות» — תוצאה מצופה: «תג "מאומת" מופיע רק כשבית העסק הציג לנו מסמך רישוי או אישור פטור, ובדקנו אותו. בית עסק בלי תג חתם על הצהרה מחייבת שהוא פועל כדין, ועבר את אותה היכרות אישית כמו כולם. את המסמכים שלו לא בדקנו.» אין יותר «חלק מהקטגוריות פטורות».
 
+## MEH-2766 — «איך נרשמים?» בלוח הבקרה: בחירה בטופס + רשימת נרשמות (06/11/2026)
+- [ ] אירוע חדש — «אירוע חדש» בלוח — «איך נרשמים?» מסומן «טופס הרשמה באתר»; אין שדה קישור
+- [ ] עסק עם טלפון קווי — טופס סדנה חדשה — WhatsApp אפור + «כדי לבחור WhatsApp צריך מספר נייד בפרטי העסק»; טלפון זמין
+- [ ] קישור חיצוני בלי כתובת — לבחור «קישור הרשמה חיצוני», לשמור ריק — «צריך להוסיף קישור הרשמה» ליד השדה, לא נשלח
+- [ ] מעבר מקישור לטופס — אירוע קיים עם קישור → «טופס הרשמה באתר» → שמירה — הקישור נמחק מהאירוע
+- [ ] רשימה סגורה — «האירועים שלי» / «החוויות שלי», פריט עם טופס באתר — «הרשמות באתר (N)», N = הרשמות פעילות
+- [ ] רשימה פתוחה — לפתוח: 0 → «עוד אין הרשמות באתר»; 1 / רבים → שם, טלפון (חיוג), אימייל; ביטול מסומן «בוטלה» עם קו
+- [ ] ספירה ידנית — סדנה עם טופס באתר — התווית «נרשמו מחוץ לאתר», לא אפשר לחרוג ממה שנשאר אחרי ההרשמות באתר; סדנה ב-WhatsApp — «כמה כבר נרשמו» כמו קודם
 ## MEH-2754 — הפוטר לא קופץ בזמן טעינת עמוד (06/11/2026)
 
 - [ ] טלפון, דף הבית, רענון — איך לבדוק: להסתכל על תחתית המסך בזמן הטעינה — תוצאה מצופה: הפוטר הירוק לא מופיע ונעלם; העמוד נבנה בלי קפיצה.
