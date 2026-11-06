@@ -61,7 +61,7 @@ export default function OpeningHours({ opening_hours }) {
     return (
       <div
         data-testid="hours-raw"
-        className="flex items-center gap-2 border border-border rounded-md bg-white mb-3 min-h-touch px-3.5 py-2.5 text-sm text-text"
+        className="flex items-center gap-2 border border-border rounded-md bg-surface mb-3 min-h-touch px-3.5 py-2.5 text-sm text-text"
       >
         <Clock size={16} className="text-primary-dark shrink-0" aria-hidden="true" />
         <span className="min-w-0">
@@ -78,7 +78,7 @@ export default function OpeningHours({ opening_hours }) {
   const today = map[todayIdx];
 
   return (
-    <div className="border border-border rounded-md bg-white mb-3 overflow-hidden">
+    <div className="border border-border rounded-md bg-surface mb-3 overflow-hidden">
       {/* Collapsed row — today only, neutral text. Every time range is
           dir="ltr" (start on the left — ReviewsSection precedent). */}
       <button

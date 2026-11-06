@@ -191,7 +191,7 @@ export default function CitiesAutocomplete({
                 className={`rounded-full border text-[12px] px-2.5 py-0.5 transition ${
                   done
                     ? "bg-green-50 border-primary/40 text-text hover:bg-danger-50 hover:border-danger-300"
-                    : "bg-white border-border text-text hover:bg-background"
+                    : "bg-surface border-border text-text hover:bg-background"
                 }`}
               >
                 {done ? `${region.name} · ✓ ${t("region_added")}` : region.name}
@@ -203,7 +203,7 @@ export default function CitiesAutocomplete({
 
       {/* Selected chips + input */}
       <div
-        className="min-h-[42px] flex flex-wrap gap-1.5 items-center border border-border rounded-md px-3 py-2 bg-white focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30 cursor-text"
+        className="min-h-[42px] flex flex-wrap gap-1.5 items-center border border-border rounded-md px-3 py-2 bg-surface focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30 cursor-text"
         onClick={() => inputRef.current?.focus()}
       >
         {value.map((city) => (
@@ -270,7 +270,7 @@ export default function CitiesAutocomplete({
           // cite this value as evidence of a repaired bug. The measurement is
           // runnable rather than recited here, because file:line citations rot
           // and it does not: e2e/qa-meh2102-dropdown-vs-map.mjs.
-          className="absolute z-[1010] start-0 end-0 mt-1 max-h-48 overflow-y-auto bg-white border border-border rounded-md shadow-md text-sm"
+          className="absolute z-[1010] start-0 end-0 mt-1 max-h-48 overflow-y-auto bg-surface border border-border rounded-md shadow-md text-sm"
         >
           {suggestions.map((city, i) => (
             <li

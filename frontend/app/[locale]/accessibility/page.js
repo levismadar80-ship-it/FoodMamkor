@@ -157,7 +157,7 @@ export default async function AccessibilityPage({ params }) {
             <section
               key={section.id}
               id={section.id}
-              className="bg-white rounded-lg p-7 border border-border shadow-[0_2px_12px_rgba(46,104,83,0.04)]"
+              className="bg-surface rounded-lg p-7 border border-border shadow-[0_2px_12px_rgba(46,104,83,0.04)]"
             >
               <h2 className="font-headline-md text-2xl font-bold text-text mb-3">
                 {t(`sections.${section.id}.title`)}

@@ -62,7 +62,7 @@ const MAP_BUTTON_POSITION = "absolute top-3 right-3"; // rtl-ok: map control lay
 // `isolate`, the overlay is `fixed … z-[1150]` — so a LOCAL value is sufficient
 // and cannot reach the page scale again.
 const MAP_BUTTON_STYLE =
-  "z-10 flex h-11 w-11 items-center justify-center rounded-full border border-border bg-white text-primary shadow-md transition hover:bg-green-50 focus-visible:ring-2 focus-visible:ring-primary/40";
+  "z-10 flex h-11 w-11 items-center justify-center rounded-full border border-border bg-surface text-primary shadow-md transition hover:bg-green-50 focus-visible:ring-2 focus-visible:ring-primary/40";
 
 // pickup / market_stand are the business's satellite points; a branch (and any
 // unknown kind) is the business itself. Same split as the /map fan-out
@@ -578,7 +578,7 @@ export default function MiniMap({
           role="dialog"
           aria-modal="true"
           aria-label={t("expanded_aria")}
-          className="fixed inset-0 z-[1150] bg-white"
+          className="fixed inset-0 z-[1150] bg-surface"
         >
           {/* MEH-2182: `surfaceProps` carries `draggableMarker` / `onMarkerDragEnd`
               here too, so the overlay marker is draggable as well — deliberately.
@@ -615,7 +615,7 @@ export default function MiniMap({
           target="_blank"
           rel="noopener noreferrer"
           aria-label={t("open_in_waze_aria")}
-          className="flex-1 flex items-center justify-center gap-2 border border-border bg-white text-text px-4 py-2 min-h-touch rounded-full text-sm font-medium hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="flex-1 flex items-center justify-center gap-2 border border-border bg-surface text-text px-4 py-2 min-h-touch rounded-full text-sm font-medium hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40"
         >
           <WazeGlyph />
           {t("open_in_waze")}
@@ -627,7 +627,7 @@ export default function MiniMap({
           // MEH-2308: no aria-label — the visible "מפות Google" is the name.
           // The old "פתיחה במפות Google" did not contain it as a word
           // (axe label-content-name-mismatch, WCAG 2.5.3).
-          className="flex-1 flex items-center justify-center gap-2 border border-border bg-white text-text px-4 py-2 min-h-touch rounded-full text-sm font-medium hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="flex-1 flex items-center justify-center gap-2 border border-border bg-surface text-text px-4 py-2 min-h-touch rounded-full text-sm font-medium hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40"
         >
           <GoogleMapsGlyph />
           {t("open_in_google")}

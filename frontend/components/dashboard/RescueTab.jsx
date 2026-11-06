@@ -511,7 +511,7 @@ export default function RescueTab() {
                   value={chosenQty}
                   onChange={(e) => setDonateQty(Number(e.target.value))}
                   data-testid="rescue-leftover-qty"
-                  className="border border-border rounded-md px-2 py-1 bg-white text-text"
+                  className="border border-border rounded-md px-2 py-1 bg-surface text-text"
                 >
                   {Array.from({ length: leftoverTotal }, (_, i) => i + 1).map((n) => (
                     <option key={n} value={n}>

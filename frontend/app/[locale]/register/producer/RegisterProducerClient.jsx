@@ -844,7 +844,7 @@ function RegisterProducerPageBody() {
   if (!submitted && user?.role === "producer") {
     return (
       <div className="max-w-2xl mx-auto px-4 py-12">
-        <div className="bg-white rounded-md p-8 text-center" data-testid="register-producer-gate">
+        <div className="bg-surface rounded-md p-8 text-center" data-testid="register-producer-gate">
           <div className="mb-4 flex justify-center">
             <CheckCircle size={64} weight="fill" className="text-primary" aria-hidden="true" />
           </div>
@@ -866,7 +866,7 @@ function RegisterProducerPageBody() {
     // manage; the message points them at creating a separate business account.
     return (
       <div className="max-w-2xl mx-auto px-4 py-12">
-        <div className="bg-white rounded-md p-8 text-center" data-testid="register-producer-gate-admin">
+        <div className="bg-surface rounded-md p-8 text-center" data-testid="register-producer-gate-admin">
           <h1 className="font-headline-lg text-3xl font-black text-text mb-2">{t("auth.register.producer.gate.admin_heading")}</h1>
           <p className="text-fg-muted">{t("auth.register.producer.gate.admin_body")}</p>
         </div>
@@ -885,7 +885,7 @@ function RegisterProducerPageBody() {
   if (showPreflight) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-12">
-        <div className="md:bg-white md:rounded-md md:p-8">
+        <div className="md:bg-surface md:rounded-md md:p-8">
           <h1 data-testid="register-hero-heading" className="font-headline-lg text-3xl font-black text-text mb-2 text-center">{t("auth.register.producer.heading")}</h1>
           <p className="text-fg-muted text-center mb-4">{t("auth.register.producer.subtitle")}</p>
           <RegisterPreflight
@@ -905,7 +905,7 @@ function RegisterProducerPageBody() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-12">
-      <div className="md:bg-white md:rounded-md md:p-8">
+      <div className="md:bg-surface md:rounded-md md:p-8">
         {/* MEH-960: hero pitch is wizard chrome — hide on CONFIRM so it doesn't
             double up with the success-screen heading. Mirrors the
             step < STEP.CONFIRM guard on the banners + stepper. */}
@@ -1689,7 +1689,7 @@ function RegisterProducerPageBody() {
                       value === "other" ? prev.referral_source_other : "",
                   }));
                 }}
-                className="w-full border rounded-md px-3 py-2 min-h-touch bg-white text-start"
+                className="w-full border rounded-md px-3 py-2 min-h-touch bg-surface text-start"
               >
                 <option value="" disabled>
                   {t("auth.register.producer.fields.referral_source.placeholder")}

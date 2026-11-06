@@ -156,7 +156,7 @@ function ReviewReply({ review, isOwner, onSaved }) {
           rows={2}
           maxLength={1000}
           placeholder={t("reply_placeholder")}
-          className="w-full border border-border rounded-sm px-3 py-2 bg-white resize-none focus-visible:ring-2 focus-visible:ring-primary/40 outline-none text-[14px]"
+          className="w-full border border-border rounded-sm px-3 py-2 bg-surface resize-none focus-visible:ring-2 focus-visible:ring-primary/40 outline-none text-[14px]"
         />
         {error && (
           <p className="text-sm text-error mt-1" role="alert">{error}</p>
@@ -461,7 +461,7 @@ export default function ReviewsSection({
           ) : (
             <form
               onSubmit={handleSubmit}
-              className="bg-white rounded-lg p-5 border border-border mb-8 space-y-4"
+              className="bg-surface rounded-lg p-5 border border-border mb-8 space-y-4"
             >
               <h3 className="font-headline-md text-lg font-bold text-text">{t("form_heading")}</h3>
               <div>
@@ -482,7 +482,7 @@ export default function ReviewsSection({
                   onChange={(e) => setBody(e.target.value)}
                   rows={3}
                   maxLength={500}
-                  className="w-full border border-border rounded-sm px-3 py-2 bg-white resize-none focus-visible:ring-2 focus-visible:ring-primary/40 outline-none"
+                  className="w-full border border-border rounded-sm px-3 py-2 bg-surface resize-none focus-visible:ring-2 focus-visible:ring-primary/40 outline-none"
                   placeholder={t("body_placeholder")}
                 />
                 <p className="text-xs text-fg-muted mt-1">{body.length}/500</p>

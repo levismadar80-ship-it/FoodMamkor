@@ -232,7 +232,7 @@ const moreGroup = (page: Page) => page.getByTestId("admin-nav-more");
  * the heading by role + exact name, which is a strict-mode violation on two.
  */
 const card = (page: Page, heading: string) =>
-  page.locator("main div.bg-white").filter({ has: page.getByRole("heading", { name: heading, exact: true }) }).last();
+  page.locator("main div.bg-surface").filter({ has: page.getByRole("heading", { name: heading, exact: true }) }).last();
 /** The pills that are actually rendered — the desktop sidebar and the mobile nav each carry a set; the other is display:none.
  *  MEH-2359: the pending-businesses count sits on BOTH approvals entries («מה מחכה לטיפול» + «בתי עסק»), so a count resolves to two. */
 const pill = (page: Page, count: number) => page.locator(`[aria-label="${count} פריטים לאישור"]:visible`);
@@ -315,7 +315,7 @@ async function openSettings(page: Page): Promise<void> {
 /** The vacation block — the page carries two other switches (holiday window, Friday mode) above it.
  *  Same shape and same reasoning as `card()`: <main>-scoped, innermost white container around the heading. */
 const vacationBlock = (page: Page) =>
-  page.locator("main div.bg-white").filter({ has: page.getByRole("heading", { name: /^מצב חופשה/ }) }).last();
+  page.locator("main div.bg-surface").filter({ has: page.getByRole("heading", { name: /^מצב חופשה/ }) }).last();
 const vacationSwitch = (page: Page) => vacationBlock(page).getByRole("switch");
 const vacationSave = (page: Page) => page.getByRole("button", { name: "שמרי מצב חופשה" });
 const returnDate = (page: Page) => page.getByLabel("אני בחופשה עד");

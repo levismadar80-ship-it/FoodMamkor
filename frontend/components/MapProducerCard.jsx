@@ -123,7 +123,7 @@ export default function MapProducerCard({ producer, active, onClick }) {
       data-testid="map-card"
       className={[
         // min-h + fixed rows = the uniform-template equal-height guarantee.
-        "flex gap-3 bg-white border border-border rounded-md overflow-hidden transition-colors min-h-[112px] p-2",
+        "flex gap-3 bg-surface border border-border rounded-md overflow-hidden transition-colors min-h-[112px] p-2",
         onClick || active ? "cursor-pointer" : "",
       ].join(" ")}
       // MEH-1243 (🔒 Pin-Echo): selected = 2px category-color border + 6% tint +

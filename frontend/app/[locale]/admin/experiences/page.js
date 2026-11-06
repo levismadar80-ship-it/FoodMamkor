@@ -130,7 +130,7 @@ export default function AdminExperiencesPage() {
             className={`px-4 py-2 rounded-full text-sm whitespace-nowrap transition ${
               tab === value
                 ? "bg-primary text-white"
-                : "bg-white border border-border text-text hover:bg-green-50"
+                : "bg-surface border border-border text-text hover:bg-green-50"
             }`}
           >
             {t(`experiences.tabs.${value}`)}
@@ -147,7 +147,7 @@ export default function AdminExperiencesPage() {
       {loading ? (
         <SkeletonTable rows={5} cols={5} label={t("common.loading_f")} />
       ) : rows.length === 0 ? (
-        <div className="bg-white border border-border rounded-lg p-8 text-center text-fg-muted">
+        <div className="bg-surface border border-border rounded-lg p-8 text-center text-fg-muted">
           {t("experiences.empty")}
         </div>
       ) : (
@@ -155,7 +155,7 @@ export default function AdminExperiencesPage() {
         // columns can still outgrow the card, and -hidden clipped the actions
         // column out of reach. Below md the table is one card per row
         // (`.table-stack`, globals.css), so nothing scrolls sideways at all.
-        <div className="bg-white border border-border rounded-lg overflow-x-auto">
+        <div className="bg-surface border border-border rounded-lg overflow-x-auto">
           <table className="table-stack w-full text-sm">
             <thead className="bg-green-50 text-fg-muted text-xs">
               <tr>
@@ -209,7 +209,7 @@ export default function AdminExperiencesPage() {
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}
               rows={5}
-              className="w-full border border-border rounded-md px-3 py-2 text-sm bg-white"
+              className="w-full border border-border rounded-md px-3 py-2 text-sm bg-surface"
               placeholder={
                 modalAction === "changes"
                   ? t("experiences.modal.changes_placeholder")
@@ -347,7 +347,7 @@ function ExperienceRow({ ex, busy, t, locale, onApprove, onChanges, onReject }) 
                 </p>
               )}
               {ex.moderation_reason && (
-                <div className="mt-3 bg-white border border-border rounded-md p-3">
+                <div className="mt-3 bg-surface border border-border rounded-md p-3">
                   <p className="font-medium text-xs mb-1">
                     {t("experiences.claude_preview")}
                   </p>
