@@ -5077,8 +5077,6 @@
       "image_remove": "Remove image",
       "image_remove_aria": "Remove image",
       "image_upload_error": "Image upload failed. Please try again.",
-      "field_registration_url_label": "External registration link (optional)",
-      "field_registration_url_placeholder": "https://…",
       "submit_publishing": "Publishing…",
       "submit": "Publish event",
       "cancel": "Cancel",
@@ -5978,6 +5976,30 @@
     "facebook": "Message on Facebook",
     "external_order": "Order",
     "wa_greeting": "Hi! I found you on Mehamakor — {name}"
+  },
+  "registration": {
+    "form": {
+      "legend": "How do people sign up?",
+      "site_form": "Sign-up form on the site",
+      "site_form_hint": "People leave a name, phone and email. You get an email for every sign-up, and the list waits for you here.",
+      "whatsapp": "WhatsApp",
+      "whatsapp_hint": "Opens WhatsApp to the business number.",
+      "phone": "Phone",
+      "external_url": "External sign-up link",
+      "external_url_hint": "For example a Google form or a ticketing site.",
+      "external_url_placeholder": "https://...",
+      "whatsapp_needs_mobile": "To choose WhatsApp, add a mobile number to the business details",
+      "phone_needs_phone": "To choose phone, add a phone number to the business details",
+      "external_needs_url": "Add a sign-up link",
+      "invalid_url": "That address is not valid — start with https://"
+    },
+    "list": {
+      "summary": "Sign-ups on the site ({count})",
+      "empty": "No sign-ups on the site yet",
+      "cancelled": "Cancelled",
+      "offline_label": "Signed up outside the site",
+      "load_error": "Couldn't load the list."
+    }
   },
   "filter_axes": {
     "has_delivery": {
