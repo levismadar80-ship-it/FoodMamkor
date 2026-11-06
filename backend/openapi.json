@@ -1978,6 +1978,7 @@
           "registration_url": {
             "anyOf": [
               {
+                "maxLength": 500,
                 "type": "string"
               },
               {
@@ -2834,6 +2835,7 @@
           "registration_url": {
             "anyOf": [
               {
+                "maxLength": 500,
                 "type": "string"
               },
               {
