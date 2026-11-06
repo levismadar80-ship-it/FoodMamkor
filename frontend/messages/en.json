@@ -3779,6 +3779,10 @@
           "ugc": {
             "label": "Content you create:",
             "value": "Ratings, comments, and inquiries through contact forms."
+          },
+          "registrations": {
+            "label": "Event or workshop sign-up:",
+            "value": "The name, phone and email you enter in the on-site sign-up form. They go to the hosting business only for the sign-up, and are deleted 30 days after the date."
           }
         }
       },
