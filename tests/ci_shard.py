@@ -68,6 +68,8 @@ def apply(config, items) -> None:
         config.hook.pytest_deselected(items=dropped)
     items[:] = kept
 
+    # One writer per job: the serial run (no worker id) or xdist's first worker,
+    # which xdist always names "gw0". The combine job fails if a report is missing.
     report = os.environ.get(REPORT_ENV_VAR)
     worker = os.environ.get("PYTEST_XDIST_WORKER")
     if report and worker in (None, "gw0"):

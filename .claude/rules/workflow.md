@@ -382,8 +382,9 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     Never wait for or report "waiting on Sapir's mobile check". Before merging
     UI: both gates green on the head · 375 + 1440 screenshots in
     `qa-artifacts/MEH-XXXX/` (compressed), **read** by CC, linked · VRT clean (add
-    the `run-e2e` label to get the run, MEH-2779) or each re-baselined PNG reviewed · say when only Chromium covered it. Rules
-    22 and 30 and the permission gates still apply.
+    the `run-e2e` label to get the run, MEH-2779) or each re-baselined PNG
+    reviewed · say when only Chromium covered it. Rules 22 and 30 and the
+    permission gates still apply.
 24. **Scope-creep prevention for copy changes (MEH-579 lesson).** Never touch
     headings, subtitles or taglines not named in `<acceptance_criteria>`; grep
     before any positional copy edit; if a change seems needed, stop and ask.

@@ -199,9 +199,10 @@ run adversarial even if the build fails.
 `protect-staging` (ruleset 15240090) requires exactly two aggregators:
 `CI gate` and `Deploy gate`. Named jobs skip on docs/config-only diffs and a
 skipped leg still aggregates to success — docs-only PRs merge with no override
-and **don't poll E2E**. `Playwright E2E` runs on a PR only once it carries the `run-e2e` label (MEH-2779; staging pushes always) and carries no vote
-until Sapir applies `docs/ci/e2e-gate.patch.md` and adds the context to the
-ruleset (both are hers). So with auto-merge armed a PR lands on the two gates
+and **don't poll E2E**. `Playwright E2E` runs on a PR only once it carries the
+`run-e2e` label (MEH-2779; staging pushes always) and carries no vote until
+Sapir applies `docs/ci/e2e-gate.patch.md` and adds the context to the ruleset
+(both are hers). So with auto-merge armed a PR lands on the two gates
 alone — an instruction like "wait for N green E2E runs" is enforced only by
 **not arming auto-merge** until it is checked. "Waiting for status / expected"
 right after a push = gates still registering; retry once. Re-measure any
