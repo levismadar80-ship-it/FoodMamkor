@@ -1,6 +1,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, act, fireEvent } from "@testing-library/react";
-import BackToTop from "@/components/BackToTop";
+import { NextIntlClientProvider } from "next-intl";
+import he from "../messages/he.json";
+import RealBackToTop from "@/components/BackToTop";
+
+// MEH-1687 phase 7: the aria-label comes from messages, so render inside the provider.
+const BackToTop = () => (
+  <NextIntlClientProvider locale="he" messages={he}>
+    <RealBackToTop />
+  </NextIntlClientProvider>
+);
 
 // Phosphor ArrowUp → identifiable span.
 vi.mock("@phosphor-icons/react", () => ({

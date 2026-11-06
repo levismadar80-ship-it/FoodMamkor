@@ -1,6 +1,7 @@
 {
   "a11y": {
-    "loading": "טוען…"
+    "loading": "טוען…",
+    "back_to_top": "חזרה לראש העמוד"
   },
   "nav": {
     "discover": "גלו",
@@ -987,7 +988,8 @@
     },
     "card": {
       "minutes_suffix": "דקות",
-      "servings_suffix": "מנות"
+      "servings_suffix": "מנות",
+      "eyebrow": "מתכון"
     },
     "detail": {
       "breadcrumb_aria": "ניווט קבצי שורש",
