@@ -1324,7 +1324,9 @@
     },
     "errors": {
       "load_failed": "לא הצלחנו לטעון עסקים — נסו שוב",
-      "invalid_search": "חיפוש לא תקין"
+      "invalid_search": "חיפוש לא תקין",
+      "radius_too_small": "הזיזו את המפה לפני החיפוש",
+      "radius_too_large": "האזור גדול מדי — הקטינו את מרחק החיפוש"
     },
     "city_picker": {
       "heading": "לאן לשלוח?",
