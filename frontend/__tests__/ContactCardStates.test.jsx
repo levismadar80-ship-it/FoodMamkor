@@ -176,7 +176,7 @@ describe("ContactCard degenerate states (MEH-1551)", () => {
   // MEH-2775: the geometry is now a plain info line — no box.
   const ROW_GEOMETRY = ["flex", "w-full", "min-w-0", "items-center", "gap-2", "min-h-touch", "text-sm"];
   // ...and these, the box that read as one more question, must never return.
-  const BOX_CLASSES = ["border", "bg-surface", "px-3", "rounded-full", "inline-flex"];
+  const BOX_CLASSES = ["border", "bg-surface", "bg-background", "px-3", "rounded-full", "inline-flex"];
 
   it("(1 x closed) the sole-channel row is an unboxed line under a hairline", () => {
     renderCard({ phone: "0501234567" });
@@ -251,6 +251,9 @@ describe("ContactCard degenerate states (MEH-1551)", () => {
     ["instagram", { instagram: "@shikma" }, "@shikma", true],
     ["instagram (bare handle)", { instagram: "shikma" }, "@shikma", true],
     ["email", { contact_email: " hello@shikma.co.il " }, "hello@shikma.co.il", true],
+    ["website", { website: "http://www.shikma.co.il/a?b=1" }, "shikma.co.il", true],
+    ["instagram (legacy URL row)", { instagram: "https://instagram.com/shikma" }, "אינסטגרם", false],
+    ["whatsapp_group", { whatsapp_group: "https://chat.whatsapp.com/AbC123" }, "producer.detail.contact_card.single.whatsapp_group", false],
     ["facebook", { facebook: "facebook.com/shikma" }, "producer.detail.contact_card.single.facebook", false],
     ["external_order", { external_order_form: "forms.gle/x" }, "producer.detail.contact_card.single.external_order", false],
   ])("sole %s row shows %s", (_name, extra, text, ltr) => {

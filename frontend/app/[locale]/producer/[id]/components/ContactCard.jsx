@@ -111,7 +111,7 @@ const CHANNELS = [
   {
     key: "phone",
     Icon: Phone,
-    href: (p) => (p.phone ? `tel:${p.phone}` : null),
+    href: (p) => (p.phone?.trim() ? `tel:${p.phone.trim()}` : null),
     display: (p) => p.phone?.trim() || null,
   },
   {
@@ -120,7 +120,9 @@ const CHANNELS = [
     href: (p) => instagramUrl(p.instagram),
     display: (p) => {
       const handle = instagramHandle(p.instagram);
-      return handle ? `@${handle}` : null;
+      // A legacy row stored as a full URL is not a handle — keep the label
+      // rather than print "@https://…" (social-links.js: URL rows out of scope).
+      return handle && !/[/:]/.test(handle) ? `@${handle}` : null;
     },
   },
   // MEH-1525: the business-website tile carries referral UTM (rel drops
@@ -224,8 +226,8 @@ export default function ContactCard({ producer, isVacation }) {
   // circle would re-create the very orphan MEH-1551 closed.
   const single = channels.length === 1;
 
-  // The row also has to render when the reveal emptied `channels` (the
-  // sole-channel card): the number row is then its only child.
+  // `|| revealed` is defensive only: since MEH-2775 a SOLE phone never reveals
+  // (its number is already on the row), so a reveal always leaves ≥1 survivor.
   const showChannelRow = channels.length > 0 || revealed;
 
   // Shared by both affordances (circle + single row) so the tracking and the
@@ -334,6 +336,8 @@ export default function ContactCard({ producer, isVacation }) {
                     {value ? (
                       <span
                         dir={isLatinValue(value) ? "ltr" : undefined}
+                        // full value on hover when a long email/domain truncates
+                        title={value}
                         className={`truncate${key === "phone" ? " numeric" : ""}`}
                       >
                         {value}
@@ -379,14 +383,14 @@ export default function ContactCard({ producer, isVacation }) {
                 tel: link so a desktop softphone / click-to-call can act on it. */}
             {revealed && (
               <a
-                href={`tel:${producer.phone}`}
+                href={`tel:${producer.phone.trim()}`}
                 data-testid="revealed-phone"
                 role="listitem"
                 className={`${ROW_ANATOMY} ${single ? "" : "col-span-4"} text-primary-dark focus-visible:ring-2 focus-visible:ring-primary/40`}
               >
                 <Phone size={18} className="shrink-0" aria-hidden="true" />
                 <span dir="ltr" className="numeric">
-                  {producer.phone}
+                  {producer.phone.trim()}
                 </span>
               </a>
             )}
