@@ -1643,23 +1643,23 @@ test.describe("manual › /map PEEK sheet count clears the nav pill on short pho
 // Industry practice is one responsive element per control; where the repo has
 // two, the inventory is what keeps them from drifting. A NEW one-shell control
 // is not a failure to silence: put it in both shells, or add it here with why.
-const SHELL_ONLY: Record<string, string> = {
+const SHELL_ONLY: Record<string, { shell: "desktop" | "phone"; why: string }> = {
   // desktop
-  "map-gps-button": "desktop GPS circle; the phone uses map-near-me-pill (MEH-970)",
-  "map-key-toggle-desktop": "per-shell twin of map-key-toggle-mobile (MapPane.jsx)",
-  "pickup-layer-toggle-desktop": "per-shell twin of pickup-layer-toggle-mobile (MapPane.jsx)",
-  "map-legend": "desktop legend panel (MapPane.jsx hidden lg:block, MEH-979)",
-  "map-legend-toggle": "lives inside map-legend",
-  "map-list-count": "desktop list count; the phone shows sheet-count in the bottom sheet",
-  "map-sort-select": "the phone has no sort control and never did (MEH-1864)",
+  "map-gps-button": { shell: "desktop", why: "desktop GPS circle; the phone uses map-near-me-pill (MEH-970)" },
+  "map-key-toggle-desktop": { shell: "desktop", why: "per-shell twin of map-key-toggle-mobile (MapPane.jsx)" },
+  "pickup-layer-toggle-desktop": { shell: "desktop", why: "per-shell twin of pickup-layer-toggle-mobile (MapPane.jsx)" },
+  "map-legend": { shell: "desktop", why: "desktop legend panel (MapPane.jsx hidden lg:block, MEH-979)" },
+  "map-legend-toggle": { shell: "desktop", why: "lives inside map-legend" },
+  "map-list-count": { shell: "desktop", why: "desktop list count; the phone shows sheet-count in the bottom sheet" },
+  "map-sort-select": { shell: "desktop", why: "the phone has no sort control and never did (MEH-1864)" },
   // mobile
-  "map-key-toggle-mobile": "per-shell twin of map-key-toggle-desktop",
-  "pickup-layer-toggle-mobile": "per-shell twin of pickup-layer-toggle-desktop",
-  "map-near-me-pill": "phone GPS control; desktop uses map-gps-button",
-  "map-mobile-bar": "the phone's top bar container",
-  "map-bottom-sheet": "the phone's card list container",
-  "map-sheet-content": "inside map-bottom-sheet",
-  "sheet-count": "phone count; desktop shows map-list-count",
+  "map-key-toggle-mobile": { shell: "phone", why: "per-shell twin of map-key-toggle-desktop" },
+  "pickup-layer-toggle-mobile": { shell: "phone", why: "per-shell twin of pickup-layer-toggle-desktop" },
+  "map-near-me-pill": { shell: "phone", why: "phone GPS control; desktop uses map-gps-button" },
+  "map-mobile-bar": { shell: "phone", why: "the phone's top bar container" },
+  "map-bottom-sheet": { shell: "phone", why: "the phone's card list container" },
+  "map-sheet-content": { shell: "phone", why: "inside map-bottom-sheet" },
+  "sheet-count": { shell: "phone", why: "phone count; desktop shows map-list-count" },
 };
 // Shown by state, not by shell: «חפשו באזור זה» (MapPane.jsx, both shells)
 // appears once the map has moved, and the resize below moves it.
@@ -1718,11 +1718,13 @@ test.describe("manual › /map desktop ↔ phone: one control, one place (MEH-27
     expect(moved, "same control, different container").toEqual([]);
 
     const oneShell = [
-      ...[...desktop.keys()].filter((id) => !mobile.has(id)).map((id) => ({ id, label: `desktop only: ${id}` })),
-      ...[...mobile.keys()].filter((id) => !desktop.has(id)).map((id) => ({ id, label: `phone only: ${id}` })),
+      ...[...desktop.keys()].filter((id) => !mobile.has(id)).map((id) => ({ id, shell: "desktop", label: `desktop only: ${id}` })),
+      ...[...mobile.keys()].filter((id) => !desktop.has(id)).map((id) => ({ id, shell: "phone", label: `phone only: ${id}` })),
     ];
+    // An exemption names its shell: a desktop-only control showing up in the
+    // phone shell alone is still a finding.
     expect(
-      oneShell.filter(({ id }) => !(id in SHELL_ONLY)).map(({ label }) => label),
+      oneShell.filter(({ id, shell }) => SHELL_ONLY[id]?.shell !== shell).map(({ label }) => label),
       "control in one shell only — put it in both, or list it in SHELL_ONLY with why",
     ).toEqual([]);
     // The exemptions go stale too: an entry that gained a twin, or no longer
