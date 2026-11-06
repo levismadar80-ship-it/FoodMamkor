@@ -4,6 +4,16 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-06 20:15 — מצב העסק: רק «פתוח» / «בהפסקה» (MEH-2757)
+
+**‏שורה אחת:** ‏#4062, #4066, #4074 ו-#4079 מוזגו (פירוט ב-CHANGELOG, ‏06/11). ‏MEH-2758 ו-MEH-2759 במצב Done.
+
+**‏מה צריך לדעת לפני עבודה:**
+- אפשר לכתוב רק `accepting_orders` / `on_vacation`. שורות ישנות עם `available_today` / `full_this_week` עדיין נקראות, אז אסור להסיר אותם מצד הקריאה לפני MEH-2782.
+- ‏`resolveHeaderStatus({ isVacation, orderStatus })` מקבל שני פרמטרים בלבד, ומצב «סגור» כבר לא קיים.
+
+**‏הבא:** ‏MEH-2782 (אחרי ההשקה).
+
 ## 2026-11-06 15:00 — ניקוי מערכת העיצוב ומחרוזות בקוד (MEH-1687), שלבים 1–7
 
 **‏שורה אחת:** ארבעה-עשר PRs מוזגו (פירוט ב-CHANGELOG, ‏06/11). ‏MEH-1687 נשאר פתוח עד שמסתיימת העבודה.
