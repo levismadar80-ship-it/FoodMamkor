@@ -244,7 +244,7 @@
           "after_body": "כל בית עסק עובר היכרות אישית — אחרי שתשלימו את הפרופיל ותשלחו לבדיקה, הצוות שלנו בודק את הפרטים, יוצר קשר אם צריך, ותוך עד 3 ימי עסקים העסק באוויר.",
           "after_link": "איך תהליך הקבלה עובד",
           "cta": "מתחילים",
-          "organizer_entry": "מארגנ/ת קנייה קבוצתית? התחילו כאן"
+          "organizer_entry": "מארגנים קנייה קבוצתית? התחילו כאן"
         },
         "loading": "בטעינה...",
         "loading_form": "טעינת טופס הרשמה...",
@@ -600,7 +600,15 @@
       "og_title": "מהמקור — בתי עסק מקומיים בתחום המזון, כולם במקום אחד",
       "og_description": "מהמקור — הבית הראשון של העסק שלך. המקום שבו הסיפור מתחיל.",
       "twitter_title": "מהמקור — בתי עסק מקומיים בתחום המזון, כולם במקום אחד",
-      "twitter_description": "מהמקור — הבית הראשון של העסק שלך. המקום שבו הסיפור מתחיל."
+      "twitter_description": "מהמקור — הבית הראשון של העסק שלך. המקום שבו הסיפור מתחיל.",
+      "keywords": [
+        "מוצרים מקומיים",
+        "grass-fed",
+        "אוכל בריא",
+        "אוכל אורגני",
+        "בעלי עסק ישראלים",
+        "שוק איכרים"
+      ]
     },
     "about": {
       "title": "החזון שלנו — על מהמקור",
@@ -711,6 +719,18 @@
     "claim": {
       "title": "קבלת עמוד העסק | מהמקור",
       "description": "הכנו לכם עמוד במהמקור"
+    },
+    "producer": {
+      "title_full": "{name} — {category} ב{city} | {brand}",
+      "title_city": "{name} ב{city} | {brand}",
+      "title_category": "{name} — {category} | {brand}",
+      "title_name": "{name} | {brand}",
+      "description_full": "{name} — בית עסק מקומי מ{city}. {category}",
+      "description_city": "{name} — בית עסק מקומי מ{city}",
+      "description_category": "{name} — בית עסק מקומי. {category}",
+      "description_name": "{name} — בית עסק מקומי",
+      "not_found": "בית עסק לא נמצא | {brand}",
+      "country": "ישראל"
     }
   },
   "producer": {
@@ -1359,7 +1379,7 @@
     "pane": {
       "search_this_area": "חפשו באזור זה",
       "empty": {
-        "heading": "אין עסקים באזור זה עדיין"
+        "heading": "אין עדיין בתי עסק באזור הזה"
       },
       "aria": {
         "center_on_me": "מרכזו את המפה על המיקום שלי",
@@ -2632,6 +2652,11 @@
       "previous_month": "חודש קודם",
       "next_month": "חודש הבא",
       "label": "לוח שנה",
+      "today": "היום",
+      "list_heading": "כל האירועים ב{month}",
+      "list_heading_experiences": "כל החוויות ב{month}",
+      "empty_month": "אין אירועים בחודש הזה. אפשר לעבור לחודש הבא.",
+      "empty_month_experiences": "אין חוויות בחודש הזה. אפשר לעבור לחודש הבא.",
       "events_count": "{count, plural, =0 {אין אירועים} one {אירוע אחד} two {שני אירועים} other {# אירועים}}",
       "days": {
         "sun": "א׳",
@@ -3924,6 +3949,12 @@
         "customer_messages": "זמן תגובה, טון, ו-5 תבניות מוכנות. הדברים הקטנים שמכריעים אם השיחה נסגרת בהזמנה."
       }
     },
+    "article": {
+      "eyebrow": "מדריך לבעלי עסקים · קריאה כ-{minutes} דקות",
+      "founder_name": "ספיר שנפ",
+      "founder_role": "מייסדת · {brand}",
+      "back": "חזרה למדריכים"
+    },
     "business_story": {
       "title": "איך לכתוב סיפור טוב על העסק שלך",
       "subtitle": "כתבו את הסיפור פעם אחת, נכון. השאר ידאג לעצמו.",
@@ -5042,8 +5073,6 @@
       "image_remove": "הסרת תמונה",
       "image_remove_aria": "הסרת התמונה",
       "image_upload_error": "העלאת התמונה נכשלה. נסו שוב.",
-      "field_registration_url_label": "לינק הרשמה חיצוני (אופציונלי)",
-      "field_registration_url_placeholder": "https://...",
       "submit_publishing": "בפרסום...",
       "submit": "פרסמו אירוע",
       "cancel": "ביטול",
@@ -5765,7 +5794,7 @@
       "loading": "טוענים…",
       "failed": "משהו נתקע. נסו שוב.",
       "counter": {
-        "reserved": "משוריינות",
+        "reserved": "משוריינים",
         "handed": "נמסרו",
         "no_show": "לא הגיעו"
       },
@@ -5942,6 +5971,30 @@
     "facebook": "שליחת הודעה בפייסבוק",
     "external_order": "להזמנה",
     "wa_greeting": "היי! הגעתי דרך מהמקור — {name}"
+  },
+  "registration": {
+    "form": {
+      "legend": "איך נרשמים?",
+      "site_form": "טופס הרשמה באתר",
+      "site_form_hint": "הנרשמות משאירות שם, טלפון ואימייל. את מקבלת אימייל על כל הרשמה, והרשימה מחכה לך כאן.",
+      "whatsapp": "WhatsApp",
+      "whatsapp_hint": "ייפתח וואטסאפ למספר של בית העסק.",
+      "phone": "טלפון",
+      "external_url": "קישור הרשמה חיצוני",
+      "external_url_hint": "למשל טופס גוגל או אתר כרטיסים.",
+      "external_url_placeholder": "https://...",
+      "whatsapp_needs_mobile": "כדי לבחור WhatsApp צריך מספר נייד בפרטי העסק",
+      "phone_needs_phone": "כדי לבחור טלפון צריך מספר טלפון בפרטי העסק",
+      "external_needs_url": "צריך להוסיף קישור הרשמה",
+      "invalid_url": "הכתובת אינה תקינה — התחילו ב-https://"
+    },
+    "list": {
+      "summary": "הרשמות באתר ({count})",
+      "empty": "עוד אין הרשמות באתר",
+      "cancelled": "בוטלה",
+      "offline_label": "נרשמו מחוץ לאתר",
+      "load_error": "לא הצלחנו לטעון את הרשימה."
+    }
   },
   "filter_axes": {
     "has_delivery": {
