@@ -10,7 +10,7 @@ import Breadcrumb from "@/components/Breadcrumb";
 import ProducerCard from "@/components/ProducerCard";
 import ChipScrollRow from "@/components/ChipScrollRow";
 import PromotedServiceChips from "@/components/PromotedServiceChips";
-import { SERVICE_CHIP_KEYS } from "@/lib/map-chips";
+import { SERVICE_CHIP_KEYS, categoryGroupRow, toggleCategoryGroup } from "@/lib/map-chips";
 import { CATEGORY_STYLES, resolveCategoryGlyph } from "@/lib/category-registry";
 import LocationModal from "@/components/LocationModal";
 // MEH-1825: day axis on the canonical listing surface — same component home
@@ -498,11 +498,14 @@ export default function ProducersClient({
   // MEH-1465: multi-select OR. "הכל" ("all") is ChipScrollRow's reset sentinel →
   // clears the whole set; re-tapping a selected category removes it; any other
   // category is added to the union.
+  // MEH-2783: a chip is a GROUP (same 6 as /map) → it toggles all its ids.
   const handleCategorySelect = (key) => {
     let next;
     if (key === "all") next = [];
-    else if (categoryFilter.includes(key)) next = categoryFilter.filter((k) => k !== key);
-    else next = [...categoryFilter, key];
+    else {
+      const group = categoryRow.find((g) => g.key === key);
+      next = toggleCategoryGroup(categoryFilter, group ? group.ids : [key]);
+    }
     setCategoryFilter(next);
     // MEH-1084: ADDING a category is a new view → push (Back removes it);
     // removing one or clearing to baseline is refinement → replace (a push there
@@ -800,23 +803,30 @@ export default function ProducersClient({
   // CATEGORY_STYLES entry stays currentColor (deliberate — MEH-763 palette lock
   // forbids inventing new category colours). The active chip ignores iconColor
   // (ChipScrollRow) so its glyph stays white.
+  // MEH-2783 (Sapir 06/11): the row shows the 6 department groups /map shows
+  // (lib/map-chips.js CATEGORY_CHIPS), not one chip per DB category. A group
+  // is offered when any of its categories is visible (the same data gate as
+  // before), and a category no group claims keeps its own chip.
+  const categoryRow = categoryGroupRow(categories, visibleCategories);
   const categoryChips = [
     { key: "all", label: t("filters.category_all") },
-    ...visibleCategories.map((c) => {
-      // MEH-2163: one total lookup, and the chip policy stated rather than
-      // inferred from a bare index returning `undefined` — an unmapped category
-      // renders NO icon here (`isFallback` discarded), which is MEH-1441's
-      // "never a Leaf fallback" decision, not an accident of the lookup shape.
-      const { glyph: Glyph, isFallback } = resolveCategoryGlyph(c);
-      const style = CATEGORY_STYLES[c.name];
-      const iconColor = style ? (style.textColor ?? style.color) : undefined;
+    ...categoryRow.map((g) => {
+      const c = g.dbCategory;
+      // MEH-2163: one total lookup; an unmapped glyph renders NO icon (MEH-1441).
+      const { glyph: Glyph, isFallback } = resolveCategoryGlyph(c ?? g.iconName ?? "");
+      const style = c ? CATEGORY_STYLES[c.name] : null;
+      const iconColor = c ? (style ? (style.textColor ?? style.color) : undefined) : g.iconColor;
+      const label = c ? c.name : withChipCopy({ key: g.key }).label;
       return {
-        key: String(c.id),
-        label: c.name,
-        ...(isFallback ? {} : { icon: <Glyph size={16} />, ...(iconColor ? { iconColor } : {}) }),
+        key: g.key,
+        label,
+        ...(isFallback || (!c && !g.iconName) ? {} : { icon: <Glyph size={16} />, ...(iconColor ? { iconColor } : {}) }),
       };
     }),
   ];
+  const activeCategoryKeys = new Set(
+    categoryRow.filter((g) => g.ids.some((id) => categoryFilter.includes(id))).map((g) => g.key),
+  );
   const showFilterEmpty =
     hasActiveChips && !loading && filteredItems !== null && filteredItems.length === 0;
   const showPageOverflow =
@@ -918,7 +928,7 @@ export default function ProducersClient({
           <ChipScrollRow
             variant="category"
             chips={categoryChips}
-            activeKeys={new Set(categoryFilter)}
+            activeKeys={activeCategoryKeys}
             onChipClick={handleCategorySelect}
           />
         </div>

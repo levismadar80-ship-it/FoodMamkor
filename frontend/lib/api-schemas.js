@@ -24,6 +24,9 @@ export const CategorySchema = z.object({
   id: z.union([z.number(), z.string()]),
   name: z.string(),
   emoji: z.string().nullable().optional(),
+  // MEH-2783: the stable id (CategoryOut since MEH-2139) — the category groups
+  // match on it, so it must survive parsing (zod strips unknown keys).
+  slug: z.string().nullable().optional(),
 });
 export const CategoriesResponseSchema = z.array(CategorySchema);
 

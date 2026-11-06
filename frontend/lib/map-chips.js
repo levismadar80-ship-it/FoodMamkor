@@ -296,3 +296,37 @@ export function boundsToCenterRadius(bounds) {
   const radius_km = Math.min(50, Math.ceil(EARTH_RADIUS_KM * c));
   return { lat, lng, radius_km };
 }
+
+/**
+ * MEH-2783 — the /producers category row uses the SAME 6 groups as /map.
+ *
+ * Returns one entry per group that has at least one visible DB category,
+ * `{ ...chip, ids: [String id…] }` (ids = every DB category the group
+ * resolves to, so a group tap selects the whole department). A visible DB
+ * category that no group claims (a new admin category) keeps its own chip,
+ * `{ key: String(id), ids: [String(id)], dbCategory }`, so nothing is ever
+ * unreachable. The URL stays ?category=<id> — home cards deep-link one id.
+ */
+export function categoryGroupRow(dbCategories = [], visibleCategories = dbCategories) {
+  const visible = new Set(visibleCategories.map((c) => String(c.id)));
+  const claimed = new Set();
+  const rows = [];
+  for (const chip of withResolvedIcons(CATEGORY_CHIPS, dbCategories)) {
+    if (!chip.matches) continue;
+    const ids = resolveCategoryIds(chip, dbCategories).map(String);
+    ids.forEach((id) => claimed.add(id));
+    if (ids.some((id) => visible.has(id))) rows.push({ ...chip, ids });
+  }
+  for (const c of visibleCategories) {
+    const id = String(c.id);
+    if (!claimed.has(id)) rows.push({ key: id, ids: [id], dbCategory: c });
+  }
+  return rows;
+}
+
+/** MEH-2783 — tap on a group: active (any id selected) → drop all its ids; else add them. */
+export function toggleCategoryGroup(selected = [], ids = []) {
+  const on = ids.some((id) => selected.includes(id));
+  if (on) return selected.filter((id) => !ids.includes(id));
+  return [...selected, ...ids.filter((id) => !selected.includes(id))];
+}

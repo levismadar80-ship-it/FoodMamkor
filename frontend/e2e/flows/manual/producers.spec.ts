@@ -177,12 +177,16 @@ function icu(msg: string, count: number): string {
 // Registry names (lib/category-registry.js): «בשר» carries CATEGORY_STYLES
 // color #c04040 + a glyph; «חלב וגבינות» textColor #3b72ad; «ביצים» has a glyph
 // in CATEGORY_ICONS but NO CATEGORY_STYLES row — the MEH-1452 row-3 case.
-const CAT_MEAT = { id: 1, name: "בשר" };
-const CAT_DAIRY = { id: 2, name: "חלב וגבינות" };
-const CAT_EGGS = { id: 3, name: "ביצים" };
+// MEH-2783: the row shows the /map department GROUPS (he.map_category_chips),
+// matched by name or by the stable slug — so the fixture carries slugs, as
+// CategoryOut does. «ביצים» now sits in the dairy group («חלב וביצים»).
+const CAT_MEAT = { id: 1, name: "בשר", slug: "meat" };
+const CAT_DAIRY = { id: 2, name: "חלב וגבינות", slug: "dairy" };
+const CAT_EGGS = { id: 3, name: "ביצים", slug: "eggs" };
+const G_HE = he.map_category_chips;
+const DAIRY_TINT = "rgb(59, 114, 173)"; // #3b72ad, CATEGORY_CHIPS dairy iconColor
 const CATEGORIES = [CAT_MEAT, CAT_DAIRY, CAT_EGGS];
 const MEAT_TINT = "rgb(192, 64, 64)"; // #c04040
-const DEFAULT_CAT_RING = "rgb(46, 104, 83)"; // #2e6853, ChipScrollRow DEFAULT_CAT_RING
 
 type Producer = Record<string, unknown> & { id: string; name: string };
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
@@ -524,8 +528,8 @@ test.describe("manual › multi-category OR (MEH-1465)", () => {
     page,
   }) => {
     const { seen } = await gotoFiltered(page, "/producers?category=1&category=2");
-    await expect(categoryChip(page, CAT_MEAT.name)).toHaveAttribute("aria-pressed", "true");
-    await expect(categoryChip(page, CAT_DAIRY.name)).toHaveAttribute("aria-pressed", "true");
+    await expect(categoryChip(page, G_HE.meat)).toHaveAttribute("aria-pressed", "true");
+    await expect(categoryChip(page, G_HE.dairy)).toHaveAttribute("aria-pressed", "true");
     await expect(allChip(page)).toHaveAttribute("aria-pressed", "false");
     await expect(allChip(page)).toHaveClass(/bg-white/);
     const union = seen.filter((u) => u.searchParams.getAll("category").join() === "1,2");
@@ -537,9 +541,9 @@ test.describe("manual › multi-category OR (MEH-1465)", () => {
   //   loses only that id); «הכל» clears the whole set.
   test("re-tapping a selected category drops only its id; «הכל» clears the set", async ({ page }) => {
     const { seen } = await gotoFiltered(page, "/producers?category=1&category=2");
-    await categoryChip(page, CAT_DAIRY.name).click();
+    await categoryChip(page, G_HE.dairy).click();
     await expect.poll(() => query(page).getAll("category")).toEqual(["1"]);
-    await expect(categoryChip(page, CAT_MEAT.name)).toHaveAttribute("aria-pressed", "true");
+    await expect(categoryChip(page, G_HE.meat)).toHaveAttribute("aria-pressed", "true");
     await expect(allChip(page)).toHaveAttribute("aria-pressed", "false");
     await expect
       .poll(() => seen.some((u) => u.searchParams.getAll("category").join() === "1"), {
@@ -558,7 +562,7 @@ test.describe("manual › multi-category OR (MEH-1465)", () => {
     await gotoFiltered(page, "/producers?category=1&vegetarian=1");
     const line = scope(page).getByTestId("producers-control-line");
     await expect(line.getByRole("button", { name: AXES.vegetarian.label })).toHaveCount(1);
-    await expect(line.getByRole("button", { name: CAT_MEAT.name })).toHaveCount(0);
+    await expect(line.getByRole("button", { name: G_HE.meat })).toHaveCount(0);
     await expect(line.getByRole("button")).toHaveCount(2); // the × chip + «נקו הכל»
     await line.getByTestId("producers-clear-all").click();
     await expect.poll(() => query(page).toString()).toBe("");
@@ -582,11 +586,11 @@ test.describe("manual › category glyph tint (MEH-1452)", () => {
   //   selected ✓ fall back to the default category green (MEH-2500 / MEH-2531;
   //   it used to keep currentColor before the ✓ replaced the glyph).
   // MT:MEH-1452:4 — «הכל» has no glyph.
-  test("selected «בשר» carries #c04040 as ring + glyph; «ביצים» (no style row) takes the default green; «הכל» has no glyph", async ({
+  test("selected «בשר» carries #c04040 as ring + glyph; «ביצים» presses the «חלב וביצים» group in its colour; «הכל» has no glyph", async ({
     page,
   }) => {
     await gotoFiltered(page, "/producers?category=1&category=3");
-    const meat = categoryChip(page, CAT_MEAT.name);
+    const meat = categoryChip(page, G_HE.meat);
     await expect(meat).toHaveCSS("border-top-color", MEAT_TINT);
     const meatGlyph = meat.locator("span[aria-hidden]");
     await expect(meatGlyph).toHaveCount(1);
@@ -594,20 +598,14 @@ test.describe("manual › category glyph tint (MEH-1452)", () => {
     // The label stays neutral — the tint is on the glyph, not the text.
     await expect(meat).not.toHaveCSS("color", MEAT_TINT);
 
-    // MEH-2531: since MEH-2500 (#3754) a SELECTED category chip swaps its
-    // glyph for a ✓ in the ring colour (ChipScrollRow `catRing`). A category
-    // with no style row falls back to DEFAULT_CAT_RING for ring AND ✓ — the
-    // old "inherits currentColor" read no longer holds for a selected chip.
-    const eggs = categoryChip(page, CAT_EGGS.name);
-    await expect(eggs).toHaveCSS("border-top-color", DEFAULT_CAT_RING);
-    const eggsGlyph = eggs.locator("span[aria-hidden]");
-    await expect(eggsGlyph).toHaveCount(1);
-    await expect(eggsGlyph, "an unstyled category's ✓ carries the default ring colour").toHaveCSS(
-      "color",
-      DEFAULT_CAT_RING,
-    );
-    await expect(eggs, "the label stays neutral").not.toHaveCSS("color", DEFAULT_CAT_RING);
-    await expect(eggsGlyph).not.toHaveCSS("color", MEAT_TINT);
+    // MEH-2783: «ביצים» (id 3) has no chip of its own any more — it belongs to
+    // the dairy group, so a ?category=3 deep link presses «חלב וביצים», whose
+    // ring is the group colour (CATEGORY_CHIPS dairy iconColor #3b72ad).
+    const dairy = categoryChip(page, G_HE.dairy);
+    await expect(dairy).toHaveAttribute("aria-pressed", "true");
+    await expect(dairy).toHaveCSS("border-top-color", DAIRY_TINT);
+    await expect(dairy.locator("span[aria-hidden]")).toHaveCount(1);
+    await expect(scope(page).getByTestId("producers-category-row").getByRole("button", { name: CAT_EGGS.name, exact: true })).toHaveCount(0);
 
     await expect(allChip(page).locator("span")).toHaveCount(0);
   });

@@ -42,3 +42,27 @@ describe("MEH-2783 category groups cover the taxonomy", () => {
     expect(pantry.iconName).toBeUndefined();
   });
 });
+
+describe("MEH-2783 /producers row = the same groups", () => {
+  it("offers a group when any of its categories is visible; selects all its ids", async () => {
+    const { categoryGroupRow } = await import("@/lib/map-chips");
+    const honey = DB.find((c) => c.slug === "honey");
+    const row = categoryGroupRow(DB, [honey]);
+    expect(row.map((g) => g.key)).toEqual(["pantry"]);
+    expect(row[0].ids).toContain(String(honey.id));
+    expect(row[0].ids.length).toBe(7);
+  });
+
+  it("a category no group claims (new admin row) keeps its own chip", async () => {
+    const { categoryGroupRow } = await import("@/lib/map-chips");
+    const stray = { id: 999, name: "x-new", slug: "x-new" };
+    const row = categoryGroupRow([...DB, stray], [stray]);
+    expect(row).toEqual([{ key: "999", ids: ["999"], dbCategory: stray }]);
+  });
+
+  it("toggle: inactive → adds every id; partly active (deep link) → drops them all", async () => {
+    const { toggleCategoryGroup } = await import("@/lib/map-chips");
+    expect(toggleCategoryGroup(["1"], ["5", "6"])).toEqual(["1", "5", "6"]);
+    expect(toggleCategoryGroup(["1", "5"], ["5", "6"])).toEqual(["1"]);
+  });
+});
