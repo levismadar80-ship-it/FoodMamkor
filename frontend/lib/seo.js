@@ -22,6 +22,9 @@ import {
   BRAND_SAME_AS,
   CANONICAL_SENTENCE,
 } from "./constants";
+import { createTranslator } from "next-intl";
+import he from "../messages/he.json";
+import en from "../messages/en.json";
 import { parseHours, resolveStoreHours } from "./hours";
 import { primaryPoint } from "./producerPoints.js";
 import { instagramUrl } from "./social-links";
@@ -32,12 +35,27 @@ export { SITE_URL };
 // HOT-006 (MEH-778): JSON-LD must declare the page's actual locale instead of
 // always claiming Hebrew. `inLanguage` uses hyphenated BCP-47 (schema.org
 // convention) — mirrors lib/i18n-seo.js OG_LOCALE (underscore form) and
-// format-date.js LOCALE_TAG. COUNTRY_LABEL localizes the one hardcoded
-// breadcrumb constant ("ישראל"). Producer name/description and DB category
+// format-date.js LOCALE_TAG. The country crumb is
+// seo.producer.country (MEH-2774). Producer name/description and DB category
 // names are user content with no message-key translation, so they stay as-is
 // (locale-invariant), per the issue's "name/address unchanged" rule.
 const IN_LANGUAGE = { he: "he-IL", en: "en-US" };
-const COUNTRY_LABEL = { he: "ישראל", en: "Israel" };
+// MEH-2774: the producer title/description templates and the country crumb
+// live in messages/{he,en}.json under seo.producer. An unknown locale reads
+// Hebrew (the default locale), never a raw key.
+const SEO_MESSAGES = { he, en };
+const BRAND_FOR = { he: BRAND_NAME, en: BRAND_NAME_LATIN };
+// Server-only module (no client component imports lib/seo — guarded by
+// SeoServerOnly.test.js), so the two message files never reach a browser
+// bundle. One translator per locale.
+const SEO_T = {};
+function producerSeoT(locale) {
+  const loc = SEO_MESSAGES[locale] ? locale : "he";
+  SEO_T[loc] ??= createTranslator({ locale: loc, messages: SEO_MESSAGES[loc], namespace: "seo.producer" });
+  return SEO_T[loc];
+}
+const countryLabel = (locale) => producerSeoT(locale)("country");
+const brandFor = (locale) => BRAND_FOR[locale] ?? BRAND_NAME;
 
 /**
  * MEH-1069: single owner of JSON-LD serialization for every
@@ -75,21 +93,13 @@ export function serializeJsonLd(obj) {
  *
  * With graceful fallbacks when category or city is missing.
  */
-export function buildTitle(producer) {
-  if (!producer?.name) return BRAND_NAME;
+export function buildTitle(producer, locale = "he") {
+  if (!producer?.name) return brandFor(locale);
 
   const category = producer.categories?.[0]?.name || "";
   const city = producer.city || "";
-
-  let prefix = producer.name;
-  if (category && city) {
-    prefix = `${producer.name} — ${category} ב${city}`;
-  } else if (city) {
-    prefix = `${producer.name} ב${city}`;
-  } else if (category) {
-    prefix = `${producer.name} — ${category}`;
-  }
-  return `${prefix} | מהמקור`;
+  const shape = category && city ? "full" : city ? "city" : category ? "category" : "name";
+  return producerSeoT(locale)(`title_${shape}`, { name: producer.name, category, city, brand: brandFor(locale) });
 }
 
 /**
@@ -97,7 +107,7 @@ export function buildTitle(producer) {
  * other is empty), truncated to 160 chars — Google's rough display limit —
  * over a generated fallback.
  */
-export function buildDescription(producer) {
+export function buildDescription(producer, locale = "he") {
   if (!producer) return "";
   // MEH-2474: the card tagline is the owner's own one-line summary — it leads
   // when present, joined to the description (audit MEH-2470 finding 11).
@@ -108,10 +118,8 @@ export function buildDescription(producer) {
   }
   const category = producer.categories?.[0]?.name || "";
   const city = producer.city || "";
-  let desc = `${producer.name} — בית עסק מקומי`;
-  if (city) desc += ` מ${city}`;
-  if (category) desc += `. ${category}`;
-  return desc;
+  const shape = category && city ? "full" : city ? "city" : category ? "category" : "name";
+  return producerSeoT(locale)(`description_${shape}`, { name: producer.name, category, city });
 }
 
 /**
@@ -228,7 +236,7 @@ export function buildJsonLd(producer, locale = "he") {
 
   const isDeliveryOnly = producer.has_physical_location === false && producer.offers_delivery;
   const pageUrl = buildPageUrl(producer);
-  const title = buildTitle(producer);
+  const title = buildTitle(producer, locale);
   const category = producer.categories?.[0]?.name || "";
   const city = producer.city || "";
 
@@ -341,7 +349,7 @@ export function buildJsonLd(producer, locale = "he") {
   // Category and city items are skipped when the source data is missing,
   // so the list stays valid (Google rejects breadcrumbs with gaps).
   const crumbs = [
-    { name: COUNTRY_LABEL[locale] ?? COUNTRY_LABEL.he, item: SITE_URL },
+    { name: countryLabel(locale), item: SITE_URL },
   ];
   if (category) {
     crumbs.push({
@@ -475,15 +483,15 @@ export function buildHomeJsonLd(locale = "he") {
 /**
  * Build Next.js metadata object. Used by generateMetadata on both routes.
  */
-export function buildProducerMetadata(producer) {
-  if (!producer) return { title: "בית עסק לא נמצא | מהמקור" };
+export function buildProducerMetadata(producer, locale = "he") {
+  if (!producer) return { title: producerSeoT(locale)("not_found", { brand: brandFor(locale) }) };
 
-  const description = buildDescription(producer);
+  const description = buildDescription(producer, locale);
   const pageUrl = buildPageUrl(producer);
   const img = ogImage(producer.images?.[0]);
 
   return {
-    title: buildTitle(producer),
+    title: buildTitle(producer, locale),
     description,
     openGraph: {
       title: producer.name,
@@ -599,7 +607,7 @@ export function buildEventJsonLd(event, locale = "he") {
 
   // Breadcrumb: ישראל → בית העסק (when named) → האירוע.
   const crumbs = [
-    { name: COUNTRY_LABEL[locale] ?? COUNTRY_LABEL.he, item: SITE_URL },
+    { name: countryLabel(locale), item: SITE_URL },
   ];
   const ownerCrumbUrl = eventOwnerUrl(event);
   if (event.producer_name && ownerCrumbUrl) {
@@ -681,7 +689,7 @@ export function buildExperienceJsonLd(experience, locale = "he") {
   };
 
   const crumbs = [
-    { name: COUNTRY_LABEL[locale] ?? COUNTRY_LABEL.he, item: SITE_URL },
+    { name: countryLabel(locale), item: SITE_URL },
     { name: experience.title, item: url },
   ];
   return {
@@ -752,7 +760,7 @@ export function buildGroupBuyJsonLd(groupBuy, locale = "he", now = new Date()) {
   const product = { "@type": "Product", "@id": `${url}#product`, name, url, offers: offer };
   if (groupBuy.description) product.description = groupBuy.description;
 
-  const crumbs = [{ name: COUNTRY_LABEL[locale] ?? COUNTRY_LABEL.he, item: SITE_URL }];
+  const crumbs = [{ name: countryLabel(locale), item: SITE_URL }];
   if (groupBuy.producer_name && producerUrl) {
     crumbs.push({ name: groupBuy.producer_name, item: producerUrl });
   }
@@ -840,7 +848,7 @@ export function buildDietPageJsonLd({
       : null;
 
   const crumbs = [
-    { name: COUNTRY_LABEL[locale] ?? COUNTRY_LABEL.he, item: SITE_URL },
+    { name: countryLabel(locale), item: SITE_URL },
   ];
   if (producersUrl && producersLabel) {
     crumbs.push({ name: producersLabel, item: producersUrl });
@@ -876,7 +884,7 @@ export function buildRecipeBreadcrumbJsonLd(
   if (!producer || !recipe) return null;
   const recipeUrl = `${SITE_URL}${canonicalUrl}`;
   const crumbs = [
-    { name: COUNTRY_LABEL[locale] ?? COUNTRY_LABEL.he, item: SITE_URL },
+    { name: countryLabel(locale), item: SITE_URL },
     { name: producer.name, item: buildPageUrl(producer) },
     { name: recipe.title, item: recipeUrl },
   ];
