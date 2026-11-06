@@ -24,9 +24,9 @@ import { badgeIcon } from "@/lib/chip-icons";
  *                          MEH-2213 made the seal the only licensing signal a
  *                          reader sees, that silence was the whole gap.)
  *   declared             → NO chip on any surface (MEH-1170: the S12 "מוצהר"
- *                          chip contradicted ADR-022 "tier 2 = no badge"; the
- *                          declared_explainer moved to ProducerHeader as quiet
- *                          visible copy — ADR-022 gate 1 "affirmatively explained")
+ *                          chip contradicted ADR-022 "tier 2 = no badge"; MEH-2710
+ *                          also removed the header's «ללא תג מאומת» line — the
+ *                          ADR-022 gate 1 explanation lives on /about/process)
  *   null                 → no badge, no negative tag (ADR-022 gate 1)
  *
  * `surface` (S12 §04): "hero" (default — full chip with the word) or "card"

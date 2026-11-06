@@ -182,6 +182,7 @@ function CompletenessBadge({ missing, priority }) {
       <span
         title={t("producers.table.completeness.missing_title", { fields })}
         className="inline-flex items-center leading-none cursor-help"
+        role="img"
         aria-label={t("producers.table.completeness.missing_critical_aria")}
       >
         <Circle size={ICON_SIZE_SM} weight="fill" className="text-danger-500" aria-hidden="true" />
@@ -193,6 +194,7 @@ function CompletenessBadge({ missing, priority }) {
       <span
         title={t("producers.table.completeness.missing_title", { fields })}
         className="inline-flex items-center leading-none cursor-help"
+        role="img"
         aria-label={t("producers.table.completeness.missing_aria")}
       >
         <Circle size={ICON_SIZE_SM} weight="fill" className="text-warning-500" aria-hidden="true" />
@@ -203,6 +205,7 @@ function CompletenessBadge({ missing, priority }) {
     <span
       title={t("producers.table.completeness.complete_title")}
       className="inline-flex items-center leading-none cursor-help opacity-60"
+      role="img"
       aria-label={t("producers.table.completeness.complete_aria")}
     >
       <Circle size={ICON_SIZE_SM} weight="fill" className="text-primary" aria-hidden="true" />

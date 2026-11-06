@@ -32,8 +32,11 @@
 .btn-whatsapp {
   @apply bg-[#16803E] hover:bg-[#136B34] text-white transition focus-visible:ring-2 focus-visible:ring-[#25D366]/40;
 }
+/* MEH-2708: text was #25D366 on white = 1.98:1 (axe color-contrast on the
+   group-buy share button). The same darkened WhatsApp green as .btn-whatsapp /
+   .text-whatsapp above (5.01:1), not a new colour. */
 .btn-whatsapp-outline {
-  @apply border border-[#25D366] text-[#25D366] hover:bg-[#25D366]/5 transition;
+  @apply border border-[#16803E] text-[#16803E] hover:bg-[#16803E]/5 transition;
 }
 .bg-whatsapp {
   @apply bg-[#25D366];

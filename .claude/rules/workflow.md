@@ -462,3 +462,12 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     the branch; slug = sub-issue id; body ends `Closes MEH-<sub>` on its own
     line. Auto-close-parent is ON — so a parent that must stay open (e.g. a
     drain control card) never gets its docs sub-issue as a child.
+37. **Placement research before code for every new UI feature (MEH-2725).**
+    A new block, row, button or banner gets a short placement study before the
+    first edit: (1) who sees it and what she came to do at that moment; (2) a
+    375 screenshot of the screen today; (3) 2–4 candidate positions rendered for
+    real, including "don't add it"; (4) for each, where it lands in px and what
+    it pushes down; (5) what comparable sites do, with sources; (6) earlier
+    decisions on the same screen (e.g. MEH-912); (7) a recommendation. Sapir
+    picks, then code. Post-launch, add a PostHog click event on the feature.
+    Precedent: MEH-2724 built under the hero before the study was asked for.

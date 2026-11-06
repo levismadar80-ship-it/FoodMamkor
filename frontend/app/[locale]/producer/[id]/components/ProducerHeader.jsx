@@ -10,7 +10,6 @@ import KashrutBadgeStrip from "@/components/KashrutBadgeStrip";
 import OfferBadge from "@/components/OfferBadge";
 import ProducerUpdatesButton from "@/components/ProducerUpdatesButton";
 import ShareButton from "@/components/ShareButton";
-import Popover from "@/components/ui/Popover";
 import { useAuth } from "@/lib/auth-context";
 import {
   ensureFavoritesLoaded,
@@ -404,42 +403,15 @@ export default function ProducerHeader({
         </p>
       )}
 
-      {/* MEH-1170: declared (tier 2) carries NO chip — ADR-022 gate 1 requires
-          the badge absence to stay "affirmatively explained in consumer copy",
-          so this block survives the MEH-1334 restructure (decision 4).
-          MEH-2634: the explanation is three sentences and it sat open in the
-          header, where a first-time reader met a paragraph about a badge the
-          business does NOT have before anything it does. The copy is unchanged
-          and still one tap away — ADR-022 gate 1 asks that the absence be
-          affirmatively explained, not that it be the longest text on screen.
-          Popover props mirror BadgeRow.jsx's hero branch (role, sheetOnMobile,
-          Esc + focus-return come from ui/Popover) — no `overlay` here: unlike
-          ImageGallery's masthead (MEH-1593), this block's ancestors are not
-          `overflow-hidden`, so the panel has no containing block to escape. */}
-      {producer.verification_tier === "declared" && (
-        <div className="mt-2">
-          <Popover
-            role="dialog"
-            sheetOnMobile
-            contentTestId="declared-explainer-popover"
-            contentClassName="w-72 flex flex-col gap-1.5"
-            sheetContentClassName="flex flex-col gap-2"
-            trigger={
-              <button
-                type="button"
-                data-testid="declared-explainer-trigger"
-                className="text-xs text-fg-muted leading-relaxed underline decoration-dotted underline-offset-2 hover:text-text focus-visible:ring-2 focus-visible:ring-primary/40 focus:outline-none rounded-sm py-1"
-              >
-                {t("producer.badge.declared_trigger")}
-              </button>
-            }
-          >
-            <span className="block text-sm leading-relaxed">
-              {t("producer.badge.declared_explainer")}
-            </span>
-          </Popover>
-        </div>
-      )}
+      {/* MEH-2710: the declared (tier 2) tier renders NOTHING here. The
+          «ללא תג מאומת · מה זה אומר?» trigger (MEH-1170 → MEH-2634) labelled the
+          business by a badge it does NOT have — noise about the platform, not
+          the business, and itself a negative label (ADR-022: "never negatively
+          labeled"). Directories show a badge only when it exists (Yelp
+          Verified License, Airbnb, Thumbtack). ADR-022 gate 1 ("absence
+          affirmatively explained in consumer copy") is met by /about/process
+          (`process.badge.absence_*`, `process.steps.badge_aside_body`), which
+          the verified badge's «איך אנחנו מאמתים?» link and the footer reach. */}
 
       {/* Quiet actions row (MEH-1334): שמירה · שיתוף. DESKTOP ONLY.
           Desktop: absolutely pinned to the title row's inline-end, two labeled

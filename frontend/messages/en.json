@@ -716,8 +716,6 @@
       "verified_tooltip_license": "License submitted and reviewed on {date}",
       "verified_tooltip_exemption": "Exemption approval submitted and reviewed on {date}",
       "verified_tooltip_cosmetics": "Cosmetics registration submitted and reviewed on {date}",
-      "declared_trigger": "No verified badge · what does that mean?",
-      "declared_explainer": "No 'Verified' badge? It doesn't mean less. Some categories are legally exempt from licensing — there's no document to show, simply because none is required. The business signed a binding declaration that it operates lawfully, and went through the same personal introduction as everyone else.",
       "verified_label": "Verified",
       "aria_verified": "Verified business. {tooltip}",
       "aria_verified_plain": "Verified business",
@@ -5797,7 +5795,11 @@
         "qty": "How many bags",
         "price": "Price (₪)",
         "from": "Pickup from",
-        "to": "until"
+        "to": "until",
+        "cancel": "Free cancellation until",
+        "cancel_half_hour": "Half an hour before pickup",
+        "cancel_hour": "An hour before pickup",
+        "cancel_two_hours": "Two hours before pickup"
       },
       "items_title": "Usually in the bag",
       "items_help": "Comma separated. This is what buyers see before they reserve.",
