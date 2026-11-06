@@ -62,8 +62,10 @@ def split(items, index: int, total: int) -> tuple[list, list]:
 def apply(config, items) -> None:
     """``pytest_collection_modifyitems`` body. No-op without the env var."""
     value = os.environ.get(ENV_VAR)
-    if not value:
+    if value is None:
         return
+    # Set but empty (e.g. a broken matrix expression) is an error, not "off":
+    # otherwise every shard job would silently run the whole suite.
     index, total = parse_shard(value)
     # Fingerprint of the ordered list being split. Round-robin is a partition
     # only if every shard job split the SAME list in the SAME order; the
