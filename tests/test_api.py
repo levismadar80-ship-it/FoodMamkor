@@ -3322,7 +3322,7 @@ class TestVacationBadgeClear:
     """
 
     def test_set_vacation_with_future_date(self, client, db):
-        """POST availability-status with vacation + future vacation_until persists both."""
+        """POST availability-state with on_vacation + future vacation_until persists both."""
         from datetime import timedelta
         user = make_user(db, role="producer")
         producer = make_producer(db)
@@ -3330,9 +3330,10 @@ class TestVacationBadgeClear:
         db.commit()
 
         future = (israel_today() + timedelta(days=7)).isoformat()
+        # MEH-2758: the legacy /availability-status endpoint is gone.
         resp = client.post(
-            "/producers/me/availability-status",
-            json={"status": "vacation", "vacation_until": future},
+            "/producers/me/availability-state",
+            json={"state": "on_vacation", "vacation_until": future},
             headers=auth_header(user),
         )
         assert resp.status_code == 200
@@ -3375,68 +3376,7 @@ class TestVacationBadgeClear:
         assert body["availability_state"] == "on_vacation"
         assert body["vacation_until"] is not None
 
-    def test_the_legacy_toggle_leaves_the_durable_states_alone(self, client, db):
-        """MEH-2271, from the CI reviewer on #3460: POST /availability is a
-        no-op on full_this_week and on_vacation, and that is PRESERVATION.
-
-        The old `_legacy_to_state` ranked `availability_status` above
-        `is_available_today`, so on a producer whose status was "full" or
-        "vacation" the boolean flip changed nothing the state could see. The
-        first version of this chunk moved them to available_today while
-        claiming parity with the old behaviour; it had neither.
-
-        The construction discriminates: a naive two-way toggle returns
-        available_today on both rows below and fails both assertions.
-        """
-        from datetime import timedelta
-        from app.models import User
-
-        for state, extra in (
-            ("full_this_week", {}),
-            ("on_vacation", {"vacation_until": israel_today() + timedelta(days=5)}),
-        ):
-            user = make_user(db, role="producer", email=f"toggle-{state}@x.com")
-            producer = make_producer(db, name=f"עסק-{state}")
-            producer.availability_state = state
-            for k, v in extra.items():
-                setattr(producer, k, v)
-            user.producer_id = producer.id
-            db.commit()
-            user = db.query(User).filter(User.id == user.id).first()
-
-            resp = client.post(
-                "/producers/me/availability", headers=auth_header(user)
-            )
-            assert resp.status_code == 200, resp.text
-            assert resp.json()["availability_state"] == state, (
-                f"{state}: the legacy toggle must not clear a durable state"
-            )
-            db.refresh(producer)
-            assert producer.availability_state == state
-
-    def test_the_legacy_toggle_still_flips_the_two_it_owns(self, client, db):
-        """The control for the test above. Without it, `pass` in the endpoint
-        would satisfy the no-op assertions and this suite would be green
-        against an endpoint that does nothing at all.
-        """
-        from app.models import User
-
-        user = make_user(db, role="producer")
-        producer = make_producer(db)
-        user.producer_id = producer.id
-        db.commit()
-        user = db.query(User).filter(User.id == user.id).first()
-        assert producer.availability_state == "accepting_orders"
-
-        body = client.post(
-            "/producers/me/availability", headers=auth_header(user)
-        ).json()
-        assert body["availability_state"] == "available_today"
-
-        body = client.post(
-            "/producers/me/availability", headers=auth_header(user)
-        ).json()
-        assert body["availability_state"] == "accepting_orders"
+    # MEH-2758: removed with the legacy endpoint it exercised (POST /producers/me/availability).
 
     def test_a_legacy_only_vacation_row_is_ignored(self, client, db):
         """MEH-2271, pinned deliberately: the legacy COLUMN no longer speaks.
@@ -3466,18 +3406,19 @@ class TestVacationBadgeClear:
         assert "is_available_today" not in body
 
     def test_switching_away_from_vacation_clears_date(self, client, db):
-        """Setting status to 'available' must clear vacation_until."""
+        """Setting state to accepting_orders must clear vacation_until."""
         from datetime import timedelta
         user = make_user(db, role="producer")
         producer = make_producer(db)
         user.producer_id = producer.id
-        producer.availability_status = "vacation"
+        producer.availability_state = "on_vacation"
         producer.vacation_until = israel_today() + timedelta(days=5)
         db.commit()
 
+        # MEH-2758: the legacy /availability-status endpoint is gone.
         resp = client.post(
-            "/producers/me/availability-status",
-            json={"status": "available"},
+            "/producers/me/availability-state",
+            json={"state": "accepting_orders"},
             headers=auth_header(user),
         )
         assert resp.status_code == 200
@@ -3521,38 +3462,8 @@ class TestAvailabilityState:
         db.refresh(producer)
         assert producer.availability_state == "accepting_orders"
 
-    def test_new_endpoint_sets_available_today(self, client, db):
-        user, producer = self._setup(db)
-        resp = client.post(
-            "/producers/me/availability-state",
-            json={"state": "available_today"},
-            headers=auth_header(user),
-        )
-        assert resp.status_code == 200, resp.text
-        assert resp.json()["availability_state"] == "available_today"
-        db.refresh(producer)
-        assert producer.availability_state == "available_today"
-        # MEH-2272: the listing serves the enum, and only the enum.
-        listed = client.get("/producers?availability_state=available_today").json()
-        mine = [p for p in listed if p["id"] == str(producer.id)]
-        assert len(mine) == 1
-        assert mine[0]["availability_state"] == "available_today"
-
-    def test_new_endpoint_sets_full_this_week(self, client, db):
-        user, producer = self._setup(db)
-        resp = client.post(
-            "/producers/me/availability-state",
-            json={"state": "full_this_week"},
-            headers=auth_header(user),
-        )
-        assert resp.status_code == 200, resp.text
-        assert resp.json()["availability_state"] == "full_this_week"
-        db.refresh(producer)
-        assert producer.availability_state == "full_this_week"
-        listed = client.get("/producers?availability_state=full_this_week").json()
-        mine = [p for p in listed if p["id"] == str(producer.id)]
-        assert len(mine) == 1
-        assert mine[0]["availability_state"] == "full_this_week"
+    # MEH-2758: available_today / full_this_week are no longer writable; the
+    # refusal and the still-listed read live in tests/test_meh2758_pause_only_writes.py.
 
     def test_new_endpoint_on_vacation_requires_vacation_until(self, client, db):
         user, _ = self._setup(db)
@@ -3590,31 +3501,9 @@ class TestAvailabilityState:
         assert mine[0]["availability_state"] == "on_vacation"
         assert mine[0]["vacation_until"] == future
 
-    def test_old_toggle_mirrors_to_state(self, client, db):
-        user, producer = self._setup(db)
-        # Start: is_available_today=False, availability_status='available'
-        # Toggle once → True → state='available_today'.
-        resp = client.post("/producers/me/availability", headers=auth_header(user))
-        assert resp.status_code == 200, resp.text
-        body = resp.json()
-        assert body["availability_state"] == "available_today"
-        db.refresh(producer)
-        assert producer.availability_state == "available_today"
-        # Toggle again → False → state='accepting_orders'.
-        resp = client.post("/producers/me/availability", headers=auth_header(user))
-        assert resp.json()["availability_state"] == "accepting_orders"
+    # MEH-2758: removed with the legacy endpoint it exercised (POST /producers/me/availability).
 
-    def test_old_status_mirrors_full_to_full_this_week(self, client, db):
-        user, producer = self._setup(db)
-        resp = client.post(
-            "/producers/me/availability-status",
-            json={"status": "full"},
-            headers=auth_header(user),
-        )
-        assert resp.status_code == 200, resp.text
-        assert resp.json()["availability_state"] == "full_this_week"
-        db.refresh(producer)
-        assert producer.availability_state == "full_this_week"
+    # MEH-2758: removed with the legacy endpoint it exercised (POST /producers/me/availability-status).
 
     def test_auto_clear_past_vacation_normalizes_the_state(self, client, db):
         from datetime import timedelta
@@ -3664,54 +3553,7 @@ class TestAvailabilityState:
         assert "Alpha" in names
         assert "Beta" not in names
 
-    def test_status_available_preserves_available_today(self, client, db):
-        """MEH-2271, from the CI reviewer's second round on #3460:
-        `_status_to_state`'s preservation case had a docstring and no test.
-
-        `status="available"` is the one ambiguous legacy value — it means "not
-        full, not on vacation" and says nothing about today. Before chunk 3a
-        that endpoint wrote only `availability_status` and left the separate
-        `is_available_today` column alone, so an available_today producer
-        stayed available_today. The function claims to reproduce that. Claiming
-        is not testing: an implementation that mapped "available" straight to
-        accepting_orders would satisfy every other test in this class and
-        silently un-mark a producer who is open today.
-        """
-        user, producer = self._setup(db)
-        producer.availability_state = "available_today"
-        db.commit()
-
-        resp = client.post(
-            "/producers/me/availability-status",
-            json={"status": "available"},
-            headers=auth_header(user),
-        )
-        assert resp.status_code == 200, resp.text
-        assert resp.json()["availability_state"] == "available_today"
-        db.refresh(producer)
-        assert producer.availability_state == "available_today"
-
-    def test_status_available_from_full_lands_on_accepting_orders(self, client, db):
-        """The other half, and the reason the case above is not vacuous.
-
-        "available" is not a no-op — from full_this_week it genuinely clears to
-        accepting_orders. Without this, an implementation that returned the
-        current state unchanged for "available" would pass the preservation
-        test and break the legacy endpoint's actual job.
-        """
-        user, producer = self._setup(db)
-        producer.availability_state = "full_this_week"
-        db.commit()
-
-        resp = client.post(
-            "/producers/me/availability-status",
-            json={"status": "available"},
-            headers=auth_header(user),
-        )
-        assert resp.status_code == 200, resp.text
-        assert resp.json()["availability_state"] == "accepting_orders"
-        db.refresh(producer)
-        assert producer.availability_state == "accepting_orders"
+    # MEH-2758: removed with the legacy endpoint it exercised (POST /producers/me/availability-status (and _status_to_state)).
 
     def test_the_removed_alias_no_longer_filters_and_the_legacy_pair_is_gone(
         self, client, db
