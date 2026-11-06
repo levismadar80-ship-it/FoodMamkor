@@ -207,7 +207,7 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={t("search_placeholder")}
-          className="w-full border border-border rounded-[10px] ps-[46px] pe-3 py-2 text-base bg-surface-card text-text focus:outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/40 transition"
+          className="w-full border border-border rounded-sm ps-[46px] pe-3 py-2 text-base bg-surface-card text-text focus:outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/40 transition"
           dir="rtl"
         />
       </div>
@@ -260,7 +260,7 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
                   onClick={() => onChange(cat.id)}
                   className={[
                     "relative grid grid-cols-[46px_1fr] items-center gap-[14px] text-start",
-                    "rounded-[14px] border p-4 md:p-[18px] min-h-[78px] transition",
+                    "rounded-full border p-4 md:p-[18px] min-h-[78px] transition",
                     selected
                       ? "border-primary bg-green-50"
                       : capDisabled

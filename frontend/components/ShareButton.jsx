@@ -114,7 +114,7 @@ export default function ShareButton({
         type="button"
         onClick={handleShare}
         data-testid="share-outline"
-        className="flex-1 inline-flex items-center justify-center gap-2 min-h-[46px] px-3 rounded-[10px] border border-primary text-primary text-sm font-semibold hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40"
+        className="flex-1 inline-flex items-center justify-center gap-2 min-h-[46px] px-3 rounded-full border border-primary text-primary text-sm font-semibold hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40"
         title={t("copy_link")}
         aria-label={labelInName(t("quiet_label"), ariaLabel)}
       >

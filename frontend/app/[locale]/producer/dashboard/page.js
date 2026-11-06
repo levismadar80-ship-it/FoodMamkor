@@ -45,7 +45,7 @@ function VanityLinkCard({ slug }) {
   return (
     <div className="bg-surface border border-border rounded-lg p-5 mb-6">
       <p className="text-sm font-medium text-text mb-2">{t("label")}</p>
-      <div className="flex items-center gap-2 bg-green-50 rounded-[10px] px-3 py-2 mb-3">
+      <div className="flex items-center gap-2 bg-green-50 rounded-md px-3 py-2 mb-3">
         <span className="text-sm text-primary font-mono flex-1 truncate" dir="ltr">{url}</span>
       </div>
       <div className="flex gap-2">
@@ -159,14 +159,14 @@ function StatusSupportModal({ onClose }) {
       aria-label={t("section_aria")}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-surface rounded-t-[24px] sm:rounded-xl w-full max-w-sm p-6 space-y-4">
+      <div className="bg-surface rounded-t-3xl sm:rounded-xl w-full max-w-sm p-6 space-y-4">
         <h2 className="font-semibold text-text text-lg">{t("heading")}</h2>
         <p className="text-sm text-fg-muted">{t("body")}</p>
         <a
           href={`https://wa.me/${env.NEXT_PUBLIC_SUPPORT_PHONE || "972500000000"}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-3 rounded-[14px] border border-border px-4 py-3 hover:bg-green-50 transition"
+          className="flex items-center gap-3 rounded-lg border border-border px-4 py-3 hover:bg-green-50 transition"
         >
           <WhatsappLogo size={22} weight="fill" className="text-[#25D366] shrink-0" />
           <div>
@@ -176,7 +176,7 @@ function StatusSupportModal({ onClose }) {
         </a>
         <a
           href="mailto:contact@mehamakor.co.il"
-          className="flex items-center gap-3 rounded-[14px] border border-border px-4 py-3 hover:bg-green-50 transition"
+          className="flex items-center gap-3 rounded-lg border border-border px-4 py-3 hover:bg-green-50 transition"
         >
           <EnvelopeSimple size={22} className="text-primary shrink-0" />
           <div>
@@ -420,7 +420,7 @@ export default function ProducerDashboardPage() {
           <LocaleLink
             href="/contact"
             data-testid="dashboard-load-error-cta"
-            className="inline-block bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition"
+            className="inline-block bg-primary text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-dark transition"
           >
             {t("load_error.cta")}
           </LocaleLink>
@@ -841,7 +841,7 @@ export default function ProducerDashboardPage() {
               <button
                 type="button"
                 onClick={() => setAvailabilityState("on_vacation")}
-                className="px-4 py-1.5 rounded-[10px] text-sm font-medium bg-primary text-white border border-primary hover:bg-primary/90 transition focus-visible:ring-2 focus-visible:ring-primary/40"
+                className="px-4 py-1.5 rounded-full text-sm font-medium bg-primary text-white border border-primary hover:bg-primary/90 transition focus-visible:ring-2 focus-visible:ring-primary/40"
               >
                 {t("availability.vacation_confirm")}
               </button>

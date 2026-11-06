@@ -67,14 +67,14 @@ function DeleteConfirmDialog({ confirmDelete, deleting, onConfirm, onCancel }) {
           <button
             disabled={deleting}
             onClick={onConfirm}
-            className="px-4 py-2 rounded-[10px] text-sm font-medium text-white transition bg-danger-600 hover:bg-danger-700 disabled:opacity-50"
+            className="px-4 py-2 rounded-full text-sm font-medium text-white transition bg-danger-600 hover:bg-danger-700 disabled:opacity-50"
           >
             {deleting ? t("producers.table.deleting") : t("common.delete")}
           </button>
           <button
             disabled={deleting}
             onClick={onCancel}
-            className="px-4 py-2 rounded-[10px] text-sm border border-border text-muted hover:bg-gray-50 transition disabled:opacity-50"
+            className="px-4 py-2 rounded-full text-sm border border-border text-muted hover:bg-gray-50 transition disabled:opacity-50"
           >
             {t("common.cancel")}
           </button>
@@ -113,13 +113,13 @@ function ApproveConfirmDialog({ approveConfirm, onConfirm, onCancel }) {
         <div className="flex gap-3 justify-start">
           <button
             onClick={onConfirm}
-            className="px-4 py-2 rounded-[10px] text-sm font-medium text-white transition bg-primary hover:opacity-90"
+            className="px-4 py-2 rounded-full text-sm font-medium text-white transition bg-primary hover:opacity-90"
           >
             {ADMIN_REVIEW_APPROVE_CONFIRM.confirmLabel}
           </button>
           <button
             onClick={onCancel}
-            className="px-4 py-2 rounded-[10px] text-sm border border-border text-muted hover:bg-gray-50 transition"
+            className="px-4 py-2 rounded-full text-sm border border-border text-muted hover:bg-gray-50 transition"
           >
             {ADMIN_REVIEW_APPROVE_CONFIRM.cancelLabel}
           </button>

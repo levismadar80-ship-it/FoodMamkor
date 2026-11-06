@@ -211,7 +211,7 @@ export default function OfferBadge({ offer, variant = "badge", className = "" })
   return (
     <div
       data-testid="offer-badge"
-      className={`inline-flex items-start gap-2 rounded-[10px] bg-primary/10 border border-primary/30 px-3 py-2 text-sm text-primary ${className}`}
+      className={`inline-flex items-start gap-2 rounded-md bg-primary/10 border border-primary/30 px-3 py-2 text-sm text-primary ${className}`}
     >
       <Gift size={18} weight="fill" aria-hidden="true" className="shrink-0 mt-0.5" />
       <span>

@@ -211,7 +211,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
                       >
                         <span
                           aria-hidden="true"
-                          className={`shrink-0 w-5 h-5 rounded-[5px] border grid place-items-center transition-colors ${
+                          className={`shrink-0 w-5 h-5 rounded border grid place-items-center transition-colors ${
                             on ? "bg-primary border-primary" : "border-fg-muted/50"
                           }`}
                         >
