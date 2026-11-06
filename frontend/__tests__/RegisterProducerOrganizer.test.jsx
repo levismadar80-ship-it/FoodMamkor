@@ -342,7 +342,7 @@ describe("MEH-2460 / MEH-2640 — registering as a markets / events organizer", 
       "producer_registration_draft",
       JSON.stringify({
         v: 2, savedAt: Date.now(), step: null,
-        form: { producer_name: "מאפייה", kind: "producer", category_ids: [7], fulfilment: "delivery" },
+        form: { producer_name: "מאפייה", kind: "producer", category_ids: [7], fulfilment: "delivery", producer_license_number: "12345" },
       }),
     );
     await renderWizard({ as: "organizer" });
@@ -363,6 +363,7 @@ describe("MEH-2460 / MEH-2640 — registering as a markets / events organizer", 
     // The organizer default shape, not the business's «delivery» answer.
     expect(body.offers_delivery).toBe(false);
     expect(body.has_physical_location).toBe(true);
+    expect(body.producer_license_number).toBe("");
   });
 
   it("organizer door: DETAILS goes straight to STORY, and the stepper drops CATEGORY", async () => {

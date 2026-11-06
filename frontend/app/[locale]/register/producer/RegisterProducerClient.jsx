@@ -551,10 +551,9 @@ function RegisterProducerPageBody({ routeKind }) {
           // MEH-2460 (review #3711): an organizer never stands on CATEGORY —
           // neither as a resume target nor as the frame she was on when she
           // pressed «continue».
-          const organizerDraft = routeIsOrganizer;
-          const skipCategory = (s) => (organizerDraft && s === STEP.CATEGORY ? STEP.STORY : s);
+          const skipCategory = (s) => (routeIsOrganizer && s === STEP.CATEGORY ? STEP.STORY : s);
           if (resumeAt) setStep(skipCategory(resumeAt));
-          else if (organizerDraft) setStep(skipCategory);
+          else if (routeIsOrganizer) setStep(skipCategory);
         } else {
           localStorage.removeItem(DRAFT_KEY);
         }
@@ -720,7 +719,9 @@ function RegisterProducerPageBody({ routeKind }) {
         category_ids: isOrganizer ? [] : form.category_ids,
         // MEH-530: empty string normalises server-side to "missing" via
         // license_validation._normalize_license — safe to send unconditionally.
-        producer_license_number: form.producer_license_number,
+        // MEH-2773: an organizer is never asked for a license; a number
+        // carried in by a shared business draft must not ride along.
+        producer_license_number: isOrganizer ? "" : form.producer_license_number,
         // MEH-971 chunk 1: only true when a license-required category is
         // selected AND the opt-in box is checked (backend default False).
         license_pending: licenseRequired && licensePending,
