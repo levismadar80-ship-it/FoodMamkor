@@ -279,7 +279,7 @@ describe("ProducerHeader status tag (MEH-2596)", () => {
     expect(tag.className).toMatch(/\btext-primary\b/);
   });
 
-  it("full this week: the grey tag is fg-muted, not muted", () => {
+  it("MEH-2759: full_this_week no longer greys the tag — it reads as open", () => {
     render(
       <ProducerHeader
         producer={{ ...baseProducer, availability_state: "full_this_week" }}
@@ -287,9 +287,8 @@ describe("ProducerHeader status tag (MEH-2596)", () => {
         hasImages
       />,
     );
-    const tag = screen.getByTestId("status-closed");
-    expect(tag.className).toMatch(/\btext-fg-muted\b/);
-    expect(tag.className).not.toMatch(/(^|\s)text-muted(\s|$)/);
+    expect(screen.queryByTestId("status-closed")).not.toBeInTheDocument();
+    expect(screen.getByTestId("status-open")).toBeInTheDocument();
   });
 
   it("vacation: the tag keeps gold-deep (4.90:1 on its tint)", () => {

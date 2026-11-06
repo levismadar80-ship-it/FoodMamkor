@@ -2496,12 +2496,13 @@ test.describe("manual › recently viewed (task 13)", () => {
 test.describe("manual › Friday delivery strip (סרגל שישי)", () => {
   // MT:FRI:1 — inside the Friday window (forced through the documented
   //   `friday_mode_override` localStorage flag, lib/friday-mode.js:6) and with
-  //   businesses delivering today, the strip renders REAL copy — not an
+  //   businesses delivering on Friday (MEH-2759), the strip renders REAL copy — not an
   //   untranslated key path — and the cards carry the "today" badge.
   test("in the Friday window the strip renders real Hebrew copy, not a key path", async ({ page }) => {
     await seedStorage(page, "friday_mode_override", "1");
     await gotoWithFeed(page, "/", (u: URL) =>
-      u.searchParams.get("availability_state") === "available_today" ? [P1, P2] : PRODUCERS,
+      // MEH-2759: the strip asks for Friday delivery, not available_today.
+      u.searchParams.get("delivery_day") === "שישי" ? [P1, P2] : PRODUCERS,
     );
     const strip = scope(page).getByTestId("friday-delivery-strip");
     await expect(strip).toBeVisible(FIRST_PAINT);
@@ -2515,7 +2516,8 @@ test.describe("manual › Friday delivery strip (סרגל שישי)", () => {
   test("the same strip renders in English on /en", async ({ page }) => {
     await seedStorage(page, "friday_mode_override", "1");
     await gotoWithFeed(page, "/en", (u: URL) =>
-      u.searchParams.get("availability_state") === "available_today" ? [P1, P2] : PRODUCERS,
+      // MEH-2759: the strip asks for Friday delivery, not available_today.
+      u.searchParams.get("delivery_day") === "שישי" ? [P1, P2] : PRODUCERS,
     );
     const strip = scope(page).getByTestId("friday-delivery-strip");
     await expect(strip).toBeVisible(FIRST_PAINT);

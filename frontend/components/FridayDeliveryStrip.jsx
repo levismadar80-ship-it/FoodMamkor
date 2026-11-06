@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { ShoppingCart } from "@phosphor-icons/react";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import api from "@/lib/api";
+import { DELIVERY_DAYS } from "@/lib/delivery-days";
 import useScrollAffordance, { ScrollArrows } from "@/hooks/useScrollAffordance";
 
 function ProducerMiniCard({ producer }) {
@@ -64,9 +65,12 @@ export default function FridayDeliveryStrip({ city, onVisibilityChange }) {
   const affordance = useScrollAffordance();
 
   useEffect(() => {
-    // MEH-291 Phase 3 — switched from is_available_today=true to the unified
-    // availability_state filter. Backend dual-writes during the 7-day overlap.
-    const params = { availability_state: "available_today", page_size: 12 };
+    // MEH-2759: businesses that DELIVER ON FRIDAY (an explicit שישי row in
+    // their delivery days — producer_listing._delivery_day_condition), instead
+    // of the owner-ticked «זמין היום» state, which is no longer writable.
+    // The default listing already hides on_vacation.
+    // DELIVERY_DAYS is sun→sat, so index 5 is שישי (the backend vocabulary).
+    const params = { delivery_day: DELIVERY_DAYS[5], page_size: 12 };
     if (city) params.delivery_city = city;
     api
       .get("/producers", { params })
