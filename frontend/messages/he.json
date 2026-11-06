@@ -5802,11 +5802,11 @@
       "needs_address": "כדי לפרסם סלים צריך כתובת איסוף מדויקת.",
       "needs_address_privacy": "את הכתובת המלאה רואים רק מי ששריינו סל.",
       "needs_address_cta": "להוספת כתובת",
-      "leftover_title": "{count, plural, one {לא נאסף היום: סל אחד} other {לא נאספו היום: # סלים}}",
+      "leftover_title": "{count, plural, one {לא נאסף היום: סל אחד} two {לא נאספו היום: שני סלים} other {לא נאספו היום: # סלים}}",
       "leftover_share": "לשתף בוואטסאפ",
       "leftover_donated": "נמסרו בחינם",
-      "leftover_done": "{count, plural, one {✓ סל אחד נמסר בחינם} other {✓ # סלים נמסרו בחינם}}",
-      "leftover_share_text": "{count, plural, one {נשאר לנו היום סל אחד} other {נשארו לנו היום # סלים}} של {name} ב{city}, למסירה בחינם. מי שרוצה, כתבו לנו."
+      "leftover_done": "{count, plural, one {✓ סל אחד נמסר בחינם} two {✓ שני סלים נמסרו בחינם} other {✓ # סלים נמסרו בחינם}}",
+      "leftover_share_text": "{count, plural, one {נשאר לנו היום סל אחד} two {נשארו לנו היום שני סלים} other {נשארו לנו היום # סלים}} של {name} ב{city}, למסירה בחינם. מי שרוצה, כתבו לנו."
     },
     "counter_card": {
       "title": "סל הפתעה של מהמקור",
