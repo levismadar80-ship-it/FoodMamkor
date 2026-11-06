@@ -6,6 +6,7 @@ These helpers carry no FastAPI surface and can be imported by any router
 or background job that needs to hydrate or count Producer rows.
 """
 
+from datetime import timedelta
 from uuid import UUID
 
 import structlog
@@ -19,6 +20,8 @@ from app.models import (
     Producer,
     ProducerCategory,
     ProducerLocation,
+    RescueOffer,
+    RescueOrder,
 )
 from app.schemas.schemas import DeliveryAreaCreate, ProducerCreate
 from app.services.city_centroid import city_centroid
@@ -278,6 +281,62 @@ def attach_favorites_counts(producers, db: Session):
     )
     for p in producers:
         p.favorites_count = counts.get(p.id, 0)
+    return producers
+
+
+# MEH-2716: how far back a saved bag still lights «מצילים מזון».
+RESCUE_SAVING_WINDOW_DAYS = 30
+
+
+def _rescue_pilot_on() -> bool:
+    # Imported at call time: the router imports this module, and the tests
+    # switch the pilot by patching `rescue.rescue_bags_enabled`.
+    from app.routers import rescue
+
+    return rescue.rescue_bags_enabled()
+
+
+def attach_rescue_saving(producers, db: Session):
+    """MEH-2716: batch-set `rescued_recently` — the «מצילים מזון» system badge.
+
+    True when, in the last RESCUE_SAVING_WINDOW_DAYS, the business handed a
+    surprise bag over at the counter or reported bags «נמסרו בחינם». Computed
+    from rows the pilot already writes, never declared by the business. Two
+    queries for the whole page, none while the pilot is off — and then the
+    badge is False whatever the data says.
+    """
+    if not producers:
+        return producers
+    for p in producers:
+        p.rescued_recently = False
+    if not _rescue_pilot_on():
+        return producers
+    ids = [p.id for p in producers]
+    since = utc_now() - timedelta(days=RESCUE_SAVING_WINDOW_DAYS)
+    handed = (
+        db.query(ProducerLocation.producer_id)
+        .join(RescueOffer, RescueOffer.producer_location_id == ProducerLocation.id)
+        .join(RescueOrder, RescueOrder.offer_id == RescueOffer.id)
+        .filter(
+            ProducerLocation.producer_id.in_(ids),
+            RescueOrder.status == "handed",
+            RescueOrder.handed_at >= since,
+        )
+        .distinct()
+    )
+    donated = (
+        db.query(ProducerLocation.producer_id)
+        .join(RescueOffer, RescueOffer.producer_location_id == ProducerLocation.id)
+        .filter(
+            ProducerLocation.producer_id.in_(ids),
+            RescueOffer.qty_donated > 0,
+            RescueOffer.pickup_end >= since,
+        )
+        .distinct()
+    )
+    saving = {row[0] for row in handed.union(donated).all()}
+    for p in producers:
+        p.rescued_recently = p.id in saving
     return producers
 
 

@@ -2576,6 +2576,9 @@ class ProducerListOut(BaseModel):
     # no other axis, because nothing implies them.
     has_no_added_sugar_products: bool = False
     has_low_carb_products: bool = False
+    # MEH-2716: «מצילים מזון» — set by attach_rescue_saving (a surprise bag
+    # saved in the last 30 days); False while the rescue pilot is off.
+    rescued_recently: bool = False
     has_delivery: bool = False
     # MEH-2060: no longer the raw column value. attach_badge_fields overwrites
     # this attribute with `offers_pickup` before serialization (same mechanism
