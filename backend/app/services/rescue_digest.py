@@ -67,8 +67,7 @@ _FORBIDDEN_IN_PARAM = str.maketrans({"\n": " ", "\r": " ", "\t": " "})
 
 def _clean_param(value: str) -> str:
     """One line, no tabs, no run of 5+ spaces — safe as a template parameter."""
-    out = " ".join(value.translate(_FORBIDDEN_IN_PARAM).split())
-    return out
+    return " ".join(value.translate(_FORBIDDEN_IN_PARAM).split())
 
 
 def build_codes_param(orders: list[RescueOrder]) -> str:
@@ -145,10 +144,9 @@ def _resolve_target(db: Session, offer: RescueOffer, city_in_pilot) -> _Target |
 
     Split from `_digest_one` so that one owns "can this be sent" and the other
     owns "send it and record it" — which also keeps both inside Ruff's
-    PLR0911/C901 budgets. Two shapes share one key on purpose: a missing
-    location and a missing producer are both `skipped_no_location`, and a blank
-    phone and a missing owner row are both `skipped_no_phone`, because the
-    operator's question in each pair is the same one.
+    PLR0911/C901 budgets. A missing location and a missing producer share one
+    key (`skipped_no_location`) because the join makes them the same failure;
+    every other skip has its own, so a tick log says which one happened.
     """
     # One join rather than two queries: the offer hangs off a location, and the
     # location's producer is what the message is addressed to.
@@ -181,11 +179,17 @@ def _resolve_target(db: Session, offer: RescueOffer, city_in_pilot) -> _Target |
         return "skipped_no_reserved"
 
     phone = (producer.phone or "").strip()
-    # The owner row is needed for the AlertLog cap, which is keyed on a user.
-    # No phone or no owner ⇒ nothing is sent and nothing is stamped.
-    owner = db.query(User).filter(User.producer_id == producer.id).first()
-    if not phone or owner is None:
+    if not phone:
         return "skipped_no_phone"
+
+    # The owner row is needed for the AlertLog cap, which is keyed on a user.
+    # Counted separately from the missing phone: when a digest silently does
+    # not arrive, "the business has no number" and "the business has no owner
+    # account" send you to different places, and a tick log that merges them
+    # costs the reader that distinction.
+    owner = db.query(User).filter(User.producer_id == producer.id).first()
+    if owner is None:
+        return "skipped_no_owner"
 
     return _Target(producer=producer, owner=owner, phone=phone, reserved=reserved)
 
@@ -263,6 +267,23 @@ def send_rescue_digests(db: Session) -> dict[str, int]:
     as "not digested", which covers both "not yet" and "never" — the filter is
     what distinguishes them, not the column.
 
+    **Delivery is at-least-once, not exactly-once, and the stamp is NOT written
+    in the same transaction as the send.** `send_template` is an outbound HTTP
+    call and `db.commit()` runs after it, so a commit that fails once Meta has
+    accepted the message leaves `codes_sent_at` NULL and the next tick sends a
+    second digest, up to 5 minutes later. That is the deliberate direction:
+    for codes a business reads at a counter, a duplicate is cheap and a missing
+    message is not. Stamping first would invert it.
+
+    **A bag reserved AFTER the digest has gone out never reaches the business.**
+    The message is built once from the orders that were `reserved` at that
+    moment, and the stamp then takes the offer out of the candidate set for
+    good. The dashboard is still live and still shows every code, so this is a
+    gap in the convenience, not in the data — but it is a real limit and it is
+    recorded in docs/MANUAL_TESTING.md rather than left for someone to
+    discover. A follow-up message for late reservations is a product decision,
+    not an oversight here.
+
     Which outcomes stamp and which do not is `_digest_one`'s decision, branch
     by branch; read it for the reasoning.
 
@@ -276,6 +297,7 @@ def send_rescue_digests(db: Session) -> dict[str, int]:
         "skipped_no_reserved": 0,
         "skipped_not_in_pilot": 0,
         "skipped_no_phone": 0,
+        "skipped_no_owner": 0,
         "skipped_no_location": 0,
         "skipped_capped": 0,
         "failed": 0,
@@ -291,9 +313,10 @@ def send_rescue_digests(db: Session) -> dict[str, int]:
     if not rescue_bags_enabled():
         return counts
 
-    # Checked here as well as at registration (startup.py). The registration
-    # gate is read once at boot; this one is read every tick, so flipping the
-    # env var off stops sends at the next tick instead of at the next deploy.
+    # Checked here as well as at registration (startup.py), and the two are not
+    # symmetric: the registration gate is read once at boot, so turning the flag
+    # ON needs a redeploy, while this per-tick check stops sends at the next
+    # tick when it is turned OFF. Off is the direction that has to be fast.
     # It also lets a test exercise the gate without a scheduler.
     if not digest_enabled():
         counts["skipped_gate_off"] = 1
