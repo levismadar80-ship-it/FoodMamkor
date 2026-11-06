@@ -495,7 +495,7 @@ export default function GroupBuyDetailClient({ id }) {
             </div>
 
             <div className="mt-5">
-              <p className="text-[13px] text-fg-muted">{gb.city}</p>
+              <p className="text-sm text-fg-muted">{gb.city}</p>
               <h1 className="font-headline-lg text-3xl md:text-4xl font-black text-text mt-1 leading-tight">{gb.title}</h1>
               {/* MEH-2472: the product being bought. */}
               {gb.product_name && (

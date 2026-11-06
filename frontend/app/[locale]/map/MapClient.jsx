@@ -647,7 +647,7 @@ export default function MapPage() {
             data-testid="sort-origin-chip"
             className={
               compact
-                ? "inline-flex items-center gap-1 max-w-full rounded-md bg-green-50 text-primary ps-2 text-[11px]"
+                ? "inline-flex items-center gap-1 max-w-full rounded-md bg-green-50 text-primary ps-2 text-2xs"
                 : "inline-flex items-center gap-1.5 min-h-touch max-w-full rounded-full border border-border bg-surface-card ps-3 text-xs text-fg-muted"
             }
           >
@@ -878,7 +878,7 @@ export default function MapPage() {
                   </p>
                 )}
                 {mapRegion && (
-                  <p className="text-[11px] text-fg-muted mt-0.5" data-testid="map-list-subhead">{t("map.client.subhead", { region: mapRegion })}</p>
+                  <p className="text-2xs text-fg-muted mt-0.5" data-testid="map-list-subhead">{t("map.client.subhead", { region: mapRegion })}</p>
                 )}
               </div>
               {/* MEH-1110: borderless text+chevron sort control — appearance-none

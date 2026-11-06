@@ -186,7 +186,7 @@ export default function ImageGallery({ images = [], producerId = null, producerN
                   <SealCheck size={18} className="text-primary" weight="fill" aria-hidden="true" />
                   {tBadge("verified_popover_title")}
                 </span>
-                <span className="block text-[13px] leading-relaxed">
+                <span className="block text-sm leading-relaxed">
                   {getVerifiedPopoverBody(
                     { verification_doc_type: verificationDocType, verified_at: verifiedAt },
                     tBadge

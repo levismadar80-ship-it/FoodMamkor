@@ -38,7 +38,7 @@ function Section({ title, children }) {
 function Swatch({ label, children }) {
   return (
     <div className="flex flex-col items-start gap-2">
-      <span className="text-[11px] text-fg-muted">{label}</span>
+      <span className="text-2xs text-fg-muted">{label}</span>
       {children}
     </div>
   );
@@ -165,8 +165,8 @@ export default function DevComponentsPage() {
                 </>
               }
             >
-              <p className="text-[11px] text-fg-muted">קטגוריה</p>
-              <Heading level={3} variant="editorial" className="text-[20px] hover:text-primary">
+              <p className="text-2xs text-fg-muted">קטגוריה</p>
+              <Heading level={3} variant="editorial" className="text-xl hover:text-primary">
                 שם בית העסק
               </Heading>
               <p className="text-sm text-text/85 line-clamp-1">תיאור קצר של מה שהעסק מציע.</p>

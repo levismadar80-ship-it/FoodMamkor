@@ -57,7 +57,7 @@ function SampleVerified() {
 function SampleCluster() {
   return (
     <span
-      className="shrink-0 w-7 h-7 rounded-full bg-primary text-white border-2 border-white shadow-md flex items-center justify-center text-[11px] font-semibold numeric"
+      className="shrink-0 w-7 h-7 rounded-full bg-primary text-white border-2 border-white shadow-md flex items-center justify-center text-2xs font-semibold numeric"
       aria-hidden="true"
     >
       5

@@ -35,7 +35,7 @@ import { isFullThisWeek } from "@/lib/availability";
 // it reads as a fact tag next to the tinted status tag, never as a second
 // status (no tint, no dot, no colour of its own).
 const KOSHER_CHIP =
-  "inline-flex min-h-[28px] items-center rounded-full border border-border bg-surface-card px-2.5 py-0.5 text-[13px] text-text";
+  "inline-flex min-h-[28px] items-center rounded-full border border-border bg-surface-card px-2.5 py-0.5 text-sm text-text";
 
 // The «·» between facts on the one line. aria-hidden: a screen reader gets the
 // facts as separate runs already.
@@ -225,7 +225,7 @@ export default function ProducerHeader({
         <span className="numeric font-headline-md text-lg font-bold" dir="ltr">
           {Number(producer.avg_rating).toFixed(1)}
         </span>
-        <span className="text-[13px] text-muted underline underline-offset-4">
+        <span className="text-sm text-muted underline underline-offset-4">
           {t("producer.detail.header.review_count", { count: producer.reviews_count })}
         </span>
         {/* MEH-1048 a11y: sr-only nav hint so AT users hear the link scrolls to reviews */}
@@ -283,7 +283,7 @@ export default function ProducerHeader({
           adversarial-review fix (imageless-desktop overlap). */}
       {producer.short_description && (
         // MEH-2596: a muted 17px deck under the name, not body text.
-        <p className={`text-[17px] leading-relaxed text-fg-muted mt-2.5${hasImages ? "" : " lg:pe-72"}`}>
+        <p className={`text-lg leading-relaxed text-fg-muted mt-2.5${hasImages ? "" : " lg:pe-72"}`}>
           {producer.short_description}
         </p>
       )}
@@ -434,7 +434,7 @@ export default function ProducerHeader({
               </button>
             }
           >
-            <span className="block text-[13px] leading-relaxed">
+            <span className="block text-sm leading-relaxed">
               {t("producer.badge.declared_explainer")}
             </span>
           </Popover>

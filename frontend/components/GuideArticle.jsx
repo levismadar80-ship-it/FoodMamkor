@@ -54,7 +54,7 @@ function renderBlock(block, i) {
       return (
         <h2
           key={key}
-          className="font-headline-md mt-10 mb-3 sm:mt-12 text-primary text-[22px] font-bold"
+          className="font-headline-md mt-10 mb-3 sm:mt-12 text-primary text-2xl font-bold"
         >
           {block.text}
         </h2>
@@ -63,7 +63,7 @@ function renderBlock(block, i) {
       return (
         <h3
           key={key}
-          className="font-headline-md mt-8 mb-2 text-primary-dark text-[18px] font-bold"
+          className="font-headline-md mt-8 mb-2 text-primary-dark text-lg font-bold"
         >
           {block.text}
         </h3>
@@ -72,7 +72,7 @@ function renderBlock(block, i) {
       return (
         <p
           key={key}
-          className="mb-4 text-[16px] sm:text-[17px] leading-[1.8] text-text/90"
+          className="mb-4 text-base sm:text-lg leading-[1.8] text-text/90"
         >
           <InlineBold text={block.text} idBase={key} />
         </p>
@@ -82,8 +82,8 @@ function renderBlock(block, i) {
       const Tag = block.type === "ul" ? "ul" : "ol";
       const listClass =
         block.type === "ul"
-          ? "list-disc ms-6 mb-4 space-y-2 text-[16px] sm:text-[17px] leading-[1.8]"
-          : "list-decimal ms-6 mb-4 space-y-2 text-[16px] sm:text-[17px] leading-[1.8]";
+          ? "list-disc ms-6 mb-4 space-y-2 text-base sm:text-lg leading-[1.8]"
+          : "list-decimal ms-6 mb-4 space-y-2 text-base sm:text-lg leading-[1.8]";
       return (
         <Tag key={key} className={`${listClass} text-text/90`}>
           {block.items.map((item, j) => (
@@ -98,7 +98,7 @@ function renderBlock(block, i) {
       return (
         <blockquote
           key={key}
-          className="border-s-4 border-primary ps-4 py-2.5 my-5 text-[16px] sm:text-[17px] leading-[1.8] italic text-text bg-primary/[0.04]"
+          className="border-s-4 border-primary ps-4 py-2.5 my-5 text-base sm:text-lg leading-[1.8] italic text-text bg-primary/[0.04]"
         >
           <InlineBold text={block.text} idBase={key} />
         </blockquote>
@@ -111,7 +111,7 @@ function renderBlock(block, i) {
       return (
         <p
           key={key}
-          className="mb-4 text-[16px] sm:text-[17px] leading-[1.8] italic text-primary-dark"
+          className="mb-4 text-base sm:text-lg leading-[1.8] italic text-primary-dark"
         >
           <InlineBold text={block.text} idBase={key} />
         </p>
@@ -139,7 +139,7 @@ export default function GuideArticle({
             {title}
           </h1>
           {subtitle ? (
-            <p className="italic text-[17px] sm:text-[18px] leading-relaxed text-text/90">
+            <p className="italic text-lg sm:text-lg leading-relaxed text-text/90">
               {subtitle}
             </p>
           ) : null}
@@ -148,15 +148,15 @@ export default function GuideArticle({
         <div>{blocks.map(renderBlock)}</div>
 
         <footer className="mt-14 sm:mt-16 border-t border-border pt-8">
-          <p className="text-[15px] mb-2 font-headline-md text-text font-semibold">
+          <p className="text-base mb-2 font-headline-md text-text font-semibold">
             ספיר שנפ
           </p>
-          <p className="text-[14px] mb-6 text-text/90">
+          <p className="text-sm mb-6 text-text/90">
             מייסדת · {BRAND_NAME} · mehamakor.co.il
           </p>
           <Link
             href={backHref}
-            className="inline-flex items-center gap-2 text-[15px] underline text-primary"
+            className="inline-flex items-center gap-2 text-base underline text-primary"
           >
             {/* MEH-990: raw ← dingbat → Phosphor ArrowRight; rtl:rotate-180 = back/reading-forward in he (MEH-938 pattern) */}
             <ArrowRight size={16} weight="bold" aria-hidden="true" className="rtl:rotate-180" />

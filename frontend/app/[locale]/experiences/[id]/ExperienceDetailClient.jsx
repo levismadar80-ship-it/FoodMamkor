@@ -230,9 +230,9 @@ export default function ExperienceDetailClient() {
           aria-hidden="true"
           className="lg:hidden absolute start-4 -bottom-7 w-16 rounded-md bg-white shadow-lg text-center overflow-hidden"
         >
-          <span className="block bg-accent text-white text-[11px] font-bold py-0.5">{month}</span>
-          <span className="block font-headline-display font-black text-[28px] leading-tight pt-1 numeric">{day}</span>
-          <span className="block text-[10px] text-fg-muted pb-1.5">{weekday}</span>
+          <span className="block bg-accent text-white text-2xs font-bold py-0.5">{month}</span>
+          <span className="block font-headline-display font-black text-3xl leading-tight pt-1 numeric">{day}</span>
+          <span className="block text-2xs text-fg-muted pb-1.5">{weekday}</span>
         </div>
       </div>
 
@@ -294,7 +294,7 @@ export default function ExperienceDetailClient() {
               <Link
                 href={hostHref}
                 data-testid="experience-byline"
-                className="inline-flex items-center gap-2 min-h-touch text-[15px] text-text hover:text-primary rounded transition focus-ring"
+                className="inline-flex items-center gap-2 min-h-touch text-base text-text hover:text-primary rounded transition focus-ring"
               >
                 <span aria-hidden="true" className="w-7 h-7 rounded-full bg-surface-card text-accent text-sm font-bold grid place-items-center">
                   {Array.from(hostName.trim())[0] ?? ""}
@@ -303,7 +303,7 @@ export default function ExperienceDetailClient() {
                 <CaretLeft size={14} className="text-primary ltr:rotate-180" aria-hidden="true" />
               </Link>
             ) : (
-              <p data-testid="experience-byline" className="text-[15px] text-text">
+              <p data-testid="experience-byline" className="text-base text-text">
                 {t("host_label")} {hostName}
               </p>
             )

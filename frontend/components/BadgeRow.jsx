@@ -274,7 +274,7 @@ function VerifiedTierBadge({ producer, surface, t, avoidRef = null }) {
             <SealCheck size={18} className="text-primary" weight="fill" aria-hidden="true" />
             {t("verified_popover_title")}
           </span>
-          <span className="block text-[13px] leading-relaxed">
+          <span className="block text-sm leading-relaxed">
             {getVerifiedPopoverBody(producer, t)}
           </span>
           <LocaleLink

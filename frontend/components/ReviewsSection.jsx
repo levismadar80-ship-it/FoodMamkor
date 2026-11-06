@@ -146,7 +146,7 @@ function ReviewReply({ review, isOwner, onSaved }) {
   if (editing) {
     return (
       <div className="mt-3">
-        <label htmlFor={`reply-${review.id}`} className="block text-[13px] font-semibold text-primary-dark mb-1">
+        <label htmlFor={`reply-${review.id}`} className="block text-sm font-semibold text-primary-dark mb-1">
           {t("reply_heading")}
         </label>
         <textarea
@@ -156,7 +156,7 @@ function ReviewReply({ review, isOwner, onSaved }) {
           rows={2}
           maxLength={1000}
           placeholder={t("reply_placeholder")}
-          className="w-full border border-border rounded-sm px-3 py-2 bg-white resize-none focus-visible:ring-2 focus-visible:ring-primary/40 outline-none text-[14px]"
+          className="w-full border border-border rounded-sm px-3 py-2 bg-white resize-none focus-visible:ring-2 focus-visible:ring-primary/40 outline-none text-sm"
         />
         {error && (
           <p className="text-sm text-error mt-1" role="alert">{error}</p>
@@ -189,12 +189,12 @@ function ReviewReply({ review, isOwner, onSaved }) {
         // MEH-2592: a side rule marks the business's voice — the green box
         // read as a second review card.
         <div className="mt-3 border-s-2 border-primary/40 ps-3" data-testid="review-reply">
-          <p className="text-[13px] font-semibold text-primary-dark">{t("reply_heading")}</p>
-          <p className="text-[14px] text-text/85 leading-relaxed whitespace-pre-line mt-0.5">
+          <p className="text-sm font-semibold text-primary-dark">{t("reply_heading")}</p>
+          <p className="text-sm text-text/85 leading-relaxed whitespace-pre-line mt-0.5">
             {reply}
           </p>
           {review.reply_at && formatEventDate(review.reply_at, locale, REVIEW_DATE_OPTIONS) && (
-            <p className="text-[12px] text-fg-muted mt-1" dir="ltr">
+            <p className="text-xs text-fg-muted mt-1" dir="ltr">
               {formatEventDate(review.reply_at, locale, REVIEW_DATE_OPTIONS)}
             </p>
           )}
@@ -564,11 +564,11 @@ export default function ReviewsSection({
                     {Array.from(formatName(review.user_name, anonymousFallback))[0]}
                   </span>
                   <div className="min-w-0">
-                    <p className="font-body-md font-semibold text-[15px] text-text leading-snug">
+                    <p className="font-body-md font-semibold text-base text-text leading-snug">
                       {formatName(review.user_name, anonymousFallback)}
                       {formatEventDate(review.created_at, locale, REVIEW_DATE_OPTIONS) && (
                         <span
-                          className="ms-2 text-[13px] font-normal text-fg-muted"
+                          className="ms-2 text-sm font-normal text-fg-muted"
                           dir="ltr"
                           data-testid="review-date"
                         >
@@ -586,7 +586,7 @@ export default function ReviewsSection({
                   </div>
                 </div>
                 {review.body && (
-                  <p className="text-[15px] text-text/85 leading-relaxed whitespace-pre-line">
+                  <p className="text-base text-text/85 leading-relaxed whitespace-pre-line">
                     {review.body}
                   </p>
                 )}

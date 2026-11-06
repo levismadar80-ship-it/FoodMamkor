@@ -741,7 +741,7 @@ function LocationForm({
 
       {/* MEH-1563: every field carries a hint and/or an example placeholder
           (MEH-1539 standard items 2–3). REUSES: edit/cards.jsx `*_where` /
-          `scope_helper` lines — same `text-[11px] text-fg-muted` treatment.
+          `scope_helper` lines — same `text-2xs text-fg-muted` treatment.
           MEH-1595: single column below `sm`. Two columns gave each input 134px
           at 375px (108px usable) while the example placeholders measure
           125–186px, so four of five were cut mid-example — `למשל: 050-1234567`
@@ -800,7 +800,7 @@ function LocationForm({
             value={form.city}
             onChange={handleCityChange}
           />
-          <span className="mt-1 block text-[11px] text-fg-muted">{placeHint}</span>
+          <span className="mt-1 block text-2xs text-fg-muted">{placeHint}</span>
         </div>
         <div className="text-xs" data-testid="location-address-field">
           <label
@@ -817,7 +817,7 @@ function LocationForm({
             onSelect={handleAddressSelect}
             placeholder={tForm("address_placeholder")}
           />
-          <span className="mt-1 block text-[11px] text-fg-muted">{placeHint}</span>
+          <span className="mt-1 block text-2xs text-fg-muted">{placeHint}</span>
         </div>
       </div>
 
@@ -971,7 +971,7 @@ function LocationForm({
         >
           {tForm("coords_summary")}
         </summary>
-        <p className="mt-1 text-[11px] text-fg-muted">{tForm("coords_hint")}</p>
+        <p className="mt-1 text-2xs text-fg-muted">{tForm("coords_hint")}</p>
         <div className="mt-2 grid grid-cols-2 gap-2">
           <Field label={tForm("lat_label")}>
             <TextInput
@@ -1077,7 +1077,7 @@ function AddressState({ geocoded, unresolved, confirmLabel, lat, lng, name }) {
     return (
       <p
         data-testid="location-address-unresolved"
-        className="text-[11px] text-fg-muted text-start"
+        className="text-2xs text-fg-muted text-start"
       >
         {tForm("address_unresolved")}
       </p>
@@ -1102,7 +1102,7 @@ function Field({ label, hint, children }) {
         {children}
       </label>
       {hint ? (
-        <span className="mt-1 block text-[11px] text-fg-muted">{hint}</span>
+        <span className="mt-1 block text-2xs text-fg-muted">{hint}</span>
       ) : null}
     </div>
   );

@@ -93,7 +93,7 @@ export default function EventEntryRow({ entry, freeLabel, compact = false }) {
     entry.image || !entry.ownerInitial ? null : (
       <span
         data-testid="event-row-owner-initial"
-        className="absolute bottom-1 end-1 w-5 h-5 rounded-full bg-white text-primary text-[10px] font-bold grid place-items-center shadow-sm"
+        className="absolute bottom-1 end-1 w-5 h-5 rounded-full bg-white text-primary text-2xs font-bold grid place-items-center shadow-sm"
       >
         {entry.ownerInitial}
       </span>
@@ -118,7 +118,7 @@ export default function EventEntryRow({ entry, freeLabel, compact = false }) {
             {day}
           </span>
           <span className="text-xs font-semibold text-fg-muted mt-1">{weekday}</span>
-          <span className="text-[10px] text-fg-muted">{month}</span>
+          <span className="text-2xs text-fg-muted">{month}</span>
           {time && (
             <span dir="ltr" className={`font-english italic text-sm mt-1 numeric ${accentText}`}>
               {time}

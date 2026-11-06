@@ -107,7 +107,7 @@ export default function AdminNameChangeRequestsPage() {
               was actually asked to approve. */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <p className="text-[13px] font-semibold text-fg-muted mb-1">
+              <p className="text-sm font-semibold text-fg-muted mb-1">
                 {t("current_label")}
               </p>
               <p className="text-base text-text" data-testid="name-change-old">
@@ -115,7 +115,7 @@ export default function AdminNameChangeRequestsPage() {
               </p>
             </div>
             <div>
-              <p className="text-[13px] font-semibold text-fg-muted mb-1">
+              <p className="text-sm font-semibold text-fg-muted mb-1">
                 {t("requested_label")}
               </p>
               <p
@@ -129,7 +129,7 @@ export default function AdminNameChangeRequestsPage() {
 
           {r.reason && (
             <div>
-              <p className="text-[13px] font-semibold text-fg-muted mb-1">
+              <p className="text-sm font-semibold text-fg-muted mb-1">
                 {t("reason_label")}
               </p>
               <p className="text-sm text-text">{r.reason}</p>

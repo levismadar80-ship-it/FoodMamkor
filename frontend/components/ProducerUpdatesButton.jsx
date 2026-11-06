@@ -66,7 +66,7 @@ const VARIANT_CLASS = {
   gallery: () =>
     `bg-white/95 hover:bg-white rounded-full w-11 h-11 flex items-center justify-center shadow-md hover:scale-105 ${FOCUS}`,
   quiet: (on) =>
-    `inline-flex items-center gap-1.5 min-h-touch py-2 text-[13px] font-medium rounded ${FOCUS} ${
+    `inline-flex items-center gap-1.5 min-h-touch py-2 text-sm font-medium rounded ${FOCUS} ${
       on ? "text-primary" : "text-text hover:text-primary"
     }`,
 };

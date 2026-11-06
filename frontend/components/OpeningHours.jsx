@@ -112,7 +112,7 @@ export default function OpeningHours({ opening_hours }) {
             return (
               <div
                 key={abbr}
-                className={`flex justify-between text-[13px] py-1.5 ${
+                className={`flex justify-between text-sm py-1.5 ${
                   isToday ? "font-semibold text-text" : "text-fg-muted"
                 }`}
               >

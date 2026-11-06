@@ -789,7 +789,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
 
       <Section title={t("producers.form.sections.categories_tags")}>
         {/* MEH-1297: primary-first + ≤3 cap hint (parity with the register CategorySelector) */}
-        <p className="text-[11px] text-fg-muted mb-2">
+        <p className="text-2xs text-fg-muted mb-2">
           {t("producers.form.category_cap_hint")}
         </p>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-4">
@@ -817,7 +817,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
                 {isPrimary && (
                   <span
                     data-testid="admin-primary-badge"
-                    className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary"
+                    className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-2xs font-medium text-primary"
                   >
                     {t("producers.form.primary_badge")}
                   </span>

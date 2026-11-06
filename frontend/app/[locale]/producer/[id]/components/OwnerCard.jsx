@@ -53,7 +53,7 @@ export default function OwnerCard({ producer, heading, nested = false }) {
   if (nested) {
     return (
       <div className="mt-6" data-testid="owner-card" data-nested="true">
-        <h3 className="text-[15px] font-bold text-gold-deep mb-3">{heading || t("heading")}</h3>
+        <h3 className="text-base font-bold text-gold-deep mb-3">{heading || t("heading")}</h3>
         {(photo || name || producer.city) && (
           <div className="flex items-center gap-3">
             {photo ? (
@@ -79,7 +79,7 @@ export default function OwnerCard({ producer, heading, nested = false }) {
             ) : null}
             <div className="min-w-0">
               {name && <p className="font-headline-md text-lg font-bold text-text leading-tight">{name}</p>}
-              {producer.city && <p className="text-[13px] text-muted mt-0.5">{producer.city}</p>}
+              {producer.city && <p className="text-sm text-muted mt-0.5">{producer.city}</p>}
             </div>
           </div>
         )}
@@ -120,7 +120,7 @@ export default function OwnerCard({ producer, heading, nested = false }) {
           ) : null}
           <div className="min-w-0">
             {name && <h3 className="font-headline-md text-lg font-bold text-text">{name}</h3>}
-            {producer.city && <p className="text-[12.5px] text-muted mt-0.5">{producer.city}</p>}
+            {producer.city && <p className="text-xs text-muted mt-0.5">{producer.city}</p>}
           </div>
         </div>
         )}

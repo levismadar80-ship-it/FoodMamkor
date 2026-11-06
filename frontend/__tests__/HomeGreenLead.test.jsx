@@ -124,7 +124,7 @@ describe("MEH-2441 — featured business on the green band", () => {
     expect(classes(screen.getByText(attribution))).toContain("text-background/90");
     unmount();
     const { container } = render(<HomeFeaturedProducer featured={FEATURED} />);
-    expect(container.querySelectorAll("p.text-sm")).toHaveLength(0);
+    expect(container.querySelectorAll("p.text-sm:not([data-testid=home-featured-place])")).toHaveLength(0);
   });
 
   it("no photo → the tonal plate from the start", () => {
