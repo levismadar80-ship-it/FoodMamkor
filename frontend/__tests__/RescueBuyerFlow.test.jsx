@@ -719,6 +719,71 @@ describe("a reload keeps the order (MEH-2680)", () => {
   });
 });
 
+describe("the business cancelled the bag (MEH-2738)", () => {
+  const mine = (over = {}) => ({
+    ...order(over),
+    producer_id: PRODUCER.id,
+    reviewed: false,
+    cancelled_by_business: false,
+    ...over,
+  });
+  const byBusiness = (over = {}) =>
+    mine({ status: "cancelled", cancelled_by_business: true, ...over });
+  const TEXT = "בית העסק ביטל את הסל של היום, ולכן השריון שלכם בוטל. אין צורך להגיע.";
+
+  it("says so in words, with no code, when the offer left the list", async () => {
+    authUser = { id: "u1" };
+    fetchOffers.mockResolvedValue([]);
+    fetchMyOrders.mockResolvedValue([byBusiness()]);
+    render(<RescueSection producer={PRODUCER} />);
+    const notice = await screen.findByTestId("rescue-business-cancelled");
+    expect(notice.textContent).toBe(TEXT);
+    expect(screen.queryByTestId("rescue-confirmation")).toBeNull();
+  });
+
+  it("a code on screen gives way to the line when the tab is re-read", async () => {
+    authUser = { id: "u1" };
+    fetchMyOrders.mockResolvedValueOnce([mine({ status: "reserved" })]);
+    render(<RescueSection producer={PRODUCER} />);
+    await screen.findByTestId("rescue-confirmation");
+    fetchMyOrders.mockResolvedValueOnce([byBusiness()]);
+    window.dispatchEvent(new Event("focus"));
+    expect(await screen.findByTestId("rescue-business-cancelled")).toBeTruthy();
+    expect(screen.queryByTestId("rescue-confirmation")).toBeNull();
+  });
+
+  it("a bag handed over before the cancel still shows the handed order, not the line", async () => {
+    authUser = { id: "u1" };
+    fetchMyOrders.mockResolvedValue([
+      mine({ id: "got", status: "handed" }),
+      byBusiness({ id: "lost" }),
+    ]);
+    render(<RescueSection producer={PRODUCER} />);
+    expect(await screen.findByTestId("rescue-review")).toBeTruthy();
+    expect(screen.queryByTestId("rescue-business-cancelled")).toBeNull();
+  });
+
+  it("a cancelled row the business did not cancel shows nothing", async () => {
+    authUser = { id: "u1" };
+    fetchOffers.mockResolvedValue([]);
+    fetchMyOrders.mockResolvedValue([mine({ status: "cancelled" })]);
+    const { container } = render(<RescueSection producer={PRODUCER} />);
+    await waitFor(() => expect(fetchMyOrders).toHaveBeenCalled());
+    expect(screen.queryByTestId("rescue-business-cancelled")).toBeNull();
+    expect(screen.queryByTestId("rescue-confirmation")).toBeNull();
+    expect(container.textContent).toBe("");
+  });
+
+  it("another business's cancel is not shown here", async () => {
+    authUser = { id: "u1" };
+    fetchMyOrders.mockResolvedValue([byBusiness({ producer_id: "someone-else" })]);
+    render(<RescueSection producer={PRODUCER} />);
+    await screen.findByTestId("rescue-reserve");
+    await waitFor(() => expect(fetchMyOrders).toHaveBeenCalled());
+    expect(screen.queryByTestId("rescue-business-cancelled")).toBeNull();
+  });
+});
+
 describe("the confirmation after the counter or the cutoff (MEH-2694)", () => {
   it("a handed bag offers no cancel and no cancel terms, and marks the last step", () => {
     render(<RescueConfirmation order={order({ status: "handed" })} onCancel={() => {}} />);

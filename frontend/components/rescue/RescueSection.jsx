@@ -34,7 +34,8 @@ import Button from "@/components/ui/Button";
  * History:  MEH-2648 (creation) · MEH-2713 (icon-row card: price up top,
  *           one short cancel line, allergens folded) · MEH-2737 (a cancel
  *           says it worked, or why not; past the cutoff the card says the bag
- *           can no longer be cancelled)
+ *           can no longer be cancelled) · MEH-2738 (says when the business
+ *           cancelled the bag)
  */
 
 /** The struck-through "worth": the business's own LOW estimate, and only when
@@ -56,6 +57,8 @@ export default function RescueSection({ producer }) {
   const [reviewed, setReviewed] = useState(false);
   // MEH-2737: shown once the cancel went through, until the next reserve.
   const [cancelled, setCancelled] = useState(false);
+  // MEH-2738: the business cancelled today's bag, and hers with it.
+  const [businessCancelled, setBusinessCancelled] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -93,9 +96,20 @@ export default function RescueSection({ producer }) {
         // A buyer may hold two bags of one offer (the cap is per buyer per
         // offer, summed), e.g. one already handed and a newer one reserved:
         // the reserved one wins, because its code is what she still needs.
+        // MEH-2738: the list also carries reservations the business
+        // cancelled. A live one (reserved, then handed) always wins over
+        // them; only when none is left does the page say the business
+        // cancelled. A buyer's own cancel is never in the list.
         const here = mine.filter((row) => row.producer_id === producer.id);
-        const hit = here.find((row) => row.status === "reserved") || here[here.length - 1];
+        const live = here.filter((row) => row.status !== "cancelled");
+        const hit = live.find((row) => row.status === "reserved") || live[live.length - 1];
+        if (!hit && here.some((row) => row.cancelled_by_business)) {
+          setOrder(null);
+          setBusinessCancelled(true);
+          return;
+        }
         if (hit) {
+          setBusinessCancelled(false);
           setOrder(hit);
           // Never un-review: a read that left before a just-sent review must
           // not bring the form back.
@@ -118,7 +132,7 @@ export default function RescueSection({ producer }) {
   // renders nothing at all rather than an empty "no bags" shelf.
   // …except right after a cancel of the last bag: the list had dropped the
   // sold-out offer, and the buyer must still read that the cancel worked.
-  if (!offer && !order && !cancelled) return null;
+  if (!offer && !order && !cancelled && !businessCancelled) return null;
 
   async function reserve() {
     // MEH-2700: a known guest gets the sign-in line straight away. Sending the
@@ -131,6 +145,7 @@ export default function RescueSection({ producer }) {
     setBusy(true);
     setErrorKey(null);
     setCancelled(false);
+    setBusinessCancelled(false);
     try {
       setOrder(await reserveBag({ offerId: offer.id }));
     } catch (err) {
@@ -187,6 +202,16 @@ export default function RescueSection({ producer }) {
           className="mt-3 font-body-sm text-sm text-text bg-surface-card border border-border rounded-md px-4 py-3"
         >
           {t("section.cancelled")}
+        </p>
+      )}
+
+      {businessCancelled && !order && (
+        <p
+          role="status"
+          data-testid="rescue-business-cancelled"
+          className="mt-3 font-body-sm text-sm text-text bg-surface-card border border-border rounded-md px-4 py-3"
+        >
+          {t("section.business_cancelled")}
         </p>
       )}
 

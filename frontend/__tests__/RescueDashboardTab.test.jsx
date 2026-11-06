@@ -784,3 +784,121 @@ describe("MEH-2730 each message sits next to what caused it", () => {
     }
   });
 });
+
+// MEH-2738 — the business cancels today's bag. Copy approved word for word by
+// Sapir on 6/11 («מאשרת 1-8», text 6); the assertions read it from he.json.
+describe("cancelling today's bag", () => {
+  function liveBag(over = {}) {
+    return bag({
+      leftover: 0,
+      pickup_start: new Date(Date.now() + HOUR).toISOString(),
+      pickup_end: new Date(Date.now() + 2 * HOUR).toISOString(),
+      ...over,
+    });
+  }
+  function mockCancelDay({ offers = [liveBag()], orders = [] } = {}) {
+    let current = offers;
+    get.mockImplementation((url) => {
+      if (url.includes("typical-items")) return Promise.resolve({ data: { items: [] } });
+      if (url === "/producers/me/locations") return Promise.resolve({ data: locs });
+      if (url === "/producers/me/rescue/offers") return Promise.resolve({ data: current });
+      if (url === "/producers/me/rescue/orders") return Promise.resolve({ data: orders });
+      if (url === "/producers/me") return Promise.resolve({ data: { name: "מאפיית הכרמל" } });
+      return Promise.resolve({ data: [] });
+    });
+    return { set: (next) => (current = next) };
+  }
+  const L = (k) => lookup(`rescue.dashboard.${k}`);
+
+  async function ask() {
+    fireEvent.click(await screen.findByTestId("rescue-offer-cancel"));
+    return screen.findByTestId("rescue-offer-cancel-ask");
+  }
+
+  it("offers the button on a live bag, labelled as approved", async () => {
+    mockCancelDay();
+    render(<RescueTab />);
+    expect((await screen.findByTestId("rescue-offer-cancel")).textContent).toBe(L("cancel_offer"));
+  });
+
+  it("no live bag (none, cancelled, or window closed) → no button", async () => {
+    for (const offers of [
+      [],
+      [liveBag({ status: "cancelled" })],
+      [liveBag({ pickup_end: new Date(Date.now() - 60_000).toISOString() })],
+    ]) {
+      mockCancelDay({ offers });
+      const { unmount } = render(<RescueTab />);
+      await waitFor(() => expect(get).toHaveBeenCalledWith("/producers/me/rescue/offers"));
+      await act(async () => {});
+      expect(screen.queryByTestId("rescue-offer-cancel")).toBeNull();
+      unmount();
+      vi.clearAllMocks();
+    }
+  });
+
+  it("asks first: nobody reserved yet", async () => {
+    mockCancelDay();
+    render(<RescueTab />);
+    const box = await ask();
+    expect(box.textContent).toContain(L("cancel_offer_title"));
+    expect(box.textContent).toContain(L("cancel_offer_none"));
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it("asks first: one open reservation (a handed one and another bag's do not count)", async () => {
+    mockCancelDay({
+      orders: [
+        order({ id: "a", status: "reserved" }),
+        order({ id: "b", status: "handed" }),
+        order({ id: "c", status: "reserved", offer_id: "other" }),
+      ],
+    });
+    render(<RescueTab />);
+    const box = await ask();
+    expect(box.textContent).toContain(L("cancel_offer_one"));
+  });
+
+  it("asks first: many open reservations, with the count", async () => {
+    mockCancelDay({
+      orders: [order({ id: "a" }), order({ id: "b" }), order({ id: "c" })],
+    });
+    render(<RescueTab />);
+    const box = await ask();
+    expect(box.textContent).toContain(format(L("cancel_offer_many"), { n: 3 }));
+  });
+
+  it("«לא» closes the question and cancels nothing", async () => {
+    mockCancelDay();
+    render(<RescueTab />);
+    await ask();
+    fireEvent.click(screen.getByTestId("rescue-offer-cancel-no"));
+    expect(screen.queryByTestId("rescue-offer-cancel-ask")).toBeNull();
+    expect(screen.getByTestId("rescue-offer-cancel")).toBeTruthy();
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it("«כן, לבטל» cancels THAT bag and the button goes once the server says cancelled", async () => {
+    const day = mockCancelDay();
+    render(<RescueTab />);
+    await ask();
+    post.mockImplementation(async () => {
+      day.set([liveBag({ status: "cancelled" })]);
+      return { data: {} };
+    });
+    fireEvent.click(screen.getByTestId("rescue-offer-cancel-yes"));
+    await waitFor(() => expect(post).toHaveBeenCalledWith("/rescue/offers/of1/cancel"));
+    await waitFor(() => expect(screen.queryByTestId("rescue-offer-cancel")).toBeNull());
+    expect(screen.queryByTestId("rescue-offer-cancel-ask")).toBeNull();
+  });
+
+  it("a refusal says the server's reason next to the button", async () => {
+    mockCancelDay();
+    render(<RescueTab />);
+    await ask();
+    post.mockRejectedValueOnce({ response: { status: 409, data: { detail: "זמן האיסוף חלף" } } });
+    fireEvent.click(screen.getByTestId("rescue-offer-cancel-yes"));
+    const box = await screen.findByTestId("rescue-offer-cancel-box");
+    await waitFor(() => expect(box.textContent).toContain("זמן האיסוף חלף"));
+  });
+});
