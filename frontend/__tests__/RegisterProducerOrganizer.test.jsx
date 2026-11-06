@@ -245,10 +245,17 @@ beforeEach(() => {
 // — and it is now a secondary line under the preflight's main CTA (Sapir,
 // 03/11). Same wizard, same kind="organizer", different door. So these cases
 // now choose the door at render time instead of ticking a box mid-form.
+// MEH-2773: the door is now the ROUTE. /register/organizer renders the client
+// with kind="organizer" and skips the business preflight; /register/producer
+// renders it bare and the preflight CTA starts the business flow.
 async function renderWizard({ as = "producer" } = {}) {
+  if (as === "organizer") {
+    render(<RegisterProducerClient kind="organizer" />);
+    await screen.findByText(`${K}.steps.account.title`);
+    return;
+  }
   render(<RegisterProducerClient />);
-  const entry = as === "organizer" ? "register-preflight-organizer" : "register-preflight-start";
-  fireEvent.click(await screen.findByTestId(entry));
+  fireEvent.click(await screen.findByTestId("register-preflight-start"));
 }
 
 // Fill ACCOUNT and walk to a target frame. Returns once the target marker shows.
@@ -287,12 +294,33 @@ describe("MEH-2460 / MEH-2640 — registering as a markets / events organizer", 
   // What survives is the part that still decides behaviour — which door was
   // used, and what that does to the steps and to the POST body.
 
-  it("the preflight offers the organizer door, with the approved copy key", async () => {
+  it("MEH-2773: the business preflight no longer shows an organizer door", async () => {
     render(<RegisterProducerClient />);
-    const link = await screen.findByTestId("register-preflight-organizer");
-    expect(link).toHaveTextContent(`${K}.preflight.organizer_entry`);
-    // It is secondary to the main CTA, not a replacement for it.
-    expect(screen.getByTestId("register-preflight-start")).toBeInTheDocument();
+    // Gate on the preflight itself, so a missing door means removed, not unrendered.
+    expect(await screen.findByTestId("register-preflight-start")).toBeInTheDocument();
+    expect(screen.queryByTestId("register-preflight-organizer")).toBeNull();
+    expect(screen.queryByText(`${K}.preflight.organizer_entry`)).toBeNull();
+  });
+
+  it("MEH-2773: the organizer route skips the business preflight", async () => {
+    render(<RegisterProducerClient kind="organizer" />);
+    expect(await screen.findByText(`${K}.steps.account.title`)).toBeInTheDocument();
+    expect(screen.queryByTestId("register-preflight")).toBeNull();
+  });
+
+  it("MEH-2773: a business draft restored on the organizer route stays an organizer", async () => {
+    // Both routes share one draft key. The route decides the kind, not the draft.
+    localStorage.setItem(
+      "producer_registration_draft",
+      JSON.stringify({ v: 2, savedAt: Date.now(), step: null, form: { producer_name: "מאפייה", kind: "producer" } }),
+    );
+    await renderWizard({ as: "organizer" });
+    fireEvent.click(await screen.findByTestId("register-draft-continue"));
+    await fillAccountToDetails();
+    fillDetailsFields();
+    fireEvent.click(nextBtn());
+    await screen.findByPlaceholderText(STORY_MARKER);
+    expect(screen.queryByTestId("register-frame-category")).toBeNull();
   });
 
   it("organizer door: DETAILS goes straight to STORY, and the stepper drops CATEGORY", async () => {
