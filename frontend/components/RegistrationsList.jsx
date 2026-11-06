@@ -38,7 +38,8 @@ export default function RegistrationsList({ kind, itemId, count = 0 }) {
     if (!e.currentTarget.open || rows !== null) return;
     setFailed(false);
     api
-      .get(`/${kind}/${itemId}/registrations`)
+      // Literal paths, so the API-contract audit can resolve both routes.
+      .get(kind === "events" ? `/events/${itemId}/registrations` : `/experiences/${itemId}/registrations`)
       .then((r) => setRows(Array.isArray(r.data) ? r.data : []))
       .catch(() => setFailed(true));
   };
