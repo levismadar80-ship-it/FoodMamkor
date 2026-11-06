@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 
 // MEH-1551 — the two degenerate states of the secondary-channel row, neither
 // of which MEH-1334's design specified:
@@ -103,16 +103,19 @@ describe("ContactCard degenerate states (MEH-1551)", () => {
     expect(rows).toHaveLength(1);
     // the label is visible text, and it is the accessible name (no aria-label
     // override) — the orphan circle had neither.
-    expect(rows[0]).toHaveTextContent("חייגו אלינו");
+    // MEH-2775: the label is the number itself, not «חייגו אלינו».
+    expect(rows[0]).toHaveTextContent("0501234567");
+    expect(rows[0]).not.toHaveTextContent("חייגו אלינו");
     expect(rows[0]).toHaveAttribute("href", "tel:0501234567");
     expect(rows[0].className).toContain("w-full");
     expect(screen.queryByLabelText("התקשרו")).not.toBeInTheDocument();
   });
 
   it("uses the single row for a non-phone sole channel too", () => {
-    renderCard({ website: "havat-hashikma.co.il" });
+    renderCard({ website: "https://www.havat-hashikma.co.il/shop/" });
     const row = screen.getByTestId("contact-single-row");
-    expect(row).toHaveTextContent("לאתר העסק");
+    // MEH-2775: the host people know, not the label and not the full URL.
+    expect(row).toHaveTextContent(/^havat-hashikma\.co\.il$/);
     // MEH-1525: the website link keeps noopener but drops noreferrer.
     expect(row).toHaveAttribute("rel", "noopener");
     expect(row).toHaveAttribute("target", "_blank");
@@ -151,15 +154,17 @@ describe("ContactCard degenerate states (MEH-1551)", () => {
     });
   });
 
-  it("swaps the single row in place on desktop reveal", () => {
+  // MEH-2775: a sole phone row already shows the number, so the desktop tap
+  // is a plain tel: link — no reveal, no second row, no layout change.
+  it("(1 x desktop) a sole phone does not reveal — the number is already shown", () => {
     withDesktop(() => {
       renderCard({ phone: "0501234567" });
-      const row = screen.getByTestId("contact-single-row").parentElement;
-      fireEvent.click(screen.getByTestId("contact-single-row"));
-
-      const revealed = screen.getByTestId("revealed-phone");
-      expect(revealed.parentElement).toBe(row);
-      expect(screen.queryByTestId("contact-single-row")).not.toBeInTheDocument();
+      const row = screen.getByTestId("contact-single-row");
+      const evt = fireEvent.click(row);
+      expect(evt).toBe(true); // not preventDefault()-ed
+      expect(screen.queryByTestId("revealed-phone")).not.toBeInTheDocument();
+      expect(screen.getByTestId("contact-single-row")).toHaveTextContent("0501234567");
+      expect(trackContactClick).toHaveBeenCalledWith(7, "phone");
     });
   });
 
@@ -168,37 +173,38 @@ describe("ContactCard degenerate states (MEH-1551)", () => {
   // a revealed card could show two geometric languages at once.
 
   /** The geometry contract both full-width affordances must satisfy. */
-  const ROW_GEOMETRY = [
-    "flex",
-    "w-full",
-    "items-center",
-    "gap-2",
-    "min-h-touch",
-    "px-3",
-    "rounded-md",
-    "border",
-    "border-border",
-    "bg-surface",
-    "text-sm",
-  ];
+  // MEH-2775: the geometry is now a plain info line — no box.
+  const ROW_GEOMETRY = ["flex", "w-full", "min-w-0", "items-center", "gap-2", "min-h-touch", "text-sm"];
+  // ...and these, the box that read as one more question, must never return.
+  const BOX_CLASSES = ["border", "bg-surface", "px-3", "rounded-full", "inline-flex"];
 
-  it("(1 x open) is geometrically identical to (1 x closed) — no layout jump", () => {
+  it("(1 x closed) the sole-channel row is an unboxed line under a hairline", () => {
+    renderCard({ phone: "0501234567" });
+    const row = screen.getByTestId("contact-single-row");
+    const cls = row.className.split(/\s+/);
+    for (const c of ROW_GEOMETRY) expect(cls).toContain(c);
+    for (const c of BOX_CLASSES) expect(cls).not.toContain(c);
+    // the same hairline the circle grid has, so it is set apart from the
+    // ready-made questions above it.
+    const wrap = row.parentElement.className.split(/\s+/);
+    expect(wrap).toContain("border-t");
+    expect(wrap).toContain("border-border");
+  });
+
+  it("(survivor x open) the revealed number and the lone survivor share one geometry", () => {
     withDesktop(() => {
-      const { unmount } = renderCard({ phone: "0501234567" });
-      const closed = screen.getByTestId("contact-single-row").className.split(/\s+/);
-      unmount();
-
-      renderCard({ phone: "0501234567" });
-      fireEvent.click(screen.getByTestId("contact-single-row"));
+      renderCard({ phone: "0501234567", instagram: "@shikma" });
+      fireEvent.click(screen.getByTestId("contact-channel-phone"));
+      const survivor = screen.getByTestId("contact-single-row").className.split(/\s+/);
       const open = screen.getByTestId("revealed-phone").className.split(/\s+/);
-
-      for (const cls of ROW_GEOMETRY) {
-        expect(closed).toContain(cls);
-        expect(open).toContain(cls);
+      for (const c of ROW_GEOMETRY) {
+        expect(survivor).toContain(c);
+        expect(open).toContain(c);
       }
-      // the pill anatomy is gone from the revealed row for good.
-      expect(open).not.toContain("rounded-full");
-      expect(open).not.toContain("inline-flex");
+      for (const c of BOX_CLASSES) {
+        expect(survivor).not.toContain(c);
+        expect(open).not.toContain(c);
+      }
     });
   });
 
@@ -220,8 +226,8 @@ describe("ContactCard degenerate states (MEH-1551)", () => {
 
   it("puts dir/numeric on the number span, not the row (icon stays at the RTL start)", () => {
     withDesktop(() => {
-      renderCard({ phone: "0501234567" });
-      fireEvent.click(screen.getByTestId("contact-single-row"));
+      renderCard({ phone: "0501234567", instagram: "@shikma" });
+      fireEvent.click(screen.getByTestId("contact-channel-phone"));
 
       const revealed = screen.getByTestId("revealed-phone");
       expect(revealed).not.toHaveAttribute("dir");
@@ -229,6 +235,30 @@ describe("ContactCard degenerate states (MEH-1551)", () => {
       expect(span).toHaveTextContent("0501234567");
       expect(span.className).toContain("numeric");
     });
+    // MEH-2775: same rule on the sole-phone row.
+    cleanup();
+    renderCard({ phone: "0501234567" });
+    const row = screen.getByTestId("contact-single-row");
+    expect(row).not.toHaveAttribute("dir");
+    const span = row.querySelector("span[dir='ltr']");
+    expect(span).toHaveTextContent("0501234567");
+    expect(span.className).toContain("numeric");
+  });
+
+  // MEH-2775: every sole channel, value-or-label. The value runs LTR so an
+  // "@handle" keeps its "@" first in an RTL card.
+  it.each([
+    ["instagram", { instagram: "@shikma" }, "@shikma", true],
+    ["instagram (bare handle)", { instagram: "shikma" }, "@shikma", true],
+    ["email", { contact_email: " hello@shikma.co.il " }, "hello@shikma.co.il", true],
+    ["facebook", { facebook: "facebook.com/shikma" }, "producer.detail.contact_card.single.facebook", false],
+    ["external_order", { external_order_form: "forms.gle/x" }, "producer.detail.contact_card.single.external_order", false],
+  ])("sole %s row shows %s", (_name, extra, text, ltr) => {
+    renderCard(extra);
+    const row = screen.getByTestId("contact-single-row");
+    expect(row).toHaveTextContent(text);
+    if (ltr) expect(row.querySelector("span[dir='ltr']")).toHaveTextContent(text);
+    else expect(row.querySelector("span[dir='ltr']")).toBeNull();
   });
 
   it("promotes the lone survivor to a labeled row (no orphan circle after reveal)", () => {
@@ -239,7 +269,7 @@ describe("ContactCard degenerate states (MEH-1551)", () => {
       fireEvent.click(screen.getByTestId("contact-channel-phone"));
 
       const survivor = screen.getByTestId("contact-single-row");
-      expect(survivor).toHaveTextContent("אינסטגרם");
+      expect(survivor).toHaveTextContent("@shikma"); // MEH-2775: the value
       expect(survivor.className).toContain("w-full");
       expect(screen.getByTestId("revealed-phone")).toBeInTheDocument();
     });

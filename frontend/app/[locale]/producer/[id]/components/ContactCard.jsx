@@ -13,16 +13,16 @@ import {
 import PrimaryContactButton from "@/components/PrimaryContactButton";
 import WhatsAppQuestionChips from "@/components/WhatsAppQuestionChips";
 import { getPrimaryMethod } from "@/lib/contact-method";
-import { instagramUrl } from "@/lib/social-links";
+import { instagramHandle, instagramUrl } from "@/lib/social-links";
 import { withReferralParams } from "@/lib/utils";
 import { whatsappUpdatesHref } from "@/components/WhatsAppUpdatesPill";
 import { markWhatsAppClickedLocal, pingWhatsAppBeacon, trackContactClick } from "@/lib/contact-tracking";
 import { showToast } from "@/lib/toast";
 
 // MEH-1221: silent-mailto fallback window. mailto: fails silently on desktops
-// with no mail handler (no error, no navigation). The email icon is a bare
-// mailto and the address is not shown anywhere on the card, so a customer on
-// such a desktop has NO email path at all. We race this timer against window
+// with no mail handler (no error, no navigation). The email circle is a bare
+// mailto and shows no address (MEH-2775: only the SOLE-channel row shows it),
+// so a customer on such a desktop has NO email path at all. We race this timer against window
 // "blur" / visibilitychange (either fires when a handler grabs focus); timer
 // wins → no handler → copy the address + toast so she can paste it.
 // REUSES: frontend/app/[locale]/share/ShareClient.jsx:104-143 (MEH-1220/1223)
@@ -101,16 +101,41 @@ function armMailtoFallback(email, t) {
 // resolves its own href from the producer with the trim/prefix guards the
 // prior ContactSidebar tiles carried. The channel equal to the primary
 // method is filtered out so it never duplicates the big CTA.
+//
+// MEH-2775: `display` is what the SOLE-channel info row shows instead of the
+// channel's name — the value people recognise (the number, @handle, domain,
+// address), the way Google Maps / Yelp list contact details on desktop. A
+// channel without one (facebook / order form / updates: their value is a long
+// URL that says nothing) keeps its `single.*` label.
 const CHANNELS = [
-  { key: "phone", Icon: Phone, href: (p) => (p.phone ? `tel:${p.phone}` : null) },
-  { key: "instagram", Icon: InstagramLogo, href: (p) => instagramUrl(p.instagram) },
+  {
+    key: "phone",
+    Icon: Phone,
+    href: (p) => (p.phone ? `tel:${p.phone}` : null),
+    display: (p) => p.phone?.trim() || null,
+  },
+  {
+    key: "instagram",
+    Icon: InstagramLogo,
+    href: (p) => instagramUrl(p.instagram),
+    display: (p) => {
+      const handle = instagramHandle(p.instagram);
+      return handle ? `@${handle}` : null;
+    },
+  },
   // MEH-1525: the business-website tile carries referral UTM (rel drops
   // noreferrer at the render site below). Social / order tiles are untouched.
-  { key: "website", Icon: Globe, href: (p) => withReferralParams(httpUrl(p.website)) },
+  {
+    key: "website",
+    Icon: Globe,
+    href: (p) => withReferralParams(httpUrl(p.website)),
+    display: (p) => websiteHost(p.website),
+  },
   {
     key: "email",
     Icon: EnvelopeSimple,
     href: (p) => (p.contact_email?.trim() ? `mailto:${p.contact_email.trim()}` : null),
+    display: (p) => p.contact_email?.trim() || null,
   },
   { key: "facebook", Icon: FacebookLogo, href: (p) => httpUrl(p.facebook) },
   { key: "external_order", Icon: Receipt, href: (p) => httpUrl(p.external_order_form) },
@@ -135,6 +160,14 @@ function httpUrl(raw) {
   return v.startsWith("http") ? v : `https://${v}`;
 }
 
+/** MEH-2775: "https://www.x.co.il/shop/" → "x.co.il" — the host people know. */
+function websiteHost(raw) {
+  const v = (raw || "").trim();
+  if (!v) return null;
+  const host = v.replace(/^[a-z]+:\/\//i, "").replace(/^www\./i, "").split(/[/?#]/)[0];
+  return host || null;
+}
+
 // MEH-1551: the circle and the single-channel row are two renderings of the
 // same link, so the target/rel policy lives in one place. Output for the
 // circle is unchanged — phone stays a bare tel:, website keeps noopener only
@@ -151,8 +184,14 @@ const linkAttrs = (key) =>
 // wearing pill anatomy (inline-flex + rounded-full + no w-full), so a card
 // could show two geometric languages at once. Only the trailing state classes
 // (hover/text colour) differ per affordance.
-const ROW_ANATOMY =
-  "flex w-full items-center gap-2 min-h-touch px-3 rounded-md border border-border bg-surface text-sm";
+// MEH-2775: the box is gone. A bordered full-width row sitting right under the
+// bordered «שאלה אחרת?» pill read as one more question (Sapir 06/11). The row
+// is now a plain info line — icon + value — under the same hairline the
+// circle grid already has, so a sole channel reads as a contact DETAIL.
+const ROW_ANATOMY = "flex w-full min-w-0 items-center gap-2 min-h-touch text-sm rounded-md";
+
+/** MEH-2775: a value in Latin script runs LTR so "@handle" keeps its "@" first. */
+const isLatinValue = (v) => /[a-z0-9]/i.test(v) && !/[\u0590-\u05FF]/.test(v);
 
 export default function ContactCard({ producer, isVacation }) {
   const t = useTranslations();
@@ -194,8 +233,11 @@ export default function ContactCard({ producer, isVacation }) {
   const onChannelClick = (e, { key }) => {
     // MEH-1334: on desktop a phone tap reveals the number inline (no dialer)
     // — swallow the tel: navigation and show the pill.
+    // MEH-2775: a SOLE phone already shows its number, so there is nothing to
+    // reveal — the tap stays a plain tel: link (desktop softphone can act).
     if (
       key === "phone" &&
+      !single &&
       typeof window !== "undefined" &&
       window.matchMedia("(min-width: 1024px)").matches
     ) {
@@ -265,7 +307,7 @@ export default function ContactCard({ producer, isVacation }) {
           <div
             className={
               single
-                ? "flex flex-wrap items-center gap-2 mt-3 mb-1"
+                ? "flex flex-col gap-1 mt-4 pt-3 border-t border-border"
                 : "grid grid-cols-4 gap-x-1 gap-y-3 mt-4 pt-4 border-t border-border"
             }
             role="list"
@@ -275,7 +317,9 @@ export default function ContactCard({ producer, isVacation }) {
 
               // MEH-1551: sole channel → a labeled quiet row (the visible label
               // IS the accessible name here, so no aria-label overriding it).
+              // MEH-2775: the label is the channel's VALUE when it has one.
               if (single) {
+                const value = channel.display?.(producer);
                 return (
                   <a
                     key={key}
@@ -284,10 +328,19 @@ export default function ContactCard({ producer, isVacation }) {
                     role="listitem"
                     data-testid="contact-single-row"
                     onClick={(e) => onChannelClick(e, channel)}
-                    className={`${ROW_ANATOMY} text-primary-dark hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40`}
+                    className={`${ROW_ANATOMY} text-primary-dark hover:text-primary hover:underline underline-offset-2 transition focus-visible:ring-2 focus-visible:ring-primary/40`}
                   >
-                    <Icon size={18} aria-hidden="true" />
-                    {t(`producer.detail.contact_card.single.${key}`)}
+                    <Icon size={18} className="shrink-0" aria-hidden="true" />
+                    {value ? (
+                      <span
+                        dir={isLatinValue(value) ? "ltr" : undefined}
+                        className={`truncate${key === "phone" ? " numeric" : ""}`}
+                      >
+                        {value}
+                      </span>
+                    ) : (
+                      t(`producer.detail.contact_card.single.${key}`)
+                    )}
                   </a>
                 );
               }
@@ -329,9 +382,9 @@ export default function ContactCard({ producer, isVacation }) {
                 href={`tel:${producer.phone}`}
                 data-testid="revealed-phone"
                 role="listitem"
-                className={`${ROW_ANATOMY} ${single ? "" : "col-span-4"} text-text focus-visible:ring-2 focus-visible:ring-primary/40`}
+                className={`${ROW_ANATOMY} ${single ? "" : "col-span-4"} text-primary-dark focus-visible:ring-2 focus-visible:ring-primary/40`}
               >
-                <Phone size={18} className="text-primary-dark" aria-hidden="true" />
+                <Phone size={18} className="shrink-0" aria-hidden="true" />
                 <span dir="ltr" className="numeric">
                   {producer.phone}
                 </span>
