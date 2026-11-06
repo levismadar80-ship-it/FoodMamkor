@@ -1,7 +1,8 @@
 /* eslint-disable max-lines, max-lines-per-function, max-statements, complexity, no-magic-numbers, react-hooks/set-state-in-effect, react-hooks/immutability, unicorn/consistent-function-scoping, unicorn/prefer-query-selector, unicorn/prefer-global-this, id-length */
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { consumeHistoryReturn } from "@/lib/route-memory";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
@@ -45,11 +46,22 @@ import {
 } from "@/lib/api-schemas";
 
 const PAGE_SIZE = 8;
+
+// MEH-2714: the last /stats answer, kept for the life of the JS document. On a
+// back-navigation the trust band used to start from its skeleton again (90px)
+// and grow to 114px when /stats answered — above the reader's position, so the
+// cards they returned to jumped. Seeding from this skips the skeleton on a
+// return; the request still runs and refreshes it. Null on the server and on
+// the first hydration render, so server and client markup agree.
+let statsMemo = null;
 // MEH-1387: cap the home grid at ONE "עוד בתי עסק" expansion. Once
 // visibleCount hits the cap the grid swaps the load-more button for a
 // link to /producers (the full listing owns deep browsing, not home).
 // Exported so HomeProducersGrid can compare against visibleCount.
 export const LOAD_MORE_CAP = PAGE_SIZE * 2;
+// MEH-2714: how far the native back-restore may sit from the stash before the
+// hook corrects it (a sub-card drift is the browser's own scroll anchoring).
+const RESTORE_TOLERANCE_PX = 120;
 // MEH-521: minimum approved count before showing numeric stats.
 const STATS_DISPLAY_THRESHOLD = 5;
 // MEH-1692: minimum approved count before the trust band's LEAD line stops
@@ -128,6 +140,8 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
   // this wrap is removed.
   const intlT = useTranslations();
   const t = useCallback((oldKey) => intlT(mapKey(oldKey)), [intlT]);
+  // MEH-2714: set once by the mount effect — read by the scroll restore below.
+  const historyReturnRef = useRef(false);
   const [producers, setProducers] = useState(initialProducers ?? []);
   // MEH-1487: region fallback — { regionName, producers } when a delivery_city
   // filter returned 0 AND the city belongs to a region in data/regions.js;
@@ -156,7 +170,7 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
   // error so derived selectors stay safe). Three render states downstream:
   // skeleton (statsLoaded=false), counter (loaded + count >= threshold),
   // fallback/hidden (loaded + below threshold).
-  const [stats, setStats] = useState(null);
+  const [stats, setStats] = useState(() => (typeof window === "undefined" ? null : statsMemo));
   // MEH-1832: with a server-supplied feed there is nothing in flight, so the
   // grid must NOT open on the skeleton — otherwise the server HTML contains
   // skeletons where the cards should be and the whole SSR win is invisible.
@@ -241,7 +255,13 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
     const initChips = Object.fromEntries(
       HOME_CHIP_KEYS.map((key) => [key, p.get(homeParamFor(key)) === "1"]),
     );
-    const savedCount = Number(window.sessionStorage?.getItem("home_visible_count"));
+    // MEH-2714: restore the expanded grid only on a history return (back /
+    // forward / reload). A fresh arrival — the logo, the bottom nav — starts
+    // at the first page, the same as it starts at the top.
+    historyReturnRef.current = consumeHistoryReturn();
+    const savedCount = historyReturnRef.current
+      ? Number(window.sessionStorage?.getItem("home_visible_count"))
+      : NaN;
     // MEH-1387: clamp a restored count to the cap — sessions saved before the
     // cap existed (or tampered values) must not restore an over-cap grid.
     if (Number.isFinite(savedCount) && savedCount >= PAGE_SIZE) {
@@ -290,7 +310,8 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
       .get("/stats")
       .then((r) => {
         const parsed = StatsSchema.safeParse(r.data);
-        setStats(parsed.success ? parsed.data : {});
+        statsMemo = parsed.success ? parsed.data : {};
+        setStats(statsMemo);
       })
       .catch(() => setStats({}));
     // Task 13 + MEH-11: load recently viewed producer IDs from
@@ -328,12 +349,24 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
   // Restore scroll on mount when returning from a producer page. We
   // defer to rAF * 2 so the grid has a chance to render the expanded
   // visibleCount before we call scrollTo.
+  //
+  // MEH-2714: only on a history return. The stash used to be written on
+  // `pagehide` alone, which never fires on a client-side navigation, so a value
+  // left by an earlier reload was restored on a plain logo click — the reader
+  // landed mid-page (measured: scrollY 1500 instead of 0).
   useEffect(() => {
     if (typeof window === "undefined") return;
+    if (!historyReturnRef.current) return;
     const savedY = Number(window.sessionStorage.getItem("home_scroll_y"));
     if (!Number.isFinite(savedY) || savedY <= 0) return;
     requestAnimationFrame(() => {
-      requestAnimationFrame(() => window.scrollTo(0, savedY));
+      requestAnimationFrame(() => {
+        // MEH-2714: the browser restores the position itself on a back step;
+        // step in only when it fell short (an expanded grid it could not
+        // reach yet). Overriding a correct native restore shifted the
+        // reader's card by 24px in the 375 measurement.
+        if (Math.abs(window.scrollY - savedY) > RESTORE_TOLERANCE_PX) window.scrollTo(0, savedY);
+      });
     });
   }, []);
 
@@ -348,7 +381,16 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
       }
     };
     window.addEventListener("pagehide", stash);
-    return () => window.removeEventListener("pagehide", stash);
+    // MEH-2714: a client-side navigation (a card or nav link) never fires
+    // pagehide, so the stash was stale on every back step. Stash on the click
+    // itself, capture phase, before the router moves anything. Not on unmount:
+    // by then the router may already have scrolled for the next page (measured
+    // 645 written for a reader who left at 1145).
+    document.addEventListener("click", stash, true);
+    return () => {
+      window.removeEventListener("pagehide", stash);
+      document.removeEventListener("click", stash, true);
+    };
   }, []);
 
   // Rebuild the URL from the full filter + chip state. Both args are

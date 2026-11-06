@@ -2,6 +2,11 @@
 
 import { useEffect } from "react";
 import Lenis from "lenis";
+// MEH-2714: side-effect import — installs route-memory's popstate listener on
+// every page (this provider is mounted in the root layout), so a back step is
+// seen even when the reader first landed on a page that never loads the home
+// chunk.
+import "@/lib/route-memory";
 
 /**
  * SmoothScrollProvider (docs/archive/WORLD_CLASS_V2.md #1)
