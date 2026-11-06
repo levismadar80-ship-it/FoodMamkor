@@ -307,6 +307,35 @@ class RescueOwnerOrderOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class RescueOwnerOfferOut(BaseModel):
+    """One of today's bags as the business's dashboard sees it (MEH-2703).
+
+    `leftover` is what was not collected once the window closed: bags never
+    reserved (`qty_left`) plus bags reserved by someone who did not come
+    (`no_show` orders). It is 0 until `pickup_end` — before that a bag may
+    still be reserved or picked up — and 0 for a cancelled offer, which
+    never went on sale. `qty_donated` is the business's own report, capped at
+    `leftover` by the API.
+    """
+
+    id: UUID
+    qty_total: int
+    qty_left: int
+    status: str
+    pickup_start: UtcDatetimeOut
+    pickup_end: UtcDatetimeOut
+    leftover: int
+    qty_donated: int
+
+
+class RescueDonatedIn(BaseModel):
+    """How many uncollected bags were given away free. A set, not an
+    increment: a second tap with the same number is a no-op, and a mistake is
+    corrected by sending the right number."""
+
+    qty: int = Field(ge=0, le=RESCUE_MAX_QTY_PER_OFFER)
+
+
 class RescueMetricsOut(BaseModel):
     """The pilot's read-only numbers (chunk 5).
 
@@ -328,3 +357,5 @@ class RescueMetricsOut(BaseModel):
     no_show_rate: float | None = None
     buyers_total: int
     repeat_buyers: int
+    # MEH-2703: owner-reported «נמסרו בחינם», summed over the window.
+    bags_donated: int = 0

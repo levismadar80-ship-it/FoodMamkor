@@ -1247,14 +1247,14 @@
         "placeholder": "Type a city",
         "yes_nationwide": "Yes! Nationwide delivery — including {city}",
         "yes": "Yes, we deliver to {city}",
-        "no": "Sorry, we don't deliver to {city} right now"
+        "no": "Not delivering to {city} yet"
       },
       "coverage_cta": {
-        "known_city": "Not delivering to {city}? You can ask the business",
+        "known_city": "Ask on WhatsApp",
         "prefill": "Hi! I'm from {city} — I'd love to know if delivery to my area is possible"
       },
       "waitlist": {
-        "cta": "Tell me when you deliver to {city}",
+        "cta": "Tell me when you do",
         "email_label": "Your email",
         "email_placeholder": "name@example.com",
         "submit": "Notify me",
@@ -4438,7 +4438,7 @@
           "row_one": "One person asked for delivery to {city}",
           "row_many": "{count} asked for delivery to {city}",
           "empty": "No requests yet. When someone asks about a city that isn't on your list, it shows up here.",
-          "scope": "Counts taps on “You can ask the business” in the last 30 days. Conversations that continued on WhatsApp aren't counted."
+          "scope": "Counts taps on “Ask on WhatsApp” in the last 30 days. Conversations that continued on WhatsApp aren't counted."
         },
         "pickup_hosts": {
           "title": "Willing to host a pickup point",
@@ -5778,7 +5778,7 @@
       "hand_over": "Confirm handover",
       "no_show": "Didn't show",
       "no_show_too_early": "Can only be marked after the pickup window closes",
-      "qty": "{qty} bags",
+      "qty": "{qty, plural, one {one bag} other {# bags}}",
       "handed_at": "✓ handed over {time}",
       "status": {
         "cancelled": "Cancelled",
@@ -5803,11 +5803,20 @@
       "items_help": "Comma separated. This is what buyers see before they reserve.",
       "items_save": "Save",
       "items_saved": "Saved.",
-      "leftover_hint": "Bags left over? You can give them away free in a food-rescue group.",
-      "leftover_link": "Open the group",
+      "leftover_hint": "Instead of throwing them away, you can give them away free.",
+      "leftover_link": "Food give-away group on Facebook",
       "needs_address": "To publish bags you need an exact pickup address.",
       "needs_address_privacy": "Only people who reserved a bag see the full address.",
-      "needs_address_cta": "Add an address"
+      "needs_address_cta": "Add an address",
+      "leftover_title": "{count, plural, one {Not collected today: one bag} other {Not collected today: # bags}}",
+      "leftover_share": "Share on WhatsApp",
+      "leftover_donated": "Done: given away free",
+      "leftover_done": "{count, plural, one {✓ One bag given away free} other {✓ # bags given away free}}",
+      "leftover_share_text": "{count, plural, one {We have one bag left today} other {We have # bags left today}} from {name} in {city}, free to give away. If you want it, message us.",
+      "leftover_donated_help": "Tap after you've given them away, so we know how many bags were saved.",
+      "leftover_qty_label": "How many bags were given?",
+      "leftover_undo": "Undo",
+      "leftover_upcoming": "After pickup time ends, what wasn't collected will show here."
     },
     "counter_card": {
       "title": "Mehamakor rescue bag",

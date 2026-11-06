@@ -2834,6 +2834,10 @@ class RescueOffer(Base):
         CheckConstraint(
             "pickup_end > pickup_start", name="rescue_offers_pickup_window_check"
         ),
+        CheckConstraint(
+            "qty_donated >= 0 AND qty_donated <= qty_total",
+            name="rescue_offers_qty_donated_check",
+        ),
         Index("ix_rescue_offers_location_date", "producer_location_id", "date"),
     )
 
@@ -2854,6 +2858,11 @@ class RescueOffer(Base):
     cancel_until = Column(DateTime, nullable=False)
     status = Column(String(20), default="active", nullable=False)
     created_at = Column(DateTime, default=utc_now, nullable=False)
+    # MEH-2703: bags the business reports it gave away free after the pickup
+    # window — never reserved, or reserved and not collected. Owner-reported;
+    # the API caps it at that leftover, the CHECK only at qty_total (the
+    # no-show half lives on rescue_orders, out of a row CHECK's reach).
+    qty_donated = Column(Integer, nullable=False, default=0, server_default=text("0"))
 
     location = relationship("ProducerLocation")
     # passive_deletes defers to the DB ON DELETE CASCADE — without it a
