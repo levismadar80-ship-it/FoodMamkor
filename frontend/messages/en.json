@@ -848,7 +848,6 @@
           "shared": "Gluten is present in the production facility — as declared by the business. If you have celiac disease, please confirm directly with the business.",
           "dedicated": "No gluten in the production facility — as declared by the business."
         },
-        "slow_response": "Longer response times this week",
         "vacation": "This business is on break right now",
         "vacation_return": "{label} — you can leave a message",
         "vacation_back": "Back on {date}",
@@ -940,7 +939,6 @@
       },
       "badges": {
         "delivery_only": "Delivery only",
-        "available_today": "Coming today",
         "overflow_aria": "Show {count} more badges",
         "overflow_heading": "More about this business"
       },
@@ -1767,8 +1765,6 @@
           "opening_hours_label": "Opening hours (format: \"Sun-Thu 09:00-18:00, Fri 09:00-14:00\")",
           "opening_hours_placeholder": "Sun-Thu 09:00-18:00, Fri 09:00-14:00",
           "avail_accepting": "Accepting orders",
-          "avail_today": "Available today",
-          "avail_full": "Busy this week",
           "avail_vacation": "On break",
           "vacation_until": "Return date (optional)",
           "as_draft": "Draft the owner will receive by invite link",
@@ -4368,17 +4364,10 @@
       },
       "holiday_catalog_cta": "Update the catalog →",
       "availability": {
-        "tooltip_line_default": "Open to orders = default.",
-        "tooltip_line_today": "Available today = fresh inventory now.",
-        "tooltip_line_full": "Busy this week = appears but marked.",
-        "tooltip_line_vacation": "On a break = hidden until a date you choose.",
         "heading": "Current status",
-        "info_label": "What's the difference between the states?",
         "intro": "A temporary update that overrides the schedule — like a note on the door.",
         "options": {
           "accepting_orders": "Open to orders",
-          "available_today": "Available today",
-          "full_this_week": "Busy this week",
           "on_vacation": "On a break"
         },
         "vacation_return_label": "Returning on:",
@@ -5510,7 +5499,6 @@
     "primary_channel": "The primary channel is the big button on your business page — most customer inquiries arrive there. You can change it anytime.",
     "order_form": "A link to an external form (e.g. Google Forms) where customers leave a structured order instead of a free-text message.",
     "group_buy": "A pooled order: several customers order together until a preset deadline, and everything is delivered at once — fewer trips, more certainty.",
-    "availability": "A temporary exception — busy this week, on a break, or available today. It overrides the fixed schedule and is shown to customers on the card and the business page.",
     "order_window": "Like opening hours, but for orders. Fixed and weekly; it changes only when you change it. Shown on the business page as a status and a day strip. This schedule applies to the whole business. Branch or pickup-point hours are set separately in the location editor."
   },
   "about_badges": {
