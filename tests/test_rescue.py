@@ -662,6 +662,27 @@ class TestPublicList:
         db.commit()
         assert len(client.get("/rescue/offers").json()) == 1
 
+    def test_a_bag_whose_pickup_window_ended_is_not_listed(
+        self, client, db, shop, rescue_on
+    ):
+        """MEH-2713: reserve refuses a bag once pickup_end passed ("זמן האיסוף
+        חלף"), so listing it showed a button that could only fail — and the
+        buyer read the 409 as «הסל הזה נגמר». Still today, still stock."""
+        now = utc_now()
+        ended = _seed_offer(
+            db,
+            shop["location"],
+            pickup_start=now - timedelta(hours=3),
+            pickup_end=now - timedelta(minutes=1),
+            cancel_until=now - timedelta(hours=4),
+        )
+        assert client.get("/rescue/offers").json() == []
+        # Control: the same row is listed while its window is still open, so the
+        # empty list above is the window filter and not a broken seed.
+        ended.pickup_end = now + timedelta(minutes=5)
+        db.commit()
+        assert [row["id"] for row in client.get("/rescue/offers").json()] == [str(ended.id)]
+
     def test_distance_is_absent_when_the_caller_sends_no_coordinates(
         self, client, db, shop, rescue_on
     ):
