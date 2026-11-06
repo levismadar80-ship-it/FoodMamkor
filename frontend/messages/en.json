@@ -5801,7 +5801,11 @@
         "qty": "How many bags",
         "price": "Price (₪)",
         "from": "Pickup from",
-        "to": "until"
+        "to": "until",
+        "cancel": "Free cancellation until",
+        "cancel_half_hour": "Half an hour before pickup",
+        "cancel_hour": "An hour before pickup",
+        "cancel_two_hours": "Two hours before pickup"
       },
       "items_title": "Usually in the bag",
       "items_help": "Comma separated. This is what buyers see before they reserve.",

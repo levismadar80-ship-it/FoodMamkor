@@ -148,6 +148,7 @@ export default function AdminUsersPage() {
         <select
           value={role}
           onChange={(e) => setRole(e.target.value)}
+          aria-label={t("users.columns.role")}
           className="border border-border rounded-md px-3 py-2 bg-white"
         >
           <option value="all">{t("users.role_filter.all")}</option>
@@ -197,7 +198,7 @@ export default function AdminUsersPage() {
               )}
               {!loading && pagedUsers.map((u) => (
                 <>
-                  <tr key={u.id} className={`border-t ${u.is_blocked ? "bg-red-50" : ""}`}>
+                  <tr key={u.id} className={`border-t ${u.is_blocked ? "bg-danger-50" : ""}`}>
                     <td className="px-4 py-3 font-medium">{u.name}</td>
                     <td className="px-4 py-3 text-muted text-xs break-all" data-label={t("users.columns.email")}>{u.email}</td>
                     <td className="px-4 py-3 text-muted" data-label={t("users.columns.city")}>{u.city || "—"}</td>
@@ -210,7 +211,7 @@ export default function AdminUsersPage() {
                               <span className="text-xs px-2 py-0.5 rounded-full bg-green-50 text-primary font-medium">
                                 {t("users.roles.admin")}
                               </span>
-                              <span className="text-xs px-2 py-0.5 rounded-full bg-[#FEF3C7] text-accent font-medium">
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-warning-100 text-accent font-medium">
                                 {t("users.roles.admin_protected")}
                               </span>
                             </>
@@ -238,7 +239,7 @@ export default function AdminUsersPage() {
                     <td className="px-4 py-3 text-muted text-xs" data-label={t("users.columns.favorites")}>
                       <button onClick={() => toggleExpand(u)} className="inline-flex items-center gap-1 hover:text-primary hover:underline">
                         {u.favorites_count}
-                        <Heart size={14} weight="fill" className="text-red-500" aria-hidden="true" />
+                        <Heart size={14} weight="fill" className="text-danger-500" aria-hidden="true" />
                       </button>
                     </td>
                     <td className="px-4 py-3 text-muted text-xs" data-label={t("users.columns.joined")}>
@@ -252,8 +253,8 @@ export default function AdminUsersPage() {
                           disabled={isBusy(`block:${u.id}`)}
                           className={`text-xs px-2 py-1 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed ${
                             u.is_blocked
-                              ? "bg-red-100 text-red-700"
-                              : "text-muted hover:text-red-600"
+                              ? "bg-danger-100 text-danger-700"
+                              : "text-muted hover:text-danger-600"
                           }`}
                         >
                           {u.is_blocked ? t("users.actions.unblock") : t("users.actions.block")}
@@ -302,7 +303,7 @@ export default function AdminUsersPage() {
                           <ul className="space-y-1">
                             {favorites[u.id].map((f) => (
                               <li key={f.producer_id} className="inline-flex items-center gap-1">
-                                <Heart size={12} weight="fill" className="text-red-500" aria-hidden="true" />
+                                <Heart size={12} weight="fill" className="text-danger-500" aria-hidden="true" />
                                 {f.producer_name}
                               </li>
                             ))}
@@ -391,7 +392,7 @@ export default function AdminUsersPage() {
                 className={`px-4 py-2 rounded-[10px] text-sm font-medium text-white transition ${
                   confirm.action === "promote"
                     ? "bg-primary hover:bg-primary-dark"
-                    : "bg-red-600 hover:bg-red-700"
+                    : "bg-danger-600 hover:bg-danger-700"
                 } disabled:opacity-50`}
               >
                 {isBusy(confirmKey(confirm))

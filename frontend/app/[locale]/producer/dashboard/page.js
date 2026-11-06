@@ -613,15 +613,15 @@ export default function ProducerDashboardPage() {
           never emits, so its banner was dead code. */}
       {producer.status === "inactive" && (
         <div
-          className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 text-sm space-y-3"
+          className="bg-warning-50 border border-warning-200 rounded-lg p-4 mb-6 text-sm space-y-3"
           role="alert"
           data-testid="status-inactive-banner"
         >
-          <p className="font-semibold text-amber-800 flex items-center gap-2">
+          <p className="font-semibold text-warning-800 flex items-center gap-2">
             <Warning size={18} weight="fill" aria-hidden="true" />
             {t("status.inactive.title")}
           </p>
-          <p className="text-amber-700">{t("status.inactive.body")}</p>
+          <p className="text-warning-700">{t("status.inactive.body")}</p>
           <button
             type="button"
             onClick={() => setSupportOpen(true)}
@@ -832,7 +832,7 @@ export default function ProducerDashboardPage() {
                 <button
                   type="button"
                   onClick={() => { setVacationUntil(""); setVacationDateError(""); }}
-                  className="text-fg-muted hover:text-red-600 transition inline-flex"
+                  className="text-fg-muted hover:text-danger-600 transition inline-flex"
                   aria-label={t("availability.remove_vacation_date_aria")}
                 >
                   <X size={14} weight="bold" aria-hidden="true" />
@@ -847,7 +847,7 @@ export default function ProducerDashboardPage() {
               </button>
             </div>
             {vacationDateError && (
-              <p id="vacation-until-error" role="alert" className="mt-2 text-sm text-red-600">
+              <p id="vacation-until-error" role="alert" className="mt-2 text-sm text-danger-600">
                 {vacationDateError}
               </p>
             )}

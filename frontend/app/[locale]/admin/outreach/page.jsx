@@ -332,6 +332,7 @@ export default function AdminOutreachPage() {
                         value={lead.status}
                         onChange={(e) => handleStatusChange(lead.id, e.target.value)}
                         className="text-xs border border-border rounded-lg px-2 py-1 bg-white"
+                        aria-label={t("outreach.columns.status")}
                         data-testid={`status-select-${lead.id}`}
                       >
                         {STATUS_ORDER.map((s) => (
@@ -375,7 +376,7 @@ export default function AdminOutreachPage() {
                         <button
                           type="button"
                           onClick={() => handleDelete(lead.id)}
-                          className="text-xs px-2 py-1 rounded-lg text-red-600 hover:bg-red-50"
+                          className="text-xs px-2 py-1 rounded-lg text-danger-600 hover:bg-danger-50"
                         >
                           {t("outreach.actions.delete")}
                         </button>
@@ -619,7 +620,7 @@ function AddLeadModal({ onClose, onCreated }) {
           rows={2}
           className="w-full border border-border rounded-md px-3 py-2"
         />
-        {error && <p className="text-sm text-red-600" role="alert">{error}</p>}
+        {error && <p className="text-sm text-danger-600" role="alert">{error}</p>}
         <div className="flex gap-2">
           <button
             type="button"

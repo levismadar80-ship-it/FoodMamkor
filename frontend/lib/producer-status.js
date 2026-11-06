@@ -29,7 +29,7 @@ export const PRODUCER_STATUS_COLORS = {
   draft: "bg-slate-100 text-slate-700",
   approved: "bg-primary text-white",
   pending: "bg-yellow-100 text-yellow-800",
-  rejected: "bg-red-100 text-red-700",
+  rejected: "bg-danger-100 text-danger-700",
   inactive: "bg-gray-200 text-gray-700",
 };
 

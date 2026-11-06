@@ -190,7 +190,7 @@ export default function CitiesAutocomplete({
                 onClick={() => (done ? removeRegion(region) : addRegion(region))}
                 className={`rounded-full border text-[12px] px-2.5 py-0.5 transition ${
                   done
-                    ? "bg-green-50 border-primary/40 text-text hover:bg-red-50 hover:border-red-300"
+                    ? "bg-green-50 border-primary/40 text-text hover:bg-danger-50 hover:border-danger-300"
                     : "bg-white border-border text-text hover:bg-background"
                 }`}
               >

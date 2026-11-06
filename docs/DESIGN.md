@@ -34,6 +34,26 @@ colors:
   state-selected: "#2E4A2E"
   error: "#B3261E"
   error-on-dark: "#FCA5A5"
+  danger-50: "#FEF2F2"
+  danger-100: "#FEE2E2"
+  danger-200: "#FECACA"
+  danger-300: "#FCA5A5"
+  danger-400: "#F87171"
+  danger-500: "#EF4444"
+  danger-600: "#DC2626"
+  danger-700: "#B91C1C"
+  danger-800: "#991B1B"
+  danger-900: "#7F1D1D"
+  warning-50: "#FFFBEB"
+  warning-100: "#FEF3C7"
+  warning-200: "#FDE68A"
+  warning-300: "#FCD34D"
+  warning-400: "#FBBF24"
+  warning-500: "#F59E0B"
+  warning-600: "#D97706"
+  warning-700: "#B45309"
+  warning-800: "#92400E"
+  warning-900: "#78350F"
 typography:
   headline-display:
     fontFamily: '"Frank Ruhl Libre", "David Libre", Georgia, serif'
@@ -589,6 +609,13 @@ on-dark pair `error-on-dark` (`#FCA5A5`, for `green-900` surfaces) are the sole
 state-color tokens, added for form/validation error text that failed AA as raw
 Tailwind reds. This is the "new ADR supersedes ADR-019" path in action — error
 only; `warning`/`info`/`success` remain un-tokenized (success = `primary`).
+
+**Status scales (ADR-038, 06/11/2026):** `danger-50…900` and `warning-50…900`
+are tokens, at exactly Tailwind's `red` / `amber` values, so `red-N → danger-N` and
+`amber-N → warning-N` was a pixel-identical codemod. Use them for status surfaces,
+borders and destructive buttons; keep `error` for error text on cream. Success
+stays `primary` / `green-*`. `yellow-*`, `gray-*` and `blue-*` are still raw debt —
+moving them changes colour and needs a mock first.
 
 ## S4 design tokens (MEH-136)
 

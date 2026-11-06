@@ -31,9 +31,9 @@ describe("MEH-2110 — waiting badge colour thresholds", () => {
   it.each([
     [0, "bg-gray-100"],
     [1, "bg-gray-100"],
-    [2, "bg-amber-100"],
-    [3, "bg-red-100"],
-    [9, "bg-red-100"],
+    [2, "bg-warning-100"],
+    [3, "bg-danger-100"],
+    [9, "bg-danger-100"],
   ])("%i business days -> %s", (days, expectedClass) => {
     const badge = renderBadge(queued(days));
     expect(badge).not.toBeNull();
@@ -59,8 +59,8 @@ describe("MEH-2110 — which rows carry SLA colour at all", () => {
     });
     expect(badge).not.toBeNull();
     expect(badge.className).toContain("bg-gray-100");
-    expect(badge.className).not.toContain("bg-red-100");
-    expect(badge.className).not.toContain("bg-amber-100");
+    expect(badge.className).not.toContain("bg-danger-100");
+    expect(badge.className).not.toContain("bg-warning-100");
   });
 
   it.each(["approved", "rejected", "inactive"])(

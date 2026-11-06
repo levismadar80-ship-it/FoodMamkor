@@ -128,7 +128,7 @@ function ConfirmStep({ onCancelConfirm, onSubmit, submitting }) {
           onClick={onSubmit}
           disabled={submitting}
           data-testid="decision-confirm-submit"
-          className="px-4 py-2 rounded-sm text-white bg-red-600 hover:bg-red-700 disabled:opacity-50"
+          className="px-4 py-2 rounded-sm text-white bg-danger-600 hover:bg-danger-700 disabled:opacity-50"
         >
           {submitting ? t("common.sending") : t("producers.decision.submit_reject")}
         </button>
@@ -159,7 +159,7 @@ function DecisionForm({ presets, presetsError, value, setValue, freeText, setFre
   if (presetsError) {
     return (
       <>
-        <p className="text-red-600 text-sm mb-4" role="alert" data-testid="decision-presets-error">
+        <p className="text-danger-600 text-sm mb-4" role="alert" data-testid="decision-presets-error">
           {t("producers.reject.presets_error")}
         </p>
         <div className="flex gap-2 justify-end">
@@ -224,7 +224,7 @@ function DecisionForm({ presets, presetsError, value, setValue, freeText, setFre
           disabled={!canSubmitDecision(value, freeText)}
           data-testid="decision-submit"
           className={`px-4 py-2 rounded-sm text-white disabled:opacity-50 disabled:cursor-not-allowed ${
-            isReject ? "bg-red-600 hover:bg-red-700" : "bg-primary hover:opacity-90"
+            isReject ? "bg-danger-600 hover:bg-danger-700" : "bg-primary hover:opacity-90"
           }`}
         >
           {isReject

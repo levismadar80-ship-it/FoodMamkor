@@ -289,6 +289,36 @@ describe("publishing", () => {
     }
   });
 
+  // Sapir 6/11: the business picks the free-cancel cutoff. Default stays
+  // half an hour before pickup, the value that was hard-coded before.
+  const minutesBefore = (body) =>
+    (new Date(body.pickup_start).getTime() - new Date(body.cancel_until).getTime()) / 60000;
+
+  it("offers the three free-cancel cutoffs and defaults to half an hour", async () => {
+    render(<RescueTab />);
+    await pointsLoaded();
+    const select = screen.getByTestId("rescue-publish-cancel");
+    expect(select.tagName).toBe("SELECT");
+    expect([...select.options].map((o) => o.textContent)).toEqual([
+      "חצי שעה לפני האיסוף",
+      "שעה לפני האיסוף",
+      "שעתיים לפני האיסוף",
+    ]);
+    expect(screen.getByText("ביטול חינם עד")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("rescue-publish-today"));
+    await waitFor(() => expect(post).toHaveBeenCalled());
+    expect(minutesBefore(post.mock.calls[0][1])).toBe(30);
+  });
+
+  it("sends the cutoff the business chose", async () => {
+    render(<RescueTab />);
+    await pointsLoaded();
+    fireEvent.change(screen.getByTestId("rescue-publish-cancel"), { target: { value: "120" } });
+    fireEvent.click(screen.getByTestId("rescue-publish-tomorrow"));
+    await waitFor(() => expect(post).toHaveBeenCalled());
+    expect(minutesBefore(post.mock.calls[0][1])).toBe(120);
+  });
+
   it("sends agorot, not shekels", async () => {
     render(<RescueTab />);
     await pointsLoaded();

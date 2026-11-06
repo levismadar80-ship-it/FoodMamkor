@@ -302,7 +302,7 @@ export default function KashrutBadgeStrip({
         );
       })}
       {nearExpiry && (
-        <span className="inline-flex items-center rounded-full border border-amber-300 bg-amber-50 text-amber-700 px-2 py-0.5 text-xs font-medium">
+        <span className="inline-flex items-center rounded-full border border-warning-300 bg-warning-50 text-warning-700 px-2 py-0.5 text-xs font-medium">
           {t("expiry.near_expiry")}
         </span>
       )}

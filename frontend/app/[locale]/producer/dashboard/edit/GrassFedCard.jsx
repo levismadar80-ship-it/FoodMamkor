@@ -91,7 +91,7 @@ export default function GrassFedCard({ profile, onSave, reportDirty = () => {} }
       </label>
 
       {errorMsg && (
-        <p className="flex items-center gap-1.5 text-xs text-red-600" role="alert">
+        <p className="flex items-center gap-1.5 text-xs text-danger-600" role="alert">
           <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
           {errorMsg}
         </p>

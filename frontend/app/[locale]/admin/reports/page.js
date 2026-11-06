@@ -85,7 +85,7 @@ export default function AdminReportsPage() {
                 <div
                   key={r.producer_id}
                   className={`bg-white rounded-md p-5 border ${
-                    r.auto_flagged ? "border-red-200" : "border-border"
+                    r.auto_flagged ? "border-danger-200" : "border-border"
                   }`}
                 >
                   <div className="flex items-start justify-between">
@@ -93,12 +93,12 @@ export default function AdminReportsPage() {
                       <div className="flex items-center gap-2">
                         <h3 className="font-semibold">{r.producer_name}</h3>
                         {r.auto_flagged && (
-                          <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded-full text-xs font-medium">
+                          <span className="bg-danger-100 text-danger-700 px-2 py-0.5 rounded-full text-xs font-medium">
                             {t("reports.auto_flag_badge")}
                           </span>
                         )}
                       </div>
-                      <p className={`text-sm font-medium ${r.auto_flagged ? "text-red-600" : "text-fg-muted"}`}>
+                      <p className={`text-sm font-medium ${r.auto_flagged ? "text-danger-600" : "text-fg-muted"}`}>
                         {t("reports.report_count", { count: r.report_count })}
                       </p>
                     </div>
@@ -122,7 +122,7 @@ export default function AdminReportsPage() {
                     {r.reports.map((rep) => (
                       <li
                         key={rep.id}
-                        className={`rounded-sm p-2 text-xs ${r.auto_flagged ? "bg-red-50" : "bg-gray-50"}`}
+                        className={`rounded-sm p-2 text-xs ${r.auto_flagged ? "bg-danger-50" : "bg-gray-50"}`}
                       >
                         <p>{rep.reason}</p>
                         <p className="text-fg-muted mt-1">
@@ -153,7 +153,7 @@ export default function AdminReportsPage() {
               <button
                 disabled={isBusy(`dismiss:${dismissTarget.producer_id}`)}
                 onClick={confirmDismiss}
-                className="px-4 py-2 rounded-[10px] text-sm font-medium text-white transition bg-red-600 hover:bg-red-700 disabled:opacity-50"
+                className="px-4 py-2 rounded-[10px] text-sm font-medium text-white transition bg-danger-600 hover:bg-danger-700 disabled:opacity-50"
               >
                 {isBusy(`dismiss:${dismissTarget.producer_id}`)
                   ? t("reports.actions.dismissing")

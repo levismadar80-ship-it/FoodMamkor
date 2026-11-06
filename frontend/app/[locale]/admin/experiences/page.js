@@ -139,7 +139,7 @@ export default function AdminExperiencesPage() {
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 rounded-md p-4">
+        <div className="bg-danger-50 border border-danger-200 text-danger-700 rounded-md p-4">
           {error}
         </div>
       )}
@@ -230,7 +230,7 @@ export default function AdminExperiencesPage() {
                 className={`px-4 py-2 rounded-sm text-white ${
                   modalAction === "changes"
                     ? "bg-accent hover:opacity-90"
-                    : "bg-red-600 hover:bg-red-700"
+                    : "bg-danger-600 hover:bg-danger-700"
                 } disabled:opacity-50`}
               >
                 {busy ? t("common.sending") : t("experiences.modal.submit")}
@@ -307,7 +307,7 @@ function ExperienceRow({ ex, busy, t, locale, onApprove, onChanges, onReject }) 
               <button
                 onClick={() => onReject(ex)}
                 disabled={busy}
-                className="bg-red-600 text-white px-3 py-1 rounded-full text-xs hover:bg-red-700 disabled:opacity-50"
+                className="bg-danger-600 text-white px-3 py-1 rounded-full text-xs hover:bg-danger-700 disabled:opacity-50"
               >
                 {t("experiences.actions.reject")}
               </button>
@@ -356,7 +356,7 @@ function ExperienceRow({ ex, busy, t, locale, onApprove, onChanges, onReject }) 
                   </p>
                   {ex.moderation_suggestion && (
                     <p className="text-xs text-fg-muted mt-1 inline-flex items-center gap-1">
-                      <Lightbulb size={14} weight="fill" className="text-amber-500" aria-hidden="true" />
+                      <Lightbulb size={14} weight="fill" className="text-warning-500" aria-hidden="true" />
                       {ex.moderation_suggestion}
                     </p>
                   )}

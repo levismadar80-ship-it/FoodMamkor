@@ -81,7 +81,7 @@ export default function ForgotPasswordClient() {
             testId="forgot-collection-notice"
           />
           {error && (
-            <p className="text-red-600 text-sm text-center" role="alert">
+            <p className="text-danger-600 text-sm text-center" role="alert">
               {error}
             </p>
           )}
