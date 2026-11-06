@@ -244,6 +244,23 @@ props only; the bottom-end corner belongs to the chat FAB (MEH-1135 — see rtl.
 
 ---
 
+## One control, one element — phone and desktop (MEH-2776)
+
+Prefer ONE element per control that adapts with responsive classes. A second
+copy per screen size (`hidden lg:…` + `lg:hidden`) drifts: a fix lands in one
+copy and the other keeps the old look. MEH-2506 moved «מרחק מ…» on the phone
+only; the desktop chip stayed until MEH-2769.
+
+- Where two copies already exist (`/map` shells, Header, event/experience
+  detail, rescue card), build both from one function and change both together.
+- A fix that touches one copy only says why in the PR, and asks Sapir when the
+  reason is not a locked decision.
+- `/map` is guarded: `map.spec.ts` «one control, one place (MEH-2776)» fails
+  when a control sits in a different container per shell, or exists in one
+  shell without a reason in `SHELL_ONLY`. Add a reason there; don't loosen it.
+
+---
+
 ## After UI changes
 
 - Update [docs/MANUAL_TESTING.md](../../docs/MANUAL_TESTING.md) with any

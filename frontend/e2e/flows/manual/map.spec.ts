@@ -1630,3 +1630,93 @@ test.describe("manual › /map PEEK sheet count clears the nav pill on short pho
     await sheetSettledAt(page, shell, 0.45);
   });
 });
+
+// ── MEH-2776: one control, one place, at 375 AND 1440 ────────────────────────
+// /map mounts two shells (desktop `hidden lg:grid`, mobile `lg:hidden`) and
+// most controls exist once in each. A fix made to one copy leaves the other as
+// it was: MEH-2506 moved «מרחק מ…» into the filter tag row on the phone and
+// left the desktop chip above the card list, which Sapir found on 6/11
+// (MEH-2769). This test inventories every VISIBLE data-testid in each shell,
+// with the nearest data-testid ancestor it sits in, and fails when
+//   (a) a control is in both shells but inside a different container, or
+//   (b) a control is in one shell only and not on the list below.
+// Industry practice is one responsive element per control; where the repo has
+// two, the inventory is what keeps them from drifting. A NEW one-shell control
+// is not a failure to silence: put it in both shells, or add it here with why.
+const SHELL_ONLY: Record<string, string> = {
+  // desktop
+  "map-gps-button": "desktop GPS circle; the phone uses map-near-me-pill (MEH-970)",
+  "map-key-toggle-desktop": "per-shell twin of map-key-toggle-mobile (MapPane.jsx)",
+  "pickup-layer-toggle-desktop": "per-shell twin of pickup-layer-toggle-mobile (MapPane.jsx)",
+  "map-legend": "desktop legend panel (MapPane.jsx hidden lg:block, MEH-979)",
+  "map-legend-toggle": "lives inside map-legend",
+  "map-list-count": "desktop list count; the phone shows sheet-count in the bottom sheet",
+  "map-sort-select": "the phone has no sort control and never did (MEH-1864)",
+  // mobile
+  "map-key-toggle-mobile": "per-shell twin of map-key-toggle-desktop",
+  "pickup-layer-toggle-mobile": "per-shell twin of pickup-layer-toggle-desktop",
+  "map-near-me-pill": "phone GPS control; desktop uses map-gps-button",
+  "map-mobile-bar": "the phone's top bar container",
+  "map-bottom-sheet": "the phone's card list container",
+  "map-sheet-content": "inside map-bottom-sheet",
+  "sheet-count": "phone count; desktop shows map-list-count",
+};
+// Shown by state, not by shell: «חפשו באזור זה» (MapPane.jsx, both shells)
+// appears once the map has moved, and the resize below moves it.
+const TRANSIENT = new Set(["map-search-this-area"]);
+// Layout wrappers that hold a whole region in one shell and have no twin: a
+// control directly inside one of them counts as directly in the shell.
+const SHELL_WRAPPERS = new Set(["map-mobile-bar", "map-bottom-sheet", "map-sheet-content"]);
+
+async function shellInventory(page: Page, shellId: string): Promise<Map<string, string>> {
+  const rows = await page.evaluate(
+    ([id, wrappers, transient]) => {
+      const root = document.querySelector(`[data-testid="${id}"]`);
+      if (!root) throw new Error(`no ${id}`);
+      const out: [string, string][] = [];
+      for (const el of root.querySelectorAll<HTMLElement>("[data-testid]")) {
+        const r = el.getBoundingClientRect();
+        if (transient.includes(el.dataset.testid!)) continue;
+        if (!r.width || !r.height || getComputedStyle(el).visibility === "hidden") continue;
+        let p = el.parentElement;
+        while (p && p !== root && (!p.dataset.testid || wrappers.includes(p.dataset.testid))) p = p.parentElement;
+        out.push([el.dataset.testid!, p && p !== root ? p.dataset.testid! : "(shell)"]);
+      }
+      return out;
+    },
+    [shellId, [...SHELL_WRAPPERS], [...TRANSIENT]] as const,
+  );
+  return new Map(rows);
+}
+
+test.describe("manual › /map desktop ↔ phone: one control, one place (MEH-2776)", () => {
+  test("every control sits in the same container in both shells", async ({ page }, info) => {
+    desktopOnly(info, "one run measures both shells by resizing; the mobile project would repeat it");
+    await seedGps(page, GPS_NEAR); // origin tag on
+    await gotoWithCatalog(page, info, "/map?kosher=true"); // an active filter tag on
+    await expect(page.getByTestId("map-desktop-shell").getByTestId("sort-origin-label")).toBeVisible(FIRST_PAINT);
+    const desktop = await shellInventory(page, "map-desktop-shell");
+
+    await page.setViewportSize({ width: 375, height: 812 });
+    await expect(page.getByTestId("map-mobile-shell").getByTestId("sort-origin-label")).toBeVisible(FIRST_PAINT);
+    const mobile = await shellInventory(page, "map-mobile-shell");
+
+    // Control: the inventory must have seen the controls this test is about, in
+    // BOTH shells. An empty or broken probe would otherwise pass (testing.md).
+    for (const id of ["sort-origin", "map-active-filter-tag", "map-filters-button", "map-card"]) {
+      expect(desktop.has(id), `desktop inventory saw ${id}`).toBe(true);
+      expect(mobile.has(id), `phone inventory saw ${id}`).toBe(true);
+    }
+
+    const moved = [...desktop]
+      .filter(([id, parent]) => mobile.has(id) && mobile.get(id) !== parent)
+      .map(([id, parent]) => `${id}: desktop in ${parent}, phone in ${mobile.get(id)}`);
+    expect(moved, "same control, different container").toEqual([]);
+
+    const oneShell = [
+      ...[...desktop.keys()].filter((id) => !mobile.has(id)).map((id) => `desktop only: ${id}`),
+      ...[...mobile.keys()].filter((id) => !desktop.has(id)).map((id) => `phone only: ${id}`),
+    ].filter((row) => !(row.split(": ")[1] in SHELL_ONLY));
+    expect(oneShell, "control in one shell only — put it in both, or list it in SHELL_ONLY with why").toEqual([]);
+  });
+});
