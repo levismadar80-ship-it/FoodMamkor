@@ -101,5 +101,5 @@ describe("MEH-1687 phase 6 — actions use the shared <Button>", () => {
     }
     expect(primitives, "corpus control: the primitive must be in use").toBeGreaterThan(90);
     expect(offenders).toEqual([]);
-  });
+  }, 60_000); // walks ~400 files through @babel/parser; 5 s default timed out on CI
 });
