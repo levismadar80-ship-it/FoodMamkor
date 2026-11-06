@@ -26,6 +26,7 @@ import { formatEventDate } from "@/lib/format-date";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import { SkeletonList } from "@/components/Skeleton";
+import Button from "@/components/ui/Button";
 
 export default function AdminNameChangeRequestsPage() {
   const t = useTranslations("admin.name_change_requests");
@@ -151,15 +152,15 @@ export default function AdminNameChangeRequestsPage() {
 
           {r.status === "pending" && (
             <div className="flex gap-3 flex-wrap">
-              <button
+              <Button
                 type="button"
                 onClick={() => review(r.id, "approved")}
                 disabled={actionLoading === r.id}
-                className="bg-primary text-white rounded-full px-5 py-2.5 text-sm font-semibold disabled:opacity-50 focus-ring"
+                variant="primary" size="sm"
                 data-testid="name-change-approve"
               >
                 {t("approve")}
-              </button>
+              </Button>
               <button
                 type="button"
                 onClick={() => review(r.id, "rejected")}

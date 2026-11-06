@@ -6,6 +6,7 @@ import { useFocusReturn } from "@/lib/use-focus-return";
 import { showToast } from "@/lib/toast";
 import api from "@/lib/api";
 import CollectionNotice from "@/components/CollectionNotice";
+import Button from "@/components/ui/Button";
 
 function countLetters(s) {
   return (s.match(/[א-תa-zA-Z]/g) || []).length;
@@ -141,13 +142,13 @@ export default function CategoryRequestModal({ open, onClose, producerId }) {
           />
 
           <div className="flex gap-3 pt-1">
-            <button
+            <Button
               type="submit"
               disabled={loading || !hasEnoughLetters}
-              className="flex-1 bg-primary text-white py-2 rounded-md text-sm font-medium hover:bg-primary-dark transition disabled:opacity-50"
+              variant="primary" size="sm" className="flex-1"
             >
               {loading ? t("submit_loading") : t("submit")}
-            </button>
+            </Button>
             <button
               type="button"
               onClick={onClose}

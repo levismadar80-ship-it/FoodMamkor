@@ -39,6 +39,7 @@ import Input from "@/components/ui/Input";
 import CitySearch from "@/components/CitySearch";
 import CollectionNotice from "@/components/CollectionNotice";
 import api from "@/lib/api";
+import Button from "@/components/ui/Button";
 
 const EMPTY = {
   name: "",
@@ -284,14 +285,14 @@ export default function RecommendClient() {
               </p>
             )}
 
-            <button
+            <Button
               type="submit"
               disabled={status === "submitting"}
               data-testid="recommend-submit"
-              className="mt-6 w-full min-h-[48px] rounded-md bg-primary text-white font-medium disabled:opacity-60"
+              variant="primary" size="lg" className="mt-6 w-full"
             >
               {status === "submitting" ? tContact("submit_loading") : t("submit")}
-            </button>
+            </Button>
 
             {/* t.rich, NOT t(): this string carries <link> markup and a plain
                 t() prints the tags on screen. ContactClient.jsx:173 is the

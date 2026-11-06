@@ -30,6 +30,7 @@ import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
+import Button from "@/components/ui/Button";
 
 // Mirrors constants.MAX_PRODUCER_RESUBMISSIONS. The server is the authority
 // (409 past it); this only decides whether to draw the button at all, so a
@@ -130,15 +131,15 @@ export default function RejectedBanner({
         </p>
       ) : (
         <div className="flex flex-wrap items-center gap-3">
-          <button
+          <Button
             type="button"
             onClick={resubmit}
             disabled={status === "sending"}
-            className="inline-flex items-center rounded-full bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
+            variant="primary" size="sm"
             data-testid="status-rejected-resubmit"
           >
             {t("resubmit_cta")}
-          </button>
+          </Button>
           <span className="text-xs text-danger-700" data-testid="status-rejected-caption">
             {t("resubmit_caption", { n: used + 1, max: MAX_RESUBMISSIONS })}
           </span>

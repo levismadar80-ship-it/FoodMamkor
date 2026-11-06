@@ -29,6 +29,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ArrowDown, ArrowUp, Plus } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import Input from "@/components/ui/Input";
+import Button from "@/components/ui/Button";
 
 const ICON = 16;
 
@@ -265,14 +266,14 @@ export default function ChecklistSettings() {
           הוספת סעיף
         </button>
 
-        <button
+        <Button
           type="button"
           onClick={save}
           disabled={saving || !canSave}
-          className="ms-auto bg-primary text-white rounded-lg px-4 py-2 text-sm disabled:opacity-50"
+          variant="primary" size="sm" className="ms-auto"
         >
           {saving ? "שומרת…" : "שמירת הרשימה"}
-        </button>
+        </Button>
       </div>
 
       {saveError && <p className="text-xs text-error mt-2">{saveError}</p>}
