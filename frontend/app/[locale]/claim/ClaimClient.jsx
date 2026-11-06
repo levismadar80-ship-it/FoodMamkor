@@ -351,7 +351,7 @@ export default function ClaimClient({ tokenFromPath = null }) {
 function Shell({ children, testid }) {
   return (
     <div className="max-w-xl mx-auto px-4 py-10" data-testid={testid}>
-      <div className="bg-white rounded-md border border-border p-6">{children}</div>
+      <div className="bg-surface rounded-md border border-border p-6">{children}</div>
     </div>
   );
 }
@@ -405,7 +405,7 @@ function SwitchAccount({ onClick, children }) {
       type="button"
       onClick={onClick}
       data-testid="claim-switch-account"
-      className="min-h-touch w-full sm:w-auto bg-white border border-primary text-primary rounded-md px-6 py-2 font-medium hover:bg-background transition"
+      className="min-h-touch w-full sm:w-auto bg-surface border border-primary text-primary rounded-md px-6 py-2 font-medium hover:bg-background transition"
     >
       {children}
     </button>

@@ -119,7 +119,7 @@ const METHOD_CTA = {
   website: {
     Icon: Globe,
     className:
-      "bg-white text-text border border-primary hover:bg-green-50 focus-visible:ring-primary/40",
+      "bg-surface text-text border border-primary hover:bg-green-50 focus-visible:ring-primary/40",
   },
   email: {
     Icon: EnvelopeSimple,
@@ -155,7 +155,7 @@ const METHOD_CTA = {
 // transition was still in flight. The only transition this control ever wanted
 // is the hover colour.
 const OVERLAY_CONTROL_CLS =
-  "flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-text " +
+  "flex h-11 w-11 items-center justify-center rounded-full bg-surface/90 text-text " +
   "transition-colors hover:bg-background focus-visible:ring-2 focus-visible:ring-primary/40";
 
 export default function ProductSheet({
@@ -424,7 +424,7 @@ export default function ProductSheet({
         aria-label={product.name}
         data-testid="product-sheet"
         onClick={(e) => e.stopPropagation()}
-        className="relative flex w-full max-h-[85vh] flex-col rounded-t-2xl bg-white shadow-xl md:max-w-md md:rounded-2xl"
+        className="relative flex w-full max-h-[85vh] flex-col rounded-t-2xl bg-surface shadow-xl md:max-w-md md:rounded-2xl"
       >
         <button
           ref={closeRef}
@@ -545,7 +545,7 @@ export default function ProductSheet({
                     total,
                   })}
                   data-testid="product-sheet-counter"
-                  className="absolute inset-x-0 bottom-2 z-10 mx-auto w-fit rounded-full bg-white/90 px-2.5 py-1 text-xs font-medium tabular-nums text-text"
+                  className="absolute inset-x-0 bottom-2 z-10 mx-auto w-fit rounded-full bg-surface/90 px-2.5 py-1 text-xs font-medium tabular-nums text-text"
                 >
                   {/* MEH-1933: "2 / 5" is an EN run, a neutral run, an EN run.
                       Under UBA rule N1 the neutral " / " inherits the

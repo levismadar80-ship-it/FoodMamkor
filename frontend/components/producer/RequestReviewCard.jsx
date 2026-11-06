@@ -74,7 +74,7 @@ export default function RequestReviewCard() {
   return (
     <section
       data-testid="request-review-card"
-      className="bg-white border border-border rounded-lg p-5 mt-6"
+      className="bg-surface border border-border rounded-lg p-5 mt-6"
     >
       <ChatCircleText size={24} className="text-primary mb-2" aria-hidden="true" />
       <h2 className="font-headline-md text-lg font-bold mb-1">{t("title")}</h2>

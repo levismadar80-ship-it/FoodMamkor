@@ -37,7 +37,7 @@ export default function PromotedServiceChips({ chips = [], chipState = {}, onTog
         className={`inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 rounded-md text-sm font-medium border transition shrink-0 ${
           active
             ? "bg-green-50 text-primary border-primary ring-1 ring-primary"
-            : "bg-white text-text border-border hover:border-primary hover:text-primary"
+            : "bg-surface text-text border-border hover:border-primary hover:text-primary"
         }`}
       >
         <span aria-hidden="true">{active ? <Check size={16} weight="bold" /> : chipIcon(chip.key)}</span>

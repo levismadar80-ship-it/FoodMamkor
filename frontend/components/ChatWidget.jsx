@@ -314,7 +314,7 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
             {messages.map((m, i) => (
               <div key={i} className={`flex ${m.role === "user" ? "justify-start" : "justify-end"}`}>
                 <div className={`max-w-[85%] px-3 py-2 rounded-md text-sm leading-relaxed whitespace-pre-line ${
-                  m.role === "user" ? "bg-primary text-white" : "bg-white text-text border border-border"
+                  m.role === "user" ? "bg-primary text-white" : "bg-surface text-text border border-border"
                 }`}>
                   {m.content}
                 </div>
@@ -322,7 +322,7 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
             ))}
             {sending && (
               <div className="flex justify-end">
-                <div className="bg-white text-fg-muted border border-border px-3 py-2 rounded-md text-sm">
+                <div className="bg-surface text-fg-muted border border-border px-3 py-2 rounded-md text-sm">
                   <span className="inline-flex gap-1">
                     <span className="animate-pulse">●</span>
                     <span className="animate-pulse" style={{ animationDelay: "0.15s" }}>●</span>
@@ -351,7 +351,7 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
           </div>
 
           {/* Composer */}
-          <form onSubmit={handleSubmit} className="border-t border-border bg-white px-3 py-2 flex items-center gap-2">
+          <form onSubmit={handleSubmit} className="border-t border-border bg-surface px-3 py-2 flex items-center gap-2">
             <label htmlFor="chat-input" className="sr-only">{t("input_label")}</label>
             <input
               ref={inputRef} id="chat-input" type="text"
@@ -376,7 +376,7 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
             // The only surface that overrides the default: the composer sits on a
             // white panel over the page, so the notice paints the same white and
             // shares the composer's horizontal padding instead of the form default.
-            className="bg-white px-3 pb-2"
+            className="bg-surface px-3 pb-2"
           />
         </div>
       )}

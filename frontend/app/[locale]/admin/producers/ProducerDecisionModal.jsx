@@ -208,7 +208,7 @@ function DecisionForm({ presets, presetsError, value, setValue, freeText, setFre
         onChange={(e) => setFreeText(e.target.value)}
         rows={4}
         aria-required={isOther}
-        className="w-full border border-border rounded-md px-3 py-2 text-sm bg-white"
+        className="w-full border border-border rounded-md px-3 py-2 text-sm bg-surface"
         placeholder={t("producers.decision.free_text_placeholder")}
       />
 

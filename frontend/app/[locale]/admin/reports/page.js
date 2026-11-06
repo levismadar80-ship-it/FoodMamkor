@@ -73,7 +73,7 @@ export default function AdminReportsPage() {
         {loadError ? (
           <AdminLoadError onRetry={loadReports} testId="admin-reports-load-error" />
         ) : reports.length === 0 ? (
-          <p className="text-sm text-fg-muted bg-white border border-border rounded-md p-5">
+          <p className="text-sm text-fg-muted bg-surface border border-border rounded-md p-5">
             {t("reports.no_reports")}
           </p>
         ) : (
@@ -84,7 +84,7 @@ export default function AdminReportsPage() {
               .map((r) => (
                 <div
                   key={r.producer_id}
-                  className={`bg-white rounded-md p-5 border ${
+                  className={`bg-surface rounded-md p-5 border ${
                     r.auto_flagged ? "border-danger-200" : "border-border"
                   }`}
                 >
@@ -112,7 +112,7 @@ export default function AdminReportsPage() {
                       </button>
                       <button
                         onClick={() => setDismissTarget(r)}
-                        className="bg-white border border-border px-3 py-1.5 rounded-md text-xs"
+                        className="bg-surface border border-border px-3 py-1.5 rounded-md text-xs"
                       >
                         {t("reports.actions.ignore")}
                       </button>
@@ -144,7 +144,7 @@ export default function AdminReportsPage() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="dismiss-title"
-            className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full mx-4 text-start space-y-4"
+            className="bg-surface rounded-lg shadow-xl p-6 max-w-sm w-full mx-4 text-start space-y-4"
           >
             <p id="dismiss-title" className="font-medium text-base">
               {t("reports.actions.dismiss_confirm", { name: dismissTarget.producer_name })}
