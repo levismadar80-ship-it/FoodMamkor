@@ -144,8 +144,8 @@ export default function AdminAnalyticsPage() {
 
       {/* Heat map note */}
       <div className="bg-white border border-border rounded-md p-5">
-        <h2 className="font-semibold mb-3">{t("analytics.geographic")}</h2>
-        <p id="admin-analytics-map-count" className="text-sm text-muted mb-2">
+        <h2 id="admin-analytics-map-heading" className="font-semibold mb-3">{t("analytics.geographic")}</h2>
+        <p className="text-sm text-muted mb-2">
           {t("analytics.map_count", { count: (data.map_points || []).length })}
         </p>
         {(data.map_points || []).length === 0 ? (
@@ -156,7 +156,7 @@ export default function AdminAnalyticsPage() {
             // (axe scrollable-region-focusable).
             tabIndex={0}
             role="region"
-            aria-labelledby="admin-analytics-map-count"
+            aria-labelledby="admin-analytics-map-heading"
             className="bg-accent/30 rounded-md p-4 text-xs grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto"
           >
             {(data.map_points || []).slice(0, 30).map((p) => (

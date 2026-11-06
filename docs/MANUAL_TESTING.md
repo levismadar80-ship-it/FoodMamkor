@@ -50,6 +50,7 @@
 ## MEH-2708 — נגישות: שמות לשדות, רשימת פרטים, ניגודיות (06/11/2026)
 - [ ] סריקת axe (wcag2a/aa, critical+serious) על /producer/dashboard/experiences/new, /group-buys/<id>, /producer/dashboard/insights ו-/admin/{kashrut,outreach,producers,producers/new,settings,users,analytics} — **תוצאה מצופה:** אין select-name, label, button-name, aria-prohibited-attr, definition-list, dlitem, scrollable-region-focusable, link-in-text-block
 - [ ] /group-buys/<id> בנייד (375) — **תוצאה מצופה:** «איסוף»/«משלוח» עם האייקון מימין לכותרת, כמו קודם; כפתור «שיתוף בוואטסאפ» המתאר בירוק כהה (#16803E)
+
 ## MEH-2705 — שם הכותב בביקורת ומונה הביקורות (06/11/2026)
 - [ ] ביקורת ממשתמש ששמו «לקוחת בדיקות (QA)» — **תוצאה מצופה:** מוצג «לקוחת Q.» (ולא «לקוחת (.»)
 - [ ] כתיבת ביקורת חדשה בדף עסק עם 3 ביקורות, בנייד — **תוצאה מצופה:** בלי לרענן, בכותרת ובפס הנעוץ התחתון מוצג «4 ביקורות»
