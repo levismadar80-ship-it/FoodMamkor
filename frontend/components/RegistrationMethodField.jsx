@@ -22,8 +22,6 @@ import api from "@/lib/api";
 import { normalizePhone } from "@/lib/utils";
 import Input from "@/components/ui/Input";
 
-export const REGISTRATION_METHODS = ["site_form", "whatsapp", "phone", "external_url"];
-
 /**
  * Which methods the business can use, from GET /producers/me.
  * `null` while loading — nothing is disabled until the answer arrives, so a
@@ -47,7 +45,7 @@ function useBusinessPhone() {
 }
 
 /**
- * @param {string} value                 one of REGISTRATION_METHODS
+ * @param {string} value                 "site_form" | "whatsapp" | "phone" | "external_url"
  * @param {(m:string)=>void} onChange
  * @param {string} url                   registration_url (external_url only)
  * @param {(u:string)=>void} onUrlChange
