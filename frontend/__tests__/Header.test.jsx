@@ -189,7 +189,7 @@ describe("Header", () => {
 
     it("has NO hamburger drawer (retired by MEH-789 PR-B — BottomNav owns mobile)", () => {
       render(<Header />);
-      expect(screen.queryByLabelText("פתח תפריט")).toBeNull();
+      expect(screen.queryByLabelText("פתיחת התפריט")).toBeNull();
       expect(screen.queryByTestId("icon-hamburger")).toBeNull();
     });
   });

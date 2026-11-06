@@ -12,7 +12,7 @@ vi.mock("next-intl", () => ({
     const city = vars?.city ?? "";
     if (key === "checker.yes_nationwide") return `כן! משלוחים לכל הארץ — כולל ${city}`;
     if (key === "checker.yes") return `כן, מגיעים ל${city}`;
-    if (key === "checker.no") return `לצערנו לא מגיעים ל${city} כרגע`;
+    if (key === "checker.no") return `עדיין לא מגיעים ל${city}`;
     if (key === "nationwide_except") return `משלוחים לכל הארץ (למעט ${vars?.cities ?? ""})`;
     const map = {
       "producer.detail.whatsapp_updates.full": "עדכונים מבית העסק בוואטסאפ",

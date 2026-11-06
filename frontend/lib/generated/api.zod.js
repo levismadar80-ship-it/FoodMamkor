@@ -2387,7 +2387,10 @@ export const ResolveReportAdminReportsReportIdResolvePostResponse = /*#__PURE__*
  * distinction is the whole point of a pilot metric.
  * @summary Pilot Metrics
  */
+export const pilotMetricsAdminRescueMetricsGetResponseBagsDonatedDefault = 0;
+
 export const PilotMetricsAdminRescueMetricsGetResponse = /*#__PURE__*/ zod.object({
+  "bags_donated": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), pilotMetricsAdminRescueMetricsGetResponseBagsDonatedDefault),
   "bags_offered": /*#__PURE__*/ zod.int(),
   "bags_reserved": /*#__PURE__*/ zod.int(),
   "buyers_total": /*#__PURE__*/ zod.int(),
@@ -5191,6 +5194,45 @@ export const UpdateMyRecipeProducersMeRecipesRecipeIdPatchResponse = /*#__PURE__
  * @summary Request Producer Review
  */
 export const RequestProducerReviewProducersMeRequestReviewPostResponse = /*#__PURE__*/ zod.unknown()
+
+
+/**
+ * Today's bags across this business's pickup points, with what was left.
+ *
+ * Today only, by the Israel clock, like the orders list beside it.
+ * @summary List My Offers
+ */
+export const ListMyOffersProducersMeRescueOffersGetResponseItem = /*#__PURE__*/ zod.object({
+  "id": /*#__PURE__*/ zod.uuid(),
+  "leftover": /*#__PURE__*/ zod.int(),
+  "pickup_end": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "pickup_start": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "qty_donated": /*#__PURE__*/ zod.int(),
+  "qty_left": /*#__PURE__*/ zod.int(),
+  "qty_total": /*#__PURE__*/ zod.int(),
+  "status": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('One of today\'s bags as the business\'s dashboard sees it (MEH-2703).\n\n`leftover` is what was not collected once the window closed: bags never\nreserved (`qty_left`) plus bags reserved by someone who did not come\n(`no_show` orders). It is 0 until `pickup_end` — before that a bag may\nstill be reserved or picked up — and 0 for a cancelled offer, which\nnever went on sale. `qty_donated` is the business\'s own report, capped at\n`leftover` by the API.'))
+export const ListMyOffersProducersMeRescueOffersGetResponse = /*#__PURE__*/ zod.array(ListMyOffersProducersMeRescueOffersGetResponseItem)
+
+
+/**
+ * Record how many uncollected bags were given away free.
+ *
+ * Owner (or admin) of the offer's point only. Only after the window
+ * closed, and never more than was left over — a number above the leftover
+ * would inflate the pilot's «ניצלו» count with bags that were sold.
+ * @summary Set Donated
+ */
+export const SetDonatedProducersMeRescueOffersOfferIdDonatedPutResponse = /*#__PURE__*/ zod.object({
+  "id": /*#__PURE__*/ zod.uuid(),
+  "leftover": /*#__PURE__*/ zod.int(),
+  "pickup_end": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "pickup_start": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "qty_donated": /*#__PURE__*/ zod.int(),
+  "qty_left": /*#__PURE__*/ zod.int(),
+  "qty_total": /*#__PURE__*/ zod.int(),
+  "status": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('One of today\'s bags as the business\'s dashboard sees it (MEH-2703).\n\n`leftover` is what was not collected once the window closed: bags never\nreserved (`qty_left`) plus bags reserved by someone who did not come\n(`no_show` orders). It is 0 until `pickup_end` — before that a bag may\nstill be reserved or picked up — and 0 for a cancelled offer, which\nnever went on sale. `qty_donated` is the business\'s own report, capped at\n`leftover` by the API.'))
 
 
 /**
