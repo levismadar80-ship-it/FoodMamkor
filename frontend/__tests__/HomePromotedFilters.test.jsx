@@ -59,7 +59,8 @@ vi.mock("@/lib/api", () => ({
   default: { get: vi.fn(() => Promise.resolve({ data: [] })) },
 }));
 const router = { replace: vi.fn(), push: vi.fn() };
-vi.mock("next/navigation", () => ({ useRouter: () => router }));
+// MEH-2714: the home grids read the route via usePathname (route-memory).
+vi.mock("next/navigation", () => ({ useRouter: () => router, usePathname: () => "/" }));
 
 /** The pair the card promotes. Asserted against the component's rendered
  *  output, never imported from it — a test that imports the constant it is
