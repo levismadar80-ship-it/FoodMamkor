@@ -38,6 +38,7 @@ graph LR
     App --> Admin[admin.router<br/>/admin/producers/*]
     App --> AdminExtra[admin_extra.router<br/>/admin/users, /analytics, /dashboard, etc.]
     App --> AdminExperiences[admin_experiences.router<br/>/admin/experiences/*]
+    App --> Registrations[registrations.router<br/>MEH-2763: POST /events/id/registrations + /experiences/id/registrations public,<br/>GET same paths owner/admin, /registrations/token cancel]
     App --> Health[health.router<br/>/health, /health/liveness, /health/readiness, /health/places]
 ```
 

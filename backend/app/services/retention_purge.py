@@ -6,6 +6,7 @@ Purpose:  Enforce the retention windows the privacy policy promises (Sapir's
           MEH-2079 chunk C (MEH-2303).
 Touches:  DB tables `producer_page_views`, `producer_whatsapp_clicks`,
           `alert_log` — DELETE only, in batches, committing per batch.
+          MEH-2763: also `registrations`, 30 days after the item's date.
           Reads the roll-up watermark through analytics_rollup — never
           the aggregate table directly (the MEH-2079 single-reader guard).
 Does NOT: roll anything up (analytics_rollup.py owns that); decide WHEN to
@@ -47,7 +48,14 @@ from datetime import date, datetime, timedelta, timezone
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
-from app.models.models import AlertLog, ProducerPageView, ProducerWhatsAppClick
+from app.models.models import (
+    AlertLog,
+    Event,
+    Experience,
+    ProducerPageView,
+    ProducerWhatsAppClick,
+    Registration,
+)
 from app.services.analytics_rollup import RAW_RETENTION_DAYS, rollup_watermark
 from app.utils.clock import ISRAEL_TZ, israel_today
 
@@ -55,6 +63,10 @@ logger = logging.getLogger(__name__)
 
 #: Sapir's ruling 05/09 — internal alert logs keep 30 days.
 ALERT_LOG_RETENTION_DAYS = 30
+
+#: MEH-2763 — the sign-up form promises «נמחקים 30 יום אחרי המועד»
+#: (approved 6/11). Counted from the event's / experience's own date.
+REGISTRATION_RETENTION_DAYS = 30
 
 #: Rows per DELETE statement. Small enough that one batch never holds a long
 #: lock on a table the request path writes to; the loop runs until empty.
@@ -70,6 +82,7 @@ class PurgeResult:
     views_deleted: int
     clicks_deleted: int
     alerts_deleted: int
+    registrations_deleted: int = 0
 
 
 def _israel_day_start_utc(day: date) -> datetime:
@@ -114,6 +127,32 @@ def _delete_in_batches(db: Session, model, time_col, cutoff: datetime) -> int:
             return total
 
 
+def _purge_registrations(db: Session, today: date) -> int:
+    """MEH-2763: delete every sign-up whose item's date is more than
+    REGISTRATION_RETENTION_DAYS behind `today` (Israel day), active or
+    cancelled. Name, phone and email go with the row. Small table, one
+    statement per item kind; rolls back and re-raises on failure."""
+    boundary = today - timedelta(days=REGISTRATION_RETENTION_DAYS)
+    total = 0
+    for fk, model in (
+        (Registration.event_id, Event),
+        (Registration.experience_id, Experience),
+    ):
+        old_items = select(model.id).where(model.event_date < boundary)
+        try:
+            result = db.execute(
+                delete(Registration)
+                .where(fk.in_(old_items.scalar_subquery()))
+                .execution_options(synchronize_session=False)
+            )
+            db.commit()
+        except Exception:
+            db.rollback()
+            raise
+        total += result.rowcount or 0
+    return total
+
+
 def run_purge(
     db: Session, *, today: date | None = None, now: datetime | None = None
 ) -> PurgeResult:
@@ -140,6 +179,8 @@ def run_purge(
         now - timedelta(days=ALERT_LOG_RETENTION_DAYS),
     )
 
-    result = PurgeResult(boundary, views, clicks, alerts)
+    registrations = _purge_registrations(db, today)
+
+    result = PurgeResult(boundary, views, clicks, alerts, registrations)
     logger.info("[RETENTION-PURGE] %s", result)
     return result

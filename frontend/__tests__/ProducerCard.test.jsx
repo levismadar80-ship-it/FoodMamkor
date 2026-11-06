@@ -46,7 +46,7 @@ vi.mock("next-intl", () => ({
     if (key === "group_buys.delivery.fee_from") return `משלוח מ-${values.amount}`;
     // MEH-2676: card delivery row folds a free-delivery threshold in.
     if (key === "producer.offer.card_free_above") return `חינם מעל ${values.amount}`;
-    if (key === "producer.offer.card_free_above_alone") return `משלוח חינם מעל ${values.amount}`;
+    if (key === "producer.offer.card_delivery_sr") return "משלוח";
     if (key === "producer.offer.unit_amount.kg") return `${values.count} ק"ג`;
     return key;
   },
@@ -331,38 +331,20 @@ describe("ProducerCard — Phase B anatomy", () => {
     expect(screen.queryByTestId("card-rating")).not.toBeInTheDocument();
   });
 
-  // MEH-643: availability dots tokenized — available_today → primary (brand
-  // green), non-available (full_this_week / on_vacation) → fg-muted. No raw
-  // hex / inline style (was #4cb08b/#f97316/#EF9F27 pre-redesign).
-  it("renders the primary (green) dot when availability_state='available_today'", () => {
-    render(<ProducerCard producer={fullProducer} />);
-    const dot = screen.getByTestId("availability-dot");
-    expect(dot).toHaveAttribute("data-status", "available_today");
-    expect(dot.className).toMatch(/bg-primary/);
-  });
-
-  it("renders an fg-muted dot when availability_state='full_this_week'", () => {
-    render(
-      <ProducerCard producer={{ ...fullProducer, availability_state: "full_this_week" }} />,
-    );
-    const dot = screen.getByTestId("availability-dot");
-    expect(dot).toHaveAttribute("data-status", "full_this_week");
-    expect(dot.className).toMatch(/bg-fg-muted/);
-  });
-
-  it("renders an fg-muted dot when availability_state='on_vacation'", () => {
-    render(
-      <ProducerCard producer={{ ...fullProducer, availability_state: "on_vacation" }} />,
-    );
-    const dot = screen.getByTestId("availability-dot");
-    expect(dot).toHaveAttribute("data-status", "on_vacation");
-    expect(dot.className).toMatch(/bg-fg-muted/);
-  });
-
-  it("renders no dot when producer is not available and not on vacation", () => {
-    render(<ProducerCard producer={minimalProducer} />);
-    expect(screen.queryByTestId("availability-dot")).not.toBeInTheDocument();
-  });
+  // MEH-2751: the card draws no availability dot in any state — it carried
+  // no word and visitors could not tell what it meant (Sapir, 6/11).
+  it.each(["available_today", "full_this_week", "on_vacation", "accepting_orders"])(
+    "renders no availability dot when availability_state=%s",
+    (state) => {
+      render(<ProducerCard producer={{ ...fullProducer, availability_state: state }} />);
+      expect(screen.queryByTestId("availability-dot")).not.toBeInTheDocument();
+      // Also without a testid: the two lines that used to carry the dot hold
+      // no round marker at all.
+      for (const id of ["location-line", "card-place"]) {
+        expect(screen.getByTestId(id).querySelector(".rounded-full")).toBeNull();
+      }
+    },
+  );
 
   it("always shows the city", () => {
     render(<ProducerCard producer={fullProducer} />);
@@ -410,27 +392,18 @@ describe("ProducerCard — Phase B anatomy", () => {
 
   // MEH-2440 (claude[bot] review on #3694): city, no category, no distance —
   // the line under the name would be empty, so it is skipped, and the
-  // availability dot moves up to the place line instead of being lost.
-  it("skips the empty line under the name and keeps the dot with the city", () => {
+  // place line holds just the city.
+  it("skips the empty line under the name", () => {
     render(<ProducerCard producer={{ ...fullProducer, categories: [] }} />);
     expect(screen.queryByTestId("location-line")).not.toBeInTheDocument();
-    const place = screen.getByTestId("card-place");
-    expect(place.textContent).toBe("רחובות");
-    expect(place).toContainElement(screen.getByTestId("availability-dot"));
+    expect(screen.getByTestId("card-place").textContent).toBe("רחובות");
   });
 
-  it("no city, no category, no distance: no empty lines and no orphan dot", () => {
+  it("no city, no category, no distance: no empty lines", () => {
     render(<ProducerCard producer={{ ...fullProducer, city: null, categories: [] }} />);
     expect(screen.queryByTestId("card-place")).not.toBeInTheDocument();
     expect(screen.queryByTestId("location-line")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("availability-dot")).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 3, name: "חוות השקמה" })).toBeInTheDocument();
-  });
-
-  it("keeps the dot in the line under the name when that line has text", () => {
-    render(<ProducerCard producer={fullProducer} />);
-    expect(screen.getByTestId("location-line")).toContainElement(screen.getByTestId("availability-dot"));
-    expect(screen.getAllByTestId("availability-dot")).toHaveLength(1);
   });
 
   it("the name plate can break a single over-long token instead of overflowing", () => {
@@ -957,16 +930,37 @@ describe("ProducerCard — free-delivery threshold in the delivery row (MEH-2676
     expires_at: null,
   };
 
-  it("appends «חינם מעל 150₪» to the fee and drops the chip", () => {
+  // MEH-2744: with a threshold the row shows only «חינם מעל 150₪» next to the
+  // truck; the fee is left to the business page, «משלוח» is screen-reader only.
+  it("shows only «חינם מעל 150₪» when there is also a fee, and drops the chip", () => {
     render(<ProducerCard producer={{ ...fullProducer, delivery_fee: 20, active_offer: freeOffer }} />);
-    expect(screen.getByTestId("card-delivery-fee")).toHaveTextContent("משלוח: 20₪ · חינם מעל 150₪");
+    const row = screen.getByTestId("card-delivery-fee");
+    expect(row).toHaveTextContent("משלוח חינם מעל 150₪");
+    expect(row).not.toHaveTextContent("20₪");
+    expect(row).not.toHaveTextContent("·");
     expect(screen.queryByTestId("offer-chip")).not.toBeInTheDocument();
   });
 
-  it("states «משלוח חינם מעל 150₪» alone when no fee is stated", () => {
+  it("shows «חינם מעל 150₪» when no fee is stated", () => {
     render(<ProducerCard producer={{ ...fullProducer, delivery_fee: null, active_offer: freeOffer }} />);
-    expect(screen.getByTestId("card-delivery-fee")).toHaveTextContent("משלוח חינם מעל 150₪");
+    expect(screen.getByTestId("card-free-above")).toHaveTextContent(/^חינם מעל 150₪$/);
     expect(screen.queryByTestId("offer-chip")).not.toBeInTheDocument();
+  });
+
+  it("keeps the word «משלוח» for screen readers only", () => {
+    render(<ProducerCard producer={{ ...fullProducer, delivery_fee: 20, active_offer: freeOffer }} />);
+    const row = screen.getByTestId("card-delivery-fee");
+    const sr = row.querySelector(".sr-only");
+    expect(sr).not.toBeNull();
+    expect(sr).toHaveTextContent("משלוח");
+    // The visible part (everything outside .sr-only) does not repeat it.
+    expect(screen.getByTestId("card-free-above")).not.toHaveTextContent("משלוח");
+  });
+
+  it("still states the fee when there is no threshold", () => {
+    render(<ProducerCard producer={{ ...fullProducer, delivery_fee: 20, active_offer: null }} />);
+    expect(screen.getByTestId("card-delivery-fee")).toHaveTextContent("משלוח: 20₪");
+    expect(screen.queryByTestId("card-free-above")).not.toBeInTheDocument();
   });
 
   it("uses the offer's unit when the threshold is not shekels", () => {
@@ -975,7 +969,7 @@ describe("ProducerCard — free-delivery threshold in the delivery row (MEH-2676
         producer={{ ...fullProducer, delivery_fee: null, active_offer: { ...freeOffer, threshold_value: 3, threshold_unit: "kg" } }}
       />,
     );
-    expect(screen.getByTestId("card-free-above")).toHaveTextContent('משלוח חינם מעל 3 ק"ג');
+    expect(screen.getByTestId("card-free-above")).toHaveTextContent('חינם מעל 3 ק"ג');
   });
 
   it("keeps the chip for a free-delivery offer without a threshold", () => {
