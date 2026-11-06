@@ -32,6 +32,10 @@ from app.services.delivery_validation import (
 )
 from app.services.email import send_email
 from app.services.group_buy_delist import cancel_live_group_buys  # MEH-2498
+from app.services.availability_validation import (  # MEH-2758
+    AvailabilityValidationError,
+    validate_transition,
+)
 from app.services.producer_listing import is_business  # MEH-2459
 from app.services import retired_slugs  # MEH-2528
 
@@ -57,6 +61,7 @@ from app.schemas.schemas import (
     ProducerAdminOut,
     ProducerRejectIn,
     ProducerAdminUpdate,
+    WRITABLE_AVAILABILITY_STATES,
     RejectionPresetOut,
     RequestChangesIn,
     StoryCardUploadRequest,
@@ -840,6 +845,29 @@ def _retire_replaced_slug(db: Session, producer: Producer, payload: dict) -> Non
         retired_slugs.reclaim(db, payload["slug"], producer.id)
 
 
+def _guard_availability_change(producer: Producer, payload: dict) -> None:
+    """MEH-2758: pause-only availability writes on the admin PUT.
+
+    Only a CHANGE is checked — ProducerForm sends availability_state on every
+    save, so a business still on a legacy value (available_today /
+    full_this_week) must stay editable; it just cannot be moved INTO one.
+    """
+    new_state = payload.get("availability_state")
+    if "availability_state" not in payload or new_state == producer.availability_state:
+        return
+    try:
+        validate_transition(producer.availability_state, new_state)
+    except AvailabilityValidationError as e:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "invalid_availability_state",
+                "message": "מצב לא תקין",
+                "params": {"allowed": list(WRITABLE_AVAILABILITY_STATES)},
+            },
+        ) from e
+
+
 @router.put("/producers/{producer_id}", response_model=ProducerAdminOut)
 def admin_update_producer(
     producer_id: UUID,
@@ -909,6 +937,8 @@ def admin_update_producer(
     # below — that loop is what turns `producer.is_recommended` into the new
     # value, so the transition has to be read while it is still the old one.
     _apply_recommended_pick(producer, payload)
+
+    _guard_availability_change(producer, payload)  # MEH-2758
 
     for field, value in payload.items():
         setattr(producer, field, value)
