@@ -216,6 +216,17 @@ Use the semantic name: `text-error`, `bg-surface`, `border-border`,
 (MEH-1629, `warn`: the ~170 historical hits are debt, not a build failure). If a
 raw shade is genuinely required, mark it `// token-ok` + `eslint-disable-next-line`.
 
+**The blocking gate is `scripts/checks/raw-color-tokens.sh` (MEH-2717, Repo guards).**
+It ratchets every raw colour in `frontend/{app,components,lib,hooks}` — palette
+classes including `white`/`black`, arbitrary `bg-[#…]` classes and hex literals in
+JS/CSS — against `scripts/checks/raw-color-baseline.txt`. Existing occurrences are
+frozen; a new one fails CI. `bg-white`, `border-white`, `ring-white` etc. are gated;
+only `text-white` and `bg-black/<n>` scrims are exempt. The
+`// token-ok` comment above silences only the ESLint warning; for the gate, a
+genuinely fixed colour (a third-party brand colour, an SVG fill) is
+`--update-baseline` plus a reason in the PR body. Why it matters: a future theme
+switch (dark mode) can only re-colour what goes through the tokens.
+
 ### Address/city fields must use the canonical component
 
 A hand-rolled `<input>` for an address or city, instead of `<AddressSearch>` /

@@ -47,7 +47,7 @@ export function SkeletonStyles() {
 export function SkeletonCard({ className = "" }) {
   return (
     <div
-      className={`skeleton-box rounded-[16px] ${className}`}
+      className={`skeleton-box rounded-lg ${className}`}
       style={{ height: "320px" }}
       aria-hidden="true"
     />
@@ -229,7 +229,7 @@ export function SkeletonTiles({ count = 4, label, className = "", testId }) {
       testId={testId}
     >
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="bg-surface-card border border-border rounded-[16px] p-4 space-y-3" aria-hidden="true">
+        <div key={i} className="bg-surface-card border border-border rounded-lg p-4 space-y-3" aria-hidden="true">
           <div className="skeleton-box rounded-lg h-[10px] w-[55%]" />
           <div className="skeleton-box rounded-lg h-[28px] w-[40%]" />
         </div>
@@ -263,7 +263,7 @@ export function SkeletonDetail({ hero = true, width = "max-w-3xl", label, classN
           <div className="skeleton-box rounded-lg w-28 h-4" />
           <div className="skeleton-box rounded-lg w-20 h-4" />
         </div>
-        <div className="skeleton-box rounded-[16px] w-full h-32" />
+        <div className="skeleton-box rounded-lg w-full h-32" />
       </div>
     </SkeletonStatus>
   );

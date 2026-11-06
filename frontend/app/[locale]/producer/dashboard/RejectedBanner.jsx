@@ -86,7 +86,7 @@ export default function RejectedBanner({
 
   return (
     <div
-      className="bg-red-50 border border-red-200 rounded-[16px] p-4 mb-6 text-sm space-y-3"
+      className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 text-sm space-y-3"
       role="alert"
       data-testid="status-rejected-banner"
       data-reason-code={code ?? ""}

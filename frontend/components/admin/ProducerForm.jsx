@@ -1158,7 +1158,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
                 <img
                   src={optimizeCloudinary(url)}
                   alt=""
-                  className="w-full h-24 object-cover rounded-[8px] border border-border"
+                  className="w-full h-24 object-cover rounded-sm border border-border"
                 />
                 <button
                   type="button"

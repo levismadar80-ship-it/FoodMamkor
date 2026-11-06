@@ -145,8 +145,8 @@ export default function Tooltip({ content, children, position = "top", overlay =
         overlayActive
           ? // Same visual as the anchored bubble; `fixed` + measured offsets
             // replace `absolute` + the placement classes.
-            "pointer-events-none fixed z-[9999] whitespace-normal break-words w-max max-w-[8.5rem] sm:max-w-[13rem] bg-text text-white text-[11px] leading-relaxed rounded-[8px] px-[10px] py-[6px] shadow-lg"
-          : `pointer-events-none absolute z-[9999] whitespace-normal break-words w-max max-w-[8.5rem] sm:max-w-[13rem] bg-text text-white text-[11px] leading-relaxed rounded-[8px] px-[10px] py-[6px] shadow-lg ${POSITION_CLASSES[position] ?? POSITION_CLASSES.top}`
+            "pointer-events-none fixed z-[9999] whitespace-normal break-words w-max max-w-[8.5rem] sm:max-w-[13rem] bg-text text-white text-[11px] leading-relaxed rounded-sm px-[10px] py-[6px] shadow-lg"
+          : `pointer-events-none absolute z-[9999] whitespace-normal break-words w-max max-w-[8.5rem] sm:max-w-[13rem] bg-text text-white text-[11px] leading-relaxed rounded-sm px-[10px] py-[6px] shadow-lg ${POSITION_CLASSES[position] ?? POSITION_CLASSES.top}`
       }
     >
       {content}

@@ -102,7 +102,7 @@ export default function CategoryRequestModal({ open, onClose, producerId }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="cat-req-title"
-        className="bg-white rounded-[16px] shadow-xl w-full max-w-sm p-6 text-start"
+        className="bg-white rounded-lg shadow-xl w-full max-w-sm p-6 text-start"
       >
         <h2 id="cat-req-title" className="font-headline-md text-lg font-bold text-text mb-4">
           {t("title")}

@@ -114,7 +114,7 @@ export default function CalendarView({ items, linkPrefix }) {
     : [];
 
   return (
-    <div className="bg-background rounded-[16px] border border-border p-4 md:p-6">
+    <div className="bg-background rounded-lg border border-border p-4 md:p-6">
       <div className="flex items-center justify-between mb-4">
         <button
           type="button"

@@ -155,7 +155,7 @@ export default function AdminRecipesPage() {
       ) : rows.length === 0 ? (
         <div
           data-testid="admin-recipes-empty"
-          className="bg-white border border-border rounded-[16px] p-8 text-center text-fg-muted"
+          className="bg-white border border-border rounded-lg p-8 text-center text-fg-muted"
         >
           {t("recipes.empty")}
         </div>
@@ -163,7 +163,7 @@ export default function AdminRecipesPage() {
         // overflow-x-auto (never -hidden) keeps the actions reachable between
         // md and lg; below md the table is one card per row (MEH-2426,
         // globals.css .table-stack), so nothing scrolls sideways on a phone.
-        <div className="bg-white border border-border rounded-[16px] overflow-x-auto">
+        <div className="bg-white border border-border rounded-lg overflow-x-auto">
           <table className="table-stack w-full text-sm">
             <thead className="bg-green-50 text-fg-muted text-xs">
               <tr>
@@ -197,7 +197,7 @@ export default function AdminRecipesPage() {
         <div className="fixed inset-0 bg-black/40 z-[9000] flex items-center justify-center p-4">
           <div
             data-testid="admin-recipes-feedback-modal"
-            className="bg-background rounded-[16px] p-6 max-w-lg w-full border border-border"
+            className="bg-background rounded-lg p-6 max-w-lg w-full border border-border"
           >
             <h2 className="font-headline-md text-xl font-bold text-text mb-2">
               {modalAction === "changes" ? t("recipes.modal.changes_title") : t("recipes.modal.reject_title")}
@@ -223,14 +223,14 @@ export default function AdminRecipesPage() {
               <button
                 onClick={closeModal}
                 disabled={busy}
-                className="px-4 py-2 rounded-[8px] border border-border text-text hover:bg-green-50"
+                className="px-4 py-2 rounded-sm border border-border text-text hover:bg-green-50"
               >
                 {t("common.cancel")}
               </button>
               <button
                 onClick={submitModal}
                 disabled={busy}
-                className={`px-4 py-2 rounded-[8px] text-white ${
+                className={`px-4 py-2 rounded-sm text-white ${
                   modalAction === "changes"
                     ? "bg-accent hover:opacity-90"
                     : "bg-red-600 hover:bg-red-700"

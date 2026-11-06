@@ -99,7 +99,7 @@ function SignupCountField({ ex, t, onSaved }) {
           onKeyDown={(e) => {
             if (e.key === "Enter") e.currentTarget.blur();
           }}
-          className="w-20 min-h-touch border border-border rounded-[8px] px-3 text-center numeric focus-ring disabled:opacity-50"
+          className="w-20 min-h-touch border border-border rounded-sm px-3 text-center numeric focus-ring disabled:opacity-50"
         />
         <span className="text-sm text-fg-muted numeric" aria-hidden="true">/ {ex.max_participants}</span>
         {state === "saved" && <Check size={18} weight="bold" className="text-primary" aria-hidden="true" />}
@@ -184,7 +184,7 @@ export default function ManageExperiencesPage() {
         {Array.isArray(items) && items.length > 0 && (
           <Link
             href="/producer/dashboard/experiences/new"
-            className="inline-flex items-center gap-1.5 bg-primary text-white px-4 py-2 min-h-touch rounded-[8px] text-sm font-medium hover:bg-primary-dark transition"
+            className="inline-flex items-center gap-1.5 bg-primary text-white px-4 py-2 min-h-touch rounded-sm text-sm font-medium hover:bg-primary-dark transition"
           >
             <Sparkle size={18} weight="bold" aria-hidden="true" />
             {t("create_cta")}
@@ -243,7 +243,7 @@ export default function ManageExperiencesPage() {
                   <Link
                     href={`/producer/dashboard/experiences/${ex.id}/edit`}
                     aria-label={t("action_edit")}
-                    className="inline-flex items-center gap-1 border border-border rounded-[8px] px-3 py-1.5 min-h-touch text-xs hover:bg-green-50 transition"
+                    className="inline-flex items-center gap-1 border border-border rounded-sm px-3 py-1.5 min-h-touch text-xs hover:bg-green-50 transition"
                   >
                     <PencilSimple size={16} aria-hidden="true" />
                     {t("action_edit")}
@@ -253,7 +253,7 @@ export default function ManageExperiencesPage() {
                       type="button"
                       onClick={() => toggleActive(ex)}
                       disabled={busyId === ex.id}
-                      className="inline-flex items-center gap-1 border border-border rounded-[8px] px-3 py-1.5 min-h-touch text-xs hover:bg-green-50 transition disabled:opacity-50"
+                      className="inline-flex items-center gap-1 border border-border rounded-sm px-3 py-1.5 min-h-touch text-xs hover:bg-green-50 transition disabled:opacity-50"
                     >
                       {ex.is_active ? (
                         <>
@@ -273,7 +273,7 @@ export default function ManageExperiencesPage() {
                     onClick={() => remove(ex)}
                     disabled={busyId === ex.id}
                     aria-label={t("action_delete")}
-                    className="inline-flex items-center gap-1 border border-red-300 text-red-600 rounded-[8px] px-3 py-1.5 min-h-touch text-xs hover:bg-red-50 transition disabled:opacity-50"
+                    className="inline-flex items-center gap-1 border border-red-300 text-red-600 rounded-sm px-3 py-1.5 min-h-touch text-xs hover:bg-red-50 transition disabled:opacity-50"
                   >
                     <Trash size={16} aria-hidden="true" />
                     {t("action_delete")}

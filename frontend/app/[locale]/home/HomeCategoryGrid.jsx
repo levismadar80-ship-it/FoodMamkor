@@ -3,6 +3,7 @@
 import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { useRevealSkip } from "@/lib/route-memory";
 import { useTranslations } from "next-intl";
 import FadeInSection from "@/components/FadeInSection";
 // MEH-2163: the no-photo glyph AND its fallback both come from the registry's
@@ -52,6 +53,7 @@ const EASE_QUART = [0.25, 1, 0.5, 1];
  */
 export function HomeCategoryGrid({ categoryCards }) {
   const t = useTranslations();
+  const skipReveal = useRevealSkip();
   return (
     <section className="max-w-7xl mx-auto px-4 section-y" data-testid="home-category-grid">
       <FadeInSection className="mb-10">
@@ -74,7 +76,9 @@ export function HomeCategoryGrid({ categoryCards }) {
       <motion.div
         className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x snap-proximity -mx-4 px-4 scroll-px-4 md:mx-0 md:px-0 md:pb-0 md:overflow-visible md:grid md:grid-cols-2 lg:grid-cols-4 md:gap-4 lg:gap-6"
         data-testid="home-category-rail"
-        initial="hidden"
+        // MEH-2714: no replay on a back-navigation — `false` also reaches the
+        // staggered children, which inherit `initial` through the variants.
+        initial={skipReveal ? false : "hidden"}
         whileInView="show"
         viewport={{ once: true, amount: 0.1 }}
       >

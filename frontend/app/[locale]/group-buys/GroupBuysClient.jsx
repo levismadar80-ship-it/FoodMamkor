@@ -45,7 +45,7 @@ function GroupBuyCard({ gb }) {
     <Link
       href={`/group-buys/${gb.id}`}
       data-testid="group-buy-card"
-      className="group bg-white rounded-[16px] border border-border overflow-hidden flex flex-col hover:border-primary transition focus-ring"
+      className="group bg-white rounded-lg border border-border overflow-hidden flex flex-col hover:border-primary transition focus-ring"
     >
       <div className="relative aspect-[16/9] bg-green-50 overflow-hidden">
         {showImg ? (
@@ -243,7 +243,7 @@ export default function GroupBuysClient() {
         {loading ? (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-64 rounded-[16px] bg-border animate-pulse" />
+              <div key={i} className="h-64 rounded-lg bg-border animate-pulse" />
             ))}
           </div>
         ) : error ? (

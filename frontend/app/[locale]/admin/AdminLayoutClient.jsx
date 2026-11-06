@@ -211,7 +211,7 @@ function AdminShell({ children }) {
       <Link
         key={n.href}
         href={n.href}
-        className={`flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-sm transition ${
+        className={`flex items-center gap-2.5 px-3 py-2.5 rounded-sm text-sm transition ${
           active
             ? "bg-primary text-white"
             : "text-green-50/70 hover:bg-white/5 hover:text-white"
@@ -304,7 +304,7 @@ function AdminShell({ children }) {
               <Link
                 key={n.href}
                 href={n.href}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-xs transition ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs transition ${
                   active ? "bg-primary text-white" : "text-green-50/70"
                 }`}
                 aria-current={active ? "page" : undefined}
@@ -339,7 +339,7 @@ function AdminShell({ children }) {
             type="button"
             data-testid="admin-mobile-logout"
             onClick={logout}
-            className="inline-flex items-center gap-2 min-h-touch px-4 text-sm font-medium text-error focus-ring rounded-[8px]"
+            className="inline-flex items-center gap-2 min-h-touch px-4 text-sm font-medium text-error focus-ring rounded-sm"
           >
             <SignOut size={18} aria-hidden="true" />
             {tAccount("logout")}

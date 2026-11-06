@@ -85,7 +85,7 @@ export default function ProducerDashboardInsightsPage() {
       <div className="max-w-5xl mx-auto px-4 py-16">
         <div
           data-testid="insights-load-error"
-          className="bg-white border border-border rounded-[16px] p-6 text-center"
+          className="bg-white border border-border rounded-lg p-6 text-center"
           role="alert"
         >
           <p className="text-fg-muted mb-4">{t("section_errors.analytics")}</p>
@@ -122,7 +122,7 @@ export default function ProducerDashboardInsightsPage() {
           (Site Kit hasZeroData pattern). KPI cards still render below. */}
       {profile && !isApproved && (
         <div
-          className="bg-white border border-border rounded-[16px] p-4 mb-6 text-sm"
+          className="bg-white border border-border rounded-lg p-4 mb-6 text-sm"
           role="status"
           data-testid="insights-zero-state"
         >
@@ -276,14 +276,14 @@ function DeepAnalyticsSection({ analytics, profile }) {
 
       {/* Charts */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-white border border-border rounded-[16px] p-5">
+        <div className="bg-white border border-border rounded-lg p-5">
           <h2 className="font-headline-md text-lg font-bold mb-3">
             {t("views_chart_title")}
             <InfoTooltip content={t("views_chart_tooltip")} />
           </h2>
           <ViewsLineChart data={views_by_day} />
         </div>
-        <div className="bg-white border border-border rounded-[16px] p-5">
+        <div className="bg-white border border-border rounded-lg p-5">
           <h2 className="font-headline-md text-lg font-bold mb-3">{t("top_cities_title")}</h2>
           <TopCitiesBarChart data={top_cities} />
         </div>
@@ -320,7 +320,7 @@ function PickupHostsCard({ data }) {
   if (rows.length === 0) return null;
   return (
     <div
-      className="bg-white border border-border rounded-[16px] p-5"
+      className="bg-white border border-border rounded-lg p-5"
       data-testid="pickup-hosts-card"
     >
       <h2 className="font-headline-md text-lg font-bold mb-1">{t("title")}</h2>
@@ -361,7 +361,7 @@ function CoverageRequestsCard({ data }) {
   const rows = Array.isArray(data) ? data : [];
   return (
     <div
-      className="bg-white border border-border rounded-[16px] p-5"
+      className="bg-white border border-border rounded-lg p-5"
       data-testid="coverage-requests-card"
     >
       <h2 className="font-headline-md text-lg font-bold mb-3">{t("title")}</h2>
@@ -390,7 +390,7 @@ function CoverageRequestsCard({ data }) {
 function WindowedMetricCard({ label, icon: Icon, windows, tooltip, period }) {
   const locale = useLocale();
   return (
-    <div className="bg-white border border-border rounded-[16px] p-5" data-testid="windowed-card">
+    <div className="bg-white border border-border rounded-lg p-5" data-testid="windowed-card">
       <div className="flex items-center justify-between mb-3">
         <Icon size={24} className="text-primary" aria-hidden="true" />
       </div>
@@ -411,7 +411,7 @@ function WindowedMetricCard({ label, icon: Icon, windows, tooltip, period }) {
 
 function SimpleCard({ label, icon: Icon, value, sub, empty }) {
   return (
-    <div className="bg-white border border-border rounded-[16px] p-5">
+    <div className="bg-white border border-border rounded-lg p-5">
       <div className="flex items-center justify-between mb-3">
         <Icon size={24} className="text-primary" aria-hidden="true" />
       </div>

@@ -449,7 +449,7 @@ export default function ExperienceDetailClient() {
               (or per comma when she wrote one line). White like the
               description — the old green box read as a warning. */}
           {bringItems.length > 0 && (
-            <div className="bg-white border border-border rounded-[16px] p-6" data-testid="experience-bring">
+            <div className="bg-white border border-border rounded-lg p-6" data-testid="experience-bring">
               <h2 className="font-headline-md text-lg font-bold text-text mb-3">
                 {t("requirements_title")}
               </h2>
@@ -465,7 +465,7 @@ export default function ExperienceDetailClient() {
           )}
 
           {ex.description && (
-            <div className="bg-white border border-border rounded-[16px] p-6 leading-relaxed whitespace-pre-line text-text/90">
+            <div className="bg-white border border-border rounded-lg p-6 leading-relaxed whitespace-pre-line text-text/90">
               {ex.description}
             </div>
           )}

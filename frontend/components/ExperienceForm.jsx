@@ -384,7 +384,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
   };
 
   return (
-    <form onSubmit={submit} noValidate className="bg-background border border-border rounded-[16px] p-6 space-y-5">
+    <form onSubmit={submit} noValidate className="bg-background border border-border rounded-lg p-6 space-y-5">
       {unverified && <UnverifiedEmailNotice />}
       {serverError && (
         <div className="bg-red-50 border border-red-200 text-red-700 rounded-md p-3 text-sm">{serverError}</div>
@@ -492,7 +492,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
             <img
               src={form.image_url}
               alt={t("field_image")}
-              className="w-24 h-24 object-cover rounded-[8px] border border-border"
+              className="w-24 h-24 object-cover rounded-sm border border-border"
             />
             {/* No aria-label: it carried "הסרת התמונה" while the visible text
                 is "הסרת תמונה", and WCAG 2.5.3 (Label in Name) requires the
@@ -525,7 +525,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
              the same idiom as AddressSearch.jsx:196 / CitiesAutocomplete.jsx:206.
              EventForm.jsx has the original `hidden`; not touched from here, noted
              on the PR. (CI reviewer, PR #2814.) */
-          <label className="flex flex-col items-center justify-center text-center text-sm text-fg-muted border border-dashed border-border rounded-[8px] px-4 py-6 cursor-pointer hover:bg-green-50 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30">
+          <label className="flex flex-col items-center justify-center text-center text-sm text-fg-muted border border-dashed border-border rounded-sm px-4 py-6 cursor-pointer hover:bg-green-50 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30">
             <input
               id="experience-image"
               type="file"
@@ -747,7 +747,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
           // save the PREVIOUS image_url while the owner watches a new one
           // upload — which reads as the upload having been ignored.
           disabled={submitting || uploading || verdict?.status === "REJECTED"}
-          className="bg-primary text-white px-6 py-3 rounded-[8px] font-medium hover:bg-primary-dark transition disabled:opacity-50 disabled:cursor-not-allowed"
+          className="bg-primary text-white px-6 py-3 rounded-sm font-medium hover:bg-primary-dark transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {submitting
             ? t("submitting")

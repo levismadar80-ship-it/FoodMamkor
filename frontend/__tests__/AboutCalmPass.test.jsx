@@ -28,6 +28,8 @@ vi.mock("next-intl", () => ({
 }));
 vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(""),
+  // MEH-2714: FadeInSection reads the route via usePathname (route-memory).
+  usePathname: () => "/about",
 }));
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ children, href, ...props }) => (

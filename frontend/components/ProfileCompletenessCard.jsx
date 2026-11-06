@@ -270,7 +270,7 @@ export default function ProfileCompletenessCard({ producer }) {
     return (
       <div
         data-testid="profile-completeness-card"
-        className="bg-background border border-border rounded-[16px] px-6 py-4 mb-8 flex items-center gap-3"
+        className="bg-background border border-border rounded-lg px-6 py-4 mb-8 flex items-center gap-3"
         role="status"
       >
         <Check size={20} weight="bold" className="text-primary shrink-0" aria-hidden="true" />
@@ -293,7 +293,7 @@ export default function ProfileCompletenessCard({ producer }) {
   return (
     <div
       data-testid="profile-completeness-card"
-      className="bg-background border border-border rounded-[16px] p-6 md:p-8 mb-8"
+      className="bg-background border border-border rounded-lg p-6 md:p-8 mb-8"
     >
       <div className="flex items-start gap-4">
         <ProgressRing
@@ -318,7 +318,7 @@ export default function ProfileCompletenessCard({ producer }) {
               <li key={s.key}>
                 <Link
                   href={s.href}
-                  className="flex items-center gap-2 text-sm rounded-[8px] -mx-2 px-2 py-1.5 hover:bg-primary/5 transition-colors focus-ring"
+                  className="flex items-center gap-2 text-sm rounded-sm -mx-2 px-2 py-1.5 hover:bg-primary/5 transition-colors focus-ring"
                 >
                   <span
                     className="inline-flex w-4 justify-center text-primary"

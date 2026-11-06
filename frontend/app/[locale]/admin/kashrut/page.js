@@ -233,7 +233,7 @@ export default function AdminKashrutPage() {
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="border rounded-[8px] px-3 py-2 text-sm"
+          className="border rounded-sm px-3 py-2 text-sm"
         >
           <option value="pending">{t("kashrut.status.pending")}</option>
           <option value="approved">{t("kashrut.status.approved")}</option>
@@ -328,7 +328,7 @@ export default function AdminKashrutPage() {
       {/* MEH-2518: approve modal — the expiry printed on the certificate. */}
       {approveModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[9000] p-4">
-          <div className="bg-white rounded-[16px] p-6 w-full max-w-md shadow-xl" dir="rtl">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl" dir="rtl">
             <h2 className="font-semibold text-lg mb-3">{t("kashrut.approve_modal.title")}</h2>
             <label htmlFor="kashrut-expires-on" className="text-sm font-medium block mb-1.5">
               {t("kashrut.approve_modal.date_label")}
@@ -341,7 +341,7 @@ export default function AdminKashrutPage() {
               max={israelDateOffset(400)}
               value={approveDate}
               onChange={(e) => setApproveDate(e.target.value)}
-              className="w-full border rounded-[8px] p-3 text-sm"
+              className="w-full border rounded-sm p-3 text-sm"
             />
             <p className="text-xs text-fg-muted mt-2">{t("kashrut.approve_modal.hint")}</p>
             <div className="flex gap-3 mt-4">
@@ -366,14 +366,14 @@ export default function AdminKashrutPage() {
       {/* MEH-2518: revoke modal — takes an approved badge down. */}
       {revokeModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[9000] p-4">
-          <div className="bg-white rounded-[16px] p-6 w-full max-w-md shadow-xl" dir="rtl">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl" dir="rtl">
             <h2 className="font-semibold text-lg mb-3">{t("kashrut.revoke_modal.title")}</h2>
             <p className="text-sm text-fg-muted mb-3">{t("kashrut.revoke_modal.body")}</p>
             <textarea
               value={revokeNotes}
               onChange={(e) => setRevokeNotes(e.target.value)}
               placeholder={t("kashrut.revoke_modal.placeholder")}
-              className="w-full border rounded-[8px] p-3 text-sm resize-none h-24"
+              className="w-full border rounded-sm p-3 text-sm resize-none h-24"
             />
             <div className="flex gap-3 mt-4">
               <button
@@ -397,13 +397,13 @@ export default function AdminKashrutPage() {
       {/* Reject modal */}
       {rejectModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[9000] p-4">
-          <div className="bg-white rounded-[16px] p-6 w-full max-w-md shadow-xl" dir="rtl">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl" dir="rtl">
             <h2 className="font-semibold text-lg mb-3">{t("kashrut.reject_modal.title")}</h2>
             <textarea
               value={rejectNotes}
               onChange={(e) => setRejectNotes(e.target.value)}
               placeholder={t("kashrut.reject_modal.placeholder")}
-              className="w-full border rounded-[8px] p-3 text-sm resize-none h-24"
+              className="w-full border rounded-sm p-3 text-sm resize-none h-24"
             />
             <div className="flex gap-3 mt-4">
               <button

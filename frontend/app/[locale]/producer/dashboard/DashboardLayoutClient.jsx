@@ -92,7 +92,7 @@ function DashboardChromeSkeleton({ label }) {
         <div className="max-w-5xl mx-auto px-2 sm:px-4 flex gap-1">
           {TABS.map((tab) => (
             <div key={tab.key} className="flex-1 sm:flex-none flex justify-center px-1 sm:px-4 py-3">
-              <div className="h-5 w-12 sm:w-20 bg-border rounded-[8px] animate-pulse" />
+              <div className="h-5 w-12 sm:w-20 bg-border rounded-sm animate-pulse" />
             </div>
           ))}
         </div>
@@ -101,7 +101,7 @@ function DashboardChromeSkeleton({ label }) {
         <div className="h-8 w-48 bg-border rounded-md animate-pulse" />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[0, 1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-32 bg-border rounded-[16px] animate-pulse" />
+            <div key={i} className="h-32 bg-border rounded-lg animate-pulse" />
           ))}
         </div>
       </div>
@@ -247,7 +247,7 @@ export default function ProducerDashboardLayout({ children }) {
           type="button"
           data-testid="dashboard-mobile-logout"
           onClick={logout}
-          className="inline-flex items-center gap-2 min-h-touch px-4 text-sm font-medium text-error focus-ring rounded-[8px]"
+          className="inline-flex items-center gap-2 min-h-touch px-4 text-sm font-medium text-error focus-ring rounded-sm"
         >
           <SignOut size={18} aria-hidden="true" />
           {tAccount("logout")}

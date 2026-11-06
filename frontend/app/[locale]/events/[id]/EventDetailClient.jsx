@@ -101,7 +101,7 @@ export default function EventDetailClient() {
             <span className="w-28 h-4 rounded bg-border/60 animate-pulse" />
             <span className="w-20 h-4 rounded bg-border/60 animate-pulse" />
           </div>
-          <span className="block w-full h-32 rounded-[16px] bg-border/60 animate-pulse" />
+          <span className="block w-full h-32 rounded-lg bg-border/60 animate-pulse" />
         </div>
       </div>
     );
@@ -370,7 +370,7 @@ export default function EventDetailClient() {
           {hasCoords && <MiniMap lat={event.lat} lng={event.lng} name={event.title} />}
 
           {event.description && (
-            <div className="bg-white border border-border rounded-[16px] p-6 leading-relaxed whitespace-pre-line text-text/90">
+            <div className="bg-white border border-border rounded-lg p-6 leading-relaxed whitespace-pre-line text-text/90">
               {event.description}
             </div>
           )}

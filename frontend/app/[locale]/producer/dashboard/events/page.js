@@ -100,7 +100,7 @@ export default function ManageEventsPage() {
         {Array.isArray(items) && items.length > 0 && (
           <Link
             href="/producer/dashboard/events/new"
-            className="inline-flex items-center gap-1.5 bg-primary text-white px-4 py-2 min-h-touch rounded-[8px] text-sm font-medium hover:bg-primary-dark transition"
+            className="inline-flex items-center gap-1.5 bg-primary text-white px-4 py-2 min-h-touch rounded-sm text-sm font-medium hover:bg-primary-dark transition"
           >
             <CalendarPlus size={18} weight="bold" aria-hidden="true" />
             {t("create_cta")}
@@ -156,7 +156,7 @@ export default function ManageEventsPage() {
                   <Link
                     href={`/producer/dashboard/events/${ev.id}/edit`}
                     aria-label={t("action_edit")}
-                    className="inline-flex items-center gap-1 border border-border rounded-[8px] px-3 py-1.5 min-h-touch text-xs hover:bg-green-50 transition"
+                    className="inline-flex items-center gap-1 border border-border rounded-sm px-3 py-1.5 min-h-touch text-xs hover:bg-green-50 transition"
                   >
                     <PencilSimple size={16} aria-hidden="true" />
                     {t("action_edit")}
@@ -166,7 +166,7 @@ export default function ManageEventsPage() {
                     type="button"
                     onClick={() => toggleActive(ev)}
                     disabled={busyId === ev.id}
-                    className="inline-flex items-center gap-1 border border-border rounded-[8px] px-3 py-1.5 min-h-touch text-xs hover:bg-green-50 transition disabled:opacity-50"
+                    className="inline-flex items-center gap-1 border border-border rounded-sm px-3 py-1.5 min-h-touch text-xs hover:bg-green-50 transition disabled:opacity-50"
                   >
                     {ev.is_active ? (
                       <>
@@ -186,7 +186,7 @@ export default function ManageEventsPage() {
                     onClick={() => remove(ev)}
                     disabled={busyId === ev.id}
                     aria-label={t("action_delete")}
-                    className="inline-flex items-center gap-1 border border-red-300 text-red-600 rounded-[8px] px-3 py-1.5 min-h-touch text-xs hover:bg-red-50 transition disabled:opacity-50"
+                    className="inline-flex items-center gap-1 border border-red-300 text-red-600 rounded-sm px-3 py-1.5 min-h-touch text-xs hover:bg-red-50 transition disabled:opacity-50"
                   >
                     <Trash size={16} aria-hidden="true" />
                     {t("action_delete")}

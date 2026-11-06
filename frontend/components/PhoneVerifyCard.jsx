@@ -140,7 +140,7 @@ export default function PhoneVerifyCard({ onVerified }) {
         type="button"
         onClick={handleSend}
         disabled={sending || cooldown > 0}
-        className="btn-whatsapp-outline min-h-touch text-sm rounded-[8px] px-4 py-2 disabled:opacity-50"
+        className="btn-whatsapp-outline min-h-touch text-sm rounded-sm px-4 py-2 disabled:opacity-50"
       >
         {sendLabel}
       </button>
@@ -161,13 +161,13 @@ export default function PhoneVerifyCard({ onVerified }) {
               value={code}
               onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, OTP_LENGTH))}
               placeholder={t("code_placeholder")}
-              className="w-40 text-center tracking-[0.3em] border border-border rounded-[8px] px-3 py-2 text-sm focus:border-primary outline-none"
+              className="w-40 text-center tracking-[0.3em] border border-border rounded-sm px-3 py-2 text-sm focus:border-primary outline-none"
             />
             <button
               type="button"
               onClick={handleConfirm}
               disabled={confirming || code.length !== OTP_LENGTH}
-              className="bg-primary text-white min-h-touch text-sm rounded-[8px] px-4 py-2 font-medium hover:bg-primary-dark transition disabled:opacity-50"
+              className="bg-primary text-white min-h-touch text-sm rounded-sm px-4 py-2 font-medium hover:bg-primary-dark transition disabled:opacity-50"
             >
               {confirming ? t("confirming") : t("confirm_cta")}
             </button>
