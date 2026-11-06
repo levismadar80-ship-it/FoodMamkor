@@ -1,5 +1,5 @@
-> **Status: STAGED — as-of 06/11/2026.** Not yet applied: `.github/workflows/post-deploy-checks.yml` does not exist on `origin/staging`.
-> Re-check before acting: `git ls-tree origin/staging .github/workflows/post-deploy-checks.yml`.
+> **Status: APPLIED on the PR branch — as-of 06/11/2026.** Sapir committed `.github/workflows/post-deploy-checks.yml` in `16620bb` (GitHub web editor). CC compared it with the yaml block below: byte-identical, 120 lines. It reaches `staging` when PR #4069 merges.
+> Re-check before acting: `git ls-tree origin/staging .github/workflows/post-deploy-checks.yml`. This file stays as the record of why each step is there; change the workflow and this block together.
 
 # 🔧 Staged patch — post-deploy checks workflow (MEH-2749)
 
