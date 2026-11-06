@@ -32,8 +32,16 @@ describe("holiday copy lives in messages (MEH-2741)", () => {
     for (const k of KEYS) for (const f of FIELDS) expect(en.holidays[k][f], `${k}.${f}`).not.toMatch(HEBREW);
   });
 
-  it("reader-facing taglines are gender-neutral (ADR-037)", () => {
+  // The two taglines with a verb use the plural form; no reader string in the
+  // set uses a feminine-singular imperative (the forms this copy used before).
+  it("reader-facing holiday copy is gender-neutral (ADR-037)", () => {
     expect(he.holidays.pesach.tagline).toContain("מצאו");
     expect(he.holidays.chanuka.tagline).toContain("הדליקו");
+    const FEMININE = /(^|\s)(מצאי|הדליקי|גלי|קני|הזמיני|בחרי|חפשי|עדכני)(\s|$)/;
+    for (const k of KEYS) {
+      for (const f of ["name", "tagline", "cta"]) {
+        expect(he.holidays[k][f], `${k}.${f}`).not.toMatch(FEMININE);
+      }
+    }
   });
 });
