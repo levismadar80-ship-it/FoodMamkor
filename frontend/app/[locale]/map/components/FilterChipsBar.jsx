@@ -7,6 +7,7 @@ import { resolveCategoryGlyph } from "@/lib/category-registry";
 import FilterSheet from "@/components/FilterSheet";
 import DeliveryContextBanner from "./DeliveryContextBanner";
 import ServiceChipRow from "./ServiceChipRow";
+import { useChipCopy } from "@/lib/use-chip-copy";
 
 /**
  * The /map filter bar: one category chip row + a "סינון" button + a
@@ -48,6 +49,7 @@ export default function FilterChipsBar({
   originTag = null,
 }) {
   const t = useTranslations();
+  const withChipCopy = useChipCopy(); // MEH-2748: tag words from messages
   const [sheetOpen, setSheetOpen] = useState(false);
   // MEH-1441: attach a 16px CATEGORY_ICONS glyph (via the chip's `iconName`) to
   // each category chip at the render site — map-chips.js stays React-free (only
@@ -88,7 +90,7 @@ export default function FilterChipsBar({
         className={`${inRow ? "" : "mt-2 "}flex flex-wrap items-center gap-1.5`}
         aria-live="polite"
       >
-        {activeFilterTags.map((tag) => (
+        {activeFilterTags.map(withChipCopy).map((tag) => (
           // MEH-825: ≥44px hit area via the transparent button (min-h-touch
           // + -my-2.5 keeps the visible row compact); the visible pill is the
           // inner span (~24px, AA floor).
