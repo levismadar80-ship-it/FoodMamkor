@@ -105,6 +105,22 @@ describe("the three counters", () => {
   });
 });
 
+describe("the order list", () => {
+  it("puts orders still waiting at the counter first and cancelled ones last", async () => {
+    mockOrders([
+      order({ id: "c", status: "cancelled", pickup_code: "0001" }),
+      order({ id: "h", status: "handed", pickup_code: "0002" }),
+      order({ id: "r", status: "reserved", pickup_code: "0003" }),
+      order({ id: "n", status: "no_show", pickup_code: "0004" }),
+      order({ id: "r2", status: "reserved", pickup_code: "0005" }),
+    ]);
+    render(<RescueTab />);
+    await screen.findAllByTestId("rescue-order-row");
+    const codes = screen.getAllByTestId("rescue-order-code").map((el) => el.textContent);
+    expect(codes).toEqual(["0003", "0005", "0002", "0004", "0001"]);
+  });
+});
+
 describe("«לא הגיע» and the pickup window", () => {
   it("is DISABLED while the window is still open", async () => {
     mockOrders([order()]);

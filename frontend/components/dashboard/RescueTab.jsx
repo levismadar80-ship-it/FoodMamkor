@@ -24,6 +24,8 @@ const MAX_QTY = 20;
 // refuses a bag dated in the past (MEH-2678).
 const ISRAEL_DATE = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jerusalem" });
 
+const ORDER_RANK = { reserved: 0, handed: 1, no_show: 2, cancelled: 3 };
+
 export default function RescueTab() {
   const t = useTranslations("rescue.dashboard");
   const [orders, setOrders] = useState(null);
@@ -92,6 +94,15 @@ export default function RescueTab() {
       no_show: rows.filter((o) => o.status === "no_show").length,
     };
   }, [orders]);
+  // Orders still waiting at the counter first, cancelled ones last; the
+  // server order is kept inside each group.
+  const sortedOrders = useMemo(
+    () =>
+      [...(orders || [])].sort(
+        (a, b) => (ORDER_RANK[a.status] ?? 9) - (ORDER_RANK[b.status] ?? 9),
+      ),
+    [orders],
+  );
 
   async function act(order, what) {
     setBusyId(order.id);
@@ -263,7 +274,7 @@ export default function RescueTab() {
           </p>
         )}
         <ul className="space-y-2">
-          {(orders || []).map((o) => {
+          {sortedOrders.map((o) => {
             // «לא הגיע» is only legal after the window closed — the server
             // refuses it earlier, so the button must not offer it earlier.
             const windowClosed = new Date(o.pickup_end).getTime() <= now;
@@ -271,24 +282,26 @@ export default function RescueTab() {
               <li
                 key={o.id}
                 data-testid="rescue-order-row"
-                className="flex items-center justify-between gap-3 border border-border rounded-md px-3 py-2"
+                // A fixed grid, so code and quantity line up whatever the
+                // status cell holds (two buttons, a time, or one word).
+                className="grid grid-cols-[3.5rem_4rem_1fr] items-center gap-2 border border-border rounded-md px-3 py-2"
               >
                 <span dir="ltr" className="font-headline-md font-black tracking-[0.2em]" data-testid="rescue-order-code">
                   {o.pickup_code}
                 </span>
                 <span className="font-body-sm text-sm text-fg-muted">{t("qty", { qty: o.qty })}</span>
                 {o.status === "handed" ? (
-                  <span className="font-body-sm text-sm text-fg-muted" data-testid="rescue-order-handed">
+                  <span className="justify-self-end font-body-sm text-sm text-fg-muted" data-testid="rescue-order-handed">
                     {t("handed_at", { time: israelTime(o.handed_at) || "" })}
                   </span>
                 ) : o.status === "reserved" ? (
-                  <span className="flex gap-2">
+                  <span className="justify-self-end flex gap-2">
                     <button
                       type="button"
                       disabled={busyId === o.id}
                       onClick={() => act(o, "handed")}
                       data-testid="rescue-order-hand"
-                      className="bg-primary text-white px-3 py-1 rounded-md font-body-sm text-sm disabled:opacity-50"
+                      className="whitespace-nowrap bg-primary text-white px-3 py-1 rounded-md font-body-sm text-sm disabled:opacity-50"
                     >
                       {t("hand_over")}
                     </button>
@@ -298,13 +311,13 @@ export default function RescueTab() {
                       title={windowClosed ? undefined : t("no_show_too_early")}
                       onClick={() => act(o, "no_show")}
                       data-testid="rescue-order-noshow"
-                      className="border border-border px-3 py-1 rounded-md font-body-sm text-sm disabled:opacity-40"
+                      className="whitespace-nowrap border border-border px-3 py-1 rounded-md font-body-sm text-sm disabled:opacity-40"
                     >
                       {t("no_show")}
                     </button>
                   </span>
                 ) : (
-                  <span className="font-body-sm text-sm text-fg-muted">{t(`status.${o.status}`)}</span>
+                  <span className="justify-self-end font-body-sm text-sm text-fg-muted">{t(`status.${o.status}`)}</span>
                 )}
               </li>
             );
