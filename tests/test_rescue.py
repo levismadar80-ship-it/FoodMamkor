@@ -799,3 +799,33 @@ class TestReserveEmail:
         assert r.status_code == 201, r.text
         assert "<b>מאפה</b>" not in sent[0]["html"]
         assert "&lt;b&gt;מאפה&lt;/b&gt;" in sent[0]["html"]
+
+    def test_no_address_drops_the_clause_and_a_line_break_never_reaches_the_subject(
+        self, monkeypatch
+    ):
+        """Direct call: an empty address and a name with a newline are not
+        reachable through the route's fixtures (exact-precision points carry an
+        address), so the service is driven with plain values."""
+        from app.services import rescue_emails
+
+        sent = self._capture(monkeypatch)
+        rescue_emails.send_reservation_email(
+            "x@example.com",
+            rescue_emails.ReservationEmail(
+                producer_name="מאפה\r\nBcc: a@example.com",
+                producer_id="p1",
+                pickup_code="0431",
+                total_agorot=1250,
+                pickup_from="20:00",
+                pickup_until="22:00",
+                address="",
+                cancel_until="19:30",
+            ),
+        )
+        mail = sent[0]
+        assert "\n" not in mail["subject"] and "\r" not in mail["subject"]
+        assert mail["subject"] == "שמרנו לכם סל במאפה Bcc: a@example.com"
+        assert "איסוף היום 20:00–22:00.\n" in mail["body"]
+        assert ", ." not in mail["body"]
+        assert "📍" not in mail["html"]
+        assert "ומשלמים 12.50" in mail["body"]

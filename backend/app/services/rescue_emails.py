@@ -52,14 +52,18 @@ class ReservationEmail:
 
 
 def send_reservation_email(to: str, m: ReservationEmail) -> None:
-    subject = f"שמרנו לכם סל ב{m.producer_name}"
+    # A name with a line break would break the Subject header; collapse all
+    # whitespace runs to one space (the body keeps the same, cleaned name).
+    name = " ".join(m.producer_name.split())
+    subject = f"שמרנו לכם סל ב{name}"
+    where = f", {m.address}" if m.address else ""
     price = shekels(m.total_agorot)
     page_url = f"{settings.frontend_url}/producer/{m.producer_id}"
 
     body = (
         f"{subject}\n\n"
         f"הקוד שלכם: {m.pickup_code}. אומרים אותו בקופה ומשלמים {price} ₪.\n"
-        f"איסוף היום {m.pickup_from}–{m.pickup_until}, {m.address}.\n"
+        f"איסוף היום {m.pickup_from}–{m.pickup_until}{where}.\n"
         f"אי אפשר להגיע? אפשר לבטל בחינם עד {m.cancel_until}, "
         f"וככה הסל יגיע למישהו אחר.\n\n"
         f"לבטל את השריון: {page_url}\n\n"
@@ -71,6 +75,7 @@ def send_reservation_email(to: str, m: ReservationEmail) -> None:
     # nothing and keeps the rule simple.
     e = html_escape
     subject_html = e(subject)
+    address_html = f"<br>\n                📍&nbsp; {e(m.address)}" if m.address else ""
     html_body = f"""\
 <!DOCTYPE html>
 <html dir="rtl" lang="he">
@@ -91,8 +96,7 @@ def send_reservation_email(to: str, m: ReservationEmail) -> None:
           <tr><td style="padding:16px 22px 4px;">
             <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#fffefb;border:1px solid #e5dfd3;border-radius:10px;">
               <tr><td style="padding:12px 14px;text-align:right;font-size:15px;color:#1c1a17;line-height:1.7;">
-                🕗&nbsp; איסוף היום {e(m.pickup_from)}–{e(m.pickup_until)}<br>
-                📍&nbsp; {e(m.address)}
+                🕗&nbsp; איסוף היום {e(m.pickup_from)}–{e(m.pickup_until)}{address_html}
               </td></tr>
             </table>
           </td></tr>
