@@ -81,6 +81,9 @@
 
 import { parseNaiveUtc } from "./dates";
 
+// MEH-2740: each badge's label and tooltip live in messages/{he,en}.json under
+// `badges.<key>.label` / `badges.<key>.tooltip` — read them with useBadgeCopy()
+// (lib/use-badge-copy.js). This registry holds only logic and metadata.
 export const BADGE_CONFIG = {
   verified: {
     key: "verified",
@@ -88,11 +91,9 @@ export const BADGE_CONFIG = {
     // document against the Ministry of Health register (ADR-022).
     scope: "business",
     evidence: "admin-verified",
-    label: "מאומת",
     // MEH-762: ADR-022 tier-1 copy lock (terms §5.2-aligned). Replaces the
-    // pre-ADR-022 over-claim ("עבר אימות זהות ורישוי"). en gap is inherited
-    // legacy — dies when MEH-76 S12 wires the MEH-758 keys.
-    tooltip: "בית העסק הציג מסמך רישוי או אישור פטור רשמי שנבדק ידנית.",
+    // pre-ADR-022 over-claim ("עבר אימות זהות ורישוי"). (MEH-2740: the
+    // copy now lives in messages, en included.)
     color: "primary",
   },
   recommended: {
@@ -108,9 +109,6 @@ export const BADGE_CONFIG = {
     // MEH-1492: renamed מומלץ → "בחירת העורכת" — the label now names who stands
     // behind the opinion (an editor), and the popover links out to the /about
     // criteria + the ADR-030 "can't be bought" promise (aboutHref below).
-    label: "בחירת העורכת",
-    tooltip:
-      "בחירה אישית של עורכת מהמקור — על איכות, טריות או סיפור מיוחד. אי אפשר לקנות את התגית הזו.",
     // MEH-1492: the badge popover links here (BadgeRow wraps the tooltip in a
     // LocaleLink when aboutHref is set — mirrors the verified → /about#verification
     // pattern, MEH-1336). Editorial opinion → publish the criteria.
@@ -134,8 +132,6 @@ export const BADGE_CONFIG = {
     // for. scope is `business` — the business joined recently, not a product.
     scope: "business",
     evidence: "system",
-    label: "חדש",
-    tooltip: "העסק הצטרף אלינו בחודש האחרון.",
     // MEH-792: was "secondary" — an alias of primary ever since MEH-703
     // collapsed brand-secondary into primary.
     // MEH-1168 P1: demoted primary → muted (tonal cream/hairline). Solid green
@@ -157,8 +153,6 @@ export const BADGE_CONFIG = {
     // is the one non-diet member of the self-declared group.
     scope: "business",
     evidence: "self-declared",
-    label: "גראס פד",
-    tooltip: "בעלי החיים גדלים על מרעה ולא על תערובת תעשייתית, לפי הצהרת בית העסק.",
     color: "muted",
   },
   // MEH-1439: tooltips state any-product semantics, not an all-products claim.
@@ -170,11 +164,9 @@ export const BADGE_CONFIG = {
     // Matches FILTER_AXES.gluten_free. `any-product`, never `business`: the
     // badge lights on `has_gluten_free_products` — ANY marked product in the
     // catalog (MEH-479). Reading it as a whole-business property is the exact
-    // MEH-1439 over-claim, and the tooltip below is worded to prevent it.
+    // MEH-1439 over-claim, and its tooltip (messages `badges.<key>.tooltip`) is worded to prevent it.
     scope: "any-product",
     evidence: "self-declared",
-    label: "ללא גלוטן",
-    tooltip: "לעסק יש מוצרים ללא גלוטן מסומנים בקטלוג.",
     color: "muted",
   },
   // MEH-1438: vegetarian badge — lights on has_vegetarian_products (aggregation
@@ -185,12 +177,10 @@ export const BADGE_CONFIG = {
     // Matches FILTER_AXES.vegetarian. `any-product`, never `business`: the
     // badge lights on `has_vegetarian_products` — ANY marked product in the
     // catalog (MEH-479). Reading it as a whole-business property is the exact
-    // MEH-1439 over-claim, and the tooltip below is worded to prevent it.
+    // MEH-1439 over-claim, and its tooltip (messages `badges.<key>.tooltip`) is worded to prevent it.
     scope: "any-product",
     evidence: "self-declared",
     // MEH-1508 chunk 3ב-2 (§6.6, LOCKED): scope in the term, matching the axis.
-    label: "מתאים לצמחונים",
-    tooltip: "לעסק יש מוצרים צמחוניים מסומנים בקטלוג.",
     color: "muted",
   },
   vegan: {
@@ -198,12 +188,10 @@ export const BADGE_CONFIG = {
     // Matches FILTER_AXES.vegan. `any-product`, never `business`: the
     // badge lights on `has_vegan_products` — ANY marked product in the
     // catalog (MEH-479). Reading it as a whole-business property is the exact
-    // MEH-1439 over-claim, and the tooltip below is worded to prevent it.
+    // MEH-1439 over-claim, and its tooltip (messages `badges.<key>.tooltip`) is worded to prevent it.
     scope: "any-product",
     evidence: "self-declared",
     // MEH-1508 chunk 3ב-2 (§6.6, LOCKED): scope in the term, matching the axis.
-    label: "מתאים לטבעונים",
-    tooltip: "לעסק יש מוצרים טבעוניים מסומנים בקטלוג.",
     color: "muted",
   },
   // MEH-1508 chunk 3ב-2 — the 100% layer (card §6.4, copy LOCKED). Matches
@@ -221,8 +209,6 @@ export const BADGE_CONFIG = {
     // MEH-2677 (Sapir 05/11): was «100% טבעוני» — readers did not parse the
     // percent. Deliveroo / Uber Eats / Yelp: one word for the whole business,
     // "… friendly" for partial (ours: «מתאים לטבעונים»).
-    label: "טבעוני",
-    tooltip: "לפי הצהרת בית העסק",
     color: "muted",
   },
   vegetarian_all: {
@@ -230,8 +216,6 @@ export const BADGE_CONFIG = {
     scope: "business",
     evidence: "self-declared",
     // MEH-2677: was «100% צמחוני».
-    label: "צמחוני",
-    tooltip: "לפי הצהרת בית העסק",
     color: "muted",
   },
   lactose_free: {
@@ -239,11 +223,9 @@ export const BADGE_CONFIG = {
     // Matches FILTER_AXES.lactose_free. `any-product`, never `business`: the
     // badge lights on `has_lactose_free_products` — ANY marked product in the
     // catalog (MEH-479). Reading it as a whole-business property is the exact
-    // MEH-1439 over-claim, and the tooltip below is worded to prevent it.
+    // MEH-1439 over-claim, and its tooltip (messages `badges.<key>.tooltip`) is worded to prevent it.
     scope: "any-product",
     evidence: "self-declared",
-    label: "ללא לקטוז",
-    tooltip: "לעסק יש מוצרים ללא לקטוז מסומנים בקטלוג.",
     color: "muted",
   },
   // MEH-1934: tooltip carries any-product semantics (MEH-1439) — "לעסק יש
@@ -254,11 +236,9 @@ export const BADGE_CONFIG = {
     // Matches FILTER_AXES.no_added_sugar. `any-product`, never `business`: the
     // badge lights on `has_no_added_sugar_products` — ANY marked product in the
     // catalog (MEH-479). Reading it as a whole-business property is the exact
-    // MEH-1439 over-claim, and the tooltip below is worded to prevent it.
+    // MEH-1439 over-claim, and its tooltip (messages `badges.<key>.tooltip`) is worded to prevent it.
     scope: "any-product",
     evidence: "self-declared",
-    label: "ללא סוכר מוסף",
-    tooltip: "לעסק יש מוצרים ללא סוכר מוסף מסומנים בקטלוג.",
     color: "muted",
   },
   kosher: {
@@ -282,10 +262,8 @@ export const BADGE_CONFIG = {
     // where naming a single certificate would itself be a misstatement.
     // Industry precedent: ACM/Booking.com 2024 — the objection was to the
     // self-synthesized label, and the remedy was naming the third-party
-    // certification instead. Hardcoded Hebrew matches every sibling entry in
-    // this file; no new i18n key, so the MEH-978 en-parity guard is untouched.
-    label: "כשרות מאומתת",
-    tooltip: "המוצרים תחת השגחת כשרות.",
+    // certification instead. (MEH-2740: the words now live in messages
+    // `badges.kosher.*`, he + en.)
     color: "muted",
   },
   delivery: {
@@ -298,8 +276,6 @@ export const BADGE_CONFIG = {
     // label claims and who established it, not how the boolean is computed.
     scope: "business",
     evidence: "self-declared",
-    label: "משלוח",
-    tooltip: "העסק מוסר או שולח לכתובת שלך.",
     color: "muted",
   },
   // MEH-2693 «עסק של מילואימניקים» — the owner ticks it in the dashboard
@@ -312,8 +288,6 @@ export const BADGE_CONFIG = {
     key: "reservist_owned",
     scope: "business",
     evidence: "self-declared",
-    label: "עסק של מילואימניקים",
-    tooltip: "לפי הצהרת בית העסק, אחד הבעלים משרת במילואים.",
     color: "muted",
   },
   // MEH-2716 «מצילים מזון» — the second `system` badge, after «חדש». Nobody
@@ -325,8 +299,6 @@ export const BADGE_CONFIG = {
     key: "rescue_saving",
     scope: "business",
     evidence: "system",
-    label: "מצילים מזון",
-    tooltip: "בחודש האחרון העסק מסר סלי הפתעה, כך שאוכל לא נזרק.",
     color: "muted",
   },
   // MEH-1846: the products badge is REMOVED. It lit on products_count >= 3,

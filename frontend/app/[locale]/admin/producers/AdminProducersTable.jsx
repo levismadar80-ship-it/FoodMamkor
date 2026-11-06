@@ -16,6 +16,7 @@ import { SLA_STATUSES } from "./sla-statuses";
 import { getProducerStatusLabel, getProducerStatusColor } from "@/lib/producer-status";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { BADGE_CONFIG, isKashrutCurrent } from "@/lib/badges";
+import { useBadgeCopy } from "@/lib/use-badge-copy";
 
 // Phosphor icon size used in trait tags + the action row.
 const ICON_SIZE_SM = 16;
@@ -219,6 +220,7 @@ function CompletenessBadge({ missing, priority }) {
 // surface renders. Same predicate as the public strip (lib/badges.js).
 export function ProducerTags({ producer }) {
   const t = useTranslations("admin");
+  const kosherBadge = useBadgeCopy()(BADGE_CONFIG.kosher);
   return (
     <div className="flex gap-1 flex-wrap">
       {/* MEH-2459: an organizer (markets / events, sells nothing) stays in the
@@ -242,7 +244,7 @@ export function ProducerTags({ producer }) {
           (MEH-1259 organic; delivery is derived from delivery areas; pickup
           from ProducerLocation rows, MEH-2046/2060). */}
       {isKashrutCurrent(producer) && (
-        <span data-testid="admin-tag-kashrut" title={BADGE_CONFIG.kosher.label}>
+        <span data-testid="admin-tag-kashrut" title={kosherBadge.label}>
           <StarOfDavid size={ICON_SIZE_SM} className="text-primary" aria-hidden="true" />
         </span>
       )}
