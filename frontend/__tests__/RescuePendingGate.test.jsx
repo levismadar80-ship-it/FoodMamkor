@@ -54,6 +54,14 @@ describe("RescueTab — approval gate (MEH-2784)", () => {
     expect(screen.queryByTestId("rescue-publish-tomorrow")).toBeNull();
   });
 
+  it("suspended: open orders stay workable, only publishing is gated", async () => {
+    mockStatus("suspended");
+    render(<RescueTab />);
+    await screen.findByTestId("rescue-not-approved");
+    expect(screen.getByTestId("rescue-counters")).toBeTruthy();
+    expect(screen.queryByTestId("rescue-publish-tomorrow")).toBeNull();
+  });
+
   it("approved: the form, no gate", async () => {
     mockStatus("approved");
     render(<RescueTab />);

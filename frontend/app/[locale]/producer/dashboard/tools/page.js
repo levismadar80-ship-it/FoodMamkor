@@ -102,7 +102,7 @@ export default function ProducerDashboardToolsPage() {
   // the tile, before the owner opens them. The tile stays a link so the
   // owner can still see what the tool is.
   const approved = producer.status === "approved";
-  const lockedLine = !approved && (
+  const lockedLine = producer.status === "pending" && (
     <p data-testid="tool-locked-line" className="text-xs font-medium text-warning-800 mt-1">
       {t("quick_links.locked_until_approved")}
     </p>

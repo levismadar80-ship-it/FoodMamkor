@@ -126,8 +126,7 @@ export default function RescueTab() {
         setBusinessName(typeof r.data?.name === "string" ? r.data.name : "");
         setProducerStatus(typeof r.data?.status === "string" ? r.data.status : "unknown");
       })
-      // Silent on purpose: without a name the WhatsApp button stays hidden.
-      // An unknown status falls back to the form; the server still guards.
+      // A failed read hides the WhatsApp button (no name). An unknown status falls back to the form; the server still guards.
       .catch(() => setProducerStatus("unknown"));
     api
       .get("/producers/me/rescue/typical-items")
@@ -303,10 +302,10 @@ export default function RescueTab() {
   // front, and gets no form. Pending reads «we are reviewing»; any other
   // non-approved status (draft, rejected, suspended) gets the server's line.
   const gated = producerStatus !== null && producerStatus !== "approved" && producerStatus !== "unknown";
-  if (gated) {
-    return (
-      <div data-testid="rescue-tab" className="space-y-6">
-        {producerStatus === "pending" ? (
+  return (
+    <div data-testid="rescue-tab" className="space-y-6">
+      {gated &&
+        (producerStatus === "pending" ? (
           <div data-testid="rescue-pending-banner" role="status" className="bg-warning-50 border border-warning-200 rounded-md px-4 py-3">
             <p className="font-semibold text-warning-800">{t("pending_title")}</p>
             <p className="font-body-sm text-sm text-warning-800">{t("pending_body")}</p>
@@ -315,19 +314,7 @@ export default function RescueTab() {
           <p data-testid="rescue-not-approved" role="status" className="font-body-sm text-sm text-text">
             {t("not_approved")}
           </p>
-        )}
-        {producerStatus === "pending" && (
-          <section className="border border-border rounded-md px-4 py-4 space-y-2">
-            <h3 className="font-headline-md text-base font-black text-text">{t("publish_title")}</h3>
-            <p className="font-body-sm text-sm text-fg-muted">{t("pending_form_note")}</p>
-          </section>
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <div data-testid="rescue-tab" className="space-y-6">
+        ))}
       <div className="grid grid-cols-3 gap-3" data-testid="rescue-counters">
         {["reserved", "handed", "no_show"].map((k) => (
           <div key={k} className="border border-border rounded-md px-3 py-3 text-center">
@@ -425,7 +412,17 @@ export default function RescueTab() {
         {noticeAt(AT.orders)}
       </section>
 
-      {producerStatus === null ? null : locationsLoaded && !exactLocation ? (
+      {/* MEH-2784: only the publish form is gated. Codes, orders and «לא הגיע»
+          stay, so a business suspended with bags already out can still close
+          its open orders. */}
+      {producerStatus === null ? null : gated ? (
+        producerStatus === "pending" && (
+          <section className="border border-border rounded-md px-4 py-4 space-y-2">
+            <h3 className="font-headline-md text-base font-black text-text">{t("publish_title")}</h3>
+            <p className="font-body-sm text-sm text-fg-muted">{t("pending_form_note")}</p>
+          </section>
+        )
+      ) : locationsLoaded && !exactLocation ? (
         // MEH-2702: say what is missing up front, instead of an error after «לפרסם».
         <section
           className="border border-border rounded-md px-4 py-4 space-y-3"
