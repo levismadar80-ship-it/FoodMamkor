@@ -140,8 +140,9 @@ describe("MEH-2130 — surfaces decide membership, and nothing else does", () =>
     expect(Object.keys(ATTRIBUTE_LABELS).sort()).toEqual([...SHARED_AXIS_KEYS].sort());
     // The two surface-local axes are excluded BY THEIR OWN declaration —
     // there is no second exclusion list to maintain.
-    expect(ATTRIBUTE_LABELS.grass_fed).toBeUndefined();
-    expect(FILTER_AXES.grass_fed.surfaces).toEqual(["map"]);
+    // MEH-2767: grass_fed is on all three now, so it is IN the shared set.
+    expect(ATTRIBUTE_LABELS.grass_fed).toBeDefined();
+    expect(FILTER_AXES.grass_fed.surfaces).toEqual(["home", "producers", "map"]);
     // MEH-2131 widened `open_for_orders_now` from ["producers"] to all three,
     // so it is now cross-surface BY ITS OWN DECLARATION and correctly appears
     // in ATTRIBUTE_LABELS. This case previously asserted the opposite; the
@@ -297,13 +298,15 @@ describe("MEH-2130 — helper self-tests (known inputs, known answers)", () => {
   // Run these before trusting anything above: if the derivation helpers cannot
   // tell a correct input from a broken one, nothing they produced is evidence.
   it("axisKeysFor filters by surface and sorts by the given order", () => {
-    // MEH-2131: `open_for_orders_now` is on every surface now, so `grass_fed`
-    // (still /map-only) carries the "filters by surface" half of this
-    // self-test — asserted in BOTH directions so it proves the filter selects
-    // rather than merely returning everything.
+    // MEH-2767: no production axis is surface-local any more, so the
+    // "filters by surface" half runs on the badge-only pair (`surfaces: []`)
+    // — asserted in BOTH directions so it proves the filter selects rather
+    // than merely returning everything.
     expect(axisKeysFor("map", MAP_CHIP_ORDER)).toContain("grass_fed");
-    expect(axisKeysFor("producers", LISTING_CHIP_ORDER)).not.toContain("grass_fed");
-    expect(axisKeysFor("home", LISTING_CHIP_ORDER)).not.toContain("grass_fed");
+    expect(axisKeysFor("producers", LISTING_CHIP_ORDER)).toContain("grass_fed");
+    for (const surface of ["home", "producers", "map"]) {
+      expect(axisKeysFor(surface, LISTING_CHIP_ORDER)).not.toContain("vegan_all");
+    }
     // Order is honoured: reversing the order array reverses the result.
     const forward = axisKeysFor("map", MAP_CHIP_ORDER);
     const backward = axisKeysFor("map", [...MAP_CHIP_ORDER].reverse());

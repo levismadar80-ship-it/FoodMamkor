@@ -13,7 +13,7 @@ import { TOGGLE_CHIPS, chipStateToParams } from "@/lib/map-chips";
 import { chipsFromQuery } from "@/lib/filter-url";
 import { geocodeCity } from "@/lib/places";
 import { producerPoints, hiddenWhenSecondaryOff } from "@/lib/producerPoints";
-import { isRatingSortEnabled } from "@/lib/rating-gate";
+import { isRatingSortEnabled, mapRatingGateSource } from "@/lib/rating-gate";
 import { showToast } from "@/lib/toast";
 import { useUserCity } from "@/lib/use-user-city";
 import {
@@ -321,9 +321,11 @@ export default function MapPage() {
   // read straight off it — no extra request. An axis already selected when the
   // feed drops below the threshold falls back to the auto default rather than
   // leaving the <select> on a value it no longer renders.
+  // MEH-2778: counted on the UNFILTERED mount snapshot, as /producers counts
+  // the whole catalog — not on the filtered/viewport feed (see rating-gate.js).
   const ratingSortEnabled = useMemo(
-    () => isRatingSortEnabled(feed.allProducers),
-    [feed.allProducers],
+    () => isRatingSortEnabled(mapRatingGateSource(feed.catalogSnapshot, feed.allProducers)),
+    [feed.catalogSnapshot, feed.allProducers],
   );
   const effectiveSort =
     requestedSort === "rating" && !ratingSortEnabled ? autoSort : requestedSort;
@@ -611,20 +613,22 @@ export default function MapPage() {
   // card labels change meaning silently (MEH-1307 dropped the "ממך" suffix, so
   // a label is a bare magnitude). Naming the active origin is what keeps the
   // numbers readable; the clear button is unchanged beneath it.
-  // MEH-2506: one origin chip, two sizes. Desktop keeps the 44px bordered chip
-  // beside the sort select. On mobile it is a compact tag BELOW the filter chips
+  // MEH-2506: on mobile the origin is a compact tag BELOW the filter chips
   // (Sapir 28/10: the full-height row above them read as one more filter, and
   // a chip grown out of the near-me button looked wrong) — the same green tag
   // language as the active-filter strip, with the ✕ keeping a 44px hit area
   // through negative margin (the MEH-825 tag pattern), so the bar grows by
   // mt-3 + the 20px tag + mb-1 instead of a 44px row (map.spec pins the ✕ box).
+  // MEH-2769: the desktop sidebar now gets the same tag in its own filter bar.
+  // MEH-2506 had kept a 44px bordered chip above the card list there, and on a
+  // computer it still read as the old stray row (Sapir 6/11). One size.
   // One label for the chip and the MEH-2525 live region, so they cannot drift.
   const originLabel = userLoc
     ? userLoc.source === SOURCE_CITY
       ? t("map.client.sort.origin_city", { city: userLoc.city })
       : t("map.client.sort.origin_gps")
     : "";
-  const originChip = (compact) =>
+  const originChip = () =>
     cityOriginPending || (userLoc && !geoSortPending) ? (
       <div
         className="flex flex-wrap items-center gap-x-2 gap-y-1"
@@ -640,22 +644,14 @@ export default function MapPage() {
           // label + underlined "clear" line read as stray text (Sapir 27/10).
           // The chip is the Google Maps / Airbnb active-location pattern. The
           // ✕'s accessible name is the existing clear_location string — no new
-          // copy. Desktop: the chip row keeps the 44px tap height. Compact
-          // (MEH-2506): the ✕ alone keeps 44px via -my-3, and FilterChipsBar's
-          // origin row (mt-3 mb-1) is what keeps that hit area clear.
+          // copy. MEH-2506: the ✕ alone keeps 44px via -my-3, and
+          // FilterChipsBar's origin row (mt-3 mb-1) is what keeps that hit area
+          // clear.
           <span
             data-testid="sort-origin-chip"
-            className={
-              compact
-                ? "inline-flex items-center gap-1 max-w-full rounded-md bg-green-50 text-primary ps-2 text-2xs"
-                : "inline-flex items-center gap-1.5 min-h-touch max-w-full rounded-full border border-border bg-surface-card ps-3 text-xs text-fg-muted"
-            }
+            className="inline-flex items-center gap-1 max-w-full rounded-md bg-green-50 text-primary ps-2 text-2xs"
           >
-            {compact ? (
-              <MapPin size={12} weight="fill" aria-hidden="true" className="shrink-0" />
-            ) : (
-              <MapPinLine size={14} weight="bold" aria-hidden="true" className="shrink-0 text-primary" />
-            )}
+            <MapPin size={12} weight="fill" aria-hidden="true" className="shrink-0" />
             <span className="min-w-0 truncate" data-testid="sort-origin-label">
               {originLabel}
             </span>
@@ -665,20 +661,17 @@ export default function MapPage() {
               data-testid="clear-user-location"
               aria-label={t("map.client.sort.clear_location")}
               title={t("map.client.sort.clear_location")}
-              className={
-                compact
-                  ? "inline-flex shrink-0 items-center justify-center w-11 h-11 -my-3 rounded-full hover:opacity-80 focus-ring"
-                  : "inline-flex shrink-0 items-center justify-center w-11 h-11 rounded-full text-fg-muted hover:text-primary focus-ring"
-              }
+              className="inline-flex shrink-0 items-center justify-center w-11 h-11 -my-3 rounded-full hover:opacity-80 focus-ring"
             >
-              <X size={compact ? 12 : 14} weight="bold" aria-hidden="true" />
+              <X size={12} weight="bold" aria-hidden="true" />
             </button>
           </span>
         )}
       </div>
     ) : null;
-  const clearLocationControl = originChip(false);
-  const mobileOriginTag = originChip(true);
+  // Called once per shell: both are mounted and CSS hides one.
+  const desktopOriginTag = originChip();
+  const mobileOriginTag = originChip();
 
   // The empty state's "נקו את הסינון" — a wider reset than
   // filters.resetAllFilters: it also drops the city refinement and the legend's
@@ -697,7 +690,7 @@ export default function MapPage() {
     feed.loadProducers();
   };
 
-  // MEH-2506: the mobile bar passes its origin tag in, so it shares one row
+  // MEH-2506 / MEH-2769: each shell passes its origin tag in, so it shares one row
   // with the active-filter tags instead of opening a row of its own.
   const renderFilterChipsBar = (originTag = null) => (
     <FilterChipsBar
@@ -846,7 +839,7 @@ export default function MapPage() {
             <div className="mb-3">
               <CitySearch id="map-city-search-desktop" label={t("map.client.city_search.label")} value={filters.cityFilter} onChange={filters.setCityFilter} onSubmit={handleCitySearchSubmit} placeholder={t("map.client.city_search.placeholder")} />
             </div>
-            {renderFilterChipsBar()}
+            {renderFilterChipsBar(desktopOriginTag)}
           </div>
           {/* MEH-1230: pt-3.5 gives the sort <select>'s focus ring clearance at the
               scroll container's top edge. The control keeps -my-2.5 (compact count
@@ -919,16 +912,14 @@ export default function MapPage() {
                 />
               </div>
             </div>
-            {/* MEH-2014: the fix now outlives the tab, so it needs a visible
-                way out. Shown only when there is something to clear, and it
-                announces the pending state for screen readers, which cannot
-                see the greyed <select>. */}
+            {/* MEH-2014: announces the pending state for screen readers, which
+                cannot see the greyed <select>. The visible way out (the origin
+                tag's ✕) lives in the filter bar above (MEH-2769). */}
             {geoSortPending && (
               <p role="status" className="text-xs text-fg-muted mb-3">
                 {t("map.client.sort.locating")}
               </p>
             )}
-            {clearLocationControl && <div className="mb-3">{clearLocationControl}</div>}
             {cardList}
           </div>
         </div>

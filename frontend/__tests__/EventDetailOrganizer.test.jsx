@@ -85,10 +85,12 @@ describe("MEH-2461 — event page owner line by kind", () => {
     expect(screen.queryByTestId("owner-chevron")).toBeNull();
   });
 
-  it("business: unchanged — «מאורגן על ידי» + /producer link + contact button", async () => {
+  // MEH-2768: the «יצירת קשר עם בית העסק» button gave way to the
+  // «איך נרשמים?» CTA — the on-site form by default.
+  it("business: «מאורגן על ידי» + /producer link + the sign-up CTA", async () => {
     await renderEvent({ producer_name: "חוות הניסוי", owner_kind: "producer", owner_slug: "farm" });
     expect(screen.queryByTestId("event-organizer-line")).not.toBeInTheDocument();
-    expect(screen.getByText("events.detail.contact_producer")).toBeInTheDocument();
+    expect(screen.getByTestId("registration-open")).toBeInTheDocument();
     const row = screen.getByTestId("event-business-line").querySelector("a");
     expect(row.getAttribute("href")).toBe("/producer/p-1");
     expect(row.textContent).toContain("events.detail.organized_by חוות הניסוי");

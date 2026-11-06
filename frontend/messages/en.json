@@ -225,6 +225,7 @@
       },
       "producer": {
         "heading": "Give your business a home",
+        "organizer_heading": "Publish your markets and events",
         "subtitle": "About 5 minutes. No commissions. The customer comes straight to you",
         "gate": {
           "producer_heading": "You already have a business page on Mehamakor",
@@ -243,8 +244,7 @@
           "after_title": "What happens next",
           "after_body": "Every business gets a personal intro — once you complete your profile and send it for review, our team checks the details, gets in touch if needed, and your business goes live within up to 3 business days.",
           "after_link": "How the acceptance process works",
-          "cta": "Start",
-          "organizer_entry": "Organising a group buy? Start here"
+          "cta": "Start"
         },
         "loading": "Loading...",
         "loading_form": "Loading registration form...",
@@ -280,6 +280,7 @@
         "step_captions": {
           "account": "Account",
           "details": "Business",
+          "details_organizer": "Details",
           "category": "Category",
           "story": "Story"
         },
@@ -600,7 +601,15 @@
       "og_title": "Mehamakor — real food, straight from the source",
       "og_description": "Real food from local businesses — all in one place.",
       "twitter_title": "Mehamakor — real food, straight from the source",
-      "twitter_description": "Real food from local businesses — all in one place."
+      "twitter_description": "Real food from local businesses — all in one place.",
+      "keywords": [
+        "local products",
+        "grass-fed",
+        "healthy food",
+        "organic food",
+        "Israeli local businesses",
+        "farmers market"
+      ]
     },
     "about": {
       "title": "About Mehamakor — our vision and values",
@@ -711,6 +720,18 @@
     "claim": {
       "title": "Take your business page | Mehamakor",
       "description": "We prepared a page for you on Mehamakor"
+    },
+    "producer": {
+      "title_full": "{name} — {category} in {city} | {brand}",
+      "title_city": "{name} in {city} | {brand}",
+      "title_category": "{name} — {category} | {brand}",
+      "title_name": "{name} | {brand}",
+      "description_full": "{name} — a local business in {city}. {category}",
+      "description_city": "{name} — a local business in {city}",
+      "description_category": "{name} — a local business. {category}",
+      "description_name": "{name} — a local business",
+      "not_found": "Business not found | {brand}",
+      "country": "Israel"
     }
   },
   "producer": {
@@ -980,7 +1001,7 @@
       "save_cta": "Save",
       "save_error": "Save failed. Please try again.",
       "card_free_above": "free over {amount}",
-      "card_free_above_alone": "Free delivery over {amount}"
+      "card_delivery_sr": "Delivery"
     }
   },
   "recipes": {
@@ -2636,6 +2657,11 @@
       "previous_month": "Previous month",
       "next_month": "Next month",
       "label": "Calendar",
+      "today": "Today",
+      "list_heading": "All events in {month}",
+      "list_heading_experiences": "All experiences in {month}",
+      "empty_month": "No events this month. Try the next month.",
+      "empty_month_experiences": "No experiences this month. Try the next month.",
       "events_count": "{count, plural, =0 {No events} one {# event} other {# events}}",
       "days": {
         "sun": "Sun",
@@ -3932,6 +3958,12 @@
         "customer_messages": "Response time, tone, and 5 ready-made templates. The small things that decide whether a conversation closes in an order."
       }
     },
+    "article": {
+      "eyebrow": "A guide for business owners · {minutes} min read",
+      "founder_name": "Sapir Schnapp",
+      "founder_role": "Founder · {brand}",
+      "back": "Back to guides"
+    },
     "business_story": {
       "title": "How to write a good story about your business",
       "subtitle": "Write the story once, properly. The rest takes care of itself.",
@@ -5057,8 +5089,6 @@
       "image_remove": "Remove image",
       "image_remove_aria": "Remove image",
       "image_upload_error": "Image upload failed. Please try again.",
-      "field_registration_url_label": "External registration link (optional)",
-      "field_registration_url_placeholder": "https://…",
       "submit_publishing": "Publishing…",
       "submit": "Publish event",
       "cancel": "Cancel",
@@ -5961,6 +5991,66 @@
     "facebook": "Message on Facebook",
     "external_order": "Order",
     "wa_greeting": "Hi! I found you on Mehamakor — {name}"
+  },
+  "registration": {
+    "form": {
+      "legend": "How do people sign up?",
+      "site_form": "Sign-up form on the site",
+      "site_form_hint": "People leave a name, phone and email. You get an email for every sign-up, and the list waits for you here.",
+      "whatsapp": "WhatsApp",
+      "whatsapp_hint": "Opens WhatsApp to the business number.",
+      "phone": "Phone",
+      "external_url": "External sign-up link",
+      "external_url_hint": "For example a Google form or a ticketing site.",
+      "external_url_placeholder": "https://...",
+      "whatsapp_needs_mobile": "To choose WhatsApp, add a mobile number to the business details",
+      "phone_needs_phone": "To choose phone, add a phone number to the business details",
+      "external_needs_url": "Add a sign-up link",
+      "invalid_url": "That address is not valid — start with https://"
+    },
+    "list": {
+      "summary": "Sign-ups on the site ({count})",
+      "empty": "No sign-ups on the site yet",
+      "cancelled": "Cancelled",
+      "offline_label": "Signed up outside the site",
+      "load_error": "Couldn't load the list."
+    },
+    "cta": {
+      "signup_experience": "Sign up for the workshop",
+      "signup_event": "Sign up for the event",
+      "whatsapp": "Sign up on WhatsApp",
+      "phone": "Call to sign up",
+      "external": "Sign up →",
+      "question": "Or ask the host",
+      "full": "No spots left",
+      "whatsapp_message": "Hi! I'd like to sign up for \"{title}\"",
+      "question_message": "Hi! I have a question about \"{title}\""
+    },
+    "signup": {
+      "name": "Name",
+      "phone": "Phone",
+      "email": "Email",
+      "submit": "Send sign-up",
+      "submitting": "Sending...",
+      "privacy": "Your details go to the host only for this sign-up, and are deleted 30 days after the date.",
+      "success": "You're signed up. We sent a confirmation email with a cancellation link.",
+      "required": "This field is required",
+      "name_short": "The name needs at least 2 letters",
+      "email_invalid": "That email address isn't valid",
+      "phone_invalid": "Invalid phone number",
+      "generic": "Something went wrong. Try again."
+    },
+    "cancel": {
+      "title": "Cancel sign-up for \"{title}\"",
+      "confirm": "Cancel the sign-up",
+      "cancelling": "Cancelling...",
+      "done": "Your sign-up was cancelled.",
+      "not_found": "This link isn't valid or has expired.",
+      "generic": "Something went wrong. Try again.",
+      "back_event": "To the event page",
+      "back_experience": "To the workshop page",
+      "page_title": "Cancel sign-up"
+    }
   },
   "filter_axes": {
     "has_delivery": {

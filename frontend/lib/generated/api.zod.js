@@ -189,6 +189,8 @@ export const GetDashboardAdminDashboardGetResponse = /*#__PURE__*/ zod.unknown()
 export const adminListExperiencesAdminExperiencesGetResponseIsActiveDefault = true;
 export const adminListExperiencesAdminExperiencesGetResponseIsRecurringDefault = false;
 export const adminListExperiencesAdminExperiencesGetResponseParticipantsCountDefault = 0;
+export const adminListExperiencesAdminExperiencesGetResponseRegisteredCountDefault = 0;
+export const adminListExperiencesAdminExperiencesGetResponseRegistrationMethodDefault = `site_form`;
 
 export const AdminListExperiencesAdminExperiencesGetResponseItem = /*#__PURE__*/ zod.object({
   "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -223,6 +225,9 @@ export const AdminListExperiencesAdminExperiencesGetResponseItem = /*#__PURE__*/
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminListExperiencesAdminExperiencesGetResponseParticipantsCountDefault),
   "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "registered_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), adminListExperiencesAdminExperiencesGetResponseRegisteredCountDefault),
+  "registration_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), adminListExperiencesAdminExperiencesGetResponseRegistrationMethodDefault),
+  "registration_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "rejection_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "requirements": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "spots_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
@@ -238,6 +243,8 @@ export const AdminListExperiencesAdminExperiencesGetResponse = /*#__PURE__*/ zod
 export const approveExperienceAdminExperiencesExperienceIdApprovePostResponseIsActiveDefault = true;
 export const approveExperienceAdminExperiencesExperienceIdApprovePostResponseIsRecurringDefault = false;
 export const approveExperienceAdminExperiencesExperienceIdApprovePostResponseParticipantsCountDefault = 0;
+export const approveExperienceAdminExperiencesExperienceIdApprovePostResponseRegisteredCountDefault = 0;
+export const approveExperienceAdminExperiencesExperienceIdApprovePostResponseRegistrationMethodDefault = `site_form`;
 
 export const ApproveExperienceAdminExperiencesExperienceIdApprovePostResponse = /*#__PURE__*/ zod.object({
   "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -272,6 +279,9 @@ export const ApproveExperienceAdminExperiencesExperienceIdApprovePostResponse = 
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), approveExperienceAdminExperiencesExperienceIdApprovePostResponseParticipantsCountDefault),
   "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "registered_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), approveExperienceAdminExperiencesExperienceIdApprovePostResponseRegisteredCountDefault),
+  "registration_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), approveExperienceAdminExperiencesExperienceIdApprovePostResponseRegistrationMethodDefault),
+  "registration_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "rejection_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "requirements": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "spots_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
@@ -286,6 +296,8 @@ export const ApproveExperienceAdminExperiencesExperienceIdApprovePostResponse = 
 export const rejectExperienceAdminExperiencesExperienceIdRejectPostResponseIsActiveDefault = true;
 export const rejectExperienceAdminExperiencesExperienceIdRejectPostResponseIsRecurringDefault = false;
 export const rejectExperienceAdminExperiencesExperienceIdRejectPostResponseParticipantsCountDefault = 0;
+export const rejectExperienceAdminExperiencesExperienceIdRejectPostResponseRegisteredCountDefault = 0;
+export const rejectExperienceAdminExperiencesExperienceIdRejectPostResponseRegistrationMethodDefault = `site_form`;
 
 export const RejectExperienceAdminExperiencesExperienceIdRejectPostResponse = /*#__PURE__*/ zod.object({
   "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -320,6 +332,9 @@ export const RejectExperienceAdminExperiencesExperienceIdRejectPostResponse = /*
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), rejectExperienceAdminExperiencesExperienceIdRejectPostResponseParticipantsCountDefault),
   "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "registered_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), rejectExperienceAdminExperiencesExperienceIdRejectPostResponseRegisteredCountDefault),
+  "registration_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), rejectExperienceAdminExperiencesExperienceIdRejectPostResponseRegistrationMethodDefault),
+  "registration_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "rejection_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "requirements": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "spots_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
@@ -334,6 +349,8 @@ export const RejectExperienceAdminExperiencesExperienceIdRejectPostResponse = /*
 export const requestChangesAdminExperiencesExperienceIdRequestChangesPostResponseIsActiveDefault = true;
 export const requestChangesAdminExperiencesExperienceIdRequestChangesPostResponseIsRecurringDefault = false;
 export const requestChangesAdminExperiencesExperienceIdRequestChangesPostResponseParticipantsCountDefault = 0;
+export const requestChangesAdminExperiencesExperienceIdRequestChangesPostResponseRegisteredCountDefault = 0;
+export const requestChangesAdminExperiencesExperienceIdRequestChangesPostResponseRegistrationMethodDefault = `site_form`;
 
 export const RequestChangesAdminExperiencesExperienceIdRequestChangesPostResponse = /*#__PURE__*/ zod.object({
   "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -368,6 +385,9 @@ export const RequestChangesAdminExperiencesExperienceIdRequestChangesPostRespons
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), requestChangesAdminExperiencesExperienceIdRequestChangesPostResponseParticipantsCountDefault),
   "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "registered_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), requestChangesAdminExperiencesExperienceIdRequestChangesPostResponseRegisteredCountDefault),
+  "registration_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), requestChangesAdminExperiencesExperienceIdRequestChangesPostResponseRegistrationMethodDefault),
+  "registration_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "rejection_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "requirements": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "spots_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
@@ -2942,6 +2962,8 @@ export const UnsubscribeDeliveryWaitlistDeliveryWaitlistUnsubscribePostResponse 
  * @summary List Events
  */
 export const listEventsEventsGetResponseOwnerKindDefault = `producer`;
+export const listEventsEventsGetResponseRegisteredCountDefault = 0;
+export const listEventsEventsGetResponseRegistrationMethodDefault = `site_form`;
 
 export const ListEventsEventsGetResponseItem = /*#__PURE__*/ zod.object({
   "category": /*#__PURE__*/ zod.string(),
@@ -2964,7 +2986,11 @@ export const ListEventsEventsGetResponseItem = /*#__PURE__*/ zod.object({
   "price": /*#__PURE__*/ zod.int(),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "producer_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "producer_phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "registered_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listEventsEventsGetResponseRegisteredCountDefault),
+  "registration_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listEventsEventsGetResponseRegistrationMethodDefault),
   "registration_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "spots_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "title": /*#__PURE__*/ zod.string()
 })
 export const ListEventsEventsGetResponse = /*#__PURE__*/ zod.array(ListEventsEventsGetResponseItem)
@@ -2974,6 +3000,8 @@ export const ListEventsEventsGetResponse = /*#__PURE__*/ zod.array(ListEventsEve
  * @summary Create Event
  */
 export const createEventEventsPostResponseOwnerKindDefault = `producer`;
+export const createEventEventsPostResponseRegisteredCountDefault = 0;
+export const createEventEventsPostResponseRegistrationMethodDefault = `site_form`;
 
 export const CreateEventEventsPostResponse = /*#__PURE__*/ zod.object({
   "category": /*#__PURE__*/ zod.string(),
@@ -2996,7 +3024,11 @@ export const CreateEventEventsPostResponse = /*#__PURE__*/ zod.object({
   "price": /*#__PURE__*/ zod.int(),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "producer_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "producer_phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "registered_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), createEventEventsPostResponseRegisteredCountDefault),
+  "registration_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), createEventEventsPostResponseRegistrationMethodDefault),
   "registration_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "spots_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "title": /*#__PURE__*/ zod.string()
 })
 
@@ -3005,6 +3037,8 @@ export const CreateEventEventsPostResponse = /*#__PURE__*/ zod.object({
  * @summary List My Events
  */
 export const listMyEventsEventsMineGetResponseOwnerKindDefault = `producer`;
+export const listMyEventsEventsMineGetResponseRegisteredCountDefault = 0;
+export const listMyEventsEventsMineGetResponseRegistrationMethodDefault = `site_form`;
 
 export const ListMyEventsEventsMineGetResponseItem = /*#__PURE__*/ zod.object({
   "category": /*#__PURE__*/ zod.string(),
@@ -3027,7 +3061,11 @@ export const ListMyEventsEventsMineGetResponseItem = /*#__PURE__*/ zod.object({
   "price": /*#__PURE__*/ zod.int(),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "producer_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "producer_phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "registered_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listMyEventsEventsMineGetResponseRegisteredCountDefault),
+  "registration_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listMyEventsEventsMineGetResponseRegistrationMethodDefault),
   "registration_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "spots_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "title": /*#__PURE__*/ zod.string()
 })
 export const ListMyEventsEventsMineGetResponse = /*#__PURE__*/ zod.array(ListMyEventsEventsMineGetResponseItem)
@@ -3037,6 +3075,8 @@ export const ListMyEventsEventsMineGetResponse = /*#__PURE__*/ zod.array(ListMyE
  * @summary Upcoming Events
  */
 export const upcomingEventsEventsUpcomingGetResponseOwnerKindDefault = `producer`;
+export const upcomingEventsEventsUpcomingGetResponseRegisteredCountDefault = 0;
+export const upcomingEventsEventsUpcomingGetResponseRegistrationMethodDefault = `site_form`;
 
 export const UpcomingEventsEventsUpcomingGetResponseItem = /*#__PURE__*/ zod.object({
   "category": /*#__PURE__*/ zod.string(),
@@ -3059,7 +3099,11 @@ export const UpcomingEventsEventsUpcomingGetResponseItem = /*#__PURE__*/ zod.obj
   "price": /*#__PURE__*/ zod.int(),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "producer_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "producer_phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "registered_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), upcomingEventsEventsUpcomingGetResponseRegisteredCountDefault),
+  "registration_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), upcomingEventsEventsUpcomingGetResponseRegistrationMethodDefault),
   "registration_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "spots_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "title": /*#__PURE__*/ zod.string()
 })
 export const UpcomingEventsEventsUpcomingGetResponse = /*#__PURE__*/ zod.array(UpcomingEventsEventsUpcomingGetResponseItem)
@@ -3075,6 +3119,8 @@ export const DeleteEventEventsEventIdDeleteResponse = /*#__PURE__*/ zod.unknown(
  * @summary Get Event
  */
 export const getEventEventsEventIdGetResponseOwnerKindDefault = `producer`;
+export const getEventEventsEventIdGetResponseRegisteredCountDefault = 0;
+export const getEventEventsEventIdGetResponseRegistrationMethodDefault = `site_form`;
 
 export const GetEventEventsEventIdGetResponse = /*#__PURE__*/ zod.object({
   "category": /*#__PURE__*/ zod.string(),
@@ -3097,7 +3143,11 @@ export const GetEventEventsEventIdGetResponse = /*#__PURE__*/ zod.object({
   "price": /*#__PURE__*/ zod.int(),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "producer_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "producer_phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "registered_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getEventEventsEventIdGetResponseRegisteredCountDefault),
+  "registration_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getEventEventsEventIdGetResponseRegistrationMethodDefault),
   "registration_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "spots_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "title": /*#__PURE__*/ zod.string()
 })
 
@@ -3106,6 +3156,8 @@ export const GetEventEventsEventIdGetResponse = /*#__PURE__*/ zod.object({
  * @summary Update Event
  */
 export const updateEventEventsEventIdPutResponseOwnerKindDefault = `producer`;
+export const updateEventEventsEventIdPutResponseRegisteredCountDefault = 0;
+export const updateEventEventsEventIdPutResponseRegistrationMethodDefault = `site_form`;
 
 export const UpdateEventEventsEventIdPutResponse = /*#__PURE__*/ zod.object({
   "category": /*#__PURE__*/ zod.string(),
@@ -3128,9 +3180,38 @@ export const UpdateEventEventsEventIdPutResponse = /*#__PURE__*/ zod.object({
   "price": /*#__PURE__*/ zod.int(),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "producer_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "producer_phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "registered_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), updateEventEventsEventIdPutResponseRegisteredCountDefault),
+  "registration_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), updateEventEventsEventIdPutResponseRegistrationMethodDefault),
   "registration_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "spots_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "title": /*#__PURE__*/ zod.string()
 })
+
+
+/**
+ * @summary List Event Registrations
+ */
+export const ListEventRegistrationsEventsEventIdRegistrationsGetResponseItem = /*#__PURE__*/ zod.object({
+  "cancelled_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "email": /*#__PURE__*/ zod.string(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "name": /*#__PURE__*/ zod.string(),
+  "phone": /*#__PURE__*/ zod.string(),
+  "status": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('One row of the owner\'s list (owner \/ admin only).'))
+export const ListEventRegistrationsEventsEventIdRegistrationsGetResponse = /*#__PURE__*/ zod.array(ListEventRegistrationsEventsEventIdRegistrationsGetResponseItem)
+
+
+/**
+ * @summary Register For Event
+ */
+export const registerForEventEventsEventIdRegistrationsPostResponseStatusDefault = `registered`;
+
+export const RegisterForEventEventsEventIdRegistrationsPostResponse = /*#__PURE__*/ zod.object({
+  "status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.literal("registered"), registerForEventEventsEventIdRegistrationsPostResponseStatusDefault).check(/*#__PURE__*/ zod.meta({ title: 'Status' }))
+}).check(/*#__PURE__*/ zod.describe('What the visitor gets back. Deliberately nothing she did not type, and\nnot the cancel token — that goes to her inbox only.'))
 
 
 /**
@@ -3141,6 +3222,8 @@ export const UpdateEventEventsEventIdPutResponse = /*#__PURE__*/ zod.object({
  */
 export const listExperiencesExperiencesGetResponseIsRecurringDefault = false;
 export const listExperiencesExperiencesGetResponseParticipantsCountDefault = 0;
+export const listExperiencesExperiencesGetResponseRegisteredCountDefault = 0;
+export const listExperiencesExperiencesGetResponseRegistrationMethodDefault = `site_form`;
 
 export const ListExperiencesExperiencesGetResponseItem = /*#__PURE__*/ zod.object({
   "category": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -3167,6 +3250,9 @@ export const ListExperiencesExperiencesGetResponseItem = /*#__PURE__*/ zod.objec
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listExperiencesExperiencesGetResponseParticipantsCountDefault),
   "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "registered_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listExperiencesExperiencesGetResponseRegisteredCountDefault),
+  "registration_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listExperiencesExperiencesGetResponseRegistrationMethodDefault),
+  "registration_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "spots_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "status": /*#__PURE__*/ zod.string(),
   "title": /*#__PURE__*/ zod.string()
@@ -3185,6 +3271,8 @@ export const ListExperiencesExperiencesGetResponse = /*#__PURE__*/ zod.array(Lis
 export const submitExperienceExperiencesPostResponseIsActiveDefault = true;
 export const submitExperienceExperiencesPostResponseIsRecurringDefault = false;
 export const submitExperienceExperiencesPostResponseParticipantsCountDefault = 0;
+export const submitExperienceExperiencesPostResponseRegisteredCountDefault = 0;
+export const submitExperienceExperiencesPostResponseRegistrationMethodDefault = `site_form`;
 
 export const SubmitExperienceExperiencesPostResponse = /*#__PURE__*/ zod.object({
   "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -3219,6 +3307,9 @@ export const SubmitExperienceExperiencesPostResponse = /*#__PURE__*/ zod.object(
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), submitExperienceExperiencesPostResponseParticipantsCountDefault),
   "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "registered_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), submitExperienceExperiencesPostResponseRegisteredCountDefault),
+  "registration_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), submitExperienceExperiencesPostResponseRegistrationMethodDefault),
+  "registration_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "rejection_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "requirements": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "spots_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
@@ -3252,6 +3343,8 @@ export const CountExperiencesExperiencesCountGetResponse = /*#__PURE__*/ zod.obj
 export const listMyExperiencesExperiencesMineGetResponseIsActiveDefault = true;
 export const listMyExperiencesExperiencesMineGetResponseIsRecurringDefault = false;
 export const listMyExperiencesExperiencesMineGetResponseParticipantsCountDefault = 0;
+export const listMyExperiencesExperiencesMineGetResponseRegisteredCountDefault = 0;
+export const listMyExperiencesExperiencesMineGetResponseRegistrationMethodDefault = `site_form`;
 
 export const ListMyExperiencesExperiencesMineGetResponseItem = /*#__PURE__*/ zod.object({
   "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -3286,6 +3379,9 @@ export const ListMyExperiencesExperiencesMineGetResponseItem = /*#__PURE__*/ zod
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listMyExperiencesExperiencesMineGetResponseParticipantsCountDefault),
   "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "registered_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), listMyExperiencesExperiencesMineGetResponseRegisteredCountDefault),
+  "registration_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), listMyExperiencesExperiencesMineGetResponseRegistrationMethodDefault),
+  "registration_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "rejection_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "requirements": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "spots_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
@@ -3320,6 +3416,8 @@ export const DeleteExperienceExperiencesExperienceIdDeleteResponse = /*#__PURE__
 export const getExperienceExperiencesExperienceIdGetResponseIsActiveDefault = true;
 export const getExperienceExperiencesExperienceIdGetResponseIsRecurringDefault = false;
 export const getExperienceExperiencesExperienceIdGetResponseParticipantsCountDefault = 0;
+export const getExperienceExperiencesExperienceIdGetResponseRegisteredCountDefault = 0;
+export const getExperienceExperiencesExperienceIdGetResponseRegistrationMethodDefault = `site_form`;
 
 export const GetExperienceExperiencesExperienceIdGetResponse = /*#__PURE__*/ zod.object({
   "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -3354,6 +3452,9 @@ export const GetExperienceExperiencesExperienceIdGetResponse = /*#__PURE__*/ zod
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getExperienceExperiencesExperienceIdGetResponseParticipantsCountDefault),
   "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "registered_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getExperienceExperiencesExperienceIdGetResponseRegisteredCountDefault),
+  "registration_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getExperienceExperiencesExperienceIdGetResponseRegistrationMethodDefault),
+  "registration_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "rejection_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "requirements": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "spots_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
@@ -3368,6 +3469,8 @@ export const GetExperienceExperiencesExperienceIdGetResponse = /*#__PURE__*/ zod
 export const updateExperienceExperiencesExperienceIdPutResponseIsActiveDefault = true;
 export const updateExperienceExperiencesExperienceIdPutResponseIsRecurringDefault = false;
 export const updateExperienceExperiencesExperienceIdPutResponseParticipantsCountDefault = 0;
+export const updateExperienceExperiencesExperienceIdPutResponseRegisteredCountDefault = 0;
+export const updateExperienceExperiencesExperienceIdPutResponseRegistrationMethodDefault = `site_form`;
 
 export const UpdateExperienceExperiencesExperienceIdPutResponse = /*#__PURE__*/ zod.object({
   "address": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -3402,12 +3505,40 @@ export const UpdateExperienceExperiencesExperienceIdPutResponse = /*#__PURE__*/ 
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), updateExperienceExperiencesExperienceIdPutResponseParticipantsCountDefault),
   "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "registered_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), updateExperienceExperiencesExperienceIdPutResponseRegisteredCountDefault),
+  "registration_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), updateExperienceExperiencesExperienceIdPutResponseRegistrationMethodDefault),
+  "registration_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "rejection_reason": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "requirements": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "spots_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "status": /*#__PURE__*/ zod.string(),
   "title": /*#__PURE__*/ zod.string()
 }).check(/*#__PURE__*/ zod.describe('Detail view. Includes `address`, `requirements`, and the\nfull moderation context — only returned to the owner or an admin\nwhen the experience is non-approved.'))
+
+
+/**
+ * @summary List Experience Registrations
+ */
+export const ListExperienceRegistrationsExperiencesExperienceIdRegistrationsGetResponseItem = /*#__PURE__*/ zod.object({
+  "cancelled_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "email": /*#__PURE__*/ zod.string(),
+  "id": /*#__PURE__*/ zod.uuid(),
+  "name": /*#__PURE__*/ zod.string(),
+  "phone": /*#__PURE__*/ zod.string(),
+  "status": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('One row of the owner\'s list (owner \/ admin only).'))
+export const ListExperienceRegistrationsExperiencesExperienceIdRegistrationsGetResponse = /*#__PURE__*/ zod.array(ListExperienceRegistrationsExperiencesExperienceIdRegistrationsGetResponseItem)
+
+
+/**
+ * @summary Register For Experience
+ */
+export const registerForExperienceExperiencesExperienceIdRegistrationsPostResponseStatusDefault = `registered`;
+
+export const RegisterForExperienceExperiencesExperienceIdRegistrationsPostResponse = /*#__PURE__*/ zod.object({
+  "status": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.literal("registered"), registerForExperienceExperiencesExperienceIdRegistrationsPostResponseStatusDefault).check(/*#__PURE__*/ zod.meta({ title: 'Status' }))
+}).check(/*#__PURE__*/ zod.describe('What the visitor gets back. Deliberately nothing she did not type, and\nnot the cancel token — that goes to her inbox only.'))
 
 
 /**
@@ -3629,6 +3760,8 @@ export const ListOrganizerSlugsOrganizersGetResponse = /*#__PURE__*/ zod.array(L
  */
 export const getOrganizerOrganizersSlugGetResponseImagesDefault = [];
 export const getOrganizerOrganizersSlugGetResponseUpcomingEventsItemOwnerKindDefault = `producer`;
+export const getOrganizerOrganizersSlugGetResponseUpcomingEventsItemRegisteredCountDefault = 0;
+export const getOrganizerOrganizersSlugGetResponseUpcomingEventsItemRegistrationMethodDefault = `site_form`;
 export const getOrganizerOrganizersSlugGetResponseUpcomingEventsDefault = [];
 
 export const GetOrganizerOrganizersSlugGetResponse = /*#__PURE__*/ zod.object({
@@ -3670,7 +3803,11 @@ export const GetOrganizerOrganizersSlugGetResponse = /*#__PURE__*/ zod.object({
   "price": /*#__PURE__*/ zod.int(),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "producer_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "producer_phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "registered_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getOrganizerOrganizersSlugGetResponseUpcomingEventsItemRegisteredCountDefault),
+  "registration_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getOrganizerOrganizersSlugGetResponseUpcomingEventsItemRegistrationMethodDefault),
   "registration_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "spots_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "title": /*#__PURE__*/ zod.string()
 })), getOrganizerOrganizersSlugGetResponseUpcomingEventsDefault),
   "website": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
@@ -5829,6 +5966,30 @@ export const GetPrefillRegisterProducerPrefillTokenGetResponse = /*#__PURE__*/ z
 
 
 /**
+ * @summary Get Registration
+ */
+export const GetRegistrationRegistrationsTokenGetResponse = /*#__PURE__*/ zod.object({
+  "event_date": /*#__PURE__*/ zod.iso.date(),
+  "item_id": /*#__PURE__*/ zod.uuid(),
+  "kind": /*#__PURE__*/ zod.enum(['event', 'experience']),
+  "status": /*#__PURE__*/ zod.string(),
+  "title": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('GET by cancel token — enough for the cancel page to say what it is.'))
+
+
+/**
+ * @summary Cancel Registration
+ */
+export const CancelRegistrationRegistrationsTokenCancelPostResponse = /*#__PURE__*/ zod.object({
+  "event_date": /*#__PURE__*/ zod.iso.date(),
+  "item_id": /*#__PURE__*/ zod.uuid(),
+  "kind": /*#__PURE__*/ zod.enum(['event', 'experience']),
+  "status": /*#__PURE__*/ zod.string(),
+  "title": /*#__PURE__*/ zod.string()
+}).check(/*#__PURE__*/ zod.describe('GET by cancel token — enough for the cancel page to say what it is.'))
+
+
+/**
  * Email the admin about wrong info on a producer page. Returns 204.
  * @summary Report Producer Info
  */
@@ -6501,9 +6662,13 @@ export const ChangePasswordUsersMePasswordPatchResponse = /*#__PURE__*/ zod.void
  * @summary Get Saved
  */
 export const getSavedUsersMeSavedGetResponseEventsItemOwnerKindDefault = `producer`;
+export const getSavedUsersMeSavedGetResponseEventsItemRegisteredCountDefault = 0;
+export const getSavedUsersMeSavedGetResponseEventsItemRegistrationMethodDefault = `site_form`;
 export const getSavedUsersMeSavedGetResponseExperiencesItemIsActiveDefault = true;
 export const getSavedUsersMeSavedGetResponseExperiencesItemIsRecurringDefault = false;
 export const getSavedUsersMeSavedGetResponseExperiencesItemParticipantsCountDefault = 0;
+export const getSavedUsersMeSavedGetResponseExperiencesItemRegisteredCountDefault = 0;
+export const getSavedUsersMeSavedGetResponseExperiencesItemRegistrationMethodDefault = `site_form`;
 
 export const GetSavedUsersMeSavedGetResponse = /*#__PURE__*/ zod.object({
   "events": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
@@ -6527,8 +6692,12 @@ export const GetSavedUsersMeSavedGetResponse = /*#__PURE__*/ zod.object({
   "price": /*#__PURE__*/ zod.int(),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "producer_name": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "producer_phone": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "registered_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getSavedUsersMeSavedGetResponseEventsItemRegisteredCountDefault),
+  "registration_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getSavedUsersMeSavedGetResponseEventsItemRegistrationMethodDefault),
   "registration_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "saved_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
+  "spots_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "title": /*#__PURE__*/ zod.string()
 })),
   "experiences": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.object({
@@ -6557,6 +6726,9 @@ export const GetSavedUsersMeSavedGetResponse = /*#__PURE__*/ zod.object({
   "participants_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getSavedUsersMeSavedGetResponseExperiencesItemParticipantsCountDefault),
   "price_per_person": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "recurring_schedule": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
+  "registered_count": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.int(), getSavedUsersMeSavedGetResponseExperiencesItemRegisteredCountDefault),
+  "registration_method": /*#__PURE__*/ zod._default(/*#__PURE__*/ zod.string(), getSavedUsersMeSavedGetResponseExperiencesItemRegistrationMethodDefault),
+  "registration_url": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.string(),/*#__PURE__*/ zod.null()])),
   "saved_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
   "spots_left": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.int(),/*#__PURE__*/ zod.null()])),
   "status": /*#__PURE__*/ zod.string(),

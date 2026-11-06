@@ -22,9 +22,7 @@ import BackToTop from "@/components/BackToTop";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
 import {
   buildChipParams,
-  openNowChipVisible,    // MEH-2131
-  visibleGatedDietKeys,  // MEH-1934
-  GATED_DIET_KEYS,       // MEH-1934
+  visibleAxisChips,      // MEH-2767: the one chip gate (was MEH-1934 + MEH-2131)
   // MEH-1881: the /producers-specific pair. The bare CHIPS_CONFIG /
   // CHIPS_DEFAULT are SHARED with the home grid (HomeProducersGrid.jsx:70), so
   // importing those here and appending to them leaks the open-now chip onto a
@@ -46,6 +44,7 @@ import { showToast } from "@/lib/toast";
 import { trackEvent } from "@/lib/analytics";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
+import { useCatalogSnapshot } from "@/lib/use-catalog-snapshot";
 import EnSearchNotice from "@/components/EnSearchNotice";
 import { CategoriesResponseSchema } from "@/lib/api-schemas";
 import Button from "@/components/ui/Button";
@@ -133,6 +132,8 @@ export default function ProducersClient({
   // is exactly what lib/orderWindow.js's header warns against — the status is
   // time-derived, so a server pass and hydration can disagree.
   const [openNowClock, setOpenNowClock] = useState(null);
+  // MEH-2767: the unfiltered catalog the chip gate counts (see visibleChipDefs).
+  const catalogSnapshot = useCatalogSnapshot();
   const [cityFilter, setCityFilter] = useState(() => searchParams.get("city") || null);
   // MEH-1825: delivery-day axis. Two guards on hydration, both from the
   // acceptance criteria: an unknown ?delivery_day= value is dropped against
@@ -746,25 +747,24 @@ export default function ProducersClient({
   //
   // `openNowClock` is null until mounted — see the state declaration for why
   // reading the clock during render would be a hydration mismatch.
-  const showOpenNowChip = openNowChipVisible({
-    producers: loadedCatalog,
-    active: chips.open_for_orders_now,
-    catalogFullyLoaded: !hasMore,
+  //
+  // MEH-2767: both gates now run through visibleAxisChips over the UNFILTERED
+  // catalog snapshot — the same function and the same kind of input home and
+  // /map use, so one catalog yields one chip set on all three surfaces
+  // (surfaceParity.test.js). `loadedCatalog` above still drives the category
+  // row; it is only the CHIP gate that moved.
+  const visibleChipDefs = visibleAxisChips({
+    chips: CHIPS_CONFIG,
+    catalog: catalogSnapshot.catalog,
+    status: catalogSnapshot.status,
+    complete: catalogSnapshot.complete,
+    // A failed snapshot gates on what this page loaded (the pre-MEH-2767
+    // source), so the open-now guard never drops out on a network blip.
+    fallbackCatalog: loadedCatalog,
+    fallbackComplete: !hasMore,
+    chipState: chips,
     now: openNowClock,
   });
-  // MEH-1934: the two new diet chips are gated on the same principle — absent,
-  // not disabled, until DIET_CHIP_MIN businesses carry the marking. Computed
-  // over the loaded producers, so the chips turn themselves on when the
-  // catalog arrives with nobody flipping a flag.
-  const shownDietKeys = visibleGatedDietKeys(loadedCatalog, chips);
-  const hiddenDietKeys = GATED_DIET_KEYS.filter(
-    (k) => !shownDietKeys.includes(k),
-  );
-  const visibleChipDefs = (
-    showOpenNowChip
-      ? CHIPS_CONFIG
-      : CHIPS_CONFIG.filter((c) => c.key !== "open_for_orders_now")
-  ).filter((c) => !hiddenDietKeys.includes(c.key));
   // MEH-1862: the row and the sheet split what used to be one array.
   //
   // The CITY chip stays INLINE and is deliberately not filed into the sheet. It

@@ -243,15 +243,22 @@ function RegisterProducerPageFallback() {
   );
 }
 
-export default function RegisterProducerPage() {
+// MEH-2773: `kind` comes from the ROUTE, not from a control on the page.
+// /register/producer → "producer"; /register/organizer → "organizer". The
+// organizer door used to be a secondary line under the business CTA (MEH-2640),
+// which showed every business owner a path that is not hers. Organizers now
+// get their own link, which Sapir sends them directly.
+export default function RegisterProducerPage({ kind = "producer" }) {
   return (
     <Suspense fallback={<RegisterProducerPageFallback />}>
-      <RegisterProducerPageBody />
+      <RegisterProducerPageBody routeKind={kind === "organizer" ? "organizer" : "producer"} />
     </Suspense>
   );
 }
 
-function RegisterProducerPageBody() {
+function RegisterProducerPageBody({ routeKind }) {
+  const routeIsOrganizer = routeKind === "organizer";
+  const routePath = routeIsOrganizer ? "/register/organizer" : "/register/producer";
   const t = useTranslations();
   const router = useRouter();
   const params = useSearchParams();
@@ -275,7 +282,9 @@ function RegisterProducerPageBody() {
   // the CTA is clicked. Entry chrome only — no STEP change, no localStorage
   // "seen" flag (shows on every visit by design). Both auth states see it;
   // the upgrade path hides the account-creation checklist line.
-  const [showPreflight, setShowPreflight] = useState(true);
+  // MEH-2773: the organizer route skips it — its checklist (license, product
+  // photos) and its «what happens after» are about a business.
+  const [showPreflight, setShowPreflight] = useState(!routeIsOrganizer);
   const [categories, setCategories] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -289,7 +298,7 @@ function RegisterProducerPageBody() {
   // effect. Do not move this read into a lazy useState initialiser — that runs
   // during SSR too, where localStorage does not exist.
   const [showDraftBanner, setShowDraftBanner] = useState(false);
-  const [form, setForm] = useState(EMPTY_FORM);
+  const [form, setForm] = useState(() => ({ ...EMPTY_FORM, kind: routeKind }));
   const [stepError, setStepError] = useState("");
   // MEH-2640: the fulfilment question's error lives in its OWN state, not in
   // `fieldErrors`. That map is documented just below as holding ONLY the
@@ -529,7 +538,10 @@ function RegisterProducerPageBody() {
       if (saved) {
         const draft = parseDraft(saved, Date.now());
         if (draft) {
-          setForm((prev) => ({ ...prev, ...draft.form }));
+          // MEH-2773: the route decides the kind, never the stored draft —
+          // both routes share DRAFT_KEY, so a business draft restored on the
+          // organizer link (or the reverse) must not switch the flow.
+          setForm((prev) => ({ ...prev, ...draft.form, kind: routeKind }));
           // MEH-1977: only ever forward, and only where the seller can
           // actually finish from — see safeResumeStep for why a signed-out
           // resume must still cross the account frame.
@@ -539,10 +551,9 @@ function RegisterProducerPageBody() {
           // MEH-2460 (review #3711): an organizer never stands on CATEGORY —
           // neither as a resume target nor as the frame she was on when she
           // pressed «continue».
-          const organizerDraft = draft.form?.kind === "organizer";
-          const skipCategory = (s) => (organizerDraft && s === STEP.CATEGORY ? STEP.STORY : s);
+          const skipCategory = (s) => (routeIsOrganizer && s === STEP.CATEGORY ? STEP.STORY : s);
           if (resumeAt) setStep(skipCategory(resumeAt));
-          else if (organizerDraft) setStep(skipCategory);
+          else if (routeIsOrganizer) setStep(skipCategory);
         } else {
           localStorage.removeItem(DRAFT_KEY);
         }
@@ -708,7 +719,9 @@ function RegisterProducerPageBody() {
         category_ids: isOrganizer ? [] : form.category_ids,
         // MEH-530: empty string normalises server-side to "missing" via
         // license_validation._normalize_license — safe to send unconditionally.
-        producer_license_number: form.producer_license_number,
+        // MEH-2773: an organizer is never asked for a license; a number
+        // carried in by a shared business draft must not ride along.
+        producer_license_number: isOrganizer ? "" : form.producer_license_number,
         // MEH-971 chunk 1: only true when a license-required category is
         // selected AND the opt-in box is checked (backend default False).
         license_pending: licenseRequired && licensePending,
@@ -739,7 +752,9 @@ function RegisterProducerPageBody() {
         // on the same default shape. That silence is why this needs a test that
         // reads the POST body, not one that asserts the request returned 200.
         // MEH-2640: computed from the one answer step 2 collects.
-        ...fulfilmentBooleans(form.fulfilment),
+        // MEH-2773: an organizer is never asked, so a business answer carried
+        // in by a shared draft must not ride along — send the default shape.
+        ...fulfilmentBooleans(isOrganizer ? "" : form.fulfilment),
       };
       // Sent only when non-empty: a physical-only registration posts no empty
       // array (the card's own acceptance criterion) and the server default is
@@ -891,13 +906,9 @@ function RegisterProducerPageBody() {
           <p className="text-fg-muted text-center mb-4">{t("auth.register.producer.subtitle")}</p>
           <RegisterPreflight
             showAccountLine={!isUpgrade && step === STEP.ACCOUNT}
-            // MEH-2640: the preflight can now start EITHER flow. `kind` is
-            // the only thing that differs — same wizard, same steps minus
-            // CATEGORY (MEH-2460 already skips it for an organizer).
-            onStart={(kind) => {
-              if (kind === "organizer") setAndSave((prev) => ({ ...prev, kind: "organizer" }));
-              setShowPreflight(false);
-            }}
+            // MEH-2773: business-only screen — the organizer route never
+            // renders it, so the CTA starts exactly one flow.
+            onStart={() => setShowPreflight(false)}
           />
         </div>
       </div>
@@ -912,8 +923,15 @@ function RegisterProducerPageBody() {
             step < STEP.CONFIRM guard on the banners + stepper. */}
         {step < STEP.CONFIRM && (
           <>
-            <h1 data-testid="register-hero-heading" className="font-headline-lg text-3xl font-black text-text mb-2 text-center">{t("auth.register.producer.heading")}</h1>
-            <p className="text-fg-muted text-center mb-4">{t("auth.register.producer.subtitle")}</p>
+            {/* MEH-2773: the organizer route has its own heading and line
+                (copy approved by Sapir 06/11); the subtitle reuses the
+                already-approved organizer_hint sentence. */}
+            <h1 data-testid="register-hero-heading" className="font-headline-lg text-3xl font-black text-text mb-2 text-center">
+              {t(routeIsOrganizer ? "auth.register.producer.organizer_heading" : "auth.register.producer.heading")}
+            </h1>
+            <p className="text-fg-muted text-center mb-4">
+              {t(routeIsOrganizer ? "auth.register.producer.fields.organizer_hint" : "auth.register.producer.subtitle")}
+            </p>
           </>
         )}
 
@@ -948,7 +966,7 @@ function RegisterProducerPageBody() {
           <div className="flex justify-center gap-4 mb-8">
             {[
               { s: STEP.ACCOUNT, caption: t("auth.register.producer.step_captions.account") },
-              { s: STEP.DETAILS, caption: t("auth.register.producer.step_captions.details") },
+              { s: STEP.DETAILS, caption: t(isOrganizer ? "auth.register.producer.step_captions.details_organizer" : "auth.register.producer.step_captions.details") },
               { s: STEP.CATEGORY, caption: t("auth.register.producer.step_captions.category") },
               { s: STEP.STORY, caption: t("auth.register.producer.step_captions.story") },
             ]
@@ -1032,7 +1050,7 @@ function RegisterProducerPageBody() {
               }}
               onError={(msg, meta) => {
                 if (meta?.redirectToLogin) {
-                  router.push(`/login?redirect=${encodeURIComponent("/register/producer")}`);
+                  router.push(`/login?redirect=${encodeURIComponent(routePath)}`);
                   return;
                 }
                 setStepError(msg);
