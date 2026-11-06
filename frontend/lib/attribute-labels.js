@@ -68,9 +68,10 @@ import { FILTER_AXES, SHARED_AXIS_KEYS } from "@/lib/filter-taxonomy";
 
 export const ATTRIBUTE_LABELS = Object.fromEntries(
   SHARED_AXIS_KEYS.map((key) => {
-    const { label, scope, evidence, subtext } = FILTER_AXES[key];
-    // `group` is deliberately not projected: it is FilterSheet wiring, and this
-    // map's shape ({label, scope, evidence, subtext}) is what MEH-1507 pinned.
-    return [key, { label, scope, evidence, subtext }];
+    const { scope, evidence, hasSubtext } = FILTER_AXES[key];
+    // `group` is deliberately not projected: it is FilterSheet wiring.
+    // MEH-2748: label/subtext are not stored here any more — they live in
+    // messages/{he,en}.json `filter_axes.<key>` (see lib/use-chip-copy.js).
+    return [key, { scope, evidence, hasSubtext }];
   }),
 );

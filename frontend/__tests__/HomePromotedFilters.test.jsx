@@ -3,6 +3,7 @@ import { render, screen, fireEvent, renderHook, act } from "@testing-library/rea
 import { HomeProducersGrid } from "@/app/[locale]/home/HomeProducersGrid";
 import { useHomePage } from "@/lib/use-home-page";
 import { CHIPS_CONFIG } from "@/lib/producer-filters";
+import { heChipCopy } from "./helpers/he-chip-copy";
 import api from "@/lib/api";
 import { Check } from "@phosphor-icons/react";
 
@@ -27,6 +28,7 @@ import { Check } from "@phosphor-icons/react";
  * browser; no assertion below should be read as covering it.
  */
 
+vi.mock("@/lib/use-chip-copy", async () => (await import("./helpers/he-chip-copy")).chipCopyMock);
 vi.mock("next-intl", () => ({
   useTranslations: () => (key, values) =>
     values && values.count !== undefined ? `${key}#${values.count}` : key,
@@ -119,7 +121,8 @@ describe("MEH-2173 — the promoted row", () => {
   it("labels each promoted chip from the taxonomy, not from a local string", () => {
     render(<HomeProducersGrid {...props()} />);
     for (const key of PROMOTED) {
-      const expected = CHIPS_CONFIG.find((c) => c.key === key).label;
+      const expected = heChipCopy(CHIPS_CONFIG.find((c) => c.key === key)).label;
+      expect(expected).toBeTruthy(); // a missing message must not pass as ""
       expect(screen.getByTestId(`home-promoted-chip-${key}`).textContent).toContain(expected);
     }
   });
