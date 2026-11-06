@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Link as LocaleLink } from "@/i18n/navigation";
 
 import api from "@/lib/api";
+import { ALLERGEN_CODES, toggleAllergen } from "@/lib/allergens";
 import { detailToMessage, errorMessage } from "@/lib/errors";
 import { israelTime, leftoverGroupUrl, shekels } from "@/lib/rescue";
 import Button from "@/components/ui/Button";
@@ -39,6 +40,9 @@ const AT = { code: "code", orders: "orders", publish: "publish", items: "items",
 
 export default function RescueTab() {
   const t = useTranslations("rescue.dashboard");
+  // The allergen LABELS are the product sheet's, not a second copy: one
+  // vocabulary for the whole site (MEH-2662).
+  const tProducts = useTranslations("settings.products.form");
   const tError = useTranslations("error");
   const [orders, setOrders] = useState(null);
   const [code, setCode] = useState("");
@@ -66,6 +70,11 @@ export default function RescueTab() {
     return detailToMessage(err.response.data?.detail) || t("failed");
   };
   const [items, setItems] = useState("");
+  // MEH-2752: null = this business declared nothing, which is NOT the same as
+  // an empty selection the owner is mid-way through making. The save turns an
+  // empty selection into null on the wire; see allergens.py for why [] must
+  // never persist.
+  const [allergens, setAllergens] = useState([]);
   const [form, setForm] = useState({ qty_total: 4, price: 15, from: "18:00", to: "20:00", cancelMin: 30 });
   // MEH-2678: the tab loads its own pickup points. It used to take them as a
   // prop that the only page rendering it never passed, so every publish
@@ -122,7 +131,10 @@ export default function RescueTab() {
       .catch(() => setProducerStatus("unknown"));
     api
       .get("/producers/me/rescue/typical-items")
-      .then((r) => setItems((r.data?.items || []).join(", ")))
+      .then((r) => {
+        setItems((r.data?.items || []).join(", "));
+        setAllergens(r.data?.allergens || []);
+      })
       .catch(() => {});
   }, [load]);
 
@@ -175,6 +187,10 @@ export default function RescueTab() {
     try {
       await api.put("/producers/me/rescue/typical-items", {
         items: items.split(",").map((s) => s.trim()).filter(Boolean),
+        // Nothing ticked is sent as [] and the server stores NULL. It is not
+        // sent as "no allergens": the owner ticking nothing is not a claim
+        // that the bag contains none of them.
+        allergens,
       });
       setNotice("items", t("items_saved"), false);
     } catch (err) {
@@ -522,6 +538,43 @@ export default function RescueTab() {
           data-testid="rescue-items-input"
           className="w-full border border-border rounded-md px-3 py-2"
         />
+
+        {/* MEH-2752: what this business declares about ITS bag. Before this,
+            every bag showed one fixed sentence naming four allergens — a
+            statement about food nobody had made. */}
+        <div className="mt-3">
+          <p id="rescue-allergens-heading" className="font-body-sm text-sm text-text font-medium">
+            {t("allergens_title")}
+          </p>
+          <p className="font-body-sm text-sm text-fg-muted mb-2">{t("allergens_help")}</p>
+          <div
+            role="group"
+            aria-labelledby="rescue-allergens-heading"
+            data-testid="rescue-allergens-group"
+            className="flex flex-wrap gap-2"
+          >
+            {ALLERGEN_CODES.map((code) => {
+              const pressed = allergens.includes(code);
+              return (
+                <button
+                  key={code}
+                  type="button"
+                  aria-pressed={pressed}
+                  onClick={() => setAllergens((prev) => toggleAllergen(prev, code))}
+                  data-testid={`rescue-allergen-${code}`}
+                  className={`inline-flex items-center min-h-touch rounded-full border px-4 py-2 font-body-sm text-sm transition focus-ring ${
+                    pressed
+                      ? "border-primary bg-green-50 text-primary"
+                      : "border-border text-fg-muted hover:border-primary"
+                  }`}
+                >
+                  {tProducts(`allergen_${code}`)}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         <Button
           type="button"
           onClick={saveItems}

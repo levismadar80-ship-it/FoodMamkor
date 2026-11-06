@@ -491,6 +491,7 @@ erDiagram
         string status "active|cancelled (CHECK) — sold out is qty_left=0"
         timestamp created_at
         int qty_donated "MEH-2703 · default 0 · CHECK 0..qty_total · owner-reported «נמסרו בחינם»"
+        timestamp codes_sent_at "MEH-2756 · timestamptz NULL · digest sent to the business; NULL = not sent"
     }
 
     rescue_orders {
@@ -521,6 +522,7 @@ erDiagram
         uuid id PK "MEH-2644"
         uuid producer_id FK "CASCADE, UNIQUE — one row per business"
         json items "JSONB NOT NULL, default []"
+        text allergens "text[] NULL — MEH-2752: NULL = not declared, never []"
         timestamp created_at
         timestamp updated_at
     }
