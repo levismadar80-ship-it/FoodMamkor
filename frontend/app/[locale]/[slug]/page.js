@@ -79,7 +79,7 @@ export async function generateMetadata(props) {
     };
   }
 
-  const base = buildProducerMetadata(producer);
+  const base = buildProducerMetadata(producer, locale);
   return {
     ...base,
     title: { absolute: buildEntityTitle(producer.name, locale) },

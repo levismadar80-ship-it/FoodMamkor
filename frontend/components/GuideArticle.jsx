@@ -17,6 +17,7 @@
  */
 import { Link } from "@/i18n/navigation";
 import { ArrowRight } from "@phosphor-icons/react/ssr";
+import { getTranslations } from "next-intl/server";
 import { BRAND_NAME } from "@/lib/constants";
 
 // MEH-821: brand colors via canonical ADR-019 token classes (text-primary,
@@ -121,19 +122,21 @@ function renderBlock(block, i) {
   }
 }
 
-export default function GuideArticle({
+export default async function GuideArticle({
   title,
   subtitle,
   readMinutes,
   blocks,
   backHref = "/about/for-businesses/guides",
 }) {
+  // MEH-2772: shell copy lives in messages (guides.article).
+  const t = await getTranslations("guides.article");
   return (
     <section className="min-h-screen bg-background text-text">
       <article className="max-w-3xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
         <header className="mb-8 sm:mb-10">
           <p className="text-xs sm:text-sm mb-3 text-accent">
-            מדריך לבעלות עסק · קריאה כ-{readMinutes} דקות
+            {t("eyebrow", { minutes: readMinutes })}
           </p>
           <h1 className="font-headline-lg mb-3 text-primary-dark text-[clamp(28px,6vw,44px)] leading-[1.15] font-black">
             {title}
@@ -149,10 +152,10 @@ export default function GuideArticle({
 
         <footer className="mt-14 sm:mt-16 border-t border-border pt-8">
           <p className="text-base mb-2 font-headline-md text-text font-semibold">
-            ספיר שנפ
+            {t("founder_name")}
           </p>
           <p className="text-sm mb-6 text-text/90">
-            מייסדת · {BRAND_NAME} · mehamakor.co.il
+            {t("founder_role", { brand: BRAND_NAME })} · mehamakor.co.il
           </p>
           <Link
             href={backHref}
@@ -160,7 +163,7 @@ export default function GuideArticle({
           >
             {/* MEH-990: raw ← dingbat → Phosphor ArrowRight; rtl:rotate-180 = back/reading-forward in he (MEH-938 pattern) */}
             <ArrowRight size={16} weight="bold" aria-hidden="true" className="rtl:rotate-180" />
-            חזרה למדריכים
+            {t("back")}
           </Link>
         </footer>
       </article>

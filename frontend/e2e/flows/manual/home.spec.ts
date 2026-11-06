@@ -324,6 +324,9 @@ function producer(
     // promoted row is two chips or three. Declared on every row so the row is
     // the full trio and the sheet the full home axis set; censused in beforeAll.
     sells_on_site: true,
+    // MEH-2767: `grass_fed` reached home and is count-gated like the diet
+    // axes, so every row declares it; censused in beforeAll.
+    grass_fed: true,
     // MEH-2131: `open_for_orders_now` is the OTHER runtime-gated axis — the sheet
     // withholds it below OPEN_NOW_CHIP_MIN (5) declared windows, and again when
     // no business is open at the current clock. An all-week 00:00-23:59 window on
@@ -450,6 +453,9 @@ test.beforeAll(() => {
   const sugarDeclared = PRODUCERS.filter((p) => p.has_no_added_sugar_products).length;
   if (sugarDeclared < 5)
     throw new Error(`DIET_CHIP_MIN = 5 declared businesses are needed to un-gate no_added_sugar, got ${sugarDeclared}`);
+  const grassFed = PRODUCERS.filter((p) => p.grass_fed).length;
+  if (grassFed < 5)
+    throw new Error(`DIET_CHIP_MIN = 5 grass-fed businesses are needed to un-gate grass_fed, got ${grassFed}`);
   const onSite = PRODUCERS.filter((p) => p.sells_on_site).length;
   if (onSite < 5)
     throw new Error(`DIET_CHIP_MIN = 5 businesses selling on site are needed to un-gate on_site, got ${onSite}`);

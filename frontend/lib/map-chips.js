@@ -31,8 +31,8 @@ import {
   mapEmitsParam,
 } from "@/lib/filter-taxonomy";
 import {
-  DIET_CHIP_MIN,
-  GATED_AXIS_PREDICATES,
+  GATED_DIET_KEYS,
+  visibleAxisChips,
 } from "@/lib/producer-filters";
 
 // `matches` lists every DB category.name variant the chip should resolve to.
@@ -94,13 +94,11 @@ export const TOGGLE_CHIPS = chipsForKeys(axisKeysFor("map", MAP_CHIP_ORDER));
 // components/PromotedServiceChips.jsx (Sapir 29/10: one row everywhere).
 export const SERVICE_CHIP_KEYS = ["has_delivery", "pickup_points", "on_site"];
 
-// MEH-2170 (option ב׳, Sapir 25/08): the five diet axes are gated on /map the
-// way /producers already gates them (DIET_CHIP_MIN, MEH-1934) — a toggle that
-// is guaranteed to return "0 businesses" on the current catalog is not
-// rendered. Only these five: verified / kosher / grass_fed / has_delivery /
-// pickup_points / open_for_orders_now stay visible whatever they return
-// (out of scope by decision; option א׳ — an unfiltered source of truth +
-// catalogFullyLoaded — is post-launch).
+// MEH-2170 (option ב׳, Sapir 25/08): the diet axes are gated on /map — a
+// toggle that is guaranteed to return "0 businesses" on the current catalog is
+// not rendered. MEH-2767 (Sapir 06/11) extended the SAME rule to grass_fed and
+// open-now here, and to every surface; verified / kosher / has_delivery /
+// pickup_points stay visible whatever they return, on every surface.
 //
 // The count source is a ONE-TIME snapshot of the mount catalog
 // (useProducersFeed.catalogSnapshot: the first, unfiltered, non-viewport
@@ -111,70 +109,40 @@ export const SERVICE_CHIP_KEYS = ["has_delivery", "pickup_points", "on_site"];
 // and never updates, which is exactly what makes both assertions in the
 // e2e spec hold: the visible set is identical before and after a toggle,
 // and before and after a geo-search.
-export const DIET_GATED_KEYS = [
-  "vegan",
-  "vegetarian",
-  "gluten_free",
-  "lactose_free",
-  "no_added_sugar",
-  // MEH-2598: not a diet axis, but gated by the same snapshot count — a new
-  // axis starts gated (producer-filters.js GATED_DIET_KEYS note).
-  "on_site",
-];
-
-// ProducerListOut boolean per axis (lib/schemas.js:215-222) — the same
-// fields /producers counts (MEH-1934 `has_no_added_sugar_products`).
-const DIET_FIELD = {
-  vegan: "has_vegan_products",
-  vegetarian: "has_vegetarian_products",
-  gluten_free: "has_gluten_free_products",
-  lactose_free: "has_lactose_free_products",
-  no_added_sugar: "has_no_added_sugar_products",
-  on_site: "sells_on_site", // MEH-2598
-};
+// MEH-2767: no longer a /map-local list. The gated set is declared once, per
+// axis, by `gate` in lib/filter-taxonomy.js, and /map gates through the same
+// function home and /producers use (producer-filters.js visibleAxisChips).
+// Before this, /map gated the four older diet axes and not open-now, while
+// /producers gated open-now and not the four — the drift in Sapir's two
+// screenshots (06/11). The export name is kept for its existing importers.
+export const DIET_GATED_KEYS = GATED_DIET_KEYS;
 
 /**
  * The toggle chips FilterSheet should offer on /map, given the mount snapshot.
+ * A thin adapter from /map's snapshot vocabulary to visibleAxisChips:
  *
- * - `snapshotPending` (the mount fetch is still in flight): gated chips are
- *   held back until it answers. Rendering them first and dropping them a
- *   moment later is the «קנייה במקום» flash on a phone's first paint (Sapir
- *   30/10) — a chip should arrive once, not arrive and vanish. Home and
- *   /producers already behave this way (they gate over an empty list).
- * - `catalogSnapshot` null/undefined once settled (the load failed): NO
- *   gating — every chip renders. Hiding on an unknown would be the
- *   "probe never ran" green in the other direction.
- * - An axis already active (deep link ?vegan=1 post MEH-2049): kept, so the
- *   visitor is never stranded with a filter she can see and cannot switch
- *   off — the same carve-out /producers makes.
- * - Otherwise a diet chip renders iff >= DIET_CHIP_MIN snapshot businesses
- *   carry its product flag.
+ * - `snapshotPending` (the mount fetch is still in flight) → "pending": gated
+ *   chips are held back until it answers — a chip should arrive once, not
+ *   arrive and vanish (the «קנייה במקום» flash, Sapir 30/10).
+ * - `catalogSnapshot` null/undefined once settled (the load failed) →
+ *   "failed": NO gating, every chip renders.
+ * - otherwise "ready": the shared rule (≥ DIET_CHIP_MIN for "count" axes, the
+ *   order-window gate for open-now). An active axis always keeps its chip.
  *
- * Pure: same snapshot + same chipState => same array, which is what keeps
- * the sheet stable across toggles and area searches.
+ * Pure: same snapshot + same chipState + same clock => same array, which is
+ * what keeps the sheet stable across toggles and area searches.
  */
 export function visibleMapToggleChips({
   catalogSnapshot,
   chipState = {},
   chips = TOGGLE_CHIPS,
   snapshotPending = false,
+  now = null,
 }) {
-  if (snapshotPending) {
-    return chips.filter((chip) => !DIET_GATED_KEYS.includes(chip.key) || chipState[chip.key]);
-  }
-  if (!Array.isArray(catalogSnapshot)) return chips;
-  return chips.filter((chip) => {
-    if (!DIET_GATED_KEYS.includes(chip.key)) return true;
-    if (chipState[chip.key]) return true;
-    const shared = GATED_AXIS_PREDICATES[chip.key];
-    if (shared) {
-      const n = catalogSnapshot.filter((p) => p && shared(p)).length;
-      return n >= DIET_CHIP_MIN;
-    }
-    const field = DIET_FIELD[chip.key];
-    const n = catalogSnapshot.filter((p) => p && p[field]).length;
-    return n >= DIET_CHIP_MIN;
-  });
+  let status = "ready";
+  if (snapshotPending) status = "pending";
+  else if (!Array.isArray(catalogSnapshot)) status = "failed";
+  return visibleAxisChips({ chips, catalog: catalogSnapshot, status, chipState, now });
 }
 
 // The /map axes that actually emit a query param. See the note in

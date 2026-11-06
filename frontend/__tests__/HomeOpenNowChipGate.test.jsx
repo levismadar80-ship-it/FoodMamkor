@@ -20,6 +20,10 @@ import { OPEN_NOW_CHIP_MIN } from "@/lib/producer-filters";
  * the `hasMore` case below is the one that fails if the argument regresses.
  */
 
+// MEH-2767: the chip gate counts the unfiltered snapshot hook; see the helper.
+import { setCatalogSnapshot } from "./helpers/catalog-snapshot";
+vi.mock("@/lib/use-catalog-snapshot", async () =>
+  (await import("./helpers/catalog-snapshot")).catalogSnapshotMock);
 vi.mock("@/lib/use-chip-copy", async () => (await import("./helpers/he-chip-copy")).chipCopyMock);
 vi.mock("next-intl", () => ({
   useTranslations: () => (k, v) => (v ? `${k}:${JSON.stringify(v)}` : k),
@@ -111,7 +115,10 @@ const NEVER_OPEN = {};
 const rows = (n, order_window) =>
   Array.from({ length: n }, (_, i) => ({ id: i + 1, order_window }));
 
-const props = (producers, overrides = {}) => ({
+// MEH-2767: the gate counts the snapshot — make it the rendered fixture.
+const props = (producers, overrides = {}) =>
+  (setCatalogSnapshot(producers), propsBase(producers, overrides));
+const propsBase = (producers, overrides = {}) => ({
   producers,
   producersLoading: false,
   visibleProducers: producers,

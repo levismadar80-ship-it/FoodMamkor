@@ -89,10 +89,12 @@ describe("homepage attribute chips → /producers deep-link (MEH-1774)", () => {
     // unknown; that is not this one.
     // MEH-1508 chunk 3ב-2: 11 → 13 (vegan_all + vegetarian_all); MEH-2677: back
     // to 11 — both left the filter (badge-only).
-    expect(CHIPS_CONFIG).toHaveLength(11); // MEH-2598: + on_site
+    // MEH-2767: 11 → 12 (grass_fed reaches home + /producers). Gated, so it
+    // satisfies the second half through GATED_DIET_KEYS, and the four older
+    // diet axes moved out of UNGATED into it (one rule on every surface).
+    expect(CHIPS_CONFIG).toHaveLength(12); // MEH-2598: + on_site
     const UNGATED = [
-      "kosher", "vegan", "vegetarian", "gluten_free",
-      "lactose_free", "has_delivery", "verified",
+      "kosher", "has_delivery", "verified",
       "pickup_points",  // MEH-2130 — see the note above
     ];
     // MEH-2131: `open_for_orders_now` reaches the home row and IS gated — but
@@ -247,7 +249,7 @@ describe("chip deep-link carries delivery context (MEH-1826)", () => {
     expect(params.get("city")).toBe("ירושלים");
   });
 
-  it("context rides along for ALL 11 chip keys, not just משלוח", () => {
+  it("context rides along for ALL 12 chip keys, not just משלוח", () => {
     withContext("חיפה", "שלישי");
     const { result } = renderHook(() => useHomePage());
 
@@ -259,6 +261,6 @@ describe("chip deep-link carries delivery context (MEH-1826)", () => {
       expect(params.get("city")).toBe("חיפה");
       expect(params.getAll("delivery_days")).toEqual(["שלישי"]);
     }
-    expect(CHIPS_CONFIG).toHaveLength(11);  // MEH-1934, MEH-2047, MEH-2130, MEH-2131, MEH-2598, MEH-1508, MEH-2677
+    expect(CHIPS_CONFIG).toHaveLength(12);  // MEH-1934, MEH-2047, MEH-2130, MEH-2131, MEH-2598, MEH-1508, MEH-2677, MEH-2767
   });
 });

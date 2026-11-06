@@ -600,7 +600,15 @@
       "og_title": "Mehamakor — real food, straight from the source",
       "og_description": "Real food from local businesses — all in one place.",
       "twitter_title": "Mehamakor — real food, straight from the source",
-      "twitter_description": "Real food from local businesses — all in one place."
+      "twitter_description": "Real food from local businesses — all in one place.",
+      "keywords": [
+        "local products",
+        "grass-fed",
+        "healthy food",
+        "organic food",
+        "Israeli local businesses",
+        "farmers market"
+      ]
     },
     "about": {
       "title": "About Mehamakor — our vision and values",
@@ -711,6 +719,18 @@
     "claim": {
       "title": "Take your business page | Mehamakor",
       "description": "We prepared a page for you on Mehamakor"
+    },
+    "producer": {
+      "title_full": "{name} — {category} in {city} | {brand}",
+      "title_city": "{name} in {city} | {brand}",
+      "title_category": "{name} — {category} | {brand}",
+      "title_name": "{name} | {brand}",
+      "description_full": "{name} — a local business in {city}. {category}",
+      "description_city": "{name} — a local business in {city}",
+      "description_category": "{name} — a local business. {category}",
+      "description_name": "{name} — a local business",
+      "not_found": "Business not found | {brand}",
+      "country": "Israel"
     }
   },
   "producer": {
@@ -2636,6 +2656,11 @@
       "previous_month": "Previous month",
       "next_month": "Next month",
       "label": "Calendar",
+      "today": "Today",
+      "list_heading": "All events in {month}",
+      "list_heading_experiences": "All experiences in {month}",
+      "empty_month": "No events this month. Try the next month.",
+      "empty_month_experiences": "No experiences this month. Try the next month.",
       "events_count": "{count, plural, =0 {No events} one {# event} other {# events}}",
       "days": {
         "sun": "Sun",
@@ -3931,6 +3956,12 @@
         "product_photography": "No professional camera, no studio. 5 principles + a 30-minute workflow enough for a full page.",
         "customer_messages": "Response time, tone, and 5 ready-made templates. The small things that decide whether a conversation closes in an order."
       }
+    },
+    "article": {
+      "eyebrow": "A guide for business owners · {minutes} min read",
+      "founder_name": "Sapir Schnapp",
+      "founder_role": "Founder · {brand}",
+      "back": "Back to guides"
     },
     "business_story": {
       "title": "How to write a good story about your business",
