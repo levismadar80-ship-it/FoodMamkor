@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { CATEGORY_LEGEND } from "@/lib/category-registry";
+import { CATEGORY_LEGEND, CATEGORY_STYLES } from "@/lib/category-registry";
 import {
   CATEGORY_CHIPS,
   SERVICE_CHIP_KEYS,
   TOGGLE_CHIPS,
   chipStateToParams,
   resolveCategoryId,
+  withResolvedIcons,
   visibleMapToggleChips,
 } from "@/lib/map-chips";
 // MEH-2131: the chip-state default is derived from the taxonomy — see the
@@ -433,8 +434,12 @@ export function useMapFilters({
   const visibleCategoryChips = useMemo(
     () =>
       categories.length > 0
-        ? CATEGORY_CHIPS.filter(
-            (c) => c.key === "all" || resolveCategoryId(c, categories) != null,
+        ? withResolvedIcons(
+            CATEGORY_CHIPS.filter(
+              (c) => c.key === "all" || resolveCategoryId(c, categories) != null,
+            ),
+            categories,
+            CATEGORY_STYLES,
           )
         : CATEGORY_CHIPS,
     [categories],
