@@ -337,7 +337,7 @@ export default function GroupBuyDetailClient({ id }) {
   );
 
   const joinCard = (
-    <div className="bg-white rounded-[16px] border border-border p-5 md:p-6">
+    <div className="bg-white rounded-lg border border-border p-5 md:p-6">
       <div className="flex items-baseline gap-2">
         <span dir="ltr" className="text-4xl font-bold text-primary">{formatPrice(Number(gb.price_per_unit_group).toFixed(0))}</span>
         <span dir="ltr" className="text-fg-muted line-through text-lg">{formatPrice(Number(gb.price_per_unit_regular).toFixed(0))}</span>
@@ -473,7 +473,7 @@ export default function GroupBuyDetailClient({ id }) {
 
         <div className="grid gap-6 lg:gap-x-10 lg:grid-cols-[1fr_380px] lg:items-start">
           <div className="min-w-0">
-            <div className="relative aspect-[16/9] rounded-[16px] overflow-hidden bg-green-50">
+            <div className="relative aspect-[16/9] rounded-lg overflow-hidden bg-green-50">
               {showHero ? (
                 <Image
                   src={heroSrc}
@@ -639,7 +639,7 @@ export default function GroupBuyDetailClient({ id }) {
             role="dialog"
             aria-modal="true"
             aria-labelledby="gb-cancel-title"
-            className="bg-background rounded-[16px] p-6 max-w-sm w-full border border-border"
+            className="bg-background rounded-lg p-6 max-w-sm w-full border border-border"
             onClick={(e) => e.stopPropagation()}
           >
             <h2

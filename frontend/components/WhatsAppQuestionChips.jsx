@@ -89,7 +89,7 @@ import { useUserCity } from "@/lib/use-user-city";
 // MEH-2592 C: ready-made questions are pills (like WhatsApp Business quick
 // replies) rather than accordion rows, so they read as tappable at a glance.
 const QUESTION_PILL =
-  "inline-flex items-center gap-1.5 min-h-[44px] px-3.5 rounded-full border font-body-md text-sm transition focus-visible:ring-2 focus-visible:ring-primary/40";
+  "inline-flex items-center gap-1.5 min-h-touch px-3.5 rounded-full border font-body-md text-sm transition focus-visible:ring-2 focus-visible:ring-primary/40";
 
 /** Collapsible answer row: button + aria-expanded + CaretDown (rotates open). */
 function Disclosure({ question, children }) {

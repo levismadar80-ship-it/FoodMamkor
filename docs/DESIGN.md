@@ -87,6 +87,7 @@ spacing:
   "5xl": 96px
   "6xl": 128px
   gutter: 16px
+  touch: 44px
 rounded:
   sm: 8px
   md: 12px
@@ -214,6 +215,17 @@ Use the semantic name: `text-error`, `bg-surface`, `border-border`,
 (the 6-stop scale above) and is exempt. An ESLint selector warns on the rest
 (MEH-1629, `warn`: the ~170 historical hits are debt, not a build failure). If a
 raw shade is genuinely required, mark it `// token-ok` + `eslint-disable-next-line`.
+
+**The blocking gate is `scripts/checks/raw-color-tokens.sh` (MEH-2717, Repo guards).**
+It ratchets every raw colour in `frontend/{app,components,lib,hooks}` — palette
+classes including `white`/`black`, arbitrary `bg-[#…]` classes and hex literals in
+JS/CSS — against `scripts/checks/raw-color-baseline.txt`. Existing occurrences are
+frozen; a new one fails CI. `bg-white`, `border-white`, `ring-white` etc. are gated;
+only `text-white` and `bg-black/<n>` scrims are exempt. The
+`// token-ok` comment above silences only the ESLint warning; for the gate, a
+genuinely fixed colour (a third-party brand colour, an SVG fill) is
+`--update-baseline` plus a reason in the PR body. Why it matters: a future theme
+switch (dark mode) can only re-colour what goes through the tokens.
 
 ### Address/city fields must use the canonical component
 
@@ -692,7 +704,9 @@ the floor and are known violations of this rule, not exceptions to it:
 `components/Header.jsx:761` (avatar button, `w-[34px] h-[34px]`). Their fix is
 a separate code PR, tracked on MEH-1687; until it lands, do not copy them._ When the
 visible control is smaller than 44px, the target is enlarged with
-`min-h-[44px] min-w-[44px]` plus `flex items-center justify-center` so the
+`min-h-touch min-w-touch` (the `spacing.touch` token = 44px, MEH-2719; the
+arbitrary `[44px]` spelling is forbidden by `TouchTokenCodemod.test.js`) plus
+`flex items-center justify-center` so the
 glyph stays centered inside the padded hit area — the `HeroSearch` submit
 button and `BadgeRow` (MEH-813) outer-button hit-area are the canonical
 patterns.

@@ -156,7 +156,7 @@ function CategoriesEditor() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="category-delete-title"
-            className="bg-white rounded-[16px] shadow-xl p-6 max-w-sm w-full mx-4 text-start space-y-4"
+            className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full mx-4 text-start space-y-4"
           >
             <p id="category-delete-title" className="font-medium text-base">
               {t("content.categories.confirm_delete", {

@@ -119,7 +119,7 @@ function ConfirmStep({ onCancelConfirm, onSubmit, submitting }) {
           type="button"
           onClick={onCancelConfirm}
           disabled={submitting}
-          className="px-4 py-2 rounded-[8px] border border-border text-text hover:bg-green-50 disabled:opacity-50"
+          className="px-4 py-2 rounded-sm border border-border text-text hover:bg-green-50 disabled:opacity-50"
         >
           {t("common.cancel")}
         </button>
@@ -128,7 +128,7 @@ function ConfirmStep({ onCancelConfirm, onSubmit, submitting }) {
           onClick={onSubmit}
           disabled={submitting}
           data-testid="decision-confirm-submit"
-          className="px-4 py-2 rounded-[8px] text-white bg-red-600 hover:bg-red-700 disabled:opacity-50"
+          className="px-4 py-2 rounded-sm text-white bg-red-600 hover:bg-red-700 disabled:opacity-50"
         >
           {submitting ? t("common.sending") : t("producers.decision.submit_reject")}
         </button>
@@ -163,7 +163,7 @@ function DecisionForm({ presets, presetsError, value, setValue, freeText, setFre
           {t("producers.reject.presets_error")}
         </p>
         <div className="flex gap-2 justify-end">
-          <button type="button" onClick={onClose} className="px-4 py-2 rounded-[8px] border border-border text-text hover:bg-green-50">
+          <button type="button" onClick={onClose} className="px-4 py-2 rounded-sm border border-border text-text hover:bg-green-50">
             {t("common.cancel")}
           </button>
         </div>
@@ -213,7 +213,7 @@ function DecisionForm({ presets, presetsError, value, setValue, freeText, setFre
       />
 
       <div className="flex gap-2 justify-end mt-4">
-        <button type="button" onClick={onClose} className="px-4 py-2 rounded-[8px] border border-border text-text hover:bg-green-50">
+        <button type="button" onClick={onClose} className="px-4 py-2 rounded-sm border border-border text-text hover:bg-green-50">
           {t("common.cancel")}
         </button>
         {/* Label AND tone are derived from the chosen group, so the button can
@@ -223,7 +223,7 @@ function DecisionForm({ presets, presetsError, value, setValue, freeText, setFre
           onClick={onSubmit}
           disabled={!canSubmitDecision(value, freeText)}
           data-testid="decision-submit"
-          className={`px-4 py-2 rounded-[8px] text-white disabled:opacity-50 disabled:cursor-not-allowed ${
+          className={`px-4 py-2 rounded-sm text-white disabled:opacity-50 disabled:cursor-not-allowed ${
             isReject ? "bg-red-600 hover:bg-red-700" : "bg-primary hover:opacity-90"
           }`}
         >
@@ -270,7 +270,7 @@ export default function ProducerDecisionModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="producer-decision-title"
-        className="bg-background rounded-[16px] p-6 max-w-lg w-full border border-border text-start max-h-[90vh] overflow-y-auto"
+        className="bg-background rounded-lg p-6 max-w-lg w-full border border-border text-start max-h-[90vh] overflow-y-auto"
         data-testid="decision-modal"
       >
         <h2 id="producer-decision-title" className="font-headline-md text-xl font-bold text-text mb-4">

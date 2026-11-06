@@ -172,7 +172,7 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
       <div
         ref={panelRef}
         tabIndex={-1}
-        className="bg-background rounded-t-[24px] sm:rounded-[16px] shadow-[0_8px_40px_rgba(0,0,0,0.15)] w-full sm:max-w-md px-6 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:p-6 relative overflow-hidden animate-[slide-up_0.2s_ease-out] focus:outline-none"
+        className="bg-background rounded-t-[24px] sm:rounded-lg shadow-[0_8px_40px_rgba(0,0,0,0.15)] w-full sm:max-w-md px-6 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:p-6 relative overflow-hidden animate-[slide-up_0.2s_ease-out] focus:outline-none"
         role="dialog"
         aria-modal="true"
         aria-labelledby="location-modal-title"
@@ -263,7 +263,7 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
               key={key}
               type="button"
               onClick={() => handleCityPick(canonical)}
-              className="px-4 py-3 rounded-lg bg-background-alt border border-accent/40 text-gold-deep hover:bg-primary hover:border-primary hover:text-white transition-colors min-h-[44px] text-sm font-medium"
+              className="px-4 py-3 rounded-lg bg-background-alt border border-accent/40 text-gold-deep hover:bg-primary hover:border-primary hover:text-white transition-colors min-h-touch text-sm font-medium"
             >
               {/* MEH-1430: label wrapped so a future «· N» count (data-gated,
                   MEH-974) can append inside this span without reflowing the
@@ -282,7 +282,7 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
           type="button"
           onClick={handleGeo}
           disabled={geoLoading}
-          className="w-full inline-flex items-center justify-center gap-2 border border-primary text-primary bg-transparent py-2.5 min-h-[44px] rounded-[10px] font-medium transition hover:bg-green-50 disabled:opacity-60 mb-3"
+          className="w-full inline-flex items-center justify-center gap-2 border border-primary text-primary bg-transparent py-2.5 min-h-touch rounded-[10px] font-medium transition hover:bg-green-50 disabled:opacity-60 mb-3"
         >
           <Crosshair size={18} weight="bold" className={geoLoading ? "animate-spin" : ""} aria-hidden="true" />
           {geoLoading ? t("geo_loading") : t("geo_button")}
@@ -291,7 +291,7 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
         <button
           type="button"
           onClick={onClose}
-          className="w-full flex items-center justify-center text-sm text-fg-muted hover:text-primary transition-colors min-h-[44px] px-4 py-3"
+          className="w-full flex items-center justify-center text-sm text-fg-muted hover:text-primary transition-colors min-h-touch px-4 py-3"
         >
           {t("skip")}
         </button>

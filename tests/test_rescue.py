@@ -20,6 +20,7 @@ THE FLAG: `settings.rescue_bags_enabled` does not exist yet —
 the field's absence can never read as "enabled".
 """
 
+import re
 from datetime import timedelta
 
 import pytest
@@ -662,6 +663,27 @@ class TestPublicList:
         db.commit()
         assert len(client.get("/rescue/offers").json()) == 1
 
+    def test_a_bag_whose_pickup_window_ended_is_not_listed(
+        self, client, db, shop, rescue_on
+    ):
+        """MEH-2713: reserve refuses a bag once pickup_end passed ("זמן האיסוף
+        חלף"), so listing it showed a button that could only fail — and the
+        buyer read the 409 as «הסל הזה נגמר». Still today, still stock."""
+        now = utc_now()
+        ended = _seed_offer(
+            db,
+            shop["location"],
+            pickup_start=now - timedelta(hours=3),
+            pickup_end=now - timedelta(minutes=1),
+            cancel_until=now - timedelta(hours=4),
+        )
+        assert client.get("/rescue/offers").json() == []
+        # Control: the same row is listed while its window is still open, so the
+        # empty list above is the window filter and not a broken seed.
+        ended.pickup_end = now + timedelta(minutes=5)
+        db.commit()
+        assert [row["id"] for row in client.get("/rescue/offers").json()] == [str(ended.id)]
+
     def test_distance_is_absent_when_the_caller_sends_no_coordinates(
         self, client, db, shop, rescue_on
     ):
@@ -713,3 +735,140 @@ class TestOfferCancel:
             ).status_code
             == 409
         )
+
+
+class TestReserveEmail:
+    """MEH-2715 — the buyer gets one confirmation email per reservation.
+
+    Copy approved word for word by Sapir on 6/11; the assertions quote it.
+    Sends are captured at the service's own `send_email` reference, so nothing
+    leaves the test (the same seam test_group_buys_api.py uses).
+    """
+
+    @staticmethod
+    def _capture(monkeypatch):
+        sent = []
+        monkeypatch.setattr(
+            "app.services.rescue_emails.send_email",
+            lambda to, subject, body, html=None, reply_to=None: sent.append(
+                {"to": to, "subject": subject, "body": body, "html": html}
+            ),
+        )
+        return sent
+
+    def test_a_reservation_emails_the_buyer_their_code_price_and_cutoff(
+        self, client, db, shop, rescue_on, monkeypatch
+    ):
+        sent = self._capture(monkeypatch)
+        offer = _seed_offer(db, shop["location"], qty_total=4)
+        buyer = make_user(db, email="mail@example.com")
+        db.commit()
+
+        r = client.post(
+            "/rescue/orders",
+            json={"offer_id": str(offer.id), "qty": 2},
+            headers=auth_header(buyer),
+        )
+        assert r.status_code == 201, r.text
+        code = r.json()["pickup_code"]
+
+        assert len(sent) == 1, sent
+        mail = sent[0]
+        assert mail["to"] == "mail@example.com"
+        assert mail["subject"] == "שמרנו לכם סל במאפיית ההצלה"
+        # The HTML is checked as rendered text: tags out, &nbsp; as a space.
+        html_text = re.sub(r"<[^>]+>", "", mail["html"]).replace("&nbsp;", " ")
+        for part in (mail["body"], html_text):
+            assert code in part
+            # Two bags at 15 ₪ each: the email quotes what is paid at the counter.
+            assert "ומשלמים 30" in part
+            assert "הנביאים 10, חיפה" in part
+            assert "וככה הסל יגיע למישהו אחר" in part
+            assert "צוות מהמקור 🌱" in part
+        assert "לבטל את השריון" in mail["html"]
+        assert f"/producer/{shop['producer'].id}" in mail["html"]
+
+    def test_a_refused_reservation_sends_nothing(
+        self, client, db, shop, rescue_on, monkeypatch
+    ):
+        sent = self._capture(monkeypatch)
+        offer = _seed_offer(db, shop["location"], qty_total=1, qty_left=0)
+        buyer = make_user(db, email="nomail@example.com")
+        db.commit()
+        r = client.post(
+            "/rescue/orders",
+            json={"offer_id": str(offer.id), "qty": 1},
+            headers=auth_header(buyer),
+        )
+        assert r.status_code == 409
+        assert sent == []
+
+    def test_the_business_name_is_escaped_in_the_html(
+        self, client, db, shop, rescue_on, monkeypatch
+    ):
+        sent = self._capture(monkeypatch)
+        shop["producer"].name = "<b>מאפה</b>"
+        db.commit()
+        offer = _seed_offer(db, shop["location"])
+        buyer = make_user(db, email="esc@example.com")
+        db.commit()
+        r = client.post(
+            "/rescue/orders",
+            json={"offer_id": str(offer.id), "qty": 1},
+            headers=auth_header(buyer),
+        )
+        assert r.status_code == 201, r.text
+        assert "<b>מאפה</b>" not in sent[0]["html"]
+        assert "&lt;b&gt;מאפה&lt;/b&gt;" in sent[0]["html"]
+
+    def test_no_address_drops_the_clause_and_a_line_break_never_reaches_the_subject(
+        self, monkeypatch
+    ):
+        """Direct call: an empty address and a name with a newline are not
+        reachable through the route's fixtures (exact-precision points carry an
+        address), so the service is driven with plain values."""
+        from app.services import rescue_emails
+
+        sent = self._capture(monkeypatch)
+        rescue_emails.send_reservation_email(
+            "x@example.com",
+            rescue_emails.ReservationEmail(
+                producer_name="מאפה\r\nBcc: a@example.com",
+                producer_id="p1",
+                pickup_code="0431",
+                total_agorot=1250,
+                pickup_from="20:00",
+                pickup_until="22:00",
+                address="",
+                cancel_until="19:30",
+            ),
+        )
+        mail = sent[0]
+        assert "\n" not in mail["subject"] and "\r" not in mail["subject"]
+        assert mail["subject"] == "שמרנו לכם סל במאפה Bcc: a@example.com"
+        assert "איסוף היום 20:00–22:00.\n" in mail["body"]
+        assert ", ." not in mail["body"]
+        assert "📍" not in mail["html"]
+        assert "ומשלמים 12.50" in mail["body"]
+
+    def test_a_failure_preparing_the_email_never_fails_a_committed_reservation(
+        self, client, db, shop, rescue_on, monkeypatch
+    ):
+        sent = self._capture(monkeypatch)
+
+        def _boom(_value):
+            raise RuntimeError("clock")
+
+        monkeypatch.setattr(rescue_module, "israel_hhmm", _boom)
+        offer = _seed_offer(db, shop["location"], qty_total=2)
+        buyer = make_user(db, email="boom@example.com")
+        db.commit()
+        r = client.post(
+            "/rescue/orders",
+            json={"offer_id": str(offer.id), "qty": 1},
+            headers=auth_header(buyer),
+        )
+        assert r.status_code == 201, r.text
+        assert sent == []
+        db.refresh(offer)
+        assert offer.qty_left == 1

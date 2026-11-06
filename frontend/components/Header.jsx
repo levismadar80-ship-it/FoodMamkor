@@ -416,14 +416,14 @@ export default function Header() {
               NAV-01. Fixed compact geometry, scroll-independent, matches the
               frozen end-cap/gap above. start of the row (visual right in RTL). */}
           <div className="flex items-center gap-9">
-            <Link href="/" onClick={handleHomeClick} className="shrink-0 inline-flex items-center min-h-[44px]" aria-label={BRAND_NAME}>
+            <Link href="/" onClick={handleHomeClick} className="shrink-0 inline-flex items-center min-h-touch" aria-label={BRAND_NAME}>
               <Image
                 src="/logo.png"
                 alt={BRAND_NAME}
                 // MEH-896 chunk 2: 122×46 → 101×38 (≈17% reduction, aspect
                 // 2.652 → 2.658, ~0.2% off — visually identical). Pairs with
                 // the slim pill (~50px); tap target preserved by the wrapper
-                // Link's min-h-[44px] above.
+                // Link's min-h-touch above.
                 // MEH-1103: 101×38 → 111×42 for legibility (aspect 2.643,
                 // ~0.4% off — visually identical); pairs with the taller
                 // py-1.5 pill.
@@ -532,7 +532,7 @@ export default function Header() {
  * the original bg-primary/10 so the active chip no longer reads as a sibling
  * to the green CTA. Text stays text-primary + font-semibold (two cues —
  * shape + color, AA preserved on both /85 at-rest and /60 scrolled glass).
- * Inactive = plain text-text with primary-ink hover. min-h-[44px] keeps each
+ * Inactive = plain text-text with primary-ink hover. min-h-touch keeps each
  * link a ≥44px tap target independent of the slim pill chrome (~50px) around it.
  */
 function NavLink({ href, label, active, onClick }) {
@@ -542,7 +542,7 @@ function NavLink({ href, label, active, onClick }) {
       onClick={onClick}
       aria-current={active ? "page" : undefined}
       className={[
-        "inline-flex items-center min-h-[44px] px-3 rounded-full text-base transition-colors duration-fast ease-quart focus-ring",
+        "inline-flex items-center min-h-touch px-3 rounded-full text-base transition-colors duration-fast ease-quart focus-ring",
         active
           // MEH-896 polish: neutral warm tint (text-token at 7%) instead of
           // green so the active chip no longer echoes the green CTA. Text
@@ -573,7 +573,7 @@ function LoginAccount({ label }) {
       // desktop and NOT on mobile, and the spec asserts both halves rather
       // than only the one that happens to be present.
       data-testid="header-login-link"
-      className="hidden md:inline-flex items-center justify-center min-h-[44px] px-2 rounded-full text-base font-medium transition-colors duration-fast ease-quart focus-ring text-primary hover:text-primary-dark"
+      className="hidden md:inline-flex items-center justify-center min-h-touch px-2 rounded-full text-base font-medium transition-colors duration-fast ease-quart focus-ring text-primary hover:text-primary-dark"
     >
       {label}
     </Link>
@@ -593,7 +593,7 @@ function RegisterAccount({ label }) {
     <Link
       href="/register"
       data-testid="header-register-link"
-      className="hidden md:inline-flex items-center justify-center min-h-[44px] px-2 rounded-full text-base font-medium transition-colors duration-fast ease-quart focus-ring text-primary hover:text-primary-dark"
+      className="hidden md:inline-flex items-center justify-center min-h-touch px-2 rounded-full text-base font-medium transition-colors duration-fast ease-quart focus-ring text-primary hover:text-primary-dark"
     >
       {label}
     </Link>

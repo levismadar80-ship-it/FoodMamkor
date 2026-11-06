@@ -61,7 +61,7 @@ export default function OpeningHours({ opening_hours }) {
     return (
       <div
         data-testid="hours-raw"
-        className="flex items-center gap-2 border border-border rounded-md bg-white mb-3 min-h-[44px] px-3.5 py-2.5 text-sm text-text"
+        className="flex items-center gap-2 border border-border rounded-md bg-white mb-3 min-h-touch px-3.5 py-2.5 text-sm text-text"
       >
         <Clock size={16} className="text-primary-dark shrink-0" aria-hidden="true" />
         <span className="min-w-0">
@@ -86,7 +86,7 @@ export default function OpeningHours({ opening_hours }) {
         onClick={() => setExpanded((v) => !v)}
         aria-expanded={expanded}
         data-testid="hours-toggle"
-        className="flex items-center gap-2 w-full min-h-[44px] px-3.5 py-2.5 text-start text-sm text-text focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40"
+        className="flex items-center gap-2 w-full min-h-touch px-3.5 py-2.5 text-start text-sm text-text focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40"
       >
         <Clock size={16} className="text-primary-dark shrink-0" aria-hidden="true" />
         <span>

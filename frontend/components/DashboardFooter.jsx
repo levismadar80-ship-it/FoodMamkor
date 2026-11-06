@@ -50,11 +50,11 @@ export default function DashboardFooter() {
             { href: "/about#contact", label: t("nav.footer.contact") },
           ].map((link) => (
             <li key={link.href}>
-              {/* 13px + min-h-[44px]: the MEH-1103 footer-utility compromise —
+              {/* 13px + min-h-touch: the MEH-1103 footer-utility compromise —
                   WCAG 2.5.5 tap target via vertical padding, not layout. */}
               <Link
                 href={link.href}
-                className="inline-flex items-center min-h-[44px] text-[13px] text-green-100 hover:text-white transition"
+                className="inline-flex items-center min-h-touch text-[13px] text-green-100 hover:text-white transition"
               >
                 {link.label}
               </Link>

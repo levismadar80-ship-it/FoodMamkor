@@ -684,7 +684,7 @@ export default function ProductSheet({
               // no shared CTA component, so this reuses the helpers rather than
               // forking or editing them.
               {...(waIsPrimary ? { onClick: fireWaTracking } : {})}
-              className={`${variant.className} flex min-h-[44px] items-center justify-center gap-2 rounded-md px-4 py-3 font-medium transition focus-visible:ring-2`}
+              className={`${variant.className} flex min-h-touch items-center justify-center gap-2 rounded-md px-4 py-3 font-medium transition focus-visible:ring-2`}
             >
               <PrimaryIcon size={20} weight="fill" aria-hidden="true" />
               {waIsPrimary
@@ -699,7 +699,7 @@ export default function ProductSheet({
                 rel="noopener noreferrer"
                 data-testid="product-sheet-wa-secondary"
                 onClick={fireWaTracking}
-                className="mt-3 flex min-h-[44px] items-center justify-center gap-1.5 text-sm text-fg-muted underline underline-offset-4 transition hover:text-text focus-visible:ring-2 focus-visible:ring-primary/40"
+                className="mt-3 flex min-h-touch items-center justify-center gap-1.5 text-sm text-fg-muted underline underline-offset-4 transition hover:text-text focus-visible:ring-2 focus-visible:ring-primary/40"
               >
                 <WhatsappLogo size={16} weight="fill" aria-hidden="true" />
                 {t("producer.detail.sections.products.sheet_secondary_wa")}

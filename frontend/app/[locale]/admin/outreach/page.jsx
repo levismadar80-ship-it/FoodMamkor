@@ -509,7 +509,7 @@ function StatusChip({ id, label, count, active, onClick }) {
       onClick={onClick}
       aria-pressed={active}
       data-testid={`outreach-chip-${id}`}
-      className={`inline-flex items-center gap-2 min-h-[44px] px-4 rounded-full border text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+      className={`inline-flex items-center gap-2 min-h-touch px-4 rounded-full border text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
         active
           ? "bg-primary text-white border-primary"
           : "bg-white text-text border-border hover:border-primary/40"
@@ -572,7 +572,7 @@ function AddLeadModal({ onClose, onCreated }) {
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
         onSubmit={handleSubmit}
-        className="bg-white rounded-[16px] p-6 max-w-md w-full space-y-3"
+        className="bg-white rounded-lg p-6 max-w-md w-full space-y-3"
       >
         <h2 className="font-headline-md text-xl font-bold">{t("outreach.modal_add.title")}</h2>
         {/* MEH-1128 Wave C: label-less ui/Input — placeholder-only parity
@@ -653,7 +653,7 @@ function ScriptModal({ onClose }) {
         role="dialog"
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-[16px] p-6 max-w-lg w-full"
+        className="bg-white rounded-lg p-6 max-w-lg w-full"
       >
         <h2 className="font-headline-md text-xl font-bold mb-3 inline-flex items-center gap-2">
           <Phone size={20} className="text-primary" aria-hidden="true" />
@@ -726,7 +726,7 @@ function WhatsAppModal({ lead, onClose, onPrefillMinted }) {
         role="dialog"
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-[16px] p-6 max-w-lg w-full space-y-4"
+        className="bg-white rounded-lg p-6 max-w-lg w-full space-y-4"
       >
         <h2 className="font-headline-md text-xl font-bold">
           {t("outreach.modal_wa.title", { name: lead.name })}

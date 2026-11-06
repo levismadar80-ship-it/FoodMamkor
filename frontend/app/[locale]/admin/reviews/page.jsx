@@ -430,7 +430,7 @@ export default function AdminReviewsPage() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="review-delete-title"
-            className="bg-white rounded-[16px] shadow-xl p-6 max-w-sm w-full mx-4 text-start space-y-4"
+            className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full mx-4 text-start space-y-4"
           >
             <p id="review-delete-title" className="font-medium text-base">
               {t("reviews.confirm_delete", {

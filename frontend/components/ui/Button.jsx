@@ -44,8 +44,8 @@ const SIZE_CLASSES = {
   // MEH-1103: md is primary interactive text → 16px default per DESIGN.md
   // "Interactive sizing minimums"; sm stays text-sm (14px floor for compact
   // controls). Geometry (min-h/px/radius) untouched — MEH-1073 T2 overlap.
-  sm: "min-h-[44px] px-3 text-sm gap-1.5",
-  md: "min-h-[44px] px-5 text-base gap-2",
+  sm: "min-h-touch px-3 text-sm gap-1.5",
+  md: "min-h-touch px-5 text-base gap-2",
   lg: "min-h-[48px] px-6 text-base gap-2",
 };
 
