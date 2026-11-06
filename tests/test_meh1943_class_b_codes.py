@@ -33,27 +33,12 @@ def _no_raw_values(detail, raw):
         assert str(value) not in detail["message"], (value, detail["message"])
 
 
-def test_legacy_availability_status_is_a_code(client, db):
-    from app.routers.producer_me import AVAILABILITY_STATUSES
-
-    user = _owner(db)
-    r = client.post(
-        "/producers/me/availability-status",
-        json={"status": "bogus"},
-        headers=auth_header(user),
-    )
-    assert r.status_code == 400
-    detail = r.json()["detail"]
-    assert detail == {
-        "code": "invalid_availability_status",
-        "message": "סטטוס לא תקין",
-        "params": {"allowed": sorted(AVAILABILITY_STATUSES)},
-    }
-    _no_raw_values(detail, AVAILABILITY_STATUSES)
+# MEH-2758: test_legacy_availability_status_is_a_code went with the legacy
+# POST /producers/me/availability-status endpoint.
 
 
 def test_availability_state_is_a_code(client, db):
-    from app.routers.producer_me import AVAILABILITY_STATES
+    from app.routers.producer_me import WRITABLE_AVAILABILITY_STATES as AVAILABILITY_STATES
 
     user = _owner(db)
     r = client.post(

@@ -4,8 +4,9 @@ import type { Route } from "@playwright/test";
 /**
  * Spec:     manual/dashboard-availability
  * Purpose:  MEH-1249 chunk 11k — the dashboard rows of MANUAL_TESTING «MEH-291
- *           Phase 3 — Unified availability card»: the four-pill radiogroup, what
- *           each pill posts, the vacation mini-form revealed BEFORE any save
+ *           Phase 3 — Unified availability card». MEH-2759: the four-pill
+ *           radiogroup is now ONE «בהפסקה» switch — what it posts, the
+ *           vacation mini-form revealed BEFORE any save
  *           (MEH-999), the empty-date guard, the saved return date surviving a
  *           reload, and switching back clearing it.
  * Touches:  no backend. GET /auth/me, /favorites, /producers/me{,/analytics}
@@ -17,19 +18,19 @@ import type { Route } from "@playwright/test";
  *           /producer/[id] banners, the admin form, the Friday strip and the
  *           /producers default-hide belong to other page groups. Does not assert
  *           the backend's vacation-date validation (backend/tests).
- * Related:  app/[locale]/producer/dashboard/page.js (AVAILABILITY_OPTIONS,
+ * Related:  app/[locale]/producer/dashboard/page.js (togglePause,
  *           setAvailabilityState, the vacation mini-form), lib/israel-date.js.
- * History:  MEH-1249 chunk 11k (creation).
+ * History:  MEH-1249 chunk 11k (creation). MEH-2759: radios → one switch.
  *
  * ON MOCKING INSIDE flows/ — the three conditions in frontend/e2e/CLAUDE.md
  * (MEH-1968), stated rather than assumed:
- *   1. No assertion is about backend BEHAVIOUR: which pill is checked, what the
+ *   1. No assertion is about backend BEHAVIOUR: whether the switch is on, what the
  *      browser sends, what the mini-form does with an empty date, what a fixed
  *      dashboard payload renders. The server's own rules are backend/tests'.
  *   2. The contracts are pinned: POST /producers/me/availability-state takes
  *      {state, vacation_until?} (AvailabilityStateIn) and the dashboard payload
  *      is DashboardOut — both Pydantic models, both used by flows/34 already.
- *   3. Unmocked, every pill click is a WRITE against the shared staging backend
+ *   3. Unmocked, every switch click is a WRITE against the shared staging backend
  *      CI points at (e2e.yml:229-233) — the class Sapir's 13/07 ruling forbids.
  *
  * MEH-1619 — shown discriminating (table in the PR body): three surgical breaks,
@@ -84,58 +85,45 @@ async function openOverview(page: Page) {
     .toBeVisible({ timeout: 15_000 });
 }
 
-const OPTIONS = ["פתוח להזמנות", "זמין היום", "עמוס השבוע", "בהפסקה"] as const;
-const group = (page: Page) => page.getByRole("radiogroup", { name: "מצב נוכחי" });
-const pill = (page: Page, name: (typeof OPTIONS)[number]) => group(page).getByRole("radio", { name });
+const pauseSwitch = (page: Page) => page.getByRole("switch", { name: "בהפסקה" });
 const dateInput = (page: Page) => page.getByLabel("חזרה ב:");
 const saveVacation = (page: Page) => page.getByRole("button", { name: "שמרו" });
 const futureIso = (days: number) => new Date(Date.now() + days * 86_400_000).toISOString().slice(0, 10);
 const REQUIRED_DATE = "בחרו תאריך חזרה כדי לעבור להפסקה";
 
-async function expectOnlyChecked(page: Page, name: (typeof OPTIONS)[number]) {
-  for (const o of OPTIONS) {
-    await expect(pill(page, o)).toHaveAttribute("aria-checked", o === name ? "true" : "false");
-  }
+async function expectPaused(page: Page, on: boolean) {
+  await expect(pauseSwitch(page)).toHaveAttribute("aria-checked", on ? "true" : "false");
 }
 
-// MT:MEH-291:1 — one availability card, four pills. Live heading is «מצב נוכחי», not «מצב זמינות».
-test("the card shows four pills in the locked order, the saved state checked and all enabled", async ({ page }) => {
+// MT:MEH-291:1 · MEH-2759 — one availability card, one «בהפסקה» switch, no radios.
+test("the card shows one enabled «בהפסקה» switch, off, and no radios", async ({ page }) => {
   await stubDashboard(page, { availability_state: "accepting_orders", vacation_until: null });
   await openOverview(page);
-  await expect(group(page)).toBeVisible();
-  const radios = group(page).getByRole("radio");
-  await expect(radios).toHaveCount(4);
-  for (const [i, name] of OPTIONS.entries()) {
-    await expect(radios.nth(i)).toHaveText(name);
-    await expect(radios.nth(i)).toBeEnabled();
-  }
-  await expectOnlyChecked(page, "פתוח להזמנות");
+  await expect(pauseSwitch(page)).toBeVisible();
+  await expect(pauseSwitch(page)).toBeEnabled();
+  await expectPaused(page, false);
+  await expect(page.getByRole("radio")).toHaveCount(0);
+  await expect(page.getByRole("radiogroup")).toHaveCount(0);
   await expect(page.getByTestId("availability-disabled-hint")).toHaveCount(0);
 });
 
-// MT:MEH-291:2 · MT:MEH-291:3 · MT:MEH-291:4 — the three no-date states: pill lights, one POST, no date input.
-// Doc labels «זמינה היום 🟢» / «עמוסה השבוע 🟠» — live copy is «זמין היום» / «עמוס השבוע», no emoji.
-for (const [name, value] of [["פתוח להזמנות", "accepting_orders"], ["זמין היום", "available_today"], ["עמוס השבוע", "full_this_week"]] as const) {
-  test(`clicking «${name}» checks it, posts {state:"${value}"} and shows no date input`, async ({ page }) => {
-    const posts: Rec[] = [];
-    // Start from a DIFFERENT state so the click is a change, not a no-op.
-    await stubDashboard(page, { availability_state: value === "full_this_week" ? "available_today" : "full_this_week", vacation_until: null }, posts);
+// MEH-2759 — the two removed states are read-only; a row still on one reads as not paused.
+for (const value of ["available_today", "full_this_week"] as const) {
+  test(`a row still on «${value}» shows the switch off and no date input`, async ({ page }) => {
+    await stubDashboard(page, { availability_state: value, vacation_until: null });
     await openOverview(page);
-    await pill(page, name).click();
-    await expectOnlyChecked(page, name);
-    await expect(page.getByText("מצב הזמינות עודכן")).toBeVisible();
-    expect(posts.map((p) => p.body)).toEqual([{ state: value }]);
+    await expectPaused(page, false);
     await expect(dateInput(page)).toHaveCount(0);
   });
 }
 
-// MT:MEH-291:5 — «בהפסקה» reveals the mini-form BEFORE any save; nothing leaves the browser.
-test("clicking «בהפסקה» reveals the return-date input and «שמרו» without posting", async ({ page }) => {
+// MT:MEH-291:5 — turning the switch on reveals the mini-form BEFORE any save; nothing leaves the browser.
+test("turning «בהפסקה» on reveals the return-date input and «שמרו» without posting", async ({ page }) => {
   const posts: Rec[] = [];
   await stubDashboard(page, { availability_state: "accepting_orders", vacation_until: null }, posts);
   await openOverview(page);
-  await pill(page, "בהפסקה").click();
-  await expectOnlyChecked(page, "בהפסקה");
+  await pauseSwitch(page).click();
+  await expectPaused(page, true);
   await expect(dateInput(page)).toBeVisible();
   await expect(dateInput(page)).toHaveValue("");
   await expect(saveVacation(page)).toBeVisible();
@@ -143,7 +131,7 @@ test("clicking «בהפסקה» reveals the return-date input and «שמרו» w
   // above a click→request round-trip, so a healthy run pays it only here, on the
   // "it did not happen" answer — the shape .claude/rules/testing.md prescribes.
   const posted = await expect.poll(() => posts.length, { timeout: 2_000 }).toBeGreaterThan(0).then(() => true).catch(() => false);
-  expect(posted, "selecting vacation must not POST — «שמרו» is the only writer").toBe(false);
+  expect(posted, "turning the switch on must not POST — «שמרו» is the only writer").toBe(false);
 });
 
 // MT:MEH-291:6 — «שמרו» with no date: the inline error, and still no POST.
@@ -151,7 +139,7 @@ test("«שמרו» with an empty date shows the inline error and posts nothing",
   const posts: Rec[] = [];
   await stubDashboard(page, { availability_state: "accepting_orders", vacation_until: null }, posts);
   await openOverview(page);
-  await pill(page, "בהפסקה").click();
+  await pauseSwitch(page).click();
   await saveVacation(page).click();
   await expect(page.getByRole("alert").filter({ hasText: REQUIRED_DATE })).toBeVisible();
   await expect(dateInput(page)).toHaveAttribute("aria-invalid", "true");
@@ -165,7 +153,7 @@ test("a future date + «שמרו» posts state and date, and a reload re-seeds b
   const until = futureIso(10);
   await stubDashboard(page, { availability_state: "accepting_orders", vacation_until: null }, posts);
   await openOverview(page);
-  await pill(page, "בהפסקה").click();
+  await pauseSwitch(page).click();
   await dateInput(page).fill(until);
   await saveVacation(page).click();
   await expect(page.getByText(`נשמר — בהפסקה עד ${until}`)).toBeVisible();
@@ -173,24 +161,25 @@ test("a future date + «שמרו» posts state and date, and a reload re-seeds b
 
   await page.reload();
   await expect(page.getByTestId("producer-overview")).toBeVisible({ timeout: 15_000 });
-  await expectOnlyChecked(page, "בהפסקה");
+  await expectPaused(page, true);
   await expect(dateInput(page)).toHaveValue(until);
 });
 
-// MT:MEH-291:8 — switching back clears the vacation date.
-test("switching back to «פתוח להזמנות» clears the return date", async ({ page }) => {
+// MT:MEH-291:8 — turning the switch off resumes and clears the vacation date.
+test("turning «בהפסקה» off posts accepting_orders and clears the return date", async ({ page }) => {
   const posts: Rec[] = [];
   await stubDashboard(page, { availability_state: "on_vacation", vacation_until: futureIso(5) }, posts);
   await openOverview(page);
-  await expectOnlyChecked(page, "בהפסקה");
+  await expectPaused(page, true);
   await expect(dateInput(page)).not.toHaveValue("");
-  await pill(page, "פתוח להזמנות").click();
-  await expectOnlyChecked(page, "פתוח להזמנות");
+  await pauseSwitch(page).click();
+  await expectPaused(page, false);
+  await expect(page.getByText("מצב הזמינות עודכן")).toBeVisible();
   expect(posts.map((p) => p.body)).toEqual([{ state: "accepting_orders" }]);
   await expect(dateInput(page)).toHaveCount(0);
   // And the "server" agrees on reload: no vacation, no date block.
   await page.reload();
   await expect(page.getByTestId("producer-overview")).toBeVisible({ timeout: 15_000 });
-  await expectOnlyChecked(page, "פתוח להזמנות");
+  await expectPaused(page, false);
   await expect(dateInput(page)).toHaveCount(0);
 });
