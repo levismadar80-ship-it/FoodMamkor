@@ -55,15 +55,17 @@
  * Field contract:
  *   key        — implicit (the object key). ALSO the /producers URL param name
  *                and the deep-link param home emits in navigateToChip.
- *   label      — the rendered consumer string. Hebrew constant, text-only
- *                (Emoji-LOCK v2 forbids emoji literals; the Phosphor leading
- *                glyph is attached at the render site via lib/chip-icons.js).
+ *   label      — NOT stored here (MEH-2748). The rendered consumer string lives
+ *                in messages/{he,en}.json `filter_axes.<key>.label` and is
+ *                attached at render time by lib/use-chip-copy.js. Text-only
+ *                (Emoji-LOCK v2; the Phosphor leading glyph comes from
+ *                lib/chip-icons.js).
  *   scope      — business | any-product | facility (.claude/rules/labels.md).
  *   evidence   — self-declared | admin-verified | system.
- *   subtext    — FilterSheet in-row explanation, or null when the sheet falls
- *                back to a BADGE_CONFIG tooltip (kosher · verified). All copy
- *                below is Sapir-LOCKED by its originating ticket — carried over
- *                VERBATIM by MEH-2130, never re-worded.
+ *   hasSubtext — whether `filter_axes.<key>.subtext` exists in messages. When
+ *                false the FilterSheet falls back to a BADGE_CONFIG tooltip
+ *                (kosher · verified). All Hebrew copy is Sapir-LOCKED by its
+ *                originating ticket — moved VERBATIM to he.json by MEH-2748.
  *   group      — FilterSheet section: diet | quality | service.
  *   surfaces   — subset of ["home", "producers", "map"]. This is the ONLY
  *                membership declaration in the repo.
@@ -77,10 +79,9 @@ export const FILTER_AXES = {
   // ── service ────────────────────────────────────────────────────────────
   // MEH-1082. Owner-toggled business property; no external check.
   has_delivery: {
-    label: "משלוח",
     scope: "business",
     evidence: "self-declared",
-    subtext: null,
+    hasSubtext: false,
     group: "service",
     surfaces: ["home", "producers", "map"],
     // home writes and reads the legacy short name `?delivery=1`
@@ -103,10 +104,9 @@ export const FILTER_AXES = {
   // עצמי" alone does not tell a reader. Stopping that quiet over-claim is what
   // the Label Scope Contract is for.
   pickup_points: {
-    label: "איסוף עצמי",
     scope: "business",
     evidence: "self-declared",
-    subtext: "עסקים עם נקודת איסוף עצמי או דוכן בשוק",
+    hasSubtext: true,
     group: "service",
     surfaces: ["home", "producers", "map"],
   },
@@ -116,10 +116,9 @@ export const FILTER_AXES = {
   // hours. The subtext names that, because "קנייה במקום" alone does not say
   // the hours are what qualify a business.
   on_site: {
-    label: "קנייה במקום",
     scope: "business",
     evidence: "self-declared",
-    subtext: "חנות פיזית עם שעות פתיחה קבועות",
+    hasSubtext: true,
     group: "service",
     surfaces: ["home", "producers", "map"],
   },
@@ -133,10 +132,9 @@ export const FILTER_AXES = {
   // FilterSheet row still explains WHAT was checked, via BADGE_CONFIG.verified
   // .tooltip (see subtext below), which is where that sentence belongs.
   verified: {
-    label: "מאומת",
     scope: "business",
     evidence: "admin-verified",
-    subtext: null, // FilterSheet uses BADGE_CONFIG.verified.tooltip
+    hasSubtext: false, // FilterSheet uses BADGE_CONFIG.verified.tooltip
     group: "service",
     surfaces: ["home", "producers", "map"],
   },
@@ -165,10 +163,9 @@ export const FILTER_AXES = {
   // `openNowChipVisible` for the one place the client looks at a clock, and
   // why that is a visibility decision rather than a second filter.
   open_for_orders_now: {
-    label: "פתוחים להזמנות עכשיו",
     scope: "business",
     evidence: "self-declared",
-    subtext: "עסקים שחלון ההזמנות שהגדירו פתוח ברגע זה",
+    hasSubtext: true,
     group: "service",
     surfaces: ["home", "producers", "map"],
   },
@@ -179,10 +176,9 @@ export const FILTER_AXES = {
   // free-text Producer.kosher — so this is admin-verified at business scope. A
   // FREE-TEXT kosher chip stays forbidden (חוק איסור הונאה בכשרות, MEH-986).
   kosher: {
-    label: "כשרות מאומתת",
     scope: "business",
     evidence: "admin-verified",
-    subtext: null, // FilterSheet uses BADGE_CONFIG.kosher.tooltip
+    hasSubtext: false, // FilterSheet uses BADGE_CONFIG.kosher.tooltip
     group: "quality",
     surfaces: ["home", "producers", "map"],
   },
@@ -190,10 +186,9 @@ export const FILTER_AXES = {
   // owner-declared. Its absence from the shared cross-surface set is what keeps
   // it off the listing surfaces — asserted by attributeLabels.test.js.
   grass_fed: {
-    label: "גראס פד",
     scope: "business",
     evidence: "self-declared",
-    subtext: "לפי הצהרת בית העסק",
+    hasSubtext: true,
     group: "quality",
     surfaces: ["map"],
   },
@@ -214,20 +209,18 @@ export const FILTER_AXES = {
   // (HappyCow / easy / NN/g / Baymard) rejected a tooltip or a second subtext for this: scope lives in the label.
   // Subtexts are unchanged (MEH-1507 lock).
   vegan: {
-    label: "מתאים לטבעונים",
     scope: "any-product",
     evidence: "self-declared",
-    subtext: "עסקים עם מוצרים טבעוניים בקטלוג",
+    hasSubtext: true,
     group: "diet",
     surfaces: ["home", "producers", "map"],
   },
   // MEH-1438: a vegan product counts as vegetarian (?vegetarian matches
   // is_vegetarian OR is_vegan) — see badges.js.
   vegetarian: {
-    label: "מתאים לצמחונים",
     scope: "any-product",
     evidence: "self-declared",
-    subtext: "עסקים עם מוצרים צמחוניים בקטלוג",
+    hasSubtext: true,
     group: "diet",
     surfaces: ["home", "producers", "map"],
   },
@@ -253,35 +246,31 @@ export const FILTER_AXES = {
     // MEH-2677 (Sapir 05/11): was «100% טבעוני» — readers did not parse the
     // percent. Deliveroo / Uber Eats / Yelp: one word for the whole business,
     // "… friendly" for partial (ours: «מתאים לטבעונים»).
-    label: "טבעוני",
     scope: "business",
     evidence: "self-declared",
-    subtext: "לפי הצהרת בית העסק",
+    hasSubtext: true,
     group: "diet",
     surfaces: [], // MEH-2677 (Sapir 05/11): one filter chip per diet — card badge only
   },
   vegetarian_all: {
     // MEH-2677: was «100% צמחוני».
-    label: "צמחוני",
     scope: "business",
     evidence: "self-declared",
-    subtext: "לפי הצהרת בית העסק",
+    hasSubtext: true,
     group: "diet",
     surfaces: [], // MEH-2677 (Sapir 05/11): one filter chip per diet — card badge only
   },
   gluten_free: {
-    label: "ללא גלוטן",
     scope: "any-product",
     evidence: "self-declared",
-    subtext: "עסקים עם מוצרים ללא גלוטן בקטלוג",
+    hasSubtext: true,
     group: "diet",
     surfaces: ["home", "producers", "map"],
   },
   lactose_free: {
-    label: "ללא לקטוז",
     scope: "any-product",
     evidence: "self-declared",
-    subtext: "עסקים עם מוצרים ללא לקטוז בקטלוג",
+    hasSubtext: true,
     group: "diet",
     surfaces: ["home", "producers", "map"],
   },
@@ -307,10 +296,9 @@ export const FILTER_AXES = {
   // cannot tell "the pin is live" from "someone wrote about the pin", which is
   // exactly the signal the pin existed to give.
   no_added_sugar: {
-    label: "ללא סוכר מוסף",
     scope: "any-product",
     evidence: "self-declared",
-    subtext: "עסקים עם מוצרים ללא סוכר מוסף בקטלוג",
+    hasSubtext: true,
     group: "diet",
     surfaces: ["home", "producers", "map"],
   },
@@ -388,17 +376,19 @@ export function axisKeysFor(surface, order) {
 }
 
 /**
- * Chip objects for a key list — the exact shape every consumer already spreads:
- * `{ key, label, scope, evidence, subtext, group }`. `chip.label` stays a plain
- * string, so chip rows render byte-identical (MEH-1507's constraint).
+ * Chip objects for a key list: `{ key, scope, evidence, hasSubtext, group }`.
+ * MEH-2748: no words here. A renderer passes the chip through `useChipCopy()`
+ * (lib/use-chip-copy.js), which adds `label` and `subtext` from messages, so
+ * `chip.label` is still a plain string at the render site and chip rows render
+ * byte-identical in Hebrew (MEH-1507's constraint).
  *
  * `surfaces` / `homeParam` / `mapParam` are deliberately NOT copied onto the
  * chip: they are wiring, and a chip object is what a renderer receives.
  */
 export function chipsForKeys(keys) {
   return keys.map((key) => {
-    const { label, scope, evidence, subtext, group } = FILTER_AXES[key];
-    return { key, label, scope, evidence, subtext, group };
+    const { scope, evidence, hasSubtext, group } = FILTER_AXES[key];
+    return { key, scope, evidence, hasSubtext, group };
   });
 }
 
