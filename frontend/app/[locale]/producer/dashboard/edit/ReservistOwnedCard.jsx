@@ -7,6 +7,7 @@ import { Warning } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { BADGE_CONFIG } from "@/lib/badges";
+import { useBadgeCopy } from "@/lib/use-badge-copy";
 import { badgeIcon } from "@/lib/chip-icons";
 
 /**
@@ -59,7 +60,7 @@ export default function ReservistOwnedCard({ profile, onSave }) {
     }
   };
 
-  const badge = BADGE_CONFIG.reservist_owned;
+  const badge = useBadgeCopy()(BADGE_CONFIG.reservist_owned);
   const icon = badgeIcon("reservist_owned");
 
   return (
