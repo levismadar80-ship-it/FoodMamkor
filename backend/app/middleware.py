@@ -5,7 +5,7 @@ from asgi_correlation_id import CorrelationIdMiddleware, correlation_id
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import Response
+from fastapi.responses import PlainTextResponse, Response
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
@@ -50,8 +50,10 @@ def _redact_email(addr: str | None) -> str:
 # Weakening HSTS in this function (dropping preload / shortening max-age)
 # would be a security regression, not a baseline addition — don't do it
 # without an explicit, informed decision from Sapir.
-async def add_security_headers(request: Request, call_next) -> Response:
-    response: Response = await call_next(request)
+def apply_security_headers(request: Request, response: Response) -> Response:
+    """Set the baseline headers on `response`. Shared by the HTTP middleware
+    below and by `server_error_with_headers` (MEH-2761), so the two cannot
+    drift."""
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
@@ -70,6 +72,26 @@ async def add_security_headers(request: Request, call_next) -> Response:
     # path can be verified from a browser's devtools without Railway logs.
     response.headers["X-Client-IP-Source"] = resolve_client_ip(request)[1]
     return response
+
+
+async def add_security_headers(request: Request, call_next) -> Response:
+    response: Response = await call_next(request)
+    return apply_security_headers(request, response)
+
+
+async def server_error_with_headers(request: Request, exc: Exception) -> Response:
+    """MEH-2761: the 500 for an unhandled exception, with the security headers.
+
+    Starlette builds that 500 in ServerErrorMiddleware, which always sits
+    OUTSIDE every user middleware, so `add_security_headers` never saw it and
+    the response left with none of the headers (measured 06/11). Registering
+    a handler for `Exception` is how Starlette lets the app shape that
+    response; the middleware still re-raises `exc` after sending it, so server
+    logs and Sentry see the exception exactly as before. Body unchanged.
+    """
+    return apply_security_headers(
+        request, PlainTextResponse("Internal Server Error", status_code=500)
+    )
 
 
 async def record_request_metrics(request: Request, call_next) -> Response:
@@ -248,6 +270,9 @@ def install_middlewares(app: FastAPI) -> None:
     """
     app.state.limiter = limiter
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+    # MEH-2761: Starlette hands an `Exception` handler to ServerErrorMiddleware
+    # (outermost), so this is the only way the 500 gets the security headers.
+    app.add_exception_handler(Exception, server_error_with_headers)
 
     # MEH-1833: GZip added FIRST, i.e. INNERMOST — it wraps the router directly.
     # The position is load-bearing and was corrected after a failing control
