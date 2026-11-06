@@ -4480,7 +4480,8 @@
           "contact": "Contact details (phone/Instagram)",
           "category": "Category",
           "image": "Main photo",
-          "short_desc": "Short description"
+          "short_desc": "Short description",
+          "hours": "Opening hours"
         },
         "chip_required": "Required",
         "chip_recommended": "Recommended"
@@ -5846,6 +5847,44 @@
       "footer": "Payment at the counter, at the price on the reservation. Questions — write to us."
     }
   },
+  "holidays": {
+    "pesach": {
+      "name": "Passover",
+      "tagline": "Find kosher-for-Passover products from local sources",
+      "cta": "Show businesses for Passover",
+      "dashboard_hint": "Passover is coming — do you have kosher-for-Passover products? Update them now"
+    },
+    "shavuot": {
+      "name": "Shavuot",
+      "tagline": "Quality cheese and dairy for the holiday",
+      "cta": "Show cheese and dairy",
+      "dashboard_hint": "Shavuot is coming — dairy and cheese makers: add your products"
+    },
+    "rosh_hashana": {
+      "name": "Rosh Hashanah",
+      "tagline": "Apples and honey, pomegranates and more — the best of local",
+      "cta": "Show Rosh Hashanah products",
+      "dashboard_hint": "Rosh Hashanah is coming — apples, honey, pomegranates: update your catalog"
+    },
+    "sukkot": {
+      "name": "Sukkot",
+      "tagline": "Fruit of the land and fresh seasonal produce",
+      "cta": "Show Sukkot products",
+      "dashboard_hint": "Sukkot is coming — local fruit is in season: update your products"
+    },
+    "chanuka": {
+      "name": "Hanukkah",
+      "tagline": "The finest extra-virgin olive oil — light up the night",
+      "cta": "Show olive oil",
+      "dashboard_hint": "Hanukkah is coming — do you make olive oil? The festival of oil is your moment"
+    },
+    "tu_bishvat": {
+      "name": "Tu BiShvat",
+      "tagline": "Honey, dried fruit and fruit of the land",
+      "cta": "Show Tu BiShvat products",
+      "dashboard_hint": "Tu BiShvat is coming — produce of the land: update your catalog"
+    }
+  },
   "badges": {
     "verified": {
       "label": "Verified",
@@ -5907,6 +5946,16 @@
       "label": "Saving food",
       "tooltip": "In the last month the business handed over rescue bags, so food wasn't thrown away."
     }
+  },
+  "contact_cta": {
+    "whatsapp": "Message on WhatsApp",
+    "phone": "Call",
+    "website": "Order on the website",
+    "email": "Send an email",
+    "instagram": "Message on Instagram",
+    "facebook": "Message on Facebook",
+    "external_order": "Order",
+    "wa_greeting": "Hi! I found you on Mehamakor — {name}"
   },
   "filter_axes": {
     "has_delivery": {
