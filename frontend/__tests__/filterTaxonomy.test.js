@@ -20,6 +20,11 @@ import {
 } from "@/lib/producer-filters";
 import { TOGGLE_CHIPS, chipStateToParams } from "@/lib/map-chips";
 import { ATTRIBUTE_LABELS } from "@/lib/attribute-labels";
+import he from "../messages/he.json";
+import { heChipCopy } from "./helpers/he-chip-copy";
+
+// MEH-2748: the words live in messages; a chip as a renderer sees it.
+const heLabel = (key) => heChipCopy({ key }).label;
 
 /**
  * MEH-2130 — the taxonomy is the single definition of every filter axis.
@@ -52,8 +57,10 @@ describe("MEH-2130 — axis declarations are complete and well-formed", () => {
     for (const key of BADGE_ONLY) expect(FILTER_AXES[key].surfaces, key).toEqual([]);
     for (const key of ALL_KEYS) {
       const axis = FILTER_AXES[key];
-      expect(typeof axis.label, `${key}.label`).toBe("string");
-      expect(axis.label.length, `${key}.label empty`).toBeGreaterThan(0);
+      // MEH-2748: the label is in messages, not on the axis.
+      expect(axis.label, `${key}.label must not be stored in code`).toBeUndefined();
+      expect(typeof he.filter_axes[key]?.label, `${key}.label`).toBe("string");
+      expect(he.filter_axes[key].label.length, `${key}.label empty`).toBeGreaterThan(0);
       expect(SCOPES, `${key}.scope`).toContain(axis.scope);
       expect(EVIDENCE, `${key}.evidence`).toContain(axis.evidence);
       expect(GROUPS, `${key}.group`).toContain(axis.group);
@@ -63,11 +70,14 @@ describe("MEH-2130 — axis declarations are complete and well-formed", () => {
         expect(axis.surfaces.length, `${key} offered on no surface`).toBeGreaterThan(0);
       }
       for (const s of axis.surfaces) expect(SURFACES, `${key}.surfaces`).toContain(s);
-      // subtext is either null (FilterSheet falls back to a BADGE_CONFIG
-      // tooltip) or a non-empty string — never undefined, never "".
+      // hasSubtext is a boolean, and it agrees with messages: true ⇔ a
+      // non-empty `filter_axes.<key>.subtext` exists (false ⇒ FilterSheet falls
+      // back to a BADGE_CONFIG tooltip).
+      expect(typeof axis.hasSubtext, `${key}.hasSubtext`).toBe("boolean");
+      const sub = he.filter_axes[key].subtext;
       expect(
-        axis.subtext === null || (typeof axis.subtext === "string" && axis.subtext.length > 0),
-        `${key}.subtext must be null or a non-empty string`,
+        axis.hasSubtext ? typeof sub === "string" && sub.length > 0 : sub === undefined,
+        `${key}.hasSubtext disagrees with he.json`,
       ).toBe(true);
     }
   });
@@ -76,12 +86,12 @@ describe("MEH-2130 — axis declarations are complete and well-formed", () => {
     for (const key of ALL_KEYS) {
       // MEH-2677: the "100% " prefix exemption (MEH-1508) is gone with the
       // prefix itself — labels are Hebrew letters and spaces only again.
-      expect(FILTER_AXES[key].label, key).toMatch(/^[֐-׿ ]+$/);
+      expect(heLabel(key), key).toMatch(/^[֐-׿ ]+$/);
     }
   });
 
   it("no axis label is a duplicate of another", () => {
-    const labels = ALL_KEYS.map((k) => FILTER_AXES[k].label);
+    const labels = ALL_KEYS.map(heLabel);
     expect(new Set(labels).size).toBe(labels.length);
   });
 });
@@ -175,12 +185,12 @@ describe("MEH-2130 — the משלוח + איסוף עצמי pair reaches all thr
   });
 
   it("the pair carries the locked labels, identical on every surface", () => {
-    expect(FILTER_AXES.has_delivery.label).toBe("משלוח");
-    expect(FILTER_AXES.pickup_points.label).toBe("איסוף עצמי"); // MEH-1461
+    expect(heLabel("has_delivery")).toBe("משלוח");
+    expect(heLabel("pickup_points")).toBe("איסוף עצמי"); // MEH-1461
     for (const key of ["has_delivery", "pickup_points"]) {
-      const label = FILTER_AXES[key].label;
-      expect(CHIPS_CONFIG.find((c) => c.key === key).label).toBe(label);
-      expect(TOGGLE_CHIPS.find((c) => c.key === key).label).toBe(label);
+      const label = heLabel(key);
+      expect(heChipCopy(CHIPS_CONFIG.find((c) => c.key === key)).label).toBe(label);
+      expect(heChipCopy(TOGGLE_CHIPS.find((c) => c.key === key)).label).toBe(label);
     }
   });
 
@@ -311,13 +321,15 @@ describe("MEH-2130 — helper self-tests (known inputs, known answers)", () => {
   it("chipsForKeys returns the chip shape and nothing more", () => {
     const [chip] = chipsForKeys(["vegan"]);
     expect(Object.keys(chip).sort()).toEqual(
-      ["evidence", "group", "key", "label", "scope", "subtext"].sort(),
+      ["evidence", "group", "hasSubtext", "key", "scope"].sort(),
     );
     // Wiring stays off the chip — a renderer receives presentation, not routing.
     expect(chip.surfaces).toBeUndefined();
     expect(chip.homeParam).toBeUndefined();
     expect(chip.mapParam).toBeUndefined();
-    expect(typeof chip.label).toBe("string"); // MEH-1507: never an object
+    // MEH-2748: no words on the chip; the resolver adds a plain string.
+    expect(chip.label).toBeUndefined();
+    expect(typeof heChipCopy(chip).label).toBe("string"); // MEH-1507: never an object
   });
 
   it("defaultsForKeys returns false for each key and nothing else", () => {

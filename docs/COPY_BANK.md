@@ -703,9 +703,11 @@ outstanding. Source MEH-760 / ADR-022 / Brief Q1+Q3.
 **Cross-ref (historical):** `process.badge.absence_body` used to mirror the tier-2
 framing of `producer.badge.declared_explainer`, and the two were kept in sync. That key
 was retired in MEH-2710 (06/11/2026), so /about/process is now the only tier-2
-explanation surface and there is nothing left to sync with. Open: its "exempt
-category" wording is inaccurate for MEH-2299 override businesses — see the lawyer
-brief's 06/11 addendum (MEH-2739).
+explanation surface and there is nothing left to sync with. Its old "exempt category"
+wording was inaccurate for override businesses (lawyer brief, 06/11 addendum); it was
+replaced in MEH-2746 with copy Sapir approved word for word on 06/11: "a badge appears
+only when a document was shown and checked; without one, the business signed the
+declaration and we did not check its documents."
 
 ## Brand phrasings
 
