@@ -107,6 +107,9 @@ export const BACKED_DIET_PAGES = DIET_PAGES.filter(isDietPageBacked);
  * (`filter_axes.<attribute>.label`) so the page and the chip can never
  * disagree (MEH-1935: "H1 = label ה-chip, לא לנסח מחדש"). MEH-2748: `t` is a
  * ROOT-namespace translator — `getTranslations({ locale })` on the server.
+ *
+ * @param {object|null} entry  a DIET_PAGES entry
+ * @param {(key: string) => string} t  required — there is no Hebrew fallback
  */
 export function dietPageLabel(entry, t) {
   if (!entry) return null;

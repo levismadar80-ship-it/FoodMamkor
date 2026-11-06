@@ -12,10 +12,17 @@
  *           app/[locale]/producers/diet/[dietSlug]/page.js (server use).
  */
 import { FILTER_AXES } from "@/lib/filter-taxonomy";
+import { CATEGORY_CHIPS } from "@/lib/map-chips";
 
-const MAP_CATEGORY_KEYS = new Set(["all", "meat", "produce", "dairy", "bread"]);
+// Derived, not restated: the /map aggregate category chips own their keys.
+const MAP_CATEGORY_KEYS = new Set(CATEGORY_CHIPS.map((c) => c.key));
 
 /**
+ * A registry chip whose key is in neither registry is returned unlabeled;
+ * ChipCopyMessages.test.jsx pins that every FILTER_AXES and CATEGORY_CHIPS
+ * key has a he + en message (and that `hasSubtext` matches), so that path is
+ * a test failure, not a blank pill.
+ *
  * @param {(key: string) => string} t  a ROOT-namespace translator
  * @param {object} chip
  */
