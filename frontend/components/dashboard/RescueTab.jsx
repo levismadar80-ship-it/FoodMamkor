@@ -291,9 +291,9 @@ export default function RescueTab() {
     return (
       <div data-testid="rescue-tab" className="space-y-6">
         {producerStatus === "pending" ? (
-          <div data-testid="rescue-pending-banner" role="status" className="bg-yellow-50 border border-yellow-200 rounded-md px-4 py-3">
-            <p className="font-semibold text-yellow-800">{t("pending_title")}</p>
-            <p className="font-body-sm text-sm text-yellow-800">{t("pending_body")}</p>
+          <div data-testid="rescue-pending-banner" role="status" className="bg-warning-50 border border-warning-200 rounded-md px-4 py-3">
+            <p className="font-semibold text-warning-800">{t("pending_title")}</p>
+            <p className="font-body-sm text-sm text-warning-800">{t("pending_body")}</p>
           </div>
         ) : (
           <p data-testid="rescue-not-approved" role="status" className="font-body-sm text-sm text-text">

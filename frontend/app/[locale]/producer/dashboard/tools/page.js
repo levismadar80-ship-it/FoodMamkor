@@ -103,7 +103,7 @@ export default function ProducerDashboardToolsPage() {
   // owner can still see what the tool is.
   const approved = producer.status === "approved";
   const lockedLine = !approved && (
-    <p data-testid="tool-locked-line" className="text-xs font-medium text-yellow-800 mt-1">
+    <p data-testid="tool-locked-line" className="text-xs font-medium text-warning-800 mt-1">
       {t("quick_links.locked_until_approved")}
     </p>
   );
