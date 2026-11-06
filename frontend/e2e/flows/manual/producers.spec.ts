@@ -151,7 +151,7 @@ const AXES = FILTER_AXES as Record<string, Axis>;
 const DIET_KEYS_ON_PRODUCERS = Object.keys(AXES).filter(
   (k) => AXES[k].group === "diet" && AXES[k].surfaces.includes("producers"),
 );
-/** The four ungated diet chips, in LISTING_CHIP_ORDER — the MEH-1438 row-2 order. */
+/** The four diet chips GATE_CATALOG opens, in LISTING_CHIP_ORDER — the MEH-1438 row-2 order. */
 const UNGATED_DIET_ORDER = ["vegan", "vegetarian", "gluten_free", "lactose_free"] as const;
 /**
  * MEH-1508 chunk 3ב-2 — the business-scope pair. MEH-2677 (Sapir 05/11) took it
@@ -248,6 +248,23 @@ const FILLERS = [5, 6, 7, 8].map((n) =>
 );
 /** Eight rows: two full desktop rows (xl:grid-cols-4) and four mobile rows. */
 const PRODUCERS: Producer[] = [P_BADGES, P_CLOSED_BETWEEN, P_NO_WINDOW, P_VACATION, ...FILLERS];
+/**
+ * MEH-2767: the chip gates count the UNFILTERED catalog snapshot (one GET
+ * /producers with no query, lib/use-catalog-snapshot.js), and the four diet
+ * axes are count-gated now. The snapshot is the rendered rows plus five
+ * never-rendered rows declaring the four diet flags, so the sheet offers the
+ * four without touching any card the badge/+N tests below read. Still no
+ * no_added_sugar — the diet order below is pinned without it.
+ */
+const GATE_ROWS = [11, 12, 13, 14, 15].map((n) =>
+  producer(n, `עסק לספירה ${n}`, {
+    has_vegan_products: true,
+    has_vegetarian_products: true,
+    has_gluten_free_products: true,
+    has_lactose_free_products: true,
+  }),
+);
+const GATE_CATALOG: Producer[] = [...PRODUCERS, ...GATE_ROWS];
 
 /** Derived from the same lib the card calls (badges.js allBadges) — never typed in.
  *  MEH-2740: the words come from messages/he.json `badges.<key>`, as the app reads them. */
@@ -266,12 +283,19 @@ test.beforeAll(() => {
   // Guards on the fixture's own premises, so a later edit cannot silently
   // move the +N count or the diet order the rows below assert.
   if (HIDDEN_BADGES.length !== 3) throw new Error(`P_BADGES must fold 3 badges, got ${HIDDEN_BADGES.length}`);
-  // Pinned: the UNGATED diet axes, in declaration order, are exactly the four,
-  // and no business-scope diet axis is offered on /producers (MEH-2677).
-  const ungated = DIET_KEYS_ON_PRODUCERS.filter((k) => !GATED_DIET_KEYS.includes(k));
-  if (ungated.join() !== UNGATED_DIET_ORDER.join()) {
+  // Pinned: the diet axes on /producers, in declaration order, are the four
+  // plus no_added_sugar, and no business-scope diet axis is offered (MEH-2677).
+  // MEH-2767: all five are count-gated; GATE_CATALOG opens exactly the four.
+  if (DIET_KEYS_ON_PRODUCERS.filter((k) => k !== "no_added_sugar").join() !== UNGATED_DIET_ORDER.join()) {
     throw new Error(`diet order drifted: ${DIET_KEYS_ON_PRODUCERS.join(",")}`);
   }
+  for (const k of DIET_KEYS_ON_PRODUCERS) {
+    if (!GATED_DIET_KEYS.includes(k)) throw new Error(`diet axis ${k} is ungated again — MEH-2767 gates them all`);
+  }
+  for (const flag of ["has_vegan_products", "has_vegetarian_products", "has_gluten_free_products", "has_lactose_free_products"] as const) {
+    if (GATE_CATALOG.filter((p) => p[flag]).length < 5) throw new Error(`GATE_CATALOG needs 5 rows with ${flag}`);
+  }
+  ListProducersProducersGetResponse.parse(GATE_CATALOG);
   const businessScope = DIET_KEYS_ON_PRODUCERS.filter((k) => AXES[k].scope !== "any-product");
   if (businessScope.length !== 0) {
     throw new Error(`a business-scope diet axis is back on /producers: ${businessScope.join(",")}`);
@@ -298,6 +322,12 @@ async function mockCatalog(page: Page, list: Producer[] | ((u: URL) => Producer[
       // fixed count keeps the zero-result fixture (`() => []`) honest about
       // which header the results line actually reads.
       return route.fulfill({ json: { count: PRODUCERS.length } });
+    }
+    // MEH-2767: the chip-gate snapshot is the one call with no query at all
+    // (the page's own fetches always carry limit/offset). Answered from
+    // GATE_CATALOG and kept out of `seen`, which records the LISTING calls.
+    if (url.search === "") {
+      return route.fulfill({ json: GATE_CATALOG, headers: { "x-total-count": String(GATE_CATALOG.length) } });
     }
     seen.push(url);
     const body = typeof list === "function" ? list(url) : list;
