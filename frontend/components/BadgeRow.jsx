@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { CaretLeft, SealCheck } from "@phosphor-icons/react";
 import { Link as LocaleLink } from "@/i18n/navigation";
 import { allBadges, topBadges, badgeExplainerHref } from "@/lib/badges";
+import { useBadgeCopy } from "@/lib/use-badge-copy";
 import { CODE_TO_KEY } from "@/components/KashrutBadgeStrip";
 import Popover from "@/components/ui/Popover";
 import { badgeIcon } from "@/lib/chip-icons";
@@ -76,6 +77,7 @@ function kosherLabel(producer, tKashrut, fallback) {
  *
  * Exported rather than duplicated so the overflow cannot drift from the pill:
  * the resolution rule (filter through CODE_TO_KEY, then count) lives here once.
+ * `badge` must already carry its copy (useBadgeCopy, MEH-2740).
  * Every other badge is returned untouched — this is a label resolver, not a
  * badge filter, and it must not become one.
  */
@@ -89,7 +91,8 @@ export default function BadgeRow({ producer, limit, surface = "hero", hideKeys, 
   // MEH-1711: same namespace KashrutBadgeStrip.jsx:115 uses, so both surfaces
   // read the identical `kashrut.badges.*.label` strings.
   const tKashrut = useTranslations("kashrut");
-  const all = limit != null ? topBadges(producer, limit) : allBadges(producer);
+  const withCopy = useBadgeCopy();
+  const all = (limit != null ? topBadges(producer, limit) : allBadges(producer)).map(withCopy);
   // MEH-1124 (MEH-1074 Task C): optional per-surface suppression. The producer
   // detail header passes hideKeys={["products", "delivery"]} — the products
   // badge is meaningless next to the page's own products section, and delivery

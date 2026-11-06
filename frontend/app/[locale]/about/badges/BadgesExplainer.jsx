@@ -12,6 +12,7 @@
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { badgesByEvidence } from "@/lib/badges";
+import { useBadgeCopy } from "@/lib/use-badge-copy";
 import { badgeIcon } from "@/lib/chip-icons";
 import { COLOR_CLASSES } from "@/components/BadgeRow";
 import { rescueBagsEnabled } from "@/lib/rescue";
@@ -29,8 +30,12 @@ export default function BadgesExplainer() {
   // MEH-2716: «מצילים מזון» can only light while the rescue pilot is on, so
   // the page does not explain a badge nobody can see.
   const pilotOn = rescueBagsEnabled();
+  const withCopy = useBadgeCopy();
   const groups = badgesByEvidence()
-    .map((g) => ({ ...g, badges: g.badges.filter((b) => b.key !== "rescue_saving" || pilotOn) }))
+    .map((g) => ({
+      ...g,
+      badges: g.badges.filter((b) => b.key !== "rescue_saving" || pilotOn).map(withCopy),
+    }))
     .filter((g) => g.badges.length > 0);
 
   return (
