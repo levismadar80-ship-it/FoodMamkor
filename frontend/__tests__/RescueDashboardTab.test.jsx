@@ -370,7 +370,7 @@ describe("what was not collected", () => {
       lookup("rescue.dashboard.leftover_hint"),
     );
     // No recipient: the business picks the contact or group in WhatsApp.
-    const share = screen.getByTestId("rescue-leftover-share").getAttribute("href");
+    const share = (await screen.findByTestId("rescue-leftover-share")).getAttribute("href");
     expect(share.startsWith("https://wa.me/?text=")).toBe(true);
     const text = decodeURIComponent(share.slice("https://wa.me/?text=".length));
     await waitFor(() =>
@@ -419,6 +419,33 @@ describe("what was not collected", () => {
       "אפשר לסמן עד 2 סלים שלא נאספו",
     );
     expect(screen.queryByTestId("rescue-leftover-done")).toBeNull();
+  });
+
+  it("hides the WhatsApp button while the business name is missing, so the text has no empty slot", async () => {
+    mockDay({ offers: [bag({ leftover: 3 })], points: ZICHRON, name: "" });
+    render(<RescueTab />);
+    await screen.findByTestId("rescue-leftover");
+    await waitFor(() => expect(get).toHaveBeenCalledWith("/producers/me"));
+    await act(async () => {});
+    expect(screen.queryByTestId("rescue-leftover-share")).toBeNull();
+    // The group link and «נמסרו בחינם» need no name and stay.
+    expect(screen.getByTestId("rescue-leftover-link")).toBeTruthy();
+    expect(screen.getByTestId("rescue-leftover-donated")).toBeTruthy();
+  });
+
+  it("reloads after a failure part-way, so a bag already saved shows as given", async () => {
+    mockDay({ offers: [bag({ id: "a", leftover: 2 }), bag({ id: "b", leftover: 1 })], points: ZICHRON });
+    put.mockImplementation(async (url, body) => {
+      const id = url.split("/").at(-2);
+      if (id === "b") throw { response: { data: { detail: "שגיאה" } } };
+      todaysOffers = todaysOffers.map((o) => (o.id === id ? { ...o, qty_donated: body.qty } : o));
+      return { data: {} };
+    });
+    render(<RescueTab />);
+    fireEvent.click(await screen.findByTestId("rescue-leftover-donated"));
+    await screen.findByTestId("rescue-tab-notice");
+    const offerLoads = () => get.mock.calls.filter(([u]) => u === "/producers/me/rescue/offers").length;
+    await waitFor(() => expect(offerLoads()).toBeGreaterThanOrEqual(2));
   });
 
   it("looks the group up by the town of the exact pickup point, not an approximate one", async () => {

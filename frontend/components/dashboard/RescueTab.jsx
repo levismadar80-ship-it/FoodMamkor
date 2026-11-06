@@ -191,10 +191,12 @@ export default function RescueTab() {
       for (const o of leftoverRows) {
         await api.put(`/producers/me/rescue/offers/${o.id}/donated`, { qty: Number(o.leftover) });
       }
-      await load();
     } catch (err) {
       setNotice(err?.response?.data?.detail || t("failed"));
     } finally {
+      // Reload even after a failure: earlier offers in the loop may already
+      // be saved, and the box must show what the server holds.
+      await load();
       setDonating(false);
     }
   }
@@ -413,6 +415,8 @@ export default function RescueTab() {
           </h3>
           <p className="font-body-sm text-sm text-fg-muted">{t("leftover_hint")}</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            {/* Without the business name the text would carry an empty slot. */}
+            {businessName && (
             <a
               href={shareHref}
               target="_blank"
@@ -422,6 +426,7 @@ export default function RescueTab() {
             >
               {t("leftover_share")}
             </a>
+            )}
             <a
               href={leftoverHref}
               target="_blank"
