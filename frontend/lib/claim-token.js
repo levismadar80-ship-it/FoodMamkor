@@ -32,6 +32,15 @@ const REDACTED = "/claim/[token]";
 // character that encoding changes, so the token itself is the same.
 const CLAIM_PATH_ENCODED = new RegExp(String.raw`(%2F(?:[a-z]{2}%2F)?claim)%2F${JWT}`, "gi");
 
+// MEH-2768: the sign-up cancel link (/registration/<token>, and the API's
+// /registrations/<token>[/cancel]) is a bearer credential too — whoever holds
+// it can cancel that sign-up. secrets.token_urlsafe(32) is 43 url-safe
+// characters; 40+ keeps route files ([token]/CancelRegistrationClient.jsx,
+// page-<hash>.js) out of the match.
+const REG_TOKEN = String.raw`[\w-]{40,}`;
+const REG_PATH = new RegExp(String.raw`(/registrations?)/${REG_TOKEN}`, "g");
+const REG_PATH_ENCODED = new RegExp(String.raw`(%2F(?:[a-z]{2}%2F)?registrations?)%2F${REG_TOKEN}`, "gi");
+
 export function stashClaimToken(token) {
   try {
     window.sessionStorage.setItem(STORAGE_KEY, token);
@@ -61,7 +70,9 @@ export function redactClaimPath(value) {
   if (typeof value !== "string") return value;
   return value
     .replace(CLAIM_PATH, REDACTED)
-    .replace(CLAIM_PATH_ENCODED, "$1%2F[token]");
+    .replace(CLAIM_PATH_ENCODED, "$1%2F[token]")
+    .replace(REG_PATH, "$1/[token]")
+    .replace(REG_PATH_ENCODED, "$1%2F[token]");
 }
 
 // Walks a telemetry payload (a Sentry event, a Speed Insights beacon) and

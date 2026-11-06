@@ -72,6 +72,9 @@ def _serialize(event: Event, registered: int | None = None) -> EventOut:
         # MEH-2459: the event card links to the owner's page by kind.
         owner_kind=event.producer.kind if event.producer else "producer",
         owner_slug=event.producer.slug if event.producer else None,
+        # MEH-2768: «איך נרשמים?» = WhatsApp / phone, and «או שאלה למארחת»,
+        # dial the business. The same number its public page already shows.
+        producer_phone=event.producer.phone if event.producer else None,
         # MEH-2546: the owner's first photo — the list rows fall back to it
         # when the event has no image of its own (Meetup's group-cover rule).
         # Read-only, no schema change.
