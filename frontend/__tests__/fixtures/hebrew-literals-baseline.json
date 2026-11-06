@@ -23,7 +23,6 @@
   "components/ui/Button.jsx": 1,
   "lib/admin-producers-export.js": 16,
   "lib/admin-review-checklist.js": 16,
-  "lib/badges.js": 28,
   "lib/category-registry.js": 8,
   "lib/constants.js": 4,
   "lib/contact-method.js": 15,

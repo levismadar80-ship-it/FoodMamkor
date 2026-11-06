@@ -32,7 +32,8 @@ fs.mkdirSync(OUT, { recursive: true });
 
 const PRODUCERS_COLLECTION_RE = /\/api\/producers(?:\?[^#]*)?$/;
 
-// Copy is asserted against these, mirrored from lib/badges.js BADGE_CONFIG.
+// Copy is asserted against these, mirrored from messages/he.json `badges.*`
+// (lib/badges.js BADGE_CONFIG until MEH-2740). Not CI-run; re-mirror on change.
 // Kept as an explicit map so a paraphrase in the component fails the probe.
 const TOOLTIPS = {
   "בחירת העורכת":

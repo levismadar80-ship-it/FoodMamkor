@@ -84,7 +84,7 @@ import { GATED_DIET_KEYS } from "../../../lib/producer-filters.js";
  *           MEH-1592), so those two locators are deliberately unscoped.
  * Copy:     every expected string is read from messages/he.json (en.json for
  *           `/en/producers`) or from the lib that owns it (FILTER_AXES labels,
- *           BADGE_CONFIG labels/tooltips via allBadges). The only literals are
+ *           badge keys via allBadges, words from messages/he.json `badges.*`). The only literals are
  *           fixture data (ids, names, window times) and CSS colours that ARE
  *           the registry values under test (lib/category-registry.js
  *           `CATEGORY_STYLES`).
@@ -249,8 +249,12 @@ const FILLERS = [5, 6, 7, 8].map((n) =>
 /** Eight rows: two full desktop rows (xl:grid-cols-4) and four mobile rows. */
 const PRODUCERS: Producer[] = [P_BADGES, P_CLOSED_BETWEEN, P_NO_WINDOW, P_VACATION, ...FILLERS];
 
-/** Derived from the same lib the card calls (badges.js allBadges) — never typed in. */
-const HIDDEN_BADGES = allBadges(P_BADGES).slice(2) as Array<{ key: string; label: string; tooltip?: string }>;
+/** Derived from the same lib the card calls (badges.js allBadges) — never typed in.
+ *  MEH-2740: the words come from messages/he.json `badges.<key>`, as the app reads them. */
+const BADGE_COPY = he.badges as Record<string, { label: string; tooltip: string }>;
+const HIDDEN_BADGES = allBadges(P_BADGES)
+  .slice(2)
+  .map((b: { key: string }) => ({ key: b.key, ...BADGE_COPY[b.key] }));
 const VISIBLE_BADGE_COUNT = 2; // MEH-991 CARD-09 v4 LOCK (ProducerCard limit={2})
 const EXPECTED_OPEN_LINE = ORDERS_OPEN_HE.replace("{time}", "5:31");
 
@@ -694,10 +698,14 @@ test.describe("manual › +N badge disclosure (MEH-1547)", () => {
     await expect(panel).toHaveAttribute("aria-modal", "true");
     await expect(panel).toContainText(OVERFLOW_HE.overflow_heading);
     const items = panel.getByRole("listitem");
+    // Non-vacuous: beforeAll pins three hidden badges; each must carry both
+    // strings, so a missing tooltip reds instead of skipping (MEH-2740).
     await expect(items).toHaveCount(HIDDEN_BADGES.length);
     for (let i = 0; i < HIDDEN_BADGES.length; i += 1) {
+      expect(HIDDEN_BADGES[i].label, HIDDEN_BADGES[i].key).toBeTruthy();
+      expect(HIDDEN_BADGES[i].tooltip, HIDDEN_BADGES[i].key).toBeTruthy();
       await expect(items.nth(i)).toContainText(HIDDEN_BADGES[i].label);
-      if (HIDDEN_BADGES[i].tooltip) await expect(items.nth(i)).toContainText(HIDDEN_BADGES[i].tooltip as string);
+      await expect(items.nth(i)).toContainText(HIDDEN_BADGES[i].tooltip);
     }
     expect(page.url(), "the tap must not navigate").toBe(url);
 

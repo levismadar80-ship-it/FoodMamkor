@@ -534,6 +534,10 @@
     "recent": {
       "heading": "Recently viewed"
     },
+    "favorites_strip": {
+      "heading": "Your favorites",
+      "all": "All favorites"
+    },
     "cta": {
       "heading": "Have a business? Join us",
       "body_l1": "Mehamakor is the home of local food businesses in Israel.",
@@ -4645,6 +4649,10 @@
         "prompt": "Missing a tag that fits your business?",
         "link": "Write to us"
       },
+      "tags": {
+        "heading": "Tags",
+        "summary": "{count, plural, =0 {No tags yet} one {One active tag} other {# active tags}}"
+      },
       "dietaryScope": {
         "heading": "Diet",
         "helper": "We cross-check these answers against the catalog before publishing.",
@@ -5874,6 +5882,68 @@
       "tagline": "Honey, dried fruit and fruit of the land",
       "cta": "Show Tu BiShvat products",
       "dashboard_hint": "Tu BiShvat is coming — produce of the land: update your catalog"
+    }
+  },
+  "badges": {
+    "verified": {
+      "label": "Verified",
+      "tooltip": "The business showed a licence or an official exemption document that was checked by hand."
+    },
+    "recommended": {
+      "label": "Editor's pick",
+      "tooltip": "A personal pick by the Mehamakor editor — for quality, freshness or a special story. This badge cannot be bought."
+    },
+    "new": {
+      "label": "New",
+      "tooltip": "The business joined us in the last month."
+    },
+    "grass_fed": {
+      "label": "Grass-fed",
+      "tooltip": "The animals graze on pasture rather than industrial feed, as declared by the business."
+    },
+    "gluten_free": {
+      "label": "Gluten-free",
+      "tooltip": "The business has products marked gluten-free in its catalog."
+    },
+    "vegetarian": {
+      "label": "Vegetarian options",
+      "tooltip": "The business has products marked vegetarian in its catalog."
+    },
+    "vegan": {
+      "label": "Vegan options",
+      "tooltip": "The business has products marked vegan in its catalog."
+    },
+    "vegan_all": {
+      "label": "Vegan",
+      "tooltip": "As declared by the business"
+    },
+    "vegetarian_all": {
+      "label": "Vegetarian",
+      "tooltip": "As declared by the business"
+    },
+    "lactose_free": {
+      "label": "Lactose-free",
+      "tooltip": "The business has products marked lactose-free in its catalog."
+    },
+    "no_added_sugar": {
+      "label": "No added sugar",
+      "tooltip": "The business has products marked no added sugar in its catalog."
+    },
+    "kosher": {
+      "label": "Verified kosher",
+      "tooltip": "The products are under kosher supervision."
+    },
+    "delivery": {
+      "label": "Delivery",
+      "tooltip": "The business delivers or ships to your address."
+    },
+    "reservist_owned": {
+      "label": "Reservist-owned business",
+      "tooltip": "As declared by the business, one of the owners serves in the reserves."
+    },
+    "rescue_saving": {
+      "label": "Saving food",
+      "tooltip": "In the last month the business handed over rescue bags, so food wasn't thrown away."
     }
   }
 }

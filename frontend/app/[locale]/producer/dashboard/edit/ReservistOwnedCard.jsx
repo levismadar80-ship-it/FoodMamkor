@@ -7,6 +7,7 @@ import { Warning } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { BADGE_CONFIG } from "@/lib/badges";
+import { useBadgeCopy } from "@/lib/use-badge-copy";
 import { badgeIcon } from "@/lib/chip-icons";
 
 /**
@@ -24,7 +25,7 @@ import { badgeIcon } from "@/lib/chip-icons";
  * Does NOT: render the public badge (lib/badges.js); add a filter axis (none
  *           until ≥5 businesses carry it — Sapir 05/11); report dirty state —
  *           there is never an unsaved value to lose.
- * Related:  page.js (mounted under OwnerStoryCard), GrassFedCard.jsx.
+ * Related:  page.js (mounted under OwnerStoryCard), TagsCard.jsx.
  */
 export default function ReservistOwnedCard({ profile, onSave }) {
   const t = useTranslations("dashboard.producer.reservistOwned");
@@ -59,7 +60,7 @@ export default function ReservistOwnedCard({ profile, onSave }) {
     }
   };
 
-  const badge = BADGE_CONFIG.reservist_owned;
+  const badge = useBadgeCopy()(BADGE_CONFIG.reservist_owned);
   const icon = badgeIcon("reservist_owned");
 
   return (
