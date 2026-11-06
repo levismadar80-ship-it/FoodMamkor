@@ -404,7 +404,7 @@ export default function RescueTab() {
                 value={form.cancelMin}
                 onChange={(e) => setForm({ ...form, cancelMin: Number(e.target.value) })}
                 data-testid="rescue-publish-cancel"
-                className="w-full border border-border rounded-md px-2 py-1 mt-1 bg-white text-text"
+                className="w-full border border-border rounded-md px-2 py-1 mt-1 bg-surface-card text-text"
               >
                 {CANCEL_CUTOFFS.map(([minutes, key]) => (
                   <option key={minutes} value={minutes}>
