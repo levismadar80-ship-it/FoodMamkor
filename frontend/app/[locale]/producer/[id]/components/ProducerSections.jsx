@@ -151,6 +151,7 @@ export default function ProducerSections({
   reviewsContainerRef,
   reviewsVisible,
   isOwner = false,
+  onReviewsTotalChange,
 }) {
   const t = useTranslations();
   const locale = useLocale();
@@ -614,6 +615,7 @@ export default function ProducerSections({
             avgRating={producer.avg_rating ?? 0}
             reviewCount={producer.reviews_count ?? 0}
             isOwner={isOwner}
+            onTotalChange={onReviewsTotalChange}
           />
         )}
       </div>
