@@ -56,6 +56,7 @@ vi.mock("@phosphor-icons/react", () => ({
   GrainsSlash: (p) => <span {...p} />,
   Barn: (p) => <span {...p} />,
   Medal: (p) => <span {...p} />,
+  HandHeart: (p) => <span {...p} />,
   DropSlash: (p) => <span {...p} />,
   // Category-tint: ProducersClient now imports CATEGORY_STYLES from
   // lib/map-categories.js, which pulls FlowerTulip from Phosphor.

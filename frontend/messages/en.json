@@ -5768,6 +5768,7 @@
       "title": "Rescue bags",
       "lead": "Today's surplus — publish, hand over against a code, mark it.",
       "back": "Back to tools",
+      "counter_card_link": "Counter card, to print",
       "loading": "Loading…",
       "failed": "Something got stuck. Try again.",
       "counter": {
@@ -5829,6 +5830,7 @@
       "title": "Mehamakor rescue bag",
       "subtitle": "Ask for the code, check it, hand it over, mark it",
       "print_hint": "To print: Ctrl+P (or Print in the browser menu). The card prints at A5.",
+      "back": "Back to rescue bags",
       "step": {
         "ask": "Ask the buyer for the code — four digits.",
         "check": "Check the code appears in the dashboard's reservation list.",

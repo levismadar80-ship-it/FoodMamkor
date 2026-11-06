@@ -30,6 +30,8 @@ describe("BADGE_PRIORITY", () => {
       "no_added_sugar",
       "kosher",
       "delivery",
+      // MEH-2716: earned this month, after the product facts.
+      "rescue_saving",
       // MEH-2693: last — never displaces a badge a card already shows.
       "reservist_owned",
     ]);
@@ -50,8 +52,9 @@ describe("BADGE_PRIORITY", () => {
     // during MEH-1934, when BADGE_PRIORITY was left un-updated.
     // MEH-1508 chunk 3ב-2: 11 → 13 (vegan_all + vegetarian_all), both together.
     // MEH-2693: 13 → 14 (reservist_owned), both together.
-    expect(BADGE_PRIORITY).toHaveLength(14);
-    expect(Object.keys(BADGE_CONFIG)).toHaveLength(14);
+    // MEH-2716: 14 → 15 (rescue_saving), both together.
+    expect(BADGE_PRIORITY).toHaveLength(15);
+    expect(Object.keys(BADGE_CONFIG)).toHaveLength(15);
     // MEH-2047: absence in BOTH structures, the same pair-check the products
     // removal above uses — a count alone would pass if something else were
     // added in the same commit that removed this.
@@ -572,5 +575,24 @@ describe("reservist_owned badge (MEH-2693)", () => {
     expect(c.tooltip).toBe("לפי הצהרת בית העסק, אחד הבעלים משרת במילואים.");
     expect(c.scope).toBe("business");
     expect(c.evidence).toBe("self-declared");
+  });
+});
+
+describe("rescue_saving badge «מצילים מזון» (MEH-2716)", () => {
+  it("lights only on rescued_recently === true — the server's answer, nothing else", () => {
+    expect(allBadges({ rescued_recently: true }).map((b) => b.key)).toEqual(["rescue_saving"]);
+    expect(allBadges({ rescued_recently: false }).map((b) => b.key)).toEqual([]);
+    expect(allBadges({}).map((b) => b.key)).toEqual([]);
+  });
+
+  it("is a system badge, never a declaration", () => {
+    expect(BADGE_CONFIG.rescue_saving.evidence).toBe("system");
+    expect(BADGE_CONFIG.rescue_saving.scope).toBe("business");
+  });
+
+  it("never displaces a product fact a card already shows (max 2)", () => {
+    const p = { grass_fed: true, has_gluten_free_products: true, rescued_recently: true };
+    expect(topBadges(p, 2).map((b) => b.key)).toEqual(["grass_fed", "gluten_free"]);
+    expect(allBadges(p).map((b) => b.key)).toContain("rescue_saving");
   });
 });
