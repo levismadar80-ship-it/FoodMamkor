@@ -4839,6 +4839,8 @@ class EventOut(BaseModel):
     max_participants: int | None = None
     registration_url: str | None = None
     # MEH-2763: «איך נרשמים?» + the on-site tally (0 for other methods).
+    # MEH-2768: the business phone, for the WhatsApp / phone sign-up CTA.
+    producer_phone: str | None = None
     registration_method: str = "site_form"
     registered_count: int = 0
     spots_left: int | None = None

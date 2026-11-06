@@ -57,7 +57,10 @@ const geocodeCity = vi.fn();
 vi.mock("@/lib/places", () => ({ geocodeCity: (...a) => geocodeCity(...a) }));
 
 vi.mock("@/lib/use-user-city", () => ({ useUserCity: () => ({ setCity: vi.fn() }) }));
-vi.mock("@/lib/rating-gate", () => ({ isRatingSortEnabled: () => false }));
+vi.mock("@/lib/rating-gate", () => ({
+  isRatingSortEnabled: () => false,
+  mapRatingGateSource: (snap, all) => (Array.isArray(snap) ? snap : all),
+}));
 
 // LocationModal is the ONLY caller of handleMapCitySelected. Stubbed to a
 // button that fires its real prop, so the test drives the production wiring
