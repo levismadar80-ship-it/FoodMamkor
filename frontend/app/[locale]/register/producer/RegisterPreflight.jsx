@@ -3,6 +3,7 @@
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { ArrowLeft, ChatCircleDots, Clock, ListChecks } from "@phosphor-icons/react";
+import Button from "@/components/ui/Button";
 
 /**
  * Module:   RegisterPreflight
@@ -70,14 +71,14 @@ export default function RegisterPreflight({ showAccountLine, onStart }) {
       {/* Single CTA — hands off to the untouched step machinery. MEH-2565: a
           filled primary button — it is the only action on the screen, and the
           outline style read as secondary. */}
-      <button
+      <Button
         type="button"
         data-testid="register-preflight-start"
         onClick={() => onStart()}
-        className="w-full bg-primary text-white py-3 rounded-md hover:bg-primary-dark transition font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
+        variant="primary" size="lg" className="w-full"
       >
         {t("cta")}
-      </button>
+      </Button>
 
       {/* MEH-2640 (Sapir, 03/11): the organizer entry lives HERE, as a
           secondary line under the main CTA — not in step 2, not in the

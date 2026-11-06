@@ -11,6 +11,7 @@ import PasswordInput from "@/components/PasswordInput";
 import { firstFailureMessage } from "@/lib/passwordMessages";
 import { PASSWORD_MIN_LENGTH } from "@/lib/validators";
 import BrandLoader from "@/components/BrandLoader";
+import Button from "@/components/ui/Button";
 
 export default function ResetPasswordClient() {
   const t = useTranslations();
@@ -192,15 +193,15 @@ function ResetPasswordForm() {
           </div>
         )}
 
-        <button
+        <Button
           type="submit"
           disabled={loading || !password || !confirm}
-          className="w-full bg-primary text-white py-3.5 rounded-full hover:bg-primary-dark transition font-medium disabled:opacity-50"
+          variant="primary" size="lg" className="w-full"
         >
           {loading
             ? t("auth.passwordRecovery.reset.submit_updating")
             : t("auth.passwordRecovery.reset.submit")}
-        </button>
+        </Button>
       </form>
     </AuthSplitLayout>
   );

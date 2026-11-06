@@ -9,6 +9,7 @@ import CollectionNotice from "@/components/CollectionNotice";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { CONTACT_EMAIL } from "@/lib/env.client";
+import Button from "@/components/ui/Button";
 
 // MEH-653: CONTACT_EMAIL now read from NEXT_PUBLIC_CONTACT_EMAIL (lib/env.client)
 // with a "contact@mehamakor.co.il" fallback. Must still match the backend
@@ -161,13 +162,13 @@ export default function ContactClient() {
                 </div>
               )}
 
-              <button
+              <Button
                 type="submit"
                 disabled={status === "loading"}
-                className="w-full bg-primary text-white py-3 rounded-md hover:bg-primary-dark transition font-medium disabled:opacity-50"
+                variant="primary" size="lg" className="w-full"
               >
                 {status === "loading" ? t("submit_loading") : t("submit")}
-              </button>
+              </Button>
 
               <p className="text-xs text-fg-muted text-center">
                 {t.rich("privacy_notice", {

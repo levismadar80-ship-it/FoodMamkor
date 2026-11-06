@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { submitReview } from "@/lib/rescue";
+import Button from "@/components/ui/Button";
 
 /**
  * Module:   RescueReview
@@ -94,15 +95,15 @@ export default function RescueReview({ orderId, onDone }) {
         </p>
       )}
 
-      <button
+      <Button
         type="button"
         onClick={submit}
         disabled={!rating || busy}
         data-testid="rescue-review-submit"
-        className="w-full mt-3 bg-primary text-white py-3 rounded-md font-medium disabled:opacity-50 hover:bg-primary-dark transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+        variant="primary" size="lg" className="w-full mt-3"
       >
         {t("review.submit")}
-      </button>
+      </Button>
     </div>
   );
 }
