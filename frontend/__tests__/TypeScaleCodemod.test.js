@@ -17,7 +17,7 @@ import path from "node:path";
 import tokens from "../tailwind.tokens.json";
 
 const ROOT = path.resolve(__dirname, "..");
-const ARBITRARY = /(?<![\w-])(?:[a-z0-9-]+:)*text-\[[0-9.]+(?:px|rem)\]/;
+const ARBITRARY = /(?<![\w-])(?:[a-z0-9-]+:)*text-\[(?:length:)?[0-9.]+(?:px|rem|em)\]/;
 const COMMENT = /^\s*(\*|\/\/|\/\*|\{\/\*)/;
 
 function walk(dir, out = []) {
@@ -35,7 +35,7 @@ describe("MEH-1687 phase 4 — one type scale", () => {
   });
 
   it("the regex sees arbitrary sizes and ignores steps and fluid clamps", () => {
-    for (const hit of ["text-[13px]", "sm:text-[17px]", "text-[12.5px]", "md:text-[0.8rem]"]) expect(ARBITRARY.test(hit), hit).toBe(true);
+    for (const hit of ["text-[13px]", "sm:text-[17px]", "text-[12.5px]", "md:text-[0.8rem]", "text-[length:13px]", "text-[0.8125em]"]) expect(ARBITRARY.test(hit), hit).toBe(true);
     for (const miss of ["text-sm", "text-2xs", "text-[clamp(28px,6vw,44px)]", "text-[#fff]", "context-[13px]"]) expect(ARBITRARY.test(miss), miss).toBe(false);
   });
 
