@@ -701,7 +701,7 @@ outstanding. Source MEH-760 / ADR-022 / Brief Q1+Q3.
 `producer.badge.verified_tooltip_license` (`{date}` → literal `5.6.2026` here).
 
 **Cross-ref:** `process.badge.absence_body` mirrors the tier-2 framing of
-`producer.badge.declared_explainer` (retired MEH-2710 — /about/process is now the only surface) — **sync if the tier-2 wording changes
+`producer.badge.declared_explainer` (retired MEH-2710 — /about/process is now the only surface, nothing left to sync with) — **historical:** sync if the tier-2 wording changes
 (lawyer/ADR-022).** Kept as a separate string (not a shared key) so the page's
 editorial voice can diverge from the per-producer badge surface; the two must
 stay semantically aligned on the "exempt ≠ less trustworthy" message.
