@@ -1787,6 +1787,14 @@ class Event(Base):
     price = Column(Integer, default=0)  # 0 = free
     max_participants = Column(Integer, nullable=True)
     registration_url = Column(String(500), nullable=True)  # external signup link
+    # MEH-2763: how a visitor signs up — the owner picks it per event. One of
+    # REGISTRATION_METHODS; CHECK in revision e8c4a1f2b7d9.
+    registration_method = Column(
+        String(20),
+        nullable=False,
+        server_default=text("'site_form'"),
+        default="site_form",
+    )
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=utc_now)
 
@@ -1878,6 +1886,16 @@ class Experience(Base):
     # Prep
     requirements = Column(Text, nullable=True)
 
+    # MEH-2763: how a visitor signs up — the host picks it per experience (one
+    # of REGISTRATION_METHODS). registration_url is used by "external_url" only.
+    registration_method = Column(
+        String(20),
+        nullable=False,
+        server_default=text("'site_form'"),
+        default="site_form",
+    )
+    registration_url = Column(String(500), nullable=True)
+
     # Moderation
     status = Column(
         String(30), default="pending"
@@ -1903,6 +1921,66 @@ class Experience(Base):
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     host = relationship("User", foreign_keys=[host_user_id])
+
+
+# MEH-2763: the four ways an event / experience owner can take sign-ups.
+# "site_form" stores a Registration row; the other three are outbound links
+# the site never observes (ADR-031).
+REGISTRATION_METHODS = ("site_form", "whatsapp", "phone", "external_url")
+
+
+class Registration(Base):
+    """MEH-2763 — one visitor's sign-up to an event OR an experience, taken
+    through the on-site form (registration_method = "site_form").
+
+    No account: name, phone and email are what the visitor typed. They are
+    shown to the owner (dashboard list + notification email) and purged 30
+    days after the item's date (services/retention_purge.py) — the promise the
+    form makes under the submit button.
+
+    Exactly one of event_id / experience_id is set (CHECK). Two real FKs
+    rather than a (kind, item_id) pair, so deleting the item cascades.
+    cancel_token is the only credential for the visitor's cancel link.
+    """
+
+    __tablename__ = "registrations"
+    __table_args__ = (
+        CheckConstraint(
+            "(event_id IS NULL) <> (experience_id IS NULL)",
+            name="ck_registrations_one_item",
+        ),
+        CheckConstraint(
+            "status IN ('registered', 'cancelled')",
+            name="ck_registrations_status",
+        ),
+        Index("ix_registrations_event_id", "event_id"),
+        Index("ix_registrations_experience_id", "experience_id"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    event_id = Column(
+        UUID(as_uuid=True), ForeignKey("events.id", ondelete="CASCADE"), nullable=True
+    )
+    experience_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("experiences.id", ondelete="CASCADE"),
+        nullable=True,
+    )
+    name = Column(String(100), nullable=False)
+    phone = Column(String(20), nullable=False)
+    email = Column(String(200), nullable=False)
+    cancel_token = Column(String(64), nullable=False, unique=True)
+    status = Column(
+        String(20),
+        nullable=False,
+        server_default=text("'registered'"),
+        default="registered",
+    )
+    created_at = Column(DateTime, nullable=False, default=utc_now)
+    cancelled_at = Column(DateTime, nullable=True)
+
+    event = relationship("Event")
+    experience = relationship("Experience")
 
 
 class NewsletterSubscriber(Base):

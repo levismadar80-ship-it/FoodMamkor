@@ -3,7 +3,7 @@ import { useTranslations } from "next-intl";
 
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
-import { GeoSearchSchema } from "@/lib/schemas";
+import { GeoSearchSchema, GEO_SEARCH_ERROR_KEYS } from "@/lib/schemas";
 import { boundsToCenterRadius } from "@/lib/map-chips";
 import { HALF } from "@/components/MapBottomSheet";
 
@@ -258,9 +258,10 @@ export function useMapSync({
       radius_km: centerRadius?.radius_km,
     });
     if (!geoValidation.success) {
-      // Zod v4: issues (not errors). Fall back to a generic Hebrew message
-      // if the shape ever changes again.
-      const msg = geoValidation.error.issues?.[0]?.message || t("map.errors.invalid_search");
+      // Zod v4: issues (not errors). MEH-2765: the schema's message is a key
+      // under map.errors; anything else falls back to invalid_search.
+      const key = geoValidation.error.issues?.[0]?.message;
+      const msg = GEO_SEARCH_ERROR_KEYS.includes(key) ? t(`map.errors.${key}`) : t("map.errors.invalid_search");
       showToast.info(msg);
       return;
     }

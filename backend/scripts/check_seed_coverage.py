@@ -281,6 +281,7 @@ EXEMPT_TABLES = {
     # would show an offer/order no owner posted and no visitor reserved.
     "rescue_offers": "MEH-2644 rescue-bags pilot — dark behind a flag; offers are posted by an owner at runtime",
     "rescue_orders": "MEH-2644 rescue-bags pilot — a visitor's reservation, runtime only",
+    "registrations": "MEH-2763 on-site sign-up — a visitor's name/phone/email, runtime only",
     "rescue_reviews": "MEH-2644 rescue-bags pilot — written only after a handed order, runtime only",
     "rescue_typical_items": "MEH-2644 rescue-bags pilot — child rows of rescue_offers, runtime only",
     "delivery_waitlist": "MEH-2618 «תודיעו לי כשתגיעו» entries — written only by a visitor's own form submit, like favorites clicks; the demo seed has no visitors",

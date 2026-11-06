@@ -52,6 +52,8 @@ vi.mock("@/components/Skeleton", () => ({
   SkeletonProducerGrid: () => null,
 }));
 vi.mock("@/lib/producer-filters", () => ({
+  // MEH-2767: the one chip gate. Identity — these specs do not exercise gating.
+  visibleAxisChips: ({ chips }) => chips,
   // MEH-1862: ProducersClient now imports this to attach FilterSheet group
   // metadata, and a partial vi.mock throws on any export it omits (same
   // reason the MEH-1881 names above are stubbed). Identity is the right

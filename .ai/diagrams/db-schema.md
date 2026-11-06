@@ -204,6 +204,8 @@ erDiagram
     users ||--o{ home_products : "lists"
     users ||--o{ events : "hosts (producer)"
     users ||--o{ experiences : "hosts (producer)"
+    events ||--o{ registrations : "on-site sign-ups (MEH-2763)"
+    experiences ||--o{ registrations : "on-site sign-ups (MEH-2763)"
     home_products ||--o{ home_product_whatsapp_clicks : "gets clicks"
     home_product_whatsapp_clicks ||--o| home_product_ratings : "optional 1:1"
 
@@ -257,6 +259,20 @@ erDiagram
         int capacity
         string city
         string status "pending|approved|rejected"
+        string registration_method "MEH-2763 site_form|whatsapp|phone|external_url"
+    }
+
+    registrations {
+        uuid id PK
+        uuid event_id FK "exactly one of event_id / experience_id"
+        uuid experience_id FK
+        string name
+        string phone
+        string email
+        string cancel_token UK "cancel link credential"
+        string status "registered|cancelled"
+        timestamp created_at
+        timestamp cancelled_at
     }
 
     experiences {
@@ -270,6 +286,8 @@ erDiagram
         numeric price
         int capacity
         int participants_count "host-reported sign-ups (MEH-2663)"
+        string registration_method "MEH-2763; legacy rows backfilled whatsapp"
+        string registration_url "MEH-2763 external_url only"
         int min_participants "nullable; minimum to run (MEH-2665)"
         string status "pending|changes_requested|approved|rejected"
         boolean is_active "MEH-1419: reversible host cancel; public list filters true"
@@ -534,6 +552,12 @@ erDiagram
 > `pickup_end` is AFTER this stamp — so one write releases a buyer and the
 > no-show rows stay in the history for the chunk-5 metrics. Adds no table →
 > `EXPECTED_TABLES` unchanged. Migration `b2e6d4a17c93`.
+
+> **MEH-2763 — `registrations` + `registration_method` (06/11/2026):** the
+> owner picks «איך נרשמים?» per event / experience; `site_form` stores one row
+> per visitor (no account; name, phone, email), purged 30 days after the item's
+> date by `retention_purge`. Adds one table → **`EXPECTED_TABLES` 48 → 49**
+> (`pr-checks.yml`). Migration `e8c4a1f2b7d9`.
 
 ## Locked invariants (do not drift)
 

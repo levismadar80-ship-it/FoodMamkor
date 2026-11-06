@@ -29,13 +29,17 @@ vi.mock("@/lib/toast", () => ({ showToast: { error: vi.fn(), success: vi.fn() } 
 import ExperienceDetailClient from "@/app/[locale]/experiences/[id]/ExperienceDetailClient";
 import ManageExperiencesPage from "@/app/[locale]/producer/dashboard/experiences/page";
 
-const D = he.experiences.detail;
 const M = he.dashboard.producer.manage_experiences;
 const BASE = {
   id: "x-1", title: "סדנת מחמצת", description: "סדנה של בוקר שלם", event_date: "2099-11-20",
   city: "חיפה", location_type: "public", status: "approved", is_active: true, max_participants: 8,
-  host: { id: "u1", name: "נועה" },
+  // MEH-2768: the CTA follows registration_method; WhatsApp needs a mobile.
+  registration_method: "whatsapp",
+  host: { id: "u1", name: "נועה", producer_id: "p1", producer_name: "מאפיית נועה", producer_phone: "050-1234567" },
 };
+const C = he.registration.cta;
+// Any sign-up / waitlist control the CTA block can render.
+const anyCta = () => document.querySelector('[data-testid^="registration-"]');
 
 function intl(ui) {
   return render(<NextIntlClientProvider locale="he" messages={he} timeZone="Asia/Jerusalem">{ui}</NextIntlClientProvider>);
@@ -64,31 +68,32 @@ describe("experience page — spots", () => {
   it("no cap → no capacity line, sign-up CTA", async () => {
     await page({ max_participants: null, spots_left: null });
     expect(screen.queryByTestId("experience-capacity")).not.toBeInTheDocument();
-    expect(screen.getByTestId("experience-whatsapp-cta").textContent).toBe(D.whatsapp_cta);
+    expect(screen.getByTestId("registration-whatsapp").textContent).toBe(C.whatsapp);
   });
 
   it("spots left → the sign-up CTA and message", async () => {
     await page({ spots_left: 2 });
-    const cta = screen.getByTestId("experience-whatsapp-cta");
-    expect(cta.textContent).toBe(D.whatsapp_cta);
+    const cta = screen.getByTestId("registration-whatsapp");
+    expect(cta.textContent).toBe(C.whatsapp);
+    expect(cta.getAttribute("href")).toMatch(/^https:\/\/wa\.me\/972501234567\?/);
     expect(decodeURIComponent(cta.getAttribute("href"))).toContain("אני רוצה להירשם");
   });
 
   it("full → the waitlist CTA with the waitlist message", async () => {
     await page({ spots_left: 0, participants_count: 8 });
-    const cta = screen.getByTestId("experience-whatsapp-cta");
+    const cta = screen.getByTestId("registration-waitlist");
     expect(cta.textContent).toBe("לרשימת ההמתנה ב-WhatsApp");
     expect(decodeURIComponent(cta.getAttribute("href"))).toContain('היי! אשמח להיכנס לרשימת ההמתנה של "סדנת מחמצת"');
   });
 
   it("host-cancelled → no sign-up or waitlist CTA", async () => {
     await page({ is_active: false, spots_left: 0 });
-    expect(screen.queryByTestId("experience-whatsapp-cta")).not.toBeInTheDocument();
+    expect(anyCta()).toBeNull();
   });
 
   it("past and full → no CTA at all", async () => {
     await page({ event_date: "2020-01-01", spots_left: 0 });
-    expect(screen.queryByTestId("experience-whatsapp-cta")).not.toBeInTheDocument();
+    expect(anyCta()).toBeNull();
   });
 });
 
@@ -123,6 +128,23 @@ describe("dashboard — «כמה כבר נרשמו»", () => {
     await dash([{ ...BASE, participants_count: 3 }]);
     fireEvent.blur(screen.getByLabelText(M.signed_up_label));
     expect(api.put).not.toHaveBeenCalled();
+  });
+
+  it("a stored tally above today's ceiling is not lowered by focus + leave", async () => {
+    // 6 counted by hand, then 4 signed up on the site: ceiling 8 - 4 = 4.
+    await dash([{ ...BASE, registration_method: "whatsapp", participants_count: 6, registered_count: 4 }]);
+    fireEvent.blur(screen.getByLabelText(he.registration.list.offline_label));
+    expect(api.put).not.toHaveBeenCalled();
+  });
+
+  it("after a switch away from the site form, earlier sign-ups stay listed", async () => {
+    await dash([{ ...BASE, registration_method: "whatsapp", participants_count: 0, registered_count: 3 }]);
+    expect(screen.getByText(he.registration.list.summary.replace("{count}", "3"))).toBeInTheDocument();
+  });
+
+  it("no site sign-ups and another method → no list", async () => {
+    await dash([{ ...BASE, registration_method: "whatsapp", participants_count: 0, registered_count: 0 }]);
+    expect(screen.queryByText(/הרשמות באתר/)).not.toBeInTheDocument();
   });
 
   it.each([
