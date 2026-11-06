@@ -47,7 +47,7 @@ vi.mock("next-intl", () => ({
     if (key === "group_buys.delivery.fee_from") return `משלוח מ-${values.amount}`;
     // MEH-2676: card delivery row folds a free-delivery threshold in.
     if (key === "producer.offer.card_free_above") return `חינם מעל ${values.amount}`;
-    if (key === "producer.offer.card_free_above_alone") return `משלוח חינם מעל ${values.amount}`;
+    if (key === "producer.offer.card_delivery_sr") return "משלוח";
     if (key === "producer.offer.unit_amount.kg") return `${values.count} ק"ג`;
     return key;
   },
@@ -958,16 +958,37 @@ describe("ProducerCard — free-delivery threshold in the delivery row (MEH-2676
     expires_at: null,
   };
 
-  it("appends «חינם מעל 150₪» to the fee and drops the chip", () => {
+  // MEH-2744: with a threshold the row shows only «חינם מעל 150₪» next to the
+  // truck; the fee is left to the business page, «משלוח» is screen-reader only.
+  it("shows only «חינם מעל 150₪» when there is also a fee, and drops the chip", () => {
     render(<ProducerCard producer={{ ...fullProducer, delivery_fee: 20, active_offer: freeOffer }} />);
-    expect(screen.getByTestId("card-delivery-fee")).toHaveTextContent("משלוח: 20₪ · חינם מעל 150₪");
+    const row = screen.getByTestId("card-delivery-fee");
+    expect(row).toHaveTextContent("משלוח חינם מעל 150₪");
+    expect(row).not.toHaveTextContent("20₪");
+    expect(row).not.toHaveTextContent("·");
     expect(screen.queryByTestId("offer-chip")).not.toBeInTheDocument();
   });
 
-  it("states «משלוח חינם מעל 150₪» alone when no fee is stated", () => {
+  it("shows «חינם מעל 150₪» when no fee is stated", () => {
     render(<ProducerCard producer={{ ...fullProducer, delivery_fee: null, active_offer: freeOffer }} />);
-    expect(screen.getByTestId("card-delivery-fee")).toHaveTextContent("משלוח חינם מעל 150₪");
+    expect(screen.getByTestId("card-free-above")).toHaveTextContent(/^חינם מעל 150₪$/);
     expect(screen.queryByTestId("offer-chip")).not.toBeInTheDocument();
+  });
+
+  it("keeps the word «משלוח» for screen readers only", () => {
+    render(<ProducerCard producer={{ ...fullProducer, delivery_fee: 20, active_offer: freeOffer }} />);
+    const row = screen.getByTestId("card-delivery-fee");
+    const sr = row.querySelector(".sr-only");
+    expect(sr).not.toBeNull();
+    expect(sr).toHaveTextContent("משלוח");
+    // The visible part (everything outside .sr-only) does not repeat it.
+    expect(screen.getByTestId("card-free-above")).not.toHaveTextContent("משלוח");
+  });
+
+  it("still states the fee when there is no threshold", () => {
+    render(<ProducerCard producer={{ ...fullProducer, delivery_fee: 20, active_offer: null }} />);
+    expect(screen.getByTestId("card-delivery-fee")).toHaveTextContent("משלוח: 20₪");
+    expect(screen.queryByTestId("card-free-above")).not.toBeInTheDocument();
   });
 
   it("uses the offer's unit when the threshold is not shekels", () => {
@@ -976,7 +997,7 @@ describe("ProducerCard — free-delivery threshold in the delivery row (MEH-2676
         producer={{ ...fullProducer, delivery_fee: null, active_offer: { ...freeOffer, threshold_value: 3, threshold_unit: "kg" } }}
       />,
     );
-    expect(screen.getByTestId("card-free-above")).toHaveTextContent('משלוח חינם מעל 3 ק"ג');
+    expect(screen.getByTestId("card-free-above")).toHaveTextContent('חינם מעל 3 ק"ג');
   });
 
   it("keeps the chip for a free-delivery offer without a threshold", () => {
