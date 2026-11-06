@@ -55,7 +55,8 @@ export default function CancelRegistrationClient({ token }) {
   const itemHref = info ? `/${info.kind === "event" ? "events" : "experiences"}/${info.item_id}` : null;
 
   return (
-    <main className="max-w-md mx-auto px-4 py-12" data-testid="registration-cancel">
+    // The layout already renders <main id="main-content"> (layout.js) — one landmark.
+    <section className="max-w-md mx-auto px-4 py-12" data-testid="registration-cancel">
       {state === "loading" && <div className="h-6 w-48 rounded bg-border/60 animate-pulse" aria-busy="true" />}
       {(state === "missing" || state === "error") && (
         <p role="alert" className="text-text" data-testid="registration-cancel-missing">
@@ -95,6 +96,6 @@ export default function CancelRegistrationClient({ token }) {
           </Link>
         </div>
       )}
-    </main>
+    </section>
   );
 }

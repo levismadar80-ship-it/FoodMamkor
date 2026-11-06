@@ -139,13 +139,30 @@ describe("RegistrationCta — the on-site form", () => {
     await waitFor(() => expect(screen.getByRole("alert").textContent).toBe("אין יותר מקומות"));
   });
 
-  it("422 → the message lands on its own field", async () => {
-    api.post.mockRejectedValue({
-      response: { status: 422, data: { detail: [{ loc: ["body", "name"], msg: "Value error, שדה זה חייב להכיל לפחות 2 אותיות" }] } },
-    });
+  it("a one-letter name is caught before sending", () => {
     openForm();
     fill("א1", "050-1112233", "noa@example.com");
     send();
-    await waitFor(() => expect(screen.getByText("שדה זה חייב להכיל לפחות 2 אותיות")).toBeInTheDocument());
+    expect(screen.getByText(S.name_short)).toBeInTheDocument();
+    expect(api.post).not.toHaveBeenCalled();
+  });
+
+  it("422 → the page's own message on that field, not the server's Hebrew text", async () => {
+    api.post.mockRejectedValue({
+      response: { status: 422, data: { detail: [{ loc: ["body", "phone"], msg: "Value error, SERVER-TEXT" }] } },
+    });
+    openForm();
+    fill("נועה כהן", "050-1112233", "noa@example.com");
+    send();
+    await waitFor(() => expect(screen.getByText(S.phone_invalid)).toBeInTheDocument());
+    expect(screen.queryByText(/SERVER-TEXT/)).toBeNull();
+  });
+
+  it("422 naming no form field → the generic banner, never silence", async () => {
+    api.post.mockRejectedValue({ response: { status: 422, data: { detail: [{ loc: ["body"], msg: "bad body" }] } } });
+    openForm();
+    fill("נועה כהן", "050-1112233", "noa@example.com");
+    send();
+    await waitFor(() => expect(screen.getByRole("alert").textContent).toBe(S.generic));
   });
 });

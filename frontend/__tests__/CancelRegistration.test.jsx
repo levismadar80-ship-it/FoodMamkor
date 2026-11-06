@@ -41,6 +41,8 @@ describe("cancel page", () => {
     expect(api.post).toHaveBeenCalledWith("/registrations/tok_abc/cancel");
     expect(screen.queryByTestId("registration-cancel-confirm")).toBeNull();
     expect(screen.getByText(X.back_experience).getAttribute("href")).toBe("/experiences/x1");
+    // the layout owns the one <main> landmark
+    expect(document.querySelector("main")).toBeNull();
   });
 
   it("already cancelled → «ההרשמה בוטלה.», no button", async () => {

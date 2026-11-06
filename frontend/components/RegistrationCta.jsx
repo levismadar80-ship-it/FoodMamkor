@@ -34,15 +34,16 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const telHref = (phone) => `tel:${String(phone).replace(/[^\d+]/g, "")}`;
 
-/** Field errors from a FastAPI 422 body: [{loc: [..., "email"], msg}] → {email: msg}. */
-function fieldErrorsFrom(detail) {
-  if (!Array.isArray(detail)) return null;
-  const out = {};
-  for (const d of detail) {
-    const field = Array.isArray(d?.loc) ? d.loc[d.loc.length - 1] : null;
-    if (field && !out[field]) out[field] = String(d.msg || "").replace(/^Value error, /, "");
-  }
-  return Object.keys(out).length ? out : null;
+// Letters in any script — the server's 2-letter rule for a name.
+const LETTERS_RE = /\p{L}/gu;
+
+/** Which form fields a FastAPI 422 body names: [{loc: [..., "email"]}] → ["email"].
+ * The server's own text is Hebrew whatever the page language, so the caller
+ * shows its own message per field. */
+function fieldsFrom(detail) {
+  if (!Array.isArray(detail)) return [];
+  const fields = detail.map((d) => (Array.isArray(d?.loc) ? d.loc[d.loc.length - 1] : null));
+  return [...new Set(fields.filter((f) => ["name", "phone", "email"].includes(f)))];
 }
 
 function SignupForm({ kind, itemId, onDone }) {
@@ -66,6 +67,7 @@ function SignupForm({ kind, itemId, onDone }) {
   const validate = () => {
     const errs = {};
     for (const f of ["name", "phone", "email"]) if (!form[f].trim()) errs[f] = t("required");
+    if (!errs.name && (form.name.match(LETTERS_RE) || []).length < 2) errs.name = t("name_short");
     if (!errs.email && !EMAIL_RE.test(form.email.trim())) errs.email = t("email_invalid");
     if (!errs.phone && String(form.phone).replace(/\D/g, "").length < 9) errs.phone = t("phone_invalid");
     return errs;
@@ -92,9 +94,10 @@ function SignupForm({ kind, itemId, onDone }) {
       onDone();
     } catch (err) {
       const detail = err.response?.data?.detail;
-      const fieldErrs = err.response?.status === 422 ? fieldErrorsFrom(detail) : null;
-      if (fieldErrs) setErrors(fieldErrs);
-      else setBanner((detail && typeof detail === "object" && detail.message) || t("generic"));
+      const fields = err.response?.status === 422 ? fieldsFrom(detail) : [];
+      const own = { name: "name_short", phone: "phone_invalid", email: "email_invalid" };
+      if (fields.length) setErrors(Object.fromEntries(fields.map((f) => [f, t(own[f])])));
+      else setBanner((detail && typeof detail === "object" && !Array.isArray(detail) && detail.message) || t("generic"));
     } finally {
       setSending(false);
     }
