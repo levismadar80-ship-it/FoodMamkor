@@ -493,7 +493,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
                   })}
                   data-testid="badge-overflow"
                   dir="ltr"
-                  className="group inline-flex items-center justify-center min-h-[44px] min-w-[44px] -m-2.5 focus:outline-none"
+                  className="group inline-flex items-center justify-center min-h-touch min-w-touch -m-2.5 focus:outline-none"
                 >
                   <span className="inline-flex items-center rounded-full bg-surface-card/95 border border-border text-fg-muted px-1.5 py-0.5 text-[11px] font-medium group-focus-visible:ring-2 group-focus-visible:ring-primary/40">
                     +{badgeCount(producer) - 2}

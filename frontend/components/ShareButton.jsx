@@ -96,7 +96,7 @@ export default function ShareButton({
     return (
       <button
         onClick={handleShare}
-        className="inline-flex items-center gap-1.5 min-h-[44px] py-2 text-[13px] font-medium text-text hover:text-primary rounded transition focus-visible:ring-2 focus-visible:ring-primary/40"
+        className="inline-flex items-center gap-1.5 min-h-touch py-2 text-[13px] font-medium text-text hover:text-primary rounded transition focus-visible:ring-2 focus-visible:ring-primary/40"
         title={t("copy_link")}
         aria-label={labelInName(t("quiet_label"), ariaLabel)}
       >
@@ -127,7 +127,7 @@ export default function ShareButton({
   return (
     <button
       onClick={handleShare}
-      className="inline-flex items-center justify-center gap-2 bg-white border border-border px-3 py-2 min-h-[44px] min-w-[44px] rounded-[8px] hover:bg-green-50 transition text-sm focus-visible:ring-2 focus-visible:ring-primary/40"
+      className="inline-flex items-center justify-center gap-2 bg-white border border-border px-3 py-2 min-h-touch min-w-touch rounded-[8px] hover:bg-green-50 transition text-sm focus-visible:ring-2 focus-visible:ring-primary/40"
       title={t("copy_link")}
       aria-label={labelInName(t("trigger"), ariaLabel)}
     >

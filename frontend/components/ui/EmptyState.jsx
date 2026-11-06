@@ -98,7 +98,7 @@ export default function EmptyState({
         // out of scope here, flagged rather than changed.
         <Link
           href={unblockHref}
-          className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center text-sm font-medium text-primary underline underline-offset-2 hover:text-primary-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-[6px] transition"
+          className="min-h-touch min-w-touch inline-flex items-center justify-center text-sm font-medium text-primary underline underline-offset-2 hover:text-primary-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-[6px] transition"
         >
           {unblockLabel}
         </Link>

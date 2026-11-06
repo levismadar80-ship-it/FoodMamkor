@@ -92,7 +92,7 @@ export default function HolidayBanner({ suppressed = false, onVisibilityChange }
       <button
         onClick={dismiss}
         aria-label={t("close_aria")}
-        className="shrink-0 text-fg-muted hover:text-text transition min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg"
+        className="shrink-0 text-fg-muted hover:text-text transition min-h-touch min-w-touch flex items-center justify-center rounded-lg"
       >
         <X size={16} weight="bold" aria-hidden="true" />
       </button>

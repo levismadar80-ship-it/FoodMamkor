@@ -87,6 +87,7 @@ spacing:
   "5xl": 96px
   "6xl": 128px
   gutter: 16px
+  touch: 44px
 rounded:
   sm: 8px
   md: 12px
@@ -692,7 +693,9 @@ the floor and are known violations of this rule, not exceptions to it:
 `components/Header.jsx:761` (avatar button, `w-[34px] h-[34px]`). Their fix is
 a separate code PR, tracked on MEH-1687; until it lands, do not copy them._ When the
 visible control is smaller than 44px, the target is enlarged with
-`min-h-[44px] min-w-[44px]` plus `flex items-center justify-center` so the
+`min-h-touch min-w-touch` (the `spacing.touch` token = 44px, MEH-2719; the
+arbitrary `[44px]` spelling is forbidden by `TouchTokenCodemod.test.js`) plus
+`flex items-center justify-center` so the
 glyph stays centered inside the padded hit area — the `HeroSearch` submit
 button and `BadgeRow` (MEH-813) outer-button hit-area are the canonical
 patterns.

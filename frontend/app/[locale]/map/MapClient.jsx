@@ -648,7 +648,7 @@ export default function MapPage() {
             className={
               compact
                 ? "inline-flex items-center gap-1 max-w-full rounded-md bg-green-50 text-primary ps-2 text-[11px]"
-                : "inline-flex items-center gap-1.5 min-h-[44px] max-w-full rounded-full border border-border bg-surface-card ps-3 text-xs text-fg-muted"
+                : "inline-flex items-center gap-1.5 min-h-touch max-w-full rounded-full border border-border bg-surface-card ps-3 text-xs text-fg-muted"
             }
           >
             {compact ? (
@@ -882,7 +882,7 @@ export default function MapPage() {
                 )}
               </div>
               {/* MEH-1110: borderless text+chevron sort control — appearance-none
-                  hides the native arrow (CaretDown is the affordance); min-h-[44px]
+                  hides the native arrow (CaretDown is the affordance); min-h-touch
                   is the AA tap floor and -my-2.5 keeps the count row compact
                   (MEH-825 pattern). Keyboard focus uses a ring (box-shadow),
                   NOT text-decoration — underline is unreliable on native <select>. */}
@@ -897,7 +897,7 @@ export default function MapPage() {
                   disabled={geoSortPending}
                   aria-label={t("map.client.sort.aria_label")}
                   aria-busy={geoSortPending || undefined}
-                  className="appearance-none bg-transparent border-0 text-sm font-medium text-primary min-h-[44px] ps-1 pe-6 cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 disabled:opacity-60"
+                  className="appearance-none bg-transparent border-0 text-sm font-medium text-primary min-h-touch ps-1 pe-6 cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 disabled:opacity-60"
                 >
                   {/* MEH-2014: never `disabled`. Choosing it without a known
                       location ASKS for one (handleSortChange) instead of

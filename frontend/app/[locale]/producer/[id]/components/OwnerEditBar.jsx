@@ -49,7 +49,7 @@ export default function OwnerEditBar({ producer }) {
       <LocaleLink
         href="/producer/dashboard/edit"
         data-testid="owner-edit-cta"
-        className="ms-auto shrink-0 inline-flex items-center min-h-[44px] font-medium text-accent hover:underline focus-visible:underline"
+        className="ms-auto shrink-0 inline-flex items-center min-h-touch font-medium text-accent hover:underline focus-visible:underline"
       >
         {t("producer.detail.owner_bar.cta")}
       </LocaleLink>

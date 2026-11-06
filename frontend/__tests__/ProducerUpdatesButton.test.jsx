@@ -363,7 +363,7 @@ describe("MEH-2562 · variants", () => {
     renderButton({ variant: "quiet" });
     expect(button()).toHaveTextContent("קבלת עדכונים");
     expect(button()).not.toHaveAttribute("aria-label");
-    expect(button().className).toMatch(/min-h-\[44px\]/);
+    expect(button().className).toMatch(/min-h-touch/);
   });
 
   it("gallery reports ON through aria-pressed like the pill", async () => {

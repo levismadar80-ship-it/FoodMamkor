@@ -339,7 +339,7 @@ function AdminShell({ children }) {
             type="button"
             data-testid="admin-mobile-logout"
             onClick={logout}
-            className="inline-flex items-center gap-2 min-h-[44px] px-4 text-sm font-medium text-error focus-ring rounded-[8px]"
+            className="inline-flex items-center gap-2 min-h-touch px-4 text-sm font-medium text-error focus-ring rounded-[8px]"
           >
             <SignOut size={18} aria-hidden="true" />
             {tAccount("logout")}

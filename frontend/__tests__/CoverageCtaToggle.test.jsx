@@ -66,8 +66,8 @@ describe("CoverageCtaToggle (MEH-1676)", () => {
   it("gives the switch a 44×44 hit area", () => {
     render(<CoverageCtaToggle producer={REACHABLE} />);
     const sw = screen.getByRole("switch");
-    expect(sw.className).toMatch(/\bmin-h-\[44px\]/);
-    expect(sw.className).toMatch(/\bmin-w-\[44px\]/);
+    expect(sw.className).toMatch(/\bmin-h-touch/);
+    expect(sw.className).toMatch(/\bmin-w-touch/);
   });
 });
 

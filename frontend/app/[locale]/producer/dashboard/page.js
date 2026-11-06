@@ -1016,7 +1016,7 @@ function ActivityPulse({ analytics }) {
               target="_blank"
               rel="noopener noreferrer"
               data-testid="activity-pulse-cta"
-              className="btn-whatsapp inline-flex items-center justify-center gap-2 min-h-[44px] px-6 rounded-full text-sm font-medium"
+              className="btn-whatsapp inline-flex items-center justify-center gap-2 min-h-touch px-6 rounded-full text-sm font-medium"
             >
               <WhatsappLogo size={18} weight="fill" aria-hidden="true" />
               {t("cta")}

@@ -338,7 +338,7 @@ export default function ClaimClient({ tokenFromPath = null }) {
             type="submit"
             data-testid="claim-submit"
             disabled={submitting}
-            className="min-h-[44px] w-full bg-primary text-white rounded-md px-6 py-2 font-medium hover:bg-primary-dark transition disabled:opacity-50"
+            className="min-h-touch w-full bg-primary text-white rounded-md px-6 py-2 font-medium hover:bg-primary-dark transition disabled:opacity-50"
           >
             {submitting ? t("eligible.submitting") : t("eligible.submit")}
           </button>
@@ -392,7 +392,7 @@ function PrimaryLink({ href, children, testid }) {
     <Link
       href={href}
       data-testid={testid}
-      className="min-h-[44px] w-full sm:w-auto inline-flex items-center justify-center bg-primary text-white rounded-md px-6 py-2 font-medium hover:bg-primary-dark transition"
+      className="min-h-touch w-full sm:w-auto inline-flex items-center justify-center bg-primary text-white rounded-md px-6 py-2 font-medium hover:bg-primary-dark transition"
     >
       {children}
     </Link>
@@ -405,7 +405,7 @@ function SwitchAccount({ onClick, children }) {
       type="button"
       onClick={onClick}
       data-testid="claim-switch-account"
-      className="min-h-[44px] w-full sm:w-auto bg-white border border-primary text-primary rounded-md px-6 py-2 font-medium hover:bg-background transition"
+      className="min-h-touch w-full sm:w-auto bg-white border border-primary text-primary rounded-md px-6 py-2 font-medium hover:bg-background transition"
     >
       {children}
     </button>

@@ -294,7 +294,7 @@ export default function ExperienceDetailClient() {
               <Link
                 href={hostHref}
                 data-testid="experience-byline"
-                className="inline-flex items-center gap-2 min-h-[44px] text-[15px] text-text hover:text-primary rounded transition focus-ring"
+                className="inline-flex items-center gap-2 min-h-touch text-[15px] text-text hover:text-primary rounded transition focus-ring"
               >
                 <span aria-hidden="true" className="w-7 h-7 rounded-full bg-surface-card text-accent text-sm font-bold grid place-items-center">
                   {Array.from(hostName.trim())[0] ?? ""}
@@ -481,7 +481,7 @@ export default function ExperienceDetailClient() {
             </div>
           )}
 
-          <Link href="/experiences" className="inline-flex items-center min-h-[44px] text-primary font-medium hover:underline">
+          <Link href="/experiences" className="inline-flex items-center min-h-touch text-primary font-medium hover:underline">
             {t("all_experiences")}
           </Link>
         </div>

@@ -228,7 +228,7 @@ export default function ProducerDashboardLayout({ children }) {
               // MEH-2429: icon-only below sm (min 44px target, name via
               // aria-label + title); the visible label returns at sm+.
               title={t("view_page")}
-              className="sm:ms-auto shrink-0 inline-flex items-center justify-center gap-1.5 min-w-[44px] px-2 sm:px-3 py-3 text-sm font-medium text-fg-muted hover:text-primary transition-colors focus-ring"
+              className="sm:ms-auto shrink-0 inline-flex items-center justify-center gap-1.5 min-w-touch px-2 sm:px-3 py-3 text-sm font-medium text-fg-muted hover:text-primary transition-colors focus-ring"
             >
               <Eye size={20} aria-hidden="true" />
               <span className="hidden sm:inline">{t("view_page")}</span>
@@ -247,7 +247,7 @@ export default function ProducerDashboardLayout({ children }) {
           type="button"
           data-testid="dashboard-mobile-logout"
           onClick={logout}
-          className="inline-flex items-center gap-2 min-h-[44px] px-4 text-sm font-medium text-error focus-ring rounded-[8px]"
+          className="inline-flex items-center gap-2 min-h-touch px-4 text-sm font-medium text-error focus-ring rounded-[8px]"
         >
           <SignOut size={18} aria-hidden="true" />
           {tAccount("logout")}

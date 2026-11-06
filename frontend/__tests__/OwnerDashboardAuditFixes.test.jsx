@@ -128,8 +128,8 @@ describe("location rows (MEH-2429 §16)", () => {
     const edits = screen.getAllByLabelText(he.settings.locations.edit_aria);
     const deletes = screen.getAllByLabelText(he.settings.locations.delete_aria);
     for (const b of [...edits, ...deletes]) {
-      expect(b.className).toMatch(/min-h-\[44px\]/);
-      expect(b.className).toMatch(/min-w-\[44px\]/);
+      expect(b.className).toMatch(/min-h-touch/);
+      expect(b.className).toMatch(/min-w-touch/);
     }
   });
 });
