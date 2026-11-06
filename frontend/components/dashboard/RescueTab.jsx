@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
+import { Link as LocaleLink } from "@/i18n/navigation";
 
 import api from "@/lib/api";
-import { israelTime, shekels } from "@/lib/rescue";
+import { israelTime, leftoverGroupUrl, shekels } from "@/lib/rescue";
 
 /**
  * Module:   RescueTab
@@ -35,6 +36,9 @@ export default function RescueTab() {
   // prop that the only page rendering it never passed, so every publish
   // answered «צריך נקודת איסוף». The API lists the primary first.
   const [locations, setLocations] = useState([]);
+  // Known only after the list answers: the "add an address" box must not
+  // flash while it loads, nor replace the form when the request failed.
+  const [locationsLoaded, setLocationsLoaded] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -49,7 +53,10 @@ export default function RescueTab() {
     load();
     api
       .get("/producers/me/locations")
-      .then((r) => setLocations(Array.isArray(r.data) ? r.data : []))
+      .then((r) => {
+        setLocations(Array.isArray(r.data) ? r.data : []);
+        setLocationsLoaded(true);
+      })
       .catch(() => setLocations([]));
     api
       .get("/producers/me/rescue/typical-items")
@@ -103,10 +110,14 @@ export default function RescueTab() {
     }
   }
 
+  // A bag publishes the full address, so the server accepts only a point
+  // marked exact; an approximate one would be refused with a 422. One lookup
+  // feeds both publish() and the leftover-group link (MEH-2702), so the link
+  // always names the town the bags are actually published from.
+  const exactLocation = locations.find((l) => l.location_precision === "exact");
+
   async function publish(dayOffset = 0) {
-    // A bag publishes the full address, so the server accepts only a point
-    // marked exact; an approximate one would be refused with a 422.
-    const location = locations.find((l) => l.location_precision === "exact");
+    const location = exactLocation;
     if (!location) {
       setNotice(t("no_location"));
       return;
@@ -138,6 +149,9 @@ export default function RescueTab() {
   }
 
   const now = Date.now();
+  // MEH-2702: the group for the town of the point bags are published from,
+  // national fallback otherwise.
+  const leftoverHref = leftoverGroupUrl(exactLocation?.city);
 
   return (
     <div data-testid="rescue-tab" className="space-y-6">
@@ -238,70 +252,88 @@ export default function RescueTab() {
         </ul>
       </section>
 
-      <section className="border border-border rounded-md px-4 py-4 space-y-3">
-        <h3 className="font-headline-md text-base font-black text-text">{t("publish_title")}</h3>
-        <div className="grid grid-cols-2 gap-3">
-          <label className="font-body-sm text-sm">
-            {t("field.qty")}
-            <input
-              type="number"
-              min={1}
-              max={MAX_QTY}
-              value={form.qty_total}
-              onChange={(e) => setForm({ ...form, qty_total: e.target.value })}
-              data-testid="rescue-publish-qty"
-              className="w-full border border-border rounded-md px-2 py-1 mt-1"
-            />
-          </label>
-          <label className="font-body-sm text-sm">
-            {t("field.price")}
-            <input
-              type="number"
-              min={0}
-              value={form.price}
-              onChange={(e) => setForm({ ...form, price: e.target.value })}
-              data-testid="rescue-publish-price"
-              className="w-full border border-border rounded-md px-2 py-1 mt-1"
-            />
-          </label>
-          <label className="font-body-sm text-sm">
-            {t("field.from")}
-            <input
-              type="time"
-              value={form.from}
-              onChange={(e) => setForm({ ...form, from: e.target.value })}
-              data-testid="rescue-publish-from"
-              className="w-full border border-border rounded-md px-2 py-1 mt-1"
-            />
-          </label>
-          <label className="font-body-sm text-sm">
-            {t("field.to")}
-            <input
-              type="time"
-              value={form.to}
-              onChange={(e) => setForm({ ...form, to: e.target.value })}
-              data-testid="rescue-publish-to"
-              className="w-full border border-border rounded-md px-2 py-1 mt-1"
-            />
-          </label>
-        </div>
-        <button
-          type="button"
-          onClick={() => publish(0)}
-          data-testid="rescue-publish-today"
-          className="w-full bg-primary text-white py-2 rounded-md font-medium"
+      {locationsLoaded && !exactLocation ? (
+        // MEH-2702: say what is missing up front, instead of an error after «לפרסם».
+        <section
+          className="border border-border rounded-md px-4 py-4 space-y-3"
+          data-testid="rescue-needs-address"
         >
-          {t("publish_today", { price: shekels(Number(form.price) * 100) ?? form.price })}
-        </button>
-        <button
-          type="button"
-          onClick={() => publish(1)}
-          data-testid="rescue-publish-tomorrow"
-          className="w-full border border-primary text-primary py-2 rounded-md font-medium"
-        >
-          {t("publish_tomorrow", { n: form.qty_total })}
-        </button>
-      </section>
+          <p className="font-body-sm text-sm text-text">{t("needs_address")}</p>
+          <p className="font-body-sm text-sm text-fg-muted">{t("needs_address_privacy")}</p>
+          <LocaleLink
+            href="/producer/dashboard/edit#locations"
+            data-testid="rescue-needs-address-link"
+            className="block w-full text-center bg-primary text-white py-2 rounded-md font-medium"
+          >
+            {t("needs_address_cta")}
+          </LocaleLink>
+        </section>
+      ) : (
+        <section className="border border-border rounded-md px-4 py-4 space-y-3">
+          <h3 className="font-headline-md text-base font-black text-text">{t("publish_title")}</h3>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="font-body-sm text-sm">
+              {t("field.qty")}
+              <input
+                type="number"
+                min={1}
+                max={MAX_QTY}
+                value={form.qty_total}
+                onChange={(e) => setForm({ ...form, qty_total: e.target.value })}
+                data-testid="rescue-publish-qty"
+                className="w-full border border-border rounded-md px-2 py-1 mt-1"
+              />
+            </label>
+            <label className="font-body-sm text-sm">
+              {t("field.price")}
+              <input
+                type="number"
+                min={0}
+                value={form.price}
+                onChange={(e) => setForm({ ...form, price: e.target.value })}
+                data-testid="rescue-publish-price"
+                className="w-full border border-border rounded-md px-2 py-1 mt-1"
+              />
+            </label>
+            <label className="font-body-sm text-sm">
+              {t("field.from")}
+              <input
+                type="time"
+                value={form.from}
+                onChange={(e) => setForm({ ...form, from: e.target.value })}
+                data-testid="rescue-publish-from"
+                className="w-full border border-border rounded-md px-2 py-1 mt-1"
+              />
+            </label>
+            <label className="font-body-sm text-sm">
+              {t("field.to")}
+              <input
+                type="time"
+                value={form.to}
+                onChange={(e) => setForm({ ...form, to: e.target.value })}
+                data-testid="rescue-publish-to"
+                className="w-full border border-border rounded-md px-2 py-1 mt-1"
+              />
+            </label>
+          </div>
+          <button
+            type="button"
+            onClick={() => publish(0)}
+            data-testid="rescue-publish-today"
+            className="w-full bg-primary text-white py-2 rounded-md font-medium"
+          >
+            {t("publish_today", { price: shekels(Number(form.price) * 100) ?? form.price })}
+          </button>
+          <button
+            type="button"
+            onClick={() => publish(1)}
+            data-testid="rescue-publish-tomorrow"
+            className="w-full border border-primary text-primary py-2 rounded-md font-medium"
+          >
+            {t("publish_tomorrow", { n: form.qty_total })}
+          </button>
+        </section>
+      )}
 
       <section className="border border-border rounded-md px-4 py-4 space-y-2">
         <h3 className="font-headline-md text-base font-black text-text">{t("items_title")}</h3>
@@ -322,6 +354,22 @@ export default function RescueTab() {
           {t("items_save")}
         </button>
       </section>
+
+      {/* No exact point → no bags can be published, so nothing can be left over. */}
+      {exactLocation && (
+        <p className="border border-border rounded-md px-4 py-3 font-body-sm text-sm text-fg-muted" data-testid="rescue-leftover-hint">
+          {t("leftover_hint")}{" "}
+          <a
+            href={leftoverHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-testid="rescue-leftover-link"
+            className="text-primary underline underline-offset-2"
+          >
+            {t("leftover_link")}
+          </a>
+        </p>
+      )}
     </div>
   );
 }

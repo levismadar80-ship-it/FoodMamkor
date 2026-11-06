@@ -32,6 +32,15 @@ vi.mock("@/lib/api", () => ({
   default: { get: (...a) => get(...a), post: (...a) => post(...a), put: (...a) => put(...a) },
 }));
 
+// Pass-through spy: the real map is empty today, so the only way to see the
+// component hand the pickup town to the lookup is to watch the call (MEH-2702).
+const leftoverSpy = vi.hoisted(() => ({ fn: null }));
+vi.mock("@/lib/rescue", async (importOriginal) => {
+  const real = await importOriginal();
+  leftoverSpy.fn = vi.fn(real.leftoverGroupUrl);
+  return { ...real, leftoverGroupUrl: (...a) => leftoverSpy.fn(...a) };
+});
+
 const { default: RescueTab } = await import("@/components/dashboard/RescueTab");
 
 const HOUR = 3600_000;
@@ -191,11 +200,28 @@ describe("the list never shows who the buyer is", () => {
 });
 
 describe("publishing", () => {
-  it("needs a pickup point and says so when there is none", async () => {
+  it("with no pickup point, shows what is missing and links to the address editor instead of the form", async () => {
     locs = [];
     mockOrders([]);
     render(<RescueTab />);
-    fireEvent.click(await screen.findByTestId("rescue-publish-today"));
+    const box = await screen.findByTestId("rescue-needs-address");
+    expect(box.textContent).toContain(lookup("rescue.dashboard.needs_address"));
+    expect(box.textContent).toContain(lookup("rescue.dashboard.needs_address_privacy"));
+    const link = screen.getByTestId("rescue-needs-address-link");
+    expect(link.textContent).toBe(lookup("rescue.dashboard.needs_address_cta"));
+    expect(link.getAttribute("href")).toContain("/producer/dashboard/edit#locations");
+    expect(screen.queryByTestId("rescue-publish-today")).toBeNull();
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it("keeps the form (and its server-side guard) when the pickup points could not be loaded", async () => {
+    get.mockImplementation((url) =>
+      url === "/producers/me/locations" ? Promise.reject(new Error("down")) : Promise.resolve({ data: [] }),
+    );
+    render(<RescueTab />);
+    await pointsLoaded();
+    expect(screen.queryByTestId("rescue-needs-address")).toBeNull();
+    fireEvent.click(screen.getByTestId("rescue-publish-today"));
     expect(await screen.findByTestId("rescue-tab-notice")).toHaveProperty(
       "textContent",
       lookup("rescue.dashboard.no_location"),
@@ -224,16 +250,12 @@ describe("publishing", () => {
     expect(post.mock.calls[0][1].producer_location_id).toBe("exact2");
   });
 
-  it("with only an approximate point, says so instead of sending a request the server refuses", async () => {
+  it("with only an approximate point, asks for an exact address instead of offering a publish the server refuses", async () => {
     locs = [{ id: "approx", location_precision: "approximate", is_primary: true }];
     mockOrders([]);
     render(<RescueTab />);
-    await pointsLoaded();
-    fireEvent.click(screen.getByTestId("rescue-publish-today"));
-    expect(await screen.findByTestId("rescue-tab-notice")).toHaveProperty(
-      "textContent",
-      lookup("rescue.dashboard.no_location"),
-    );
+    expect(await screen.findByTestId("rescue-needs-address")).toBeTruthy();
+    expect(screen.queryByTestId("rescue-publish-today")).toBeNull();
     expect(post).not.toHaveBeenCalled();
   });
 
@@ -306,5 +328,56 @@ describe("the empty day", () => {
       lookup("rescue.dashboard.orders_empty"),
     );
     expect(screen.getByTestId("rescue-counter-reserved").textContent).toBe("0");
+  });
+});
+
+// MEH-2702 — where uncollected bags can go. The 05/11 scan found no local
+// food-rescue group in any Wave 1 town, so today every town gets the national
+// group; a town added to the map must get its own link instead.
+describe("the leftover-bags line", () => {
+  it("links the national group when the pickup town has no local group", async () => {
+    locs = [{ id: "loc1", location_precision: "exact", is_primary: true, city: "זכרון יעקב" }];
+    render(<RescueTab />);
+    await pointsLoaded();
+    expect(screen.getByTestId("rescue-leftover-hint").textContent).toContain(
+      lookup("rescue.dashboard.leftover_hint"),
+    );
+    const link = screen.getByTestId("rescue-leftover-link");
+    expect(link.getAttribute("href")).toBe("https://www.facebook.com/groups/freefood/");
+    expect(link.getAttribute("target")).toBe("_blank");
+    expect(link.getAttribute("rel")).toContain("noopener");
+  });
+
+  it("looks the group up by the town of the exact pickup point, not an approximate one", async () => {
+    locs = [
+      { id: "loc0", location_precision: "approximate", is_primary: true, city: "בנימינה" },
+      { id: "loc1", location_precision: "exact", is_primary: false, city: "חדרה" },
+    ];
+    leftoverSpy.fn.mockClear();
+    render(<RescueTab />);
+    await pointsLoaded();
+    expect(leftoverSpy.fn).toHaveBeenLastCalledWith("חדרה");
+    expect(leftoverSpy.fn).not.toHaveBeenCalledWith("בנימינה");
+  });
+
+  it("is hidden when the business has no exact pickup point (no bags can be published)", async () => {
+    locs = [{ id: "loc0", location_precision: "approximate", is_primary: true, city: "בנימינה" }];
+    render(<RescueTab />);
+    await pointsLoaded();
+    expect(screen.queryByTestId("rescue-leftover-hint")).toBeNull();
+  });
+});
+
+describe("leftoverGroupUrl", () => {
+  it("returns a town's own group when the map has one, the national group otherwise", async () => {
+    const { leftoverGroupUrl, RESCUE_LEFTOVER_GROUP_NATIONAL } = await import("@/lib/rescue");
+    const groups = { "חדרה": "https://example.org/hadera" };
+    expect(leftoverGroupUrl("חדרה", groups)).toBe("https://example.org/hadera");
+    expect(leftoverGroupUrl(" חדרה ", groups)).toBe("https://example.org/hadera");
+    expect(leftoverGroupUrl("בנימינה", groups)).toBe(RESCUE_LEFTOVER_GROUP_NATIONAL);
+    expect(leftoverGroupUrl(undefined, groups)).toBe(RESCUE_LEFTOVER_GROUP_NATIONAL);
+    // An inherited property is not a group: a plain lookup returned a function here.
+    expect(leftoverGroupUrl("constructor", groups)).toBe(RESCUE_LEFTOVER_GROUP_NATIONAL);
+    expect(leftoverGroupUrl("toString")).toBe(RESCUE_LEFTOVER_GROUP_NATIONAL);
   });
 });
