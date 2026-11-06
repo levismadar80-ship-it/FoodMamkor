@@ -93,6 +93,7 @@ from app.sentry import capture_background_exception
 from app.services.rescue_emails import (
     ReservationEmail,
     israel_hhmm,
+    send_cancel_email,
     send_reservation_email,
 )
 from app.utils.clock import israel_today, utc_now
@@ -659,9 +660,30 @@ def _queue_reservation_email(
             pickup_from=israel_hhmm(offer.pickup_start),
             pickup_until=israel_hhmm(offer.pickup_end),
             address=address,
-            cancel_until=israel_hhmm(offer.cancel_until),
+            # MEH-2737: reserved after the free-cancel cutoff → the email says
+            # nothing about cancelling (no line, no button).
+            cancel_until=(
+                israel_hhmm(offer.cancel_until)
+                if offer.cancel_until > utc_now()
+                else None
+            ),
         ),
     )
+
+
+def _queue_cancel_email(
+    background_tasks: BackgroundTasks, user: User, offer: RescueOffer
+) -> None:
+    """MEH-2737: tell the buyer the cancel went through.
+
+    Same rules as `_queue_reservation_email`: plain values only, queued after
+    the commit, nothing when the buyer has no email.
+    """
+    location = offer.location
+    producer = location.producer if location else None
+    if not user.email or producer is None:
+        return
+    background_tasks.add_task(send_cancel_email, user.email, producer.name or "")
 
 
 @router.post(
@@ -840,6 +862,7 @@ def mark_no_show(
 def cancel_order(
     request: Request,
     order_id: UUID,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -857,14 +880,30 @@ def cancel_order(
             detail="מועד הביטול החופשי חלף",
         )
 
-    # Lock the offer before giving the bag back, for the same reason reserving
-    # locks it: two concurrent cancels must not both add 1 to qty_left.
+    # Lock the offer, then the order, and read the order's status AGAIN under
+    # the lock (MEH-2737). The check above ran on a row read before any lock:
+    # two cancels of one order (a double tap, or the page and the email at
+    # once) both saw `reserved` there, and with only the offer locked the
+    # second one still added the bags back — a bag on the list that does not
+    # exist. Offer first, then order: the same order reserving takes them in.
     offer = _offer_for_update(db, order.offer_id)
+    db.refresh(order, with_for_update=True)
+    if order.status != "reserved":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="ההזמנה אינה פעילה"
+        )
     order.status = "cancelled"
     order.cancelled_at = utc_now()
     offer.qty_left = min(offer.qty_left + order.qty, offer.qty_total)
     db.commit()
     db.refresh(order)
+    # Committed. A failure preparing the email must not turn a done cancel
+    # into a 500 the buyer would read as "still reserved".
+    try:
+        _queue_cancel_email(background_tasks, current_user, offer)
+    except Exception as exc:  # noqa: BLE001 — fail-open, as the reservation email
+        capture_background_exception(exc, task="rescue_cancel_email")
+        logger.error("rescue cancel email not queued: %s", type(exc).__name__)
     return order
 
 
@@ -1139,8 +1178,12 @@ def pilot_metrics(
 
     offers = db.query(RescueOffer).filter(RescueOffer.date >= since).all()
     offers_total = len(offers)
-    bags_offered = sum(o.qty_total for o in offers)
-    bags_left = sum(o.qty_left for o in offers)
+    # MEH-2737: a cancelled bag never went on sale to the end. Its qty_left is
+    # not restored when the business cancels, so counting it would report its
+    # open reservations as sold.
+    sold = [o for o in offers if o.status != "cancelled"]
+    bags_offered = sum(o.qty_total for o in sold)
+    bags_left = sum(o.qty_left for o in sold)
     bags_reserved = bags_offered - bags_left
 
     offer_ids = [o.id for o in offers]
@@ -1150,12 +1193,18 @@ def pilot_metrics(
         else []
     )
     orders_total = len(orders)
-    no_shows = sum(1 for o in orders if o.status == "no_show")
+    orders_cancelled = sum(1 for o in orders if o.status == "cancelled")
+    # The no-show rate is the prepay decision's input (>1/7 → deposit), so its
+    # denominator is the reservations that stood — a cancelled one could not
+    # have been a no-show, and counting it made the rate read low (MEH-2737).
+    stood = [o for o in orders if o.status != "cancelled"]
+    no_shows = sum(1 for o in stood if o.status == "no_show")
 
     # "Repeat" means a buyer with more than one reservation in the window —
     # the number the pilot is actually asking about (did anyone come back?).
+    # Cancelled reservations bought nothing and do not count.
     per_buyer: dict[UUID, int] = {}
-    for order in orders:
+    for order in stood:
         per_buyer[order.user_id] = per_buyer.get(order.user_id, 0) + 1
 
     return {
@@ -1168,8 +1217,10 @@ def pilot_metrics(
             round(bags_reserved / bags_offered, 4) if bags_offered else None
         ),
         "orders_total": orders_total,
+        "orders_cancelled": orders_cancelled,
+        "offers_cancelled": offers_total - len(sold),
         "no_shows": no_shows,
-        "no_show_rate": round(no_shows / orders_total, 4) if orders_total else None,
+        "no_show_rate": round(no_shows / len(stood), 4) if stood else None,
         "buyers_total": len(per_buyer),
         "repeat_buyers": sum(1 for n in per_buyer.values() if n > 1),
         "bags_donated": sum(o.qty_donated or 0 for o in offers),

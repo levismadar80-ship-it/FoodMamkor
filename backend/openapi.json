@@ -12412,12 +12412,20 @@
             "title": "No Shows",
             "type": "integer"
           },
+          "offers_cancelled": {
+            "title": "Offers Cancelled",
+            "type": "integer"
+          },
           "offers_per_day": {
             "title": "Offers Per Day",
             "type": "number"
           },
           "offers_total": {
             "title": "Offers Total",
+            "type": "integer"
+          },
+          "orders_cancelled": {
+            "title": "Orders Cancelled",
             "type": "integer"
           },
           "orders_total": {
@@ -12448,6 +12456,8 @@
           "bags_reserved",
           "orders_total",
           "no_shows",
+          "orders_cancelled",
+          "offers_cancelled",
           "buyers_total",
           "repeat_buyers"
         ],
