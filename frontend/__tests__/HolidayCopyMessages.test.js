@@ -32,15 +32,17 @@ describe("holiday copy lives in messages (MEH-2741)", () => {
     for (const k of KEYS) for (const f of FIELDS) expect(en.holidays[k][f], `${k}.${f}`).not.toMatch(HEBREW);
   });
 
-  // The two taglines with a verb use the plural form; no reader string in the
-  // set uses a feminine-singular imperative (the forms this copy used before).
-  it("reader-facing holiday copy is gender-neutral (ADR-037)", () => {
+  // ADR-037: address the reader in the plural. This is a DENYLIST of the
+  // singular forms this copy has actually used (feminine imperatives in the
+  // banner, «לך / שלך» in the dashboard hints) — it catches a regression to
+  // those, it does not prove neutrality of new wording.
+  it("holiday copy addresses the reader in the plural (ADR-037)", () => {
     expect(he.holidays.pesach.tagline).toContain("מצאו");
     expect(he.holidays.chanuka.tagline).toContain("הדליקו");
-    const FEMININE = /(^|\s)(מצאי|הדליקי|גלי|קני|הזמיני|בחרי|חפשי|עדכני)(\s|$)/;
+    const SINGULAR = /(^|[\s?:—])(מצאי|הדליקי|גלי|קני|הזמיני|בחרי|חפשי|עדכני|לך|שלך)([\s?:—.,]|$)/;
     for (const k of KEYS) {
-      for (const f of ["name", "tagline", "cta"]) {
-        expect(he.holidays[k][f], `${k}.${f}`).not.toMatch(FEMININE);
+      for (const f of FIELDS) {
+        expect(he.holidays[k][f], `${k}.${f}`).not.toMatch(SINGULAR);
       }
     }
   });
