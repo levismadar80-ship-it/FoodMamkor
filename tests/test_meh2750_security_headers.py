@@ -10,7 +10,7 @@ Touches:  Nothing outside the process — TestClient against the app.
 Related:  backend/app/middleware.py::add_security_headers ·
           docs/SECURITY.md (header list) · frontend/next.config.js
           securityHeaders (the frontend twin; checked live after deploy by
-          scripts/checks/post_deploy_checks.py, MEH-2749).
+          scripts/checks/live_security_headers.py, MEH-2749).
 History:  MEH-2750 (creation, 06/11).
 
 WHAT DISCRIMINATES WHAT
