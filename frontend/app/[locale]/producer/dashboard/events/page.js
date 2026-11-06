@@ -26,6 +26,7 @@ import BackLink from "@/components/ui/BackLink";
 import { STATUS_CLASSES } from "@/lib/dashboard-status-classes";
 import { israelToday } from "@/lib/israel-date";
 import { SkeletonList } from "@/components/Skeleton";
+import RegistrationsList from "@/components/RegistrationsList";
 
 export default function ManageEventsPage() {
   const t = useTranslations("dashboard.producer.manage_events");
@@ -193,6 +194,10 @@ export default function ManageEventsPage() {
                   </button>
                 </div>
               </div>
+              {/* MEH-2766: «טופס הרשמה באתר» sign-ups, closed by default. */}
+              {(ev.registration_method === "site_form" || (ev.registered_count ?? 0) > 0) && (
+                <RegistrationsList kind="events" itemId={ev.id} count={ev.registered_count ?? 0} />
+              )}
             </li>
             );
           })}

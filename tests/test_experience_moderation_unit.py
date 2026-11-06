@@ -125,3 +125,19 @@ class TestValidateExperience:
     def test_client_raises_approved(self, monkeypatch):
         _install_client(monkeypatch, _FakeClient(raises=RuntimeError("boom")))
         assert mod.validate_experience({"title": "t"})["status"] == "APPROVED"
+
+
+class TestRegistrationUrlInPrompt:
+    """MEH-2763: an outbound sign-up link is content — the model sees it."""
+
+    def test_link_reaches_the_prompt(self):
+        prompt = "\n".join(
+            mod._build_prompt(
+                {"title": "סדנה", "registration_url": "https://phish.example/x"}
+            )
+        )
+        assert "https://phish.example/x" in prompt
+
+    def test_no_link_no_extra_field(self):
+        prompt = "\n".join(mod._build_prompt({"title": "סדנה"}))
+        assert "קישור הרשמה" not in prompt
