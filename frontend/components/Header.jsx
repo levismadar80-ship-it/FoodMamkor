@@ -423,7 +423,7 @@ export default function Header() {
                 // MEH-896 chunk 2: 122×46 → 101×38 (≈17% reduction, aspect
                 // 2.652 → 2.658, ~0.2% off — visually identical). Pairs with
                 // the slim pill (~50px); tap target preserved by the wrapper
-                // Link's min-h-[44px] above.
+                // Link's min-h-touch above.
                 // MEH-1103: 101×38 → 111×42 for legibility (aspect 2.643,
                 // ~0.4% off — visually identical); pairs with the taller
                 // py-1.5 pill.
@@ -532,7 +532,7 @@ export default function Header() {
  * the original bg-primary/10 so the active chip no longer reads as a sibling
  * to the green CTA. Text stays text-primary + font-semibold (two cues —
  * shape + color, AA preserved on both /85 at-rest and /60 scrolled glass).
- * Inactive = plain text-text with primary-ink hover. min-h-[44px] keeps each
+ * Inactive = plain text-text with primary-ink hover. min-h-touch keeps each
  * link a ≥44px tap target independent of the slim pill chrome (~50px) around it.
  */
 function NavLink({ href, label, active, onClick }) {

@@ -162,7 +162,7 @@ function ReviewReply({ review, isOwner, onSaved }) {
           <p className="text-sm text-error mt-1" role="alert">{error}</p>
         )}
         <div className="flex items-center gap-4 mt-2">
-          {/* MEH-1103: action buttons carry min-h-[44px] (WCAG 2.5.5). */}
+          {/* MEH-1103: action buttons carry min-h-touch (WCAG 2.5.5). */}
           <button
             type="button"
             onClick={save}

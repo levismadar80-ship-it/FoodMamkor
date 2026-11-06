@@ -135,7 +135,7 @@ export default function PhoneVerifyCard({ onVerified }) {
       </p>
       <p className="text-xs text-fg-muted mb-3">{t("description")}</p>
 
-      {/* MEH-1103: send + confirm gain min-h-[44px] (WCAG 2.5.5). */}
+      {/* MEH-1103: send + confirm gain min-h-touch (WCAG 2.5.5). */}
       <button
         type="button"
         onClick={handleSend}

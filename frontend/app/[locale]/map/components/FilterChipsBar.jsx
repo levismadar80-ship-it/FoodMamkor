@@ -89,7 +89,7 @@ export default function FilterChipsBar({
         aria-live="polite"
       >
         {activeFilterTags.map((tag) => (
-          // MEH-825: ≥44px hit area via the transparent button (min-h-[44px]
+          // MEH-825: ≥44px hit area via the transparent button (min-h-touch
           // + -my-2.5 keeps the visible row compact); the visible pill is the
           // inner span (~24px, AA floor).
           <button

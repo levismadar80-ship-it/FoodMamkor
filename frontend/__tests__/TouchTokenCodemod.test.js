@@ -12,7 +12,9 @@
  *   2. no code line under app/ components/ lib/ hooks/ spells an arbitrary
  *      44px width/height again.
  * `h-11` / `w-11` (2.75rem) are deliberately out of scope: not every 44px
- * box is a touch floor.
+ * box is a touch floor. CSS and MDX files are walked too (an `@apply
+ * min-h-[44px]` would count). Comment lines are skipped; a trailing comment
+ * on a code line is scanned, so prose there should name the token.
  */
 import { describe, it, expect } from "vitest";
 import fs from "node:fs";
@@ -26,7 +28,7 @@ function walk(dir, out = []) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) walk(full, out);
-    else if (/\.(js|jsx|ts|tsx)$/.test(entry.name)) out.push(full);
+    else if (/\.(js|jsx|ts|tsx|css|mdx)$/.test(entry.name)) out.push(full);
   }
   return out;
 }
