@@ -5945,5 +5945,15 @@
       "label": "Saving food",
       "tooltip": "In the last month the business handed over rescue bags, so food wasn't thrown away."
     }
+  },
+  "contact_cta": {
+    "whatsapp": "Message on WhatsApp",
+    "phone": "Call",
+    "website": "Order on the website",
+    "email": "Send an email",
+    "instagram": "Message on Instagram",
+    "facebook": "Message on Facebook",
+    "external_order": "Order",
+    "wa_greeting": "Hi! I found you on Mehamakor — {name}"
   }
 }
