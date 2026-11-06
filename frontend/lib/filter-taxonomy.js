@@ -451,8 +451,10 @@ export const SHARED_AXIS_KEYS = Object.keys(FILTER_AXES).filter((key) => {
 
 /**
  * MEH-2767 — the axis keys carrying a given `gate` kind ("count" | "open_now"),
- * in declaration order. Derived, so a new gated axis needs one field, not an
- * entry in a per-surface list.
+ * in declaration order. Derived, so a new gated axis needs no per-surface
+ * list — only this field plus its count predicate in producer-filters.js
+ * GATED_AXIS_PREDICATES (surfaceParity.test.js fails if the predicate is
+ * missing).
  */
 export function gatedAxisKeys(kind) {
   return Object.keys(FILTER_AXES).filter((key) => FILTER_AXES[key].gate === kind);

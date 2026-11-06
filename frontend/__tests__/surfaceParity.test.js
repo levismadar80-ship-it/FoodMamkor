@@ -27,6 +27,7 @@ import {
 import {
   CHIPS_CONFIG,
   DIET_CHIP_MIN,
+  GATED_AXIS_PREDICATES,
   PRODUCERS_CHIPS_CONFIG,
   visibleAxisChips,
 } from "@/lib/producer-filters";
@@ -80,6 +81,15 @@ describe("MEH-2767 — 1. membership: every surface declares the same axes", () 
   });
 });
 
+describe("MEH-2767 — 1b. every count-gated axis can be counted", () => {
+  it("each `gate: \"count\"` axis has a predicate (else the gate fails open)", () => {
+    const missing = Object.keys(FILTER_AXES).filter(
+      (k) => FILTER_AXES[k].gate === "count" && typeof GATED_AXIS_PREDICATES[k] !== "function",
+    );
+    expect(missing).toEqual([]);
+  });
+});
+
 describe("MEH-2767 — 2. gating: the same catalog yields the same chips everywhere", () => {
   for (const [name, cat] of Object.entries(CATALOGS)) {
     it(`agrees on: ${name}`, () => {
@@ -115,6 +125,28 @@ describe("MEH-2767 — 2. gating: the same catalog yields the same chips everywh
     ]) {
       expect(sorted(chips)).toEqual(expect.arrayContaining(["grass_fed", "open_for_orders_now", "vegan"]));
     }
+  });
+});
+
+describe("MEH-2767 — 2b. a failed snapshot keeps the listing guards", () => {
+  it("falls back to the page's own catalog, so open-now stays gated", () => {
+    const visible = sorted(
+      visibleAxisChips({ chips: PRODUCERS_CHIPS_CONFIG, status: "failed", fallbackCatalog: [], now: NOW }),
+    );
+    expect(visible).not.toContain("open_for_orders_now");
+    expect(visible).not.toContain("vegan");
+    expect(visible).toContain("kosher");
+  });
+
+  it("with no fallback (/map) a failed snapshot hides nothing — unknown is not zero", () => {
+    expect(sorted(visibleMapToggleChips({ catalogSnapshot: null, now: NOW }))).toEqual(sorted(TOGGLE_CHIPS));
+  });
+
+  it("`complete: false` keeps open-now's zero-result half from hiding the chip", () => {
+    const cat = CATALOGS["windows declared, none open"];
+    const args = { chips: PRODUCERS_CHIPS_CONFIG, catalog: cat, status: "ready", now: NOW };
+    expect(sorted(visibleAxisChips({ ...args, complete: true }))).not.toContain("open_for_orders_now");
+    expect(sorted(visibleAxisChips({ ...args, complete: false }))).toContain("open_for_orders_now");
   });
 });
 

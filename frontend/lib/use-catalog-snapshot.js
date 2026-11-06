@@ -13,25 +13,35 @@ import { ProducersResponseSchema } from "@/lib/schemas";
  *           no params). Before this, /producers counted its loaded pages and
  *           home counted the first screenful of its FILTERED results — so one
  *           catalog produced three different chip sets.
- * Returns:  { catalog: Producer[] | null, status: "pending"|"ready"|"failed" }
- *           — the exact input lib/producer-filters.js visibleAxisChips takes.
+ * Returns:  { catalog, status: "pending"|"ready"|"failed", complete }
+ *           — the input lib/producer-filters.js visibleAxisChips takes.
+ *           `complete` reads the response's X-Total-Count, so whether the
+ *           snapshot is the whole catalog is the server's answer, not a copy
+ *           of its page-size constant.
  * Does NOT: filter anything, or feed what the page LISTS. It only decides
  *           which chips exist.
  *
- * One request per page load, shared: the promise is cached at module level,
- * so home → /producers in the same tab reuses it. A failure is not cached —
- * the next mount tries again.
+ * Shared, not per mount: the promise is cached at module level for
+ * SNAPSHOT_TTL_MS, so home → /producers in the same tab reuses it, while a
+ * long-lived tab still picks up a newly approved business within minutes. A
+ * failure is not cached — the next mount tries again.
  */
+const SNAPSHOT_TTL_MS = 5 * 60 * 1000;
 let cached = null;
+let cachedAt = 0;
 
 function fetchSnapshot() {
+  if (cached && Date.now() - cachedAt > SNAPSHOT_TTL_MS) cached = null;
   if (!cached) {
+    cachedAt = Date.now();
     cached = api
       .get("/producers")
-      .then((r) => {
-        const parsed = ProducersResponseSchema.safeParse(r.data);
+      .then((response) => {
+        const parsed = ProducersResponseSchema.safeParse(response.data);
         if (!parsed.success) throw new Error("malformed /producers payload");
-        return parsed.data;
+        const total = Number(response.headers?.["x-total-count"]);
+        const complete = Number.isFinite(total) ? parsed.data.length >= total : undefined;
+        return { catalog: parsed.data, complete };
       })
       .catch((error) => {
         cached = null;
@@ -44,18 +54,19 @@ function fetchSnapshot() {
 /** Test hook: forget the cached snapshot. */
 export function resetCatalogSnapshotCache() {
   cached = null;
+  cachedAt = 0;
 }
 
 export function useCatalogSnapshot() {
-  const [state, setState] = useState({ catalog: null, status: "pending" });
+  const [state, setState] = useState({ catalog: null, status: "pending", complete: undefined });
   useEffect(() => {
     let alive = true;
     fetchSnapshot()
-      .then((catalog) => {
-        if (alive) setState({ catalog, status: "ready" });
+      .then(({ catalog, complete }) => {
+        if (alive) setState({ catalog, status: "ready", complete });
       })
       .catch(() => {
-        if (alive) setState({ catalog: null, status: "failed" });
+        if (alive) setState({ catalog: null, status: "failed", complete: undefined });
       });
     return () => {
       alive = false;

@@ -757,6 +757,10 @@ export default function ProducersClient({
     chips: CHIPS_CONFIG,
     catalog: catalogSnapshot.catalog,
     status: catalogSnapshot.status,
+    complete: catalogSnapshot.complete,
+    // A failed snapshot gates on what this page loaded (the pre-MEH-2767
+    // source), so the open-now guard never drops out on a network blip.
+    fallbackCatalog: loadedCatalog,
     chipState: chips,
     now: openNowClock,
   });

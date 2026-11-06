@@ -27,6 +27,18 @@ describe("useCatalogSnapshot", () => {
     expect(get.mock.calls[0]).toHaveLength(1); // no params — unfiltered
   });
 
+  it("reads completeness off X-Total-Count", async () => {
+    get.mockResolvedValue({ data: [ROW], headers: { "x-total-count": "250" } });
+    const { result } = renderHook(() => useCatalogSnapshot());
+    await waitFor(() => expect(result.current.status).toBe("ready"));
+    expect(result.current.complete).toBe(false);
+    resetCatalogSnapshotCache();
+    get.mockResolvedValue({ data: [ROW], headers: { "x-total-count": "1" } });
+    const again = renderHook(() => useCatalogSnapshot());
+    await waitFor(() => expect(again.result.current.status).toBe("ready"));
+    expect(again.result.current.complete).toBe(true);
+  });
+
   it("shares one request between mounts", async () => {
     get.mockResolvedValue({ data: [ROW] });
     const a = renderHook(() => useCatalogSnapshot());

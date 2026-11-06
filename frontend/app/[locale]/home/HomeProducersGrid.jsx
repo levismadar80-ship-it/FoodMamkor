@@ -171,10 +171,14 @@ export function HomeProducersGrid({
         chips: CHIPS_CONFIG,
         catalog: catalogSnapshot.catalog,
         status: catalogSnapshot.status,
+        complete: catalogSnapshot.complete,
+        // A failed snapshot gates on the feed home loaded (MEH-2131's source
+        // for open-now), so no guard drops out on a network blip.
+        fallbackCatalog: producers,
         chipState: chips,
         now: openNowClock,
       }),
-    [catalogSnapshot, chips, openNowClock],
+    [catalogSnapshot, chips, openNowClock, producers],
   );
 
   // MEH-2173: the promoted pair, resolved out of CHIPS_CONFIG — the same

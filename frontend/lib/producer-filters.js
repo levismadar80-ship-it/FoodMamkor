@@ -214,7 +214,9 @@ export function visibleGatedDietKeys(producers = [], chips = {}) {
 
 /**
  * The largest page GET /producers returns (backend `limit` le=100,
- * producers.py:221). A snapshot shorter than this is the whole catalog.
+ * producers.py:221). Only a FALLBACK for completeness: a caller that has the
+ * response's X-Total-Count passes `complete` explicitly (use-catalog-snapshot
+ * does), so this copy of the backend constant decides nothing there.
  */
 export const CATALOG_SNAPSHOT_MAX = 100;
 
@@ -231,8 +233,16 @@ export const CATALOG_SNAPSHOT_MAX = 100;
  *                   result: counting that is circular — see openNowChipVisible).
  * @param status     "ready" | "pending" | "failed". Pending ⇒ gated chips wait
  *                   (a chip should arrive once, not arrive and vanish).
- *                   Failed ⇒ nothing is hidden: hiding on an unknown would be
- *                   the "probe never ran" green in the other direction.
+ *                   Failed ⇒ gate on `fallbackCatalog` when the surface has
+ *                   one (home / /producers: what the page itself loaded — the
+ *                   source their gates read before MEH-2767, so a failed
+ *                   snapshot never drops the MEH-1881 open-now guard), else
+ *                   nothing is hidden (/map: hiding on an unknown would be the
+ *                   "probe never ran" green in the other direction).
+ * @param complete   is `catalog` the whole catalog? Default: shorter than
+ *                   CATALOG_SNAPSHOT_MAX. Only the open-now zero-result half
+ *                   reads it.
+ * @param fallbackCatalog  see `status`.
  * @param chipState  an ACTIVE axis always keeps its chip, or a deep link
  *                   strands the visitor with a filter she cannot switch off.
  * @param now        Date | null — see openNowChipVisible (null through SSR
@@ -244,10 +254,16 @@ export function visibleAxisChips({
   status = "pending",
   chipState = {},
   now = null,
+  complete: completeArg,
+  fallbackCatalog = null,
 }) {
-  if (status === "failed") return chips;
+  if (status === "failed") {
+    if (!Array.isArray(fallbackCatalog)) return chips;
+    return visibleAxisChips({ chips, catalog: fallbackCatalog, status: "ready", chipState, now, complete: false });
+  }
   const list = Array.isArray(catalog) ? catalog : [];
-  const complete = status === "ready" && list.length < CATALOG_SNAPSHOT_MAX;
+  const complete =
+    status === "ready" && (completeArg ?? list.length < CATALOG_SNAPSHOT_MAX);
   return chips.filter((chip) => {
     const gate = FILTER_AXES[chip.key]?.gate;
     if (!gate) return true;
@@ -262,6 +278,10 @@ export function visibleAxisChips({
       });
     }
     const counts = GATED_AXIS_PREDICATES[chip.key];
+    // A `gate: "count"` axis with no predicate is a declaration bug
+    // (surfaceParity.test.js asserts there is none). Fail open — show the
+    // chip — rather than throw inside render on all three surfaces.
+    if (typeof counts !== "function") return true;
     const n = list.filter((p) => p && counts(p)).length;
     return n >= DIET_CHIP_MIN;
   });
