@@ -175,3 +175,47 @@ def test_admin_put_refuses_an_explicit_null_state(client, db):
     assert resp.status_code == 422, resp.text
     db.refresh(producer)
     assert producer.availability_state == "accepting_orders"
+
+
+# ---------- MEH-2782: admin PUT cannot pause without a return date ----------
+
+
+def test_admin_put_refuses_vacation_without_return_date(client, db):
+    """The owner endpoint has required vacation_until since AUD-039/040; the
+    admin PUT did not, so an admin could leave a business paused forever."""
+    _, producer = _owner(db)
+    resp = _admin_put(client, db, producer, "on_vacation")
+    assert resp.status_code == 422, resp.text
+    assert resp.json()["detail"]["code"] == "vacation_return_date_required"
+    db.refresh(producer)
+    assert producer.availability_state == "accepting_orders"
+
+
+def test_admin_put_refuses_clearing_the_return_date_of_a_paused_row(client, db):
+    _, producer = _owner(db, state="on_vacation")
+    producer.vacation_until = israel_today() + timedelta(days=3)
+    db.commit()
+    admin = make_user(db, role="admin")
+    resp = client.put(
+        f"/admin/producers/{producer.id}",
+        json={"availability_state": "on_vacation", "vacation_until": None},
+        headers=auth_header(admin),
+    )
+    assert resp.status_code == 422, resp.text
+    db.refresh(producer)
+    assert producer.vacation_until is not None
+
+
+def test_admin_put_pauses_with_a_return_date(client, db):
+    _, producer = _owner(db)
+    back = israel_today() + timedelta(days=4)
+    admin = make_user(db, role="admin")
+    resp = client.put(
+        f"/admin/producers/{producer.id}",
+        json={"availability_state": "on_vacation", "vacation_until": back.isoformat()},
+        headers=auth_header(admin),
+    )
+    assert resp.status_code == 200, resp.text
+    db.refresh(producer)
+    assert producer.availability_state == "on_vacation"
+    assert producer.vacation_until == back

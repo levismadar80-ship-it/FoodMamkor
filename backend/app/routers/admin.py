@@ -845,6 +845,22 @@ def _retire_replaced_slug(db: Session, producer: Producer, payload: dict) -> Non
         retired_slugs.reclaim(db, payload["slug"], producer.id)
 
 
+def _guard_vacation_return_date(producer: Producer, payload: dict) -> None:
+    """MEH-2782: a paused business always has a return date, on the admin PUT
+    too — the owner endpoint has required it since AUD-039/040. The past-date
+    check stays in ProducerUpdate._validate_vacation_until."""
+    state = payload.get("availability_state", producer.availability_state)
+    until = payload["vacation_until"] if "vacation_until" in payload else producer.vacation_until
+    if state == "on_vacation" and until is None:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "vacation_return_date_required",
+                "message": "תאריך חזרה לחופשה נדרש",
+            },
+        )
+
+
 def _guard_availability_change(producer: Producer, payload: dict) -> None:
     """MEH-2758: pause-only availability writes on the admin PUT.
 
@@ -852,6 +868,7 @@ def _guard_availability_change(producer: Producer, payload: dict) -> None:
     save, so a business still on a legacy value (available_today /
     full_this_week) must stay editable; it just cannot be moved INTO one.
     """
+    _guard_vacation_return_date(producer, payload)
     new_state = payload.get("availability_state")
     if "availability_state" not in payload or new_state == producer.availability_state:
         return
