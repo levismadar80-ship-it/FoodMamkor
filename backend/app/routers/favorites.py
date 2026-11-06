@@ -9,7 +9,11 @@ from app.database import get_db
 from app.models import Favorite, Producer, User
 from app.schemas.schemas import FavoriteOut
 from app.services.producer_listing import is_business
-from app.services.producer_queries import attach_badge_fields, attach_favorites_counts
+from app.services.producer_queries import (
+    attach_badge_fields,
+    attach_favorites_counts,
+    attach_rescue_saving,
+)
 
 router = APIRouter(prefix="/users/me/favorites", tags=["favorites"])
 
@@ -56,6 +60,7 @@ def get_favorites(
     for producer in producers:
         attach_badge_fields(producer)
     attach_favorites_counts(producers, db)
+    attach_rescue_saving(producers, db)
     return favorites
 
 

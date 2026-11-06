@@ -68,6 +68,7 @@ from app.services.producer_listing import (
 from app.services.producer_queries import (
     attach_badge_fields,
     attach_favorites_count,
+    attach_rescue_saving,
     create_producer_with_relations,
     get_producer_or_404,
 )
@@ -419,6 +420,7 @@ def get_producer_by_slug(slug: str, request: Request, db: Session = Depends(get_
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
     attach_badge_fields(producer)
     attach_favorites_count(producer, db)
+    attach_rescue_saving([producer], db)
     report_count = (
         db.query(func.count(Report.id))
         .filter(Report.producer_id == producer.id)
@@ -478,6 +480,7 @@ def get_producer(
     attach_badge_fields(producer)
     # MEH-106: social proof count.
     attach_favorites_count(producer, db)
+    attach_rescue_saving([producer], db)  # MEH-2716
 
     # Compute report_count from DB
     report_count = (
