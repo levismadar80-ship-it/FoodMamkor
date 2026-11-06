@@ -256,11 +256,11 @@ export function OrderWindowScheduleBlock({ orderWindow, specialHours = null }) {
               aria-expanded={expanded}
               aria-controls="order-window-week"
               data-testid="order-window-week-toggle"
-              // min-h-[44px]: measured at 41px with py-2.5 alone
+              // min-h-touch: measured at 41px with py-2.5 alone
               // (qa-meh1917-order-window.mjs P6), which is under the tap target.
               // The floor is explicit rather than tuned via padding so a future
               // font-size change cannot quietly drop it back under.
-              className="flex min-h-[44px] w-full items-center justify-center gap-1 border-t border-border px-3.5 py-2.5 text-[13px] text-fg-muted transition hover:text-text focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="flex min-h-touch w-full items-center justify-center gap-1 border-t border-border px-3.5 py-2.5 text-[13px] text-fg-muted transition hover:text-text focus-visible:ring-2 focus-visible:ring-primary/40"
             >
               {expanded ? t("hide_week") : t("show_week")}
               <CaretDown

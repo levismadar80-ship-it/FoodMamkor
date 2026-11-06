@@ -65,7 +65,7 @@ export default function AppleAuthButton({ onSuccess, onError, termsAccepted = fa
     <button
       type="button"
       onClick={() => window.AppleID?.auth.signIn()}
-      className="w-full bg-black text-white py-3 rounded-[8px] hover:bg-gray-900 transition font-medium flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-black/40"
+      className="w-full bg-black text-white py-3 rounded-sm hover:bg-gray-900 transition font-medium flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-black/40"
       aria-label={t("apple_continue")}
     >
       <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">

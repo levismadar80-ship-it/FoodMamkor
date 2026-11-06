@@ -47,7 +47,7 @@ function SheetListSkeleton({ label }) {
     // (bars themselves stay aria-hidden).
     <div data-testid="sheet-list-skeleton" role="status" aria-label={label}>
       {[0, 1, 2, 3].map((i) => (
-        <div key={i} className="skeleton-box rounded-[16px] h-20 mb-3" aria-hidden="true" />
+        <div key={i} className="skeleton-box rounded-lg h-20 mb-3" aria-hidden="true" />
       ))}
       {/* skeleton-box styles are NOT global CSS — they ship via styled-jsx
           from Skeleton.jsx; without this mount the bars render invisible. */}
@@ -300,7 +300,7 @@ export default function MapBottomSheet({
               type="button"
               onClick={onResetFilters}
               data-testid="sheet-reset-filters"
-              className="inline-flex items-center min-h-[44px] -my-2.5 shrink-0 text-sm font-medium text-primary hover:underline"
+              className="inline-flex items-center min-h-touch -my-2.5 shrink-0 text-sm font-medium text-primary hover:underline"
             >
               {t("reset_filters")}
             </button>

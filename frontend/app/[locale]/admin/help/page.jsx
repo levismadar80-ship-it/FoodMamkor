@@ -155,7 +155,7 @@ function Topic({ topic, open, onToggle, openScreenLabel }) {
           </List>
           <Link
             href={topic.href}
-            className="inline-flex items-center mt-3 min-h-[44px] text-primary font-medium hover:underline"
+            className="inline-flex items-center mt-3 min-h-touch text-primary font-medium hover:underline"
           >
             {openScreenLabel}
           </Link>

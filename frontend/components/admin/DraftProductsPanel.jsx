@@ -137,7 +137,7 @@ export default function DraftProductsPanel({ producerId, initialProducts = [] })
                     data-testid="draft-product-confirm-delete"
                     onClick={() => remove(p.id)}
                     disabled={deletingId === p.id}
-                    className="min-h-[44px] px-4 rounded-md bg-error hover:opacity-90 text-white text-sm disabled:opacity-50"
+                    className="min-h-touch px-4 rounded-md bg-error hover:opacity-90 text-white text-sm disabled:opacity-50"
                   >
                     {tConfirm("confirm")}
                   </button>
@@ -145,7 +145,7 @@ export default function DraftProductsPanel({ producerId, initialProducts = [] })
                     type="button"
                     onClick={() => setConfirmId(null)}
                     disabled={deletingId === p.id}
-                    className="min-h-[44px] px-4 rounded-md border border-border text-sm"
+                    className="min-h-touch px-4 rounded-md border border-border text-sm"
                   >
                     {tConfirm("cancel")}
                   </button>
@@ -156,7 +156,7 @@ export default function DraftProductsPanel({ producerId, initialProducts = [] })
                   data-testid="draft-product-delete"
                   aria-label={tProducts("card.delete_aria_template", { name: p.name })}
                   onClick={() => setConfirmId(p.id)}
-                  className="min-h-[44px] px-4 rounded-md border border-border text-sm hover:bg-background"
+                  className="min-h-touch px-4 rounded-md border border-border text-sm hover:bg-background"
                 >
                   {tConfirm("confirm")}
                 </button>
@@ -217,7 +217,7 @@ export default function DraftProductsPanel({ producerId, initialProducts = [] })
           type="submit"
           data-testid="draft-product-add"
           disabled={saving}
-          className="min-h-[44px] bg-primary text-white rounded-md px-6 py-2 text-sm font-medium hover:bg-primary-dark transition disabled:opacity-50"
+          className="min-h-touch bg-primary text-white rounded-md px-6 py-2 text-sm font-medium hover:bg-primary-dark transition disabled:opacity-50"
         >
           {saving ? tProducts("add_submitting") : tProducts("add_submit_cta")}
         </button>

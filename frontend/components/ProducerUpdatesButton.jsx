@@ -58,7 +58,7 @@ const TYPES = ["notify_new_event", "notify_new_product", "notify_delivery_area",
 const FOCUS = "transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40";
 const VARIANT_CLASS = {
   pill: (on) =>
-    `inline-flex items-center gap-1.5 min-h-[44px] px-4 rounded-full text-sm font-medium border ${FOCUS} ${
+    `inline-flex items-center gap-1.5 min-h-touch px-4 rounded-full text-sm font-medium border ${FOCUS} ${
       on
         ? "bg-primary/10 text-primary border-primary/30 hover:bg-primary/15"
         : "bg-white text-text border-border hover:bg-green-50"
@@ -66,7 +66,7 @@ const VARIANT_CLASS = {
   gallery: () =>
     `bg-white/95 hover:bg-white rounded-full w-11 h-11 flex items-center justify-center shadow-md hover:scale-105 ${FOCUS}`,
   quiet: (on) =>
-    `inline-flex items-center gap-1.5 min-h-[44px] py-2 text-[13px] font-medium rounded ${FOCUS} ${
+    `inline-flex items-center gap-1.5 min-h-touch py-2 text-[13px] font-medium rounded ${FOCUS} ${
       on ? "text-primary" : "text-text hover:text-primary"
     }`,
 };

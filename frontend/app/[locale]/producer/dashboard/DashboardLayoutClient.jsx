@@ -92,7 +92,7 @@ function DashboardChromeSkeleton({ label }) {
         <div className="max-w-5xl mx-auto px-2 sm:px-4 flex gap-1">
           {TABS.map((tab) => (
             <div key={tab.key} className="flex-1 sm:flex-none flex justify-center px-1 sm:px-4 py-3">
-              <div className="h-5 w-12 sm:w-20 bg-border rounded-[8px] animate-pulse" />
+              <div className="h-5 w-12 sm:w-20 bg-border rounded-sm animate-pulse" />
             </div>
           ))}
         </div>
@@ -101,7 +101,7 @@ function DashboardChromeSkeleton({ label }) {
         <div className="h-8 w-48 bg-border rounded-md animate-pulse" />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[0, 1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-32 bg-border rounded-[16px] animate-pulse" />
+            <div key={i} className="h-32 bg-border rounded-lg animate-pulse" />
           ))}
         </div>
       </div>
@@ -228,7 +228,7 @@ export default function ProducerDashboardLayout({ children }) {
               // MEH-2429: icon-only below sm (min 44px target, name via
               // aria-label + title); the visible label returns at sm+.
               title={t("view_page")}
-              className="sm:ms-auto shrink-0 inline-flex items-center justify-center gap-1.5 min-w-[44px] px-2 sm:px-3 py-3 text-sm font-medium text-fg-muted hover:text-primary transition-colors focus-ring"
+              className="sm:ms-auto shrink-0 inline-flex items-center justify-center gap-1.5 min-w-touch px-2 sm:px-3 py-3 text-sm font-medium text-fg-muted hover:text-primary transition-colors focus-ring"
             >
               <Eye size={20} aria-hidden="true" />
               <span className="hidden sm:inline">{t("view_page")}</span>
@@ -247,7 +247,7 @@ export default function ProducerDashboardLayout({ children }) {
           type="button"
           data-testid="dashboard-mobile-logout"
           onClick={logout}
-          className="inline-flex items-center gap-2 min-h-[44px] px-4 text-sm font-medium text-error focus-ring rounded-[8px]"
+          className="inline-flex items-center gap-2 min-h-touch px-4 text-sm font-medium text-error focus-ring rounded-sm"
         >
           <SignOut size={18} aria-hidden="true" />
           {tAccount("logout")}

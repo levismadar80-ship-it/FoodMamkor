@@ -2,6 +2,10 @@
 
 import { useEffect } from "react";
 import Lenis from "lenis";
+// MEH-2714: route-memory lives here because this provider is mounted once in
+// the root layout: the import installs its popstate listener on every page, and
+// useTrackRouteLeaves marks a route as visited only when the reader leaves it.
+import { useTrackRouteLeaves } from "@/lib/route-memory";
 
 /**
  * SmoothScrollProvider (docs/archive/WORLD_CLASS_V2.md #1)
@@ -20,6 +24,7 @@ import Lenis from "lenis";
  * the loop was pure main-thread and battery cost for a mobile-first audience.
  */
 export default function SmoothScrollProvider({ children }) {
+  useTrackRouteLeaves();
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;

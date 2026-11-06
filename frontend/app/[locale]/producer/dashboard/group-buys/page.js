@@ -126,7 +126,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 bg-white rounded-[16px] border border-border p-6">
+    <form onSubmit={handleSubmit} className="space-y-4 bg-white rounded-lg border border-border p-6">
       <h2 className="font-headline-lg text-lg font-bold text-text">{t("heading")}</h2>
       {/* MEH-992: one-line concept intro — what a group-buy is */}
       <p className="text-sm text-fg-muted">{t("concept_intro")}</p>
@@ -152,7 +152,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
             onChange={set("description")}
             placeholder={t("description_placeholder")}
             rows={2}
-            className="w-full border border-border rounded-[8px] px-3 py-2 text-start resize-none"
+            className="w-full border border-border rounded-sm px-3 py-2 text-start resize-none"
             dir="rtl"
           />
         </div>
@@ -290,7 +290,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
                     invalid ? "gb-fulfillment-helper gb-fulfillment-error" : "gb-fulfillment-helper"
                   }
                   rows={2}
-                  className={`w-full border rounded-[8px] px-3 py-2 text-start resize-none ${
+                  className={`w-full border rounded-sm px-3 py-2 text-start resize-none ${
                     invalid ? "border-error" : "border-border"
                   }`}
                   dir="rtl"
@@ -315,7 +315,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
       <button
         type="submit"
         disabled={submitting || priceInvalid}
-        className="bg-primary text-white px-6 py-2.5 min-h-[44px] rounded-[8px] hover:bg-primary-dark transition font-medium disabled:opacity-50"
+        className="bg-primary text-white px-6 py-2.5 min-h-touch rounded-sm hover:bg-primary-dark transition font-medium disabled:opacity-50"
       >
         {submitting ? t("submitting") : t("submit")}
       </button>
@@ -368,7 +368,7 @@ function GroupBuyActionDialog({ pending, busy, stale, error, onConfirm, onClose 
         aria-modal="true"
         aria-labelledby="group-buy-action-title"
         data-testid="group-buy-action-dialog"
-        className="bg-white rounded-[16px] shadow-xl p-6 max-w-sm w-full text-start space-y-3"
+        className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full text-start space-y-3"
       >
         <p id="group-buy-action-title" className="font-medium text-base text-text">
           {t(`${action}_title`)}
@@ -389,7 +389,7 @@ function GroupBuyActionDialog({ pending, busy, stale, error, onConfirm, onClose 
             // «חזרה» returns her to the card, which now shows the real state.
             disabled={busy || stale}
             onClick={onConfirm}
-            className={`px-4 py-2 min-h-[44px] rounded-[10px] text-sm font-medium text-white transition disabled:opacity-50 ${
+            className={`px-4 py-2 min-h-touch rounded-[10px] text-sm font-medium text-white transition disabled:opacity-50 ${
               destructive ? "bg-red-600 hover:bg-red-700" : "bg-primary hover:bg-primary-dark"
             }`}
           >
@@ -405,7 +405,7 @@ function GroupBuyActionDialog({ pending, busy, stale, error, onConfirm, onClose 
             data-autofocus
             disabled={busy}
             onClick={onClose}
-            className="px-4 py-2 min-h-[44px] rounded-[10px] text-sm border border-border text-fg-muted hover:bg-gray-50 transition disabled:opacity-50"
+            className="px-4 py-2 min-h-touch rounded-[10px] text-sm border border-border text-fg-muted hover:bg-gray-50 transition disabled:opacity-50"
           >
             {t("back")}
           </button>
@@ -557,7 +557,7 @@ export default function ProducerGroupBuysPage() {
     <div className="max-w-3xl mx-auto px-4 py-10">
       {/* MEH-1655: min-h pins the row at CTA height so it doesn't shrink
           when the button unmounts. */}
-      <div className="flex items-center justify-between mb-6 min-h-[44px]">
+      <div className="flex items-center justify-between mb-6 min-h-touch">
         <div>
           {/* MEH-999: entered from the Tools tab (tools/page.js:92). */}
           <BackLink href="/producer/dashboard/tools" label={t("back")} />
@@ -583,7 +583,7 @@ export default function ProducerGroupBuysPage() {
         {items !== null && !notApproved && !(items.length === 0 && !showForm) && (
           <button
             onClick={() => setShowForm((v) => !v)}
-            className="bg-primary text-white px-4 py-2 min-h-[44px] rounded-[8px] text-sm font-medium hover:bg-primary-dark transition"
+            className="bg-primary text-white px-4 py-2 min-h-touch rounded-sm text-sm font-medium hover:bg-primary-dark transition"
           >
             {showForm ? t("btn_close_form") : t("btn_open_form")}
           </button>
@@ -723,8 +723,8 @@ export default function ProducerGroupBuysPage() {
                         onClick={() => openAction(gb, action)}
                         className={
                           action === "deliver"
-                            ? "px-4 py-2 min-h-[44px] rounded-[8px] text-sm font-medium bg-primary text-white hover:bg-primary-dark transition"
-                            : "px-4 py-2 min-h-[44px] rounded-[8px] text-sm border border-border text-red-700 hover:bg-red-50 transition"
+                            ? "px-4 py-2 min-h-touch rounded-sm text-sm font-medium bg-primary text-white hover:bg-primary-dark transition"
+                            : "px-4 py-2 min-h-touch rounded-sm text-sm border border-border text-red-700 hover:bg-red-50 transition"
                         }
                       >
                         {tActions(action)}

@@ -71,7 +71,7 @@ export default function HolidayBanner({ suppressed = false, onVisibilityChange }
       aria-label={t("aria")}
       // MEH-991: VRT hides this date-dependent banner via injected CSS (e2e/visual/parity.css)
       data-testid="holiday-banner"
-      className="relative mx-4 md:mx-auto md:max-w-3xl rounded-[16px] px-5 py-4 flex items-center gap-4 shadow-sm"
+      className="relative mx-4 md:mx-auto md:max-w-3xl rounded-lg px-5 py-4 flex items-center gap-4 shadow-sm"
       style={{ backgroundColor: holiday.color + "18", border: `1.5px solid ${holiday.color}40` }}
     >
       {/* MEH-1687 D: Phosphor icon, not a colour emoji — 1em of this text-2xl slot. */}
@@ -92,7 +92,7 @@ export default function HolidayBanner({ suppressed = false, onVisibilityChange }
       <button
         onClick={dismiss}
         aria-label={t("close_aria")}
-        className="shrink-0 text-fg-muted hover:text-text transition min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg"
+        className="shrink-0 text-fg-muted hover:text-text transition min-h-touch min-w-touch flex items-center justify-center rounded-lg"
       >
         <X size={16} weight="bold" aria-hidden="true" />
       </button>

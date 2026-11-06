@@ -2,6 +2,7 @@
 
 import { Link } from "@/i18n/navigation";
 import { motion } from "framer-motion";
+import { useRevealSkip } from "@/lib/route-memory";
 import { Faders, Info, Leaf, MapPin, X } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import ProducerCard from "@/components/ProducerCard";
@@ -135,6 +136,8 @@ export function HomeProducersGrid({
   regionFallback,
 }) {
   const t = useTranslations();
+  // MEH-2714: the card entrance plays on the first visit only (see route-memory).
+  const skipReveal = useRevealSkip();
   // MEH-1418: attach Phosphor leading icons once (static config → stable ref).
   // MEH-1934: recomputed when the loaded set changes — the gate turns the chips
   // on by itself once the catalog carries the markings, with nobody flipping a
@@ -492,7 +495,7 @@ export function HomeProducersGrid({
               <motion.div
                 key={p.id}
                 className="h-full"
-                initial={{ opacity: 0, y: 40 }}
+                initial={skipReveal ? false : { opacity: 0, y: 40 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.1 }}
                 transition={{ duration: 0.5, delay: (idx % 4) * 0.08, ease: [0.25, 0.46, 0.45, 0.94] }}
@@ -568,7 +571,7 @@ export function HomeProducersGrid({
                          its own space inside the cell. The uncaptioned cell keeps the
                          exact markup it had before this ticket. */
                       className={captionDays === null ? "h-full" : "h-full flex flex-col"}
-                      initial={{ opacity: 0, y: 40 }}
+                      initial={skipReveal ? false : { opacity: 0, y: 40 }}
                       whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true, amount: 0.1 }}
                       transition={{ duration: 0.5, delay: (idx % 4) * 0.08, ease: [0.25, 0.46, 0.45, 0.94] }}

@@ -473,7 +473,7 @@ function LocationRow({ loc, kindLabel, deleting, onEdit, onDelete, onSetPrimary 
           <button
             type="button"
             onClick={onSetPrimary}
-            className="min-h-[44px] px-2 text-xs font-medium text-primary hover:underline"
+            className="min-h-touch px-2 text-xs font-medium text-primary hover:underline"
           >
             {t("set_primary_cta")}
           </button>
@@ -482,7 +482,7 @@ function LocationRow({ loc, kindLabel, deleting, onEdit, onDelete, onSetPrimary 
           type="button"
           onClick={onEdit}
           aria-label={t("edit_aria")}
-          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center text-fg-muted hover:text-primary"
+          className="inline-flex min-h-touch min-w-touch items-center justify-center text-fg-muted hover:text-primary"
         >
           <Pencil size={18} />
         </button>
@@ -491,7 +491,7 @@ function LocationRow({ loc, kindLabel, deleting, onEdit, onDelete, onSetPrimary 
           onClick={onDelete}
           disabled={deleting}
           aria-label={t("delete_aria")}
-          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center text-fg-muted hover:text-error disabled:opacity-50"
+          className="inline-flex min-h-touch min-w-touch items-center justify-center text-fg-muted hover:text-error disabled:opacity-50"
         >
           <Trash size={18} />
         </button>
@@ -871,7 +871,7 @@ function LocationForm({
             the Phosphor one the rest of the dashboard uses; `marker:hidden`
             covers Firefox, `[&::-webkit-details-marker]:hidden` Safari/Chrome. */}
         <summary
-          className="flex min-h-[44px] cursor-pointer list-none items-center gap-2 py-3 text-xs font-medium text-fg-muted marker:hidden [&::-webkit-details-marker]:hidden"
+          className="flex min-h-touch cursor-pointer list-none items-center gap-2 py-3 text-xs font-medium text-fg-muted marker:hidden [&::-webkit-details-marker]:hidden"
           data-testid="location-details-toggle"
         >
           <CaretDown
@@ -966,7 +966,7 @@ function LocationForm({
             default `list-item` drops the disclosure triangle that signals the
             row is expandable. */}
         <summary
-          className="min-h-[44px] cursor-pointer py-3 text-xs font-medium text-fg-muted"
+          className="min-h-touch cursor-pointer py-3 text-xs font-medium text-fg-muted"
           data-testid="location-coords-toggle"
         >
           {tForm("coords_summary")}

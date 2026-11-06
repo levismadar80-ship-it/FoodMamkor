@@ -73,7 +73,7 @@ export default function ProducerRecipesPage() {
     <div className="max-w-3xl mx-auto px-4 py-10">
       {/* MEH-1655: min-h pins the row at CTA height so it doesn't shrink
           when the button unmounts. */}
-      <div className="flex items-center justify-between mb-6 min-h-[44px]">
+      <div className="flex items-center justify-between mb-6 min-h-touch">
         <div>
           {/* MEH-999: entered from the Tools tab (tools/page.js:101), so back
               goes to Tools — not the overview. */}
@@ -90,7 +90,7 @@ export default function ProducerRecipesPage() {
         {items !== null && !(items.length === 0 && !showForm) && (
           <button
             onClick={() => setShowForm((v) => !v)}
-            className="bg-primary text-white px-4 py-2 min-h-[44px] rounded-[8px] text-sm font-medium hover:bg-primary-dark transition"
+            className="bg-primary text-white px-4 py-2 min-h-touch rounded-sm text-sm font-medium hover:bg-primary-dark transition"
           >
             {showForm ? t("btn_close_form") : t("btn_open_form")}
           </button>
@@ -126,7 +126,7 @@ export default function ProducerRecipesPage() {
               <div className="w-full max-w-xs text-start opacity-70">
                 <p className="text-[11px] text-fg-muted mb-1">{t("sample_label")}</p>
                 <div className="border border-border rounded-md p-3 bg-surface-card flex items-center gap-3">
-                  <div className="w-14 h-14 rounded-[8px] bg-green-50 flex items-center justify-center shrink-0">
+                  <div className="w-14 h-14 rounded-sm bg-green-50 flex items-center justify-center shrink-0">
                     <Bread size={22} className="text-fg-muted" aria-hidden="true" />
                   </div>
                   <div className="min-w-0">
@@ -167,12 +167,12 @@ export default function ProducerRecipesPage() {
                 </p>
               )}
               {r.moderation_status === "needs_revision" && r.moderation_notes && (
-                <div className={`rounded-[8px] p-3 text-sm mb-3 border ${STATUS_CLASSES.warning}`}>
+                <div className={`rounded-sm p-3 text-sm mb-3 border ${STATUS_CLASSES.warning}`}>
                   <strong>{t("notes_needs_revision")}</strong> {r.moderation_notes}
                 </div>
               )}
               {r.moderation_status === "rejected" && r.moderation_notes && (
-                <div className={`rounded-[8px] p-3 text-sm mb-3 border ${STATUS_CLASSES.error}`}>
+                <div className={`rounded-sm p-3 text-sm mb-3 border ${STATUS_CLASSES.error}`}>
                   <strong>{t("notes_rejected")}</strong> {r.moderation_notes}
                 </div>
               )}
