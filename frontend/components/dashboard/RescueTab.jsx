@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Link as LocaleLink } from "@/i18n/navigation";
 
 import api from "@/lib/api";
+import { detailToMessage } from "@/lib/errors";
 import { israelTime, leftoverGroupUrl, shekels } from "@/lib/rescue";
 import Button from "@/components/ui/Button";
 
@@ -33,12 +34,31 @@ const CANCEL_CUTOFFS = [
   [120, "two_hours"],
 ];
 
+// MEH-2730: the boxes a message can belong to (see `notice` below).
+const AT = { code: "code", orders: "orders", publish: "publish", items: "items", leftover: "leftover" };
+
 export default function RescueTab() {
   const t = useTranslations("rescue.dashboard");
   const [orders, setOrders] = useState(null);
   const [code, setCode] = useState("");
   const [busyId, setBusyId] = useState(null);
-  const [notice, setNotice] = useState(null);
+  // MEH-2730: { at, text } — `at` names the box the message belongs to, so it
+  // renders next to the control that caused it. It used to be one line under
+  // the code box for every action on the screen: a refused PUBLISH, far below,
+  // showed up there as «משהו נתקע» and read as a failed handover (Sapir 6/11).
+  const [notice, setNoticeState] = useState(null);
+  // `error` picks the live-region role: a refusal is announced at once
+  // (alert), a confirmation politely (status).
+  const setNotice = (at, text, error = true) => setNoticeState(text ? { at, text, error } : null);
+  const clearNotice = () => setNoticeState(null);
+  // The server's own sentence when it sent one — string, {code, message}
+  // (the verified-email gate) or a 422 list; the generic line otherwise.
+  // A raw object here used to reach JSX as a child and could not render.
+  // A 5xx gets the generic line even with a detail: that text is a server or
+  // proxy message, not one written for the owner (same split as errorMessage()
+  // in lib/errors.js).
+  const reason = (err) =>
+    (err?.response?.status >= 500 ? null : detailToMessage(err?.response?.data?.detail)) || t("failed");
   const [items, setItems] = useState("");
   const [form, setForm] = useState({ qty_total: 4, price: 15, from: "18:00", to: "20:00", cancelMin: 30 });
   // MEH-2678: the tab loads its own pickup points. It used to take them as a
@@ -111,14 +131,14 @@ export default function RescueTab() {
     [orders],
   );
 
-  async function act(order, what) {
+  async function act(order, what, at = "orders") {
     setBusyId(order.id);
-    setNotice(null);
+    clearNotice();
     try {
       await api.post(`/rescue/orders/${order.id}/${what}`);
       await load();
     } catch (err) {
-      setNotice(err?.response?.data?.detail || t("failed"));
+      setNotice(at, reason(err));
     } finally {
       setBusyId(null);
     }
@@ -129,21 +149,22 @@ export default function RescueTab() {
       (o) => o.pickup_code === code.trim() && o.status === "reserved",
     );
     if (!match) {
-      setNotice(t("code_not_found"));
+      setNotice("code", t("code_not_found"));
       return;
     }
     setCode("");
-    act(match, "handed");
+    act(match, "handed", "code");
   }
 
   async function saveItems() {
+    clearNotice();
     try {
       await api.put("/producers/me/rescue/typical-items", {
         items: items.split(",").map((s) => s.trim()).filter(Boolean),
       });
-      setNotice(t("items_saved"));
-    } catch {
-      setNotice(t("failed"));
+      setNotice("items", t("items_saved"), false);
+    } catch (err) {
+      setNotice("items", reason(err));
     }
   }
 
@@ -154,9 +175,10 @@ export default function RescueTab() {
   const exactLocation = locations.find((l) => l.location_precision === "exact");
 
   async function publish(dayOffset = 0) {
+    clearNotice();
     const location = exactLocation;
     if (!location) {
-      setNotice(t("no_location"));
+      setNotice("publish", t("no_location"));
       return;
     }
     const day = new Date();
@@ -182,10 +204,10 @@ export default function RescueTab() {
         pickup_end: iso(form.to),
         cancel_until: cancel,
       });
-      setNotice(t("published"));
+      setNotice("publish", t("published"), false);
       await load();
     } catch (err) {
-      setNotice(err?.response?.data?.detail || t("failed"));
+      setNotice("publish", reason(err));
     }
   }
 
@@ -216,7 +238,7 @@ export default function RescueTab() {
   // leftover. A set, not an increment, so 0 undoes the report.
   async function markDonated(total) {
     setDonating(true);
-    setNotice(null);
+    clearNotice();
     try {
       let rest = total;
       for (const o of leftoverRows) {
@@ -226,7 +248,7 @@ export default function RescueTab() {
       }
       setDonateQty(null);
     } catch (err) {
-      setNotice(err?.response?.data?.detail || t("failed"));
+      setNotice("leftover", reason(err));
     } finally {
       // Reload even after a failure: earlier offers in the loop may already
       // be saved, and the box must show what the server holds.
@@ -234,6 +256,18 @@ export default function RescueTab() {
       setDonating(false);
     }
   }
+
+  // One message on screen at most, rendered inside the box it belongs to.
+  const noticeAt = (at) =>
+    notice?.at === at ? (
+      <p
+        className="font-body-sm text-sm text-text"
+        role={notice.error ? "alert" : "status"}
+        data-testid="rescue-tab-notice"
+      >
+        {notice.text}
+      </p>
+    ) : null;
 
   return (
     <div data-testid="rescue-tab" className="space-y-6">
@@ -248,35 +282,32 @@ export default function RescueTab() {
         ))}
       </div>
 
-      <div className="flex gap-2">
-        <input
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-          inputMode="numeric"
-          maxLength={4}
-          dir="ltr"
-          placeholder={t("code_placeholder")}
-          aria-label={t("code_label")}
-          data-testid="rescue-code-input"
-          className="flex-1 border border-border rounded-md px-3 py-2 text-center tracking-[0.3em]"
-        />
-        <Button
-          type="button"
-          onClick={handByCode}
-          data-testid="rescue-code-submit"
-          variant="primary"
-        >
-          {t("hand_over")}
-        </Button>
+      <div className="space-y-2" data-notice-scope="code">
+        <div className="flex gap-2">
+          <input
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            inputMode="numeric"
+            maxLength={4}
+            dir="ltr"
+            placeholder={t("code_placeholder")}
+            aria-label={t("code_label")}
+            data-testid="rescue-code-input"
+            className="flex-1 border border-border rounded-md px-3 py-2 text-center tracking-[0.3em]"
+          />
+          <Button
+            type="button"
+            onClick={handByCode}
+            data-testid="rescue-code-submit"
+            variant="primary"
+          >
+            {t("hand_over")}
+          </Button>
+        </div>
+        {noticeAt(AT.code)}
       </div>
 
-      {notice && (
-        <p className="font-body-sm text-sm text-text" data-testid="rescue-tab-notice">
-          {notice}
-        </p>
-      )}
-
-      <section>
+      <section data-notice-scope="orders">
         <h3 className="font-headline-md text-base font-black text-text mb-2">{t("orders_title")}</h3>
         {orders === null && <p className="font-body-sm text-sm text-fg-muted">{t("loading")}</p>}
         {orders?.length === 0 && (
@@ -334,6 +365,7 @@ export default function RescueTab() {
             );
           })}
         </ul>
+        {noticeAt(AT.orders)}
       </section>
 
       {locationsLoaded && !exactLocation ? (
@@ -353,7 +385,7 @@ export default function RescueTab() {
           </LocaleLink>
         </section>
       ) : (
-        <section className="border border-border rounded-md px-4 py-4 space-y-3">
+        <section className="border border-border rounded-md px-4 py-4 space-y-3" data-notice-scope="publish">
           <h3 className="font-headline-md text-base font-black text-text">{t("publish_title")}</h3>
           <div className="grid grid-cols-2 gap-3">
             <label className="font-body-sm text-sm">
@@ -379,24 +411,28 @@ export default function RescueTab() {
                 className="w-full border border-border rounded-md px-2 py-1 mt-1"
               />
             </label>
-            <label className="font-body-sm text-sm">
+            <label className="font-body-sm text-sm min-w-0">
               {t("field.from")}
+              {/* MEH-2730: iOS Safari draws a time input wider than its grid
+                  column (it overflowed the card on Sapir's iPhone); min-w-0
+                  on both the grid item and the input lets it shrink. */}
               <input
                 type="time"
                 value={form.from}
                 onChange={(e) => setForm({ ...form, from: e.target.value })}
                 data-testid="rescue-publish-from"
-                className="w-full border border-border rounded-md px-2 py-1 mt-1"
+                className="block w-full min-w-0 border border-border rounded-md px-2 py-1 mt-1"
               />
             </label>
-            <label className="font-body-sm text-sm">
+            <label className="font-body-sm text-sm min-w-0">
               {t("field.to")}
+              {/* MEH-2730: min-w-0 for iOS, see the «from» field above. */}
               <input
                 type="time"
                 value={form.to}
                 onChange={(e) => setForm({ ...form, to: e.target.value })}
                 data-testid="rescue-publish-to"
-                className="w-full border border-border rounded-md px-2 py-1 mt-1"
+                className="block w-full min-w-0 border border-border rounded-md px-2 py-1 mt-1"
               />
             </label>
             <label className="font-body-sm text-sm col-span-2">
@@ -431,10 +467,11 @@ export default function RescueTab() {
           >
             {t("publish_tomorrow", { n: form.qty_total })}
           </Button>
+          {noticeAt(AT.publish)}
         </section>
       )}
 
-      <section className="border border-border rounded-md px-4 py-4 space-y-2">
+      <section className="border border-border rounded-md px-4 py-4 space-y-2" data-notice-scope="items">
         <h3 className="font-headline-md text-base font-black text-text">{t("items_title")}</h3>
         <p className="font-body-sm text-sm text-fg-muted">{t("items_help")}</p>
         <input
@@ -452,6 +489,7 @@ export default function RescueTab() {
         >
           {t("items_save")}
         </Button>
+        {noticeAt(AT.items)}
       </section>
 
       {/* MEH-2703: only once the window closed and something was not
@@ -460,6 +498,7 @@ export default function RescueTab() {
         <section
           className="border border-border rounded-md px-4 py-4 space-y-3"
           data-testid="rescue-leftover"
+          data-notice-scope="leftover"
         >
           <h3 className="font-headline-md text-base font-black text-text" data-testid="rescue-leftover-count">
             {t("leftover_title", { count: leftoverTotal })}
@@ -533,6 +572,7 @@ export default function RescueTab() {
               <p className="font-body-sm text-xs text-fg-muted">{t("leftover_donated_help")}</p>
             </div>
           )}
+          {noticeAt(AT.leftover)}
         </section>
       )}
       {leftoverTotal === 0 && upcoming && (
