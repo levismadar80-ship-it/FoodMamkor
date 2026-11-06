@@ -35,6 +35,7 @@ import { AddressNavLinks } from "@/components/NavAppGlyphs";
 import { EVENT_CATEGORIES } from "@/lib/event-categories";
 import { downloadIcs } from "@/lib/event-ics";
 import Button from "@/components/ui/Button";
+import RegistrationCta from "@/components/RegistrationCta";
 
 // MEH-1404: reuse the producer-detail static map + Waze/Gmaps block on events
 // that carry coords. ssr:false — leaflet touches window at module eval.
@@ -156,19 +157,22 @@ export default function EventDetailClient() {
   const month = formatEventDate(event.event_date, locale, { month: "long" });
   const weekday = formatEventDate(event.event_date, locale, { weekday: "long" });
 
-  const ctaClass =
-    "flex items-center justify-center min-h-[48px] w-full bg-primary text-white px-6 rounded-full font-semibold hover:bg-primary-dark transition focus-ring";
-  const cta = isPast ? null : event.registration_url ? (
-    <a href={event.registration_url} target="_blank" rel="noopener noreferrer" className={ctaClass}>
-      {t("register")}
-    </a>
-  ) : isOrganizerEvent ? null : (
-    // MEH-2461: «יצירת קשר עם בית העסק» names a business; an organizer is
-    // reached through the «מארגן:» link instead.
-    <Link href={`/producer/${event.producer_id}`} className={ctaClass}>
-      {t("contact_producer")}
-    </Link>
-  );
+  // MEH-2768: the CTA follows the owner's «איך נרשמים?» choice. The old
+  // «יצירת קשר עם בית העסק» fallback is gone — every event has a method now
+  // (site_form by default), and the on-site form carries «או שאלה למארחת».
+  const isFull = event.max_participants != null && event.spots_left === 0;
+  const cta =
+    isPast || event.is_active === false ? null : (
+      <RegistrationCta
+        kind="events"
+        itemId={event.id}
+        title={event.title}
+        method={event.registration_method}
+        phone={event.producer_phone}
+        url={event.registration_url}
+        isFull={isFull}
+      />
+    );
 
   const infoRow = "flex items-center gap-3 px-4 py-3";
   const infoIcon = "shrink-0 w-9 h-9 rounded-md bg-green-50 text-primary grid place-items-center";
