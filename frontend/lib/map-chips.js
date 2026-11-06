@@ -319,7 +319,9 @@ export function categoryGroupRow(dbCategories = [], visibleCategories = dbCatego
   const rows = [];
   for (const chip of withResolvedIcons(CATEGORY_CHIPS, dbCategories, styles)) {
     if (!chip.matches) continue;
-    const ids = resolveCategoryIds(chip, dbCategories).map(String);
+    // An id claimed by an earlier group is not re-offered (a legacy admin row
+    // could match one group by name and another by slug).
+    const ids = resolveCategoryIds(chip, dbCategories).map(String).filter((id) => !claimed.has(id));
     ids.forEach((id) => claimed.add(id));
     if (ids.some((id) => visible.has(id))) rows.push({ ...chip, ids });
   }

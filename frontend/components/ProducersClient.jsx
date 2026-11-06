@@ -813,6 +813,7 @@ export default function ProducersClient({
     ...categoryRow.map((g) => {
       const c = g.dbCategory;
       // MEH-2163: one total lookup; an unmapped glyph renders NO icon (MEH-1441).
+      // resolveCategoryGlyph takes a category object OR its name key (categoryGlyphKey).
       const { glyph: Glyph, isFallback } = resolveCategoryGlyph(c ?? g.iconName ?? "");
       const style = c ? CATEGORY_STYLES[c.name] : null;
       const iconColor = c ? (style ? (style.textColor ?? style.color) : undefined) : g.iconColor;

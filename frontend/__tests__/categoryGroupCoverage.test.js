@@ -62,6 +62,13 @@ describe("MEH-2783 /producers row = the same groups", () => {
     expect(row).toEqual([{ key: "999", ids: ["999"], dbCategory: stray }]);
   });
 
+  it("an id matched by two groups (legacy name + slug) is offered once", async () => {
+    const { categoryGroupRow } = await import("@/lib/map-chips");
+    const odd = { id: 777, name: "חלב", slug: "honey" }; // dairy by name, pantry by slug
+    const row = categoryGroupRow([odd], [odd]);
+    expect(row.filter((g) => g.ids.includes("777"))).toHaveLength(1);
+  });
+
   it("toggle: inactive → adds every id; partly active (deep link) → drops them all", async () => {
     const { toggleCategoryGroup } = await import("@/lib/map-chips");
     expect(toggleCategoryGroup(["1"], ["5", "6"])).toEqual(["1", "5", "6"]);
