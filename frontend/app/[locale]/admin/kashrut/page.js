@@ -233,6 +233,7 @@ export default function AdminKashrutPage() {
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
+          aria-label={t("producers.table.columns.status")}
           className="border rounded-sm px-3 py-2 text-sm"
         >
           <option value="pending">{t("kashrut.status.pending")}</option>

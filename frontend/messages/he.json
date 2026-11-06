@@ -716,8 +716,6 @@
       "verified_tooltip_license": "רישיון הוגש ונבדק בתאריך {date}",
       "verified_tooltip_exemption": "אישור פטור הוגש ונבדק בתאריך {date}",
       "verified_tooltip_cosmetics": "רישום קוסמטיקה הוגש ונבדק בתאריך {date}",
-      "declared_trigger": "ללא תג מאומת · מה זה אומר?",
-      "declared_explainer": "אין תג 'מאומת'? זה לא אומר פחות. חלק מהקטגוריות פטורות מרישיון לפי החוק — אין מסמך להציג, פשוט כי הוא לא נדרש. העסק חתם על הצהרה מחייבת שהוא פועל כדין, ועבר את אותה היכרות אישית כמו כולם.",
       "verified_label": "מאומת",
       "aria_verified": "בית עסק מאומת. {tooltip}",
       "aria_verified_plain": "בית עסק מאומת",

@@ -305,9 +305,9 @@ frontend/app/global-error.js:hex:#fff
 frontend/app/globals.css:arb:#136b34
 frontend/app/globals.css:arb:#16803e
 frontend/app/globals.css:arb:#16803e
-frontend/app/globals.css:arb:#25d366
-frontend/app/globals.css:arb:#25d366
-frontend/app/globals.css:arb:#25d366
+frontend/app/globals.css:arb:#16803e
+frontend/app/globals.css:arb:#16803e
+frontend/app/globals.css:arb:#16803e
 frontend/app/globals.css:arb:#25d366
 frontend/app/globals.css:arb:#25d366
 frontend/app/globals.css:hex:#000
