@@ -109,7 +109,6 @@ export function HomeProducersGrid({
   filters,
   chips,
   categories,
-  fridayMode,
   // MEH-2130: remove ONE active attribute filter from the applied-filter strip.
   onRemoveChip,
   // MEH-2173: the promoted chips AND the sheet's switches both call this — one
@@ -494,7 +493,7 @@ export function HomeProducersGrid({
                 viewport={{ once: true, amount: 0.1 }}
                 transition={{ duration: 0.5, delay: (idx % 4) * 0.08, ease: [0.25, 0.46, 0.45, 0.94] }}
               >
-                <ProducerCard producer={p} referrer="home" fridayMode={fridayMode} />
+                <ProducerCard producer={p} referrer="home" />
               </motion.div>
             ))}
           </div>
@@ -552,7 +551,7 @@ export function HomeProducersGrid({
                       ? deliveryDaysForCity(p, filters.delivery_city)
                       : null;
                   const card = (
-                    <ProducerCard producer={p} referrer="home" fridayMode={fridayMode} />
+                    <ProducerCard producer={p} referrer="home" />
                   );
                   return (
                     <motion.div

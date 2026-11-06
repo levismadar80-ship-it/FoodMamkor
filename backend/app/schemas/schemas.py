@@ -2010,6 +2010,17 @@ AVAILABILITY_STATES = (
     "on_vacation",  # "בהפסקה" (requires vacation_until)
 )
 
+# MEH-2758 (MEH-2757 chunk 1): what an owner or admin may WRITE. The status
+# picker is pause-only, like Google / Etsy / Wolt / Uber Eats: hours (the
+# order window) plus one pause switch. `available_today` / `full_this_week`
+# stay in AVAILABILITY_STATES above because rows still hold them and every
+# READ must keep accepting them — no migration. Dropping them from the enum is
+# a post-launch card (Expand-Contract, ADR-007).
+WRITABLE_AVAILABILITY_STATES = (
+    "accepting_orders",
+    "on_vacation",
+)
+
 
 # MEH-2272 chunk 2: `state_to_legacy` (enum -> legacy pair) is gone. Its last
 # callers were the dict responses in routers/producer_me.py; no response
@@ -2300,6 +2311,9 @@ class ProducerUpdate(BaseModel):
     @field_validator("availability_state")
     @classmethod
     def _validate_availability_state(cls, v):
+        # MEH-2758: membership only. The pause-only rule needs the CURRENT
+        # state (an admin form resubmitting a legacy row's unchanged value must
+        # still save), so it lives in admin.py, not here.
         if v is not None and v not in AVAILABILITY_STATES:
             raise ValueError(
                 f"availability_state חייב להיות אחד מ: {', '.join(AVAILABILITY_STATES)}"
@@ -5077,24 +5091,12 @@ class PasswordChange(BaseModel):
 
 # --- Producer Me (producer_me.py) ---
 # MEH-460 Pkg 2: relocated from routers/producer_me.py per ADR-006 R1.
-# AvailabilityStatusUpdate is the legacy MEH-291 surface; AvailabilityStateUpdate
-# is the new 4-value enum surface. Both kept during the 7-day overlap;
-# Phase 4 will drop the legacy. Schema relocation does NOT affect MEH-291.
-# AVAILABILITY_STATUSES (the legacy {"available","full","vacation"} set used
-# only by the handler for runtime validation) stays in producer_me.py — it's
-# not a schema field. AVAILABILITY_STATES (the new 4-value tuple) lives in
-# this file already (see Producer section above, MEH-291).
-class AvailabilityStatusUpdate(BaseModel):
-    status: str = Field(..., description="available | full | vacation")
-    vacation_until: date | None = Field(
-        None, description="Optional return date (vacation only)"
-    )
-
-
+# MEH-2758: the legacy AvailabilityStatusUpdate surface is gone with its two
+# endpoints; AvailabilityStateUpdate is the only availability write body.
 class AvailabilityStateUpdate(BaseModel):
     state: str = Field(
         ...,
-        description="accepting_orders | available_today | full_this_week | on_vacation",
+        description="accepting_orders | on_vacation",
     )
     vacation_until: date | None = Field(
         None, description="Required when state='on_vacation'"
