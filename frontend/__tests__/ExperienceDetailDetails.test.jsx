@@ -108,13 +108,15 @@ describe("MEH-2476 — experience details", () => {
         producer_name: "חוות נועה",
         producer_phone: "052-1234567",
       },
+      // MEH-2768: the CTA follows «איך נרשמים?».
+      registration_method: "whatsapp",
     });
     const link = screen.getByTestId("experience-host-link");
     expect(link.getAttribute("href")).toBe("/chavat-noa");
     // Avatar initial «ח», the label, the business name; plus a chevron.
     expect(link.textContent).toBe(`ח${t.host_label} חוות נועה`);
     expect(link.querySelector("svg")).not.toBeNull();
-    expect(screen.getByRole("link", { name: t.whatsapp_cta }).getAttribute("href")).toMatch(
+    expect(screen.getByTestId("registration-whatsapp").getAttribute("href")).toMatch(
       /^https:\/\/wa\.me\/972521234567\?text=/,
     );
   });

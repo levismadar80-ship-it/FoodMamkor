@@ -1072,6 +1072,9 @@ edit touches the method or the URL. `EventOut` adds `registration_method`,
 (`max_participants − registered_count`, null without a cap). Same fields on
 experiences, where `spots_left` also subtracts the host's own
 `participants_count`, and a method change does not re-moderate.
+**MEH-2768:** `EventOut.producer_phone` — the owning business's phone (the
+number its public page already shows), for the event page's WhatsApp / phone
+CTA and «או שאלה למארחת». Experiences already carry it as `host.producer_phone`.
 
 ### Registrations (on-site sign-ups — `app/routers/registrations.py`, MEH-2763)
 

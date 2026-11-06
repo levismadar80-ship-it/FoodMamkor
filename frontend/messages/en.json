@@ -225,6 +225,7 @@
       },
       "producer": {
         "heading": "Give your business a home",
+        "organizer_heading": "Publish your markets and events",
         "subtitle": "About 5 minutes. No commissions. The customer comes straight to you",
         "gate": {
           "producer_heading": "You already have a business page on Mehamakor",
@@ -243,8 +244,7 @@
           "after_title": "What happens next",
           "after_body": "Every business gets a personal intro — once you complete your profile and send it for review, our team checks the details, gets in touch if needed, and your business goes live within up to 3 business days.",
           "after_link": "How the acceptance process works",
-          "cta": "Start",
-          "organizer_entry": "Organising a group buy? Start here"
+          "cta": "Start"
         },
         "loading": "Loading...",
         "loading_form": "Loading registration form...",
@@ -280,6 +280,7 @@
         "step_captions": {
           "account": "Account",
           "details": "Business",
+          "details_organizer": "Details",
           "category": "Category",
           "story": "Story"
         },
@@ -5998,6 +5999,42 @@
       "cancelled": "Cancelled",
       "offline_label": "Signed up outside the site",
       "load_error": "Couldn't load the list."
+    },
+    "cta": {
+      "signup_experience": "Sign up for the workshop",
+      "signup_event": "Sign up for the event",
+      "whatsapp": "Sign up on WhatsApp",
+      "phone": "Call to sign up",
+      "external": "Sign up →",
+      "question": "Or ask the host",
+      "full": "No spots left",
+      "whatsapp_message": "Hi! I'd like to sign up for \"{title}\"",
+      "question_message": "Hi! I have a question about \"{title}\""
+    },
+    "signup": {
+      "name": "Name",
+      "phone": "Phone",
+      "email": "Email",
+      "submit": "Send sign-up",
+      "submitting": "Sending...",
+      "privacy": "Your details go to the host only for this sign-up, and are deleted 30 days after the date.",
+      "success": "You're signed up. We sent a confirmation email with a cancellation link.",
+      "required": "This field is required",
+      "name_short": "The name needs at least 2 letters",
+      "email_invalid": "That email address isn't valid",
+      "phone_invalid": "Invalid phone number",
+      "generic": "Something went wrong. Try again."
+    },
+    "cancel": {
+      "title": "Cancel sign-up for \"{title}\"",
+      "confirm": "Cancel the sign-up",
+      "cancelling": "Cancelling...",
+      "done": "Your sign-up was cancelled.",
+      "not_found": "This link isn't valid or has expired.",
+      "generic": "Something went wrong. Try again.",
+      "back_event": "To the event page",
+      "back_experience": "To the workshop page",
+      "page_title": "Cancel sign-up"
     }
   },
   "filter_axes": {

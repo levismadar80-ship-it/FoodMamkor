@@ -31,6 +31,26 @@ describe("redactClaimPath", () => {
     expect(redactClaimPath(input)).toBe(expected);
   });
 
+  // MEH-2768: the sign-up cancel link, page and API.
+  const REG = "Xb3_kQ9-vR2mN7pL4sT8wY1zA6cE5fH0jK3nP9qU2xV";
+  it.each([
+    [`https://mehamakor.co.il/registration/${REG}`, "https://mehamakor.co.il/registration/[token]"],
+    [`/en/registration/${REG}?x=1`, "/en/registration/[token]?x=1"],
+    [`GET https://api.example/registrations/${REG}`, "GET https://api.example/registrations/[token]"],
+    [`POST /registrations/${REG}/cancel`, "POST /registrations/[token]/cancel"],
+    [`/login?redirect=%2Fregistration%2F${REG}`, "/login?redirect=%2Fregistration%2F[token]"],
+  ])("cancel link: %s", (input, expected) => {
+    expect(redactClaimPath(input)).toBe(expected);
+  });
+
+  it.each([
+    "webpack://_N_E/./app/[locale]/registration/[token]/CancelRegistrationClient.jsx",
+    "https://mehamakor.co.il/_next/static/chunks/app/%5Blocale%5D/registration/%5Btoken%5D/page-0a1b2c3d.js",
+    "/events/11111111-0000-0000-0000-000000000001/registrations",
+  ])("leaves a registration route file / list URL alone: %s", (url) => {
+    expect(redactClaimPath(url)).toBe(url);
+  });
+
   it("leaves token-less paths alone", () => {
     expect(redactClaimPath("/claim")).toBe("/claim");
     expect(redactClaimPath("/producer/dashboard")).toBe("/producer/dashboard");
