@@ -525,3 +525,61 @@ class TestOwnerPutGrandfathersLicense:
         assert resp.status_code == 200, resp.text
         db.refresh(producer)
         assert {c.id for c in producer.categories} == {bakery.id, veggies.id}
+
+
+class TestAdminEditGrandfather:
+    """MEH-2707 — the admin PUT used to re-check the license against the
+    business's FULL category set, so an admin could not save ANY field on a
+    business in a license-required category that has no license (measured on
+    staging 5/11: 6 businesses). The admin path now applies the same MEH-999
+    grandfather rule as the owner path: only newly-added licensed categories,
+    or blanking a held license, are refused. Approval is still gated by
+    _assert_approvable, which these tests do not touch.
+    """
+
+    def _admin_and_producer(self, db, *, category, license_number=None, status="approved"):
+        admin = make_user(db, role="admin")
+        producer = make_producer(db, status=status, category=category)
+        producer.producer_license_number = license_number
+        db.commit()
+        db.refresh(producer)
+        return admin, producer
+
+    def test_unrelated_edit_on_unlicensed_business_200(self, client, db):
+        bakery = make_category(db, name=BAKERY, emoji="🍞")
+        admin, producer = self._admin_and_producer(db, category=bakery)
+        resp = client.put(
+            f"/admin/producers/{producer.id}",
+            json={"description": "תיאור חדש שהמנהלת כתבה"},
+            headers=auth_header(admin),
+        )
+        assert resp.status_code == 200, resp.text
+        db.refresh(producer)
+        assert producer.description == "תיאור חדש שהמנהלת כתבה"
+        assert producer.producer_license_number is None
+
+    def test_adding_a_new_licensed_category_without_license_still_422(self, client, db):
+        bakery = make_category(db, name=BAKERY, emoji="🍞")
+        honey = make_category(db, name=HONEY, emoji="🍯")
+        admin, producer = self._admin_and_producer(db, category=bakery)
+        resp = client.put(
+            f"/admin/producers/{producer.id}",
+            json={"category_ids": [bakery.id, honey.id]},
+            headers=auth_header(admin),
+        )
+        assert resp.status_code == 422, resp.text
+        assert resp.json()["detail"] == LICENSE_REQUIRED_HE
+        db.refresh(producer)
+        assert {c.id for c in producer.categories} == {bakery.id}
+
+    def test_blanking_a_held_license_on_licensed_category_still_422(self, client, db):
+        bakery = make_category(db, name=BAKERY, emoji="🍞")
+        admin, producer = self._admin_and_producer(db, category=bakery, license_number="1234567")
+        resp = client.put(
+            f"/admin/producers/{producer.id}",
+            json={"producer_license_number": "  "},
+            headers=auth_header(admin),
+        )
+        assert resp.status_code == 422, resp.text
+        db.refresh(producer)
+        assert producer.producer_license_number == "1234567"

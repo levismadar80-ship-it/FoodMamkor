@@ -58,8 +58,14 @@ def test_works_for_unlicensed_business_in_licence_category(client, db):
     assert producer.google_place_id == PLACE_ID
 
 
-def test_full_admin_put_still_refuses_that_business(client, db):
-    """The licence gate on the full edit is untouched — only the new route skips it."""
+def test_full_admin_put_now_accepts_that_business_too(client, db):
+    """MEH-2707 superseded this pin. It asserted 422 — the full admin PUT
+    re-checked the FULL category set, which is the very bug MEH-2582 routed
+    around. The full PUT now applies the owner path's MEH-999 grandfather rule
+    (only newly-added licensed categories or a blanked license are refused —
+    pinned in test_producer_license.py::TestAdminEditGrandfather), so an
+    unrelated field saves. The one-field route above stays and keeps working.
+    """
     producer = make_producer(db, status="pending", category=_licence_category(db))
     producer.producer_license_number = None
     db.commit()
@@ -70,7 +76,10 @@ def test_full_admin_put_still_refuses_that_business(client, db):
         headers=auth_header(make_user(db, role="admin")),
     )
 
-    assert resp.status_code == 422, resp.text
+    assert resp.status_code == 200, resp.text
+    db.refresh(producer)
+    assert producer.google_place_id == PLACE_ID
+    assert producer.producer_license_number is None
 
 
 def test_blank_clears_it(client, db):
