@@ -225,6 +225,7 @@
       },
       "producer": {
         "heading": "Give your business a home",
+        "organizer_heading": "Publish your markets and events",
         "subtitle": "About 5 minutes. No commissions. The customer comes straight to you",
         "gate": {
           "producer_heading": "You already have a business page on Mehamakor",
@@ -243,8 +244,7 @@
           "after_title": "What happens next",
           "after_body": "Every business gets a personal intro — once you complete your profile and send it for review, our team checks the details, gets in touch if needed, and your business goes live within up to 3 business days.",
           "after_link": "How the acceptance process works",
-          "cta": "Start",
-          "organizer_entry": "Organising a group buy? Start here"
+          "cta": "Start"
         },
         "loading": "Loading...",
         "loading_form": "Loading registration form...",
@@ -280,6 +280,7 @@
         "step_captions": {
           "account": "Account",
           "details": "Business",
+          "details_organizer": "Details",
           "category": "Category",
           "story": "Story"
         },
