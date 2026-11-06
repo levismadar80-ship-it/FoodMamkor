@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import * as Sentry from "@sentry/nextjs";
 
 import api from "@/lib/api";
@@ -159,5 +159,16 @@ export function useProducerData({ params, fetchPath, initialProducer }) {
       .catch(() => setNearbyProducers([]));
   }, [producer?.id, producer?.city]);
 
-  return { producer, loading, events, similarProducers, nearbyProducers };
+  // MEH-2705: the reviews section reports its live total; keep the header and
+  // the sticky bar in step with it. Same object when nothing changed, so no
+  // re-render loop and no effect keyed on `producer` re-fires for nothing.
+  const setReviewsCount = useCallback((count) => {
+    setProducer((p) =>
+      p && typeof count === "number" && p.reviews_count !== count
+        ? { ...p, reviews_count: count }
+        : p,
+    );
+  }, []);
+
+  return { producer, loading, events, similarProducers, nearbyProducers, setReviewsCount };
 }
