@@ -155,24 +155,62 @@ export default function RescueSection({ producer }) {
     }
   }
 
+  function showCancelled() {
+    setOrder(null);
+    setCancelled(true);
+    // The bag went back on the list: re-read it, so the card shows the
+    // right stock — and reappears if hers was the last one and the list
+    // had dropped it. A failed read keeps the card as it was.
+    fetchOffers({ city: producer?.city || undefined })
+      .then((rows) => setOffer(rows.find((row) => row.producer?.id === producer?.id) || null))
+      .catch(() => {});
+  }
+
   async function cancel() {
     setBusy(true);
     setErrorKey(null);
     try {
       await cancelOrder(order.id);
-      setOrder(null);
-      setCancelled(true);
-      // The bag went back on the list: re-read it, so the card shows the
-      // right stock — and reappears if hers was the last one and the list
-      // had dropped it. A failed read keeps the card as it was.
-      fetchOffers({ city: producer?.city || undefined })
-        .then((rows) => setOffer(rows.find((row) => row.producer?.id === producer?.id) || null))
-        .catch(() => {});
+      showCancelled();
     } catch (err) {
-      setErrorKey(cancelErrorKey(err, order.cancel_until));
+      const key = cancelErrorKey(err, order.cancel_until);
+      // MEH-2738: a 409 before the cutoff means the order is no longer
+      // reserved — cancelled in another tab, cancelled by the business, or
+      // handed meanwhile. Ask the server which, instead of «משהו נתקע».
+      if (key === "errors.generic" && err?.response?.status === 409 && (await settleAfterConflict(order.id))) {
+        return;
+      }
+      setErrorKey(key);
     } finally {
       setBusy(false);
     }
+  }
+
+  /** True when the server's own state explains the 409 and is now shown. */
+  async function settleAfterConflict(orderId) {
+    let mine;
+    try {
+      mine = await fetchMyOrders();
+    } catch {
+      return false;
+    }
+    const row = mine.find((r) => r.id === orderId);
+    if (!row) {
+      // Not in the list = the buyer's own cancel went through earlier.
+      showCancelled();
+      return true;
+    }
+    if (row.cancelled_by_business) {
+      setOrder(null);
+      setBusinessCancelled(true);
+      return true;
+    }
+    if (row.status === "handed") {
+      setOrder(row);
+      setReviewed((was) => was || row.reviewed);
+      return true;
+    }
+    return false;
   }
 
   const price = shekels(offer?.price_agorot);

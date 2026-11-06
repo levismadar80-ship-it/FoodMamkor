@@ -903,14 +903,58 @@ describe("cancelling a reservation (MEH-2737)", () => {
     await waitFor(() => expect(screen.queryByTestId("rescue-cancel-ask")).toBeNull());
   });
 
-  it("a 409 before the cutoff (e.g. already handed) is not called «too late»", async () => {
+  it("a 409 before the cutoff on an order still reserved is not called «too late»", async () => {
+    authUser = { id: "u1" };
     cancelOrder.mockRejectedValue({ response: { status: 409, data: { detail: "x" } } });
     await reservedSection();
+    fetchMyOrders.mockResolvedValue([{ ...order(), producer_id: PRODUCER.id, cancelled_by_business: false }]);
     fireEvent.click(screen.getByTestId("rescue-confirmation-cancel"));
     fireEvent.click(screen.getByTestId("rescue-cancel-yes"));
     expect((await screen.findByTestId("rescue-section-error")).textContent).toBe(
       lookup("rescue.errors.generic"),
     );
+  });
+
+  // MEH-2738 (reviewer, #4059): cancelled already in another tab, then again
+  // here — the server's 409 must read as the cancel it is, not «משהו נתקע».
+  it("a 409 because it was already cancelled elsewhere shows the cancelled notice", async () => {
+    authUser = { id: "u1" };
+    cancelOrder.mockRejectedValue({ response: { status: 409, data: { detail: "x" } } });
+    await reservedSection();
+    fetchMyOrders.mockResolvedValue([]);
+    fireEvent.click(screen.getByTestId("rescue-confirmation-cancel"));
+    fireEvent.click(screen.getByTestId("rescue-cancel-yes"));
+    expect((await screen.findByTestId("rescue-cancelled-notice")).textContent).toBe(
+      "השריון בוטל, והסל חזר לרשימה.",
+    );
+    expect(screen.queryByTestId("rescue-section-error")).toBeNull();
+    expect(screen.queryByTestId("rescue-confirmation-code")).toBeNull();
+  });
+
+  it("a 409 because the business cancelled meanwhile says the business did", async () => {
+    authUser = { id: "u1" };
+    cancelOrder.mockRejectedValue({ response: { status: 409, data: { detail: "x" } } });
+    await reservedSection();
+    fetchMyOrders.mockResolvedValue([
+      { ...order(), status: "cancelled", producer_id: PRODUCER.id, cancelled_by_business: true },
+    ]);
+    fireEvent.click(screen.getByTestId("rescue-confirmation-cancel"));
+    fireEvent.click(screen.getByTestId("rescue-cancel-yes"));
+    expect(await screen.findByTestId("rescue-business-cancelled")).toBeTruthy();
+    expect(screen.queryByTestId("rescue-section-error")).toBeNull();
+  });
+
+  it("a 409 because the bag was handed meanwhile shows the handed order, no error", async () => {
+    authUser = { id: "u1" };
+    cancelOrder.mockRejectedValue({ response: { status: 409, data: { detail: "x" } } });
+    await reservedSection();
+    fetchMyOrders.mockResolvedValue([
+      { ...order(), status: "handed", producer_id: PRODUCER.id, cancelled_by_business: false },
+    ]);
+    fireEvent.click(screen.getByTestId("rescue-confirmation-cancel"));
+    fireEvent.click(screen.getByTestId("rescue-cancel-yes"));
+    expect(await screen.findByTestId("rescue-review")).toBeTruthy();
+    expect(screen.queryByTestId("rescue-section-error")).toBeNull();
   });
 
   it("any other cancel failure shows the generic line next to the code", async () => {
