@@ -13,11 +13,7 @@ there and correct — an absence check alone would also pass on a 500 body or an
 empty dict.
 """
 
-from datetime import timedelta
-
 from conftest import auth_header, make_producer, make_user
-
-from app.utils.clock import israel_today
 
 LEGACY = ("is_available_today", "availability_status")
 
@@ -30,30 +26,8 @@ def _owner(db):
     return user, producer
 
 
-def test_toggle_response_has_no_legacy_keys(client, db):
-    user, _ = _owner(db)
-    resp = client.post("/producers/me/availability", headers=auth_header(user))
-    assert resp.status_code == 200, resp.text
-    body = resp.json()
-    assert body["availability_state"] == "available_today"
-    for key in LEGACY:
-        assert key not in body, key
-
-
-def test_status_response_has_no_legacy_keys(client, db):
-    user, _ = _owner(db)
-    future = (israel_today() + timedelta(days=7)).isoformat()
-    resp = client.post(
-        "/producers/me/availability-status",
-        json={"status": "vacation", "vacation_until": future},
-        headers=auth_header(user),
-    )
-    assert resp.status_code == 200, resp.text
-    body = resp.json()
-    assert body["availability_state"] == "on_vacation"
-    assert body["vacation_until"] == future
-    for key in LEGACY:
-        assert key not in body, key
+# MEH-2758: the toggle and status cases went with the two legacy endpoints
+# they called; the dashboard case below still guards the last dict response.
 
 
 def test_dashboard_producer_block_has_no_legacy_keys(client, db):
