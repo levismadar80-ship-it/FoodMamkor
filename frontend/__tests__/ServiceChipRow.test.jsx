@@ -38,9 +38,12 @@ import { render, screen, fireEvent, renderHook, act } from "@testing-library/rea
 import ServiceChipRow from "@/app/[locale]/map/components/ServiceChipRow";
 import { TOGGLE_CHIPS, chipStateToParams } from "@/lib/map-chips";
 import { ATTRIBUTE_LABELS } from "@/lib/attribute-labels";
+import { heChipCopy } from "./helpers/he-chip-copy";
 import { CHIPS_CONFIG } from "@/lib/producer-filters";
 import { useMapFilters } from "@/app/[locale]/map/state/useMapFilters";
 import { Check } from "@phosphor-icons/react";
+
+vi.mock("@/lib/use-chip-copy", async () => (await import("./helpers/he-chip-copy")).chipCopyMock);
 
 const EMPTY = {
   categoryKeys: [],
@@ -132,7 +135,7 @@ describe("pickup_points wiring (MEH-2046)", () => {
     // The Label Scope Contract guard asserts this for every entry; this states
     // the specific values, so a later edit to "any-product" or "admin-verified"
     // reds here with a readable diff rather than only at the contract test.
-    const chip = TOGGLE_CHIPS.find((c) => c.key === "pickup_points");
+    const chip = heChipCopy(TOGGLE_CHIPS.find((c) => c.key === "pickup_points"));
 
     expect(chip).toBeDefined();
     expect(chip.group).toBe("service");
@@ -142,7 +145,7 @@ describe("pickup_points wiring (MEH-2046)", () => {
   });
 
   it("reuses the MEH-1461 locked string rather than re-wording it", () => {
-    expect(TOGGLE_CHIPS.find((c) => c.key === "pickup_points").label).toBe(
+    expect(heChipCopy(TOGGLE_CHIPS.find((c) => c.key === "pickup_points")).label).toBe(
       "איסוף עצמי",
     );
   });
@@ -168,7 +171,7 @@ describe("pickup_points wiring (MEH-2046)", () => {
   it("MEH-2130: pickup is now cross-surface, and is still not the layer toggle", () => {
     // Cross-surface, by one declaration rather than by three lists agreeing.
     expect(ATTRIBUTE_LABELS.pickup_points).toBeDefined();
-    expect(ATTRIBUTE_LABELS.pickup_points.label).toBe("איסוף עצמי");
+    expect(heChipCopy({ key: "pickup_points" }).label).toBe("איסוף עצמי");
     expect(CHIPS_CONFIG.some((c) => c.key === "pickup_points")).toBe(true);
     expect(TOGGLE_CHIPS.some((c) => c.key === "pickup_points")).toBe(true);
 

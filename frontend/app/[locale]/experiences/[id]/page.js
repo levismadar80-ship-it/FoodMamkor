@@ -144,9 +144,11 @@ export default async function ExperienceDetailPage(props) {
   return (
     <>
       <ExperienceJsonLd experience={experience} locale={params.locale} />
+      {/* MEH-2754: min-h-screen keeps the footer below the fold while the
+          fallback shows, so swapping in the page shifts nothing in view. */}
       <Suspense
         fallback={
-          <div className="max-w-3xl mx-auto px-4 py-16 text-center text-fg-muted">
+          <div className="max-w-3xl mx-auto px-4 py-16 text-center text-fg-muted min-h-screen" data-testid="page-suspense-fallback">
             {t("loading")}
           </div>
         }

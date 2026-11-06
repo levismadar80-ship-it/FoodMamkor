@@ -20,6 +20,7 @@ import { OPEN_NOW_CHIP_MIN } from "@/lib/producer-filters";
  * the `hasMore` case below is the one that fails if the argument regresses.
  */
 
+vi.mock("@/lib/use-chip-copy", async () => (await import("./helpers/he-chip-copy")).chipCopyMock);
 vi.mock("next-intl", () => ({
   useTranslations: () => (k, v) => (v ? `${k}:${JSON.stringify(v)}` : k),
 }));
@@ -49,15 +50,20 @@ vi.mock("@/i18n/navigation", () => ({ Link: ({ href, children, prefetch, ...p })
 // would red seven gate cases and name none of them. That the sheet actually
 // opens is asserted where it belongs: HomePromotedFilters.test.jsx, and the
 // Playwright harness.
-vi.mock("@/components/FilterSheet", () => ({
-  default: ({ chips = [] }) => (
-    <div data-testid="chip-row">
-      {chips.map((c) => (
-        <span key={c.key} data-testid={`chip-${c.key}`}>{c.label}</span>
-      ))}
-    </div>
-  ),
-}));
+// MEH-2748: the real sheet attaches chip words via useChipCopy(); the stand-in
+// runs the same resolver over he.json so the label it prints is the shipped one.
+vi.mock("@/components/FilterSheet", async () => {
+  const { heChipCopy } = await import("./helpers/he-chip-copy");
+  return {
+    default: ({ chips = [] }) => (
+      <div data-testid="chip-row">
+        {chips.map(heChipCopy).map((c) => (
+          <span key={c.key} data-testid={`chip-${c.key}`}>{c.label}</span>
+        ))}
+      </div>
+    ),
+  };
+});
 
 const CHIP = () => screen.queryByTestId("chip-open_for_orders_now");
 

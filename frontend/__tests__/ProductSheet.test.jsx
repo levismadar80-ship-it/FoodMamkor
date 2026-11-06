@@ -16,13 +16,16 @@ import { render, screen, fireEvent } from "@testing-library/react";
 const pingWhatsAppBeacon = vi.fn();
 const markWhatsAppClickedLocal = vi.fn();
 
-vi.mock("next-intl", () => ({
+vi.mock("next-intl", async () => ({
   // MEH-2045: the sheet reads the locale to pick the arrow-key mapping and the
   // chevron glyphs. Hebrew here keeps every assertion below in the RTL world
   // these tests were written for.
   useLocale: () => "he",
-  useTranslations: (ns) => (key, vars) => {
+  useTranslations: ((heMsgs) => (ns) => (key, vars) => {
     const full = ns ? `${ns}.${key}` : key;
+    // MEH-2753: the primary-CTA label is `contact_cta.<method>` — read it from
+    // the shipped he.json rather than restating the copy here.
+    if (full.startsWith("contact_cta.")) return heMsgs.contact_cta[full.slice("contact_cta.".length)];
     if (full === "whatsapp.question_chips.source_line") return "הגעתי דרך מהמקור";
     if (full === "producer.detail.sections.products.sheet_wa_prefill") {
       return `היי, ראיתי את ״${vars?.name ?? ""}״ בעמוד שלכם במהמקור ואשמח לשמוע פרטים`;
@@ -38,7 +41,7 @@ vi.mock("next-intl", () => ({
     if (full === "producer.detail.sections.products.sheet_close_aria") return "סגירת פרטי המוצר";
     if (full === "producer.card.aria.image_missing") return `${vars?.name ?? ""} — תמונה חסרה`;
     return full;
-  },
+  })((await import("../messages/he.json")).default),
 }));
 
 vi.mock("next/image", () => ({

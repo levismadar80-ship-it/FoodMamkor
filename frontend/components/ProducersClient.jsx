@@ -39,6 +39,7 @@ import {
 // their filter IA should not diverge again.
 import FilterSheet from "@/components/FilterSheet";
 import { withChipIcons } from "@/lib/chip-icons";
+import { useChipCopy } from "@/lib/use-chip-copy";
 import { useUserCity } from "@/lib/use-user-city";
 import { useUserLocation, setUserLocation } from "@/lib/user-location";
 import { showToast } from "@/lib/toast";
@@ -118,6 +119,7 @@ export default function ProducersClient({
   const t = useTranslations("producers");
   // MEH-2616: the location-error strings shared with /map's GPS button.
   const tGeo = useTranslations("map.client.errors");
+  const withChipCopy = useChipCopy(); // MEH-2748: chip words from messages
   const searchParams = useSearchParams();
 
   // MEH-990: city chip is text-only like the rest of CHIPS_CONFIG (Emoji LOCK,
@@ -1039,7 +1041,7 @@ export default function ProducersClient({
               the "הכל" chip or re-tapping the coloured category chip. Only
               attribute/city/search chips remain removable here; "נקו הכל" still
               clears both dimensions. */}
-          {activeChipDefs.map((chip) => (
+          {activeChipDefs.map(withChipCopy).map((chip) => (
             <button
               key={chip.key}
               type="button"

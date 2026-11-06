@@ -178,8 +178,10 @@ describe("TagsCard — grass-fed (ported from GrassFedCard, MEH-1851 row 23)", (
 
   it("the owner-facing label matches the consumer chip string exactly", async () => {
     const { TOGGLE_CHIPS } = await import("@/lib/map-chips");
-    const chip = TOGGLE_CHIPS.find((c) => c.key === "grass_fed");
+    const { heChipCopy } = await import("./helpers/he-chip-copy");
+    const chip = heChipCopy(TOGGLE_CHIPS.find((c) => c.key === "grass_fed"));
     expect(chip).toBeDefined();
+    expect(chip.label).toBeTruthy();
     expect(G.label).toBe(chip.label);
   });
 });

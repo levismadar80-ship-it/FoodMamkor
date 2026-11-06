@@ -1,7 +1,16 @@
 import { describe, it, expect } from "vitest";
-import { ATTRIBUTE_LABELS } from "@/lib/attribute-labels";
-import { CHIPS_CONFIG } from "@/lib/producer-filters";
-import { TOGGLE_CHIPS } from "@/lib/map-chips";
+import { ATTRIBUTE_LABELS as RAW_ATTRIBUTE_LABELS } from "@/lib/attribute-labels";
+import { CHIPS_CONFIG as RAW_CHIPS_CONFIG } from "@/lib/producer-filters";
+import { TOGGLE_CHIPS as RAW_TOGGLE_CHIPS } from "@/lib/map-chips";
+import { heChipCopy } from "./helpers/he-chip-copy";
+
+// MEH-2748: the registries carry keys only; these are the chips as a Hebrew
+// renderer sees them (real resolver over the shipped he.json).
+const CHIPS_CONFIG = RAW_CHIPS_CONFIG.map(heChipCopy);
+const TOGGLE_CHIPS = RAW_TOGGLE_CHIPS.map(heChipCopy);
+const ATTRIBUTE_LABELS = Object.fromEntries(
+  Object.entries(RAW_ATTRIBUTE_LABELS).map(([key, v]) => [key, heChipCopy({ key, ...v })]),
+);
 
 // MEH-1082 [T-C]: the /producers filter row and the /map filter chips share one
 // label source (ATTRIBUTE_LABELS) so the taxonomy reads identically on both

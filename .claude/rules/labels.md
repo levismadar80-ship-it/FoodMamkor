@@ -141,17 +141,18 @@ filter surfaces consume. Each entry is an object:
 
 ```js
 vegan: {
-  label: "מתאים לטבעונים",    // the rendered string (MEH-1508 §6.6 rename)
   scope: "any-product",       // MEH-293 EXISTS-over-products
   evidence: "self-declared",  // owner asserts it
-  subtext: "עסקים עם מוצרים טבעוניים בקטלוג", // in-component scope explanation (LOCKED)
+  hasSubtext: true,           // filter_axes.vegan.subtext exists in messages
 },
 ```
 
-`CHIPS_CONFIG` (`producer-filters.js`) and `TOGGLE_CHIPS` (`map-chips.js`) **spread**
-these objects, so `chip.label` stays a plain string (no visual change to any chip
-row) while every chip carries scope + evidence. `grass_fed` is `/map`-local, so its
-object lives in `map-chips.js` (`GRASS_FED_LABEL`), same shape.
+The words are NOT in code (MEH-2748): `filter_axes.<key>.label` / `.subtext` in
+`messages/{he,en}.json` («מתאים לטבעונים» / «עסקים עם מוצרים טבעוניים בקטלוג»,
+both LOCKED). A renderer passes each chip through `useChipCopy()`
+(`lib/use-chip-copy.js`), which adds `label` / `subtext`, so `chip.label` is still a
+plain string at the render site and every chip carries scope + evidence.
+`/map`'s aggregate category chips read `map_category_chips.<key>` the same way.
 
 The FilterSheet renders `subtext` under every diet row + grass_fed; the trust rows
 (`kosher` · `verified`) fall back to their `BADGE_CONFIG` tooltip. The `/producers`
@@ -173,8 +174,10 @@ tool × path; MEH-671) and vitest already gates every PR — and
 because the pattern the MEH-1507 spec cites, the **MEH-1472 emoji guard**
 (`NoEmojiInComponents.test.js`), is itself a vitest test. Same mechanism, real gate.
 
-**Adding a new label:** add the object with `scope` + `evidence` (+ `subtext` if it
-needs an in-component explanation) to `FILTER_AXES` for a filter chip, or to
+**Adding a new label:** add the object with `scope` + `evidence` + `hasSubtext` to
+`FILTER_AXES` for a filter chip, with its words under `filter_axes.<key>` in
+`messages/{he,en}.json` (`ChipCopyMessages.test.jsx` fails on a missing one,
+MEH-2748), or to
 `BADGE_CONFIG` for a badge. Omit either field → the guard fails. If the new label
 is a claim that already exists on the other surface, add the pair to
 `SHARED_CLAIMS` in the test so the two cannot drift. A badge's label and tooltip

@@ -670,7 +670,7 @@ describe("MEH-2730 each message sits next to what caused it", () => {
     await pointsLoaded();
     fireEvent.click(screen.getByTestId("rescue-items-save"));
     const notice = await screen.findByTestId("rescue-tab-notice");
-    expect(notice.textContent).toBe(lookup("rescue.dashboard.failed"));
+    expect(notice.textContent).toBe(lookup("error.mapper.server"));
     expect(sectionOf(notice)).toBe("items");
   });
 
@@ -725,7 +725,39 @@ describe("MEH-2730 each message sits next to what caused it", () => {
     render(<RescueTab />);
     await pointsLoaded();
     fireEvent.click(screen.getByTestId("rescue-publish-today"));
-    expect((await screen.findByTestId("rescue-tab-notice")).textContent).toBe(lookup("rescue.dashboard.failed"));
+    expect((await screen.findByTestId("rescue-tab-notice")).textContent).toBe(lookup("error.mapper.server"));
+  });
+
+  // MEH-2745: 401 / 429 / no response get the site's own sentences
+  // (error.mapper.*), never whatever text the server or a proxy sent.
+  for (const [label, err, key] of [
+    ["an expired session (401)", { response: { status: 401, data: { detail: "Not authenticated" } } }, "error.mapper.unauthorized"],
+    ["too many attempts (429)", { response: { status: 429, data: { detail: "Rate limit exceeded: 5 per 1 minute" } } }, "error.mapper.rate_limited"],
+    ["no response at all (network)", { message: "Network Error" }, "error.mapper.network"],
+    ["a plain thrown Error (no response)", new Error("x"), "error.mapper.network"],
+  ]) {
+    it(`${label} shows the site's sentence, not the raw text`, async () => {
+      post.mockRejectedValue(err);
+      render(<RescueTab />);
+      await pointsLoaded();
+      fireEvent.click(screen.getByTestId("rescue-publish-today"));
+      const notice = await screen.findByTestId("rescue-tab-notice");
+      expect(notice.textContent).toBe(lookup(key));
+      expect(sectionOf(notice)).toBe("publish");
+    });
+  }
+
+  it("a successful publish stays «published» even when the reload after it fails", async () => {
+    post.mockResolvedValue({ data: {} });
+    render(<RescueTab />);
+    await pointsLoaded();
+    get.mockImplementation(() => Promise.reject({ response: { status: 500, data: {} } }));
+    fireEvent.click(screen.getByTestId("rescue-publish-today"));
+    await waitFor(() =>
+      expect(screen.getByTestId("rescue-tab-notice").textContent).toBe(lookup("rescue.dashboard.published")),
+    );
+    await act(async () => {});
+    expect(screen.getByTestId("rescue-tab-notice").textContent).toBe(lookup("rescue.dashboard.published"));
   });
 
   it("a refusal is an alert, a confirmation is a status", async () => {

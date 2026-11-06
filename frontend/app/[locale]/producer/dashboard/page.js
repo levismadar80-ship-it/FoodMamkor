@@ -244,6 +244,7 @@ function handleAvailabilityKeyDown(e) {
 
 export default function ProducerDashboardPage() {
   const t = useTranslations("dashboard.producer");
+  const tHoliday = useTranslations("holidays");
   // MEH-1773: explainer for the availability card below. Its twin lives on the
   // order-window card in edit/page.js — the pair is the point, so if one moves
   // the other has to follow.
@@ -664,7 +665,7 @@ export default function ProducerDashboardPage() {
             {/* MEH-1687 D: Phosphor icon, not a colour emoji. */}
             <span className="text-xl shrink-0 flex" aria-hidden="true"><HolidayIcon name={h.icon} /></span>
             <div>
-              <p className="font-semibold text-text">{h.dashboardHint}</p>
+              <p className="font-semibold text-text">{tHoliday(`${h.key}.dashboard_hint`)}</p>
               {/* MEH-2429: this pointed at /producer/dashboard — the page it
                   sits on, so the CTA did nothing. The catalog is the products
                   card on the edit tab (KEY_TO_ANCHOR.products). */}

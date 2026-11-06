@@ -6,7 +6,7 @@ import { Link as LocaleLink } from "@/i18n/navigation";
 
 import api from "@/lib/api";
 import { ALLERGEN_CODES, toggleAllergen } from "@/lib/allergens";
-import { detailToMessage } from "@/lib/errors";
+import { detailToMessage, errorMessage } from "@/lib/errors";
 import { israelTime, leftoverGroupUrl, shekels } from "@/lib/rescue";
 import Button from "@/components/ui/Button";
 
@@ -43,6 +43,7 @@ export default function RescueTab() {
   // The allergen LABELS are the product sheet's, not a second copy: one
   // vocabulary for the whole site (MEH-2662).
   const tProducts = useTranslations("settings.products.form");
+  const tError = useTranslations("error");
   const [orders, setOrders] = useState(null);
   const [code, setCode] = useState("");
   const [busyId, setBusyId] = useState(null);
@@ -55,14 +56,19 @@ export default function RescueTab() {
   // (alert), a confirmation politely (status).
   const setNotice = (at, text, error = true) => setNoticeState(text ? { at, text, error } : null);
   const clearNotice = () => setNoticeState(null);
-  // The server's own sentence when it sent one — string, {code, message}
-  // (the verified-email gate) or a 422 list; the generic line otherwise.
-  // A raw object here used to reach JSX as a child and could not render.
-  // A 5xx gets the generic line even with a detail: that text is a server or
-  // proxy message, not one written for the owner (same split as errorMessage()
-  // in lib/errors.js).
-  const reason = (err) =>
-    (err?.response?.status >= 500 ? null : detailToMessage(err?.response?.data?.detail)) || t("failed");
+  // Two paths (MEH-2745). No response, 401, 429 and 5xx get the site's own
+  // sentences (error.mapper.*, via errorMessage): the text in those comes
+  // from the auth layer, slowapi or a proxy, not written for the owner.
+  // Any other 4xx shows the server's own sentence — string, {code, message}
+  // (the verified-email gate) or a 422 list — or the generic line. A raw
+  // object here used to reach JSX as a child and could not render.
+  const reason = (err) => {
+    const status = err?.response?.status;
+    if (!err?.response || status === 401 || status === 429 || status >= 500) {
+      return errorMessage(err, tError);
+    }
+    return detailToMessage(err.response.data?.detail) || t("failed");
+  };
   const [items, setItems] = useState("");
   // MEH-2752: null = this business declared nothing, which is NOT the same as
   // an empty selection the owner is mid-way through making. The save turns an

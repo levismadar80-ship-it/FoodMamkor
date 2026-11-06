@@ -15,6 +15,9 @@ import {
   getPrimaryContactLabel,
   isPrimaryExternal,
 } from "@/lib/contact-method";
+import { createTranslator } from "next-intl";
+import he from "../messages/he.json";
+import en from "../messages/en.json";
 
 const base = {
   name: "חוות השקמה",
@@ -58,13 +61,13 @@ describe("getPrimaryContactHref", () => {
     expect(getPrimaryContactHref(undefined)).toBe(null);
   });
 
-  it("whatsapp: builds wa.me with prefilled message", () => {
-    const href = getPrimaryContactHref({
-      ...base,
-      primary_contact_method: "whatsapp",
-    });
+  it("whatsapp: builds wa.me with the caller's prefilled message", () => {
+    const href = getPrimaryContactHref(
+      { ...base, primary_contact_method: "whatsapp" },
+      "שלום — בדיקה",
+    );
     expect(href).toContain("https://wa.me/972501234567");
-    expect(href).toContain("text=");
+    expect(href).toContain(`text=${encodeURIComponent("שלום — בדיקה")}`);
   });
 
   it("whatsapp: null when no phone", () => {
@@ -120,24 +123,44 @@ describe("getPrimaryContactHref", () => {
   });
 });
 
+// MEH-2753: the label is `contact_cta.<method>` in messages; these run the
+// real ICU translator over the shipped he.json / en.json.
+const tHe = createTranslator({ locale: "he", messages: he });
+const tEn = createTranslator({ locale: "en", messages: en });
+
 describe("getPrimaryContactLabel", () => {
   it("returns the Hebrew label for each method", () => {
-    expect(getPrimaryContactLabel({ primary_contact_method: "whatsapp" })).toBe(
+    expect(getPrimaryContactLabel({ primary_contact_method: "whatsapp" }, tHe)).toBe(
       "שליחת הודעה בוואטסאפ",
     );
-    expect(getPrimaryContactLabel({ primary_contact_method: "phone" })).toBe(
+    expect(getPrimaryContactLabel({ primary_contact_method: "phone" }, tHe)).toBe(
       "התקשרו",
     );
-    expect(getPrimaryContactLabel({ primary_contact_method: "website" })).toBe(
+    expect(getPrimaryContactLabel({ primary_contact_method: "website" }, tHe)).toBe(
       "להזמנה באתר",
     );
-    expect(getPrimaryContactLabel({ primary_contact_method: "email" })).toBe(
+    expect(getPrimaryContactLabel({ primary_contact_method: "email" }, tHe)).toBe(
       "שליחת מייל",
     );
   });
 
   it("falls back for unknown method", () => {
-    expect(getPrimaryContactLabel({})).toBe("שליחת הודעה בוואטסאפ"); // default → whatsapp
+    expect(getPrimaryContactLabel({}, tHe)).toBe("שליחת הודעה בוואטסאפ"); // default → whatsapp
+  });
+
+  it("has a he AND en label for every method, and the en one is English", () => {
+    for (const { key } of CONTACT_METHODS) {
+      const producer = { primary_contact_method: key };
+      expect(getPrimaryContactLabel(producer, tHe), key).toMatch(/[\u0590-\u05FF]/);
+      const enLabel = getPrimaryContactLabel(producer, tEn);
+      expect(enLabel, key).toBeTruthy();
+      expect(enLabel, key).not.toMatch(/[\u0590-\u05FF]/);
+    }
+  });
+
+  it("the WhatsApp greeting carries the business name in both locales", () => {
+    expect(tHe("contact_cta.wa_greeting", { name: "חוות השקמה" })).toBe("היי! הגעתי דרך מהמקור — חוות השקמה");
+    expect(tEn("contact_cta.wa_greeting", { name: "Shikma Farm" })).toBe("Hi! I found you on Mehamakor — Shikma Farm");
   });
 });
 

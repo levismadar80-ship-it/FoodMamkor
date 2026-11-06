@@ -42,6 +42,7 @@ import Button from "@/components/ui/Button";
 
 export default function SpecialHoursEditor({ profile, onSave, reportDirty = () => {} }) {
   const t = useTranslations("dashboard.producer.special_hours");
+  const tHoliday = useTranslations("holidays");
   // Range mechanics and the save/revert buttons REUSE the order-window copy —
   // same nouns, same verbs, and one place to fix them.
   const tRange = useTranslations("dashboard.producer.order_window");
@@ -72,7 +73,12 @@ export default function SpecialHoursEditor({ profile, onSave, reportDirty = () =
   const dirty = JSON.stringify(current) !== seedPayload;
   const issues = today ? specialHoursIssues(rows, today) : [];
   const issueByRow = new Map(issues.map((issue) => [issue.index, issue.reason]));
-  const chips = today ? holidayChips(rows, today) : [];
+  // MEH-2741: the chip label (and the note it prefills) is the holiday's name
+  // in the reader's locale — lib/holidays.js holds dates, not words.
+  const chips = (today ? holidayChips(rows, today) : []).map((chip) => ({
+    ...chip,
+    name: tHoliday(`${chip.key}.name`),
+  }));
   const isEmpty = rows.length === 0;
   // Saving is gated on the clock having been read, EXPLICITLY. Before mount
   // `issues` is [] only because there is no `today` to validate against — not

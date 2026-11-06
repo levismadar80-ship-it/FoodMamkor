@@ -32,6 +32,7 @@ import { TOGGLE_CHIPS, visibleMapToggleChips } from "@/lib/map-chips";
 import { BADGE_CONFIG, allBadges } from "@/lib/badges";
 import { badgeIcon } from "@/lib/chip-icons";
 import { ProducerSchema } from "@/lib/schemas";
+import { heChipCopy } from "./helpers/he-chip-copy";
 
 const LOCKED = {
   vegan: "מתאים לטבעונים",
@@ -40,14 +41,16 @@ const LOCKED = {
   vegetarian_all: "צמחוני",
 };
 const DECLARED = "לפי הצהרת בית העסק";
+// MEH-2748: chip words come from messages — read them as a renderer does.
+const heLabel = (key) => heChipCopy({ key }).label;
 const SCOPE_ALL = ["vegan_all", "vegetarian_all"];
 
 describe("§6.6 — the exposed diet chips carry their scope in the term", () => {
   it("renames vegan / vegetarian to the locked strings, on every surface", () => {
     for (const key of ["vegan", "vegetarian"]) {
-      expect(FILTER_AXES[key].label).toBe(LOCKED[key]);
+      expect(heLabel(key)).toBe(LOCKED[key]);
       for (const surface of [CHIPS_CONFIG, PRODUCERS_CHIPS_CONFIG, TOGGLE_CHIPS]) {
-        expect(surface.find((c) => c.key === key)?.label).toBe(LOCKED[key]);
+        expect(heChipCopy(surface.find((c) => c.key === key))?.label).toBe(LOCKED[key]);
       }
     }
   });
@@ -58,8 +61,8 @@ describe("§6.6 — the exposed diet chips carry their scope in the term", () =>
   });
 
   it("leaves gluten-free / lactose-free untouched (they have no 100% layer)", () => {
-    expect(FILTER_AXES.gluten_free.label).toBe("ללא גלוטן");
-    expect(FILTER_AXES.lactose_free.label).toBe("ללא לקטוז");
+    expect(heLabel("gluten_free")).toBe("ללא גלוטן");
+    expect(heLabel("lactose_free")).toBe("ללא לקטוז");
     expect(heBadgeCopy(BADGE_CONFIG.gluten_free).label).toBe("ללא גלוטן");
     expect(heBadgeCopy(BADGE_CONFIG.lactose_free).label).toBe("ללא לקטוז");
   });
@@ -70,8 +73,8 @@ describe("MEH-2677 — the whole-business axes are a card badge, not a filter ch
   // a duplicate. One chip per diet (the Uber Eats pattern); the declaration
   // stays visible as the card badge below.
   it.each(SCOPE_ALL)("%s keeps its declaration (label, scope, evidence) for the badge pairing", (key) => {
-    const axis = FILTER_AXES[key];
-    expect(axis, `FILTER_AXES.${key}`).toBeDefined();
+    expect(FILTER_AXES[key], `FILTER_AXES.${key}`).toBeDefined();
+    const axis = heChipCopy({ key, ...FILTER_AXES[key] });
     expect(axis.label).toBe(LOCKED[key]);
     expect(axis.scope).toBe("business");
     expect(axis.evidence).toBe("self-declared");

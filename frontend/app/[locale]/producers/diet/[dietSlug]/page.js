@@ -155,7 +155,8 @@ export async function generateMetadata({ params }) {
 
   const { entry } = resolved;
   const t = await getTranslations({ locale, namespace: "diet_pages" });
-  const label = dietPageLabel(entry);
+  const tRoot = await getTranslations({ locale });
+  const label = dietPageLabel(entry, tRoot);
   const path = dietPagePath(entry.slug);
   const title = t("meta_title", { label });
   const description = t(`pages.${entry.attribute}.meta_description`);
@@ -200,11 +201,12 @@ export default async function DietLandingPage({ params }) {
   // (`producers.discovery.showing_count`), and the link text reuses the map
   // pane's `show_all` — zero new strings, so rule 22 is satisfied by reuse.
   // Ruling: MEH-1944 description, 02/09 + 03/09 (option a, no new copy).
-  const [tProducers, tMap] = await Promise.all([
+  const [tProducers, tMap, tRoot] = await Promise.all([
     getTranslations({ locale, namespace: "producers" }),
     getTranslations({ locale, namespace: "map" }),
+    getTranslations({ locale }),
   ]);
-  const label = dietPageLabel(entry);
+  const label = dietPageLabel(entry, tRoot);
   const path = dietPagePath(entry.slug);
   const intro = t(`pages.${entry.attribute}.intro`);
   // t.raw: the FAQ is an ARRAY of {question, answer} in messages/*.json.
@@ -269,7 +271,7 @@ export default async function DietLandingPage({ params }) {
                   href={dietPagePath(s.slug)}
                   className="inline-flex items-center rounded-full border border-border bg-surface px-4 py-2 text-sm text-fg transition-colors hover:border-primary hover:text-primary"
                 >
-                  {dietPageLabel(s)}
+                  {dietPageLabel(s, tRoot)}
                 </Link>
               </li>
             ))}

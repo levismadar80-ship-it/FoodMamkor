@@ -175,9 +175,11 @@ function RiskBadge({ score, reasoning }) {
   );
 }
 
-function CompletenessBadge({ missing, priority }) {
+export function CompletenessBadge({ missing, priority }) {
   const t = useTranslations("admin");
-  const fields = missing.join(", ");
+  // MEH-2760: `missing` holds field slugs; the words are the owner dashboard's.
+  const tField = useTranslations("dashboard.producer.completeness.fields");
+  const fields = missing.map((slug) => tField(slug)).join(", ");
   if (priority === "red") {
     return (
       <span

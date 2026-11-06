@@ -96,7 +96,7 @@ import {
   getDietPage,
   isDietPageBacked,
 } from "@/lib/diet-pages";
-import { ATTRIBUTE_LABELS } from "@/lib/attribute-labels";
+import { heT, heAxisLabel } from "./helpers/he-chip-copy";
 
 /** A /producers response carrying `total` in X-Total-Count. */
 function listing(total, items = []) {
@@ -156,9 +156,12 @@ describe("MEH-1935 config — lib/diet-pages", () => {
     expect(dietPagePath("vegan")).toBe("/producers/diet/vegan");
   });
 
-  it("takes the H1 label from ATTRIBUTE_LABELS, never a second copy", () => {
+  // MEH-2748: the H1 reads the SAME message the filter chip renders
+  // (`filter_axes.<attribute>.label`), so the two cannot disagree.
+  it("takes the H1 label from the filter chip's message, never a second copy", () => {
     for (const entry of BACKED_DIET_PAGES) {
-      expect(dietPageLabel(entry)).toBe(ATTRIBUTE_LABELS[entry.attribute].label);
+      expect(dietPageLabel(entry, heT)).toBe(heAxisLabel(entry.attribute));
+      expect(dietPageLabel(entry, heT)).toMatch(/^[֐-׿ ]+$/);
     }
   });
 
@@ -182,7 +185,8 @@ describe("MEH-1935 data gate — generateMetadata", () => {
     serverFetch.mockResolvedValue(listing(DIET_PAGE_MIN));
     const m = await meta("vegan");
     expect(m.alternates.canonical).toContain("/producers/diet/vegan");
-    expect(m.title.absolute).toContain(ATTRIBUTE_LABELS.vegan.label);
+    // The mocked translator echoes keys: the title must carry the chip's key.
+    expect(m.title.absolute).toContain("filter_axes.vegan.label");
   });
 
   it("404s one business below the threshold", async () => {
@@ -230,7 +234,6 @@ describe("MEH-1935 data gate — generateMetadata", () => {
       attribute: "__fixture_unbacked",
       filterParam: "__fixture_unbacked",
       backed: false,
-      pendingLabel: "פיקסטורה",
     };
     DIET_PAGES.push(UNBACKED);
     try {

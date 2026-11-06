@@ -9,8 +9,10 @@
  * that membership is computed from one declaration instead of maintained by
  * hand in parallel with CHIPS_CONFIG and TOGGLE_CHIPS.
  *
- * The import surface is unchanged on purpose: `ATTRIBUTE_LABELS.vegan.label`
- * reads exactly as before, so no consumer and no test needed rewriting.
+ * MEH-2748: entries no longer carry words. `ATTRIBUTE_LABELS.vegan` is
+ * `{ scope, evidence, hasSubtext }`; the label and subtext are
+ * `filter_axes.<key>` in messages/{he,en}.json, attached at render time by
+ * lib/use-chip-copy.js (lib/chip-copy.js on the server).
  *
  * Both the /producers filter row (`producer-filters.js` CHIPS_CONFIG) and the
  * /map filter chips (`map-chips.js` TOGGLE_CHIPS) render these, so the taxonomy
@@ -30,9 +32,8 @@
  *                per MEH-1507 §hebrew_copy — do not paraphrase.
  * Full contract + the four precedents: .claude/rules/labels.md.
  *
- * NOTE — `label` stays a plain string on every consumer: CHIPS_CONFIG /
- * TOGGLE_CHIPS spread these objects, so `chip.label` is unchanged and the chip
- * ROW renders byte-identical.
+ * NOTE — `chip.label` is still a plain string on every render site: the
+ * resolver adds it from messages, so the chip ROW renders byte-identical.
  *
  * Surface-specific keys stay OUT of this map — and after MEH-2130 that is a
  * CONSEQUENCE of their `surfaces` field rather than a second thing to remember:
@@ -68,9 +69,10 @@ import { FILTER_AXES, SHARED_AXIS_KEYS } from "@/lib/filter-taxonomy";
 
 export const ATTRIBUTE_LABELS = Object.fromEntries(
   SHARED_AXIS_KEYS.map((key) => {
-    const { label, scope, evidence, subtext } = FILTER_AXES[key];
-    // `group` is deliberately not projected: it is FilterSheet wiring, and this
-    // map's shape ({label, scope, evidence, subtext}) is what MEH-1507 pinned.
-    return [key, { label, scope, evidence, subtext }];
+    const { scope, evidence, hasSubtext } = FILTER_AXES[key];
+    // `group` is deliberately not projected: it is FilterSheet wiring.
+    // MEH-2748: label/subtext are not stored here any more — they live in
+    // messages/{he,en}.json `filter_axes.<key>` (see lib/use-chip-copy.js).
+    return [key, { scope, evidence, hasSubtext }];
   }),
 );

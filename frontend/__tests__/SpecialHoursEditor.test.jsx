@@ -139,17 +139,20 @@ describe("lib/special-hours — holiday chips read HOLIDAYS as-is", () => {
     expect(chips.length).toBeGreaterThan(0);
     const first = chips[0];
     const h = HOLIDAYS[first.key];
-    expect(first.name).toBe(h.name);
+    // MEH-2741: the lib carries dates, not words — the editor adds the name.
+    expect(first.name).toBeUndefined();
     expect(first.dates[0]).toBe(h.start < TODAY ? TODAY : h.start);
     expect(first.dates[first.dates.length - 1]).toBe(h.end);
     expect(first.added).toBe(false);
   });
 
   it("a chip whose every date is already a row reads as taken; a partial one does not", () => {
-    const chip = holidayChips([], TODAY)[0];
+    // The editor attaches the localized name before a chip reaches
+    // addHolidayRows; a real string here makes the note check mean something.
+    const chip = { ...holidayChips([], TODAY)[0], name: "שם החג" };
     const all = addHolidayRows([], chip);
     expect(all.map((r) => r.date)).toEqual(chip.dates);
-    expect(all.every((r) => r.closed && r.note === chip.name)).toBe(true);
+    expect(all.every((r) => r.closed && r.note === "שם החג")).toBe(true);
     expect(holidayChips(all, TODAY)[0].added).toBe(true);
     expect(holidayChips(all.slice(1), TODAY)[0].added).toBe(false);
   });
@@ -206,9 +209,13 @@ describe("SpecialHoursEditor — the state matrix", () => {
     const firstKey = UPCOMING_KEYS[0];
     const chip = screen.getByTestId(`special-hours-chip-${firstKey}`);
     expect(chip).not.toBeDisabled();
+    // MEH-2741: the chip label is the holiday's message (key-echo mock), and
+    // the note it prefills on every added row is that same string.
+    expect(chip.textContent).toContain(`${firstKey}.name`);
     fireEvent.click(chip);
     const expected = holidayChips([], TODAY).find((c) => c.key === firstKey).dates;
     expect(rows().map((r) => r.dataset.date)).toEqual(expected);
+    expect(screen.getAllByDisplayValue(`${firstKey}.name`)).toHaveLength(expected.length);
     expect(chip).toBeDisabled();
     expect(chip.getAttribute("aria-pressed")).toBe("true");
     // Nothing was saved — the owner decides.

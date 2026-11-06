@@ -3,6 +3,7 @@
 import { Check } from "@phosphor-icons/react";
 
 import { chipIcon } from "@/lib/chip-icons";
+import { useChipCopy } from "@/lib/use-chip-copy";
 import { SERVICE_CHIP_KEYS } from "@/lib/map-chips";
 
 /**
@@ -24,7 +25,10 @@ import { SERVICE_CHIP_KEYS } from "@/lib/map-chips";
  * wash+ring when active, ✓ in place of the glyph (MEH-2500).
  */
 export default function PromotedServiceChips({ chips = [], chipState = {}, onToggle, testIdPrefix }) {
-  const promoted = SERVICE_CHIP_KEYS.map((key) => chips.find((c) => c.key === key)).filter(Boolean);
+  const withChipCopy = useChipCopy(); // MEH-2748: words from messages
+  const promoted = SERVICE_CHIP_KEYS.map((key) => chips.find((c) => c.key === key))
+    .filter(Boolean)
+    .map(withChipCopy);
   return promoted.map((chip) => {
     const active = !!chipState[chip.key];
     return (

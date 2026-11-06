@@ -9,5 +9,16 @@ import BrandLoader from "@/components/BrandLoader";
 export default async function Loading() {
   // MEH-876: announce the loading state to assistive tech.
   const t = await getTranslations("a11y");
-  return <BrandLoader label={t("loading")} className="max-w-7xl mx-auto px-4 py-8" />;
+  // MEH-2754: the wrapper is at least one screen tall. The loader alone is
+  // 40vh (.brand-loader min-height), which on a phone left the site footer in
+  // the first screen while the page streamed; when the real page arrived the
+  // footer jumped below the fold — one layout shift of 0.42 CLS on the home
+  // page (Lighthouse, Moto G profile, 06/11). With the footer starting below
+  // the fold the swap moves nothing the visitor can see. The mark itself stays
+  // where it was (top 40vh band).
+  return (
+    <div className="min-h-screen" data-testid="route-loading">
+      <BrandLoader label={t("loading")} className="max-w-7xl mx-auto px-4 py-8" />
+    </div>
+  );
 }

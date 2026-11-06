@@ -1,6 +1,9 @@
 /**
- * Map filter chips (MEH-14). Category chips per spec:
- *   כל · בשר ודגים · ירקות ופירות · חלב וגבינות · לחמים ואפייה · משלוח
+ * Map filter chips (MEH-14). Category chips: all · meat · produce · dairy ·
+ * bread (keys). MEH-2748: the words a reader sees are `map_category_chips.<key>`
+ * (and `filter_axes.<key>` for TOGGLE_CHIPS) in messages/{he,en}.json, attached
+ * at render time by lib/use-chip-copy.js. The Hebrew left in this file is DB
+ * category names in `matches` / `iconName` — data, not copy.
  *   (MEH-1259: the "אורגני" quality toggle was removed — see TOGGLE_CHIPS.)
  *
  * Layout:
@@ -54,13 +57,13 @@ import {
 //   pin for the aggregate produce chip). All values ≥3:1 on white (WCAG 1.4.11);
 //   no new palette colour is introduced. "כל" has no iconColor (iconless reset).
 export const CATEGORY_CHIPS = [
-  { key: "all", label: "כל", matches: null },
+  { key: "all", matches: null },
   // MEH-927: "בשר ודגים" split into "בשר" + "דגים"; "דגים" folded into the meat
   // chip for launch (legacy "בשר ודגים" kept for any pre-migration admin rows).
-  { key: "meat", label: "בשר ודגים", matches: ["בשר ועוף", "בשר", "דגים", "בשר ודגים", "בשר, עוף ודגים"], iconName: "בשר", iconColor: "#c04040" },
-  { key: "produce", label: "ירקות ופירות", matches: ["ירקות ופירות", "ירקות", "ירקות, פירות ומשקים"], iconName: "ירקות", iconColor: "#2e6853" },
-  { key: "dairy", label: "חלב וגבינות", matches: ["חלב וגבינות", "חלב"], iconName: "חלב וגבינות", iconColor: "#3b72ad" },
-  { key: "bread", label: "לחמים ואפייה", matches: ["לחם ומאפה", "לחם", "לחמים ואפייה", "לחמים"], iconName: "לחמים ואפייה", iconColor: "#896714" },
+  { key: "meat", matches: ["בשר ועוף", "בשר", "דגים", "בשר ודגים", "בשר, עוף ודגים"], iconName: "בשר", iconColor: "#c04040" },
+  { key: "produce", matches: ["ירקות ופירות", "ירקות", "ירקות, פירות ומשקים"], iconName: "ירקות", iconColor: "#2e6853" },
+  { key: "dairy", matches: ["חלב וגבינות", "חלב"], iconName: "חלב וגבינות", iconColor: "#3b72ad" },
+  { key: "bread", matches: ["לחם ומאפה", "לחם", "לחמים ואפייה", "לחמים"], iconName: "לחמים ואפייה", iconColor: "#896714" },
 ];
 
 // MEH-58 Phase 3: RTL order right→left. Boolean toggles are

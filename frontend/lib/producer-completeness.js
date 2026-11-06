@@ -19,19 +19,20 @@ import { producerPoints } from "./producerPoints.js";
 // location row as permanently missing them.
 import { resolveStoreHours } from "./hours.js";
 
-// MEH-831: the canonical Hebrew field labels this heuristic emits in `missing`.
-// Single source of truth — ProfileCompletenessCard imports these to build its
-// label→slug map instead of mirroring the strings (which would drift silently
-// if a label here were renamed). Keyed by the card's slug.
+// MEH-831: the field ids this heuristic emits in `missing`; ProfileCompletenessCard
+// and the admin badge import them rather than restating them.
+// MEH-2760: these used to be Hebrew labels that doubled as ids, so the admin
+// tooltip read Hebrew in every locale. They are slugs now; the words are
+// `dashboard.producer.completeness.fields.<slug>` in messages/{he,en}.json.
 export const COMPLETENESS_FIELDS = {
-  city: "עיר",
-  coords: "קואורדינטות",
-  delivery: "אזורי משלוח",
-  contact: "פרטי קשר (טלפון/אינסטגרם)",
-  category: "קטגוריה",
-  image: "תמונה",
-  short_desc: "תיאור קצר",
-  hours: "שעות פתיחה",
+  city: "city",
+  coords: "coords",
+  delivery: "delivery",
+  contact: "contact",
+  category: "category",
+  image: "image",
+  short_desc: "short_desc",
+  hours: "hours",
 };
 
 // MEH-1173: the MEH-532 seed description, written at registration from the

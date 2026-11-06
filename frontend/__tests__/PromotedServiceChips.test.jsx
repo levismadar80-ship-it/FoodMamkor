@@ -7,6 +7,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 
+vi.mock("@/lib/use-chip-copy", async () => (await import("./helpers/he-chip-copy")).chipCopyMock);
 vi.mock("@phosphor-icons/react", async (importOriginal) => ({
   ...(await importOriginal()),
   Check: () => <span data-testid="check" />,

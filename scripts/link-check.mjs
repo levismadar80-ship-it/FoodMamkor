@@ -16,7 +16,8 @@
  * Related:  frontend/public/robots.txt (the Disallow set this honours),
  *           frontend/app/sitemap.js (the URL set robots must not contradict),
  *           MEH-1955 (robots/sitemap gap-check — the sibling half).
- * History:  MEH-1963 (creation).
+ * History:  MEH-1963 (creation) · MEH-2749 (Vercel bypass header from env, so
+ *           the post-deploy workflow can crawl staging).
  *
  * Usage:  node scripts/link-check.mjs [baseURL] [--json]
  *         default baseURL http://localhost:3000 (run `next start` first)
@@ -245,13 +246,31 @@ function extractAnchors(html) {
  * collapsed into its destination. `fetch`'s default `redirect: "follow"` hides
  * exactly the thing this tool is asked to report.
  */
+// MEH-2749: the post-deploy workflow crawls staging, which sits behind Vercel
+// Deployment Protection. The bypass secret comes from the env only, and is
+// attached per hop ONLY when that hop's origin is the crawl's own origin: a
+// same-site URL can 3xx to another host (vercel.com/sso-api when protection
+// rejects the header, or any external redirect), and head() follows hops by
+// hand, so a static header map would hand the secret to that host.
+// Do NOT add `x-vercel-set-bypass-cookie`: it turns redirects into cookie
+// redirects, which this tool would then report as chains (measured 28/10).
+const BYPASS = (process.env.VERCEL_AUTOMATION_BYPASS_SECRET || "").trim();
+const BASE_ORIGIN = new URL(BASE).origin;
+function requestHeaders(url) {
+  const sameOrigin = new URL(url).origin === BASE_ORIGIN;
+  return {
+    "accept-language": "he-IL",
+    ...(BYPASS && sameOrigin ? { "x-vercel-protection-bypass": BYPASS } : {}),
+  };
+}
+
 async function head(url) {
   const chain = [];
   let current = url;
   for (let hop = 0; hop < 6; hop += 1) {
     let res;
     try {
-      res = await fetch(current, { redirect: "manual", headers: { "accept-language": "he-IL" } });
+      res = await fetch(current, { redirect: "manual", headers: requestHeaders(current) });
     } catch (err) {
       return { status: 0, error: err.message, chain, final: current };
     }

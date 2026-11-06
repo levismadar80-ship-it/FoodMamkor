@@ -21,6 +21,7 @@ import FilterSheet from "@/components/FilterSheet";
 
 // Namespace-less t() that returns the key; interpolated values are appended
 // as `key#value` so the apply-count assertions can target them.
+vi.mock("@/lib/use-chip-copy", async () => (await import("./helpers/he-chip-copy")).chipCopyMock);
 vi.mock("@/lib/use-badge-copy", async () => (await import("./helpers/he-badge-copy")).badgeCopyMock);
 vi.mock("next-intl", () => ({
   useTranslations: () => (key, values) =>

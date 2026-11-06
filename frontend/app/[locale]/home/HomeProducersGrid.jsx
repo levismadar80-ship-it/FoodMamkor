@@ -15,6 +15,7 @@ import FilterSheet from "@/components/FilterSheet";
 import PromotedServiceChips from "@/components/PromotedServiceChips";
 import { SERVICE_CHIP_KEYS } from "@/lib/map-chips";
 import { chipsToQuery } from "@/lib/filter-url";
+import { useChipCopy } from "@/lib/use-chip-copy";
 // MEH-1825: the day row is shared with /producers — one definition in components/.
 import { DeliveryDayRow } from "@/components/DeliveryDayRow";
 import { keepFocusedChipClear } from "@/lib/keepFocusedChipClear";
@@ -137,6 +138,7 @@ export function HomeProducersGrid({
   regionFallback,
 }) {
   const t = useTranslations();
+  const withChipCopy = useChipCopy(); // MEH-2748: chip words from messages
   // MEH-2714: the card entrance plays on the first visit only (see route-memory).
   const skipReveal = useRevealSkip();
   // MEH-1418: attach Phosphor leading icons once (static config → stable ref).
@@ -406,7 +408,7 @@ export function HomeProducersGrid({
               colours. The aria-label is the one addition: the /producers pill's
               accessible name is just "× {label}", which does not say what the
               button does. It reuses an existing key, so no new i18n twin. */}
-          {tagChips.map((chip) => (
+          {tagChips.map(withChipCopy).map((chip) => (
               <button
                 key={chip.key}
                 type="button"

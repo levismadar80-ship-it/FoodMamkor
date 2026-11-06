@@ -228,9 +228,17 @@ const FRIDAY_HE = he.group_buys.friday_delivery;
 const FRIDAY_EN = en.group_buys.friday_delivery;
 
 type Axis = { key: string; label: string; subtext?: string | null; group?: string; scope?: string };
-const AXES = FILTER_AXES as Record<string, Axis>;
+// MEH-2748: the taxonomy holds keys only; the Hebrew label/subtext are read from
+// the same he.json the app renders (`filter_axes.<key>`).
+const AXIS_COPY = he.filter_axes as Record<string, { label: string; subtext?: string }>;
+const AXES = Object.fromEntries(
+  Object.entries(FILTER_AXES as Record<string, object>).map(([key, axis]) => [
+    key,
+    { key, ...axis, label: AXIS_COPY[key].label, subtext: AXIS_COPY[key].subtext ?? null },
+  ]),
+) as Record<string, Axis>;
 type Chip = { key: string; label: string };
-const HOME_CHIPS = CHIPS_CONFIG as Chip[];
+const HOME_CHIPS = (CHIPS_CONFIG as { key: string }[]).map((c) => ({ ...c, label: AXIS_COPY[c.key].label })) as Chip[];
 
 // MEH-2598: home promotes the shared service trio «משלוח · איסוף עצמי · קנייה
 // במקום» out of CHIPS_CONFIG and files the rest — «מאומת» included — behind the

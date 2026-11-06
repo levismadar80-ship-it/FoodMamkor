@@ -8,6 +8,7 @@ import { TOGGLE_CHIPS } from "@/lib/map-chips";
 import { chipIcon } from "@/lib/chip-icons";
 import { BADGE_CONFIG } from "@/lib/badges";
 import { useBadgeCopy } from "@/lib/use-badge-copy";
+import { useChipCopy } from "@/lib/use-chip-copy";
 import Popover from "@/components/ui/Popover";
 
 /**
@@ -138,6 +139,8 @@ export default function FilterSheet({
 }) {
   const t = useTranslations();
   const withBadgeCopy = useBadgeCopy();
+  // MEH-2748: registry chips carry no words; attach label/subtext from messages.
+  const withChipCopy = useChipCopy();
   const panelRef = useRef(null);
   const dragStartY = useRef(null);
 
@@ -290,7 +293,7 @@ export default function FilterSheet({
         </h2>
 
         {GROUP_ORDER.map((group) => {
-          const groupChips = chipsForGroup(group, chips);
+          const groupChips = chipsForGroup(group, chips).map(withChipCopy);
           // MEH-1862 (5-state rule, 0 items): a group with no chips renders
           // NOTHING — not a bare heading. This is reachable, not defensive
           // padding: /producers has no grass_fed, and its diet axes are
