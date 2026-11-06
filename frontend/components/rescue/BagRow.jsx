@@ -82,10 +82,10 @@ export default function BagRow({ offer, headingTag = "h3" }) {
           </span>
         )}
         {until && (
-          <span className="text-[11px] text-fg-muted mt-0.5">{t("row.until", { time: until })}</span>
+          <span className="text-2xs text-fg-muted mt-0.5">{t("row.until", { time: until })}</span>
         )}
         {soon && (
-          <span className="text-[11px] font-bold text-primary" data-testid="rescue-row-soon">
+          <span className="text-2xs font-bold text-primary" data-testid="rescue-row-soon">
             {t("row.soon")}
           </span>
         )}

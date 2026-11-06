@@ -289,7 +289,7 @@ function RegisterPageBody() {
         <div className="mb-6 text-start">
           {/* MEH-929: gold eyebrow rule — exact parity with LoginClient's
               eyebrow (LoginClient.jsx:161-164). */}
-          <span className="inline-flex items-center gap-3 text-accent text-[11px] font-medium mb-3">
+          <span className="inline-flex items-center gap-3 text-accent text-2xs font-medium mb-3">
             <span className="h-px w-7 bg-accent" aria-hidden="true" />
             {t("auth.register.consumer.eyebrow")}
           </span>
@@ -336,7 +336,7 @@ function RegisterPageBody() {
               )}
               <p
                 data-testid="register-oauth-terms"
-                className="text-[13px] leading-relaxed text-fg-muted text-start"
+                className="text-sm leading-relaxed text-fg-muted text-start"
               >
                 {t.rich(`auth.login.${oauthTermsKey(googleConfigured, appleConfigured)}`, {
                   tos: (chunks) => (

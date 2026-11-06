@@ -111,7 +111,7 @@ export default function StickyContactBar({
             surface — removed (single banner lives in ProducerHeader). The
             CTA label below still carries the honest expectation line. */}
         {producer.reviews_count >= 3 ? (
-          <div className="shrink-0 text-[11px] text-fg-muted leading-tight">
+          <div className="shrink-0 text-2xs text-fg-muted leading-tight">
             {/* MEH-76: gold hex -> accent token, emoji star -> Phosphor,
                 rating digits bidi-isolated (.numeric, MEH-763 convention). */}
             <div className="font-bold text-accent inline-flex items-center gap-0.5">

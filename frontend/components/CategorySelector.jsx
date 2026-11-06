@@ -188,7 +188,7 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
         </span>
       </div>
       {/* MEH-1297: primary-first + cap hint */}
-      <p className="text-[11px] text-fg-muted mb-2">{t("cap_hint")}</p>
+      <p className="text-2xs text-fg-muted mb-2">{t("cap_hint")}</p>
 
       {/* Search — magnifier on the start side, 16px font to avoid iOS zoom. */}
       <label htmlFor="category-search" className="block text-sm font-medium text-text mb-1">
@@ -281,20 +281,20 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
                     {isFallback ? <Glyph size={46} weight="light" /> : <Glyph size={46} />}
                   </span>
                   <span className="min-w-0">
-                    <span className="block font-headline-display font-bold text-[19px] leading-tight text-text">
+                    <span className="block font-headline-display font-bold text-xl leading-tight text-text">
                       {cat.name}
                       {/* MEH-1297: "ראשית" pill on the first-selected category */}
                       {isPrimary && (
                         <span
                           data-testid="primary-badge"
-                          className="ms-2 align-middle inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary"
+                          className="ms-2 align-middle inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-2xs font-medium text-primary"
                         >
                           {t("primary_badge")}
                         </span>
                       )}
                     </span>
                     {desc && (
-                      <span className="block text-[12.5px] text-fg-muted mt-0.5 leading-snug">{desc}</span>
+                      <span className="block text-xs text-fg-muted mt-0.5 leading-snug">{desc}</span>
                     )}
                   </span>
                   <span

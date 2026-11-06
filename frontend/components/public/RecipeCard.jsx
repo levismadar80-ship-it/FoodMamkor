@@ -105,14 +105,14 @@ export default function RecipeCard({ slug, recipe }) {
       <div className="p-4 flex flex-col gap-1">
         {/* Eyebrow — gold accent (Assembly v2; tracking dropped per MEH-867). Hebrew
             literal kept hardcoded per MEH-911 constraint (i18n MEH-366 mid-flight). */}
-        <p className="text-[11px] font-medium text-accent">
+        <p className="text-2xs font-medium text-accent">
           מתכון
         </p>
-        <h3 className="font-headline-md font-bold text-[20px] text-text leading-snug line-clamp-2">
+        <h3 className="font-headline-md font-bold text-xl text-text leading-snug line-clamp-2">
           {recipe.title}
         </h3>
         {(totalMin || recipe.servings) && (
-          <div className="mt-1 flex items-center gap-3 text-[13px] text-fg-muted">
+          <div className="mt-1 flex items-center gap-3 text-sm text-fg-muted">
             {totalMin && (
               <span className="inline-flex items-center gap-1.5">
                 <Clock size={16} weight="regular" aria-hidden="true" />

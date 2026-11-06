@@ -699,7 +699,7 @@ export default function ProducerSections({
           </div>
           {/* Address line — city-only fallback, never empty (revision-1 #5). */}
           {producer.city && (
-            <p className="flex items-center gap-1.5 text-[13.5px] text-muted mb-3">
+            <p className="flex items-center gap-1.5 text-sm text-muted mb-3">
               <MapPin size={14} aria-hidden="true" />
               {producer.city}
             </p>

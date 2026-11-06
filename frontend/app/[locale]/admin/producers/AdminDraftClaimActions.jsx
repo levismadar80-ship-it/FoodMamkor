@@ -39,7 +39,7 @@ export function DraftOwnerBadge({ producer }) {
     <span
       data-testid="draft-owner-badge"
       data-owner={claimed ? "claimed" : "waiting"}
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-2xs font-medium ${
         claimed ? "bg-green-100 text-green-800" : "bg-sky-100 text-sky-800"
       }`}
     >
