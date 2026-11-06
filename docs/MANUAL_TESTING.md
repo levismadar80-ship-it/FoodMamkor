@@ -3,6 +3,9 @@
 
 ---
 
+## MEH-2731 — מונה «ממתינים» צהוב קריא (06/11/2026)
+- [ ] /admin/producers — **תוצאה מצופה:** המונה הצהוב ליד «ממתינים» בטקסט כהה, קריא; axe בלי color-contrast. /admin/reports — כפתור צהוב באותו טקסט כהה
+
 ## MEH-2708 — נגישות: שמות לשדות, רשימת פרטים, ניגודיות (06/11/2026)
 - [ ] סריקת axe (wcag2a/aa, critical+serious) על /producer/dashboard/experiences/new, /group-buys/<id>, /producer/dashboard/insights ו-/admin/{kashrut,outreach,producers,producers/new,settings,users,analytics} — **תוצאה מצופה:** אין select-name, label, button-name, aria-prohibited-attr, definition-list, dlitem, scrollable-region-focusable, link-in-text-block
 - [ ] /group-buys/<id> בנייד (375) — **תוצאה מצופה:** «איסוף»/«משלוח» עם האייקון מימין לכותרת, כמו קודם; כפתור «שיתוף בוואטסאפ» המתאר בירוק כהה (#16803E)
