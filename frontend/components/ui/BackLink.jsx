@@ -1,3 +1,9 @@
+"use client";
+
+// MEH-2728: a client component so a SERVER page can render it too
+// (rescue/page.js). Phosphor icons read React context, which a server
+// component has no access to — the build failed with "createContext is not a
+// function" before this line.
 import { Link } from "@/i18n/navigation";
 import { ArrowRight } from "@phosphor-icons/react";
 

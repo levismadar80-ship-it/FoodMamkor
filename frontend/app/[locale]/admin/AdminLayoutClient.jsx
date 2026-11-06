@@ -334,17 +334,21 @@ function AdminShell({ children }) {
             (MEH-2359). Same key, icon and markup as the owner dashboard's
             (MEH-2490, producer/dashboard/DashboardLayoutClient.jsx); no new copy. After
             logout the 401 branch above sends her to /login. */}
-        <div className="md:hidden flex justify-center px-4 pt-6 pb-2">
-          <button
-            type="button"
-            data-testid="admin-mobile-logout"
-            onClick={logout}
-            className="inline-flex items-center gap-2 min-h-touch px-4 text-sm font-medium text-error focus-ring rounded-sm"
-          >
-            <SignOut size={18} aria-hidden="true" />
-            {tAccount("logout")}
-          </button>
-        </div>
+        {/* MEH-2728: only on the panel's home, and muted — same reasoning
+            as the owner dashboard (DashboardLayoutClient.jsx). */}
+        {pathname === "/admin" && (
+          <div className="md:hidden flex justify-center px-4 pt-6 pb-2">
+            <button
+              type="button"
+              data-testid="admin-mobile-logout"
+              onClick={logout}
+              className="inline-flex items-center gap-2 min-h-touch px-4 text-sm font-medium text-fg-muted hover:text-text focus-ring rounded-sm"
+            >
+              <SignOut size={18} aria-hidden="true" />
+              {tAccount("logout")}
+            </button>
+          </div>
+        )}
       </main>
     </div>
   );

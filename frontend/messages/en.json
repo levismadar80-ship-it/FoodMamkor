@@ -5765,6 +5765,7 @@
     "dashboard": {
       "title": "Rescue bags",
       "lead": "Today's surplus — publish, hand over against a code, mark it.",
+      "back": "Back to tools",
       "loading": "Loading…",
       "failed": "Something got stuck. Try again.",
       "counter": {
