@@ -140,13 +140,14 @@ export default async function ExperienceDetailPage(props) {
   // 404s a missing experience; belt-and-braces for the body.
   const experience = await getExperience(params.id);
   if (!experience) notFound();
+  const t = await getTranslations({ locale: params.locale, namespace: "experiences.detail" });
   return (
     <>
       <ExperienceJsonLd experience={experience} locale={params.locale} />
       <Suspense
         fallback={
           <div className="max-w-3xl mx-auto px-4 py-16 text-center text-fg-muted">
-            טעינת החוויה...
+            {t("loading")}
           </div>
         }
       >
