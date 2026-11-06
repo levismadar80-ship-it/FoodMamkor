@@ -18,8 +18,8 @@ vi.mock("next-intl", () => ({
     }
     if (key === "checker.yes_nationwide") return `כן! משלוחים לכל הארץ — כולל ${city}`;
     if (key === "checker.yes") return `כן, מגיעים ל${city}`;
-    if (key === "checker.no") return `לצערנו לא מגיעים ל${city} כרגע`;
-    if (key === "coverage_cta.known_city") return `לא מגיעים ל${city}? אפשר לשאול את בית העסק`;
+    if (key === "checker.no") return `עדיין לא מגיעים ל${city}`;
+    if (key === "coverage_cta.known_city") return "לשאול בוואטסאפ";
     if (key === "coverage_cta.prefill")
       return `היי! אני מ${city} — אשמח לדעת אם יש אפשרות למשלוח לאזור`;
     const map = {
@@ -93,7 +93,7 @@ describe("CoverageRequestCta on the checker's negative verdict (MEH-1675)", () =
     setup();
     commitCity("נתניה");
     await waitFor(() => expect(screen.getByTestId("coverage-request-cta")).toBeTruthy());
-    expect(screen.getByTestId("coverage-request-cta").textContent).toContain("לא מגיעים לנתניה?");
+    expect(screen.getByTestId("coverage-request-cta").textContent).toBe("לשאול בוואטסאפ");
   });
 
   it("is absent when the typed city IS served", async () => {
@@ -115,7 +115,7 @@ describe("CoverageRequestCta on the checker's negative verdict (MEH-1675)", () =
     // The negative verdict still renders — only the CTA is withheld, which is
     // what makes this an opt-out rather than a broken checker.
     await waitFor(() =>
-      expect(screen.getByText("לצערנו לא מגיעים לנתניה כרגע")).toBeTruthy(),
+      expect(screen.getByText("עדיין לא מגיעים לנתניה")).toBeTruthy(),
     );
     expect(screen.queryByTestId("coverage-request-cta")).toBeNull();
   });
@@ -177,7 +177,7 @@ describe("CoverageRequestCta on the checker's negative verdict (MEH-1675)", () =
   it("is absent when the producer has no WhatsApp channel", async () => {
     setup({ producer: { id: 7, phone: null } });
     commitCity("נתניה");
-    await waitFor(() => expect(screen.getByText(/לצערנו לא מגיעים/)).toBeTruthy());
+    await waitFor(() => expect(screen.getByText(/עדיין לא מגיעים/)).toBeTruthy());
     expect(screen.queryByTestId("coverage-request-cta")).toBeNull();
   });
 });
@@ -186,7 +186,7 @@ describe("user_city seed (MEH-1675 addition)", () => {
   it("a saved uncovered city answers — and shows the CTA — with zero typing", async () => {
     setUserCity("נתניה");
     setup();
-    await waitFor(() => expect(screen.getByText("לצערנו לא מגיעים לנתניה כרגע")).toBeTruthy());
+    await waitFor(() => expect(screen.getByText("עדיין לא מגיעים לנתניה")).toBeTruthy());
     expect(screen.getByTestId("coverage-request-cta")).toBeTruthy();
     expect(field().value).toBe("נתניה");
   });

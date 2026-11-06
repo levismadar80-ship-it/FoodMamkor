@@ -87,7 +87,7 @@ export default function DeliveryWaitlistForm({ producer = null, city = "" }) {
 
   if (phase === "done") {
     return (
-      <div className="mt-2" data-testid="delivery-waitlist" data-phase="done">
+      <div className="order-last basis-full" data-testid="delivery-waitlist" data-phase="done">
         <p
           className="flex items-center gap-2 text-sm font-medium text-primary"
           data-testid="delivery-waitlist-done"
@@ -127,12 +127,12 @@ export default function DeliveryWaitlistForm({ producer = null, city = "" }) {
 
   if (phase === "idle") {
     return (
-      <p className="mt-2" data-testid="delivery-waitlist" data-phase="idle">
+      <p className="order-first" data-testid="delivery-waitlist" data-phase="idle">
         <button
           type="button"
           onClick={() => setPhase("open")}
           data-testid="delivery-waitlist-cta"
-          className="inline-flex items-center gap-2 min-h-[44px] text-sm text-primary transition hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+          className="inline-flex items-center gap-1.5 min-h-[44px] rounded-full border border-primary/20 bg-white px-3 text-sm font-medium text-primary transition hover:bg-green-50 focus-visible:ring-2 focus-visible:ring-primary/40"
         >
           <BellRinging
             size={16}
@@ -140,7 +140,7 @@ export default function DeliveryWaitlistForm({ producer = null, city = "" }) {
             className="flex-shrink-0"
             aria-hidden="true"
           />
-          {t("cta", { city: value })}
+          {t("cta")}
         </button>
       </p>
     );
@@ -150,7 +150,7 @@ export default function DeliveryWaitlistForm({ producer = null, city = "" }) {
   return (
     <form
       onSubmit={submit}
-      className="mt-2"
+      className="order-last basis-full"
       data-testid="delivery-waitlist"
       data-phase={phase}
     >

@@ -198,8 +198,12 @@ export default function DeliveryChecker({
                 checker itself renders at most once per page (single mount in
                 DeliveryBlock.jsx:256) there is exactly one CTA block on the
                 page in every state. */}
+            {/* MEH-2709: the two follow-ups sit as one row of chips under
+                the verdict (it already names the city, so they don't repeat
+                it). The waitlist chip is visually first via `order`; once it
+                opens into a form it takes a full row of its own below. */}
             {result.status === "no" && (
-              <div className="ms-6">
+              <div className="mt-2.5 flex flex-wrap gap-2 empty:hidden" data-testid="delivery-checker-no-actions">
                 <CoverageRequestCta producer={producer} city={result.city} />
                 {/* MEH-2618: the no-account waitlist, same single mount rule.
                     Keyed by city so a new verdict starts a fresh form instead
