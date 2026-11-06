@@ -12,7 +12,9 @@ import path from "node:path";
 
 const OUT = path.resolve(process.argv[2] || "../qa-artifacts/MEH-2710");
 const BASE = process.argv[3] || "http://127.0.0.1:3000";
-const CHROMIUM_PATH = process.env.CHROMIUM_PATH || "/opt/pw-browsers/chromium";
+// CC-sandbox only (fixed path); absent elsewhere, so launch falls back to
+// Playwright's own resolution. A constant, not an env var: env-drift guard.
+const CHROMIUM_PATH = "/opt/pw-browsers/chromium";
 
 const DECLARED_ID = "3c3c3c3c-3333-4333-8333-333333333333";
 const VERIFIED_ID = "4d4d4d4d-4444-4444-8444-444444444444";
