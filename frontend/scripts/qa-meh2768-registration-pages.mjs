@@ -38,7 +38,7 @@ const EVENT = {
   event_time: "11:00:00", location: "רחוב הגפן 3", city: "זכרון יעקב", category: "שוק", price: 0,
   max_participants: 40, registered_count: 12, spots_left: 28, is_active: true, registration_method: "site_form",
 };
-const TOKEN = "tok_qa_abcdefghijklmnop";
+const CANCEL_LINK_ID = "example-cancel-link-id"; // fake, matches the fake backend below
 let cancelled = false;
 
 const api = createServer((req, res) => {
@@ -51,8 +51,8 @@ const api = createServer((req, res) => {
   if ((m = path.match(/^\/experiences\/([\w-]+)$/))) return EXPERIENCES[m[1]] ? json(200, EXPERIENCES[m[1]]) : json(404, {});
   if (path === `/events/${EVENT.id}`) return json(200, EVENT);
   if (/\/registrations$/.test(path) && req.method === "POST") return json(201, { status: "registered" });
-  if (path === `/registrations/${TOKEN}`) return json(200, { kind: "experience", item_id: "11111111-0000-0000-0000-000000000001", title: "סדנת לחם מחמצת", event_date: future, status: cancelled ? "cancelled" : "registered" });
-  if (path === `/registrations/${TOKEN}/cancel`) { cancelled = true; return json(200, { kind: "experience", item_id: "11111111-0000-0000-0000-000000000001", title: "סדנת לחם מחמצת", event_date: future, status: "cancelled" }); }
+  if (path === `/registrations/${CANCEL_LINK_ID}`) return json(200, { kind: "experience", item_id: "11111111-0000-0000-0000-000000000001", title: "סדנת לחם מחמצת", event_date: future, status: cancelled ? "cancelled" : "registered" });
+  if (path === `/registrations/${CANCEL_LINK_ID}/cancel`) { cancelled = true; return json(200, { kind: "experience", item_id: "11111111-0000-0000-0000-000000000001", title: "סדנת לחם מחמצת", event_date: future, status: "cancelled" }); }
   if (path === "/auth/me") return json(401, {});
   return json(200, []);
 });
@@ -122,7 +122,7 @@ try {
 
     // 5. Cancel page: before → after.
     cancelled = false;
-    await page.goto(`${BASE}/registration/${TOKEN}`, { waitUntil: "domcontentloaded" });
+    await page.goto(`${BASE}/registration/${CANCEL_LINK_ID}`, { waitUntil: "domcontentloaded" });
     await page.getByTestId("registration-cancel-confirm").waitFor({ timeout: 20_000 });
     await shot("cancel-before", "registration-cancel");
     await page.getByTestId("registration-cancel-confirm").click();
