@@ -99,6 +99,11 @@ from app.utils.clock import israel_today, utc_now
 
 logger = logging.getLogger(__name__)
 
+# MEH-2726 (Sapir 6/11): reservations close this long before the pickup window
+# ends — someone reserving a minute before the end cannot get there, and the bag
+# sits reserved for nobody. The list and the reserve guard read the same value.
+RESERVE_CLOSES_BEFORE_END = timedelta(minutes=15)
+
 router = APIRouter(prefix="/rescue", tags=["rescue"])
 admin_router = APIRouter(prefix="/admin/rescue", tags=["admin-rescue"])
 # The business's own view lives under /producers/me, beside
@@ -454,7 +459,7 @@ def list_offers(
             # MEH-2713: reserve refuses a bag once its window closed (409
             # "זמן האיסוף חלף"), so listing it would offer a button that can
             # only fail. Same naive-UTC comparison as the reserve guard.
-            RescueOffer.pickup_end > utc_now(),
+            RescueOffer.pickup_end > utc_now() + RESERVE_CLOSES_BEFORE_END,
             Producer.status == "approved",
         )
     )
@@ -683,7 +688,7 @@ def create_order(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="הסל אינו של היום"
         )
-    if offer.pickup_end <= utc_now():
+    if offer.pickup_end <= utc_now() + RESERVE_CLOSES_BEFORE_END:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="זמן האיסוף חלף"
         )
