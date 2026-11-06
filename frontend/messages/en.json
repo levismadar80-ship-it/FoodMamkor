@@ -5387,7 +5387,7 @@
       "h2": "The \"Verified\" badge — what it adds",
       "oneliner": "The \"Verified\" badge says one thing: an official licensing or exemption document was submitted — <em>and we reviewed it.</em>",
       "absence_h3": "No verified badge? It doesn't mean less",
-      "absence_body": "Some categories are legally exempt from licensing — they have no document to show, simply because none is required. Such a business is \"Declared\": a binding declaration of lawful operation was signed, and the business went through the same personal introduction as everyone else.",
+      "absence_body": "The \"Verified\" badge appears only when a business showed us a license or exemption document and we checked it. A business without a badge signed a binding declaration that it operates lawfully, and went through the same personal introduction as everyone else. We did not check its documents.",
       "absence_kicker": "The badge marks an extra document — not extra trust."
     },
     "matrix": {
