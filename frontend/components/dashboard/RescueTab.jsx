@@ -25,6 +25,12 @@ const MAX_QTY = 20;
 const ISRAEL_DATE = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jerusalem" });
 
 const ORDER_RANK = { reserved: 0, handed: 1, no_show: 2, cancelled: 3 };
+// Minutes before pickup_start that free cancellation ends, and the message key.
+const CANCEL_CUTOFFS = [
+  [30, "half_hour"],
+  [60, "hour"],
+  [120, "two_hours"],
+];
 
 export default function RescueTab() {
   const t = useTranslations("rescue.dashboard");
@@ -33,7 +39,7 @@ export default function RescueTab() {
   const [busyId, setBusyId] = useState(null);
   const [notice, setNotice] = useState(null);
   const [items, setItems] = useState("");
-  const [form, setForm] = useState({ qty_total: 4, price: 15, from: "18:00", to: "20:00" });
+  const [form, setForm] = useState({ qty_total: 4, price: 15, from: "18:00", to: "20:00", cancelMin: 30 });
   // MEH-2678: the tab loads its own pickup points. It used to take them as a
   // prop that the only page rendering it never passed, so every publish
   // answered «צריך נקודת איסוף». The API lists the primary first.
@@ -160,7 +166,11 @@ export default function RescueTab() {
       d.setHours(h, m, 0, 0);
       return d.toISOString();
     };
-    const cancel = new Date(new Date(iso(form.from)).getTime() - 30 * 60000).toISOString();
+    // MEH-2722: the business picks how long before pickup free cancellation
+    // ends (Sapir 6/11); half an hour is the default and the old fixed value.
+    const cancel = new Date(
+      new Date(iso(form.from)).getTime() - Number(form.cancelMin) * 60000,
+    ).toISOString();
     try {
       await api.post("/rescue/offers", {
         producer_location_id: location.id,
@@ -387,6 +397,21 @@ export default function RescueTab() {
                 data-testid="rescue-publish-to"
                 className="w-full border border-border rounded-md px-2 py-1 mt-1"
               />
+            </label>
+            <label className="font-body-sm text-sm col-span-2">
+              {t("field.cancel")}
+              <select
+                value={form.cancelMin}
+                onChange={(e) => setForm({ ...form, cancelMin: Number(e.target.value) })}
+                data-testid="rescue-publish-cancel"
+                className="w-full border border-border rounded-md px-2 py-1 mt-1 bg-surface-card text-text"
+              >
+                {CANCEL_CUTOFFS.map(([minutes, key]) => (
+                  <option key={minutes} value={minutes}>
+                    {t(`field.cancel_${key}`)}
+                  </option>
+                ))}
+              </select>
             </label>
           </div>
           <button

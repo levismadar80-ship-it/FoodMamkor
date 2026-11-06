@@ -144,14 +144,21 @@ export default function AdminAnalyticsPage() {
 
       {/* Heat map note */}
       <div className="bg-surface border border-border rounded-md p-5">
-        <h2 className="font-semibold mb-3">{t("analytics.geographic")}</h2>
+        <h2 id="admin-analytics-map-heading" className="font-semibold mb-3">{t("analytics.geographic")}</h2>
         <p className="text-sm text-muted mb-2">
           {t("analytics.map_count", { count: (data.map_points || []).length })}
         </p>
         {(data.map_points || []).length === 0 ? (
           <p className="text-sm text-muted">{t("analytics.no_data_display")}</p>
         ) : (
-          <div className="bg-accent/30 rounded-md p-4 text-xs grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto">
+          <div
+            // MEH-2708: a scrollable region must be reachable by keyboard
+            // (axe scrollable-region-focusable).
+            tabIndex={0}
+            role="region"
+            aria-labelledby="admin-analytics-map-heading"
+            className="bg-accent/30 rounded-md p-4 text-xs grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto"
+          >
             {(data.map_points || []).slice(0, 30).map((p) => (
               <div key={p.id} className="bg-surface rounded-lg p-2 border border-border">
                 <p className="font-medium truncate">{p.name}</p>

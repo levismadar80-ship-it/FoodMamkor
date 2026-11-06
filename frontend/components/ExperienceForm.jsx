@@ -436,8 +436,11 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
         </div>
       )}
 
-      <Field label={t("field_category")}>
+      {/* MEH-2708: id ties the <label> to the control — without it axe
+          reported select-name (critical) and a screen reader read no name. */}
+      <Field id="experience-category" label={t("field_category")}>
         <select
+          id="experience-category"
           value={form.category}
           onChange={setField("category")}
           className="w-full border border-border rounded-md px-3 py-2 bg-surface"
@@ -703,8 +706,9 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
         />
       </div>
 
-      <Field label={t("field_requirements")}>
+      <Field id="experience-requirements" label={t("field_requirements")}>
         <textarea
+          id="experience-requirements"
           value={form.requirements}
           onChange={setField("requirements")}
           rows={3}

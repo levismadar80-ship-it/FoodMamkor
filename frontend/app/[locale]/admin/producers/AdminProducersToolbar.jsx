@@ -26,6 +26,7 @@ function StatusSelect({ value, onChange }) {
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
+      aria-label={t("producers.table.columns.status")}
       className="border border-border rounded-md px-3 py-2 bg-surface"
     >
       <option value="all">{t("producers.toolbar.all_statuses")}</option>

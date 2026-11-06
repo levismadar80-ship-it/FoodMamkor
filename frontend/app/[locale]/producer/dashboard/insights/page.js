@@ -255,7 +255,7 @@ function DeepAnalyticsSection({ analytics, profile }) {
                 {profile?.status === "approved" && profile?.slug ? (
                   <LocaleLink
                     href={`/${profile.slug}`}
-                    className="text-primary hover:underline"
+                    className="text-primary underline underline-offset-2"
                   >
                     {t("simple_cards.followers_zero_share")}
                   </LocaleLink>

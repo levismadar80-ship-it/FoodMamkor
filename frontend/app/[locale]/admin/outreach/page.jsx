@@ -332,6 +332,7 @@ export default function AdminOutreachPage() {
                         value={lead.status}
                         onChange={(e) => handleStatusChange(lead.id, e.target.value)}
                         className="text-xs border border-border rounded-lg px-2 py-1 bg-surface"
+                        aria-label={t("outreach.columns.status")}
                         data-testid={`status-select-${lead.id}`}
                       >
                         {STATUS_ORDER.map((s) => (
