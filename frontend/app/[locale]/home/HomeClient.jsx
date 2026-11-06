@@ -11,6 +11,7 @@ import { UpcomingEventsPreview } from "@/app/[locale]/home/UpcomingEventsPreview
 import {
   HomeFeaturedProducer,
   HomeRecentlyViewed,
+  HomeFavoritesStrip,
   HomeCTA,
 } from "@/app/[locale]/home/HomeStaticBlocks";
 import { HomeHero } from "@/app/[locale]/home/HomeHero";
@@ -19,6 +20,7 @@ import { HomeProducersGrid } from "@/app/[locale]/home/HomeProducersGrid";
 import HomeSeasonalNow from "@/app/[locale]/home/HomeSeasonalNow";
 import { useTranslations } from "next-intl";
 import { useHomePage } from "@/lib/use-home-page";
+import { useFavoriteProducers } from "@/lib/use-favorite-producers";
 
 // MEH-538 + MEH-604: lazy-load Leaflet + the mini-map preview. SSR-disabled
 // because Leaflet touches `window`. MEH-604 added the `loading` skeleton so
@@ -81,6 +83,8 @@ export default function HomeClient({
     filterSheetOpen, closeFilterSheet, toggleFilterSheet,
     handleClearCategory, handleLoadMore,
   } = useHomePage({ initialProducers, initialCategories });
+  // MEH-2724: signed-in user's favorites → «המועדפים שלך» strip under the hero.
+  const favoriteProducers = useFavoriteProducers();
 
   // MEH-879: banner single-slot — at most ONE of {FridayStrip, HolidayBanner,
   // LocationBanner} renders. Precedence Friday > Holiday > Location. Each
@@ -98,6 +102,13 @@ export default function HomeClient({
         onDeliveryCta={handleDeliveryCta}
         userCity={userCity}
       />
+
+      {/* MEH-2724 (Sapir 6/11, option ב׳ of the Wolt-style research): the
+          signed-in user's saved businesses, first thing after the hero. A
+          separate row — the businesses grid below keeps one order for
+          everyone. Self-hides when signed out or with 0 favorites. Outside
+          the mobile-reorder wrapper, so it stays at the top on phones too. */}
+      <HomeFavoritesStrip items={favoriteProducers} />
 
       {/* MEH-2635: below `md` this wrapper is a flex column and the mini-map
           carries `order-last`, so it renders AFTER HomeProducersGrid — the

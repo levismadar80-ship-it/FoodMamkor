@@ -25,7 +25,7 @@ import { badgeIcon } from "@/lib/chip-icons";
  * Does NOT: render the public badge (lib/badges.js); add a filter axis (none
  *           until ≥5 businesses carry it — Sapir 05/11); report dirty state —
  *           there is never an unsaved value to lose.
- * Related:  page.js (mounted under OwnerStoryCard), GrassFedCard.jsx.
+ * Related:  page.js (mounted under OwnerStoryCard), TagsCard.jsx.
  */
 export default function ReservistOwnedCard({ profile, onSave }) {
   const t = useTranslations("dashboard.producer.reservistOwned");

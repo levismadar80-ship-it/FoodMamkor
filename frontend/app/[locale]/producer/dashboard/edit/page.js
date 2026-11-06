@@ -83,12 +83,9 @@ import ProductsSection from "@/components/ProductsSection";
 import LocationsEditor from "./LocationsEditor";
 import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, PricingCard, DeliveryCard, OffersCard, LicenseCard, KashrutCard, BusinessNameCard, ViewOnPageLink } from "./cards";
 import OrganizerCityCard from "./OrganizerCityCard";
-// MEH-1508 ch2 Phase B: owner-facing business-level dietary scope (own file —
-// cards.jsx is already >1600 lines).
-import DietaryScopeCard from "./DietaryScopeCard";
-// MEH-1851 row 23: owner-declared grass_fed (own file, same reason as above —
-// cards.jsx is already >1600 lines).
-import GrassFedCard from "./GrassFedCard";
+// MEH-2729: one «תגים» card holds the dietary scope (MEH-1508) and grass_fed
+// (MEH-1851) sections; future tags go inside it (own file — cards.jsx is >1600 lines).
+import TagsCard, { activeTagCount } from "./TagsCard";
 // «עסק של מילואימניקים» (MEH-2693): owner-declared reservist_owned (own file, same reason).
 import ReservistOwnedCard from "./ReservistOwnedCard";
 // MEH-1544: weekly order-acceptance window (own file, same reason as above —
@@ -165,9 +162,10 @@ const ORGANIZER_GROUP_KEYS = ["profile", "contact"];
 // next-step marker placement.
 const GROUP_MEMBERS = {
   profile: ["images", "categories", "bio", "ownerStory"],
-  // MEH-2433: offer, dietaryScope and grassFed are deliberately NOT members —
-  // all three are opt-in, and the orderWindow note below says why opt-in
-  // fields stay out of the "{done}/{total}" count.
+  // MEH-2433: offer and the declared tags (MEH-2729: one `tags` card, was
+  // dietaryScope + grassFed) are deliberately NOT members — all are opt-in,
+  // and the orderWindow note below says why opt-in fields stay out of the
+  // "{done}/{total}" count.
   products: ["products", "pricing"],
   trust: ["license", "kashrut"],
   // MEH-1544: `orderWindow` is deliberately NOT a member. Membership drives the
@@ -685,15 +683,12 @@ function EditPageInner() {
     // MEH-2475 (review #3728): the organizer's city card reports dirty state;
     // without a name the banner would flag unsaved work without saying where.
     organizerCity: t("organizer_city.heading"),
-    // MEH-2433: both cards already reported dirty state, but had no name here,
-    // so the banner flagged unsaved work without saying where. Now that each
-    // is its own card with its own anchor, the jump link has somewhere to go.
-    dietaryScope: t("dietaryScope.heading"),
-    grassFed: t("grassFed.heading"),
+    // MEH-2729: dietary scope + grass-fed are one «תגים» card now.
+    tags: t("tags.heading"),
   };
   // Stable order (matches the accordion render order below), filtered to dirty.
   const DIRTY_ORDER = [
-    "images", "categories", "license", "bio", "products", "contact", "pricing", "dietaryScope", "grassFed", "delivery", "orderWindow", "specialHours", "questions", "organizerCity",
+    "images", "categories", "license", "bio", "products", "contact", "pricing", "tags", "delivery", "orderWindow", "specialHours", "questions", "organizerCity",
   ];
   const dirtyKeys = DIRTY_ORDER.filter((k) => dirtyMap[k]);
 
@@ -912,8 +907,8 @@ function EditPageInner() {
         </EditAccordionCard>
       </div>
 
-      {/* ===== GROUP: products (MEH-2433) — products, pricing, offer, dietary
-              scope, grass-fed. Split out of the profile group: the products
+      {/* ===== GROUP: products (MEH-2433) — products, pricing, offer, tags
+              (MEH-2729: dietary scope + grass-fed in one card). Split out of the profile group: the products
               card is the most edited and a submit requirement, and it sat
               fourth inside «הפרופיל שלך». ===== */}
       <div
@@ -1002,39 +997,23 @@ function EditPageInner() {
           />
         </EditAccordionCard>
 
-        {/* ②d MEH-1508 ch2 Phase B — business-level dietary scope (own-catalog
-            vegan/vegetarian + gluten facility); writes producer scope fields
-            via PUT /producers/me (onSave merges). MEH-2433: was a sub-section
-            of the trust card; it is the owner's own claim about her catalog,
-            not a certificate, so it now sits with the products as its own
-            card (one card, one save button). No summary line: none existed
-            for it, and inventing one would be new copy. */}
+        {/* MEH-2729 — ONE «תגים» card for what the business declares about
+            itself: «תזונה» (MEH-1508 — whole-catalog vegan / vegetarian +
+            gluten facility) and «גידול במרעה» (MEH-1851 row 23) as
+            sub-sections, one save. Sapir (6/11): one card per tag made the
+            products group grow with every new tag. A future declared tag is a
+            sub-section inside TagsCard, not a new card here (Google Business
+            Profile attribute groups / Airbnb amenity categories). Kashrut stays
+            in the trust group (a certificate we check); the reservist switch
+            stays in the owner story. */}
         <EditAccordionCard
-          anchorId="dietary-scope"
-          title={t("dietaryScope.heading")}
-          open={openKey === "dietaryScope"}
-          onToggle={() => toggleKey("dietaryScope")}
+          anchorId="tags"
+          title={t("tags.heading")}
+          summary={t("tags.summary", { count: activeTagCount(profile) })}
+          open={openKey === "tags"}
+          onToggle={() => toggleKey("tags")}
         >
-          <DietaryScopeCard
-            profile={profile}
-            onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-            reportDirty={reportDirty}
-          />
-        </EditAccordionCard>
-
-        {/* ②e MEH-1851 row 23 — owner-declared grass_fed: a business-level
-            property the owner asserts and nobody verifies (labels.md records
-            its evidence as `self-declared`). Kept OUT of DietaryScopeCard: that
-            card asks what the catalog CONTAINS, and how livestock was raised is
-            not a dietary scope. MEH-2433: moved out of the trust card for the
-            same reason as dietary scope above. */}
-        <EditAccordionCard
-          anchorId="grass-fed"
-          title={t("grassFed.heading")}
-          open={openKey === "grassFed"}
-          onToggle={() => toggleKey("grassFed")}
-        >
-          <GrassFedCard
+          <TagsCard
             profile={profile}
             onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
             reportDirty={reportDirty}
