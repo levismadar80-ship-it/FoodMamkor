@@ -63,7 +63,7 @@ export function AwaitingCompletionBadge({ producer }) {
     : null;
   return (
     <span
-      className="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-800 px-2 py-0.5 text-[10px] font-medium"
+      className="inline-flex items-center gap-1 rounded-full bg-warning-100 text-warning-800 px-2 py-0.5 text-[10px] font-medium"
       title={producer.requested_changes}
     >
       {t("producers.table.awaiting_completion")}
@@ -116,8 +116,8 @@ export function WaitingBadge({ producer }) {
   // 0–1 neutral · 2 amber · >=3 red. Thresholds live here and in
   // __tests__/AdminQueueWaitingBadge.test.jsx, which pins each boundary.
   let cls = "bg-gray-100 text-gray-600";
-  if (isQueued && days >= 3) cls = "bg-red-100 text-red-800";
-  else if (isQueued && days === 2) cls = "bg-amber-100 text-amber-800";
+  if (isQueued && days >= 3) cls = "bg-danger-100 text-danger-800";
+  else if (isQueued && days === 2) cls = "bg-warning-100 text-warning-800";
 
   // The tooltip names WHICH timestamp it is showing rather than presenting a
   // creation date as if it were a submission — a pre-MEH-2100 row and every
@@ -159,7 +159,7 @@ function RiskBadge({ score, reasoning }) {
       cls = "bg-yellow-100 text-yellow-800";
       label = t("producers.table.risk.medium");
     } else {
-      cls = "bg-red-100 text-red-700";
+      cls = "bg-danger-100 text-danger-700";
       label = t("producers.table.risk.high");
     }
   }
@@ -184,7 +184,7 @@ function CompletenessBadge({ missing, priority }) {
         className="inline-flex items-center leading-none cursor-help"
         aria-label={t("producers.table.completeness.missing_critical_aria")}
       >
-        <Circle size={ICON_SIZE_SM} weight="fill" className="text-red-500" aria-hidden="true" />
+        <Circle size={ICON_SIZE_SM} weight="fill" className="text-danger-500" aria-hidden="true" />
       </span>
     );
   }
@@ -195,7 +195,7 @@ function CompletenessBadge({ missing, priority }) {
         className="inline-flex items-center leading-none cursor-help"
         aria-label={t("producers.table.completeness.missing_aria")}
       >
-        <Circle size={ICON_SIZE_SM} weight="fill" className="text-amber-500" aria-hidden="true" />
+        <Circle size={ICON_SIZE_SM} weight="fill" className="text-warning-500" aria-hidden="true" />
       </span>
     );
   }
@@ -250,7 +250,7 @@ export function ProducerTags({ producer }) {
         <span
           title={t("producers.table.tags.license_pending_title")}
           aria-label={t("producers.table.tags.license_pending_title")}
-          className="inline-flex items-center rounded-full bg-amber-100 text-amber-800 px-1.5 py-0.5 text-[10px] font-medium"
+          className="inline-flex items-center rounded-full bg-warning-100 text-warning-800 px-1.5 py-0.5 text-[10px] font-medium"
         >
           {t("producers.table.tags.license_pending")}
         </span>
@@ -447,7 +447,7 @@ function PendingPhotoThumb({ url, index, producerName, t }) {
           role="img"
           aria-label={t("producers.table.photo_preview.broken")}
           title={t("producers.table.photo_preview.broken")}
-          className="flex h-full w-full items-center justify-center bg-red-50 text-red-600"
+          className="flex h-full w-full items-center justify-center bg-danger-50 text-danger-600"
         >
           <Warning size={22} weight="fill" aria-hidden="true" />
         </span>

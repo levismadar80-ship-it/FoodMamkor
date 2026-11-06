@@ -150,7 +150,7 @@ export default function ContactClient() {
               />
 
               {status === "error" && (
-                <div className="text-sm text-red-600 bg-red-50 rounded-md p-3">
+                <div className="text-sm text-danger-600 bg-danger-50 rounded-md p-3">
                   <p>{errorMsg}</p>
                   <a
                     href={mailtoHref}

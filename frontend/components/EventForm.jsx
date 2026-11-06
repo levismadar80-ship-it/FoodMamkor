@@ -233,7 +233,7 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
     <>
       {unverified && <UnverifiedEmailNotice className="mb-4" />}
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 rounded-sm p-3 mb-4 text-sm" role="alert">
+        <div className="bg-danger-50 border border-danger-200 text-danger-700 rounded-sm p-3 mb-4 text-sm" role="alert">
           {error}
         </div>
       )}
@@ -423,7 +423,7 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
                 type="button"
                 onClick={() => setForm((f) => ({ ...f, image_url: "" }))}
                 aria-label={t("image_remove_aria")}
-                className="inline-flex items-center gap-1 text-sm text-red-600 hover:underline"
+                className="inline-flex items-center gap-1 text-sm text-danger-600 hover:underline"
               >
                 <X size={14} weight="bold" aria-hidden="true" />
                 {t("image_remove")}

@@ -53,9 +53,9 @@ function ResetPasswordForm() {
       >
         <div
           role="alert"
-          className="bg-red-50 border border-red-200 rounded-md p-4 grid gap-2"
+          className="bg-danger-50 border border-danger-200 rounded-md p-4 grid gap-2"
         >
-          <p className="text-red-700 font-medium">
+          <p className="text-danger-700 font-medium">
             {t("auth.passwordRecovery.reset.invalid_link")}
           </p>
           <Link
@@ -179,7 +179,7 @@ function ResetPasswordForm() {
         </div>
 
         {error && (
-          <div className="text-red-600 text-sm text-center" role="alert">
+          <div className="text-danger-600 text-sm text-center" role="alert">
             <p>{error}</p>
             {isLinkError && (
               <Link

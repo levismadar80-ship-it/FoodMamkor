@@ -234,7 +234,7 @@ test.describe("group-buy form — clarity", () => {
     await expect(helper(page)).toHaveClass(/text-fg-muted/);
     await regular(page).fill("20");
     await group(page).fill("25");
-    await expect(helper(page)).toHaveClass(/text-red-500/);
+    await expect(helper(page)).toHaveClass(/text-danger-500/);
     await group(page).fill("15");
     await expect(helper(page)).toHaveClass(/text-fg-muted/);
   });
