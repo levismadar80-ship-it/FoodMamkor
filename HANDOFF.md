@@ -4,6 +4,17 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-06 15:00 — ניקוי מערכת העיצוב ומחרוזות בקוד (MEH-1687), שלבים 1–7
+
+**‏שורה אחת:** ארבעה-עשר PRs מוזגו (פירוט ב-CHANGELOG, ‏06/11). ‏MEH-1687 נשאר פתוח עד שמסתיימת העבודה.
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏`frontend/__tests__/HebrewLiteralRatchet.test.js` נכשל אם קובץ מוסיף מחרוזת עברית מעבר ל-baseline (`__tests__/fixtures/hebrew-literals-baseline.json`), וגם כשהקובץ יורד ולא מורידים את ה-baseline. טקסט חדש לקורא נכנס ל-`messages/{he,en}.json`.
+- ‏דפוס הרשימות: קוד מחזיק מפתחות בלבד. המילים נוספות בזמן רינדור דרך `useBadgeCopy()`, ‏`useChipCopy()` (`lib/chip-copy.js` בשרת), ‏`useTranslations("holidays")`, ו-`getPrimaryContactLabel(producer, t)`. בטסטים עם mock של next-intl יש helpers ב-`__tests__/helpers/he-badge-copy.js` ו-`he-chip-copy.js`.
+- ‏`producerCompleteness().missing` מחזיר מפתחות (`city`, `hours`…) ולא מילים.
+
+**‏הבא:** ‏`lib/seo.js` (כותרות ותיאורי SEO לעמוד עסק) ו-`app/[locale]/layout.js` הם המקור הגדול שנשאר. שניהם משפיעים על אינדוקס, ולכן נדרשת בדיקה נפרדת.
+
 ## 2026-11-05 18:30 — ‏#3999 + #4011 מוזגו: «אשמח לארח נקודת מסירה» ברשימת ההמתנה
 
 **‏שורה אחת:** חלק השרת (#3999, squash `ceefbce`) וחלק המסכים (#4011) של אופציית אירוח נקודת מסירה מוזגו ל-staging. ‏MEH-2673 ו-MEH-2674 Done, ‏MEH-2672 (האב) נסגר אוטומטית.
