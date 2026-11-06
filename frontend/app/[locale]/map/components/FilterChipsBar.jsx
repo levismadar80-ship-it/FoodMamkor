@@ -103,7 +103,7 @@ export default function FilterChipsBar({
             aria-label={t("map.filter.aria.remove", { label: tag.label })}
             className="group inline-flex items-center min-h-touch -my-2.5"
           >
-            <span className="inline-flex items-center gap-1 rounded-md bg-green-50 text-primary px-2 py-1 text-[11px] group-hover:bg-green-50/80 transition">
+            <span className="inline-flex items-center gap-1 rounded-md bg-green-50 text-primary px-2 py-1 text-2xs group-hover:bg-green-50/80 transition">
               <span aria-hidden="true">×</span>
               {tag.label}
             </span>
@@ -113,7 +113,7 @@ export default function FilterChipsBar({
           type="button"
           onClick={resetAllFilters}
           data-testid="map-clear-all"
-          className="inline-flex items-center min-h-touch -my-2.5 text-primary text-[11px] no-underline hover:opacity-80 transition"
+          className="inline-flex items-center min-h-touch -my-2.5 text-primary text-2xs no-underline hover:opacity-80 transition"
         >
           {t("map.filter.clear_all")}
         </button>

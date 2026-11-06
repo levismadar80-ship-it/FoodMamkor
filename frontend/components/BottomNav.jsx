@@ -351,7 +351,7 @@ export default function BottomNav() {
       active ? "text-primary" : "text-[#4b4841]",
     ].join(" ");
   // z-10 lifts icon + label above the z-0 tint capsule.
-  const labelCls = "relative z-10 font-body text-[10.5px] font-semibold leading-none";
+  const labelCls = "relative z-10 font-body text-2xs font-semibold leading-none";
   // MEH-1014: label collapse wrapper. overflow-hidden clips the text as
   // max-height animates to 0; opacity fades it in tandem. Only height/opacity/
   // max-height transition — the pill's backdrop-filter (nav-pill-glass) is
@@ -511,7 +511,7 @@ export default function BottomNav() {
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-white text-[12px] font-semibold leading-none">{initial}</span>
+                    <span className="text-white text-xs font-semibold leading-none">{initial}</span>
                   )}
                 </span>
               ) : (

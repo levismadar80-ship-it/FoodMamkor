@@ -414,7 +414,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
                 aria-label={t("producer.card.aria.image_missing", { name: producer.name })}
               >
                 <span
-                  className="font-headline-lg font-black text-[22px] sm:text-[30px] leading-[1.05] text-text line-clamp-3 [word-break:keep-all] [overflow-wrap:anywhere]"
+                  className="font-headline-lg font-black text-2xl sm:text-3xl leading-[1.05] text-text line-clamp-3 [word-break:keep-all] [overflow-wrap:anywhere]"
                   data-testid="card-name-plate"
                   aria-hidden="true"
                 >
@@ -495,7 +495,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
                   dir="ltr"
                   className="group inline-flex items-center justify-center min-h-touch min-w-touch -m-2.5 focus:outline-none"
                 >
-                  <span className="inline-flex items-center rounded-full bg-surface-card/95 border border-border text-fg-muted px-1.5 py-0.5 text-[11px] font-medium group-focus-visible:ring-2 group-focus-visible:ring-primary/40">
+                  <span className="inline-flex items-center rounded-full bg-surface-card/95 border border-border text-fg-muted px-1.5 py-0.5 text-2xs font-medium group-focus-visible:ring-2 group-focus-visible:ring-primary/40">
                     +{badgeCount(producer) - 2}
                   </span>
                 </button>
@@ -510,7 +510,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
                   the labels so the list stays the primary content; the
                   role="list"/"listitem" tree below is untouched, and the
                   heading sits outside it so it is not announced as an item. */}
-              <span className="mb-1.5 block text-[10px] font-medium text-fg-muted">
+              <span className="mb-1.5 block text-2xs font-medium text-fg-muted">
                 {t("producer.card.badges.overflow_heading")}
               </span>
               {/* The overflow used to read `b.label` straight off BADGE_CONFIG,
@@ -560,7 +560,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
                         {resolveBadgeLabel(b, producer, tKashrut)}
                       </span>
                       {b.tooltip && (
-                        <span className="block text-[12px] leading-snug text-fg-muted">
+                        <span className="block text-xs leading-snug text-fg-muted">
                           {b.tooltip}
                         </span>
                       )}
@@ -583,7 +583,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
             // is replaced by the MEH-1418 delivery glyph (Phosphor Truck, currentColor via the
             // pill's text-text) so it matches the delivery toggle chip. size 14
             // keeps the pill height in line with the sibling text badges.
-            <span className="inline-flex items-center gap-1 rounded-full bg-surface-card border border-border text-text px-2 py-0.5 text-[11px]">
+            <span className="inline-flex items-center gap-1 rounded-full bg-surface-card border border-border text-text px-2 py-0.5 text-2xs">
               <Truck size={14} className="shrink-0" aria-hidden="true" />
               {t("producer.card.badges.delivery_only")}
             </span>
@@ -599,7 +599,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
             names the place first. The category moved to the line under the
             name. MEH-1073 T10 / MEH-867: no uppercase, no letter-spacing. */}
         {producer.city && (
-          <p className="text-[12px] font-semibold text-accent truncate flex items-center gap-1.5 min-w-0" data-testid="card-place">
+          <p className="text-xs font-semibold text-accent truncate flex items-center gap-1.5 min-w-0" data-testid="card-place">
             {/* The location line below is skipped when it would hold no text;
                 the availability dot then rides here, so it is never lost and
                 never sits alone as an orphan circle (MEH-1551). */}
@@ -619,7 +619,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
         <div className="grid grid-cols-[1fr_auto] gap-3 items-baseline">
           <Link href={producerHref} className="block min-w-0 focus-ring">
             {/* MEH-1028 (CARD-27): mobile density — 16px name on <640px, 20px sm: up. */}
-            <h3 className="font-headline-md font-bold text-[16px] sm:text-[20px] text-text group-hover:text-primary transition-colors duration-base ease-quart leading-snug line-clamp-2">
+            <h3 className="font-headline-md font-bold text-base sm:text-xl text-text group-hover:text-primary transition-colors duration-base ease-quart leading-snug line-clamp-2">
               {highlightQuery
                 ? highlightMatch(producer.name, highlightQuery)
                 : producer.name}
@@ -627,7 +627,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
           </Link>
           {hasRating && (
             <span
-              className="text-[13px] text-fg-muted shrink-0 whitespace-nowrap"
+              className="text-sm text-fg-muted shrink-0 whitespace-nowrap"
               dir="ltr"
               data-testid="card-rating"
             >
@@ -639,7 +639,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
 
         {hasLocationText && (
         <p
-          className="text-[13px] text-fg-muted truncate flex items-center gap-1.5"
+          className="text-sm text-fg-muted truncate flex items-center gap-1.5"
           data-testid="location-line"
         >
           {availabilityDotEl}
@@ -676,7 +676,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
           // only; the closed/null/vacation states render no node at all, so
           // the AC's "no layout shift" case is untouched.
           <p
-            className="text-[13px] text-primary"
+            className="text-sm text-primary"
             data-testid="card-order-window"
           >
             {t("producer.detail.header.status.orders_open", {
@@ -702,7 +702,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
             whose enum says available_today but whose legacy flag was never
             written showed no Friday pill at all before this. */}
         {fridayMode && isAvailableToday(producer) && (
-          <span className="inline-flex w-fit items-center rounded-full bg-primary/10 border border-primary/30 text-primary px-2 py-0.5 text-[11px] font-semibold">
+          <span className="inline-flex w-fit items-center rounded-full bg-primary/10 border border-primary/30 text-primary px-2 py-0.5 text-2xs font-semibold">
             {t("producer.card.badges.available_today")}
           </span>
         )}
@@ -716,7 +716,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
         {/* /MEH-1823 */}
 
         {localFavCount >= 5 && (
-          <p className="flex items-center gap-1 text-[12px] text-fg-muted">
+          <p className="flex items-center gap-1 text-xs text-fg-muted">
             {/* MEH-643/MEH-636: count heart recedes to fg-muted — never red. */}
             <HeartStraight size={14} weight="fill" className="text-fg-muted" aria-hidden="true" />
             {t("producer.card.favorites_count_short", { count: localFavCount })}
@@ -746,7 +746,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
         {/* MEH-2602: the same resolver as DeliveryBlock's top line — per-area
             overrides included — so card and page state one price. */}
         {(cardFee.fee != null || freeAbove) && (
-          <p className="flex items-start gap-1 text-[12px] text-fg-muted" data-testid="card-delivery-fee">
+          <p className="flex items-start gap-1 text-xs text-fg-muted" data-testid="card-delivery-fee">
             <Truck size={14} className="shrink-0 mt-[1px]" aria-hidden="true" />
             <span className="min-w-0">
               {alwaysFree ? (

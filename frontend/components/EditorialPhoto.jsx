@@ -22,7 +22,7 @@ const PHOTO_WIDTH = 1200;
 export default function EditorialPhoto({ src, testId, priority = false, className = "" }) {
   return (
     <div
-      className={`relative w-full aspect-video overflow-hidden rounded-[10px] bg-border ${className}`}
+      className={`relative w-full aspect-video overflow-hidden rounded-md bg-border ${className}`}
       data-testid={testId}
     >
       <Image

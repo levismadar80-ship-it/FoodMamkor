@@ -221,7 +221,7 @@ export default function KashrutBadgeStrip({
       // before MEH-1672.
       <>
         <p
-          className={`flex flex-wrap items-center gap-x-1.5 ${className || "text-[12.5px] text-muted"}`}
+          className={`flex flex-wrap items-center gap-x-1.5 ${className || "text-xs text-muted"}`}
           title={[...tooltips, expiryText].filter(Boolean).join(" · ")}
           data-testid="kashrut-quiet-line"
         >
