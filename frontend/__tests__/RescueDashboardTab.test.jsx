@@ -691,6 +691,7 @@ describe("MEH-2730 each message sits next to what caused it", () => {
     ["an expired session (401)", { response: { status: 401, data: { detail: "Not authenticated" } } }, "error.mapper.unauthorized"],
     ["too many attempts (429)", { response: { status: 429, data: { detail: "Rate limit exceeded: 5 per 1 minute" } } }, "error.mapper.rate_limited"],
     ["no response at all (network)", { message: "Network Error" }, "error.mapper.network"],
+    ["a plain thrown Error (no response)", new Error("x"), "error.mapper.network"],
   ]) {
     it(`${label} shows the site's sentence, not the raw text`, async () => {
       post.mockRejectedValue(err);
