@@ -149,19 +149,19 @@ describe("SaveButton — variants", () => {
     const face = btn.querySelector(".w-8");
     expect(face).toBeTruthy();
     expect(face.className).toContain("w-8 h-8");
-    expect(face.className).toContain("bg-white/95");
+    expect(face.className).toContain("bg-surface/95");
   });
 
   it('"overlay" (default): the 44px white circle itself, no inner face', () => {
     render(<SaveButton itemType="recipe" itemId={RID} />);
     const btn = screen.getByTestId("save-recipe");
     expect(btn.className).toContain("w-11 h-11");
-    expect(btn.className).toContain("bg-white/95");
+    expect(btn.className).toContain("bg-surface/95");
     expect(btn.querySelector(".w-8")).toBeNull();
   });
 
   it("an unknown variant falls back to the overlay look", () => {
     render(<SaveButton itemType="recipe" itemId={RID} variant="nope" />);
-    expect(screen.getByTestId("save-recipe").className).toContain("bg-white/95");
+    expect(screen.getByTestId("save-recipe").className).toContain("bg-surface/95");
   });
 });

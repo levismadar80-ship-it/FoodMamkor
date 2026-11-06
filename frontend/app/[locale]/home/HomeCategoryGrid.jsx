@@ -58,7 +58,7 @@ export function HomeCategoryGrid({ categoryCards }) {
     <section className="max-w-7xl mx-auto px-4 section-y" data-testid="home-category-grid">
       <FadeInSection className="mb-10">
         {/* MEH-1032 (HOME-17): eyebrow+rule pattern mirrors HomeStaticBlocks §10 — DM-Sans, 32×1px gold rule, start-aligned. */}
-        <span className="flex items-center gap-3 font-medium text-[11px] text-accent mb-1">
+        <span className="flex items-center gap-3 font-medium text-2xs text-accent mb-1">
           {t("home.categories.eyebrow")}
           <span className="inline-block w-8 h-px bg-accent" aria-hidden="true" />
         </span>
@@ -110,7 +110,7 @@ export function HomeCategoryGrid({ categoryCards }) {
                 // MEH-991 (HOME-15): v8 hover lock — border→green + 1px gold underline
                 // + photo zooms scale-1.05 (photo path only, motion-safe); glyph never scales.
                 "font-headline-md font-bold text-text leading-tight group-hover:underline decoration-accent decoration-1 underline-offset-4",
-                isHero ? "text-[15px] md:text-[20px] lg:text-[22px]" : "text-[15px] md:text-[18px]",
+                isHero ? "text-base md:text-xl lg:text-2xl" : "text-base md:text-lg",
               ].join(" ")}>
                 {card.name}
               </h3>

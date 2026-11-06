@@ -31,7 +31,7 @@ function ProducerMiniCard({ producer }) {
   return (
     <Link
       href={producer.slug ? `/${producer.slug}` : `/producer/${producer.id}`}
-      className="flex-shrink-0 w-36 rounded-md overflow-hidden border border-border bg-white transition group"
+      className="flex-shrink-0 w-36 rounded-md overflow-hidden border border-border bg-surface transition group"
       aria-label={producer.name}
     >
       <div className="relative h-24 bg-green-50">
@@ -42,13 +42,13 @@ function ProducerMiniCard({ producer }) {
             {(producer.name || "?")[0]}
           </div>
         )}
-        <span className="absolute top-1.5 end-1.5 inline-flex items-center gap-0.5 bg-primary text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
+        <span className="absolute top-1.5 end-1.5 inline-flex items-center gap-0.5 bg-primary text-white text-2xs font-bold px-1.5 py-0.5 rounded-full leading-none">
           <ShoppingCart size={11} weight="fill" aria-hidden="true" />{t("today")}
         </span>
       </div>
       <div className="px-2 py-1.5">
         <p className="text-xs font-semibold text-text truncate">{producer.name}</p>
-        {producer.city && <p className="text-[11px] text-fg-muted truncate">{producer.city}</p>}
+        {producer.city && <p className="text-2xs text-fg-muted truncate">{producer.city}</p>}
       </div>
     </Link>
   );

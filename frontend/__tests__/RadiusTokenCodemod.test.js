@@ -74,6 +74,33 @@ describe("MEH-2718 — every token-equal arbitrary radius is spelled as the toke
   });
 });
 
+// MEH-1687 phase 5 (06/11): the off-scale radii (10, 14, 6, 18, 9, 5, 4, 24px)
+// were placed on the documented scale (DESIGN.md § Shapes): actions →
+// rounded-full (ruling «⚖️ 03/11» E), fields → rounded-sm, everything else →
+// the nearest step, ties up. No arbitrary px radius is left at all.
+const ANY_ARBITRARY_PX = new RegExp(`(?<![\\w-])rounded${SIDE}-\\[\\d+px\\]`);
+
+describe("MEH-1687 phase 5 — no arbitrary px radius anywhere", () => {
+  it("the pattern sees off-scale radii and ignores steps", () => {
+    for (const hit of ["rounded-[10px]", "md:rounded-[14px]", "rounded-t-[24px]"]) expect(ANY_ARBITRARY_PX.test(hit), hit).toBe(true);
+    for (const miss of ["rounded-md", "rounded-full", "rounded-t-3xl", "rounded-[50%]"]) expect(ANY_ARBITRARY_PX.test(miss), miss).toBe(false);
+  });
+
+  it("no code under app/ components/ lib/ hooks/ spells rounded(-side)-[Npx]", () => {
+    const files = ["app", "components", "lib", "hooks"].flatMap((d) => walk(path.join(ROOT, d)));
+    expect(files.length, "corpus control").toBeGreaterThan(200);
+    const offenders = [];
+    for (const f of files) {
+      fs.readFileSync(f, "utf8").split("\n").forEach((line, i) => {
+        if (/^\s*(\*|\/\/|\{\/\*)/.test(line)) return;
+        const m = line.match(ANY_ARBITRARY_PX);
+        if (m) offenders.push(`${path.relative(ROOT, f)}:${i + 1}  ${m[0]}`);
+      });
+    }
+    expect(offenders).toEqual([]);
+  });
+});
+
 describe("MEH-1687 C0 — rounded-[12px] → rounded-md", () => {
   it("the md radius token is 12px (the codemod's pixel-identity premise)", () => {
     expect(tokens.theme.extend.borderRadius.md).toBe("12px");

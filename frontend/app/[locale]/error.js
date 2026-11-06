@@ -58,7 +58,7 @@ export default function GlobalError({ error, reset }) {
         </p>
         {process.env.NODE_ENV === "development" && error?.message && (
           // rtl-ok — dev-only dump of an English error message: physical left IS its start.
-          <pre className="mt-8 text-left text-xs text-fg-muted bg-white border border-border rounded-sm p-4 overflow-auto max-h-40">
+          <pre className="mt-8 text-left text-xs text-fg-muted bg-surface border border-border rounded-sm p-4 overflow-auto max-h-40">
             {error.message}
           </pre>
         )}

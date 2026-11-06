@@ -76,7 +76,7 @@ export default function EmptyState({
       ) : null}
       <h3 className="font-headline-md text-2xl font-bold text-text mb-2">{title}</h3>
       {description && (
-        <p className="text-[15px] text-fg-muted max-w-xs mx-auto mb-6">{description}</p>
+        <p className="text-base text-fg-muted max-w-xs mx-auto mb-6">{description}</p>
       )}
       {example && (
         <div aria-hidden="true" className="mb-6 flex justify-center">
@@ -98,7 +98,7 @@ export default function EmptyState({
         // out of scope here, flagged rather than changed.
         <Link
           href={unblockHref}
-          className="min-h-touch min-w-touch inline-flex items-center justify-center text-sm font-medium text-primary underline underline-offset-2 hover:text-primary-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-[6px] transition"
+          className="min-h-touch min-w-touch inline-flex items-center justify-center text-sm font-medium text-primary underline underline-offset-2 hover:text-primary-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-sm transition"
         >
           {unblockLabel}
         </Link>

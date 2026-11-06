@@ -40,7 +40,7 @@ export default function BadgesExplainer() {
           <h1 className="font-headline-lg mb-5 text-primary-dark text-[clamp(28px,6vw,44px)] leading-[1.15] font-black">
             {t("h1")}
           </h1>
-          <p className="text-[17px] sm:text-[19px] leading-[1.8] text-text/90">{t("intro")}</p>
+          <p className="text-lg sm:text-xl leading-[1.8] text-text/90">{t("intro")}</p>
         </header>
 
         {groups.map(({ evidence, badges }) => {
@@ -52,10 +52,10 @@ export default function BadgesExplainer() {
               data-testid={`badges-group-${evidence}`}
               className="scroll-mt-24 mt-10 sm:mt-12"
             >
-              <h2 className="font-headline-md mb-2 text-primary text-[22px] font-bold">
+              <h2 className="font-headline-md mb-2 text-primary text-2xl font-bold">
                 {t(`groups.${evidence}.heading`)}
               </h2>
-              <p className="mb-4 text-[16px] sm:text-[17px] leading-[1.8] text-text/90">
+              <p className="mb-4 text-base sm:text-lg leading-[1.8] text-text/90">
                 {t.rich(`groups.${evidence}.intro`, {
                   link: (chunks) => (
                     <Link href={href} className="underline text-primary hover:opacity-90 focus-ring rounded-sm">
@@ -79,7 +79,7 @@ export default function BadgesExplainer() {
                         {icon && <span aria-hidden="true" className="inline-flex">{icon}</span>}
                         {badge.label}
                       </span>
-                      <p className="text-[15px] leading-[1.7] text-text/85">{badge.tooltip}</p>
+                      <p className="text-base leading-[1.7] text-text/85">{badge.tooltip}</p>
                     </li>
                   );
                 })}

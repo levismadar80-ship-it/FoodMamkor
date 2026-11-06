@@ -77,7 +77,7 @@ export default function StickyContactBar({
       // mounts this bar there is nothing below it to clear, and the offset was
       // rendering as a strip of dead page showing under the CTA. Measured at
       // 375px before the change: bar bottom 748, viewport 812, 64px of gap.
-      className="vv-pin lg:hidden fixed bottom-0 inset-x-0 z-[598] bg-white border-t border-border"
+      className="vv-pin lg:hidden fixed bottom-0 inset-x-0 z-[598] bg-surface border-t border-border"
       data-testid="sticky-contact-bar"
       style={{
         // MEH-2148: with the bar flush, its own height is the whole distance it
@@ -111,7 +111,7 @@ export default function StickyContactBar({
             surface — removed (single banner lives in ProducerHeader). The
             CTA label below still carries the honest expectation line. */}
         {producer.reviews_count >= 3 ? (
-          <div className="shrink-0 text-[11px] text-fg-muted leading-tight">
+          <div className="shrink-0 text-2xs text-fg-muted leading-tight">
             {/* MEH-76: gold hex -> accent token, emoji star -> Phosphor,
                 rating digits bidi-isolated (.numeric, MEH-763 convention). */}
             <div className="font-bold text-accent inline-flex items-center gap-0.5">
@@ -150,7 +150,7 @@ export default function StickyContactBar({
                 ? "bg-primary text-white hover:bg-primary-dark"
                 : getPrimaryMethod(producer) === "email"
                 ? "bg-primary-dark text-white hover:bg-primary"
-                : "bg-white text-text border border-primary hover:bg-green-50"
+                : "bg-surface text-text border border-primary hover:bg-green-50"
             }`}
           >
             <CtaIcon size={20} weight="fill" aria-hidden="true" />

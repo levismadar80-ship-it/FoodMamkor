@@ -81,7 +81,7 @@ export default function AboutProcessClient() {
   const Marker = ({ children }) => (
     <div className="flex items-center gap-3.5 mb-6">
       <span className="h-px w-10 bg-accent/70" aria-hidden />
-      <span className="font-body-md font-medium text-[11px] text-fg-muted">
+      <span className="font-body-md font-medium text-2xs text-fg-muted">
         {children}
       </span>
     </div>
@@ -96,19 +96,19 @@ export default function AboutProcessClient() {
   // solid bg-surface-card gets text-accent to 5.19:1, independent of the page
   // background since the chip is now fully opaque.
   const VerifiedTag = () => (
-    <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12.5px] font-semibold bg-surface-card text-accent border border-accent/30 whitespace-nowrap">
+    <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold bg-surface-card text-accent border border-accent/30 whitespace-nowrap">
       <SealCheck size={13} aria-hidden />
       <span className="ms-[0.14em]">{t("tier.verified")}</span>
     </span>
   );
   const OptVerifiedTag = () => (
-    <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12.5px] font-semibold bg-transparent text-fg-muted border border-dashed border-border whitespace-nowrap">
+    <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold bg-transparent text-fg-muted border border-dashed border-border whitespace-nowrap">
       <SealCheck size={13} aria-hidden />
       <span className="ms-[0.14em]">{t("tier.verified")}</span>
     </span>
   );
   const DeclaredTag = () => (
-    <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12.5px] font-semibold bg-green-50 text-primary-dark border border-primary/20 whitespace-nowrap">
+    <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold bg-green-50 text-primary-dark border border-primary/20 whitespace-nowrap">
       <Note size={13} aria-hidden />
       <span className="ms-[0.14em]">{t("tier.declared")}</span>
     </span>
@@ -119,7 +119,7 @@ export default function AboutProcessClient() {
       {/* ======== 01 — Hero ======== */}
       <section data-testid="process-hero" className="bg-background py-12 md:py-20 scroll-mt-24">
         <div className="max-w-3xl mx-auto px-4 md:px-12">
-          <span className="inline-flex items-center gap-2 font-body-md font-semibold text-[12px] text-accent mb-4">
+          <span className="inline-flex items-center gap-2 font-body-md font-semibold text-xs text-accent mb-4">
             <Path size={15} aria-hidden />
             {t("hero.eyebrow")}
           </span>
@@ -130,7 +130,7 @@ export default function AboutProcessClient() {
               ),
             })}
           </h1>
-          <p className="mt-5 font-body-md text-[17px] md:text-xl text-text/90 leading-relaxed max-w-[44ch]">
+          <p className="mt-5 font-body-md text-lg md:text-xl text-text/90 leading-relaxed max-w-[44ch]">
             {t("hero.sub")}
           </p>
         </div>
@@ -140,7 +140,7 @@ export default function AboutProcessClient() {
       <section className="bg-background py-12 md:py-20 scroll-mt-24">
         <div className="max-w-5xl mx-auto px-4 md:px-12">
           <Marker>{t("steps.marker")}</Marker>
-          <p data-testid="process-steps-lead" className="font-english italic text-[19px] text-fg-muted mb-8 max-w-[48ch]">
+          <p data-testid="process-steps-lead" className="font-english italic text-xl text-fg-muted mb-8 max-w-[48ch]">
             {t("steps.lead")}
           </p>
           <ol data-testid="process-steps" className="grid grid-cols-1 md:grid-cols-4 gap-8">
@@ -152,18 +152,18 @@ export default function AboutProcessClient() {
                 <span
                   aria-hidden
                   dir="ltr"
-                  className="numeric w-11 h-11 rounded-full border border-accent bg-background grid place-items-center font-english italic font-semibold text-[20px] text-accent"
+                  className="numeric w-11 h-11 rounded-full border border-accent bg-background grid place-items-center font-english italic font-semibold text-xl text-accent"
                 >
                   {`0${i + 1}`}
                 </span>
                 <div>
                   <div className="flex items-center gap-2.5 mb-2">
                     <Icon size={19} className="text-primary shrink-0" aria-hidden />
-                    <h3 className="font-headline-md font-bold text-[21px] leading-tight text-text">
+                    <h3 className="font-headline-md font-bold text-xl leading-tight text-text">
                       {t(`steps.s${i + 1}_title`)}
                     </h3>
                   </div>
-                  <p className="font-body-md text-[15.5px] leading-relaxed text-fg-muted max-w-[50ch]">
+                  <p className="font-body-md text-base leading-relaxed text-fg-muted max-w-[50ch]">
                     {t(`steps.s${i + 1}_body`)}
                   </p>
                 </div>
@@ -174,10 +174,10 @@ export default function AboutProcessClient() {
           <div data-testid="process-badge-aside" className="mt-8 grid grid-cols-[auto_1fr] gap-3 items-start rounded-xl border border-dashed border-accent/50 bg-accent/5 p-4">
             <SealCheck size={20} className="text-accent mt-0.5 shrink-0" aria-hidden />
             <div>
-              <div className="font-body-md font-semibold text-[14.5px] text-text mb-1">
+              <div className="font-body-md font-semibold text-sm text-text mb-1">
                 {t("steps.badge_aside_title")}
               </div>
-              <p className="font-body-md text-[14px] leading-relaxed text-fg-muted">
+              <p className="font-body-md text-sm leading-relaxed text-fg-muted">
                 {t("steps.badge_aside_body")}
               </p>
             </div>
@@ -192,17 +192,17 @@ export default function AboutProcessClient() {
           <h2 className="font-headline-lg font-bold text-text text-[clamp(26px,5.4vw,32px)] leading-tight tracking-tight">
             {t("everyone.h2")}
           </h2>
-          <p className="mt-3.5 font-body-md text-[17px] leading-relaxed text-text/90 max-w-[52ch]">
+          <p className="mt-3.5 font-body-md text-lg leading-relaxed text-text/90 max-w-[52ch]">
             {t("everyone.intro")}
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 mt-8">
             {EVERYONE.map(({ Icon }, i) => (
               <div key={i}>
-                <h3 className="font-headline-md font-bold text-[20px] leading-tight text-text mb-2 flex items-center gap-2">
+                <h3 className="font-headline-md font-bold text-xl leading-tight text-text mb-2 flex items-center gap-2">
                   <Icon size={18} className="text-primary shrink-0" aria-hidden />
                   {t(`everyone.c${i + 1}_title`)}
                 </h3>
-                <p className="font-body-md text-[15.5px] leading-relaxed text-fg-muted">
+                <p className="font-body-md text-base leading-relaxed text-fg-muted">
                   {t(`everyone.c${i + 1}_body`)}
                 </p>
               </div>
@@ -227,11 +227,11 @@ export default function AboutProcessClient() {
                 })}
               </p>
               <div className="flex flex-wrap items-center gap-4 mt-6">
-                <span className="inline-flex items-center gap-2 bg-background border border-accent text-accent rounded-full ps-3.5 pe-4 py-2 font-body-md font-semibold text-[14.5px]">
+                <span className="inline-flex items-center gap-2 bg-background border border-accent text-accent rounded-full ps-3.5 pe-4 py-2 font-body-md font-semibold text-sm">
                   <SealCheck size={17} aria-hidden />
                   <span className="ms-[0.14em]">{t("tier.verified")}</span>
                 </span>
-                <span data-testid="process-badge-tooltip" className="inline-flex items-center gap-2 font-english italic text-[15px] text-fg-muted">
+                <span data-testid="process-badge-tooltip" className="inline-flex items-center gap-2 font-english italic text-base text-fg-muted">
                   <Cursor size={14} aria-hidden />
                   {tBadge.rich("verified_tooltip_license", {
                     date: <span className="numeric not-italic text-accent">{EXAMPLE_DATE}</span>,
@@ -241,13 +241,13 @@ export default function AboutProcessClient() {
             </div>
             {/* affirmative absence — never a negative flag */}
             <div className="border-s-2 border-green-300 ps-5">
-              <h3 className="font-headline-md font-bold text-text text-[20px] leading-tight mb-2.5">
+              <h3 className="font-headline-md font-bold text-text text-xl leading-tight mb-2.5">
                 {t("badge.absence_h3")}
               </h3>
-              <p className="font-body-md text-[15.5px] leading-relaxed text-text max-w-[52ch] mb-3">
+              <p className="font-body-md text-base leading-relaxed text-text max-w-[52ch] mb-3">
                 {t("badge.absence_body")}
               </p>
-              <p className="font-english italic font-medium text-[18px] text-primary-dark">
+              <p className="font-english italic font-medium text-lg text-primary-dark">
                 {t("badge.absence_kicker")}
               </p>
             </div>
@@ -262,18 +262,18 @@ export default function AboutProcessClient() {
           <h2 className="font-headline-lg font-bold text-text text-[clamp(26px,5.4vw,32px)] leading-tight tracking-tight">
             {t("matrix.h2")}
           </h2>
-          <p className="mt-3.5 font-body-md text-[17px] leading-relaxed text-text/90 max-w-[54ch]">
+          <p className="mt-3.5 font-body-md text-lg leading-relaxed text-text/90 max-w-[54ch]">
             {t("matrix.intro")}
           </p>
 
           {/* GROUP A — license required */}
           <div data-testid="process-matrix-a" className="mt-9">
             <div className="mb-4">
-              <div className="flex items-center gap-2.5 font-headline-md font-bold text-[19px] leading-tight text-text mb-1.5">
+              <div className="flex items-center gap-2.5 font-headline-md font-bold text-xl leading-tight text-text mb-1.5">
                 <Certificate size={18} className="text-accent shrink-0" aria-hidden />
                 {t("matrix.groupA_title")}
               </div>
-              <p className="font-body-md text-[14.5px] leading-relaxed text-fg-muted max-w-[56ch]">
+              <p className="font-body-md text-sm leading-relaxed text-fg-muted max-w-[56ch]">
                 {t.rich("matrix.groupA_desc", {
                   b: (chunks) => <b className="font-semibold text-primary-dark">{chunks}</b>,
                 })}
@@ -286,13 +286,13 @@ export default function AboutProcessClient() {
                   data-testid="process-matrix-row"
                   className="grid grid-cols-1 md:grid-cols-[minmax(180px,1.1fr)_minmax(150px,auto)_1.4fr] gap-y-1.5 md:gap-6 py-4 border-b border-border md:items-center"
                 >
-                  <div className="font-headline-md font-bold text-[17px] md:text-[18px] leading-tight text-text">
+                  <div className="font-headline-md font-bold text-lg md:text-lg leading-tight text-text">
                     {t(`matrix.catA.${key}`)}
                   </div>
                   <div>
                     <VerifiedTag />
                   </div>
-                  <div className="font-body-md text-[14px] leading-snug text-fg-muted">
+                  <div className="font-body-md text-sm leading-snug text-fg-muted">
                     {key === "honey" ? t("matrix.honey_doc") : t("matrix.groupA_doc")}
                   </div>
                 </div>
@@ -303,11 +303,11 @@ export default function AboutProcessClient() {
           {/* GROUP B — exempt */}
           <div data-testid="process-matrix-b" className="mt-9">
             <div className="mb-4">
-              <div className="flex items-center gap-2.5 font-headline-md font-bold text-[19px] leading-tight text-text mb-1.5">
+              <div className="flex items-center gap-2.5 font-headline-md font-bold text-xl leading-tight text-text mb-1.5">
                 <Leaf size={18} className="text-accent shrink-0" aria-hidden />
                 {t("matrix.groupB_title")}
               </div>
-              <p className="font-body-md text-[14.5px] leading-relaxed text-fg-muted max-w-[56ch]">
+              <p className="font-body-md text-sm leading-relaxed text-fg-muted max-w-[56ch]">
                 {t.rich("matrix.groupB_desc", {
                   b: (chunks) => <b className="font-semibold text-primary-dark">{chunks}</b>,
                 })}
@@ -320,28 +320,28 @@ export default function AboutProcessClient() {
                   data-testid="process-matrix-row"
                   className="grid grid-cols-1 md:grid-cols-[minmax(180px,1.1fr)_minmax(150px,auto)_1.4fr] gap-y-1.5 md:gap-6 py-4 border-b border-border md:items-center"
                 >
-                  <div className="font-headline-md font-bold text-[17px] md:text-[18px] leading-tight text-text">
+                  <div className="font-headline-md font-bold text-lg md:text-lg leading-tight text-text">
                     {t(`matrix.catB.${key}.label`)}
                   </div>
                   <div className="flex items-center flex-wrap gap-2">
                     <DeclaredTag />
                     {!declaredOnly && (
                       <>
-                        <span className="font-english italic text-fg-muted text-[14px]">
+                        <span className="font-english italic text-fg-muted text-sm">
                           {t("matrix.path_or")}
                         </span>
                         <OptVerifiedTag />
                       </>
                     )}
                   </div>
-                  <div className="font-body-md text-[14px] leading-snug text-fg-muted">
+                  <div className="font-body-md text-sm leading-snug text-fg-muted">
                     {declaredOnly ? (
                       t(`matrix.catB.${key}.note`)
                     ) : (
                       <>
                         {t(`matrix.catB.${key}.doc`)}
                         {declare && (
-                          <span className="block font-english italic text-[14.5px] text-primary-dark mt-0.5 ms-[0.14em]">
+                          <span className="block font-english italic text-sm text-primary-dark mt-0.5 ms-[0.14em]">
                             {t(`matrix.catB.${key}.declare`)}
                           </span>
                         )}
@@ -356,7 +356,7 @@ export default function AboutProcessClient() {
           {/* personal-process caveat */}
           <div className="mt-9 grid grid-cols-[auto_1fr] gap-3 items-start rounded-2xl border border-primary/20 bg-primary/5 p-5">
             <HandHeart size={20} className="text-primary mt-0.5 shrink-0" aria-hidden />
-            <p className="font-body-md text-[14.5px] leading-relaxed text-text max-w-[62ch]">
+            <p className="font-body-md text-sm leading-relaxed text-text max-w-[62ch]">
               {t("matrix.caveat")}
             </p>
           </div>
@@ -369,13 +369,13 @@ export default function AboutProcessClient() {
           spaced Hebrew letters apart. */}
       <section data-testid="process-closing" className="bg-background py-16 md:py-24 scroll-mt-24" aria-label={t("closing.em_mark")}>
         <div className="max-w-3xl mx-auto px-4 md:px-12">
-          <span className="block font-body-md font-semibold text-[13px] text-accent mb-5 ps-6 md:ps-8">
+          <span className="block font-body-md font-semibold text-sm text-accent mb-5 ps-6 md:ps-8">
             {t("closing.em_mark")}
           </span>
           <blockquote className="border-s-2 border-accent ps-6 md:ps-8 me-auto max-w-[20ch] md:max-w-[22ch] font-headline-display font-bold text-primary-dark text-[clamp(28px,8vw,52px)] leading-[1.15]">
             {t("closing.quote")}
           </blockquote>
-          <div className="ps-6 md:ps-8 mt-5 font-body-md text-[15px] text-fg-muted">
+          <div className="ps-6 md:ps-8 mt-5 font-body-md text-base text-fg-muted">
             {t("closing.attrib")}
           </div>
         </div>
@@ -390,7 +390,7 @@ export default function AboutProcessClient() {
               <h2 className="font-headline-lg font-black text-background text-[clamp(28px,6vw,44px)] leading-tight max-w-[22ch] text-balance">
                 {t("cta.h2")}
               </h2>
-              <p className="mt-3.5 font-body-md text-[16.5px] leading-relaxed text-background/90 max-w-[46ch]">
+              <p className="mt-3.5 font-body-md text-base leading-relaxed text-background/90 max-w-[46ch]">
                 {t("cta.intro")}
               </p>
             </div>

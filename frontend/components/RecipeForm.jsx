@@ -34,7 +34,7 @@ import UnverifiedEmailNotice from "@/components/UnverifiedEmailNotice";
 // MEH-1128 Wave B: single-line fields render via ui/Input; baseInput remains
 // for the textareas only (no textarea primitive yet — epic Wave D+).
 const baseInput =
-  "w-full border border-border rounded-[10px] px-3 py-2 bg-white text-start focus-visible:ring-2 focus-visible:ring-primary/40 outline-none";
+  "w-full border border-border rounded-sm px-3 py-2 bg-surface text-start focus-visible:ring-2 focus-visible:ring-primary/40 outline-none";
 
 const EMPTY = {
   title: "",
@@ -169,7 +169,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-4 bg-white rounded-lg border border-border p-6"
+      className="space-y-4 bg-surface rounded-lg border border-border p-6"
     >
       <h2 className="font-headline-md text-lg font-bold text-text">
         {mode === "edit" ? t("heading_edit") : t("heading_create")}
@@ -291,7 +291,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
             <img
               src={form.image_url}
               alt={t("image_label")}
-              className="w-24 h-24 object-cover rounded-[10px] border border-border"
+              className="w-24 h-24 object-cover rounded-sm border border-border"
             />
             <button
               type="button"
@@ -302,7 +302,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
             </button>
           </div>
         ) : (
-          <label className="inline-flex items-center text-sm border border-dashed border-border rounded-[10px] px-4 py-3 cursor-pointer hover:bg-green-50 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30">
+          <label className="inline-flex items-center text-sm border border-dashed border-border rounded-sm px-4 py-3 cursor-pointer hover:bg-green-50 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30">
             {/* MEH-2033: sr-only + focus-within — keyboard reachability, the
                 MEH-2031 pattern. */}
             <input
@@ -334,7 +334,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
             {t("no_products")}
           </p>
         ) : (
-          <ul className="space-y-1 max-h-48 overflow-y-auto border border-border rounded-[10px] p-2 bg-green-50">
+          <ul className="space-y-1 max-h-48 overflow-y-auto border border-border rounded-sm p-2 bg-green-50">
             {products.map((p) => (
               <li key={p.id}>
                 <label className="flex items-center gap-2 text-sm cursor-pointer py-1">
@@ -363,7 +363,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
         <button
           type="submit"
           disabled={submitting || uploading}
-          className="bg-primary text-white px-6 py-2.5 rounded-[10px] hover:bg-primary-dark transition font-medium disabled:opacity-50"
+          className="bg-primary text-white px-6 py-2.5 rounded-full hover:bg-primary-dark transition font-medium disabled:opacity-50"
         >
           {submitting ? t("submit_saving") : t("submit")}
         </button>

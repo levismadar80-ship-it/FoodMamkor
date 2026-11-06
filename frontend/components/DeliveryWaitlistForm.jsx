@@ -103,7 +103,7 @@ export default function DeliveryWaitlistForm({ producer = null, city = "", descr
         </p>
         {HOST_LINES[hostConfirm] && (
           <p
-            className="mt-1 text-[13px] text-text"
+            className="mt-1 text-sm text-text"
             data-testid="delivery-waitlist-host-status"
             data-host-confirm={hostConfirm}
           >
@@ -115,7 +115,7 @@ export default function DeliveryWaitlistForm({ producer = null, city = "", descr
             signed-in visitor is pointed there instead of a second opt-in. */}
         {user && (
           <p
-            className="mt-1 text-[13px] text-fg-muted"
+            className="mt-1 text-sm text-fg-muted"
             data-testid="delivery-waitlist-whatsapp-hint"
           >
             {t("whatsapp_hint")}
@@ -133,7 +133,7 @@ export default function DeliveryWaitlistForm({ producer = null, city = "", descr
           onClick={() => setPhase("open")}
           data-testid="delivery-waitlist-cta"
           aria-describedby={describedBy}
-          className="inline-flex items-center gap-1.5 min-h-touch rounded-full border border-primary/20 bg-white px-3 text-sm font-medium text-primary transition hover:bg-green-50 focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="inline-flex items-center gap-1.5 min-h-touch rounded-full border border-primary/20 bg-surface px-3 text-sm font-medium text-primary transition hover:bg-green-50 focus-visible:ring-2 focus-visible:ring-primary/40"
         >
           <BellRinging
             size={16}
@@ -157,7 +157,7 @@ export default function DeliveryWaitlistForm({ producer = null, city = "", descr
     >
       <label
         htmlFor={inputId}
-        className="block text-[13px] font-medium text-text mb-1"
+        className="block text-sm font-medium text-text mb-1"
       >
         {t("email_label")}
       </label>
@@ -174,7 +174,7 @@ export default function DeliveryWaitlistForm({ producer = null, city = "", descr
           data-testid="delivery-waitlist-email"
           /* MEH-976 pattern: plaintext bidi so a Hebrew placeholder reads RTL
              and the typed Latin address LTR, without flipping the field. */
-          className="flex-1 min-h-touch rounded-full border border-primary/15 bg-white px-4 text-sm [unicode-bidi:plaintext] focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+          className="flex-1 min-h-touch rounded-full border border-primary/15 bg-surface px-4 text-sm [unicode-bidi:plaintext] focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
         />
         <button
           type="submit"
@@ -197,10 +197,10 @@ export default function DeliveryWaitlistForm({ producer = null, city = "", descr
           data-testid="delivery-waitlist-host"
           className="mt-1 h-4 w-4 flex-shrink-0 accent-primary"
         />
-        <label htmlFor={hostId} className="text-[13px] text-text">
+        <label htmlFor={hostId} className="text-sm text-text">
           {t("host_label", { city: value })}
           <span
-            className="block text-[12px] text-fg-muted"
+            className="block text-xs text-fg-muted"
             data-testid="delivery-waitlist-host-hint"
           >
             {t("host_hint")}
@@ -209,7 +209,7 @@ export default function DeliveryWaitlistForm({ producer = null, city = "", descr
       </div>
       {error && (
         <p
-          className="mt-1 text-[13px] text-danger-700"
+          className="mt-1 text-sm text-danger-700"
           role="alert"
           data-testid="delivery-waitlist-error"
         >

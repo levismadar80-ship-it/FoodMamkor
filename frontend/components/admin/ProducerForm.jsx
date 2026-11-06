@@ -226,7 +226,7 @@ const EMPTY = {
 // React remounted the whole subtree and dropped input focus mid-typing.
 function Section({ title, children, testId }) {
   return (
-    <div className="bg-white rounded-md border border-border p-6" data-testid={testId}>
+    <div className="bg-surface rounded-md border border-border p-6" data-testid={testId}>
       <h2 className="font-semibold text-lg mb-4 text-primary">{title}</h2>
       {children}
     </div>
@@ -557,7 +557,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
   // now feeds ONLY the selects + textareas (no primitive for them until the
   // epic's later waves). Delete when those migrate.
   const inputClass =
-    "w-full border border-border rounded-md px-3 py-2 focus:outline-none focus:border-primary bg-white";
+    "w-full border border-border rounded-md px-3 py-2 focus:outline-none focus:border-primary bg-surface";
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl">
@@ -789,7 +789,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
 
       <Section title={t("producers.form.sections.categories_tags")}>
         {/* MEH-1297: primary-first + ≤3 cap hint (parity with the register CategorySelector) */}
-        <p className="text-[11px] text-fg-muted mb-2">
+        <p className="text-2xs text-fg-muted mb-2">
           {t("producers.form.category_cap_hint")}
         </p>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-4">
@@ -817,7 +817,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
                 {isPrimary && (
                   <span
                     data-testid="admin-primary-badge"
-                    className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary"
+                    className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-2xs font-medium text-primary"
                   >
                     {t("producers.form.primary_badge")}
                   </span>
@@ -1263,7 +1263,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         <button
           type="button"
           onClick={() => router.push("/admin?tab=producers")}
-          className="bg-white border border-border px-8 py-3 rounded-md hover:bg-background transition"
+          className="bg-surface border border-border px-8 py-3 rounded-md hover:bg-background transition"
         >
           {t("common.cancel")}
         </button>

@@ -226,7 +226,7 @@ function LoginPageBody() {
 
         {/* Head — gold eyebrow rule + Frank Ruhl 900 welcome headline */}
         <div className="grid gap-3 text-start">
-          <span className="inline-flex items-center gap-3 text-accent text-[11px] font-medium">
+          <span className="inline-flex items-center gap-3 text-accent text-2xs font-medium">
             <span className="h-px w-7 bg-accent" aria-hidden="true" />
             {t("title")}
           </span>
@@ -263,7 +263,7 @@ function LoginPageBody() {
                   gives it. Locale-aware links, as on /register. */}
               <p
                 data-testid="login-oauth-terms"
-                className="text-[13px] leading-relaxed text-fg-muted text-start"
+                className="text-sm leading-relaxed text-fg-muted text-start"
               >
                 {t.rich(oauthTermsKey(googleConfigured, appleConfigured), {
                   tos: (chunks) => (
@@ -295,7 +295,7 @@ function LoginPageBody() {
             browser's own bubble; `required` stays on the inputs for a11y. */}
         <form onSubmit={handleSubmit} noValidate className="grid gap-4">
           <div className="grid gap-2 text-start">
-            <label htmlFor="login-email" className="text-[13.5px] font-semibold text-text">
+            <label htmlFor="login-email" className="text-sm font-semibold text-text">
               {t("email_label")}
             </label>
             {/* dir=ltr wrapper → logical start/end resolve to left/right for the
@@ -340,7 +340,7 @@ function LoginPageBody() {
           <div className="grid gap-2 text-start">
             {/* label-row: field label at inline-start, forgot link at inline-end */}
             <div className="flex items-baseline justify-between gap-3">
-              <label htmlFor="login-password" className="text-[13.5px] font-semibold text-text">
+              <label htmlFor="login-password" className="text-sm font-semibold text-text">
                 {t("password_label")}
               </label>
               {/* MEH-215 journey C: locator for the login → forgot-password

@@ -162,7 +162,7 @@ function ResetPasswordForm() {
             placeholder={t("auth.passwordRecovery.reset.confirm_placeholder")}
             required
             dir="ltr"
-            className="w-full min-h-touch border border-border rounded-[10px] ps-4 py-3 bg-white focus-visible:ring-2 focus-visible:ring-primary/40 outline-none transition focus:border-primary pr-12" // rtl-ok: pr-12 reserves the 44px eye toggle inside the dir="ltr" input (MEH-2554 PasswordInput fix)
+            className="w-full min-h-touch border border-border rounded-sm ps-4 py-3 bg-surface focus-visible:ring-2 focus-visible:ring-primary/40 outline-none transition focus:border-primary pr-12" // rtl-ok: pr-12 reserves the 44px eye toggle inside the dir="ltr" input (MEH-2554 PasswordInput fix)
           />
           <button
             type="button"
@@ -195,7 +195,7 @@ function ResetPasswordForm() {
         <button
           type="submit"
           disabled={loading || !password || !confirm}
-          className="w-full bg-primary text-white py-3.5 rounded-[10px] hover:bg-primary-dark transition font-medium disabled:opacity-50"
+          className="w-full bg-primary text-white py-3.5 rounded-full hover:bg-primary-dark transition font-medium disabled:opacity-50"
         >
           {loading
             ? t("auth.passwordRecovery.reset.submit_updating")

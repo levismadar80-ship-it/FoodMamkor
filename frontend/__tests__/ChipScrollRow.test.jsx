@@ -492,7 +492,7 @@ describe("ChipScrollRow — category multi-select + Direction A (MEH-1465 / MEH-
     expect(btn("כל")).toHaveAttribute("aria-pressed", "true");
   });
 
-  it('"כל" drops to a ghost (bg-white + muted, not pressed) once ≥1 category is selected', () => {
+  it('"כל" drops to a ghost (bg-surface + muted, not pressed) once ≥1 category is selected', () => {
     render(
       <ChipScrollRow
         variant="category"
@@ -501,7 +501,7 @@ describe("ChipScrollRow — category multi-select + Direction A (MEH-1465 / MEH-
         onChipClick={() => {}}
       />,
     );
-    expect(btn("כל").className).toContain("bg-white");
+    expect(btn("כל").className).toContain("bg-surface");
     expect(btn("כל").className).toContain("text-muted");
     expect(btn("כל").className).not.toContain("bg-state-selected");
     expect(btn("כל")).toHaveAttribute("aria-pressed", "false");

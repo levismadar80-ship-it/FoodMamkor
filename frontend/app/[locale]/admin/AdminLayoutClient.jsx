@@ -222,7 +222,7 @@ function AdminShell({ children }) {
         <span className="flex-1">{t(`layout.nav.${n.key}`)}</span>
         {badgeCount !== null && (
           <span
-            className="bg-yellow-400 text-yellow-900 text-[11px] font-bold px-2 py-0.5 rounded-full leading-none"
+            className="bg-yellow-400 text-yellow-900 text-2xs font-bold px-2 py-0.5 rounded-full leading-none"
             {...badgeProps(badgeCount)}
           >
             {badgeCount}
@@ -313,7 +313,7 @@ function AdminShell({ children }) {
                 {t(`layout.nav.${n.key}`)}
                 {badgeCount !== null && (
                   <span
-                    className="bg-yellow-400 text-yellow-900 text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none"
+                    className="bg-yellow-400 text-yellow-900 text-2xs font-bold px-1.5 py-0.5 rounded-full leading-none"
                     {...badgeProps(badgeCount)}
                   >
                     {badgeCount}
@@ -334,17 +334,21 @@ function AdminShell({ children }) {
             (MEH-2359). Same key, icon and markup as the owner dashboard's
             (MEH-2490, producer/dashboard/DashboardLayoutClient.jsx); no new copy. After
             logout the 401 branch above sends her to /login. */}
-        <div className="md:hidden flex justify-center px-4 pt-6 pb-2">
-          <button
-            type="button"
-            data-testid="admin-mobile-logout"
-            onClick={logout}
-            className="inline-flex items-center gap-2 min-h-touch px-4 text-sm font-medium text-error focus-ring rounded-sm"
-          >
-            <SignOut size={18} aria-hidden="true" />
-            {tAccount("logout")}
-          </button>
-        </div>
+        {/* MEH-2728: only on the panel's home, and muted — same reasoning
+            as the owner dashboard (DashboardLayoutClient.jsx). */}
+        {pathname === "/admin" && (
+          <div className="md:hidden flex justify-center px-4 pt-6 pb-2">
+            <button
+              type="button"
+              data-testid="admin-mobile-logout"
+              onClick={logout}
+              className="inline-flex items-center gap-2 min-h-touch px-4 text-sm font-medium text-fg-muted hover:text-text focus-ring rounded-sm"
+            >
+              <SignOut size={18} aria-hidden="true" />
+              {tAccount("logout")}
+            </button>
+          </div>
+        )}
       </main>
     </div>
   );

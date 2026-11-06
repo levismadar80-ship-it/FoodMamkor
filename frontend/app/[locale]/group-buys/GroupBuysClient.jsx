@@ -45,7 +45,7 @@ function GroupBuyCard({ gb }) {
     <Link
       href={`/group-buys/${gb.id}`}
       data-testid="group-buy-card"
-      className="group bg-white rounded-lg border border-border overflow-hidden flex flex-col hover:border-primary transition focus-ring"
+      className="group bg-surface rounded-lg border border-border overflow-hidden flex flex-col hover:border-primary transition focus-ring"
     >
       <div className="relative aspect-[16/9] bg-green-50 overflow-hidden">
         {showImg ? (
@@ -72,14 +72,14 @@ function GroupBuyCard({ gb }) {
           </span>
         )}
         {funded && (
-          <span className="absolute top-3 end-3 bg-white text-primary text-xs font-bold px-2.5 py-1 rounded-full">
+          <span className="absolute top-3 end-3 bg-surface text-primary text-xs font-bold px-2.5 py-1 rounded-full">
             {t("funded_banner")}
           </span>
         )}
       </div>
 
       <div className="p-4 flex flex-col gap-2 flex-1">
-        <p className="text-[13px] text-fg-muted">
+        <p className="text-sm text-fg-muted">
           {[gb.producer_name, gb.city].filter(Boolean).join(" · ")}
         </p>
         <h2 className="font-headline-md text-lg font-bold text-text leading-snug line-clamp-2">
@@ -107,14 +107,14 @@ function GroupBuyCard({ gb }) {
           <div className="w-full bg-border rounded-full h-2.5 overflow-hidden">
             <div className="h-2.5 rounded-full bg-primary" style={{ width: `${pct}%` }} />
           </div>
-          <p className="mt-1.5 text-[13px] font-medium text-text" data-testid="group-buy-progress-line">
+          <p className="mt-1.5 text-sm font-medium text-text" data-testid="group-buy-progress-line">
             {funded || remaining === 0
               ? t("progress_label", { commits: gb.commits_count, min: gb.min_participants })
               : td("remaining_to_open", { n: remaining })}
           </p>
         </div>
 
-        <div className="mt-auto pt-2 flex flex-col gap-1 text-[13px] text-fg-muted">
+        <div className="mt-auto pt-2 flex flex-col gap-1 text-sm text-fg-muted">
           <span className="inline-flex items-center gap-1.5">
             <Clock size={16} aria-hidden="true" className="shrink-0" />
             {daysLeft > 0 ? t("days_left", { days: daysLeft }) : t("expired")}
@@ -223,7 +223,7 @@ export default function GroupBuysClient() {
                 className={`min-h-touch inline-flex items-center justify-center px-4 py-2 rounded-full text-sm font-medium transition border ${
                   statusFilter === s.key
                     ? "bg-primary text-white border-primary"
-                    : "bg-white text-fg-muted border-border hover:border-primary"
+                    : "bg-surface text-fg-muted border-border hover:border-primary"
                 }`}
               >
                 {s.label}

@@ -128,7 +128,7 @@ export default function PhoneVerifyCard({ onVerified }) {
       : t("send_cta");
 
   return (
-    <div className="mt-3 bg-white border border-primary/20 rounded-md p-4">
+    <div className="mt-3 bg-surface border border-primary/20 rounded-md p-4">
       <p className="font-semibold text-text mb-1 inline-flex items-center gap-1.5">
         <ChatCircleText size={18} className="text-primary" aria-hidden="true" />
         {t("title")}

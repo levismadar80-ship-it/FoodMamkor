@@ -112,7 +112,7 @@ describe("AddressSearch suggestion list — stacking (MEH-2093 chunk A)", () => 
       "absolute",
       "mt-1",
       "w-full",
-      "bg-white",
+      "bg-surface",
       "border",
       "border-border",
       "rounded-sm",
