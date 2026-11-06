@@ -29,7 +29,7 @@ export default function UnverifiedEmailNotice({ className = "" }) {
   return (
     <div
       role="alert"
-      className={`bg-background-alt border border-border rounded-[8px] p-3 text-sm flex items-start gap-2 ${className}`}
+      className={`bg-background-alt border border-border rounded-sm p-3 text-sm flex items-start gap-2 ${className}`}
     >
       <EnvelopeSimple size={18} className="text-accent mt-0.5 shrink-0" aria-hidden="true" />
       <div className="flex flex-col gap-1">

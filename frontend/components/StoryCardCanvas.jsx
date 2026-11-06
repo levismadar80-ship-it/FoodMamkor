@@ -476,7 +476,7 @@ export default function StoryCardCanvas({ producer, mode = "admin", onUploaded, 
           onClick={download}
           disabled={!rendered}
           data-testid="story-card-download"
-          className="text-sm border border-border px-4 py-2 rounded-[8px] hover:border-primary transition disabled:opacity-40"
+          className="text-sm border border-border px-4 py-2 rounded-sm hover:border-primary transition disabled:opacity-40"
         >
           <DownloadSimple size={16} className="inline align-[-2px]" aria-hidden="true" />{" "}
           {downloadLabel}
@@ -490,7 +490,7 @@ export default function StoryCardCanvas({ producer, mode = "admin", onUploaded, 
             onClick={uploadToCloudinary}
             disabled={!rendered || uploading}
             data-testid="story-card-upload"
-            className="text-sm bg-primary text-white px-4 py-2 rounded-[8px] hover:bg-primary-dark transition disabled:opacity-40"
+            className="text-sm bg-primary text-white px-4 py-2 rounded-sm hover:bg-primary-dark transition disabled:opacity-40"
           >
             {uploading ? t("uploading") : t("save_cloudinary")}
           </button>
@@ -498,7 +498,7 @@ export default function StoryCardCanvas({ producer, mode = "admin", onUploaded, 
         <button
           onClick={copyCaption}
           data-testid="story-card-copy-caption"
-          className="text-sm border border-border px-4 py-2 rounded-[8px] hover:border-primary transition"
+          className="text-sm border border-border px-4 py-2 rounded-sm hover:border-primary transition"
         >
           {captionCopied ? copiedLabel : copyLabel}
         </button>
@@ -511,7 +511,7 @@ export default function StoryCardCanvas({ producer, mode = "admin", onUploaded, 
       )}
 
       {/* Caption preview */}
-      <pre className="text-xs bg-green-50 rounded-[8px] p-3 whitespace-pre-wrap text-text font-body-md text-right" dir="rtl">
+      <pre className="text-xs bg-green-50 rounded-sm p-3 whitespace-pre-wrap text-text font-body-md text-right" dir="rtl">
         {caption}
       </pre>
     </div>

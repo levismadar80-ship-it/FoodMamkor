@@ -122,7 +122,7 @@ export default function AdminReportsPage() {
                     {r.reports.map((rep) => (
                       <li
                         key={rep.id}
-                        className={`rounded-[8px] p-2 text-xs ${r.auto_flagged ? "bg-red-50" : "bg-gray-50"}`}
+                        className={`rounded-sm p-2 text-xs ${r.auto_flagged ? "bg-red-50" : "bg-gray-50"}`}
                       >
                         <p>{rep.reason}</p>
                         <p className="text-fg-muted mt-1">
@@ -144,7 +144,7 @@ export default function AdminReportsPage() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="dismiss-title"
-            className="bg-white rounded-[16px] shadow-xl p-6 max-w-sm w-full mx-4 text-start space-y-4"
+            className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full mx-4 text-start space-y-4"
           >
             <p id="dismiss-title" className="font-medium text-base">
               {t("reports.actions.dismiss_confirm", { name: dismissTarget.producer_name })}

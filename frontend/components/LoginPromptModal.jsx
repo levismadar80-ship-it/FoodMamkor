@@ -114,7 +114,7 @@ export default function LoginPromptModal({
         aria-modal="true"
         aria-labelledby="login-prompt-title"
         onClick={(e) => e.stopPropagation()}
-        className="relative bg-white rounded-[16px] max-w-sm w-full p-6 shadow-xl text-center"
+        className="relative bg-white rounded-lg max-w-sm w-full p-6 shadow-xl text-center"
       >
         <button
           type="button"

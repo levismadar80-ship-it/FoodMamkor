@@ -332,7 +332,7 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
               </div>
             )}
             {error && (
-              <p role="status" className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-[8px] px-3 py-2">
+              <p role="status" className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-sm px-3 py-2">
                 {error}
               </p>
             )}
@@ -342,7 +342,7 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
                   const label = t(`prompts.${id}`);
                   return (
                     <button key={id} type="button" onClick={() => sendMessage(label, id)}
-                      className="text-start text-xs text-primary bg-green-50 hover:bg-green-50/70 border border-border rounded-[8px] px-3 py-2 transition focus-visible:ring-2 focus-visible:ring-primary/40"
+                      className="text-start text-xs text-primary bg-green-50 hover:bg-green-50/70 border border-border rounded-sm px-3 py-2 transition focus-visible:ring-2 focus-visible:ring-primary/40"
                     >{label}</button>
                   );
                 })}
