@@ -5776,7 +5776,7 @@
       "hand_over": "Confirm handover",
       "no_show": "Didn't show",
       "no_show_too_early": "Can only be marked after the pickup window closes",
-      "qty": "{qty} bags",
+      "qty": "{qty, plural, one {one bag} other {# bags}}",
       "handed_at": "✓ handed over {time}",
       "status": {
         "cancelled": "Cancelled",
@@ -5801,11 +5801,20 @@
       "items_help": "Comma separated. This is what buyers see before they reserve.",
       "items_save": "Save",
       "items_saved": "Saved.",
-      "leftover_hint": "Bags left over? You can give them away free in a food-rescue group.",
-      "leftover_link": "Open the group",
+      "leftover_hint": "Instead of throwing them away, you can give them away free.",
+      "leftover_link": "Food give-away group on Facebook",
       "needs_address": "To publish bags you need an exact pickup address.",
       "needs_address_privacy": "Only people who reserved a bag see the full address.",
-      "needs_address_cta": "Add an address"
+      "needs_address_cta": "Add an address",
+      "leftover_title": "{count, plural, one {Not collected today: one bag} other {Not collected today: # bags}}",
+      "leftover_share": "Share on WhatsApp",
+      "leftover_donated": "Done: given away free",
+      "leftover_done": "{count, plural, one {✓ One bag given away free} other {✓ # bags given away free}}",
+      "leftover_share_text": "{count, plural, one {We have one bag left today} other {We have # bags left today}} from {name} in {city}, free to give away. If you want it, message us.",
+      "leftover_donated_help": "Tap after you've given them away, so we know how many bags were saved.",
+      "leftover_qty_label": "How many bags were given?",
+      "leftover_undo": "Undo",
+      "leftover_upcoming": "After pickup time ends, what wasn't collected will show here."
     },
     "counter_card": {
       "title": "Mehamakor rescue bag",
