@@ -24,7 +24,7 @@ const DIRS = ["app", "components"];
 // Tailwind reorder utilities, with any variant prefix (`md:`, `max-md:`,
 // `rtl:`…). `flex-row-reverse` is included: in RTL it is the usual way a
 // direction bug gets "fixed" by hand, and it reorders focus the same way.
-export const REORDER = /(?:^|[\s"'`{])((?:[a-z0-9-]+:)*(?:order-(?:first|last|none|\d+|\[[^\]]+\])|flex-(?:row|col|wrap)-reverse|row-start-(?:\d+|auto|\[[^\]]+\])))(?=[\s"'`}]|$)/g;
+const REORDER = /(?:^|[\s"'`{])((?:[a-z0-9-]+:)*(?:order-(?:first|last|none|\d+|\[[^\]]+\])|flex-(?:row|col|wrap)-reverse|row-start-(?:\d+|auto|\[[^\]]+\])))(?=[\s"'`}]|$)/g;
 
 // file (relative to frontend/) → exact count of reorder tokens allowed, and why.
 const ALLOWED = {
@@ -56,13 +56,19 @@ function walk(dir) {
   });
 }
 
-// Only class strings count — comments that NAME a utility (like this file's
-// header, or HomeClient's MEH-2747 note) must not trip the guard.
-const CLASS_STRING = /className=(?:"[^"]*"|\{`[^`]*`\}|\{[^}]*\})|\b(?:cn|clsx|twMerge)\([^)]*\)/g;
+// Only string literals count — comments that NAME a utility (like this file's
+// header, or HomeClient's MEH-2747 note) must not trip the guard. Every quoted
+// or template string is read, not just `className=`, so a class kept in a
+// constant or passed through another prop (`wrapperClassName=`, `cls = "…"`)
+// is caught too.
+function stripComments(src) {
+  return src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'`\\])\/\/[^\n]*/g, "$1");
+}
+const STRING_LITERAL = /"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`(?:[^`\\]|\\.)*`/g;
 
-export function reorderTokens(src) {
+function reorderTokens(src) {
   const out = [];
-  for (const m of src.matchAll(CLASS_STRING)) {
+  for (const m of stripComments(src).matchAll(STRING_LITERAL)) {
     for (const t of m[0].matchAll(REORDER)) out.push(t[1]);
   }
   return out;
@@ -80,8 +86,15 @@ describe("guard self-test (MEH-1619 — the check must be able to fail)", () => 
     expect(reorderTokens('<aside className="lg:row-start-1 lg:col-start-2">')).toEqual(["lg:row-start-1"]);
   });
 
+  it("catches a class kept in a constant or another prop", () => {
+    expect(reorderTokens('const cls = "flex order-last";')).toEqual(["order-last"]);
+    expect(reorderTokens('<Card wrapperClassName="md:order-2" />')).toEqual(["md:order-2"]);
+  });
+
   it("ignores comments and look-alike classes", () => {
     expect(reorderTokens("// the map carries `order-last` on phones")).toEqual([]);
+    expect(reorderTokens("{/* MEH-2635 used `order-last` here */}")).toEqual([]);
+    expect(reorderTokens('<a href="https://x.dev/a">')).toEqual([]);
     expect(reorderTokens('<div className="border-order-x reorder-last orderly">')).toEqual([]);
   });
 
@@ -98,7 +111,11 @@ describe("no section is reordered with CSS (MEH-2747)", () => {
     return { rel, tokens: reorderTokens(fs.readFileSync(f, "utf8")) };
   });
 
-  it("scanned the real tree", () => {
+  it("scanned the real tree, including every allowlisted file and the homepage", () => {
+    const seen = new Set(files.map((f) => f.rel));
+    for (const rel of [...Object.keys(ALLOWED), "app/[locale]/home/HomeClient.jsx", "components/Header.jsx"]) {
+      expect(seen.has(rel), `${rel} was scanned`).toBe(true);
+    }
     expect(files.length).toBeGreaterThan(200);
   });
 
