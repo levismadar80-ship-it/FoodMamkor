@@ -40,6 +40,24 @@ export function rescueBagsEnabled() {
   return process.env.NEXT_PUBLIC_RESCUE_BAGS_ENABLED === "true";
 }
 
+/**
+ * Where a business can pass on bags nobody collected (MEH-2702).
+ *
+ * One link per town, for towns that have a local food-rescue group. The
+ * 05/11/2026 scan of Wave 1 (Zichron, Binyamina, Pardes Hanna, Hadera, Hof
+ * HaCarmel) found none, so the map starts empty and every town falls back to
+ * the national Facebook group. Adding a town = one line here, keyed by the
+ * pickup point's `city` exactly as the API returns it.
+ */
+export const RESCUE_LEFTOVER_GROUP_NATIONAL = "https://www.facebook.com/groups/freefood/";
+const RESCUE_LEFTOVER_GROUPS = Object.freeze({});
+
+export function leftoverGroupUrl(city, groups = RESCUE_LEFTOVER_GROUPS) {
+  const key = typeof city === "string" ? city.trim() : "";
+  // Own keys only: a town named "constructor" must not resolve to Object.prototype.
+  return (key && Object.hasOwn(groups, key) && groups[key]) || RESCUE_LEFTOVER_GROUP_NATIONAL;
+}
+
 /** Walking minutes, the way the spec defines them: haversine × 1.3 at 5 km/h. */
 export function walkingMinutes(distanceKm) {
   if (typeof distanceKm !== "number" || !Number.isFinite(distanceKm)) return null;
