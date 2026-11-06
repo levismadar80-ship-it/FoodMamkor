@@ -15,6 +15,8 @@ export default function HolidayBanner({ suppressed = false, onVisibilityChange }
   // files — the producer.holiday_banner namespace never existed (same trap
   // as FridayDeliveryStrip), so t() rendered raw key paths.
   const t = useTranslations("group_buys.holiday_banner");
+  // MEH-2741: the holiday's own words live under `holidays.<key>`.
+  const tHoliday = useTranslations("holidays");
   const [holiday, setHoliday] = useState(null);
   const [dismissed, setDismissed] = useState(true); // start hidden to avoid flash
 
@@ -61,9 +63,8 @@ export default function HolidayBanner({ suppressed = false, onVisibilityChange }
   };
 
   const searchHref = `/producers?q=${encodeURIComponent(holiday.searchParams.q)}`;
-  const label = holiday.upcoming
-    ? t("approaching", { name: holiday.name })
-    : holiday.name;
+  const name = tHoliday(`${holiday.key}.name`);
+  const label = holiday.upcoming ? t("approaching", { name }) : name;
 
   return (
     <div
@@ -78,7 +79,7 @@ export default function HolidayBanner({ suppressed = false, onVisibilityChange }
       <span className="text-2xl shrink-0 flex" aria-hidden="true"><HolidayIcon name={holiday.icon} /></span>
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-text text-sm leading-snug">{label}</p>
-        <p className="text-fg-muted text-xs mt-0.5 leading-snug line-clamp-1">{holiday.tagline}</p>
+        <p className="text-fg-muted text-xs mt-0.5 leading-snug line-clamp-1">{tHoliday(`${holiday.key}.tagline`)}</p>
       </div>
       {/* MEH-1103: text-xs py-1.5 → text-sm py-2 (DESIGN.md interactive
           sizing minimums); dismiss gains a 44px hit area. */}
@@ -87,7 +88,7 @@ export default function HolidayBanner({ suppressed = false, onVisibilityChange }
         className="shrink-0 text-sm font-semibold px-3 py-2 rounded-full text-white transition hover:opacity-90"
         style={{ backgroundColor: holiday.color }}
       >
-        {holiday.cta}
+        {tHoliday(`${holiday.key}.cta`)}
       </Link>
       <button
         onClick={dismiss}

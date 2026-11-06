@@ -136,8 +136,10 @@ describe("location rows (MEH-2429 §16)", () => {
 
 describe("holiday hint CTA (MEH-2429 §5)", () => {
   it("goes to the products card, not back to the overview it sits on", async () => {
-    holidayRef.current = { icon: "Flame", color: "#2e6853", dashboardHint: "חנוכה מתקרבת" };
+    // MEH-2741: the hint text is `holidays.<key>.dashboard_hint` in messages.
+    holidayRef.current = { key: "chanuka", icon: "Flame", color: "#2e6853" };
     renderIntl(<OverviewPage />);
+    expect(await screen.findByText(he.holidays.chanuka.dashboard_hint)).toBeTruthy();
     const cta = await screen.findByText(he.dashboard.producer.holiday_catalog_cta);
     expect(cta.closest("a")).toHaveAttribute("href", "/producer/dashboard/edit#products");
   });
