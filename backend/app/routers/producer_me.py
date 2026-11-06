@@ -78,7 +78,7 @@ from app.services.delivery_validation import (
 )
 from app.services.license_validation import (
     categories_require_license,
-    ensure_license_for_categories,
+    enforce_license_gate_on_update,
 )
 from app.services.analytics import israel_day_of, unique_views_count
 from app.services.analytics_rollup import rollup_snapshot
@@ -250,46 +250,6 @@ def _sync_active_offer(db: Session, producer: Producer, offer: dict | None):
             status_code=409,
             detail="ההטבה עודכנה במקביל מחלון אחר. רעננו את הדף ונסו שוב.",
         ) from exc
-
-
-def _enforce_owner_license_gate(db, producer, payload, category_ids):
-    """MEH-999: grandfather rule — validate NEWLY-ADDED categories only, never
-    the set the producer already holds. The MEH-530 full-set re-check bricked
-    every edit for MEH-971 license-pending producers (licensed category +
-    NULL license → 422 on any PUT). Same posture as the auth.py register
-    bypass: NOT a security relaxation — licensed-only is enforced downstream
-    by the admin approval guard and by publication requiring
-    status=="approved"; a pending producer editing her bio publishes nothing.
-    """
-    effective_license = (
-        payload.get("producer_license_number")
-        if "producer_license_number" in payload
-        else producer.producer_license_number
-    )
-    persisted_category_ids = {c.id for c in producer.categories}
-    added_category_ids = (
-        [cid for cid in category_ids if cid not in persisted_category_ids]
-        if category_ids is not None
-        else []
-    )
-    # Helper short-circuits on an empty list, so this only fires for adds.
-    ensure_license_for_categories(db, added_category_ids, effective_license)
-
-    # MEH-999 (2c): the one hole grandfathering would open — a LICENSED
-    # producer blanking her license while keeping a license-required category.
-    # Re-run the gate against the final category set with the cleared value.
-    # Pending producers are unaffected: their license is already NULL, so
-    # nothing is being cleared.
-    license_cleared = (
-        "producer_license_number" in payload
-        and not (payload.get("producer_license_number") or "").strip()
-        and (producer.producer_license_number or "").strip()
-    )
-    if license_cleared:
-        final_category_ids = (
-            category_ids if category_ids is not None else list(persisted_category_ids)
-        )
-        ensure_license_for_categories(db, final_category_ids, None)
 
 
 # MEH-1351: approvability = the admin approve gate's definition, REUSED not
@@ -817,7 +777,7 @@ def update_my_producer(
     offer_sent = "active_offer" in payload
     offer_payload = payload.pop("active_offer", None)
 
-    _enforce_owner_license_gate(db, producer, payload, category_ids)
+    enforce_license_gate_on_update(db, producer, payload, category_ids)
     # MEH-1255: effective-state guard — excluded cities require nationwide.
     ensure_exclusion_requires_nationwide(producer, payload)
     # MEH-1879: same shape — nationwide delivery requires the delivery flag,
