@@ -850,7 +850,11 @@ def _guard_vacation_return_date(producer: Producer, payload: dict) -> None:
     too — the owner endpoint has required it since AUD-039/040. The past-date
     check stays in ProducerUpdate._validate_vacation_until."""
     state = payload.get("availability_state", producer.availability_state)
-    until = payload["vacation_until"] if "vacation_until" in payload else producer.vacation_until
+    until = (
+        payload["vacation_until"]
+        if "vacation_until" in payload
+        else producer.vacation_until
+    )
     if state == "on_vacation" and until is None:
         raise HTTPException(
             status_code=422,
