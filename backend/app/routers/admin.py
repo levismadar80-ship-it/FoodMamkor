@@ -63,6 +63,7 @@ from app.schemas.schemas import (
 )
 from app.services.license_validation import (
     categories_require_license,
+    enforce_license_gate_on_update,
     ensure_license_for_categories,
 )
 from app.services.producer_queries import (
@@ -881,24 +882,13 @@ def admin_update_producer(
     # or the DB CHECK (MEH-1849) turns a partial update into a 500.
     ensure_nationwide_requires_delivery(producer, payload)
 
-    # MEH-530: PATCH semantics — guard against the EFFECTIVE state after
-    # the update. If category_ids is being changed → use the new list,
-    # otherwise read existing producer-category join rows. Same for license:
-    # if the field is in the payload (even explicitly None to clear) → use
-    # that, otherwise keep the current column. Helper short-circuits to OK
-    # when no required-category is touched, so this is cheap on non-license
-    # admin edits.
-    effective_category_ids = (
-        category_ids
-        if category_ids is not None
-        else [c.id for c in producer.categories]
-    )
-    effective_license = (
-        payload.get("producer_license_number")
-        if "producer_license_number" in payload
-        else producer.producer_license_number
-    )
-    ensure_license_for_categories(db, effective_category_ids, effective_license)
+    # MEH-2707: the owner path's MEH-999 grandfather rule, shared — only a
+    # NEWLY-ADDED licensed category, or blanking a held license, is refused.
+    # This used to re-check the FULL effective category set (MEH-530), so any
+    # edit to an unlicensed business in a licensed category 422'd — the admin
+    # could not even fix its description. Going live is still gated by
+    # approve_producer → _assert_approvable (MEH-971), unchanged.
+    enforce_license_gate_on_update(db, producer, payload, category_ids)
 
     # Keep slug unique if changed; reject reserved slugs.
     if "slug" in payload and payload["slug"]:

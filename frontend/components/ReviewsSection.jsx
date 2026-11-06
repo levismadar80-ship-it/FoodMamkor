@@ -20,11 +20,18 @@ import { SkeletonList } from "@/components/Skeleton";
 const REVIEW_DATE_OPTIONS = { year: "numeric", month: "numeric", day: "numeric" };
 
 // "Sapir L." — first name + last initial (privacy)
+// MEH-2705: the initial is the first LETTER of the last word that has one.
+// The old `parts[last][0]` took whatever came first, so «לקוחת בדיקות (QA)»
+// rendered «לקוחת (.» and «דנה כהן -» rendered «דנה -.».
 function formatName(fullName, fallback) {
   if (!fullName) return fallback;
   const parts = fullName.trim().split(/\s+/);
   if (parts.length === 1) return parts[0];
-  return `${parts[0]} ${parts[parts.length - 1][0]}.`;
+  for (let i = parts.length - 1; i > 0; i--) {
+    const letter = parts[i].match(/\p{L}/u);
+    if (letter) return `${parts[0]} ${letter[0]}.`;
+  }
+  return parts[0];
 }
 
 // MEH-1233 B1: fractional fill — an average of 4.7 renders four full stars and
@@ -223,7 +230,13 @@ function ReviewReply({ review, isOwner, onSaved }) {
  * kept per producer by lib/review-invite.js) — forwarded as `review_token`
  * and verified server-side (reviews.py `_invited_by_token`).
  */
-export default function ReviewsSection({ producerId, avgRating = 0, reviewCount = 0, isOwner = false }) {
+export default function ReviewsSection({
+  producerId,
+  avgRating = 0,
+  reviewCount = 0,
+  isOwner = false,
+  onTotalChange,
+}) {
   const t = useTranslations("reviews");
   // MEH-848: shared generic error copy (collapsed from reviews.error_generic).
   const tError = useTranslations("error");
@@ -250,6 +263,14 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
   // /login, which is what it always was.
   const [loginHref, setLoginHref] = useState("/login");
   const sectionRef = useRef(null);
+  // MEH-2705: the header and the sticky bar render producer.reviews_count from
+  // the server (ISR, up to 60 s old), so a new review left them one behind.
+  // Report the live total upward; the parent decides what to do with it.
+  const onTotalChangeRef = useRef(onTotalChange);
+  onTotalChangeRef.current = onTotalChange;
+  useEffect(() => {
+    onTotalChangeRef.current?.(total);
+  }, [total]);
   // MEH-1426: fire the anonymous-click→login re-ping at most once per mount.
   const rePingedRef = useRef(false);
 
