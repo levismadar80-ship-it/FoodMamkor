@@ -567,3 +567,89 @@ describe("leftoverGroupUrl", () => {
     expect(leftoverGroupUrl("toString")).toBe(RESCUE_LEFTOVER_GROUP_NATIONAL);
   });
 });
+
+// MEH-2730: Sapir saw «משהו נתקע. נסו שוב.» under the code box after a PUBLISH
+// was refused (staging logs: 5× POST /rescue/offers → 403). One shared notice
+// sat under the code box for every action on the screen, and an object
+// `detail` (the verified-email gate) could not be shown at all.
+describe("MEH-2730 each message sits next to what caused it", () => {
+  beforeEach(() => {
+    locs = [{ id: "loc1", location_precision: "exact", is_primary: true }];
+    mockOrders([]);
+    post.mockReset();
+    put.mockReset();
+  });
+
+  const sectionOf = (el) => el.closest("[data-notice-scope]")?.getAttribute("data-notice-scope");
+
+  it("a refused publish is shown in the publish box, not under the code box", async () => {
+    post.mockRejectedValue({ response: { status: 403, data: { detail: "רק בית עסק מאושר יכול לפרסם סל הפתעה" } } });
+    render(<RescueTab />);
+    await pointsLoaded();
+    fireEvent.click(screen.getByTestId("rescue-publish-today"));
+    const notice = await screen.findByTestId("rescue-tab-notice");
+    expect(notice.textContent).toBe("רק בית עסק מאושר יכול לפרסם סל הפתעה");
+    expect(sectionOf(notice)).toBe("publish");
+    expect(sectionOf(screen.getByTestId("rescue-publish-today"))).toBe("publish");
+  });
+
+  it("an unknown code is shown by the code box", async () => {
+    render(<RescueTab />);
+    await pointsLoaded();
+    fireEvent.change(screen.getByTestId("rescue-code-input"), { target: { value: "222" } });
+    fireEvent.click(screen.getByTestId("rescue-code-submit"));
+    const notice = await screen.findByTestId("rescue-tab-notice");
+    expect(sectionOf(notice)).toBe("code");
+    expect(sectionOf(screen.getByTestId("rescue-code-input"))).toBe("code");
+  });
+
+  it("the verified-email refusal (an object detail) shows its sentence instead of crashing", async () => {
+    post.mockRejectedValue({
+      response: { status: 403, data: { detail: { code: "email_unverified", message: "יש לאמת את כתובת האימייל תחילה" } } },
+    });
+    render(<RescueTab />);
+    await pointsLoaded();
+    fireEvent.click(screen.getByTestId("rescue-publish-today"));
+    expect((await screen.findByTestId("rescue-tab-notice")).textContent).toBe("יש לאמת את כתובת האימייל תחילה");
+  });
+
+  it("a validation error (array detail) shows its sentence instead of crashing", async () => {
+    post.mockRejectedValue({ response: { status: 422, data: { detail: [{ msg: "Value error, המחיר חייב להיות חיובי" }] } } });
+    render(<RescueTab />);
+    await pointsLoaded();
+    fireEvent.click(screen.getByTestId("rescue-publish-today"));
+    expect((await screen.findByTestId("rescue-tab-notice")).textContent).toBe("המחיר חייב להיות חיובי");
+  });
+
+  it("a failed «בדרך כלל יש בסל» save is shown in that box", async () => {
+    put.mockRejectedValue({ response: { status: 500, data: {} } });
+    render(<RescueTab />);
+    await pointsLoaded();
+    fireEvent.click(screen.getByTestId("rescue-items-save"));
+    const notice = await screen.findByTestId("rescue-tab-notice");
+    expect(notice.textContent).toBe(lookup("rescue.dashboard.failed"));
+    expect(sectionOf(notice)).toBe("items");
+  });
+
+  it("only one message is on screen at a time", async () => {
+    post.mockRejectedValue({ response: { data: { detail: "סירוב" } } });
+    render(<RescueTab />);
+    await pointsLoaded();
+    fireEvent.change(screen.getByTestId("rescue-code-input"), { target: { value: "222" } });
+    fireEvent.click(screen.getByTestId("rescue-code-submit"));
+    await screen.findByTestId("rescue-tab-notice");
+    fireEvent.click(screen.getByTestId("rescue-publish-today"));
+    await waitFor(() => expect(screen.getByTestId("rescue-tab-notice").textContent).toBe("סירוב"));
+    expect(screen.getAllByTestId("rescue-tab-notice")).toHaveLength(1);
+  });
+
+  it("the time fields can shrink inside their column (iOS draws them wider)", async () => {
+    render(<RescueTab />);
+    await pointsLoaded();
+    for (const id of ["rescue-publish-from", "rescue-publish-to"]) {
+      const input = screen.getByTestId(id);
+      expect(input.className).toContain("min-w-0");
+      expect(input.closest("label").className).toContain("min-w-0");
+    }
+  });
+});
