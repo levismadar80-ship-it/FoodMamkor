@@ -6045,13 +6045,13 @@ export const CreateOfferRescueOffersPostResponse = /*#__PURE__*/ zod.object({
 
 /**
  * The business pulls the whole bag offer. Every open reservation on it is
- * cancelled with it.
+ * cancelled with it; a bag already handed over stays handed.
  *
- * No refund, because nothing was paid. No message either, yet: telling the
- * buyers needs a Meta-approved WhatsApp template and none exists for rescue
- * (see this module's "Does NOT"). Until one does, the buyers learn from the
- * app — which is a real gap, recorded on MEH-2646 rather than papered over
- * with a send that would silently fail outside the 24h window.
+ * No refund, because nothing was paid. MEH-2738: each buyer whose
+ * reservation went with it gets one email after the commit (fail-open), and
+ * their page says the business cancelled (`list_my_reservations`). A window
+ * that already closed is refused: by then every bag is collected or a
+ * no-show, and cancelling would only rewrite the record.
  * @summary Cancel Offer
  */
 export const CancelOfferRescueOffersOfferIdCancelPostResponse = /*#__PURE__*/ zod.object({
@@ -6103,9 +6103,15 @@ export const CreateOrderRescueOrdersPostResponse = /*#__PURE__*/ zod.object({
  * The caller's own live reservations on today's bags (MEH-2680).
  *
  * Only the caller's rows, only today's offers (Israel date), only
- * `reserved` / `handed` — a cancelled or no-show order has no code left to
- * say and nothing to review. Carries the same fields as the reservation
- * response, so the confirmation renders from either without a second shape.
+ * `reserved` / `handed` — a no-show or a buyer's own cancel has no code
+ * left to say and nothing to review. Carries the same fields as the
+ * reservation response, so the confirmation renders from either without a
+ * second shape.
+ *
+ * MEH-2738: plus the reservations the BUSINESS cancelled, flagged
+ * `cancelled_by_business`, so the page can say so instead of silently
+ * dropping the code. See `_business_cancelled_ids` for how they are told
+ * apart from a buyer's own cancel without a column for it.
  * @summary List My Reservations
  */
 export const listMyReservationsRescueOrdersMineGetResponsePickupCodeMin = 4;
@@ -6118,6 +6124,7 @@ export const listMyReservationsRescueOrdersMineGetResponseReviewedDefault = fals
 export const ListMyReservationsRescueOrdersMineGetResponseItem = /*#__PURE__*/ zod.object({
   "cancel_until": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
   "cancelled_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
+  "cancelled_by_business": /*#__PURE__*/ zod.boolean(),
   "created_at": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
   "handed_at": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.iso.datetime({"offset":true}),/*#__PURE__*/ zod.null()])),
   "id": /*#__PURE__*/ zod.uuid(),

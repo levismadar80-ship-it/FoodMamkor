@@ -290,6 +290,10 @@ class RescueMyOrderOut(RescueOrderCreatedOut):
     # so the buyer of the last bag cannot find her order through `offer_id`
     # alone — the business page matches on this instead.
     producer_id: UUID
+    # MEH-2738: the business cancelled the bag, so this reservation went with
+    # it. Only a cancelled row can carry True; the page says so in words.
+    # Required (no default) so the generated zod adds no default export.
+    cancelled_by_business: bool
 
 
 class RescueNoShowStateOut(BaseModel):

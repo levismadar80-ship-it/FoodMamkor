@@ -12484,6 +12484,10 @@
             ],
             "title": "Cancelled At"
           },
+          "cancelled_by_business": {
+            "title": "Cancelled By Business",
+            "type": "boolean"
+          },
           "created_at": {
             "format": "date-time",
             "title": "Created At",
@@ -12574,7 +12578,8 @@
           "cancel_until",
           "pickup_start",
           "pickup_end",
-          "producer_id"
+          "producer_id",
+          "cancelled_by_business"
         ],
         "title": "RescueMyOrderOut",
         "type": "object"
@@ -24446,7 +24451,7 @@
     },
     "/rescue/offers/{offer_id}/cancel": {
       "post": {
-        "description": "The business pulls the whole bag offer. Every open reservation on it is\ncancelled with it.\n\nNo refund, because nothing was paid. No message either, yet: telling the\nbuyers needs a Meta-approved WhatsApp template and none exists for rescue\n(see this module's \"Does NOT\"). Until one does, the buyers learn from the\napp — which is a real gap, recorded on MEH-2646 rather than papered over\nwith a send that would silently fail outside the 24h window.",
+        "description": "The business pulls the whole bag offer. Every open reservation on it is\ncancelled with it; a bag already handed over stays handed.\n\nNo refund, because nothing was paid. MEH-2738: each buyer whose\nreservation went with it gets one email after the commit (fail-open), and\ntheir page says the business cancelled (`list_my_reservations`). A window\nthat already closed is refused: by then every bag is collected or a\nno-show, and cancelling would only rewrite the record.",
         "operationId": "cancel_offer_rescue_offers__offer_id__cancel_post",
         "parameters": [
           {
@@ -24542,7 +24547,7 @@
     },
     "/rescue/orders/mine": {
       "get": {
-        "description": "The caller's own live reservations on today's bags (MEH-2680).\n\nOnly the caller's rows, only today's offers (Israel date), only\n`reserved` / `handed` — a cancelled or no-show order has no code left to\nsay and nothing to review. Carries the same fields as the reservation\nresponse, so the confirmation renders from either without a second shape.",
+        "description": "The caller's own live reservations on today's bags (MEH-2680).\n\nOnly the caller's rows, only today's offers (Israel date), only\n`reserved` / `handed` — a no-show or a buyer's own cancel has no code\nleft to say and nothing to review. Carries the same fields as the\nreservation response, so the confirmation renders from either without a\nsecond shape.\n\nMEH-2738: plus the reservations the BUSINESS cancelled, flagged\n`cancelled_by_business`, so the page can say so instead of silently\ndropping the code. See `_business_cancelled_ids` for how they are told\napart from a buyer's own cancel without a column for it.",
         "operationId": "list_my_reservations_rescue_orders_mine_get",
         "responses": {
           "200": {
