@@ -148,6 +148,7 @@ export default function AdminUsersPage() {
         <select
           value={role}
           onChange={(e) => setRole(e.target.value)}
+          aria-label={t("users.columns.role")}
           className="border border-border rounded-md px-3 py-2 bg-white"
         >
           <option value="all">{t("users.role_filter.all")}</option>
