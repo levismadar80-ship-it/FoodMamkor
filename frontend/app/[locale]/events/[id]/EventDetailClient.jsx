@@ -156,7 +156,7 @@ export default function EventDetailClient() {
   const weekday = formatEventDate(event.event_date, locale, { weekday: "long" });
 
   const ctaClass =
-    "flex items-center justify-center min-h-[48px] w-full bg-primary text-white px-6 rounded-[10px] font-semibold hover:bg-primary-dark transition focus-ring";
+    "flex items-center justify-center min-h-[48px] w-full bg-primary text-white px-6 rounded-full font-semibold hover:bg-primary-dark transition focus-ring";
   const cta = isPast ? null : event.registration_url ? (
     <a href={event.registration_url} target="_blank" rel="noopener noreferrer" className={ctaClass}>
       {t("register")}
@@ -170,7 +170,7 @@ export default function EventDetailClient() {
   );
 
   const infoRow = "flex items-center gap-3 px-4 py-3";
-  const infoIcon = "shrink-0 w-9 h-9 rounded-[10px] bg-green-50 text-primary grid place-items-center";
+  const infoIcon = "shrink-0 w-9 h-9 rounded-md bg-green-50 text-primary grid place-items-center";
 
   return (
     <div className="pb-12" data-testid="event-detail">
@@ -188,7 +188,7 @@ export default function EventDetailClient() {
         {event.image_url ? (
           <div
             data-testid="event-cover"
-            className="h-[210px] md:h-[300px] lg:h-[380px] bg-cover bg-center lg:rounded-[18px] bg-border"
+            className="h-[210px] md:h-[300px] lg:h-[380px] bg-cover bg-center lg:rounded-xl bg-border"
             style={{ backgroundImage: cssUrl(optimizeCloudinary(event.image_url, { aspectRatio: IMAGE_RATIOS.banner, width: 1280 })) }}
             role="img"
             aria-label={event.title}
@@ -197,7 +197,7 @@ export default function EventDetailClient() {
           <div
             data-testid="event-cover-band"
             aria-hidden="true"
-            className="h-[150px] lg:h-[200px] bg-primary lg:rounded-[18px] grid place-items-center"
+            className="h-[150px] lg:h-[200px] bg-primary lg:rounded-xl grid place-items-center"
           >
             <CatIcon size={54} weight="duotone" className="text-white/85" />
           </div>
@@ -284,7 +284,7 @@ export default function EventDetailClient() {
         {/* Details card: below the title on mobile, a sticky side card on
             desktop (Airbnb / Eventbrite). */}
         <aside className="mt-6 lg:mt-0 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:sticky lg:top-24 space-y-4">
-          <div className="bg-white border border-border rounded-[14px] overflow-hidden lg:shadow-md" data-testid="event-info">
+          <div className="bg-white border border-border rounded-lg overflow-hidden lg:shadow-md" data-testid="event-info">
             <div aria-hidden="true" className="hidden lg:block text-center border-b border-border">
               <span className="block bg-primary text-white text-sm font-bold py-1.5">
                 {formatEventDate(event.event_date, locale, { month: "long", year: "numeric" })}
@@ -354,7 +354,7 @@ export default function EventDetailClient() {
                     type="button"
                     onClick={() => downloadIcs(event, { url: pageUrl })}
                     data-testid="event-add-to-calendar"
-                    className="flex-1 inline-flex items-center justify-center gap-2 min-h-[46px] px-3 rounded-[10px] border border-primary text-primary text-sm font-semibold hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40"
+                    className="flex-1 inline-flex items-center justify-center gap-2 min-h-[46px] px-3 rounded-full border border-primary text-primary text-sm font-semibold hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40"
                   >
                     <CalendarPlus size={18} aria-hidden="true" />
                     {t("add_to_calendar")}

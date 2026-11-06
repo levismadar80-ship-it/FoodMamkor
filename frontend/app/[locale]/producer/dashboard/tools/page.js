@@ -80,7 +80,7 @@ export default function ProducerDashboardToolsPage() {
           <button
             type="button"
             onClick={() => setAttempt((n) => n + 1)}
-            className="inline-block bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition"
+            className="inline-block bg-primary text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-dark transition"
           >
             {t("section_errors.retry_cta")}
           </button>

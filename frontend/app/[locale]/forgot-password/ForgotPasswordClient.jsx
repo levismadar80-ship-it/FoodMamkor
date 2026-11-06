@@ -89,7 +89,7 @@ export default function ForgotPasswordClient() {
             type="submit"
             data-testid="forgot-submit"
             disabled={loading || !email}
-            className="w-full bg-primary text-white py-3.5 rounded-[10px] hover:bg-primary-dark transition font-medium disabled:opacity-50"
+            className="w-full bg-primary text-white py-3.5 rounded-full hover:bg-primary-dark transition font-medium disabled:opacity-50"
           >
             {loading
               ? t("auth.passwordRecovery.forgot.submit_sending")

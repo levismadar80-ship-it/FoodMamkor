@@ -160,7 +160,7 @@ export default function EventEntryRow({ entry, freeLabel, compact = false }) {
           aria-hidden="true"
           data-testid="event-row-image"
           data-kind={entry.image ? "event" : entry.ownerImage ? "owner" : "category"}
-          className={`relative overflow-hidden my-4 md:my-5 me-4 w-20 h-20 md:w-28 md:h-28 rounded-[10px] bg-cover bg-center grid place-items-center ${picture ? "bg-border" : tileTone}${compact ? " lg:hidden" : ""}`}
+          className={`relative overflow-hidden my-4 md:my-5 me-4 w-20 h-20 md:w-28 md:h-28 rounded-md bg-cover bg-center grid place-items-center ${picture ? "bg-border" : tileTone}${compact ? " lg:hidden" : ""}`}
           style={thumbBg}
         >
           {pictureFace}
