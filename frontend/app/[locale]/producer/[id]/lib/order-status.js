@@ -44,7 +44,7 @@ export function israelDayKey(date) {
 /**
  * Resolve the single status element. First match wins (MEH-1546):
  *   1 vacation            → gold-deep, copy unchanged
- *   2 full/full_this_week → muted, copy unchanged
+ *   (2 full/full_this_week → muted — REMOVED, MEH-2759: pause-only states)
  *   3 order window closed → muted, "orders closed now · reopening {day} at {time}"
  *   4 order window open   → primary, "open for orders · until {time}"
  *   5 no order window     → primary, "open for orders" (byte-identical to pre-1546)
@@ -64,12 +64,9 @@ export function israelDayKey(date) {
  * it, and it maps to branch 4. The "until {time}" suffix carries the cutoff
  * honestly — no urgency styling, no countdown.
  */
-export function resolveHeaderStatus({ isVacation, isClosed, orderStatus }) {
+export function resolveHeaderStatus({ isVacation, orderStatus }) {
   if (isVacation) {
     return { branch: "vacation", tone: "text-gold-deep", testid: "status-vacation" };
-  }
-  if (isClosed) {
-    return { branch: "closed", tone: "text-muted", testid: "status-closed" };
   }
   if (orderStatus?.state === "closed") {
     // A window object whose every day is unusable (close <= open on all of

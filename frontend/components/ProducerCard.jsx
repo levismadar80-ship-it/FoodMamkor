@@ -27,7 +27,7 @@ import { producerPoints } from "@/lib/producerPoints";
 import { allBadges, badgeCount } from "@/lib/badges";
 import { useBadgeCopy } from "@/lib/use-badge-copy";
 import { badgeIcon } from "@/lib/chip-icons";
-import { deriveAvailability, isAvailableToday } from "@/lib/availability";
+import { deriveAvailability } from "@/lib/availability";
 import Popover from "@/components/ui/Popover";
 import { useAuth } from "@/lib/auth-context";
 import { showToast } from "@/lib/toast";
@@ -209,7 +209,7 @@ function CardHeart({ producer, onCountChange }) {
   );
 }
 
-export default function ProducerCard({ producer, active, onClick, referrer, fridayMode = false, highlightQuery = null }) {
+export default function ProducerCard({ producer, active, onClick, referrer, highlightQuery = null }) {
   const t = useTranslations();
   const cardFee = resolveDeliveryFee(producer.delivery_fee, producer.delivery_areas);
   // MEH-2676: a free-delivery offer with a threshold joins the delivery row
@@ -701,14 +701,9 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
           </p>
         )}
 
-        {/* MEH-1854: reads the derived state, not the legacy column. A business
-            whose enum says available_today but whose legacy flag was never
-            written showed no Friday pill at all before this. */}
-        {fridayMode && isAvailableToday(producer) && (
-          <span className="inline-flex w-fit items-center rounded-full bg-primary/10 border border-primary/30 text-primary px-2 py-0.5 text-2xs font-semibold">
-            {t("producer.card.badges.available_today")}
-          </span>
-        )}
+        {/* MEH-2759: the Friday «מגיעה היום» pill (fridayMode + available_today)
+            is gone with the state; the Friday strip now lists businesses that
+            deliver on Friday. */}
 
         {/* MEH-1823: the active offer, as a short chip. OfferBadge returns null
             when active_offer is absent, so a business without an offer renders

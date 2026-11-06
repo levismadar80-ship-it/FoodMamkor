@@ -23,7 +23,6 @@ vi.mock("next-intl", () => ({
       "producer.card.favorites.add": "הוסף למועדפים",
       "producer.card.favorites.aria": "שמירה",
       "producer.card.badges.delivery_only": "משלוחים בלבד",
-      "producer.card.badges.available_today": "מגיעה היום",
       // MEH-1547: +N overflow disclosure aria.
       "producer.card.badges.overflow_aria": `הצגת עוד ${values.count} תגיות`,
       // MEH-76 chunk 4 — S12 tier badge keys consumed by BadgeRow.
@@ -1009,5 +1008,15 @@ describe("ProducerCard — free-delivery threshold in the delivery row (MEH-2676
     const row = screen.getByTestId("card-delivery-fee");
     expect(row).toHaveTextContent("משלוח חינם");
     expect(row).not.toHaveTextContent("מעל");
+  });
+});
+
+// MEH-2759: the Friday «מגיעה היום» pill went with the available_today state.
+describe("ProducerCard — no Friday pill (MEH-2759)", () => {
+  it("renders no «מגיעה היום» pill, even for an available_today row in Friday mode", () => {
+    const { container } = render(
+      <ProducerCard producer={{ ...fullProducer, availability_state: "available_today" }} fridayMode />,
+    );
+    expect(container.textContent).not.toMatch(/מגיעה היום|badges\.available_today/);
   });
 });

@@ -274,7 +274,6 @@ export default function HomeClient({
         chips={chips}
         categories={categories}
         showNewUserHint={showNewUserHint}
-        fridayMode={fridayMode}
         onRemoveChip={handleRemoveChip}
         onToggleChip={handleToggleChip}
         onClearChips={handleClearChips}

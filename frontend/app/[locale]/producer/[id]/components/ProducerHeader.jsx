@@ -28,7 +28,6 @@ import { resolveCategoryGlyph, styleForProducer } from "@/lib/category-registry"
 // docs/CLAUDE-REVIEW.md rule 5.)
 import { israelDayKey, israelTime, resolveHeaderStatus, statusTagTone } from "../lib/order-status";
 import { humanTime } from "@/lib/time-format";
-import { isFullThisWeek } from "@/lib/availability";
 
 // MEH-2592: the kosher chip — outlined, on the card surface, 13px text-text so
 // it reads as a fact tag next to the tinted status tag, never as a second
@@ -146,12 +145,8 @@ export default function ProducerHeader({
 
   const showAlerts = Boolean(favorited && user);
 
-  // MEH-1334: 3-state status. Anything not closed/vacation reads as open —
-  // matches the old ContactCard OPEN_STATES default-open behavior.
-  // MEH-1854: the helper returns the CANONICAL enum, so the legacy "full"
-  // twin is already normalised to full_this_week and no longer needs its own
-  // comparison here.
-  const isClosed = !isVacation && isFullThisWeek(producer);
+  // MEH-2759: «עמוס השבוע» no longer closes the page — the availability
+  // choice is pause-only, so the status is vacation or the order window.
   const vacationDate = getVacationReturnDate(producer, locale);
 
   // MEH-1546: order_window status is time-derived, so it must not run during
@@ -166,7 +161,7 @@ export default function ProducerHeader({
   const orderStatus = mounted
     ? getOrderWindowStatus(producer.order_window, new Date(), producer.special_hours)
     : null;
-  const status = resolveHeaderStatus({ isVacation, isClosed, orderStatus });
+  const status = resolveHeaderStatus({ isVacation, orderStatus });
   const statusLabel = {
     vacation: () =>
       vacationDate
@@ -319,7 +314,7 @@ export default function ProducerHeader({
       {/* Status line — the status ALONE (Sapir, 30/10: a separate line, so a
           longer tags row never crowds it; this keeps MEH-2403's "status alone"
           half). It is the page's ONLY order-status element (MEH-1546:
-          five-branch precedence in resolveHeaderStatus; order_window feeds it
+          branch precedence in resolveHeaderStatus; order_window feeds it
           instead of adding a second line) and the page's one green. MEH-2596
           tag styling: dot + 10% tint of its own colour via color-mix on
           currentColor. */}
@@ -482,14 +477,8 @@ export default function ProducerHeader({
         </div>
       )}
 
-      {/* MEH-291 — full_this_week banner (response-time hint, not a closure
-          signal; kept per decision 4 alongside the closed status text).
-          Suppressed during vacation since that banner already dominates. */}
-      {producer.availability_state === "full_this_week" && !isVacation && (
-        <div className="mx-0 mt-3 bg-background border border-border rounded-xl p-3">
-          <p className="text-sm font-bold text-text">{t("producer.detail.header.slow_response")}</p>
-        </div>
-      )}
+      {/* MEH-2759: the MEH-291 full_this_week «slow response» box is gone
+          with the state (pause-only availability). */}
 
       {/* MEH-1334 chunk 3: the vacation banner was REMOVED — it repeated the
           return date the gold meta status already owns ("one home per fact").
