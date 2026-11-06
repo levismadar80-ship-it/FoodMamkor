@@ -149,7 +149,7 @@ export default function DraftSubmitBanner({ producer, onSubmitted, onPhoneVerifi
 
   return (
     <div
-      className="bg-primary/5 border border-primary/20 rounded-[16px] p-4 md:p-6 mb-6 text-sm"
+      className="bg-primary/5 border border-primary/20 rounded-lg p-4 md:p-6 mb-6 text-sm"
       role="status"
       data-testid="draft-submit-banner"
       data-state-ready={ready}

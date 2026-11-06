@@ -444,7 +444,7 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
               <img
                 src={optimizeCloudinary(url, { aspectRatio: IMAGE_RATIOS.card, width: 320 })}
                 alt={`${t("heading")} ${i + 1}`}
-                className="w-full h-24 object-cover rounded-[8px] border border-border"
+                className="w-full h-24 object-cover rounded-sm border border-border"
               />
               <button
                 type="button"
@@ -1503,7 +1503,7 @@ export function KashrutCard({ profile, reportDirty = () => {} }) {
               <img
                 src={certUrl}
                 alt={t("upload_label")}
-                className="w-16 h-16 rounded-[8px] object-cover border border-border"
+                className="w-16 h-16 rounded-sm object-cover border border-border"
               />
             )}
             <label className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary-dark cursor-pointer transition">
@@ -2002,7 +2002,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
                               set({ fees: { ...form.fees, [c]: e.target.value } })
                             }
                             placeholder={t("area_fee_placeholder")}
-                            className="w-20 border border-border rounded-[8px] px-2 py-1 text-sm bg-surface"
+                            className="w-20 border border-border rounded-sm px-2 py-1 text-sm bg-surface"
                           />
                           <select
                             value={form.days[c] || ""}
@@ -2011,7 +2011,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
                             onChange={(e) =>
                               set({ days: { ...form.days, [c]: e.target.value } })
                             }
-                            className="border border-border rounded-[8px] px-2 py-1 text-sm bg-surface"
+                            className="border border-border rounded-sm px-2 py-1 text-sm bg-surface"
                           >
                             <option value="">{t("day_arranged")}</option>
                             {DELIVERY_DAYS.map((d) => (
@@ -2461,7 +2461,7 @@ export function BusinessNameCard({ profile }) {
       <div>
         <p className="text-[13px] font-semibold text-text mb-1">{t("current_label")}</p>
         <p
-          className="text-base font-bold text-text bg-bg-subtle border border-border rounded-[8px] px-3 py-2"
+          className="text-base font-bold text-text bg-bg-subtle border border-border rounded-sm px-3 py-2"
           data-testid="name-change-current"
         >
           {profile?.name}

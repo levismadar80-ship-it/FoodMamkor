@@ -439,7 +439,7 @@ function PendingPhotoThumb({ url, index, producerName, t }) {
       target="_blank"
       rel="noopener noreferrer"
       title={alt}
-      className="relative block shrink-0 rounded-[8px] overflow-hidden border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+      className="relative block shrink-0 rounded-sm overflow-hidden border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
       style={{ width: PENDING_THUMB_PX, height: PENDING_THUMB_PX }}
     >
       {broken ? (
@@ -484,7 +484,7 @@ function PendingPhotoStrip({ producer }) {
       ))}
       {extra > 0 && (
         <span
-          className="inline-flex shrink-0 items-center justify-center rounded-[8px] border border-border bg-background text-xs font-medium text-muted"
+          className="inline-flex shrink-0 items-center justify-center rounded-sm border border-border bg-background text-xs font-medium text-muted"
           style={{ width: PENDING_THUMB_PX, height: PENDING_THUMB_PX }}
           title={t("producers.table.photo_preview.more_alt", { count: extra })}
           aria-label={t("producers.table.photo_preview.more_alt", { count: extra })}

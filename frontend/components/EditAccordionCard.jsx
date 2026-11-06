@@ -76,7 +76,7 @@ export function PreviewThumbs({ urls = [], max = 3 }) {
           src={optimizeCloudinary(url, { aspectRatio: IMAGE_RATIOS.square, width: 80 })}
           alt=""
           aria-hidden="true"
-          className="w-10 h-10 object-cover rounded-[8px] border border-border shrink-0"
+          className="w-10 h-10 object-cover rounded-sm border border-border shrink-0"
         />
       ))}
       {extra > 0 && <PreviewOverflowChip count={extra} />}
@@ -150,7 +150,7 @@ export default function EditAccordionCard({
     <section
       id={anchorId}
       aria-labelledby={headerId}
-      className="bg-white border border-border rounded-[16px] scroll-mt-24"
+      className="bg-white border border-border rounded-lg scroll-mt-24"
     >
       <h2 id={headerId} className="font-headline-md text-base font-bold">
         <button
@@ -159,7 +159,7 @@ export default function EditAccordionCard({
           aria-controls={bodyId}
           onClick={onToggle}
           data-testid={`accordion-${anchorId}`}
-          className="w-full min-h-[44px] flex items-center justify-between gap-3 p-5 text-start rounded-[16px] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition"
+          className="w-full min-h-[44px] flex items-center justify-between gap-3 p-5 text-start rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition"
         >
           <span className="min-w-0">
             <span className="flex items-center gap-2 text-base font-bold text-text">

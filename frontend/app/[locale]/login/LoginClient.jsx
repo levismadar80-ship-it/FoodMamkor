@@ -320,7 +320,7 @@ function LoginPageBody() {
                 // MEH-1617: value moved to auth.login.email_placeholder.
                 placeholder={t("email_placeholder")}
                 aria-invalid={emailInvalid || undefined}
-                className={`w-full min-h-[54px] rounded-[8px] ps-11 pe-4 py-3.5 bg-surface-card text-text outline-none transition focus-visible:ring-2 focus-visible:ring-primary/40 ${
+                className={`w-full min-h-[54px] rounded-sm ps-11 pe-4 py-3.5 bg-surface-card text-text outline-none transition focus-visible:ring-2 focus-visible:ring-primary/40 ${
                   emailInvalid
                     ? "border border-red-400"
                     : emailValid
@@ -372,7 +372,7 @@ function LoginPageBody() {
                 // able to sign in. Empty-submit is still blocked in handleSubmit
                 // (MEH-2623). Regression of MEH-418.
                 aria-invalid={passwordInvalid || undefined}
-                className={`w-full min-h-[54px] rounded-[8px] ps-11 pe-12 py-3.5 bg-surface-card text-text outline-none transition focus-visible:ring-2 focus-visible:ring-primary/40 ${
+                className={`w-full min-h-[54px] rounded-sm ps-11 pe-12 py-3.5 bg-surface-card text-text outline-none transition focus-visible:ring-2 focus-visible:ring-primary/40 ${
                   passwordInvalid
                     ? "border border-red-400"
                     : passwordValidLength
