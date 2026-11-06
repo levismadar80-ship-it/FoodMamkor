@@ -473,6 +473,7 @@ erDiagram
         string status "active|cancelled (CHECK) — sold out is qty_left=0"
         timestamp created_at
         int qty_donated "MEH-2703 · default 0 · CHECK 0..qty_total · owner-reported «נמסרו בחינם»"
+        timestamp codes_sent_at "MEH-2756 · timestamptz NULL · digest sent to the business; NULL = not sent"
     }
 
     rescue_orders {
