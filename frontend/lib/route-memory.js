@@ -20,10 +20,12 @@
  * fresh, a client-side navigation keeps it. That is exactly the boundary we
  * want — a reload is a new visit, a back-navigation is not.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 
 const leftPaths = new Set();
+let popPath = null;
+let documentEntryConsumed = false;
 
 /**
  * Route-level: records a path as LEFT when the pathname actually changes.
@@ -33,12 +35,25 @@ const leftPaths = new Set();
  */
 export function useTrackRouteLeaves() {
   const pathname = usePathname();
-  useEffect(() => () => leftPaths.add(pathname), [pathname]);
+  const prev = useRef(null);
+  // Compared against the previous path, not done in a cleanup: StrictMode's
+  // dev mount→cleanup→mount would otherwise mark the route the reader is on.
+  useEffect(() => {
+    if (prev.current !== null && prev.current !== pathname) {
+      leftPaths.add(prev.current);
+      // A history step that was for another route (e.g. a hash step on /) and
+      // was never consumed must not count for a later arrival.
+      if (popPath !== null && popPath !== pathname) popPath = null;
+    }
+    prev.current = pathname;
+  }, [pathname]);
 }
 
 /**
  * True when the reader has already been on — and left — the current route in
- * this document. Sections that mount late on the first visit (after their data
+ * this document, by ANY way back (browser back, the logo, the bottom nav): the
+ * entrance animation is a first-visit effect, so a second visit in the same
+ * tab never replays it. Sections that mount late on the first visit (after their data
  * arrives) still animate, because the route is marked only on leave. Always
  * false on the server and on the first hydration render, so server and client
  * markup agree.
@@ -49,8 +64,6 @@ export function useRevealSkip() {
   return skip;
 }
 
-let popPath = null;
-let documentEntryConsumed = false;
 const entryPath = typeof window !== "undefined" ? window.location.pathname : null;
 
 if (typeof window !== "undefined") {

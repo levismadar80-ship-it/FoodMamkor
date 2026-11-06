@@ -2,7 +2,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { consumeHistoryReturn } from "@/lib/route-memory";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
@@ -36,6 +35,7 @@ import { trackEvent } from "@/lib/analytics";
 import { isFridayMode } from "@/lib/friday-mode";
 import { CATEGORY_CARDS, matchCategoryId } from "@/lib/home-categories";
 import { selectFeaturedProducer } from "@/lib/featured-producer";
+import { consumeHistoryReturn } from "@/lib/route-memory";
 import { findRegionForCity } from "@/data/regions";
 import {
   CategoriesResponseSchema,
@@ -393,7 +393,9 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
     // Links only: a chip, menu or load-more click is not a position the reader
     // leaves from.
     const stashOnLink = (e) => {
-      if (e.target instanceof Element && e.target.closest("a[href]")) stash();
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const a = e.target instanceof Element ? e.target.closest("a[href]") : null;
+      if (a && a.target !== "_blank") stash();
     };
     document.addEventListener("click", stashOnLink, true);
     return () => {
