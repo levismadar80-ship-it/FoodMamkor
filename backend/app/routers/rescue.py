@@ -80,6 +80,8 @@ from app.schemas.rescue import (
     RescueMyOrderOut,
     RescueOrderCreatedOut,
     RescueOrderOut,
+    RescueDonatedIn,
+    RescueOwnerOfferOut,
     RescueOwnerOrderOut,
     RescueReviewCreate,
     RescueReviewOut,
@@ -982,6 +984,114 @@ def list_my_orders(
     ]
 
 
+def _leftover(offer: RescueOffer, now) -> int:
+    """Bags not collected once the window closed (MEH-2703).
+
+    Never reserved (`qty_left`) plus reserved-but-nobody-came (`no_show`).
+    0 before `pickup_end` — a bag may still be reserved or collected — and 0
+    for a cancelled offer, which never went on sale. A `reserved` order the
+    business has not marked yet is NOT counted: until it is marked «לא הגיע»
+    the business has not said the bag is free to give away.
+    """
+    if offer.status != "active" or offer.pickup_end > now:
+        return 0
+    no_show = sum(o.qty for o in offer.orders if o.status == "no_show")
+    return offer.qty_left + no_show
+
+
+def _owner_offer_row(offer: RescueOffer, now) -> dict:
+    return {
+        "id": offer.id,
+        "qty_total": offer.qty_total,
+        "qty_left": offer.qty_left,
+        "status": offer.status,
+        "pickup_start": offer.pickup_start,
+        "pickup_end": offer.pickup_end,
+        "leftover": _leftover(offer, now),
+        "qty_donated": offer.qty_donated or 0,
+    }
+
+
+@me_router.get(
+    "/producers/me/rescue/offers",
+    response_model=list[RescueOwnerOfferOut],
+    dependencies=[Depends(require_rescue_enabled)],
+)
+@limiter.limit("120/minute")
+def list_my_offers(
+    request: Request,
+    current_user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+):
+    """Today's bags across this business's pickup points, with what was left.
+
+    Today only, by the Israel clock, like the orders list beside it.
+    """
+    if not current_user.producer_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="אין בית עסק מקושר"
+        )
+    offers = (
+        db.query(RescueOffer)
+        .options(selectinload(RescueOffer.orders))
+        .join(
+            ProducerLocation,
+            RescueOffer.producer_location_id == ProducerLocation.id,
+        )
+        .filter(
+            ProducerLocation.producer_id == current_user.producer_id,
+            RescueOffer.date == israel_today(),
+        )
+        .order_by(RescueOffer.pickup_start.asc())
+        .all()
+    )
+    now = utc_now()
+    return [_owner_offer_row(o, now) for o in offers]
+
+
+@me_router.put(
+    "/producers/me/rescue/offers/{offer_id}/donated",
+    response_model=RescueOwnerOfferOut,
+    dependencies=[Depends(require_rescue_enabled)],
+)
+@limiter.limit("60/minute")
+def set_donated(
+    request: Request,
+    offer_id: UUID,
+    body: RescueDonatedIn,
+    current_user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+):
+    """Record how many uncollected bags were given away free.
+
+    Owner (or admin) of the offer's point only. Only after the window
+    closed, and never more than was left over — a number above the leftover
+    would inflate the pilot's «ניצלו» count with bags that were sold.
+    """
+    offer = _offer_for_update(db, offer_id)
+    _require_offer_owner(current_user, offer)
+    now = utc_now()
+    if offer.status != "active":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="הסל בוטל ולא נמכר"
+        )
+    if offer.pickup_end > now:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="אפשר לסמן רק אחרי שזמן האיסוף נגמר",
+        )
+    leftover = _leftover(offer, now)
+    if body.qty > leftover:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"אפשר לסמן עד {leftover} סלים שלא נאספו",
+        )
+    offer.qty_donated = body.qty
+    db.commit()
+    db.refresh(offer)
+    return _owner_offer_row(offer, now)
+
+
 @admin_router.get(
     "/metrics",
     response_model=RescueMetricsOut,
@@ -1038,6 +1148,7 @@ def pilot_metrics(
         "no_show_rate": round(no_shows / orders_total, 4) if orders_total else None,
         "buyers_total": len(per_buyer),
         "repeat_buyers": sum(1 for n in per_buyer.values() if n > 1),
+        "bags_donated": sum(o.qty_donated or 0 for o in offers),
     }
 
 

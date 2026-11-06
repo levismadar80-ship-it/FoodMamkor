@@ -12074,9 +12074,30 @@
         "title": "RequestChangesIn",
         "type": "object"
       },
+      "RescueDonatedIn": {
+        "description": "How many uncollected bags were given away free. A set, not an\nincrement: a second tap with the same number is a no-op, and a mistake is\ncorrected by sending the right number.",
+        "properties": {
+          "qty": {
+            "maximum": 20.0,
+            "minimum": 0.0,
+            "title": "Qty",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "qty"
+        ],
+        "title": "RescueDonatedIn",
+        "type": "object"
+      },
       "RescueMetricsOut": {
         "description": "The pilot's read-only numbers (chunk 5).\n\n`sell_through` and `no_show_rate` are fractions 0..1, not percentages, so\nthe UI decides how to render them and nothing is rounded twice. Both are\nNone when their denominator is zero — a pilot with no bags yet has no\nsell-through, and reporting 0% would read as \"nothing sold\" rather than\n\"nothing published\".",
         "properties": {
+          "bags_donated": {
+            "default": 0,
+            "title": "Bags Donated",
+            "type": "integer"
+          },
           "bags_offered": {
             "title": "Bags Offered",
             "type": "integer"
@@ -12783,6 +12804,58 @@
           "created_at"
         ],
         "title": "RescueOrderOut",
+        "type": "object"
+      },
+      "RescueOwnerOfferOut": {
+        "description": "One of today's bags as the business's dashboard sees it (MEH-2703).\n\n`leftover` is what was not collected once the window closed: bags never\nreserved (`qty_left`) plus bags reserved by someone who did not come\n(`no_show` orders). It is 0 until `pickup_end` — before that a bag may\nstill be reserved or picked up — and 0 for a cancelled offer, which\nnever went on sale. `qty_donated` is the business's own report, capped at\n`leftover` by the API.",
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "leftover": {
+            "title": "Leftover",
+            "type": "integer"
+          },
+          "pickup_end": {
+            "format": "date-time",
+            "title": "Pickup End",
+            "type": "string"
+          },
+          "pickup_start": {
+            "format": "date-time",
+            "title": "Pickup Start",
+            "type": "string"
+          },
+          "qty_donated": {
+            "title": "Qty Donated",
+            "type": "integer"
+          },
+          "qty_left": {
+            "title": "Qty Left",
+            "type": "integer"
+          },
+          "qty_total": {
+            "title": "Qty Total",
+            "type": "integer"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "qty_total",
+          "qty_left",
+          "status",
+          "pickup_start",
+          "pickup_end",
+          "leftover",
+          "qty_donated"
+        ],
+        "title": "RescueOwnerOfferOut",
         "type": "object"
       },
       "RescueOwnerOrderOut": {
@@ -22558,6 +22631,96 @@
         "summary": "Request Producer Review",
         "tags": [
           "producer-management"
+        ]
+      }
+    },
+    "/producers/me/rescue/offers": {
+      "get": {
+        "description": "Today's bags across this business's pickup points, with what was left.\n\nToday only, by the Israel clock, like the orders list beside it.",
+        "operationId": "list_my_offers_producers_me_rescue_offers_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RescueOwnerOfferOut"
+                  },
+                  "title": "Response List My Offers Producers Me Rescue Offers Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List My Offers",
+        "tags": [
+          "rescue"
+        ]
+      }
+    },
+    "/producers/me/rescue/offers/{offer_id}/donated": {
+      "put": {
+        "description": "Record how many uncollected bags were given away free.\n\nOwner (or admin) of the offer's point only. Only after the window\nclosed, and never more than was left over — a number above the leftover\nwould inflate the pilot's «ניצלו» count with bags that were sold.",
+        "operationId": "set_donated_producers_me_rescue_offers__offer_id__donated_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "offer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Offer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RescueDonatedIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RescueOwnerOfferOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Set Donated",
+        "tags": [
+          "rescue"
         ]
       }
     },
