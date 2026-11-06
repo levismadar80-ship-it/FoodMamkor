@@ -47,7 +47,11 @@ job (`!cancelled()`), which fails by name.
 - `git apply --check` of the diff below against `origin/staging` at 5ee0311: clean.
 - YAML parses; `actionlint` reports nothing new (only the pre-existing
   `queue:` key and `github.head_ref` findings it already reports on staging).
-- Local, 4 cores: see the PR body for the shard-vs-full coverage comparison.
+- Local, 4 cores, same tree, full run vs 3 shards combined:
+  - pytest: 478 s vs 109 / 113 / 114 s per shard; coverage TOTAL 13,288 stmts,
+    841 miss in **both**; shard reports 1722 + 1722 + 1721 = 5,165 of 5,165.
+  - vitest: 351 s vs 120 / 118 / 117 s per shard; lines 15,290 / 18,169 in
+    **both**; 6,261 passed in both; ratchet OK on the merged summary.
 - vitest: 2 shards of 40 merged with `--merge-reports --coverage` produced one
   `coverage-summary.json` whose covered lines (3,447) are the union of the two
   shards (2,425 + 1,115 with overlap), not either one.
