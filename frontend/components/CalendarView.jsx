@@ -186,7 +186,7 @@ export default function CalendarView({ items, linkPrefix }) {
               {hasEvents && (
                 <span
                   className={`w-1.5 h-1.5 rounded-full mt-1 ${
-                    isSelected ? "bg-white" : "bg-primary"
+                    isSelected ? "bg-surface" : "bg-primary"
                   }`}
                   aria-hidden="true"
                 />

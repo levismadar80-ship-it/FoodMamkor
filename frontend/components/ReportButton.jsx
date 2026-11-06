@@ -47,7 +47,7 @@ export default function ReportButton({ producerId }) {
             role="dialog"
             aria-modal="true"
             aria-labelledby="report-dialog-title"
-            className="bg-white rounded-md p-6 max-w-md w-full"
+            className="bg-surface rounded-md p-6 max-w-md w-full"
           >
             {submitted ? (
               <div className="text-center">

@@ -87,7 +87,7 @@ export default function CookieBanner() {
             type="button"
             onClick={() => accept("all")}
             data-testid="cookie-accept-all"
-            className="bg-green-50 text-primary-dark font-medium text-xs px-4 py-2 rounded-full hover:bg-white transition whitespace-nowrap inline-flex items-center justify-center min-h-touch"
+            className="bg-green-50 text-primary-dark font-medium text-xs px-4 py-2 rounded-full hover:bg-surface transition whitespace-nowrap inline-flex items-center justify-center min-h-touch"
           >
             {t("accept_all")}
           </button>

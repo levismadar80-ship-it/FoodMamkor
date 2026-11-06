@@ -7,6 +7,8 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 
 const authState = { user: null };
 const nav = { pathname: "/producer/dashboard" };
@@ -125,6 +127,27 @@ describe("MEH-2728 the tools tab stays active on its spokes", () => {
       expect(screen.getByTestId("dashboard-tab-overview").getAttribute("aria-current")).toBeNull();
     });
   }
+
+  // Derived, not listed: every screen the «כלים» page links to must keep the
+  // tab lit, so a new tool card without an `also` entry goes red here.
+  it("every spoke linked from tools/page.js lights the tools tab", () => {
+    const src = readFileSync(
+      path.resolve(__dirname, "../app/[locale]/producer/dashboard/tools/page.js"),
+      "utf8",
+    );
+    const spokes = [...src.matchAll(/href="(\/producer\/dashboard\/[a-z0-9/-]+)"/g)].map((m) => m[1]);
+    expect(spokes.length).toBeGreaterThanOrEqual(5);
+    authState.user = { role: "producer", producer_id: "p-1" };
+    for (const spoke of spokes) {
+      nav.pathname = spoke;
+      const { unmount } = render(<DashboardLayout><div /></DashboardLayout>);
+      expect(
+        screen.getByTestId("dashboard-tab-tools").getAttribute("aria-current"),
+        spoke,
+      ).toBe("page");
+      unmount();
+    }
+  });
 
   it("an organizer's events tab is still the active one on /events", () => {
     authState.user = { role: "producer", producer_id: "p-2", producer_kind: "organizer" };

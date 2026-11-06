@@ -177,7 +177,7 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
         }`}
       >
         <span
-          className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${
+          className={`absolute top-1 w-4 h-4 rounded-full bg-surface shadow transition-all ${
             prefs[key] ? "end-1" : "start-1"
           }`}
         />
@@ -197,7 +197,7 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
       // behaviour their role promised; this one sheds a role it never meant.
       role="group"
       aria-labelledby={headingId}
-      className="rounded-md border border-border bg-white p-4 space-y-3 shadow-sm max-h-[70vh] overflow-y-auto"
+      className="rounded-md border border-border bg-surface p-4 space-y-3 shadow-sm max-h-[70vh] overflow-y-auto"
       dir="rtl"
     >
       <div className="flex items-center justify-between gap-2">

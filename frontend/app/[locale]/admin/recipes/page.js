@@ -136,7 +136,7 @@ export default function AdminRecipesPage() {
             className={`px-4 py-2 rounded-full text-sm whitespace-nowrap transition ${
               tab === value
                 ? "bg-primary text-white"
-                : "bg-white border border-border text-text hover:bg-green-50"
+                : "bg-surface border border-border text-text hover:bg-green-50"
             }`}
           >
             {t(`recipes.tabs.${value}`)}
@@ -155,7 +155,7 @@ export default function AdminRecipesPage() {
       ) : rows.length === 0 ? (
         <div
           data-testid="admin-recipes-empty"
-          className="bg-white border border-border rounded-lg p-8 text-center text-fg-muted"
+          className="bg-surface border border-border rounded-lg p-8 text-center text-fg-muted"
         >
           {t("recipes.empty")}
         </div>
@@ -163,7 +163,7 @@ export default function AdminRecipesPage() {
         // overflow-x-auto (never -hidden) keeps the actions reachable between
         // md and lg; below md the table is one card per row (MEH-2426,
         // globals.css .table-stack), so nothing scrolls sideways on a phone.
-        <div className="bg-white border border-border rounded-lg overflow-x-auto">
+        <div className="bg-surface border border-border rounded-lg overflow-x-auto">
           <table className="table-stack w-full text-sm">
             <thead className="bg-green-50 text-fg-muted text-xs">
               <tr>
@@ -212,7 +212,7 @@ export default function AdminRecipesPage() {
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}
               rows={5}
-              className="w-full border border-border rounded-md px-3 py-2 text-sm bg-white"
+              className="w-full border border-border rounded-md px-3 py-2 text-sm bg-surface"
               placeholder={
                 modalAction === "changes"
                   ? t("recipes.modal.changes_placeholder")
@@ -331,7 +331,7 @@ function RecipeRow({ recipe, busy, t, locale, onApprove, onChanges, onReject }) 
               </p>
               <p className="whitespace-pre-wrap text-fg-muted">{recipe.instructions}</p>
               {recipe.moderation_notes && (
-                <div className="mt-3 bg-white border border-border rounded-md p-3">
+                <div className="mt-3 bg-surface border border-border rounded-md p-3">
                   <p className="font-medium text-xs mb-1">
                     {t("recipes.notes_label")}
                   </p>

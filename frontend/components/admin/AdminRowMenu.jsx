@@ -268,7 +268,7 @@ export default function AdminRowMenu({ items = [], ariaLabel }) {
         top: coords?.top,
         insetInlineEnd: coords?.insetInlineEnd,
       }}
-      className="z-[800] min-w-[10rem] bg-white border border-border rounded-md shadow-lg py-1 text-start"
+      className="z-[800] min-w-[10rem] bg-surface border border-border rounded-md shadow-lg py-1 text-start"
     >
       {items.map((it) => (
         <button

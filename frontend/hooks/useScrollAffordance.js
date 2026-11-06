@@ -177,7 +177,7 @@ export function ScrollArrows({ affordance }) {
   const { canScrollStart, canScrollEnd, scrollByAmount, showArrows, rtl } = affordance;
   if (!showArrows) return null;
   const cls =
-    "absolute top-1/2 -translate-y-1/2 z-20 flex h-8 w-8 items-center justify-center rounded-full border border-border bg-white text-text shadow-sm transition hover:border-primary hover:text-primary";
+    "absolute top-1/2 -translate-y-1/2 z-20 flex h-8 w-8 items-center justify-center rounded-full border border-border bg-surface text-text shadow-sm transition hover:border-primary hover:text-primary";
   // Carets point at the hidden content past their edge. RTL: inline-start
   // is the physical RIGHT (CaretRight) and inline-end the LEFT; LTR mirrors.
   const StartCaret = rtl ? CaretRight : CaretLeft;
