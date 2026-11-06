@@ -600,7 +600,15 @@
       "og_title": "Mehamakor — real food, straight from the source",
       "og_description": "Real food from local businesses — all in one place.",
       "twitter_title": "Mehamakor — real food, straight from the source",
-      "twitter_description": "Real food from local businesses — all in one place."
+      "twitter_description": "Real food from local businesses — all in one place.",
+      "keywords": [
+        "local products",
+        "grass-fed",
+        "healthy food",
+        "organic food",
+        "Israeli local businesses",
+        "farmers market"
+      ]
     },
     "about": {
       "title": "About Mehamakor — our vision and values",
@@ -711,6 +719,18 @@
     "claim": {
       "title": "Take your business page | Mehamakor",
       "description": "We prepared a page for you on Mehamakor"
+    },
+    "producer": {
+      "title_full": "{name} — {category} in {city} | {brand}",
+      "title_city": "{name} in {city} | {brand}",
+      "title_category": "{name} — {category} | {brand}",
+      "title_name": "{name} | {brand}",
+      "description_full": "{name} — a local business in {city}. {category}",
+      "description_city": "{name} — a local business in {city}",
+      "description_category": "{name} — a local business. {category}",
+      "description_name": "{name} — a local business",
+      "not_found": "Business not found | {brand}",
+      "country": "Israel"
     }
   },
   "producer": {
@@ -2636,6 +2656,11 @@
       "previous_month": "Previous month",
       "next_month": "Next month",
       "label": "Calendar",
+      "today": "Today",
+      "list_heading": "All events in {month}",
+      "list_heading_experiences": "All experiences in {month}",
+      "empty_month": "No events this month. Try the next month.",
+      "empty_month_experiences": "No experiences this month. Try the next month.",
       "events_count": "{count, plural, =0 {No events} one {# event} other {# events}}",
       "days": {
         "sun": "Sun",
@@ -3932,6 +3957,12 @@
         "customer_messages": "Response time, tone, and 5 ready-made templates. The small things that decide whether a conversation closes in an order."
       }
     },
+    "article": {
+      "eyebrow": "A guide for business owners · {minutes} min read",
+      "founder_name": "Sapir Schnapp",
+      "founder_role": "Founder · {brand}",
+      "back": "Back to guides"
+    },
     "business_story": {
       "title": "How to write a good story about your business",
       "subtitle": "Write the story once, properly. The rest takes care of itself.",
@@ -5057,8 +5088,6 @@
       "image_remove": "Remove image",
       "image_remove_aria": "Remove image",
       "image_upload_error": "Image upload failed. Please try again.",
-      "field_registration_url_label": "External registration link (optional)",
-      "field_registration_url_placeholder": "https://…",
       "submit_publishing": "Publishing…",
       "submit": "Publish event",
       "cancel": "Cancel",
@@ -5966,6 +5995,30 @@
     "facebook": "Message on Facebook",
     "external_order": "Order",
     "wa_greeting": "Hi! I found you on Mehamakor — {name}"
+  },
+  "registration": {
+    "form": {
+      "legend": "How do people sign up?",
+      "site_form": "Sign-up form on the site",
+      "site_form_hint": "People leave a name, phone and email. You get an email for every sign-up, and the list waits for you here.",
+      "whatsapp": "WhatsApp",
+      "whatsapp_hint": "Opens WhatsApp to the business number.",
+      "phone": "Phone",
+      "external_url": "External sign-up link",
+      "external_url_hint": "For example a Google form or a ticketing site.",
+      "external_url_placeholder": "https://...",
+      "whatsapp_needs_mobile": "To choose WhatsApp, add a mobile number to the business details",
+      "phone_needs_phone": "To choose phone, add a phone number to the business details",
+      "external_needs_url": "Add a sign-up link",
+      "invalid_url": "That address is not valid — start with https://"
+    },
+    "list": {
+      "summary": "Sign-ups on the site ({count})",
+      "empty": "No sign-ups on the site yet",
+      "cancelled": "Cancelled",
+      "offline_label": "Signed up outside the site",
+      "load_error": "Couldn't load the list."
+    }
   },
   "filter_axes": {
     "has_delivery": {
