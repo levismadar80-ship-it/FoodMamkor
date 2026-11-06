@@ -41,7 +41,7 @@ const HOST_LINES = {
 };
 
 // idle → open → (busy) → done; error keeps the form open with a message.
-export default function DeliveryWaitlistForm({ producer = null, city = "", describedBy }) {
+export default function DeliveryWaitlistForm({ producer = null, city = "", describedBy = undefined }) {
   const t = useTranslations("group_buys.delivery.waitlist");
   const auth = useOptionalAuth();
   const user = auth?.user ?? null;

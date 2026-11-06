@@ -33,7 +33,7 @@ import { pingWhatsAppBeacon } from "@/lib/contact-tracking";
 // endpoint still accepts no body at all, so every other WhatsApp CTA on the site
 // is unchanged and stores NULL.
 
-export default function CoverageRequestCta({ producer = null, city = "", describedBy }) {
+export default function CoverageRequestCta({ producer = null, city = "", describedBy = undefined }) {
   const t = useTranslations("group_buys.delivery");
   const tChips = useTranslations("whatsapp.question_chips");
 
