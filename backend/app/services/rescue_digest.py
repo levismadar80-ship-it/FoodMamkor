@@ -25,11 +25,19 @@ History:  MEH-2756 (creation; the digest MEH-2646 deliberately left out).
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from datetime import timedelta
 
 from sqlalchemy.orm import Session
 
-from app.models import AlertLog, Producer, ProducerLocation, RescueOffer, RescueOrder, User
+from app.models import (
+    AlertLog,
+    Producer,
+    ProducerLocation,
+    RescueOffer,
+    RescueOrder,
+    User,
+)
 from app.services.rescue_emails import israel_hhmm
 from app.services.whatsapp import send_template
 from app.services.whatsapp_templates import RescueCodesDigestV1
@@ -70,7 +78,10 @@ def build_codes_param(orders: list[RescueOrder]) -> str:
     matching four digits a customer just said against a list, so the list has
     to be scannable, and arrival order is noise for that job.
     """
-    parts = [f"{o.pickup_code} ({o.qty})" for o in sorted(orders, key=lambda o: o.pickup_code)]
+    parts = [
+        f"{o.pickup_code} ({o.qty})"
+        for o in sorted(orders, key=lambda o: o.pickup_code)
+    ]
     return _clean_param(", ".join(parts))
 
 
@@ -81,7 +92,9 @@ def build_window_param(offer: RescueOffer) -> str:
     repo's one owner of that conversion. An en dash, matching the buyer-facing
     copy.
     """
-    return _clean_param(f"{israel_hhmm(offer.pickup_start)}–{israel_hhmm(offer.pickup_end)}")
+    return _clean_param(
+        f"{israel_hhmm(offer.pickup_start)}–{israel_hhmm(offer.pickup_end)}"
+    )
 
 
 def digest_enabled() -> bool:
@@ -116,6 +129,126 @@ def _recently_sent(db: Session, user_id, producer_id) -> bool:
     ).scalar()
 
 
+@dataclass(frozen=True)
+class _Target:
+    """Who the digest goes to and what it says — resolved while the Session is
+    open, so nothing below re-queries a detached row."""
+
+    producer: Producer
+    owner: User
+    phone: str
+    reserved: list[RescueOrder]
+
+
+def _resolve_target(db: Session, offer: RescueOffer, city_in_pilot) -> _Target | str:
+    """The recipient and the payload, or the counter key saying why not.
+
+    Split from `_digest_one` so that one owns "can this be sent" and the other
+    owns "send it and record it" — which also keeps both inside Ruff's
+    PLR0911/C901 budgets. Two shapes share one key on purpose: a missing
+    location and a missing producer are both `skipped_no_location`, and a blank
+    phone and a missing owner row are both `skipped_no_phone`, because the
+    operator's question in each pair is the same one.
+    """
+    # One join rather than two queries: the offer hangs off a location, and the
+    # location's producer is what the message is addressed to.
+    row = (
+        db.query(ProducerLocation, Producer)
+        .join(Producer, Producer.id == ProducerLocation.producer_id)
+        .filter(ProducerLocation.id == offer.producer_location_id)
+        .first()
+    )
+    if row is None:
+        return "skipped_no_location"
+    location, producer = row
+
+    if not city_in_pilot(location.city):
+        return "skipped_not_in_pilot"
+
+    reserved = (
+        db.query(RescueOrder)
+        .filter(
+            RescueOrder.offer_id == offer.id,
+            RescueOrder.status == "reserved",
+        )
+        .all()
+    )
+    if not reserved:
+        # Left UNSTAMPED by the caller, same reasoning as pending_nudge's
+        # no-addressable-owner branch: nothing was sent, so the column must not
+        # claim otherwise. A reservation made later in the window is then still
+        # digested on a later tick.
+        return "skipped_no_reserved"
+
+    phone = (producer.phone or "").strip()
+    # The owner row is needed for the AlertLog cap, which is keyed on a user.
+    # No phone or no owner ⇒ nothing is sent and nothing is stamped.
+    owner = db.query(User).filter(User.producer_id == producer.id).first()
+    if not phone or owner is None:
+        return "skipped_no_phone"
+
+    return _Target(producer=producer, owner=owner, phone=phone, reserved=reserved)
+
+
+def _digest_one(db: Session, offer: RescueOffer, now, city_in_pilot) -> str:
+    """Send ONE offer's digest. Returns the counter key to increment.
+
+    Raises nothing it can help; the caller is the fail-isolation boundary.
+    """
+    target = _resolve_target(db, offer, city_in_pilot)
+    if isinstance(target, str):
+        return target
+
+    if _recently_sent(db, target.owner.id, target.producer.id):
+        # Stamped, unlike every other skip: the cap is a decision about this
+        # offer, not a "not yet". Leaving it NULL would make every later tick
+        # re-evaluate and re-log it for the rest of the window. See the PR
+        # description — for a business with two pickup points publishing on the
+        # same day this suppresses the second one's codes, and the cap's key
+        # cannot express "per offer".
+        offer.codes_sent_at = now
+        db.commit()
+        logger.info(
+            "[RESCUE-DIGEST] offer_id=%s capped (24h, channel=%s) — stamped",
+            offer.id,
+            CHANNEL_DIGEST,
+        )
+        return "skipped_capped"
+
+    template = RescueCodesDigestV1(
+        producer_name=_clean_param(target.producer.name or ""),
+        window=build_window_param(offer),
+        codes=build_codes_param(target.reserved),
+    )
+    if not send_template(target.phone, template):
+        # Unstamped: a Meta rejection or an unconfigured client is a "not sent",
+        # and the next tick retries inside the window.
+        logger.warning(
+            "[RESCUE-DIGEST] offer_id=%s send failed to %s",
+            offer.id,
+            mask_phone(target.phone),
+        )
+        return "failed"
+
+    offer.codes_sent_at = now
+    db.add(
+        AlertLog(
+            user_id=target.owner.id,
+            producer_id=target.producer.id,
+            channel=CHANNEL_DIGEST,
+            alert_type=ALERT_TYPE,
+        )
+    )
+    db.commit()
+    logger.info(
+        "[RESCUE-DIGEST] offer_id=%s sent codes=%d to %s",
+        offer.id,
+        len(target.reserved),
+        mask_phone(target.phone),
+    )
+    return "sent"
+
+
 def send_rescue_digests(db: Session) -> dict[str, int]:
     """Scheduler entry point. One digest per due offer; never raises.
 
@@ -130,6 +263,9 @@ def send_rescue_digests(db: Session) -> dict[str, int]:
     as "not digested", which covers both "not yet" and "never" — the filter is
     what distinguishes them, not the column.
 
+    Which outcomes stamp and which do not is `_digest_one`'s decision, branch
+    by branch; read it for the reasoning.
+
     Fail-isolated per offer, like `run_watchdog`: one business's bad phone
     number or Meta rejection must not cost the others their codes. The
     aggregate counters are the return value and the only thing the caller logs.
@@ -140,15 +276,16 @@ def send_rescue_digests(db: Session) -> dict[str, int]:
         "skipped_no_reserved": 0,
         "skipped_not_in_pilot": 0,
         "skipped_no_phone": 0,
+        "skipped_no_location": 0,
         "skipped_capped": 0,
         "failed": 0,
         "skipped_gate_off": 0,
     }
 
-    # Imported here, not at module scope: these three are owned by the router
-    # module, and a service that imports a router at import time drags the
-    # whole route tree into the scheduler worker's first tick. One owner for
-    # the pilot gates (MEH-271) without the import-order cost.
+    # Imported here, not at module scope: these are owned by the router module,
+    # and a service that imports a router at import time drags the whole route
+    # tree into the scheduler worker's first tick. One owner for the pilot
+    # gates (MEH-271) without the import-order cost.
     from app.routers.rescue import city_in_pilot, rescue_bags_enabled
 
     if not rescue_bags_enabled():
@@ -179,104 +316,7 @@ def send_rescue_digests(db: Session) -> dict[str, int]:
     for offer in offers:
         counts["scanned"] += 1
         try:
-            location = (
-                db.query(ProducerLocation)
-                .filter(ProducerLocation.id == offer.producer_location_id)
-                .first()
-            )
-            if location is None:
-                continue
-
-            if not city_in_pilot(location.city):
-                counts["skipped_not_in_pilot"] += 1
-                continue
-
-            reserved = (
-                db.query(RescueOrder)
-                .filter(
-                    RescueOrder.offer_id == offer.id,
-                    RescueOrder.status == "reserved",
-                )
-                .all()
-            )
-            if not reserved:
-                # Left UNSTAMPED on purpose, same reasoning as pending_nudge's
-                # no-addressable-owner branch: nothing was sent, so the column
-                # must not claim otherwise. A reservation made later in the
-                # window is then still digested on a later tick.
-                counts["skipped_no_reserved"] += 1
-                continue
-
-            producer = (
-                db.query(Producer).filter(Producer.id == location.producer_id).first()
-            )
-            if producer is None:
-                continue
-
-            phone = (producer.phone or "").strip()
-            if not phone:
-                counts["skipped_no_phone"] += 1
-                continue
-
-            owner = db.query(User).filter(User.producer_id == producer.id).first()
-            if owner is None:
-                # No owner row to attribute the AlertLog entry to, and the cap
-                # is keyed on one. Skipped rather than sent uncapped.
-                counts["skipped_no_phone"] += 1
-                continue
-
-            if _recently_sent(db, owner.id, producer.id):
-                # Stamped, unlike every other skip above: the cap is a decision
-                # about this offer, not a "not yet". Leaving it NULL would make
-                # every later tick re-evaluate and re-log it for the rest of the
-                # window. See the PR description — for a business with two
-                # pickup points publishing on the same day, this suppresses the
-                # second one's codes, and the cap's key cannot express "per
-                # offer".
-                offer.codes_sent_at = now
-                db.commit()
-                counts["skipped_capped"] += 1
-                logger.info(
-                    "[RESCUE-DIGEST] offer_id=%s capped (24h, channel=%s) — stamped",
-                    offer.id,
-                    CHANNEL_DIGEST,
-                )
-                continue
-
-            template = RescueCodesDigestV1(
-                producer_name=_clean_param(producer.name or ""),
-                window=build_window_param(offer),
-                codes=build_codes_param(reserved),
-            )
-            ok = send_template(phone, template)
-            if not ok:
-                # Unstamped: a Meta rejection or an unconfigured client is a
-                # "not sent", and the next tick retries inside the window.
-                counts["failed"] += 1
-                logger.warning(
-                    "[RESCUE-DIGEST] offer_id=%s send failed to %s",
-                    offer.id,
-                    mask_phone(phone),
-                )
-                continue
-
-            offer.codes_sent_at = now
-            db.add(
-                AlertLog(
-                    user_id=owner.id,
-                    producer_id=producer.id,
-                    channel=CHANNEL_DIGEST,
-                    alert_type=ALERT_TYPE,
-                )
-            )
-            db.commit()
-            counts["sent"] += 1
-            logger.info(
-                "[RESCUE-DIGEST] offer_id=%s sent codes=%d to %s",
-                offer.id,
-                len(reserved),
-                mask_phone(phone),
-            )
+            counts[_digest_one(db, offer, now, city_in_pilot)] += 1
         except Exception:
             db.rollback()
             counts["failed"] += 1
