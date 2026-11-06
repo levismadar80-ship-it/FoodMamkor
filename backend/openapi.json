@@ -12787,6 +12787,20 @@
       "RescueOfferPublicOut": {
         "description": "One row of `GET /rescue/offers` — the offer, who is selling it, what is\nusually in it, and how far away it is.\n\n`distance_km` is None unless the caller sent lat/lng; chunk 4 renders it\nonly when present rather than inventing a zero.",
         "properties": {
+          "allergens": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allergens"
+          },
           "cancel_until": {
             "format": "date-time",
             "title": "Cancel Until",
@@ -13451,6 +13465,20 @@
       "RescueTypicalItemsIn": {
         "description": "«בדרך כלל: …» — the list a business edits once. Bounded so the line\nstays one line on a phone.",
         "properties": {
+          "allergens": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allergens"
+          },
           "items": {
             "items": {
               "type": "string"
@@ -13465,6 +13493,20 @@
       },
       "RescueTypicalItemsOut": {
         "properties": {
+          "allergens": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allergens"
+          },
           "items": {
             "items": {
               "type": "string"

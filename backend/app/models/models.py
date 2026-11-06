@@ -3091,6 +3091,16 @@ class RescueTypicalItems(Base):
         nullable=False,
     )
     items = Column(JSONB, nullable=False, default=list)
+    # MEH-2752: the 14-code allergen list this business declares for its bag.
+    # NULL = nothing filled; [] is NEVER stored, because an empty list reads as
+    # "contains none of them", which is a food-safety claim nobody made.
+    # `normalize_allergens` collapses both to None on the way in.
+    # Annotated like the products column at models.py:1117 (MEH-2662): mypy
+    # --strict reaches this file transitively from app/auth.py and asks for an
+    # annotation on a generic ARRAY column (`var-annotated`). The six unannotated
+    # ones above are grandfathered in backend/mypy-baseline.txt; a NEW one is
+    # annotated rather than added to the baseline.
+    allergens: Column[list[str]] = Column(ARRAY(Text), nullable=True)
     created_at = Column(DateTime, default=utc_now, nullable=False)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 

@@ -521,6 +521,7 @@ erDiagram
         uuid id PK "MEH-2644"
         uuid producer_id FK "CASCADE, UNIQUE — one row per business"
         json items "JSONB NOT NULL, default []"
+        text allergens "text[] NULL — MEH-2752: NULL = not declared, never []"
         timestamp created_at
         timestamp updated_at
     }
