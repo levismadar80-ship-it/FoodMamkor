@@ -32,7 +32,7 @@ describe("ui/Badge", () => {
 
   it("applies the sm size classes", () => {
     render(<Badge size="sm">z</Badge>);
-    expect(screen.getByText("z").className).toContain("text-[10px]");
+    expect(screen.getByText("z").className).toContain("text-2xs");
   });
 
   it("renders without a tooltip wrapper when no tooltip prop is given", () => {

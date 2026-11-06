@@ -74,7 +74,7 @@ export default function AdminReviewChecklist({
               ? `(${doneCount}/${list.length})`
               : `(?/${list.length})`}
         </span>
-        {saving && <span className="text-[11px] text-muted">שומרת…</span>}
+        {saving && <span className="text-2xs text-muted">שומרת…</span>}
       </button>
 
       {open && (
@@ -126,7 +126,7 @@ export default function AdminReviewChecklist({
                           {item.label}
                         </span>
                         {item.hint && (
-                          <span className="text-[11px] text-muted">
+                          <span className="text-2xs text-muted">
                             {item.hint}
                           </span>
                         )}

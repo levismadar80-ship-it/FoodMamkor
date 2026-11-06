@@ -152,7 +152,7 @@ const linkAttrs = (key) =>
 // could show two geometric languages at once. Only the trailing state classes
 // (hover/text colour) differ per affordance.
 const ROW_ANATOMY =
-  "flex w-full items-center gap-2 min-h-touch px-3 rounded-[10px] border border-border bg-surface text-sm";
+  "flex w-full items-center gap-2 min-h-touch px-3 rounded-md border border-border bg-surface text-sm";
 
 export default function ContactCard({ producer, isVacation }) {
   const t = useTranslations();

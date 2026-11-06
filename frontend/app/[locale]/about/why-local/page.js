@@ -82,7 +82,7 @@ export default async function WhyLocalPage({ params }) {
           <h1 className="font-headline-lg mb-5 text-primary-dark text-[clamp(28px,6vw,44px)] leading-[1.15] font-black">
             {t("h1")}
           </h1>
-          <p className="text-[17px] sm:text-[19px] leading-[1.8] text-text/90">
+          <p className="text-lg sm:text-xl leading-[1.8] text-text/90">
             {t("intro")}
           </p>
         </header>
@@ -90,10 +90,10 @@ export default async function WhyLocalPage({ params }) {
         <div>
           {SECTIONS.map((s, i) => (
             <section key={s.heading}>
-              <h2 className="font-headline-md mt-10 mb-3 sm:mt-12 text-primary text-[22px] font-bold">
+              <h2 className="font-headline-md mt-10 mb-3 sm:mt-12 text-primary text-2xl font-bold">
                 {t(s.heading)}
               </h2>
-              <p className="mb-4 text-[16px] sm:text-[17px] leading-[1.8] text-text/90">
+              <p className="mb-4 text-base sm:text-lg leading-[1.8] text-text/90">
                 {s.rich
                   ? t.rich(s.body, {
                       nef: (chunks) => (
@@ -121,13 +121,13 @@ export default async function WhyLocalPage({ params }) {
           ))}
 
           <section>
-            <h2 className="font-headline-md mt-10 mb-3 sm:mt-12 text-primary text-[22px] font-bold">
+            <h2 className="font-headline-md mt-10 mb-3 sm:mt-12 text-primary text-2xl font-bold">
               {t("changes_h")}
             </h2>
             {CHANGES_LINES.map((line) => (
               <p
                 key={line}
-                className="mb-4 text-[16px] sm:text-[17px] leading-[1.8] text-text/90"
+                className="mb-4 text-base sm:text-lg leading-[1.8] text-text/90"
               >
                 {t(line)}
               </p>
@@ -149,7 +149,7 @@ export default async function WhyLocalPage({ params }) {
         </div>
 
         <footer data-testid="why-local-sources" className="mt-12 sm:mt-14 border-t border-border pt-6">
-          <p className="text-[13px] leading-relaxed text-fg-muted">
+          <p className="text-sm leading-relaxed text-fg-muted">
             {t("sources_prefix")}{" "}
             <a
               href={NEF_URL}

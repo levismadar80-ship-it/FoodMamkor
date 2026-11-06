@@ -194,13 +194,13 @@ export default async function OrganizerPage(props) {
               src={optimizeCloudinary(image, { aspectRatio: "16:9", width: 1100 })}
               alt="" // decorative: the h1 below names the organizer (review #3812)
               data-testid="organizer-cover"
-              className="w-full h-[170px] md:h-[320px] object-cover md:rounded-[18px] bg-border"
+              className="w-full h-[170px] md:h-[320px] object-cover md:rounded-xl bg-border"
             />
           ) : (
             <div
               aria-hidden="true"
               data-testid="organizer-cover-band"
-              className="w-full h-[96px] md:h-[140px] md:rounded-[18px] bg-green-50"
+              className="w-full h-[96px] md:h-[140px] md:rounded-xl bg-green-50"
             />
           )}
           {initial && (

@@ -1045,7 +1045,7 @@ export default function ProducersClient({
               onClick={() => toggleChip(chip.key)}
               className="inline-flex items-center gap-1 bg-surface text-primary border border-primary rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap shrink-0"
             >
-              <span aria-hidden="true" className="text-[10px] font-bold">×</span>
+              <span aria-hidden="true" className="text-2xs font-bold">×</span>
               {chip.label}
             </button>
           ))}
@@ -1066,7 +1066,7 @@ export default function ProducersClient({
               }}
               className="inline-flex items-center gap-1 bg-surface text-primary border border-primary rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap shrink-0"
             >
-              <span aria-hidden="true" className="text-[10px] font-bold">×</span>
+              <span aria-hidden="true" className="text-2xs font-bold">×</span>
               <MagnifyingGlass size={13} weight="bold" aria-hidden="true" />{searchQ}
             </button>
           )}

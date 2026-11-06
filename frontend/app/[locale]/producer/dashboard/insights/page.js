@@ -92,7 +92,7 @@ export default function ProducerDashboardInsightsPage() {
           <button
             type="button"
             onClick={() => setAnalyticsAttempt((n) => n + 1)}
-            className="inline-block bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition"
+            className="inline-block bg-primary text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-dark transition"
           >
             {t("section_errors.retry_cta")}
           </button>
@@ -132,7 +132,7 @@ export default function ProducerDashboardInsightsPage() {
               as-needed locale routing (MEH-956 precedent). */}
           <LocaleLink
             href="/producer/dashboard/edit"
-            className="inline-block bg-primary text-white px-4 py-2 rounded-[10px] text-xs font-medium hover:bg-primary-dark transition"
+            className="inline-block bg-primary text-white px-4 py-2 rounded-full text-xs font-medium hover:bg-primary-dark transition"
           >
             {t("insights_zero_state.cta")}
           </LocaleLink>
