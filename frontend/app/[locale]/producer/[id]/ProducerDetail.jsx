@@ -54,7 +54,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
     setFromMap(new URLSearchParams(window.location.search).get("from") === MAP_REFERRER);
   }, []);
 
-  const { producer, loading, events, similarProducers, nearbyProducers } = useProducerData({
+  const { producer, loading, events, similarProducers, nearbyProducers, setReviewsCount } = useProducerData({
     params,
     fetchPath,
     initialProducer,
@@ -270,6 +270,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             reviewsContainerRef={reviewsContainerRef}
             reviewsVisible={reviewsVisible}
             isOwner={user?.producer_id === producer.id}
+            onReviewsTotalChange={setReviewsCount}
           />
         </div>
 
