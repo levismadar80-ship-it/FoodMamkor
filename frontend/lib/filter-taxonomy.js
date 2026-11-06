@@ -71,6 +71,14 @@
  *                membership declaration in the repo.
  *   homeParam  — home's own URL param name when it differs from `key`. Present
  *                on exactly one axis (see has_delivery). Absent ⇒ `key`.
+ *   gate       — MEH-2767. Absent ⇒ the chip always renders. "count" ⇒ it
+ *                renders only once DIET_CHIP_MIN (5) businesses in the
+ *                unfiltered catalog carry it. "open_now" ⇒ the order-window
+ *                gate (producer-filters.js openNowChipVisible). The SAME gate
+ *                applies on every surface — lib/producer-filters.js
+ *                visibleAxisChips is the one function that reads it. Before
+ *                MEH-2767 each surface kept its own gate list and they drifted
+ *                (Sapir's two screenshots, 06/11).
  *   mapParam   — false when /map deliberately emits NO param for this axis.
  *                Present on exactly one axis, and it marks a DEFECT, not a
  *                design choice (see no_added_sugar).
@@ -121,6 +129,7 @@ export const FILTER_AXES = {
     hasSubtext: true,
     group: "service",
     surfaces: ["home", "producers", "map"],
+    gate: "count", // MEH-2767
   },
   // MEH-1418 named WHAT was verified — a license or exemption document checked
   // by an admin against the Ministry of Health registry (ADR-022) — and the
@@ -168,6 +177,7 @@ export const FILTER_AXES = {
     hasSubtext: true,
     group: "service",
     surfaces: ["home", "producers", "map"],
+    gate: "open_now", // MEH-2767
   },
 
   // ── quality ────────────────────────────────────────────────────────────
@@ -182,15 +192,18 @@ export const FILTER_AXES = {
     group: "quality",
     surfaces: ["home", "producers", "map"],
   },
-  // MEH-1507: /map-only. A producer-level boolean column (models.py grass_fed),
-  // owner-declared. Its absence from the shared cross-surface set is what keeps
-  // it off the listing surfaces — asserted by attributeLabels.test.js.
+  // MEH-1507: a producer-level boolean column (models.py grass_fed),
+  // owner-declared. It was /map-only from MEH-1082 until MEH-2767 — a leftover
+  // of the pre-taxonomy surface-local lists, never a product decision (Sapir
+  // 06/11 chose one rule for the list and the map). The backend filter
+  // `?grass_fed=true` has always been public and global (producers.py:182).
   grass_fed: {
     scope: "business",
     evidence: "self-declared",
     hasSubtext: true,
     group: "quality",
-    surfaces: ["map"],
+    surfaces: ["home", "producers", "map"],
+    gate: "count", // MEH-2767
   },
 
   // ── diet ───────────────────────────────────────────────────────────────
@@ -214,6 +227,7 @@ export const FILTER_AXES = {
     hasSubtext: true,
     group: "diet",
     surfaces: ["home", "producers", "map"],
+    gate: "count", // MEH-2767
   },
   // MEH-1438: a vegan product counts as vegetarian (?vegetarian matches
   // is_vegetarian OR is_vegan) — see badges.js.
@@ -223,6 +237,7 @@ export const FILTER_AXES = {
     hasSubtext: true,
     group: "diet",
     surfaces: ["home", "producers", "map"],
+    gate: "count", // MEH-2767
   },
   // MEH-1508 chunk 3ב-2 — the 100% layer. A DIFFERENT CLAIM from the partial
   // axes above, not a stricter version of the same one: the backend answers
@@ -266,6 +281,7 @@ export const FILTER_AXES = {
     hasSubtext: true,
     group: "diet",
     surfaces: ["home", "producers", "map"],
+    gate: "count", // MEH-2767
   },
   lactose_free: {
     scope: "any-product",
@@ -273,6 +289,7 @@ export const FILTER_AXES = {
     hasSubtext: true,
     group: "diet",
     surfaces: ["home", "producers", "map"],
+    gate: "count", // MEH-2767
   },
   // MEH-1934: the fifth diet axis. Copy Sapir-LOCKED (MEH-1934 §hebrew_copy).
   // "מתאים לסוכרתיים" stays banned everywhere — a medical claim on top of a
@@ -301,6 +318,7 @@ export const FILTER_AXES = {
     hasSubtext: true,
     group: "diet",
     surfaces: ["home", "producers", "map"],
+    gate: "count", // MEH-2767
   },
   // MEH-1259 (organic) and MEH-2047 (דל פחמימות) were REMOVED from the public
   // taxonomy — a self-declared certificate claim and an undefined term
@@ -343,6 +361,7 @@ export const MAP_CHIP_ORDER = [
  */
 export const LISTING_CHIP_ORDER = [
   "kosher",
+  "grass_fed", // MEH-2767: beside kosher, its quality-group twin (same as /map)
   "vegan",
   "vegetarian",
   "gluten_free",
@@ -420,11 +439,23 @@ export function mapEmitsParam(key) {
  *
  * This is what ATTRIBUTE_LABELS derives from, and membership in it is a PROMISE
  * that home, /producers and /map all render the axis with the same label
- * (attributeLabels.test.js turns that promise into a gate). `grass_fed` (/map)
- * and `open_for_orders_now` (/producers) are excluded by their own `surfaces`,
- * with no second list to keep in step.
+ * (attributeLabels.test.js turns that promise into a gate). Since MEH-2767
+ * every offered axis is on all three surfaces; an axis that ever leaves one
+ * drops out of this set by its own `surfaces`, with no second list to keep in
+ * step — and surfaceParity.test.js goes red until that is a stated decision.
  */
 export const SHARED_AXIS_KEYS = Object.keys(FILTER_AXES).filter((key) => {
   const s = FILTER_AXES[key].surfaces;
   return s.includes("home") && s.includes("producers") && s.includes("map");
 });
+
+/**
+ * MEH-2767 — the axis keys carrying a given `gate` kind ("count" | "open_now"),
+ * in declaration order. Derived, so a new gated axis needs no per-surface
+ * list — only this field plus its count predicate in producer-filters.js
+ * GATED_AXIS_PREDICATES (surfaceParity.test.js fails if the predicate is
+ * missing).
+ */
+export function gatedAxisKeys(kind) {
+  return Object.keys(FILTER_AXES).filter((key) => FILTER_AXES[key].gate === kind);
+}

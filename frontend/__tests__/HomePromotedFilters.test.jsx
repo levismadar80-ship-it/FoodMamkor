@@ -28,6 +28,11 @@ import { Check } from "@phosphor-icons/react";
  * browser; no assertion below should be read as covering it.
  */
 
+// MEH-2767: the chip gate counts the unfiltered snapshot hook; see the helper.
+import { setCatalogSnapshot } from "./helpers/catalog-snapshot";
+import { FILTER_AXES } from "@/lib/filter-taxonomy";
+vi.mock("@/lib/use-catalog-snapshot", async () =>
+  (await import("./helpers/catalog-snapshot")).catalogSnapshotMock);
 vi.mock("@/lib/use-chip-copy", async () => (await import("./helpers/he-chip-copy")).chipCopyMock);
 vi.mock("next-intl", () => ({
   useTranslations: () => (key, values) =>
@@ -73,7 +78,10 @@ const PROMOTED = ["has_delivery", "pickup_points"];
 
 const producers = Array.from({ length: 12 }, (_, i) => ({ id: i + 1 }));
 
-const props = (overrides = {}) => ({
+// MEH-2767: the gate counts the snapshot — make it the rendered fixture.
+const props = (overrides = {}) =>
+  (setCatalogSnapshot(overrides.producers ?? producers), propsBase(overrides));
+const propsBase = (overrides = {}) => ({
   producers,
   producersLoading: false,
   visibleProducers: producers,
@@ -196,19 +204,16 @@ describe("MEH-2173 — the sheet", () => {
     // "no removal of any filter capability" line, asserted rather than assumed.
     for (const chip of CHIPS_CONFIG) {
       // Gated axes (zero-data catalog in this fixture) are hidden by design.
-      // MEH-1508 chunk 3ב-2: + the two 100% axes (gated at threshold 1).
-      if (
-        ["open_for_orders_now", "no_added_sugar", "on_site", "vegan_all", "vegetarian_all"].includes(
-          chip.key,
-        )
-      )
-        continue;
+      // MEH-2767: read off the taxonomy's `gate` field — the one declaration.
+      if (FILTER_AXES[chip.key].gate) continue;
       expect(screen.getByTestId(`chip-${chip.key}`)).toBeTruthy();
     }
   });
 
   it("a switch inside the sheet drives the SAME handler the promoted chips do", () => {
-    const p = props({ filterSheetOpen: true });
+    // MEH-2767: vegan is count-gated, so the catalog has to carry it.
+    const vegan = producers.map((x) => ({ ...x, has_vegan_products: true }));
+    const p = props({ filterSheetOpen: true, producers: vegan });
     render(<HomeProducersGrid {...p} />);
     fireEvent.click(screen.getByTestId("chip-vegan"));
     expect(p.onToggleChip).toHaveBeenCalledWith("vegan");

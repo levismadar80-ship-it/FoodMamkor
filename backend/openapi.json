@@ -1339,6 +1339,17 @@
             "title": "Price",
             "type": "integer"
           },
+          "registration_method": {
+            "default": "site_form",
+            "enum": [
+              "site_form",
+              "whatsapp",
+              "phone",
+              "external_url"
+            ],
+            "title": "Registration Method",
+            "type": "string"
+          },
           "registration_url": {
             "anyOf": [
               {
@@ -1539,6 +1550,27 @@
             ],
             "title": "Producer Name"
           },
+          "producer_phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Producer Phone"
+          },
+          "registered_count": {
+            "default": 0,
+            "title": "Registered Count",
+            "type": "integer"
+          },
+          "registration_method": {
+            "default": "site_form",
+            "title": "Registration Method",
+            "type": "string"
+          },
           "registration_url": {
             "anyOf": [
               {
@@ -1549,6 +1581,17 @@
               }
             ],
             "title": "Registration Url"
+          },
+          "spots_left": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spots Left"
           },
           "title": {
             "title": "Title",
@@ -1715,6 +1758,23 @@
               }
             ],
             "title": "Price"
+          },
+          "registration_method": {
+            "anyOf": [
+              {
+                "enum": [
+                  "site_form",
+                  "whatsapp",
+                  "phone",
+                  "external_url"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Registration Method"
           },
           "registration_url": {
             "anyOf": [
@@ -1914,6 +1974,29 @@
               }
             ],
             "title": "Recurring Schedule"
+          },
+          "registration_method": {
+            "default": "site_form",
+            "enum": [
+              "site_form",
+              "whatsapp",
+              "phone",
+              "external_url"
+            ],
+            "title": "Registration Method",
+            "type": "string"
+          },
+          "registration_url": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Registration Url"
           },
           "requirements": {
             "anyOf": [
@@ -2170,6 +2253,27 @@
               }
             ],
             "title": "Recurring Schedule"
+          },
+          "registered_count": {
+            "default": 0,
+            "title": "Registered Count",
+            "type": "integer"
+          },
+          "registration_method": {
+            "default": "site_form",
+            "title": "Registration Method",
+            "type": "string"
+          },
+          "registration_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Registration Url"
           },
           "rejection_reason": {
             "anyOf": [
@@ -2434,6 +2538,27 @@
               }
             ],
             "title": "Recurring Schedule"
+          },
+          "registered_count": {
+            "default": 0,
+            "title": "Registered Count",
+            "type": "integer"
+          },
+          "registration_method": {
+            "default": "site_form",
+            "title": "Registration Method",
+            "type": "string"
+          },
+          "registration_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Registration Url"
           },
           "spots_left": {
             "anyOf": [
@@ -2700,6 +2825,35 @@
               }
             ],
             "title": "Recurring Schedule"
+          },
+          "registration_method": {
+            "anyOf": [
+              {
+                "enum": [
+                  "site_form",
+                  "whatsapp",
+                  "phone",
+                  "external_url"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Registration Method"
+          },
+          "registration_url": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Registration Url"
           },
           "requirements": {
             "anyOf": [
@@ -12041,6 +12195,142 @@
         "title": "RegisterAck",
         "type": "object"
       },
+      "RegistrationCancelInfoOut": {
+        "description": "GET by cancel token — enough for the cancel page to say what it is.",
+        "properties": {
+          "event_date": {
+            "format": "date",
+            "title": "Event Date",
+            "type": "string"
+          },
+          "item_id": {
+            "format": "uuid",
+            "title": "Item Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "event",
+              "experience"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "item_id",
+          "title",
+          "event_date",
+          "status"
+        ],
+        "title": "RegistrationCancelInfoOut",
+        "type": "object"
+      },
+      "RegistrationCreate": {
+        "description": "The on-site sign-up form: name, phone and email, all required, no\naccount (approved 6/11).",
+        "properties": {
+          "email": {
+            "format": "email",
+            "maxLength": 200,
+            "title": "Email",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "phone": {
+            "maxLength": 20,
+            "minLength": 1,
+            "title": "Phone",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "phone",
+          "email"
+        ],
+        "title": "RegistrationCreate",
+        "type": "object"
+      },
+      "RegistrationCreatedOut": {
+        "description": "What the visitor gets back. Deliberately nothing she did not type, and\nnot the cancel token — that goes to her inbox only.",
+        "properties": {
+          "status": {
+            "const": "registered",
+            "default": "registered",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "title": "RegistrationCreatedOut",
+        "type": "object"
+      },
+      "RegistrationOwnerOut": {
+        "description": "One row of the owner's list (owner / admin only).",
+        "properties": {
+          "cancelled_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelled At"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "phone": {
+            "title": "Phone",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "phone",
+          "email",
+          "status",
+          "created_at"
+        ],
+        "title": "RegistrationOwnerOut",
+        "type": "object"
+      },
       "RejectionPresetOut": {
         "description": "MEH-226: one row of GET /admin/producers/rejection-presets.\n\nTyped rather than a bare dict so the MEH-1748 codegen chain emits a real\nschema for this route — an untyped handler generates `zod.unknown()`,\nwhich makes the drift guard structurally unable to notice the shape\nchanging.",
         "properties": {
@@ -13666,6 +13956,27 @@
             ],
             "title": "Producer Name"
           },
+          "producer_phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Producer Phone"
+          },
+          "registered_count": {
+            "default": 0,
+            "title": "Registered Count",
+            "type": "integer"
+          },
+          "registration_method": {
+            "default": "site_form",
+            "title": "Registration Method",
+            "type": "string"
+          },
           "registration_url": {
             "anyOf": [
               {
@@ -13681,6 +13992,17 @@
             "format": "date-time",
             "title": "Saved At",
             "type": "string"
+          },
+          "spots_left": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spots Left"
           },
           "title": {
             "title": "Title",
@@ -13850,6 +14172,27 @@
               }
             ],
             "title": "Recurring Schedule"
+          },
+          "registered_count": {
+            "default": 0,
+            "title": "Registered Count",
+            "type": "integer"
+          },
+          "registration_method": {
+            "default": "site_form",
+            "title": "Registration Method",
+            "type": "string"
+          },
+          "registration_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Registration Url"
           },
           "saved_at": {
             "format": "date-time",
@@ -19870,6 +20213,109 @@
         ]
       }
     },
+    "/events/{event_id}/registrations": {
+      "get": {
+        "operationId": "list_event_registrations_events__event_id__registrations_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "event_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Event Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RegistrationOwnerOut"
+                  },
+                  "title": "Response List Event Registrations Events  Event Id  Registrations Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List Event Registrations",
+        "tags": [
+          "registrations"
+        ]
+      },
+      "post": {
+        "operationId": "register_for_event_events__event_id__registrations_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "event_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Event Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistrationCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistrationCreatedOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Register For Event",
+        "tags": [
+          "registrations"
+        ]
+      }
+    },
     "/experiences": {
       "get": {
         "description": "Only approved + upcoming (event_date >= today), and only from an\napproved business (MEH-1749). Past experiences drop out of the public\nfeed automatically.",
@@ -20241,6 +20687,109 @@
         "summary": "Update Experience",
         "tags": [
           "experiences"
+        ]
+      }
+    },
+    "/experiences/{experience_id}/registrations": {
+      "get": {
+        "operationId": "list_experience_registrations_experiences__experience_id__registrations_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "experience_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Experience Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RegistrationOwnerOut"
+                  },
+                  "title": "Response List Experience Registrations Experiences  Experience Id  Registrations Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List Experience Registrations",
+        "tags": [
+          "registrations"
+        ]
+      },
+      "post": {
+        "operationId": "register_for_experience_experiences__experience_id__registrations_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "experience_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Experience Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistrationCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistrationCreatedOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Register For Experience",
+        "tags": [
+          "registrations"
         ]
       }
     },
@@ -23725,6 +24274,90 @@
         "summary": "Get Prefill",
         "tags": [
           "auth"
+        ]
+      }
+    },
+    "/registrations/{token}": {
+      "get": {
+        "operationId": "get_registration_registrations__token__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistrationCancelInfoOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Registration",
+        "tags": [
+          "registrations"
+        ]
+      }
+    },
+    "/registrations/{token}/cancel": {
+      "post": {
+        "operationId": "cancel_registration_registrations__token__cancel_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistrationCancelInfoOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cancel Registration",
+        "tags": [
+          "registrations"
         ]
       }
     },

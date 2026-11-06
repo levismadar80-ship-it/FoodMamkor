@@ -79,25 +79,6 @@ export default function RegisterPreflight({ showAccountLine, onStart }) {
       >
         {t("cta")}
       </Button>
-
-      {/* MEH-2640 (Sapir, 03/11): the organizer entry lives HERE, as a
-          secondary line under the main CTA — not in step 2, not in the
-          dashboard. It was a checkbox in the middle of step 2, which asked
-          every bakery owner to consider a path that is not hers.
-          It is a <button>, not an <a>: there is no organizer ROUTE to point
-          at. The organizer flow is the same wizard with kind="organizer"
-          (MEH-2460), whose only previous entry was the checkbox this ticket
-          removes — so "the existing organizer route" is an entry, not a URL.
-          A shareable /register/producer?kind=organizer would be a separate,
-          larger change. */}
-      <button
-        type="button"
-        data-testid="register-preflight-organizer"
-        onClick={() => onStart("organizer")}
-        className="w-full text-sm text-primary font-medium hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 min-h-touch"
-      >
-        {t("organizer_entry")}
-      </button>
     </div>
   );
 }

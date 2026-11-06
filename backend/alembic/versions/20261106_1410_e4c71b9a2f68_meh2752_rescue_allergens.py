@@ -1,7 +1,7 @@
 """meh2752_rescue_allergens
 
 Revision ID: e4c71b9a2f68
-Revises: b7d2e4f1a903
+Revises: e8c4a1f2b7d9
 Create Date: 2026-11-06 14:10:00.000000+00:00
 
 MEH-2752: per-business allergens on the surprise bag.
@@ -35,7 +35,7 @@ the bag section falls back to saying nothing was declared — which is the
 honest pre-MEH-2752 state, not the old fixed sentence (that string is deleted
 in this PR and does not come back on a rollback).
 
-Chained on b7d2e4f1a903 (MEH-2703 qty_donated), the staging head measured with
+Chained on e8c4a1f2b7d9 (MEH-2763 registrations; re-pointed after #4078 merged), the staging head measured with
 scripts/checks/alembic-head-guard.sh on 06/11 — not taken from HANDOFF, which
 still named the older b2e6d4a17c93.
 """
@@ -47,7 +47,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "e4c71b9a2f68"
-down_revision: Union[str, None] = "b7d2e4f1a903"
+down_revision: Union[str, None] = "e8c4a1f2b7d9"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
