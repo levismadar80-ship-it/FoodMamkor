@@ -780,7 +780,7 @@ export function buildGroupBuyJsonLd(groupBuy, locale = "he", now = new Date()) {
  * mismatch Google's Rich Results tests flag.
  *
  * @param {object}   args
- * @param {string}   args.label     the diet label (H1) — from ATTRIBUTE_LABELS
+ * @param {string}   args.label     the diet label (H1) — dietPageLabel(), i.e. messages filter_axes.<key>.label
  * @param {string}   args.pageUrl   absolute, locale-correct page URL
  * @param {string}   args.intro     the editorial intro paragraph
  * @param {{question: string, answer: string}[]} args.faq
