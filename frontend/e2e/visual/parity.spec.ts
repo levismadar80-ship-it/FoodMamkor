@@ -873,11 +873,12 @@ test.describe("Visual parity — MEH-991", () => {
     });
   });
 
-  // Desktop-only: the phone reveal is a >=1024px behavior. On the minimal
-  // producer the phone is the sole channel, so it renders as the labeled single
-  // row (MEH-1551) — clicking it swaps the number pill in place.
-  test("producer-detail-phone-revealed", async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name !== "desktop", "phone reveal is desktop-only (>=1024px)");
+  // Desktop-only. On the minimal producer the phone is the sole channel, so it
+  // renders as the single row (MEH-1551). MEH-2775: that row now SHOWS the
+  // number (no reveal click), as an unboxed line under a hairline — this shot
+  // pins it. The reveal itself is still covered by the two-channel shot below.
+  test("producer-detail-phone-single", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "sidebar contact card is desktop-only (>=1024px)");
     await preparePage(page);
     await page.route(PRODUCER_DETAIL_RE, async (route) => {
       await route.fulfill({ status: 200, contentType: "application/json", body: MINIMAL_FIXTURE });
@@ -891,12 +892,11 @@ test.describe("Visual parity — MEH-991", () => {
     }
     await page.goto(`/producer/${borrowedId}`);
     await expect(page.locator("main h1").first()).toBeVisible({ timeout: 20_000 });
-    // Click the visible ContactCard (the desktop sidebar instance — the inline
-    // card is hidden at this width), then wait for the revealed number pill.
-    await page.locator('[data-testid="contact-single-row"]:visible').first().click();
-    await page.locator('[data-testid="revealed-phone"]:visible').first().waitFor({ timeout: 5_000 });
+    // The visible ContactCard is the desktop sidebar instance (the inline card
+    // is hidden at this width). Its sole row must carry digits, not a label.
+    await expect(page.locator('[data-testid="contact-single-row"]:visible').first()).toHaveText(/\d{6,}/);
     await settle(page);
-    await expect(page).toHaveScreenshot("producer-detail-phone-revealed.png", {
+    await expect(page).toHaveScreenshot("producer-detail-phone-single.png", {
       ...SHOT,
       mask: [page.locator("main img"), page.locator(".leaflet-container")],
     });
