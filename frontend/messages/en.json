@@ -6072,7 +6072,9 @@
     "all": "All",
     "meat": "Meat & fish",
     "produce": "Fruit & vegetables",
-    "dairy": "Dairy & cheese",
-    "bread": "Bread & baking"
+    "dairy": "Dairy & eggs",
+    "bread": "Bread & baking",
+    "pantry": "Pantry",
+    "care": "Care & home"
   }
 }

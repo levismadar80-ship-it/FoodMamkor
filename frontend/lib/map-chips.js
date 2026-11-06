@@ -61,9 +61,21 @@ export const CATEGORY_CHIPS = [
   // MEH-927: "בשר ודגים" split into "בשר" + "דגים"; "דגים" folded into the meat
   // chip for launch (legacy "בשר ודגים" kept for any pre-migration admin rows).
   { key: "meat", matches: ["בשר ועוף", "בשר", "דגים", "בשר ודגים", "בשר, עוף ודגים"], iconName: "בשר", iconColor: "#c04040" },
-  { key: "produce", matches: ["ירקות ופירות", "ירקות", "ירקות, פירות ומשקים"], iconName: "ירקות", iconColor: "#2e6853" },
-  { key: "dairy", matches: ["חלב וגבינות", "חלב"], iconName: "חלב וגבינות", iconColor: "#3b72ad" },
+  { key: "produce", matches: ["ירקות ופירות", "ירקות", "ירקות, פירות ומשקים"], slugs: ["fruit"], iconName: "ירקות", iconColor: "#2e6853" },
+  // MEH-2783: eggs join dairy («חלב וביצים», the Market Wagon "Dairy & Eggs" department).
+  { key: "dairy", matches: ["חלב וגבינות", "חלב"], slugs: ["eggs"], iconName: "חלב וגבינות", iconColor: "#3b72ad" },
   { key: "bread", matches: ["לחם ומאפה", "לחם", "לחמים ואפייה", "לחמים"], iconName: "לחמים ואפייה", iconColor: "#896714" },
+  // MEH-2783 (Sapir 06/11, «6 קבוצות שמכסות הכל»): two departments so every DB
+  // category has a chip — the farm-marketplace pattern (Market Wagon: Pantry +
+  // Non-Food). categoryGroupCoverage.test.js pins that each canonical category
+  // lands in exactly one group. New memberships match on the STABLE `slug`
+  // (backend category_slug.NAME_TO_SLUG, serialized on CategoryOut since
+  // MEH-2139), not the Hebrew name, so the Hebrew-literal ratchet does not grow;
+  // `iconSlug` is resolved to the glyph's name key from the loaded DB categories
+  // (withResolvedIcons) instead of a frontend slug→name table. Colours reuse CATEGORY_STYLES (honey textColor;
+  // the legacy care purple #9b59b6 = 4.67:1 white / 4.12:1 cream).
+  { key: "pantry", matches: [], slugs: ["honey", "oil", "spices", "ferments", "prepared", "drinks", "chocolate"], iconSlug: "honey", iconColor: "#A8681A" },
+  { key: "care", matches: [], slugs: ["care", "cosmetics", "herbs", "candles"], iconSlug: "care", iconColor: "#9b59b6" },
 ];
 
 // MEH-58 Phase 3: RTL order right→left. Boolean toggles are
@@ -172,7 +184,25 @@ export function resolveCategoryIds(chip, dbCategories) {
     const hit = dbCategories.find((c) => c.name === candidate);
     if (hit) ids.push(hit.id);
   }
+  // MEH-2783: slug memberships (see CATEGORY_CHIPS).
+  for (const slug of chip.slugs ?? []) {
+    const hit = dbCategories.find((c) => c.slug === slug);
+    if (hit && !ids.includes(hit.id)) ids.push(hit.id);
+  }
   return ids;
+}
+
+/**
+ * MEH-2783 — a chip that names its glyph by `iconSlug` gets the matching
+ * `iconName` (the CATEGORY_ICONS name key) from the loaded DB categories.
+ * No DB row for the slug → the chip stays text-only.
+ */
+export function withResolvedIcons(chips, dbCategories = []) {
+  return chips.map((chip) => {
+    if (!chip.iconSlug || chip.iconName) return chip;
+    const name = dbCategories.find((c) => c.slug === chip.iconSlug)?.name;
+    return name ? { ...chip, iconName: name } : chip;
+  });
 }
 
 /**
