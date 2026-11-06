@@ -225,6 +225,7 @@
       },
       "producer": {
         "heading": "תנו לעסק שלכם בית",
+        "organizer_heading": "פרסמו את השווקים והאירועים שלכם",
         "subtitle": "כ־5 דקות. בלי עמלות. הלקוחות מגיעים ישירות אליכם",
         "gate": {
           "producer_heading": "כבר יש לכם עמוד עסק במהמקור",
@@ -279,6 +280,7 @@
         "step_captions": {
           "account": "חשבון",
           "details": "עסק",
+          "details_organizer": "פרטים",
           "category": "קטגוריה",
           "story": "סיפור"
         },

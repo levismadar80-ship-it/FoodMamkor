@@ -922,8 +922,15 @@ function RegisterProducerPageBody({ routeKind }) {
             step < STEP.CONFIRM guard on the banners + stepper. */}
         {step < STEP.CONFIRM && (
           <>
-            <h1 data-testid="register-hero-heading" className="font-headline-lg text-3xl font-black text-text mb-2 text-center">{t("auth.register.producer.heading")}</h1>
-            <p className="text-fg-muted text-center mb-4">{t("auth.register.producer.subtitle")}</p>
+            {/* MEH-2773: the organizer route has its own heading and line
+                (copy approved by Sapir 06/11); the subtitle reuses the
+                already-approved organizer_hint sentence. */}
+            <h1 data-testid="register-hero-heading" className="font-headline-lg text-3xl font-black text-text mb-2 text-center">
+              {t(routeIsOrganizer ? "auth.register.producer.organizer_heading" : "auth.register.producer.heading")}
+            </h1>
+            <p className="text-fg-muted text-center mb-4">
+              {t(routeIsOrganizer ? "auth.register.producer.fields.organizer_hint" : "auth.register.producer.subtitle")}
+            </p>
           </>
         )}
 
@@ -958,7 +965,7 @@ function RegisterProducerPageBody({ routeKind }) {
           <div className="flex justify-center gap-4 mb-8">
             {[
               { s: STEP.ACCOUNT, caption: t("auth.register.producer.step_captions.account") },
-              { s: STEP.DETAILS, caption: t("auth.register.producer.step_captions.details") },
+              { s: STEP.DETAILS, caption: t(isOrganizer ? "auth.register.producer.step_captions.details_organizer" : "auth.register.producer.step_captions.details") },
               { s: STEP.CATEGORY, caption: t("auth.register.producer.step_captions.category") },
               { s: STEP.STORY, caption: t("auth.register.producer.step_captions.story") },
             ]

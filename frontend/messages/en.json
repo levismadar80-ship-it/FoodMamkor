@@ -225,6 +225,7 @@
       },
       "producer": {
         "heading": "Give your business a home",
+        "organizer_heading": "Publish your markets and events",
         "subtitle": "About 5 minutes. No commissions. The customer comes straight to you",
         "gate": {
           "producer_heading": "You already have a business page on Mehamakor",
@@ -279,6 +280,7 @@
         "step_captions": {
           "account": "Account",
           "details": "Business",
+          "details_organizer": "Details",
           "category": "Category",
           "story": "Story"
         },

@@ -299,6 +299,23 @@ describe("MEH-2460 / MEH-2640 — registering as a markets / events organizer", 
     expect(screen.queryByText(`${K}.preflight.organizer_entry`)).toBeNull();
   });
 
+  it("MEH-2773: the organizer route shows the organizer heading, line and step caption", async () => {
+    render(<RegisterProducerClient kind="organizer" />);
+    const h = await screen.findByTestId("register-hero-heading");
+    expect(h).toHaveTextContent(`${K}.organizer_heading`);
+    expect(screen.getByText(`${K}.fields.organizer_hint`)).toBeInTheDocument();
+    expect(screen.getByText(`${K}.step_captions.details_organizer`)).toBeInTheDocument();
+    expect(screen.queryByText(`${K}.step_captions.details`)).toBeNull();
+  });
+
+  it("MEH-2773: the business wizard keeps the business heading (control)", async () => {
+    await renderWizard();
+    const h = await screen.findByTestId("register-hero-heading");
+    expect(h).toHaveTextContent(`${K}.heading`);
+    expect(h).not.toHaveTextContent("organizer_heading");
+    expect(screen.getByText(`${K}.step_captions.details`)).toBeInTheDocument();
+  });
+
   it("MEH-2773: the organizer route skips the business preflight", async () => {
     render(<RegisterProducerClient kind="organizer" />);
     expect(await screen.findByText(`${K}.steps.account.title`)).toBeInTheDocument();
