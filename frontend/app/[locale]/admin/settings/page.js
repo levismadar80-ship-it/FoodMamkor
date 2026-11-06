@@ -176,6 +176,7 @@ export default function AdminSettingsPage() {
           <span className="text-sm">{t("settings.sections.holiday_active")}</span>
           <button
             role="switch"
+            aria-label={t("settings.sections.holiday_active")}
             aria-checked={settings.holiday_override_enabled === "true"}
             onClick={() => update("holiday_override_enabled", settings.holiday_override_enabled === "true" ? "false" : "true")}
             className={`relative inline-flex h-6 w-11 rounded-full transition-colors ${settings.holiday_override_enabled === "true" ? "bg-primary" : "bg-gray-200"}`}
@@ -216,6 +217,7 @@ export default function AdminSettingsPage() {
           <span className="text-sm">{t("settings.sections.friday_active")}</span>
           <button
             role="switch"
+            aria-label={t("settings.sections.friday_active")}
             aria-checked={settings.friday_mode_override === "true"}
             onClick={() => {
               const next = settings.friday_mode_override === "true" ? "false" : "true";
@@ -249,6 +251,7 @@ export default function AdminSettingsPage() {
           <span className="text-sm">{t("settings.sections.vacation_active")}</span>
           <button
             role="switch"
+            aria-label={t("settings.sections.vacation_active")}
             aria-checked={vacation.active}
             onClick={() => {
               setVacationToast(null);

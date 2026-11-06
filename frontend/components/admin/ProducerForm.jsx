@@ -1141,6 +1141,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
           type="file"
           accept="image/*"
           multiple
+          aria-label={t("producers.form.sections.images")}
           onChange={handleImageUpload}
           disabled={isBusy("producer-images")}
           className="text-sm w-full max-w-full"
@@ -1223,6 +1224,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       <Section title={t("producers.form.sections.admin_notes")}>
         <textarea
           value={form.admin_notes}
+          aria-label={t("producers.form.sections.admin_notes")}
           onChange={(e) => update("admin_notes", e.target.value)}
           className={`${inputClass} h-20 resize-none`}
         />

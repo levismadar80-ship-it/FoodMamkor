@@ -563,12 +563,16 @@ export default function GroupBuyDetailClient({ id }) {
                     ]
                       .filter(([, , note]) => note)
                       .map(([kind, Icon, note]) => (
-                        <div key={kind} className="flex gap-3" data-testid={`group-buy-${kind}-note`}>
-                          <Icon size={22} className="text-primary shrink-0 mt-0.5" aria-hidden="true" />
-                          <div className="min-w-0">
-                            <dt className="text-sm font-bold text-text">{t(`${kind}_label`)}</dt>
-                            <dd className="text-base text-text whitespace-pre-line">{note}</dd>
-                          </div>
+                        // MEH-2708: a <dl> may wrap each dt/dd pair in ONE <div>,
+                        // never two (axe definition-list + dlitem). The icon moves
+                        // into the <dt>, positioned at the start edge, so the
+                        // layout is the same: icon column, then label over note.
+                        <div key={kind} className="relative ps-[34px] min-w-0" data-testid={`group-buy-${kind}-note`}>
+                          <dt className="text-sm font-bold text-text">
+                            <Icon size={22} className="text-primary absolute start-0 top-0.5" aria-hidden="true" />
+                            {t(`${kind}_label`)}
+                          </dt>
+                          <dd className="text-base text-text whitespace-pre-line">{note}</dd>
                         </div>
                       ))}
                   </dl>
