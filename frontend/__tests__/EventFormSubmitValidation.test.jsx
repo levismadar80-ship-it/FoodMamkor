@@ -112,6 +112,8 @@ describe("EventForm — submit validation (MEH-1809)", () => {
 
     fireEvent.change(document.getElementById("title"), { target: { value: "יום פתוח" } });
     fireEvent.change(document.getElementById("event_date"), { target: { value: "2026-09-01" } });
+    // MEH-2766: the URL box appears only once «קישור הרשמה חיצוני» is picked.
+    fireEvent.click(document.getElementById("registration_method_external_url"));
     fireEvent.change(document.getElementById("registration_url"), { target: { value: "abc" } });
     fireEvent.click(screen.getByText(T.submit));
 
@@ -139,6 +141,8 @@ describe("EventForm — submit validation (MEH-1809)", () => {
 
     fireEvent.change(document.getElementById("title"), { target: { value: "יום פתוח" } });
     fireEvent.change(document.getElementById("event_date"), { target: { value: "2026-09-01" } });
+    // MEH-2766: the URL box appears only once «קישור הרשמה חיצוני» is picked.
+    fireEvent.click(document.getElementById("registration_method_external_url"));
     fireEvent.change(document.getElementById("registration_url"), {
       target: { value: "https://example.com/signup" },
     });

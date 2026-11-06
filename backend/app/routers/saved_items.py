@@ -44,6 +44,7 @@ from app.routers.events import _serialize as serialize_event
 from app.routers.experiences import _publicly_visible_query, _serialize_list
 from app.schemas.schemas import SavedItemRefOut, SavedItemsOut, SavedItemType
 from app.services.producer_listing import is_business
+from app.services.registrations import registered_counts
 
 router = APIRouter(prefix="/users/me/saved", tags=["saved"])
 
@@ -123,6 +124,9 @@ def get_saved(user: User = Depends(get_current_user), db: Session = Depends(get_
     recipes = _load("recipe")
     events = _load("event")
     experiences = _load("experience")
+    # MEH-2763: one grouped count per kind, not one per saved row.
+    event_counts = registered_counts(db, event_ids=list(events))
+    experience_counts = registered_counts(db, experience_ids=list(experiences))
 
     out = {"recipes": [], "events": [], "experiences": []}
     for row in by_type["recipe"]:
@@ -145,14 +149,21 @@ def get_saved(user: User = Depends(get_current_user), db: Session = Depends(get_
         event = events.get(row.item_id)
         if event:
             out["events"].append(
-                {**serialize_event(event).model_dump(), "saved_at": row.created_at}
+                {
+                    **serialize_event(
+                        event, event_counts.get(event.id, 0)
+                    ).model_dump(),
+                    "saved_at": row.created_at,
+                }
             )
     for row in by_type["experience"]:
         experience = experiences.get(row.item_id)
         if experience:
             out["experiences"].append(
                 {
-                    **_serialize_list(experience),
+                    **_serialize_list(
+                        experience, experience_counts.get(experience.id, 0)
+                    ),
                     # The public list shape omits is_active (it only lists
                     # active ones); the saved list keeps a cancelled one, so
                     # the page needs it to label it.
