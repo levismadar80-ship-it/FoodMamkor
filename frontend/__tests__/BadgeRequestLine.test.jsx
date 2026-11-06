@@ -67,7 +67,7 @@ describe("Missing-badge request line (MEH-2695)", () => {
     expect(copy.link).toBe("כתבו לנו");
   });
 
-  it("sits inside the products group, after the grass-fed card, linking to the contact page", async () => {
+  it("sits inside the products group, after the «תגים» card, linking to the contact page", async () => {
     params = { group: "products" };
     mount();
     const line = await screen.findByTestId("badge-request-line");
@@ -79,8 +79,8 @@ describe("Missing-badge request line (MEH-2695)", () => {
     const link = within(line).getByRole("link", { name: copy.link });
     expect(link).toHaveAttribute("href", "/about#contact");
 
-    // Order: the line comes after the grass-fed card (the last badge card).
-    const grass = group.querySelector("#grass-fed");
+    // Order: the line comes right after the «תגים» card (MEH-2729).
+    const grass = group.querySelector("#tags");
     expect(grass).not.toBeNull();
     expect(
       grass.compareDocumentPosition(line) & Node.DOCUMENT_POSITION_FOLLOWING,
