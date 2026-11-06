@@ -36,6 +36,7 @@ import Input from "@/components/ui/Input";
 import UnverifiedEmailNotice from "@/components/UnverifiedEmailNotice";
 import CollectionNotice from "@/components/CollectionNotice";
 import { EXPERIENCE_CATEGORIES } from "@/lib/event-categories";
+import Button from "@/components/ui/Button";
 
 const CATEGORY_KEYS = EXPERIENCE_CATEGORIES.map((c) => ({ value: c.key, labelKey: c.labelKey }));
 
@@ -745,13 +746,13 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
         <Link href={cancelHref} className="text-sm text-fg-muted hover:text-primary">
           {t("cancel")}
         </Link>
-        <button
+        <Button
           type="submit"
           // MEH-2012: `uploading` joins the gate. Submitting mid-upload would
           // save the PREVIOUS image_url while the owner watches a new one
           // upload — which reads as the upload having been ignored.
           disabled={submitting || uploading || verdict?.status === "REJECTED"}
-          className="bg-primary text-white px-6 py-3 rounded-sm font-medium hover:bg-primary-dark transition disabled:opacity-50 disabled:cursor-not-allowed"
+          variant="primary" size="lg"
         >
           {submitting
             ? t("submitting")
@@ -762,7 +763,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
                 : isEdit
                   ? t("save_cta")
                   : t("submit_cta")}
-        </button>
+        </Button>
       </div>
     </form>
   );

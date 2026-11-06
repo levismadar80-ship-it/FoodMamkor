@@ -29,6 +29,7 @@ import {
   canAddOrderRange,
   MAX_ORDER_RANGES_PER_DAY,
 } from "@/lib/order-window";
+import Button from "@/components/ui/Button";
 
 export default function OrderWindowEditor({
   profile,
@@ -265,13 +266,13 @@ export default function OrderWindowEditor({
       )}
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
-        <button
+        <Button
           onClick={handleSave}
           disabled={saving || !dirty}
-          className="bg-primary text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
+          variant="primary" size="sm"
         >
           {saving ? t("saving") : t("save_cta")}
-        </button>
+        </Button>
         {dirty && (
           <button
             type="button"

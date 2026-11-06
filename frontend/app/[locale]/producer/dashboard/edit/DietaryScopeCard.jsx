@@ -6,6 +6,7 @@ import { Warning } from "@phosphor-icons/react";
 
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
+import Button from "@/components/ui/Button";
 
 /**
  * Module:   DietaryScopeCard
@@ -144,15 +145,15 @@ export default function DietaryScopeCard({ profile, onSave, reportDirty = () => 
         </p>
       )}
 
-      <button
+      <Button
         onClick={handleSave}
         disabled={saving || !dirty}
-        className="bg-primary text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
+        variant="primary" size="sm"
       >
         <span aria-live="polite" aria-atomic="true">
           {saving ? tChrome("saving") : saved ? tChrome("saved") : tChrome("save_cta")}
         </span>
-      </button>
+      </Button>
     </div>
   );
 }

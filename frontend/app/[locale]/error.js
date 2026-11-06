@@ -7,6 +7,7 @@ import { WarningCircle } from "@phosphor-icons/react";
 import * as Sentry from "@sentry/nextjs";
 import { useTranslations } from "next-intl";
 import { BRAND_NAME } from "@/lib/constants";
+import Button from "@/components/ui/Button";
 
 export default function GlobalError({ error, reset }) {
   const t = useTranslations("errors.boundary");
@@ -36,13 +37,13 @@ export default function GlobalError({ error, reset }) {
           {t("message")}
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <button
+          <Button
             type="button"
             onClick={() => reset()}
-            className="bg-primary text-white px-6 py-3 rounded-full hover:bg-primary-dark transition font-medium focus-visible:ring-2 focus-visible:ring-primary/40"
+            variant="primary" size="lg"
           >
             {t("retry")}
-          </button>
+          </Button>
           <Link
             href="/"
             className="border border-primary text-primary px-6 py-3 rounded-full hover:bg-green-50 transition font-medium focus-visible:ring-2 focus-visible:ring-primary/40"

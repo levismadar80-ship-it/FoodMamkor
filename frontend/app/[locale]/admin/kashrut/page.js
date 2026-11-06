@@ -16,6 +16,7 @@ import InfoTooltip from "@/components/InfoTooltip";
 // message namespaces, which is a separate question (MEH-1852 chunk B).
 import { CODE_TO_KEY } from "@/components/KashrutBadgeStrip";
 import { SkeletonTable } from "@/components/Skeleton";
+import Button from "@/components/ui/Button";
 
 function formatDate(iso, locale) {
   if (!iso) return "—";
@@ -214,14 +215,14 @@ export default function AdminKashrutPage() {
                   ))}
                 </ul>
                 {!remindersSent && (
-                  <button
+                  <Button
                     type="button"
                     onClick={() => runReminders(true)}
                     disabled={remindersBusy}
-                    className="mt-3 bg-primary text-white text-sm px-4 py-2 rounded-full hover:bg-primary-dark transition disabled:opacity-50"
+                    variant="primary" size="sm" className="mt-3"
                   >
                     {t("kashrut.reminders.send_now")}
-                  </button>
+                  </Button>
                 )}
               </>
             )}
@@ -352,13 +353,13 @@ export default function AdminKashrutPage() {
               >
                 {t("common.cancel")}
               </button>
-              <button
+              <Button
                 onClick={() => approve(approveModal)}
                 disabled={busy || !approveDate}
-                className="flex-1 bg-primary text-white rounded-full py-2 text-sm disabled:opacity-50"
+                variant="primary" size="sm" className="flex-1"
               >
                 {busy ? t("kashrut.approve_modal.submitting") : t("kashrut.approve_modal.submit")}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

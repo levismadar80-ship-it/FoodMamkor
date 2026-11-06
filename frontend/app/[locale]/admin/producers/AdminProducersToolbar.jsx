@@ -3,6 +3,7 @@
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { Star, Warning } from "@phosphor-icons/react";
+import Button from "@/components/ui/Button";
 
 // Phosphor icon size used in this toolbar.
 const ICON_SIZE_SM = 16;
@@ -122,9 +123,9 @@ export default function AdminProducersToolbar({
     <div className="flex flex-col md:flex-row gap-3">
       <SearchInput value={producerSearch} onChange={setProducerSearch} onSearch={onSearch} />
       <StatusSelect value={producerStatus} onChange={setProducerStatus} />
-      <button onClick={() => onSearch()} className="bg-primary text-white px-4 py-2 rounded-md text-sm">
+      <Button onClick={() => onSearch()} variant="primary" size="sm">
         {t("common.search")}
-      </button>
+      </Button>
       <IncompleteToggle active={incompleteOnly} count={incompleteCount} onToggle={setIncompleteOnly} />
       <ReviewDueToggle active={reviewDueOnly} onToggle={setReviewDueOnly} />
       <ToolbarActions onExport={onExport} />
