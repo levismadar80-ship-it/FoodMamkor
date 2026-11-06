@@ -901,8 +901,8 @@ function EditPageInner() {
         </EditAccordionCard>
       </div>
 
-      {/* ===== GROUP: products (MEH-2433) — products, pricing, offer, dietary
-              scope, grass-fed. Split out of the profile group: the products
+      {/* ===== GROUP: products (MEH-2433) — products, pricing, offer, tags
+              (MEH-2729: dietary scope + grass-fed in one card). Split out of the profile group: the products
               card is the most edited and a submit requirement, and it sat
               fourth inside «הפרופיל שלך». ===== */}
       <div

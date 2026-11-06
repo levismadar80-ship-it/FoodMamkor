@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { Warning } from "@phosphor-icons/react";
 
@@ -81,6 +81,10 @@ export default function TagsCard({ profile, onSave, reportDirty = () => {} }) {
   const [grassFed, setGrassFed] = useState(seed.grass_fed);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  // One «נשמר» timer at a time: an earlier save's timer must not clear a newer
+  // confirmation, and none may fire after unmount.
+  const savedTimer = useRef(null);
+  useEffect(() => () => clearTimeout(savedTimer.current), []);
   const [errorMsg, setErrorMsg] = useState(null);
 
   const current = {
@@ -117,7 +121,8 @@ export default function TagsCard({ profile, onSave, reportDirty = () => {} }) {
       await api.put("/producers/me", payload);
       onSave(payload);
       setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
+      clearTimeout(savedTimer.current);
+      savedTimer.current = setTimeout(() => setSaved(false), 3000);
     } catch (err) {
       setErrorMsg(detailToMessage(err?.response?.data?.detail) || tChrome("save_error"));
     } finally {

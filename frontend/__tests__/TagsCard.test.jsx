@@ -10,7 +10,7 @@
  *   - activeTagCount drives the summary line.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import he from "../messages/he.json";
 import api from "@/lib/api";
@@ -90,6 +90,37 @@ describe("TagsCard — diet (ported from DietaryScopeCard, MEH-1508)", () => {
     await waitFor(() => expect(api.put).toHaveBeenCalledTimes(1));
     expect(api.put).toHaveBeenCalledWith("/producers/me", expected);
     expect(onSave).toHaveBeenCalledWith(expected);
+  });
+});
+
+describe("TagsCard — partial payloads (MEH-2729 review)", () => {
+  it("one changed radio sends exactly that key", async () => {
+    renderCard({ vegan_scope: "unknown", vegetarian_scope: "all", gluten_free_facility: "shared", grass_fed: true });
+    fireEvent.click(radio("vegan_scope", D.opt_yes));
+    fireEvent.click(saveBtn());
+    await waitFor(() => expect(api.put).toHaveBeenCalledTimes(1));
+    expect(api.put.mock.calls[0][1]).toEqual({ vegan_scope: "all" });
+  });
+});
+
+describe("TagsCard — the «נשמר» timer (MEH-2729 review)", () => {
+  it("a second save restarts the 3s confirmation instead of being cut short by the first", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      renderCard({ vegan_scope: "unknown" });
+      fireEvent.click(radio("vegan_scope", D.opt_yes));
+      fireEvent.click(saveBtn());
+      await waitFor(() => expect(screen.getByRole("button", { name: CHROME.saved })).toBeInTheDocument());
+      await act(async () => { vi.advanceTimersByTime(2000); });
+      fireEvent.click(screen.getByRole("button", { name: CHROME.saved }));
+      await waitFor(() => expect(api.put).toHaveBeenCalledTimes(2));
+      await waitFor(() => expect(screen.getByRole("button", { name: CHROME.saved })).toBeInTheDocument());
+      // 1.5s later the FIRST timer (3s) would have fired; the second has 1.5s left.
+      await act(async () => { vi.advanceTimersByTime(1500); });
+      expect(screen.getByRole("button", { name: CHROME.saved })).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
