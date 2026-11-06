@@ -1,6 +1,9 @@
 /**
- * Map filter chips (MEH-14). Category chips per spec:
- *   כל · בשר ודגים · ירקות ופירות · חלב וגבינות · לחמים ואפייה · משלוח
+ * Map filter chips (MEH-14). Category chips: all · meat · produce · dairy ·
+ * bread (keys). MEH-2748: the words a reader sees are `map_category_chips.<key>`
+ * (and `filter_axes.<key>` for TOGGLE_CHIPS) in messages/{he,en}.json, attached
+ * at render time by lib/use-chip-copy.js. The Hebrew left in this file is DB
+ * category names in `matches` / `iconName` — data, not copy.
  *   (MEH-1259: the "אורגני" quality toggle was removed — see TOGGLE_CHIPS.)
  *
  * Layout:
