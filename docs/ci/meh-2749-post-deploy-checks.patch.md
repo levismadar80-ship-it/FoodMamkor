@@ -13,7 +13,7 @@ After every push to `staging` or `main`, once the new build is live, one job run
 | Production smoke (main only) | `scripts/checks/smoke_production.py` (MEH-2088, existed but was wired to nothing) | a sitemap URL 404, a key page not 200, readiness not ready |
 | Broken links | `scripts/link-check.mjs` (MEH-1963, reused — not a second crawler) | any internal link 4xx/5xx |
 | Security headers (live) | `scripts/checks/live_security_headers.py` | CSP / HSTS / frame / sniff / referrer missing on HTML or API |
-| Lighthouse budget | `scripts/checks/lighthouserc.cjs` | bytes, CLS, a11y / SEO / best-practices below budget (timing = warn only) |
+| Lighthouse budget (production only) | `scripts/checks/lighthouserc.cjs` | bytes, CLS, a11y / SEO / best-practices below budget (timing = warn only) |
 
 Every check runs even if an earlier one failed; the last step names each red. The Lighthouse HTML report is kept as a 14-day artifact.
 
@@ -25,9 +25,11 @@ Every check runs even if an earlier one failed; the last step names each red. Th
 
 `.github/workflows/**` is denied to CC's filesystem tools and the Contents API is refused at the sandbox proxy (`.claude/rules/security.md`, measured 28/10). Sapir commits the file below through the GitHub web editor on the PR branch; CC then verifies the PR diff byte-for-byte.
 
+**Why Lighthouse is production-only.** Lighthouse sends extra headers on every request the page makes, third-party hosts included (Chrome `Network.setExtraHTTPHeaders`). Running it on staging would hand the Vercel bypass secret to Cloudinary, Google, PostHog and Sentry. So the secret is given only to the three steps that scope it to our own origin (wait, links, headers), and Lighthouse runs where no secret is needed.
+
 ## Apply only after
 
-The home page CLS fix is merged. Until then the Lighthouse step is red on staging every run (home CLS 0.42 — the route loading fallback is 40vh, so on a phone the footer is in the first screen and jumps).
+The home page CLS fix is merged. Until it reaches production the Lighthouse step is red on every `main` run (home CLS 0.42 — the route loading fallback is 40vh, so on a phone the footer is in the first screen and jumps).
 
 ## The file — `.github/workflows/post-deploy-checks.yml`
 
@@ -70,8 +72,10 @@ jobs:
     env:
       BASE_URL: ${{ (github.event_name == 'workflow_dispatch' && inputs.target == 'staging' || github.event_name == 'push' && github.ref == 'refs/heads/staging') && 'https://staging.mehamakor.online' || 'https://mehamakor.co.il' }}
       IS_PRODUCTION: ${{ (github.event_name == 'workflow_dispatch' && inputs.target == 'production' || github.event_name == 'push' && github.ref == 'refs/heads/main') && 'true' || 'false' }}
-      VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
     steps:
+      - name: Target
+        run: echo "BASE_URL=$BASE_URL IS_PRODUCTION=$IS_PRODUCTION (smoke and Lighthouse run only when IS_PRODUCTION=true)"
+
       - uses: actions/checkout@v7
 
       - uses: actions/setup-python@v6
@@ -84,6 +88,8 @@ jobs:
 
       - name: Wait for the new build to be live
         if: github.event_name == 'push'
+        env:
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: python scripts/checks/wait_for_deploy.py --base-url "$BASE_URL" --sha "${{ github.sha }}" || echo "::warning title=Deploy not detected::the checks below may describe the previous build"
 
       - name: Production smoke
@@ -95,17 +101,24 @@ jobs:
       - name: Broken links
         id: links
         continue-on-error: true
+        env:
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: node scripts/link-check.mjs "$BASE_URL"
 
       - name: Security headers (live)
         id: headers
         continue-on-error: true
+        env:
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: |
           python scripts/checks/live_security_headers.py --self-test
           python scripts/checks/live_security_headers.py --base-url "$BASE_URL"
 
       - name: Lighthouse budget
         id: lighthouse
+        # Production only, and no bypass secret in this step: Lighthouse would
+        # send it to every third-party host the page loads.
+        if: env.IS_PRODUCTION == 'true'
         continue-on-error: true
         env:
           LHCI_BASE_URL: ${{ env.BASE_URL }}

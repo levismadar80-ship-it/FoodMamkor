@@ -36,12 +36,14 @@
  * lines here. Byte budgets sit ~10% above the heaviest page so normal growth
  * fits and a new heavy dependency does not.
  *
- * Base URL: LHCI_BASE_URL (default production). Staging needs
- * VERCEL_AUTOMATION_BYPASS_SECRET in the env; it is sent as a header and
- * never written anywhere.
+ * Base URL: LHCI_BASE_URL (default production). The workflow runs this on
+ * production only. It never reads VERCEL_AUTOMATION_BYPASS_SECRET: Lighthouse
+ * applies extra headers to EVERY request the page makes (Chrome
+ * Network.setExtraHTTPHeaders), so the staging bypass secret would reach
+ * Cloudinary, Google, PostHog and Sentry. A staging run is a local one-off
+ * (see docs/TESTING.md), never this config with the secret.
  */
 const base = (process.env.LHCI_BASE_URL || "https://mehamakor.co.il").replace(/\/$/, "");
-const bypass = (process.env.VERCEL_AUTOMATION_BYPASS_SECRET || "").trim();
 
 const PAGES = ["/", "/producers", "/map", "/events", "/about"];
 
@@ -60,7 +62,6 @@ module.exports = {
       settings: {
         chromeFlags: "--headless=new --no-sandbox",
         ...(isProduction ? {} : { skipAudits: ["robots-txt", "is-crawlable"] }),
-        ...(bypass ? { extraHeaders: JSON.stringify({ "x-vercel-protection-bypass": bypass }) } : {}),
       },
     },
     assert: {

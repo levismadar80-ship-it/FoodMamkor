@@ -40,6 +40,7 @@ import os
 import re
 import sys
 import time
+import urllib.error
 import urllib.request
 
 
@@ -62,6 +63,9 @@ _OPENER = urllib.request.build_opener(_NoRedirect)
 BUILD_ID_RE = re.compile(rb'\\?"b\\?":\\?"([A-Za-z0-9_-]{8,})\\?"\}')
 
 
+_reported: set[str] = set()
+
+
 def _get(url: str) -> bytes:
     headers = {"User-Agent": "mehamakor-wait-for-deploy/1.0"}
     secret = os.environ.get("VERCEL_AUTOMATION_BYPASS_SECRET", "").strip()
@@ -71,7 +75,13 @@ def _get(url: str) -> bytes:
     try:
         with _OPENER.open(req, timeout=20) as r:
             return r.read()
-    except Exception:
+    except Exception as e:
+        # Say why once per kind of failure: a 302/403 from Vercel protection
+        # (secret missing or wrong) must not look like "no build id yet".
+        why = f"HTTP {e.code}" if isinstance(e, urllib.error.HTTPError) else type(e).__name__
+        if why not in _reported:
+            _reported.add(why)
+            print(f"  fetch failed: {why} ({url.split('?')[0]})")
         return b""
 
 
@@ -122,7 +132,7 @@ def main() -> int:
     )
     if start_build is None:
         print(
-            "WARN could not read a build id from the home page — the frontend signal cannot move"
+            "WARN could not read a build id from the home page — waiting on the backend sha alone"
         )
 
     deadline = time.time() + args.timeout_min * 60
@@ -138,6 +148,9 @@ def main() -> int:
         print(
             f"  frontend {'OK ' if fe_done else '...'} {fe} · backend {'OK ' if be_done else '...'} {str(be)[:7]}"
         )
+        if start_build is None and be_done:
+            print("backend is live at the pushed sha (frontend not measurable)")
+            return 0
         if fe_done and (
             be_done or time.time() - fe_moved_at >= args.backend_grace_min * 60
         ):

@@ -368,9 +368,14 @@ python scripts/checks/wait_for_deploy.py --base-url <URL> --sha <commit>  # מח
 python scripts/checks/smoke_production.py                                  # main בלבד
 node   scripts/link-check.mjs <URL>                                        # קישורים שבורים
 python scripts/checks/live_security_headers.py --base-url <URL>            # CSP, HSTS ועוד
-npx @lhci/cli@0.15.1 collect --config=scripts/checks/lighthouserc.cjs      # תקציב ביצועים
+npx @lhci/cli@0.15.1 collect --config=scripts/checks/lighthouserc.cjs      # תקציב ביצועים (פרודקשן בלבד)
 npx @lhci/cli@0.15.1 assert  --config=scripts/checks/lighthouserc.cjs
 ```
+
+- **Lighthouse רץ רק על פרודקשן.** Lighthouse שולח headers נוספים לכל בקשה
+  שהעמוד עושה, גם לשרתים חיצוניים (Cloudinary, Google, PostHog, Sentry), אז
+  הסוד שעוקף את ההגנה של staging היה דולף אליהם. שלושת הצעדים האחרים שולחים
+  אותו רק לדומיין שלנו. `lighthouserc.cjs` לא קורא את הסוד בכלל.
 
 - **תקציב Lighthouse:** בנייד, 3 הרצות לעמוד, החציון. בייטים, CLS ו-a11y/SEO
   = אדום. זמני טעינה (ציון ביצועים, LCP, TBT) = אזהרה בלבד, כי מכונות CI

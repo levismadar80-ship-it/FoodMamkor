@@ -16,8 +16,10 @@ History:  MEH-2749 (creation, 06/11).
 Exit codes: 0 all present · 1 something missing · 2 the control failed.
 `--self-test` runs the evaluator against synthetic header maps (no network).
 
-Control: the run first asks for a header no layer ever sets and requires it
-ABSENT, so a fetch layer that returns a fake header map cannot pass.
+Control: before any check, the home page must answer 200 and must NOT carry
+a header name no layer ever sets. That catches a fetch layer that echoes every
+asked-for name back; it does not by itself prove the header checks run —
+`--self-test` does that, against the same `missing()` evaluator.
 """
 
 from __future__ import annotations
