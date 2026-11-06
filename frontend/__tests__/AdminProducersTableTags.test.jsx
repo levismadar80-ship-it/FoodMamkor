@@ -15,11 +15,13 @@
  * (grass_fed's Cow, which this card leaves alone) so a "0 icons" cannot come
  * from icons not rendering at all.
  */
+import { heBadgeCopy } from "./helpers/he-badge-copy";
 import { describe, it, expect, vi } from "vitest";
 import { render } from "@testing-library/react";
 import { ProducerTags } from "@/app/[locale]/admin/producers/AdminProducersTable";
 import { BADGE_CONFIG } from "@/lib/badges";
 
+vi.mock("@/lib/use-badge-copy", async () => (await import("./helpers/he-badge-copy")).badgeCopyMock);
 vi.mock("next-intl", () => ({
   useTranslations: (scope) => (key) => (scope ? `${scope}.${key}` : key),
 }));
@@ -76,7 +78,7 @@ describe("Admin ProducerTags — ✡ follows verified kashrut (MEH-2521)", () =>
       />,
     );
     expect(container.querySelectorAll("svg")).toHaveLength(1);
-    const tag = container.querySelector(`[title="${BADGE_CONFIG.kosher.label}"]`);
+    const tag = container.querySelector(`[title="${heBadgeCopy(BADGE_CONFIG.kosher).label}"]`);
     expect(tag).not.toBeNull();
     expect(tag.querySelector("svg")).not.toBeNull();
   });

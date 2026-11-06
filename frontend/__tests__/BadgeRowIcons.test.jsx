@@ -3,6 +3,7 @@ import { render } from "@testing-library/react";
 
 // MEH-2584: attribute badges carry the filter chip's glyph next to the word;
 // "new" / "recommended" stay text-only.
+vi.mock("@/lib/use-badge-copy", async () => (await import("./helpers/he-badge-copy")).badgeCopyMock);
 vi.mock("next-intl", () => ({
   useTranslations: () => (key) => key,
 }));

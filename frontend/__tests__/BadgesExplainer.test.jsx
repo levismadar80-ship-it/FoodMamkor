@@ -4,6 +4,7 @@
  * evidence group; every group present in BADGE_CONFIG has a section; the
  * section ids are the anchors BadgeRow links to.
  */
+import { heBadgeCopy } from "./helpers/he-badge-copy";
 import { afterEach, beforeEach, describe, it, expect, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
@@ -59,8 +60,8 @@ describe("BadgesExplainer (MEH-2701)", () => {
       expect(items).toHaveLength(1);
       const group = screen.getByTestId(`badges-group-${BADGE_CONFIG[key].evidence}`);
       expect(within(group).getByTestId(`badges-item-${key}`)).toBe(items[0]);
-      expect(items[0].textContent).toContain(BADGE_CONFIG[key].label);
-      expect(items[0].textContent).toContain(BADGE_CONFIG[key].tooltip);
+      expect(items[0].textContent).toContain(heBadgeCopy(BADGE_CONFIG[key]).label);
+      expect(items[0].textContent).toContain(heBadgeCopy(BADGE_CONFIG[key]).tooltip);
     }
   });
 
