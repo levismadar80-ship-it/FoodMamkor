@@ -107,10 +107,16 @@ async function open(browser, width, height, { cutoffPassed = false, mine = [], c
     if (path === "/rescue/offers") return json(200, [offer(cutoffPassed)]);
     if (path === "/rescue/orders/mine") return json(200, mine);
     if (req.method() === "POST" && path === "/rescue/orders") {
-      return json(201, order(cutoffPassed));
+      // "late": the cutoff passes while the cancel is in flight.
+      const o = order(cutoffPassed);
+      if (cancel === "late") o.cancel_until = new Date(Date.now() + 3000).toISOString();
+      return json(201, o);
     }
     if (req.method() === "POST" && path.endsWith("/cancel")) {
-      if (cancel === "late") return json(409, { detail: "מועד הביטול החופשי חלף" });
+      if (cancel === "late") {
+        await new Promise((r) => setTimeout(r, 4000));
+        return json(409, { detail: "מועד הביטול החופשי חלף" });
+      }
       return json(200, { ...order(cutoffPassed, "cancelled") });
     }
     return json(200, []);
@@ -161,9 +167,10 @@ async function run(browser, label, width, height) {
     await page.getByTestId("rescue-confirmation-cancel").click();
     await page.getByTestId("rescue-cancel-yes").click();
     const err = page.getByTestId("rescue-section-error");
-    await err.waitFor();
+    await err.waitFor({ timeout: 10_000 });
     check(`[${label}] too-late text`, (await err.innerText()) === "מועד הביטול החינמי כבר עבר, אז השריון נשאר בתוקף.");
     check(`[${label}] code still shown`, (await page.getByTestId("rescue-confirmation-code").innerText()) === "0431");
+    check(`[${label}] cancel link gone after the cutoff`, (await page.getByTestId("rescue-confirmation-cancel").count()) === 0);
     await shot(page, err, `cancel-too-late-${label}`, width);
     await ctx.close();
   }

@@ -151,7 +151,7 @@ export default function RescueSection({ producer }) {
         .then((rows) => setOffer(rows.find((row) => row.producer?.id === producer?.id) || null))
         .catch(() => {});
     } catch (err) {
-      setErrorKey(cancelErrorKey(err));
+      setErrorKey(cancelErrorKey(err, order.cancel_until));
     } finally {
       setBusy(false);
     }

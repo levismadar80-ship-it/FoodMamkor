@@ -786,10 +786,18 @@ describe("cancelling a reservation (MEH-2737)", () => {
   });
 
   it("a cancel refused because the cutoff passed says so, and the code stays", async () => {
-    cancelOrder.mockRejectedValue({
-      response: { status: 409, data: { detail: "מועד הביטול החופשי חלף" } },
-    });
-    await reservedSection();
+    // The page loaded before the cutoff; the cutoff passes while the request
+    // is in flight, and the server refuses with 409.
+    reserveBag.mockResolvedValue(order({ cancel_until: new Date(Date.now() + 400).toISOString() }));
+    cancelOrder.mockImplementation(
+      () =>
+        new Promise((_res, rej) =>
+          setTimeout(() => rej({ response: { status: 409, data: { detail: "x" } } }), 700),
+        ),
+    );
+    render(<RescueSection producer={PRODUCER} />);
+    fireEvent.click(await screen.findByTestId("rescue-reserve"));
+    await screen.findByTestId("rescue-confirmation-code");
     fireEvent.click(screen.getByTestId("rescue-confirmation-cancel"));
     fireEvent.click(screen.getByTestId("rescue-cancel-yes"));
     const err = await screen.findByTestId("rescue-section-error");
@@ -797,6 +805,16 @@ describe("cancelling a reservation (MEH-2737)", () => {
     expect(screen.getByTestId("rescue-confirmation-code").textContent).toBe("0431");
     // The question is closed: a second «כן» could only be refused again.
     await waitFor(() => expect(screen.queryByTestId("rescue-cancel-ask")).toBeNull());
+  });
+
+  it("a 409 before the cutoff (e.g. already handed) is not called «too late»", async () => {
+    cancelOrder.mockRejectedValue({ response: { status: 409, data: { detail: "x" } } });
+    await reservedSection();
+    fireEvent.click(screen.getByTestId("rescue-confirmation-cancel"));
+    fireEvent.click(screen.getByTestId("rescue-cancel-yes"));
+    expect((await screen.findByTestId("rescue-section-error")).textContent).toBe(
+      lookup("rescue.errors.generic"),
+    );
   });
 
   it("any other cancel failure shows the generic line next to the code", async () => {

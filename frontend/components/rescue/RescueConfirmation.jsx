@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 
+import Button from "@/components/ui/Button";
+
 import { israelTime, shekels } from "@/lib/rescue";
 
 /**
@@ -109,8 +111,9 @@ export default function RescueConfirmation({ order, onCancel, cancelling = false
           </p>
           <p className="font-body-sm text-sm text-fg-muted mt-1">{t("confirm.cancel_ask_body")}</p>
           <div className="flex flex-wrap justify-center gap-2 mt-3">
-            <button
-              type="button"
+            <Button
+              variant="outlined"
+              size="sm"
               onClick={async () => {
                 // The question closes once the attempt is over: on success
                 // this whole card goes, on a refusal the reason shows under
@@ -120,19 +123,17 @@ export default function RescueConfirmation({ order, onCancel, cancelling = false
               }}
               disabled={cancelling}
               data-testid="rescue-cancel-yes"
-              className="min-h-[44px] px-4 rounded-md border border-error text-error font-body-sm text-sm font-medium disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
               {t("confirm.cancel_yes")}
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              size="sm"
               onClick={() => setAsking(false)}
               disabled={cancelling}
               data-testid="rescue-cancel-no"
-              className="min-h-[44px] px-4 rounded-md bg-primary text-white font-body-sm text-sm font-medium disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
               {t("confirm.cancel_no")}
-            </button>
+            </Button>
           </div>
         </div>
       )}
