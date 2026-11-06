@@ -100,7 +100,9 @@ jobs:
       - name: Security headers (live)
         id: headers
         continue-on-error: true
-        run: python scripts/checks/live_security_headers.py --base-url "$BASE_URL"
+        run: |
+          python scripts/checks/live_security_headers.py --self-test
+          python scripts/checks/live_security_headers.py --base-url "$BASE_URL"
 
       - name: Lighthouse budget
         id: lighthouse
