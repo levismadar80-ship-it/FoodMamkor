@@ -434,6 +434,10 @@ def list_offers(
             RescueOffer.date == today,
             RescueOffer.status == "active",
             RescueOffer.qty_left > 0,
+            # MEH-2713: reserve refuses a bag once its window closed (409
+            # "זמן האיסוף חלף"), so listing it would offer a button that can
+            # only fail. Same naive-UTC comparison as the reserve guard.
+            RescueOffer.pickup_end > utc_now(),
             Producer.status == "approved",
         )
     )

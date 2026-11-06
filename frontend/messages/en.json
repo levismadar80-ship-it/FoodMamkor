@@ -5721,9 +5721,11 @@
     },
     "section": {
       "title": "Rescue bag",
-      "cta": "Reserve · {price} ₪ at the counter",
+      "cta": "Reserve · pay at the counter",
       "typical": "Usually: {items}",
-      "allergens": "May contain gluten, milk, nuts and sesame. Ask at the business before pickup."
+      "allergens": "May contain gluten, milk, nuts and sesame. Ask at the business before pickup.",
+      "allergens_title": "Allergens",
+      "cancel_until": "Free cancellation until {time}"
     },
     "confirm": {
       "title": "Your bag is reserved",

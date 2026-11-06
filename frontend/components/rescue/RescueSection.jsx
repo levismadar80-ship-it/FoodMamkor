@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import { Basket, Clock, MapPin, Bread } from "@phosphor-icons/react";
 
 import { useOptionalAuth } from "@/lib/auth-context";
 
@@ -28,8 +29,17 @@ import {
  *           confirmation, in place.
  * Related:  app/[locale]/producer/[id]/components/ProducerSections.jsx (slot,
  *           before section-products), lib/rescue.js
- * History:  MEH-2648 (creation)
+ * History:  MEH-2648 (creation) · MEH-2713 (icon-row card: price up top,
+ *           one short cancel line, allergens folded)
  */
+
+/** The struck-through "worth": the business's own LOW estimate, and only when
+ *  it is above the price (BagRow's rule — never a made-up discount). */
+function worthAgorot(offer) {
+  const v = offer?.value_min_agorot;
+  if (typeof v !== "number" || typeof offer?.price_agorot !== "number") return null;
+  return v > offer.price_agorot ? v : null;
+}
 export default function RescueSection({ producer }) {
   const t = useTranslations("rescue");
   const [offer, setOffer] = useState(null);
@@ -131,6 +141,8 @@ export default function RescueSection({ producer }) {
   }
 
   const price = shekels(offer?.price_agorot);
+  const worth = shekels(worthAgorot(offer));
+  const cancelUntil = israelTime(offer?.cancel_until);
   const from = israelTime(offer?.pickup_start);
   const until = israelTime(offer?.pickup_end);
 
@@ -158,52 +170,106 @@ export default function RescueSection({ producer }) {
           )}
         </div>
       ) : (
-        <div className="mt-3 border border-border bg-surface-card rounded-md px-4 py-4 space-y-2">
-          <p className="font-body-sm text-sm text-text" data-testid="rescue-section-stock">
-            {t("row.left", { count: offer.qty_left })}
-          </p>
-          {from && until && (
-            <p className="font-body-sm text-sm text-text" data-testid="rescue-section-pickup">
-              {t("row.pickup", { from, until })}
-            </p>
-          )}
-          {/* Full address: a live bag is the MEH-829 carve-out, and the point
-              is exact-precision or the backend refuses the offer. */}
-          {offer.producer?.location_address && (
-            <p className="font-body-sm text-sm text-text" data-testid="rescue-section-address">
-              {offer.producer.location_address}
-              {offer.producer.location_city ? `, ${offer.producer.location_city}` : ""}
-            </p>
-          )}
-          {offer.typical_items?.length > 0 && (
-            <p className="font-body-sm text-sm text-fg-muted" data-testid="rescue-section-typical">
-              {t("section.typical", { items: offer.typical_items.join(", ") })}
-            </p>
-          )}
-          <p className="font-body-sm text-sm text-fg-muted" data-testid="rescue-section-allergens">
-            {t("section.allergens")}
-          </p>
+        <div
+          className="mt-3 border border-border bg-surface-card rounded-md p-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_220px] md:gap-x-5 md:items-center"
+          data-testid="rescue-section-card"
+        >
+          {/* Start column: what, when, where. On md+ the price/CTA column sits
+              at the end side; below md everything stacks in source order, with
+              the price on the top row next to the stock tag. */}
+          <div className="grid gap-3 min-w-0">
+            <div className="flex items-center gap-2.5">
+              <span aria-hidden="true" className="w-11 h-11 rounded-[10px] bg-green-50 text-primary grid place-items-center shrink-0">
+                <Basket size={24} weight="duotone" />
+              </span>
+              {/* The only gold on the card, as on the home row: the stock is what makes someone hurry. */}
+              <span className="text-xs font-bold text-gold-deep bg-gold-deep/10 rounded-full px-2.5 py-0.5 whitespace-nowrap" data-testid="rescue-section-stock">
+                {t("row.left_short", { count: offer.qty_left })}
+              </span>
+              <PriceBlock className="ms-auto text-end md:hidden" price={price} worth={worth} t={t} testIds />
+            </div>
+            <ul className="grid gap-2 font-body-sm text-[15px] text-text">
+              {from && until && (
+                <li className="flex items-start gap-2">
+                  <Clock aria-hidden="true" size={18} className="text-primary shrink-0 mt-0.5" />
+                  <span data-testid="rescue-section-pickup">{t("row.pickup", { from, until })}</span>
+                </li>
+              )}
+              {/* Full address: a live bag is the MEH-829 carve-out, and the point
+                  is exact-precision or the backend refuses the offer. */}
+              {offer.producer?.location_address && (
+                <li className="flex items-start gap-2">
+                  <MapPin aria-hidden="true" size={18} className="text-primary shrink-0 mt-0.5" />
+                  <span data-testid="rescue-section-address">
+                    {offer.producer.location_address}
+                    {offer.producer.location_city ? `, ${offer.producer.location_city}` : ""}
+                  </span>
+                </li>
+              )}
+              {offer.typical_items?.length > 0 && (
+                <li className="flex items-start gap-2">
+                  <Bread aria-hidden="true" size={18} className="text-primary shrink-0 mt-0.5" />
+                  <span className="text-fg-muted" data-testid="rescue-section-typical">
+                    {t("section.typical", { items: offer.typical_items.join(", ") })}
+                  </span>
+                </li>
+              )}
+            </ul>
+          </div>
 
-          {errorKey && (
-            <p className="font-body-sm text-sm text-error" data-testid="rescue-section-error">
-              {t(errorKey)}
-            </p>
-          )}
+          <div className="grid gap-2 md:text-center">
+            <PriceBlock className="hidden md:block" price={price} worth={worth} t={t} />
+            {errorKey && (
+              <p className="font-body-sm text-sm text-error" data-testid="rescue-section-error">
+                {t(errorKey)}
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={reserve}
+              disabled={busy || offer.qty_left < 1}
+              data-testid="rescue-reserve"
+              className="w-full bg-primary text-white py-3 rounded-md font-medium disabled:opacity-50 hover:bg-primary-dark transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
+              {t("section.cta")}
+            </button>
+            {/* Only the cutoff here (Sapir 6/11); the no-show rule stays on the
+                confirmation, where confirm.terms still carries it. */}
+            {cancelUntil && (
+              <p className="font-body-sm text-sm text-fg-muted text-center" data-testid="rescue-section-terms">
+                {t("section.cancel_until", { time: cancelUntil })}
+              </p>
+            )}
+          </div>
 
-          <button
-            type="button"
-            onClick={reserve}
-            disabled={busy || offer.qty_left < 1}
-            data-testid="rescue-reserve"
-            className="w-full bg-primary text-white py-3 rounded-md font-medium disabled:opacity-50 hover:bg-primary-dark transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          <details
+            className="md:col-span-2 border-t border-border pt-2.5 font-body-sm text-sm text-fg-muted"
+            data-testid="rescue-section-allergens"
           >
-            {t("section.cta", { price })}
-          </button>
-          <p className="font-body-sm text-sm text-fg-muted text-center" data-testid="rescue-section-terms">
-            {t("confirm.terms", { cancel_until: israelTime(offer.cancel_until) })}
-          </p>
+            <summary className="cursor-pointer text-text font-medium">{t("section.allergens_title")}</summary>
+            <p className="mt-1.5">{t("section.allergens")}</p>
+          </details>
         </div>
       )}
     </section>
+  );
+}
+
+/** Price, with the struck worth under it when there is one. Rendered twice —
+ *  top row below md, end column on md+ — so only one copy carries test ids. */
+function PriceBlock({ price, worth, t, className = "", testIds = false }) {
+  if (price === null) return null;
+  return (
+    <span className={`leading-tight ${className}`}>
+      <b dir="ltr" className="block font-headline-display font-black text-[28px] text-primary numeric" data-testid={testIds ? "rescue-section-price" : undefined}>
+        {t("row.price", { price })}
+      </b>
+      {worth !== null && (
+        // aria-hidden: read aloud as a second bare price it says nothing useful.
+        <s dir="ltr" aria-hidden="true" className="block text-[13px] text-fg-muted numeric" data-testid={testIds ? "rescue-section-worth" : undefined}>
+          {t("row.price", { price: worth })}
+        </s>
+      )}
+    </span>
   );
 }
