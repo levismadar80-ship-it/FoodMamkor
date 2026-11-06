@@ -79,3 +79,19 @@ export function weightedRating(producer) {
   const avg = Number(producer?.avg_rating) || 0;
   return (avg * n + RATING_PRIOR_MEAN * RATING_PRIOR_WEIGHT) / (n + RATING_PRIOR_WEIGHT);
 }
+
+/**
+ * MEH-2778 — the list /map's rating-sort gate counts.
+ *
+ * /producers asks this question of the WHOLE catalog (page.jsx
+ * fetchRatingSortEnabled, no filters). /map used to ask it of
+ * `feed.allProducers` — the list reloaded with the chip params after every
+ * toggle and replaced by «חפשו באזור זה» — so «הכי מדורגות» could vanish
+ * the moment a filter narrowed the list, while /producers kept offering it.
+ * The mount snapshot (useProducersFeed.catalogSnapshot, MEH-2170) is the
+ * unfiltered catalog; it is used whenever it exists, and the live feed only
+ * as a fallback before it lands or when it failed.
+ */
+export function mapRatingGateSource(catalogSnapshot, allProducers) {
+  return Array.isArray(catalogSnapshot) ? catalogSnapshot : allProducers;
+}
