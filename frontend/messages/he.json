@@ -5772,7 +5772,7 @@
       "hand_over": "אשר מסירה",
       "no_show": "לא הגיע",
       "no_show_too_early": "אפשר לסמן רק אחרי שזמן האיסוף נגמר",
-      "qty": "{qty} סלים",
+      "qty": "{qty, plural, one {סל אחד} two {שני סלים} other {# סלים}}",
       "handed_at": "✓ נמסר {time}",
       "status": {
         "cancelled": "בוטל",

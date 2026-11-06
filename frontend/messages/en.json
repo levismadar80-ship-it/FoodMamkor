@@ -5776,7 +5776,7 @@
       "hand_over": "Confirm handover",
       "no_show": "Didn't show",
       "no_show_too_early": "Can only be marked after the pickup window closes",
-      "qty": "{qty} bags",
+      "qty": "{qty, plural, one {one bag} other {# bags}}",
       "handed_at": "✓ handed over {time}",
       "status": {
         "cancelled": "Cancelled",
