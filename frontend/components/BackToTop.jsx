@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ArrowUp } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 
 /**
  * Module:   BackToTop
@@ -35,6 +36,7 @@ const BOTTOM_MOBILE =
 const BOTTOM_DESKTOP = "84px";
 
 export default function BackToTop() {
+  const t = useTranslations("a11y");
   const [visible, setVisible] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
 
@@ -98,7 +100,7 @@ export default function BackToTop() {
     <button
       type="button"
       onClick={handleClick}
-      aria-label="חזרה לראש העמוד"
+      aria-label={t("back_to_top")}
       data-testid="back-to-top"
       className="vv-pin fixed end-4 z-[1000] flex items-center justify-center w-12 h-12 rounded-full bg-background text-primary border border-border shadow-lg hover:bg-green-50 transition-colors focus-ring"
       style={{ bottom: isDesktop ? BOTTOM_DESKTOP : BOTTOM_MOBILE }}

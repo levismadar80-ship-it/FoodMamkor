@@ -1,6 +1,7 @@
 {
   "a11y": {
-    "loading": "Loading…"
+    "loading": "Loading…",
+    "back_to_top": "Back to top"
   },
   "nav": {
     "discover": "Discover",
@@ -987,7 +988,8 @@
     },
     "card": {
       "minutes_suffix": "minutes",
-      "servings_suffix": "servings"
+      "servings_suffix": "servings",
+      "eyebrow": "Recipe"
     },
     "detail": {
       "breadcrumb_aria": "Breadcrumb navigation",
