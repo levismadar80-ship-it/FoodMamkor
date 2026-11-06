@@ -225,6 +225,7 @@
       },
       "producer": {
         "heading": "Give your business a home",
+        "organizer_heading": "Publish your markets and events",
         "subtitle": "About 5 minutes. No commissions. The customer comes straight to you",
         "gate": {
           "producer_heading": "You already have a business page on Mehamakor",
@@ -243,8 +244,7 @@
           "after_title": "What happens next",
           "after_body": "Every business gets a personal intro — once you complete your profile and send it for review, our team checks the details, gets in touch if needed, and your business goes live within up to 3 business days.",
           "after_link": "How the acceptance process works",
-          "cta": "Start",
-          "organizer_entry": "Organising a group buy? Start here"
+          "cta": "Start"
         },
         "loading": "Loading...",
         "loading_form": "Loading registration form...",
@@ -280,6 +280,7 @@
         "step_captions": {
           "account": "Account",
           "details": "Business",
+          "details_organizer": "Details",
           "category": "Category",
           "story": "Story"
         },
@@ -600,7 +601,15 @@
       "og_title": "Mehamakor — real food, straight from the source",
       "og_description": "Real food from local businesses — all in one place.",
       "twitter_title": "Mehamakor — real food, straight from the source",
-      "twitter_description": "Real food from local businesses — all in one place."
+      "twitter_description": "Real food from local businesses — all in one place.",
+      "keywords": [
+        "local products",
+        "grass-fed",
+        "healthy food",
+        "organic food",
+        "Israeli local businesses",
+        "farmers market"
+      ]
     },
     "about": {
       "title": "About Mehamakor — our vision and values",
@@ -711,6 +720,18 @@
     "claim": {
       "title": "Take your business page | Mehamakor",
       "description": "We prepared a page for you on Mehamakor"
+    },
+    "producer": {
+      "title_full": "{name} — {category} in {city} | {brand}",
+      "title_city": "{name} in {city} | {brand}",
+      "title_category": "{name} — {category} | {brand}",
+      "title_name": "{name} | {brand}",
+      "description_full": "{name} — a local business in {city}. {category}",
+      "description_city": "{name} — a local business in {city}",
+      "description_category": "{name} — a local business. {category}",
+      "description_name": "{name} — a local business",
+      "not_found": "Business not found | {brand}",
+      "country": "Israel"
     }
   },
   "producer": {
@@ -2636,6 +2657,11 @@
       "previous_month": "Previous month",
       "next_month": "Next month",
       "label": "Calendar",
+      "today": "Today",
+      "list_heading": "All events in {month}",
+      "list_heading_experiences": "All experiences in {month}",
+      "empty_month": "No events this month. Try the next month.",
+      "empty_month_experiences": "No experiences this month. Try the next month.",
       "events_count": "{count, plural, =0 {No events} one {# event} other {# events}}",
       "days": {
         "sun": "Sun",

@@ -39,6 +39,10 @@ let params = {};
 // next/navigation for real and fails under the partial mocks in this file.
 // Stubbed here; the notice's own contract lives in EnSearchNotice.test.jsx and
 // its mount on /producers is pinned in ProducersClientSearch.test.jsx.
+// MEH-2767: the chip gate counts the unfiltered snapshot hook; see the helper.
+import { setCatalogSnapshot } from "./helpers/catalog-snapshot";
+vi.mock("@/lib/use-catalog-snapshot", async () =>
+  (await import("./helpers/catalog-snapshot")).catalogSnapshotMock);
 vi.mock("@/components/EnSearchNotice", () => ({ default: () => null }));
 vi.mock("next/navigation", () => ({
   useRouter: () => router,
@@ -133,7 +137,9 @@ vi.mock("@/lib/api", () => ({
 const items = (n) =>
   Array.from({ length: n }, (_, i) => ({ id: `p${i}`, name: `עסק ${i}`, categories: [] }));
 
-const props = (initialItems) => ({
+// MEH-2767: the gate counts the snapshot — make it the rendered fixture.
+const props = (initialItems) => (setCatalogSnapshot(initialItems), propsBase(initialItems));
+const propsBase = (initialItems) => ({
   initialItems,
   initialTotal: initialItems.length,
   initialPage: 1,
@@ -175,9 +181,10 @@ describe("MEH-1862 — attribute axes move into the sheet", () => {
   it("offers every gated-open attribute inside the sheet", () => {
     render(<ProducersClient {...props(items(3))} />);
     openSheet();
-    // The four ungated axes: closed runtime gates (MEH-1881 open-now,
-    // MEH-1934 diet) are asserted separately — see the gate specs.
-    for (const key of ["kosher", "vegan", "vegetarian", "gluten_free"]) {
+    // The ungated axes. MEH-2767: the diet axes and grass_fed are count-gated
+    // now (one rule on every surface), and this fixture carries no markings,
+    // so they are asserted in surfaceParity.test.js / the gate specs instead.
+    for (const key of ["kosher", "verified"]) {
       expect(screen.getByTestId(`chip-${key}`)).toBeTruthy();
     }
   });
