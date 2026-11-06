@@ -45,8 +45,9 @@ const IN_LANGUAGE = { he: "he-IL", en: "en-US" };
 // Hebrew (the default locale), never a raw key.
 const SEO_MESSAGES = { he, en };
 const BRAND_FOR = { he: BRAND_NAME, en: BRAND_NAME_LATIN };
-// Server-only module (no client component imports lib/seo), so the two
-// message files never reach a browser bundle. One translator per locale.
+// Server-only module (no client component imports lib/seo — guarded by
+// SeoServerOnly.test.js), so the two message files never reach a browser
+// bundle. One translator per locale.
 const SEO_T = {};
 function producerSeoT(locale) {
   const loc = SEO_MESSAGES[locale] ? locale : "he";
@@ -93,7 +94,7 @@ export function serializeJsonLd(obj) {
  * With graceful fallbacks when category or city is missing.
  */
 export function buildTitle(producer, locale = "he") {
-  if (!producer?.name) return BRAND_NAME;
+  if (!producer?.name) return brandFor(locale);
 
   const category = producer.categories?.[0]?.name || "";
   const city = producer.city || "";

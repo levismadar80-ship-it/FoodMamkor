@@ -36,3 +36,10 @@ describe("producer SEO copy — en", () => {
     expect(buildTitle(p, "fr")).toBe("Shikma Farm — Dairy בRehovot | מהמקור");
   });
 });
+
+describe("nameless producer", () => {
+  it("falls back to the locale's brand", () => {
+    expect(buildTitle(null, "en")).toBe("Mehamakor");
+    expect(buildTitle(null, "he")).toBe("מהמקור");
+  });
+});
