@@ -7,6 +7,11 @@
 > below; Sapir pastes the two files over the originals on the PR branch, and CC
 > then verifies the branch copies byte-for-byte against these two files.
 
+> **Applied 06/11/2026** by Sapir via the GitHub web editor: `89a3ec45`
+> (`pr-checks.yml`) and `084dad07` (`e2e.yml`). CC verified both branch files
+> byte-identical (`cmp`) to `docs/ci/meh-2779/pr-checks.yml` (sha256
+> `67729153…`) and `docs/ci/meh-2779/e2e.yml` (sha256 `e88763d7…`).
+
 ## Why — measured 4–6/11/2026 (≈840 PR runs, `gh api actions/runs` + jobs)
 
 | | median | p90 |
