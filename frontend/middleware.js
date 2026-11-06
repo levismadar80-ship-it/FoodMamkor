@@ -3,6 +3,7 @@ import createMiddleware from "next-intl/middleware";
 import { NextResponse } from "next/server";
 import { routing } from "./i18n/routing";
 import { isSlugShaped, decodeSlugParam } from "./lib/slug";
+import { DIET_PAGE_MIN, getDietPage, isDietPageBacked } from "./lib/diet-pages";
 import staticRoutes from "./lib/static-routes.json";
 
 /**
@@ -107,6 +108,60 @@ const EXISTENCE_CHECK_TIMEOUT_MS = 3000;
 
 // producerExists() result for a deleted business (truthy: it is not a 404).
 const GONE = "gone";
+
+// MEH-2706: the same real-404 for two more page-level notFound() routes that
+// were measured streaming 200 on staging (6/11, browser and Googlebot UA
+// alike): /events/<id> and /producers/diet/<slug>. generateMetadata's
+// notFound() no longer yields a 404 status once metadata streams, so — as for
+// the slug route — the status has to be minted here. Same fail-open contract
+// as producerExists: only an ANSWERED "absent" becomes a 404; anything else
+// (5xx, 429, timeout, a missing count header) lets the page run.
+
+// /events/<id>: the backend answers 404 for an unknown id and 422 for one that
+// is not a UUID (events/[id]/page.js treats both as "no such event").
+//
+// Owner check (the MEH-1632 trap for /producer/<id>): the backend also 404s an
+// ANONYMOUS caller for an event of a not-yet-approved business, and this fetch
+// is anonymous. That costs the owner nothing here, because the page's own
+// server fetch (events/[id]/page.js getEvent) is anonymous too and already
+// calls notFound() for her — the UI was the not-found page before this check;
+// only the status code changes from 200 to 404.
+async function eventExists(url) {
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(EXISTENCE_CHECK_TIMEOUT_MS) });
+    if (res.status === 404 || res.status === 422) return false;
+    if (!res.ok) report(`backend answered ${res.status} for ${url} — failing open`);
+    return true;
+  } catch (err) {
+    report(`fetch threw for ${url} — failing open`, err);
+    return true;
+  }
+}
+
+// /producers/diet/<slug>: unknown or un-backed slug → absent without a fetch;
+// otherwise absent only when X-Total-Count is READ and below DIET_PAGE_MIN.
+// An absent or unparsable header is "unknown", never "zero" (MEH-1754, same
+// rule as fetchDietProducers in the page).
+async function dietPageExists(slug) {
+  const entry = getDietPage(slug);
+  if (!isDietPageBacked(entry)) return false;
+  const url = `${API_URL}/producers?${entry.filterParam}=true&limit=1&offset=0`;
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(EXISTENCE_CHECK_TIMEOUT_MS) });
+    if (!res.ok) {
+      report(`backend answered ${res.status} for ${url} — failing open`);
+      return true;
+    }
+    const raw = res.headers?.get?.("x-total-count") ?? null;
+    const total = Number(raw);
+    // Number("") is 0, so a blank header must be caught before it reads as zero.
+    if (raw === null || raw.trim() === "" || !Number.isFinite(total)) return true;
+    return total >= DIET_PAGE_MIN;
+  } catch (err) {
+    report(`fetch threw for ${url} — failing open`, err);
+    return true;
+  }
+}
 
 async function producerExists(url) {
   try {
@@ -235,7 +290,19 @@ export default async function middleware(request) {
   // above is untouched, so the canonical, indexable, crawler-facing shape
   // keeps its real 404 and MEH-1398's SEO guarantee holds where it matters.
 
-  const exists = existsUrl ? await producerExists(existsUrl) : true;
+  let exists = existsUrl ? await producerExists(existsUrl) : true;
+  // MEH-2706: event and diet pages (see eventExists / dietPageExists). These
+  // branches never overlap the slug check above (that one needs segs.length 1).
+  // DO NOT add a static route under /events/ (e.g. /events/new) without
+  // excluding it here: the backend would 404/422 it and this would mint a
+  // real 404 for a real page. app/[locale]/events/ today holds only [id].
+  // Cost: one uncached backend GET (≤3 s, then fail-open) per request on
+  // these two routes — the same trade the slug check already makes.
+  if (segs.length === 2 && segs[0] === "events" && segs[1]) {
+    exists = await eventExists(`${API_URL}/events/${encodeURIComponent(segs[1])}`);
+  } else if (segs.length === 3 && segs[0] === "producers" && segs[1] === "diet") {
+    exists = await dietPageExists(decodeSlugParam(segs[2]));
+  }
   if (!exists) {
     // Rewrite to a guaranteed-unmatched path → globalNotFound renders a real 404.
     const nf = request.nextUrl.clone();
