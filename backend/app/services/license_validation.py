@@ -13,12 +13,16 @@ History:  MEH-530 (creation, 2026-05-15).
 """
 
 from collections.abc import Iterable
+from typing import TYPE_CHECKING
 
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.constants import LICENSE_REQUIRED_CATEGORIES
 from app.models.models import Category
+
+if TYPE_CHECKING:
+    from app.models.models import Producer
 
 
 # MEH-530: shared Hebrew copy for the 422 message — keep both router-level
@@ -70,11 +74,17 @@ def ensure_license_for_categories(
         raise HTTPException(status_code=422, detail=LICENSE_REQUIRED_ERROR_HE)
 
 
-def enforce_license_gate_on_update(db: Session, producer, payload: dict, category_ids) -> None:
+def enforce_license_gate_on_update(
+    db: Session,
+    producer: "Producer",
+    payload: dict,
+    category_ids: list[int] | None,
+) -> None:
     """Shared by the owner PUT (producer_me.py) and the admin PUT (admin.py) —
     MEH-2707 moved it here from producer_me so both paths have ONE rule. The
     admin path used to re-check the FULL category set, so an admin could not
-    save any field on an unlicensed business in a licensed category.
+    save any field on an unlicensed business in a licensed category. Going
+    live is gated separately: admin.py approve_producer -> _assert_approvable.
 
     MEH-999: grandfather rule — validate NEWLY-ADDED categories only, never
     the set the producer already holds. The MEH-530 full-set re-check bricked
