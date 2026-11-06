@@ -161,7 +161,7 @@ describe("producer dashboard status banners (MEH-1355)", () => {
 
     const banner = screen.getByTestId("status-inactive-banner");
     expect(banner).toBeInTheDocument();
-    expect(banner.className).toContain("amber");
+    expect(banner.className).toContain("warning");
     expect(screen.getByText("status.inactive.title")).toBeInTheDocument();
     expect(screen.getByTestId("status-inactive-support")).toBeInTheDocument();
     // NOT the rejected banner

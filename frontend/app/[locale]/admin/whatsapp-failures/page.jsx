@@ -20,7 +20,7 @@ import { showToast } from "@/lib/toast";
 import { SkeletonList } from "@/components/Skeleton";
 
 const STATUS_COLORS = {
-  failed: "bg-red-100 text-red-800",
+  failed: "bg-danger-100 text-danger-800",
   window_expired: "bg-yellow-100 text-yellow-800",
 };
 

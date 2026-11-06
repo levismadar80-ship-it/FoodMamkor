@@ -332,7 +332,7 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
               </div>
             )}
             {error && (
-              <p role="status" className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-sm px-3 py-2">
+              <p role="status" className="text-xs text-danger-700 bg-danger-50 border border-danger-200 rounded-sm px-3 py-2">
                 {error}
               </p>
             )}

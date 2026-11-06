@@ -123,12 +123,12 @@ describe("QueueSlaSummary (MEH-2138 chunk E)", () => {
     });
 
     it("2 is amber — the day before the promise is broken", () => {
-      expect(toneOf(2)).toContain("bg-amber-100");
+      expect(toneOf(2)).toContain("bg-warning-100");
     });
 
     it("3 and above are red", () => {
-      expect(toneOf(3)).toContain("bg-red-100");
-      expect(toneOf(9)).toContain("bg-red-100");
+      expect(toneOf(3)).toContain("bg-danger-100");
+      expect(toneOf(9)).toContain("bg-danger-100");
     });
   });
 });

@@ -190,7 +190,7 @@ export function CategoriesCard({ profile, onSave, reportDirty = () => {} }) {
       <p className="text-xs text-fg-muted mb-4">{t("subtitle")}</p>
 
       {fetchError ? (
-        <p className="flex items-center gap-1.5 text-xs text-red-600" role="alert">
+        <p className="flex items-center gap-1.5 text-xs text-danger-600" role="alert">
           <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
           {fetchError}
         </p>
@@ -210,7 +210,7 @@ export function CategoriesCard({ profile, onSave, reportDirty = () => {} }) {
       />
 
       {errorMsg && (
-        <p className="mt-3 flex items-center gap-1.5 text-xs text-red-600" role="alert">
+        <p className="mt-3 flex items-center gap-1.5 text-xs text-danger-600" role="alert">
           <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
           {errorMsg}
         </p>
@@ -1112,7 +1112,7 @@ export function PricingCard({ profile, onSave, reportDirty = () => {} }) {
       </div>
 
       {errorMsg && (
-        <p className="mt-3 flex items-center gap-1.5 text-xs text-red-600" role="alert">
+        <p className="mt-3 flex items-center gap-1.5 text-xs text-danger-600" role="alert">
           <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
           {errorMsg}
         </p>
@@ -1236,13 +1236,13 @@ export function LicenseCard({ profile, onSave, reportDirty = () => {} }) {
       {warning && (
         // Amber + non-blocking, mirroring the admin field — the backend
         // deliberately doesn't enforce the regex (manual-approval flow).
-        <p className="text-xs text-amber-600 mt-1">
+        <p className="text-xs text-warning-600 mt-1">
           {tAdmin("license_format_warning")}
         </p>
       )}
 
       {errorMsg && (
-        <p className="mt-3 flex items-center gap-1.5 text-xs text-red-600" role="alert">
+        <p className="mt-3 flex items-center gap-1.5 text-xs text-danger-600" role="alert">
           <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
           {errorMsg}
         </p>
@@ -1843,7 +1843,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
           {t("offers_delivery")}
         </label>
         {neitherType && (
-          <p className="text-xs text-red-600">{t("type_validation")}</p>
+          <p className="text-xs text-danger-600">{t("type_validation")}</p>
         )}
         {form.offersDelivery && (
           <div className="ms-6 space-y-3 border-s-2 border-border ps-4 pt-1">
@@ -1952,7 +1952,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
                   showRegionChips
                 />
                 {form.cities.length === 0 && (
-                  <p className="text-xs text-red-600 mt-1">
+                  <p className="text-xs text-danger-600 mt-1">
                     {t("delivery_cities_required")}
                   </p>
                 )}
@@ -2060,7 +2060,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
       </div>
 
       {errorMsg && (
-        <p className="mt-3 flex items-center gap-1.5 text-xs text-red-600" role="alert">
+        <p className="mt-3 flex items-center gap-1.5 text-xs text-danger-600" role="alert">
           <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
           {errorMsg}
         </p>
@@ -2288,7 +2288,7 @@ export function OffersCard({ profile, onSave, reportDirty = () => {} }) {
                 </select>
               </div>
               {pairBroken && (
-                <p className="text-xs text-red-600 mt-1" data-testid="offer-pair-error">
+                <p className="text-xs text-danger-600 mt-1" data-testid="offer-pair-error">
                   {t("threshold_pair_required")}
                 </p>
               )}
@@ -2320,7 +2320,7 @@ export function OffersCard({ profile, onSave, reportDirty = () => {} }) {
                 className="w-full border border-border rounded-[10px] px-3 py-2 text-sm"
               />
               {missingCustomHeadline && (
-                <p className="text-xs text-red-600 mt-1" data-testid="offer-headline-error">
+                <p className="text-xs text-danger-600 mt-1" data-testid="offer-headline-error">
                   {t("custom_headline_required")}
                 </p>
               )}
@@ -2340,7 +2340,7 @@ export function OffersCard({ profile, onSave, reportDirty = () => {} }) {
                 className="border border-border rounded-[10px] px-3 py-2 text-sm"
               />
               {missingExpiry && (
-                <p className="text-xs text-red-600 mt-1" data-testid="offer-expiry-error">
+                <p className="text-xs text-danger-600 mt-1" data-testid="offer-expiry-error">
                   {t("expires_required")}
                 </p>
               )}
@@ -2350,7 +2350,7 @@ export function OffersCard({ profile, onSave, reportDirty = () => {} }) {
       </div>
 
       {errorMsg && (
-        <p className="mt-3 flex items-center gap-1.5 text-xs text-red-600" role="alert">
+        <p className="mt-3 flex items-center gap-1.5 text-xs text-danger-600" role="alert">
           <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
           {errorMsg}
         </p>
@@ -2513,7 +2513,7 @@ export function BusinessNameCard({ profile }) {
             <p className="text-sm text-fg-muted">{t("same_name_hint")}</p>
           )}
           {error && (
-            <p className="text-sm text-red-700" role="alert" data-testid="name-change-error">
+            <p className="text-sm text-danger-700" role="alert" data-testid="name-change-error">
               {error}
             </p>
           )}

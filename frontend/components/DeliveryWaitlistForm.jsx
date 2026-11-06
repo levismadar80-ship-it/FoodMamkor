@@ -209,7 +209,7 @@ export default function DeliveryWaitlistForm({ producer = null, city = "", descr
       </div>
       {error && (
         <p
-          className="mt-1 text-[13px] text-red-700"
+          className="mt-1 text-[13px] text-danger-700"
           role="alert"
           data-testid="delivery-waitlist-error"
         >

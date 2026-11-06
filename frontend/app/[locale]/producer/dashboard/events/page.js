@@ -186,7 +186,7 @@ export default function ManageEventsPage() {
                     onClick={() => remove(ev)}
                     disabled={busyId === ev.id}
                     aria-label={t("action_delete")}
-                    className="inline-flex items-center gap-1 border border-red-300 text-red-600 rounded-sm px-3 py-1.5 min-h-touch text-xs hover:bg-red-50 transition disabled:opacity-50"
+                    className="inline-flex items-center gap-1 border border-danger-300 text-danger-600 rounded-sm px-3 py-1.5 min-h-touch text-xs hover:bg-danger-50 transition disabled:opacity-50"
                   >
                     <Trash size={16} aria-hidden="true" />
                     {t("action_delete")}

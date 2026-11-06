@@ -133,7 +133,7 @@ export default function AdminAnalyticsPage() {
                   <span>{p.name}</span>
                   <span className="text-muted inline-flex items-center gap-1">
                     {p.favorites}
-                    <Heart size={14} weight="fill" className="text-red-500" aria-hidden="true" />
+                    <Heart size={14} weight="fill" className="text-danger-500" aria-hidden="true" />
                   </span>
                 </li>
               ))}

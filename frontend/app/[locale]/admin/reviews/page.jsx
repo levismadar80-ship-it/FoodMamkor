@@ -408,7 +408,7 @@ export default function AdminReviewsPage() {
                           type="button"
                           onClick={() => handleDelete(r)}
                           disabled={deletingId === r.id}
-                          className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg text-red-600 hover:bg-red-50 disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-red-400/40"
+                          className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg text-danger-600 hover:bg-danger-50 disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-danger-400/40"
                           aria-label={t("reviews.delete_aria", { user: r.user_name || t("reviews.default_user") })}
                         >
                           <Trash size={14} />
@@ -442,7 +442,7 @@ export default function AdminReviewsPage() {
               <button
                 disabled={deleting}
                 onClick={confirmRemove}
-                className="px-4 py-2 rounded-[10px] text-sm font-medium text-white transition bg-red-600 hover:bg-red-700 disabled:opacity-50"
+                className="px-4 py-2 rounded-[10px] text-sm font-medium text-white transition bg-danger-600 hover:bg-danger-700 disabled:opacity-50"
               >
                 {deleting ? t("reviews.deleting") : t("reviews.delete")}
               </button>

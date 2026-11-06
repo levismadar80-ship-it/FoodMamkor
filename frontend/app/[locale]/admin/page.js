@@ -37,7 +37,7 @@ export default function AdminHome() {
   const error = loadError ? detailToMessage(errorDetail) || t("common.error_loading") : "";
 
   if (error) {
-    return <div className="bg-red-50 border border-red-200 text-red-700 rounded-md p-4">{error}</div>;
+    return <div className="bg-danger-50 border border-danger-200 text-danger-700 rounded-md p-4">{error}</div>;
   }
   if (!data) {
     return <SkeletonTiles count={4} label={t("common.loading")} />;

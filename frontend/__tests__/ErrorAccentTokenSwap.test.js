@@ -11,8 +11,8 @@
  *
  * Documented exception: components/PasswordStrength.jsx. The ruling says the
  * strength palette moves only if error/warning/success tokens all exist; there
- * is no warning token (DESIGN.md "deliberate absence"), so the palette stays
- * as-is. It doubles as the positive control below: the regex must still SEE
+ * was no warning token then, so the palette stayed as-is (ADR-038 later renamed
+ * its shades to danger-500 / warning-500 at identical values). It doubles as the positive control below: the regex must still SEE
  * its text-red-500, or the walk is blind and a null proves nothing.
  */
 import { describe, it, expect } from "vitest";
@@ -36,7 +36,9 @@ const files = ["app", "components", "lib"]
   .map((f) => path.relative(ROOT, f).split(path.sep).join("/"))
   .filter((rel) => !/\/(admin|dashboard)\//.test(rel));
 
-const RED = /\btext-red-500\b/g;
+// ADR-038 renamed red-N to danger-N at identical values; `text-danger-500` is
+// the same #ef4444, so it is still not the error token on a public surface.
+const RED = /\btext-(?:red|danger)-500\b/g;
 // A quoted literal only — the ProducerHeader comment that NAMES the old gold
 // ("the pre-revision #8B6914 failed") is history, not a rendered colour.
 const OLD_GOLD = /["'`]#8B6914["'`]/gi;

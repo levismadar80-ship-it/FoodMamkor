@@ -168,7 +168,7 @@ function CategoriesEditor() {
               <button
                 disabled={deleting}
                 onClick={confirmRemove}
-                className="px-4 py-2 rounded-[10px] text-sm font-medium text-white transition bg-red-600 hover:bg-red-700 disabled:opacity-50"
+                className="px-4 py-2 rounded-[10px] text-sm font-medium text-white transition bg-danger-600 hover:bg-danger-700 disabled:opacity-50"
               >
                 {deleting ? t("content.categories.deleting") : t("content.categories.delete")}
               </button>
@@ -245,7 +245,7 @@ function CategoryRow({ cat, onSave, onDelete, saving }) {
           <button
             onClick={() => onDelete(cat)}
             data-testid={`category-delete-${cat.id}`}
-            className="text-xs text-red-600"
+            className="text-xs text-danger-600"
           >
             {t("content.categories.delete")}
           </button>
