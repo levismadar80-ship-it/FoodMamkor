@@ -556,13 +556,14 @@ export const ExperienceMetadataSchema = z.object({
 // belt-and-braces safety net in case a future caller bypasses it.
 // MEH-2765: the messages are keys under map.errors in messages/{he,en}.json
 // (useMapSync resolves them); no reader copy lives here.
+export const GEO_SEARCH_ERROR_KEYS = Object.freeze(["radius_too_small", "radius_too_large"]);
 export const GeoSearchSchema = z.object({
   lat: z.number().finite(),
   lng: z.number().finite(),
   radius_km: z
     .number()
-    .min(1, "radius_too_small")
-    .max(50, "radius_too_large"),
+    .min(1, GEO_SEARCH_ERROR_KEYS[0])
+    .max(50, GEO_SEARCH_ERROR_KEYS[1]),
 });
 
 // Validated coords before any Leaflet flyTo / marker creation call.

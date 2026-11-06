@@ -12,8 +12,6 @@ import en from "../messages/en.json";
 const issueKey = (radius_km) =>
   GeoSearchSchema.safeParse({ lat: 32.5, lng: 34.9, radius_km }).error?.issues?.[0]?.message;
 
-// Feminine-singular imperatives and possessives the reader copy must not use.
-const FEMININE = /הזיזי|הקטיני|נסי\b|חפשי|שלך\b|לך\b/;
 
 describe("GeoSearchSchema error copy comes from messages, gender-neutral", () => {
   it.each([
@@ -25,10 +23,9 @@ describe("GeoSearchSchema error copy comes from messages, gender-neutral", () =>
     expect(en.map.errors[key]).toBeTruthy();
   });
 
-  it("the Hebrew copy is not in the feminine singular", () => {
-    for (const key of ["radius_too_small", "radius_too_large"]) {
-      expect(he.map.errors[key]).not.toMatch(FEMININE);
-    }
+  it("the Hebrew copy is the plural imperative, not the old feminine strings", () => {
+    expect(he.map.errors.radius_too_small).toBe("הזיזו את המפה לפני החיפוש");
+    expect(he.map.errors.radius_too_large).toBe("האזור גדול מדי — הקטינו את מרחק החיפוש");
   });
 
   it("a valid radius still parses", () => {
