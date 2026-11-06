@@ -183,7 +183,7 @@ async function main() {
         r.text.includes("3") && r.text.includes("5") && !r.text.includes("{"),
         `text=«${r.text}» (template=«${SUMMARY_TEMPLATE}»)`,
       );
-      check(`${width}: 5 days is a breach → red tone`, r.cls.includes("bg-red-100"), r.cls);
+      check(`${width}: 5 days is a breach → red tone`, r.cls.includes("bg-danger-100"), r.cls);
       check(`${width}: the box is real and inside the viewport`, r.w > 0 && r.h > 0 && r.insideViewport,
         `${r.w}x${r.h}, inside=${r.insideViewport}`);
     }

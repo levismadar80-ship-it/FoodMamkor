@@ -75,7 +75,7 @@ export default function AdminGroupBuysPage() {
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 rounded-[10px] px-4 py-3 mb-4 text-sm">
+        <div className="bg-danger-50 border border-danger-200 text-danger-700 rounded-[10px] px-4 py-3 mb-4 text-sm">
           {error}
         </div>
       )}

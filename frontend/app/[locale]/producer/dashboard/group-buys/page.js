@@ -204,7 +204,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
             dir="ltr"
           />
           {/* MEH-992: pre-submit price-rule helper — muted hint, turns red on violation (pre-400) */}
-          <p className={`text-xs mt-1 ${priceInvalid ? "text-red-500" : "text-fg-muted"}`}>
+          <p className={`text-xs mt-1 ${priceInvalid ? "text-danger-500" : "text-fg-muted"}`}>
             {t("price_helper")}
           </p>
         </div>
@@ -311,7 +311,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
 
       {/* MEH-1165: role="alert" so the submit error is announced to AT. */}
       {unverified && <UnverifiedEmailNotice />}
-      {error && <p className="text-red-500 text-sm" role="alert">{error}</p>}
+      {error && <p className="text-danger-500 text-sm" role="alert">{error}</p>}
       <button
         type="submit"
         disabled={submitting || priceInvalid}
@@ -379,7 +379,7 @@ function GroupBuyActionDialog({ pending, busy, stale, error, onConfirm, onClose 
             {t("cancel_funded_note", { count: gb.commits_count })}
           </p>
         )}
-        {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+        {error && <p role="alert" className="text-sm text-danger-600">{error}</p>}
         <div className="flex gap-3 justify-start pt-1">
           <button
             type="button"
@@ -390,7 +390,7 @@ function GroupBuyActionDialog({ pending, busy, stale, error, onConfirm, onClose 
             disabled={busy || stale}
             onClick={onConfirm}
             className={`px-4 py-2 min-h-[44px] rounded-[10px] text-sm font-medium text-white transition disabled:opacity-50 ${
-              destructive ? "bg-red-600 hover:bg-red-700" : "bg-primary hover:bg-primary-dark"
+              destructive ? "bg-danger-600 hover:bg-danger-700" : "bg-primary hover:bg-primary-dark"
             }`}
           >
             {/* The close and deliver confirms reuse their button's own label —
@@ -724,7 +724,7 @@ export default function ProducerGroupBuysPage() {
                         className={
                           action === "deliver"
                             ? "px-4 py-2 min-h-[44px] rounded-sm text-sm font-medium bg-primary text-white hover:bg-primary-dark transition"
-                            : "px-4 py-2 min-h-[44px] rounded-sm text-sm border border-border text-red-700 hover:bg-red-50 transition"
+                            : "px-4 py-2 min-h-[44px] rounded-sm text-sm border border-border text-danger-700 hover:bg-danger-50 transition"
                         }
                       >
                         {tActions(action)}

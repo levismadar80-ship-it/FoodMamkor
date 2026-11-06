@@ -563,7 +563,7 @@ export default function ProductsSection({
         <div
           role="alert"
           data-testid="products-load-error"
-          className="border border-border rounded-[10px] p-4 bg-red-50 text-center"
+          className="border border-border rounded-[10px] p-4 bg-danger-50 text-center"
         >
           <p className="text-sm text-text mb-2">{tErr("load_failed")}</p>
           <button
@@ -826,7 +826,7 @@ export default function ProductsSection({
                 onClick={() => { setError(""); setConfirmDelete({ id: product.id, name: product.name }); }}
                 disabled={deletingId === product.id}
                 aria-label={t("card.delete_aria_template", { name: product.name })}
-                className="p-1.5 rounded-[6px] text-fg-muted hover:text-error hover:bg-red-50 transition disabled:opacity-40"
+                className="p-1.5 rounded-[6px] text-fg-muted hover:text-error hover:bg-danger-50 transition disabled:opacity-40"
               >
                 <Trash size={16} aria-hidden="true" />
               </button>
@@ -970,13 +970,13 @@ export default function ProductsSection({
               {t("delete_confirm.title", { name: confirmDelete.name })}
             </p>
             <p className="text-sm text-fg-muted">{t("delete_confirm.body")}</p>
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && <p className="text-sm text-danger-600">{error}</p>}
             <div className="flex gap-3 justify-start pt-1">
               <button
                 type="button"
                 disabled={deletingId != null}
                 onClick={() => handleDelete(confirmDelete.id)}
-                className="px-4 py-2 rounded-[10px] text-sm font-medium text-white transition bg-red-600 hover:bg-red-700 disabled:opacity-50"
+                className="px-4 py-2 rounded-[10px] text-sm font-medium text-white transition bg-danger-600 hover:bg-danger-700 disabled:opacity-50"
               >
                 {t("delete_confirm.confirm")}
               </button>

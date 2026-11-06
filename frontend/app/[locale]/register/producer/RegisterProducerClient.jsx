@@ -1184,7 +1184,7 @@ function RegisterProducerPageBody() {
                 aria-invalid={phoneErrorMessage ? "true" : undefined}
                 aria-describedby={phoneErrorMessage ? "register-phone-error" : undefined}
                 className={`w-full border rounded-md px-3 py-2 min-h-[44px] ${
-                  phoneErrorMessage ? "border-red-400" : ""
+                  phoneErrorMessage ? "border-danger-400" : ""
                 }`}
                 dir="ltr"
               />

@@ -435,7 +435,7 @@ test.describe("approvals queue — overflow menu", () => {
     await openQueue(page);
     await openKebab(page, "עסק לבדיקה");
     await expect(menu(page).getByRole("menuitem")).toHaveText(["דחייה", "מחקו"]);
-    await expect(item(page, "מחקו")).toHaveClass(/text-red-600/);
+    await expect(item(page, "מחקו")).toHaveClass(/text-danger-600/);
   });
 
   // MT:MEH-530:38 — an approved row's menu: suspend · story · delete (red). MEH-2509 removed ambassador.
@@ -444,8 +444,8 @@ test.describe("approvals queue — overflow menu", () => {
     await openQueue(page);
     await openKebab(page, "עסק מאושר");
     await expect(menu(page).getByRole("menuitem")).toHaveText(["השהה", "סטורי", "מחקו"]);
-    await expect(item(page, "מחקו")).toHaveClass(/text-red-600/);
-    await expect(item(page, "השהה")).not.toHaveClass(/text-red-600/);
+    await expect(item(page, "מחקו")).toHaveClass(/text-danger-600/);
+    await expect(item(page, "השהה")).not.toHaveClass(/text-danger-600/);
   });
 
   // MT:MEH-530:39 — «סטורי» opens the StoryCardCanvas panel under the row, and its close button removes it.

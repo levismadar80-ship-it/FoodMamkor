@@ -175,7 +175,7 @@ describe("ProducerActions — overflow menu (MEH-1027 Chunk A)", () => {
     const h = renderRow(producer);
     openMenu();
     const reject = screen.getByRole("menuitem", { name: REJECT_KEY });
-    expect(reject).toHaveClass("text-red-600");
+    expect(reject).toHaveClass("text-danger-600");
     fireEvent.click(reject);
     // the whole producer, not just the id — ProducerDecisionModal renders its name.
     expect(h.onReject).toHaveBeenCalledWith(expect.objectContaining({ id: "p1", name: "חוה" }));
@@ -191,7 +191,7 @@ describe("ProducerActions — overflow menu (MEH-1027 Chunk A)", () => {
     const h = renderRow({ id: "p1", status: "approved", slug: "farm", name: "חוה" });
     openMenu();
     const del = screen.getByRole("menuitem", { name: DELETE_KEY });
-    expect(del).toHaveClass("text-red-600");
+    expect(del).toHaveClass("text-danger-600");
     fireEvent.click(del);
     expect(h.onDeleteProducer).toHaveBeenCalledWith("p1", "חוה");
   });

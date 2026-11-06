@@ -127,7 +127,7 @@ export default function ExperienceDetailClient() {
       label: t("status_changes_requested"),
     },
     rejected: {
-      className: "bg-red-50 border-red-300 text-red-900",
+      className: "bg-danger-50 border-danger-300 text-danger-900",
       label: t("status_rejected"),
     },
   };

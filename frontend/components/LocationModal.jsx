@@ -249,7 +249,7 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
         />
 
         {geoError && (
-          <p role="alert" className="text-sm text-red-600 -mt-2 mb-4">
+          <p role="alert" className="text-sm text-danger-600 -mt-2 mb-4">
             {geoError}
           </p>
         )}

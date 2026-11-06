@@ -221,7 +221,7 @@ export default function OrderWindowEditor({
                           onClick={() => removeRange(i, rangeIdx)}
                           aria-label={`${tDays(key)} — ${t("remove_range")}`}
                           data-testid={`order-window-remove-${i}-${rangeIdx}`}
-                          className="text-fg-muted hover:text-red-600 transition p-1"
+                          className="text-fg-muted hover:text-danger-600 transition p-1"
                         >
                           <X size={14} aria-hidden="true" />
                         </button>
@@ -248,7 +248,7 @@ export default function OrderWindowEditor({
               )}
 
               {issueReason && (
-                <span className="w-full text-xs text-red-600" role="alert">
+                <span className="w-full text-xs text-danger-600" role="alert">
                   {t(issueReason)}
                 </span>
               )}
@@ -258,7 +258,7 @@ export default function OrderWindowEditor({
       </div>
 
       {errorMsg && (
-        <p className="mt-4 flex items-center gap-1.5 text-xs text-red-600" role="alert">
+        <p className="mt-4 flex items-center gap-1.5 text-xs text-danger-600" role="alert">
           <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
           {errorMsg}
         </p>

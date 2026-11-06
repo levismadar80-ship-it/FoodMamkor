@@ -322,7 +322,7 @@ function LoginPageBody() {
                 aria-invalid={emailInvalid || undefined}
                 className={`w-full min-h-[54px] rounded-sm ps-11 pe-4 py-3.5 bg-surface-card text-text outline-none transition focus-visible:ring-2 focus-visible:ring-primary/40 ${
                   emailInvalid
-                    ? "border border-red-400"
+                    ? "border border-danger-400"
                     : emailValid
                       ? "border border-primary"
                       : "border border-border focus:border-primary"
@@ -374,7 +374,7 @@ function LoginPageBody() {
                 aria-invalid={passwordInvalid || undefined}
                 className={`w-full min-h-[54px] rounded-sm ps-11 pe-12 py-3.5 bg-surface-card text-text outline-none transition focus-visible:ring-2 focus-visible:ring-primary/40 ${
                   passwordInvalid
-                    ? "border border-red-400"
+                    ? "border border-danger-400"
                     : passwordValidLength
                       ? "border border-primary"
                       : "border border-border focus:border-primary"

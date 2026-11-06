@@ -65,7 +65,7 @@ import type { Locator, Route } from "@playwright/test";
  *      form's toggle DOES read «יש לי רישיון יצרן ↓» — two surfaces, two strings.
  * D3 · MT:MEH-530:5 calls the format warning "orange". On the register form it
  *      is `text-fg-muted` (gray, deliberately softer than the red blocking
- *      error — card 952); the admin form's is `text-amber-600`. Both asserted
+ *      error — card 952); the admin form's is `text-warning-600`. Both asserted
  *      by text; the register colour is asserted as measured.
  * D4 · MT:MEH-213:4 says ticking «משלוחים לכל הארץ» makes "CitiesAutocomplete
  *      disappear". The DELIVERY-CITIES one does; card 1255 then renders a second
@@ -497,7 +497,7 @@ test.describe("/admin/producers — the licence field on the admin form", () => 
     await openNewProducer(page);
     await setChecked(page.getByRole("checkbox", { name: "בשר" }), true);
     await licenceInput(page).fill("abc");
-    await expect(page.getByText("מספר רישיון ייצור הוא 7-10 ספרות")).toHaveClass(/text-amber-600/);
+    await expect(page.getByText("מספר רישיון ייצור הוא 7-10 ספרות")).toHaveClass(/text-warning-600/);
     await licenceInput(page).fill("1234567");
     await expect(page.getByText("מספר רישיון ייצור הוא 7-10 ספרות")).toHaveCount(0);
     await page.getByLabel("שם העסק").fill("קצביית הכפר");
@@ -541,7 +541,7 @@ test.describe("/admin/producers/new — «סוג העסק»", () => {
     await setChecked(physical(page), false);
     const err = page.getByText("חייב לסמן לפחות אחד מהשניים");
     await expect(err).toBeVisible();
-    await expect(err).toHaveClass(/text-red-600/);
+    await expect(err).toHaveClass(/text-danger-600/);
     await expect(saveBtn(page)).toBeDisabled();
     await setChecked(physical(page), true);
     await expect(err).toHaveCount(0);
@@ -582,7 +582,7 @@ test.describe("/admin/producers/new — «סוג העסק»", () => {
     await setChecked(nationwide(page), false);
     const err = page.getByText("יש לבחור לפחות עיר אחת או לסמן משלוחים לכל הארץ");
     await expect(err).toBeVisible();
-    await expect(err).toHaveClass(/text-red-600/);
+    await expect(err).toHaveClass(/text-danger-600/);
     await expect(saveBtn(page)).toBeDisabled();
   });
 
@@ -690,7 +690,7 @@ test.describe("/admin/producers — completeness dot for delivery-only businesse
     const yellow = dot(r, "חסרים פרטים");
     await expect(yellow).toBeVisible();
     await expect(yellow).toHaveAttribute("title", "חסרים פרטים: אזורי משלוח");
-    await expect(yellow.locator("svg")).toHaveClass(/text-amber-500/);
+    await expect(yellow.locator("svg")).toHaveClass(/text-warning-500/);
     await expect(dot(r, "שלם")).toHaveCount(0);
     // Control on the same page: the nationwide sibling is green.
     await expect(dot(page.getByRole("row", { name: /משלוחים ארציים/ }), "שלם")).toBeVisible();
