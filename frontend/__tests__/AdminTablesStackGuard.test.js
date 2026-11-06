@@ -64,7 +64,7 @@ function clippingWrappers(src) {
 describe("guard self-test (MEH-1619 — the checks must be able to fail)", () => {
   // Verbatim shape of the pre-MEH-2426 /admin/experiences wrapper.
   const OLD_EXPERIENCES = `
-        <div className="bg-white border border-border rounded-[16px] overflow-hidden">
+        <div className="bg-surface border border-border rounded-[16px] overflow-hidden">
           <table className="w-full text-sm">
             <thead><tr><th>t</th><th>h</th><th>d</th><th>c</th><th>ai</th><th>a</th></tr></thead>
             <tbody><tr><td>x</td><td data-label="h">y</td></tr></tbody>

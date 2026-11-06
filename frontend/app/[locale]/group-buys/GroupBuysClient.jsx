@@ -45,7 +45,7 @@ function GroupBuyCard({ gb }) {
     <Link
       href={`/group-buys/${gb.id}`}
       data-testid="group-buy-card"
-      className="group bg-white rounded-lg border border-border overflow-hidden flex flex-col hover:border-primary transition focus-ring"
+      className="group bg-surface rounded-lg border border-border overflow-hidden flex flex-col hover:border-primary transition focus-ring"
     >
       <div className="relative aspect-[16/9] bg-green-50 overflow-hidden">
         {showImg ? (
@@ -72,7 +72,7 @@ function GroupBuyCard({ gb }) {
           </span>
         )}
         {funded && (
-          <span className="absolute top-3 end-3 bg-white text-primary text-xs font-bold px-2.5 py-1 rounded-full">
+          <span className="absolute top-3 end-3 bg-surface text-primary text-xs font-bold px-2.5 py-1 rounded-full">
             {t("funded_banner")}
           </span>
         )}
@@ -223,7 +223,7 @@ export default function GroupBuysClient() {
                 className={`min-h-touch inline-flex items-center justify-center px-4 py-2 rounded-full text-sm font-medium transition border ${
                   statusFilter === s.key
                     ? "bg-primary text-white border-primary"
-                    : "bg-white text-fg-muted border-border hover:border-primary"
+                    : "bg-surface text-fg-muted border-border hover:border-primary"
                 }`}
               >
                 {s.label}

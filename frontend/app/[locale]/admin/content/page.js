@@ -27,7 +27,7 @@ export default function AdminContentPage() {
             key={s.id}
             onClick={() => setSection(s.id)}
             className={`px-3 py-1.5 rounded-md text-sm transition ${
-              section === s.id ? "bg-primary text-white" : "bg-white border border-border hover:bg-accent"
+              section === s.id ? "bg-primary text-white" : "bg-surface border border-border hover:bg-accent"
             }`}
           >
             {s.label}
@@ -116,7 +116,7 @@ function CategoriesEditor() {
   }, [confirmDelete, deleting]);
 
   return (
-    <div className="bg-white border border-border rounded-md p-5 space-y-4">
+    <div className="bg-surface border border-border rounded-md p-5 space-y-4">
       <form onSubmit={create} className="flex gap-2">
         <input
           placeholder={t("content.categories.name_placeholder")}
@@ -156,7 +156,7 @@ function CategoriesEditor() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="category-delete-title"
-            className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full mx-4 text-start space-y-4"
+            className="bg-surface rounded-lg shadow-xl p-6 max-w-sm w-full mx-4 text-start space-y-4"
           >
             <p id="category-delete-title" className="font-medium text-base">
               {t("content.categories.confirm_delete", {
@@ -276,7 +276,7 @@ function PageEditor({ slug }) {
     });
 
   return (
-    <div className="bg-white border border-border rounded-md p-5 space-y-3">
+    <div className="bg-surface border border-border rounded-md p-5 space-y-3">
       <input
         value={page.title}
         onChange={(e) => { setPage({ ...page, title: e.target.value }); setSaved(false); }}

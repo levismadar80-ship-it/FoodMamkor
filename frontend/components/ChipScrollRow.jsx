@@ -356,13 +356,13 @@ export default function ChipScrollRow({
             };
           } else if (isReset && !active) {
             // "כל" ghost — ≥1 category selected → it is the escape, not the state.
-            stateClass = "bg-white text-muted border-border";
+            stateClass = "bg-surface text-muted border-border";
           } else if (active) {
             // solid fill: toggle-active chips + the "כל" baseline.
             stateClass = "bg-state-selected text-white border-state-selected";
           } else {
             stateClass =
-              "bg-white text-text border-border hover:border-primary hover:text-primary";
+              "bg-surface text-text border-border hover:border-primary hover:text-primary";
           }
           // Glyph tint: keep the category colour on the glyph UNLESS the chip is a
           // solid white-fill state (toggle-active / "כל" baseline), where the

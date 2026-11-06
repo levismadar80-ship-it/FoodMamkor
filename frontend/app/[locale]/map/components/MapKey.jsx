@@ -68,7 +68,7 @@ function SampleCluster() {
 function SamplePickup() {
   return (
     <span className="shrink-0 w-7 h-7 flex items-center justify-center" aria-hidden="true">
-      <span className="w-5 h-5 rounded-full bg-white border-2 border-primary flex items-center justify-center">
+      <span className="w-5 h-5 rounded-full bg-surface border-2 border-primary flex items-center justify-center">
         <Leaf size={10} className="text-primary" />
       </span>
     </span>

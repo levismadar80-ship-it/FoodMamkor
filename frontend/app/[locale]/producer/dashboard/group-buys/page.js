@@ -126,7 +126,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 bg-white rounded-lg border border-border p-6">
+    <form onSubmit={handleSubmit} className="space-y-4 bg-surface rounded-lg border border-border p-6">
       <h2 className="font-headline-lg text-lg font-bold text-text">{t("heading")}</h2>
       {/* MEH-992: one-line concept intro — what a group-buy is */}
       <p className="text-sm text-fg-muted">{t("concept_intro")}</p>
@@ -368,7 +368,7 @@ function GroupBuyActionDialog({ pending, busy, stale, error, onConfirm, onClose 
         aria-modal="true"
         aria-labelledby="group-buy-action-title"
         data-testid="group-buy-action-dialog"
-        className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full text-start space-y-3"
+        className="bg-surface rounded-lg shadow-xl p-6 max-w-sm w-full text-start space-y-3"
       >
         <p id="group-buy-action-title" className="font-medium text-base text-text">
           {t(`${action}_title`)}
@@ -666,7 +666,7 @@ export default function ProducerGroupBuysPage() {
                 // whose action buttons are gone (useDialogFocus fallback).
                 data-group-buy-card={gb.id}
                 tabIndex={-1}
-                className="bg-white rounded-[14px] border border-border p-5 focus:outline-none"
+                className="bg-surface rounded-[14px] border border-border p-5 focus:outline-none"
               >
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div>
