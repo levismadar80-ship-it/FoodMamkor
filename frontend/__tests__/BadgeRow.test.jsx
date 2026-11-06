@@ -276,7 +276,7 @@ describe("BadgeRow", () => {
 
     // MEH-1170: the S12 "מוצהר" chip contradicted ADR-022 ("tier 2 = no
     // badge") and was removed. Declared renders no tier badge on ANY surface;
-    // the affirmative declared_explainer moved to ProducerHeader as visible copy.
+    // the affirmative explanation lives on /about/process (MEH-2710).
     it("declared renders no tier badge on the hero surface (ADR-022 no-badge)", () => {
       const { container } = render(
         <BadgeRow producer={{ verification_tier: "declared" }} />,
