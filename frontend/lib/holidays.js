@@ -12,6 +12,10 @@
  * inclusive. This file is the ONLY date table: chips, banners and the dashboard
  * hint import from here (MEH-1889 B) — never a second static list.
  *
+ * MEH-2741: each holiday's words (name, tagline, cta, dashboard_hint) live in
+ * messages/{he,en}.json under `holidays.<key>`. `searchParams.q` stays Hebrew on
+ * purpose — it searches product names the businesses write in Hebrew.
+ *
  * MEH-1687 D: `icon` names a Phosphor glyph rendered by components/HolidayIcon
  * (the holiday → icon table lives there). No emoji here — Emoji LOCK.
  */
@@ -19,75 +23,45 @@ import { israelToday } from "@/lib/israel-date";
 
 export const HOLIDAYS = {
   pesach: {
-    name: "פסח",
     icon: "Sparkle",
     start: "2027-04-21",
     end: "2027-04-28",
-    tagline: "מצאי מוצרים כשרים לפסח ממקורות מקומיים",
-    cta: "הצגת עסקים לפסח",
     searchParams: { q: "כשר לפסח" },
-    featured: ["ירקות טריים", "פירות", "שמן זית", "דבש", "בשר"],
-    dashboardHint: "פסח מתקרב — יש לך מוצרים כשרים לפסח? עדכנו עכשיו",
     color: "#B45309", // amber-700
   },
   shavuot: {
-    name: "שבועות",
     icon: "Cheese",
     start: "2027-06-10",
     end: "2027-06-11",
-    tagline: "גבינות ומוצרי חלב איכותיים לחג",
-    cta: "הצגת גבינות ומוצרי חלב",
     searchParams: { q: "גבינות" },
-    featured: ["גבינות", "חלב", "יוגורט", "שמנת"],
-    dashboardHint: "שבועות מתקרב — ספקי חלב וגבינות: הוסיפו את המוצרים שלך",
     color: "#1D4ED8", // blue-700
   },
   rosh_hashana: {
-    name: "ראש השנה",
     icon: "Jar",
     start: "2026-09-11",
     end: "2026-09-13",
-    tagline: "תפוח ודבש, רימון ועוד — מהמיטב המקומי",
-    cta: "הצגת מוצרי ראש השנה",
     searchParams: { q: "דבש" },
-    featured: ["דבש", "תפוחים", "רימון", "תמרים"],
-    dashboardHint: "ראש השנה מתקרב — תפוחים, דבש, רימון: עדכנו את הקטלוג",
     color: "#B45309",
   },
   sukkot: {
-    name: "סוכות",
     icon: "Leaf",
     start: "2026-09-25",
     end: "2026-10-03",
-    tagline: "פירות הארץ ומוצרי עונה טריים",
-    cta: "הצגת מוצרי סוכות",
     searchParams: { q: "פירות" },
-    featured: ["פירות", "ירקות", "אתרוג", "ארבעת המינים"],
-    dashboardHint: "סוכות מתקרב — פירות הארץ בעונה: עדכנו את המוצרים שלך",
     color: "#15803D",
   },
   chanuka: {
-    name: "חנוכה",
     icon: "Flame",
     start: "2026-12-05",
     end: "2026-12-12",
-    tagline: "שמן זית כתית מהמיטב — הדליקי אור",
-    cta: "הצגת שמן זית",
     searchParams: { q: "שמן זית" },
-    featured: ["שמן זית", "שמן זית כתית"],
-    dashboardHint: "חנוכה מתקרב — יש לך שמן זית? חג השמן הוא ההזדמנות שלך",
     color: "#1D4ED8",
   },
   tu_bishvat: {
-    name: "ט\"ו בשבט",
     icon: "Tree",
     start: "2027-01-23",
     end: "2027-01-23",
-    tagline: "דבש, פירות יבשים ופירות הארץ",
-    cta: "הצגת מוצרי ט׳ו בשבט",
     searchParams: { q: "דבש" },
-    featured: ["דבש", "פירות יבשים", "שקדים", "תאנים"],
-    dashboardHint: "ט׳ו בשבט מתקרב — מוצרי ארץ ישראל: עדכנו את הקטלוג",
     color: "#15803D",
   },
 };
