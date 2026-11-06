@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { israelTime, shekels } from "@/lib/rescue";
@@ -15,10 +16,14 @@ import { israelTime, shekels } from "@/lib/rescue";
  *           It also does NOT promise an SMS — nothing in this stack sends one,
  *           so the copy says «אומרים בקופה» and stops there.
  * Related:  components/rescue/RescueSection.jsx (reserves, then renders this)
- * History:  MEH-2648 (creation)
+ * History:  MEH-2648 (creation) · MEH-2737 (cancel asks first; past the
+ *           cutoff the terms say it can no longer be cancelled)
  */
 export default function RescueConfirmation({ order, onCancel, cancelling = false }) {
   const t = useTranslations("rescue");
+  // MEH-2737: the cancel link asks before it acts — one stray tap used to
+  // give the bag away with no way back.
+  const [asking, setAsking] = useState(false);
   if (!order) return null;
 
   const price = shekels(order.price_agorot);
@@ -73,7 +78,10 @@ export default function RescueConfirmation({ order, onCancel, cancelling = false
 
       {cancelUntil && !handed && (
         <p className="font-body-sm text-sm text-fg-muted mt-2" data-testid="rescue-confirmation-terms">
-          {t("confirm.terms", { cancel_until: cancelUntil })}
+          {/* MEH-2737: past the cutoff, never a time that has already gone by. */}
+          {order.status === "reserved" && !cancellable
+            ? t("confirm.terms_no_cancel")
+            : t("confirm.terms", { cancel_until: cancelUntil })}
         </p>
       )}
 
@@ -89,10 +97,50 @@ export default function RescueConfirmation({ order, onCancel, cancelling = false
         </li>
       </ol>
 
-      {onCancel && cancellable && (
+      {onCancel && cancellable && asking && (
+        <div
+          role="group"
+          aria-labelledby="rescue-cancel-ask-title"
+          data-testid="rescue-cancel-ask"
+          className="mt-4 border-t border-border pt-3"
+        >
+          <p id="rescue-cancel-ask-title" className="font-body-sm text-sm font-semibold text-text">
+            {t("confirm.cancel_ask_title")}
+          </p>
+          <p className="font-body-sm text-sm text-fg-muted mt-1">{t("confirm.cancel_ask_body")}</p>
+          <div className="flex flex-wrap justify-center gap-2 mt-3">
+            <button
+              type="button"
+              onClick={async () => {
+                // The question closes once the attempt is over: on success
+                // this whole card goes, on a refusal the reason shows under
+                // it and a second «כן» would only be refused again.
+                await onCancel();
+                setAsking(false);
+              }}
+              disabled={cancelling}
+              data-testid="rescue-cancel-yes"
+              className="min-h-[44px] px-4 rounded-md border border-error text-error font-body-sm text-sm font-medium disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
+              {t("confirm.cancel_yes")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setAsking(false)}
+              disabled={cancelling}
+              data-testid="rescue-cancel-no"
+              className="min-h-[44px] px-4 rounded-md bg-primary text-white font-body-sm text-sm font-medium disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
+              {t("confirm.cancel_no")}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {onCancel && cancellable && !asking && (
         <button
           type="button"
-          onClick={onCancel}
+          onClick={() => setAsking(true)}
           disabled={cancelling}
           data-testid="rescue-confirmation-cancel"
           className="mt-4 font-body-sm text-sm text-fg-muted underline disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded"

@@ -13,6 +13,7 @@ import {
   fetchMyOrders,
   fetchOffers,
   israelTime,
+  cancelErrorKey,
   rescueBagsEnabled,
   reserveBag,
   reserveErrorKey,
@@ -30,7 +31,9 @@ import {
  * Related:  app/[locale]/producer/[id]/components/ProducerSections.jsx (slot,
  *           before section-products), lib/rescue.js
  * History:  MEH-2648 (creation) · MEH-2713 (icon-row card: price up top,
- *           one short cancel line, allergens folded)
+ *           one short cancel line, allergens folded) · MEH-2737 (a cancel
+ *           says it worked, or why not; past the cutoff the card says the bag
+ *           can no longer be cancelled)
  */
 
 /** The struck-through "worth": the business's own LOW estimate, and only when
@@ -47,6 +50,8 @@ export default function RescueSection({ producer }) {
   const [busy, setBusy] = useState(false);
   const [errorKey, setErrorKey] = useState(null);
   const [reviewed, setReviewed] = useState(false);
+  // MEH-2737: shown once the cancel went through, until the next reserve.
+  const [cancelled, setCancelled] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -107,7 +112,9 @@ export default function RescueSection({ producer }) {
   if (!rescueBagsEnabled()) return null;
   // No bag today is the ordinary case for most businesses most days, and it
   // renders nothing at all rather than an empty "no bags" shelf.
-  if (!offer && !order) return null;
+  // …except right after a cancel of the last bag: the list had dropped the
+  // sold-out offer, and the buyer must still read that the cancel worked.
+  if (!offer && !order && !cancelled) return null;
 
   async function reserve() {
     // MEH-2700: a known guest gets the sign-in line straight away. Sending the
@@ -119,6 +126,7 @@ export default function RescueSection({ producer }) {
     }
     setBusy(true);
     setErrorKey(null);
+    setCancelled(false);
     try {
       setOrder(await reserveBag({ offerId: offer.id }));
     } catch (err) {
@@ -130,11 +138,19 @@ export default function RescueSection({ producer }) {
 
   async function cancel() {
     setBusy(true);
+    setErrorKey(null);
     try {
       await cancelOrder(order.id);
       setOrder(null);
-    } catch {
-      setErrorKey("errors.generic");
+      setCancelled(true);
+      // The bag went back on the list: re-read it, so the card shows the
+      // right stock — and reappears if hers was the last one and the list
+      // had dropped it. A failed read keeps the card as it was.
+      fetchOffers({ city: producer?.city || undefined })
+        .then((rows) => setOffer(rows.find((row) => row.producer?.id === producer?.id) || null))
+        .catch(() => {});
+    } catch (err) {
+      setErrorKey(cancelErrorKey(err));
     } finally {
       setBusy(false);
     }
@@ -143,6 +159,12 @@ export default function RescueSection({ producer }) {
   const price = shekels(offer?.price_agorot);
   const worth = shekels(worthAgorot(offer));
   const cancelUntil = israelTime(offer?.cancel_until);
+  const cutoffPassed = offer?.cancel_until ? new Date(offer.cancel_until) <= new Date() : false;
+  const errorLine = errorKey && (
+    <p className="font-body-sm text-sm text-error" role="alert" data-testid="rescue-section-error">
+      {t(errorKey)}
+    </p>
+  );
   const from = israelTime(offer?.pickup_start);
   const until = israelTime(offer?.pickup_end);
 
@@ -154,9 +176,20 @@ export default function RescueSection({ producer }) {
     >
       <h2 className="font-headline-md text-lg font-black text-text">{t("section.title")}</h2>
 
+      {cancelled && (
+        <p
+          role="status"
+          data-testid="rescue-cancelled-notice"
+          className="mt-3 font-body-sm text-sm text-text bg-surface-card border border-border rounded-md px-4 py-3"
+        >
+          {t("section.cancelled")}
+        </p>
+      )}
+
       {order ? (
         <div className="mt-3 space-y-4">
           <RescueConfirmation order={order} onCancel={cancel} cancelling={busy} />
+          {errorLine}
           {/* The review only appears once the business marked it handed; the
               API refuses it before that with a 409, so showing it earlier
               would be a button that cannot work. */}
@@ -169,7 +202,7 @@ export default function RescueSection({ producer }) {
             </p>
           )}
         </div>
-      ) : (
+      ) : offer ? (
         <div
           className="mt-3 border border-border bg-surface-card rounded-md p-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_220px] md:gap-x-5 md:items-center"
           data-testid="rescue-section-card"
@@ -219,11 +252,7 @@ export default function RescueSection({ producer }) {
 
           <div className="grid gap-2 md:text-center">
             <PriceBlock className="hidden md:block" price={price} worth={worth} t={t} />
-            {errorKey && (
-              <p className="font-body-sm text-sm text-error" data-testid="rescue-section-error">
-                {t(errorKey)}
-              </p>
-            )}
+            {errorLine}
             <button
               type="button"
               onClick={reserve}
@@ -237,7 +266,7 @@ export default function RescueSection({ producer }) {
                 confirmation, where confirm.terms still carries it. */}
             {cancelUntil && (
               <p className="font-body-sm text-sm text-fg-muted text-center" data-testid="rescue-section-terms">
-                {t("section.cancel_until", { time: cancelUntil })}
+                {cutoffPassed ? t("section.no_cancel") : t("section.cancel_until", { time: cancelUntil })}
               </p>
             )}
           </div>
@@ -250,7 +279,7 @@ export default function RescueSection({ producer }) {
             <p className="mt-1.5">{t("section.allergens")}</p>
           </details>
         </div>
-      )}
+      ) : null}
     </section>
   );
 }

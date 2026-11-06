@@ -205,3 +205,18 @@ export function reserveErrorKey(error) {
   }
   return "errors.generic";
 }
+
+/**
+ * MEH-2737 — the message for a refused cancel. The API answers 409 with
+ * «מועד הביטול החופשי חלף» when the free-cancel cutoff passed between the
+ * page loading and the tap; that gets its own line, because «משהו נתקע»
+ * would send the buyer to tap again on something that cannot work.
+ */
+export function cancelErrorKey(error) {
+  const status = error?.response?.status;
+  const detail = error?.response?.data?.detail;
+  if (status === HTTP_CONFLICT && typeof detail === "string" && detail.includes("מועד הביטול")) {
+    return "errors.cancel_too_late";
+  }
+  return "errors.generic";
+}

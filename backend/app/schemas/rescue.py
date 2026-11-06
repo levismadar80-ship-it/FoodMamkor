@@ -354,7 +354,12 @@ class RescueMetricsOut(BaseModel):
     sell_through: float | None = None
     orders_total: int
     no_shows: int
+    # MEH-2737: out of the reservations that were not cancelled.
     no_show_rate: float | None = None
+    # MEH-2737: cancelled reservations (by the buyer or with the bag) and
+    # bags the business cancelled. Shown, never part of the two rates.
+    orders_cancelled: int
+    offers_cancelled: int
     buyers_total: int
     repeat_buyers: int
     # MEH-2703: owner-reported «נמסרו בחינם», summed over the window.

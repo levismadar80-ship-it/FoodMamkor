@@ -2397,8 +2397,10 @@ export const PilotMetricsAdminRescueMetricsGetResponse = /*#__PURE__*/ zod.objec
   "days": /*#__PURE__*/ zod.int(),
   "no_show_rate": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
   "no_shows": /*#__PURE__*/ zod.int(),
+  "offers_cancelled": /*#__PURE__*/ zod.int(),
   "offers_per_day": /*#__PURE__*/ zod.number(),
   "offers_total": /*#__PURE__*/ zod.int(),
+  "orders_cancelled": /*#__PURE__*/ zod.int(),
   "orders_total": /*#__PURE__*/ zod.int(),
   "repeat_buyers": /*#__PURE__*/ zod.int(),
   "sell_through": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()]))

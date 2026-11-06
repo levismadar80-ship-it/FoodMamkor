@@ -725,3 +725,111 @@ describe("a guest taps reserve (MEH-2700)", () => {
     expect(reserveBag).not.toHaveBeenCalled();
   });
 });
+
+// MEH-2737 — copy approved word for word by Sapir on 6/11 («מאשרת 1-8»).
+describe("cancelling a reservation (MEH-2737)", () => {
+  async function reservedSection() {
+    reserveBag.mockResolvedValue(order());
+    render(<RescueSection producer={PRODUCER} />);
+    fireEvent.click(await screen.findByTestId("rescue-reserve"));
+    await screen.findByTestId("rescue-confirmation-code");
+  }
+
+  it("the first tap asks, and nothing is cancelled yet", async () => {
+    await reservedSection();
+    fireEvent.click(screen.getByTestId("rescue-confirmation-cancel"));
+    const ask = screen.getByTestId("rescue-cancel-ask");
+    expect(ask.textContent).toContain("לבטל את השריון?");
+    expect(ask.textContent).toContain("הסל יחזור לרשימה ומישהו אחר יוכל לשריין אותו.");
+    expect(screen.getByTestId("rescue-cancel-yes").textContent).toBe("כן, לבטל");
+    expect(screen.getByTestId("rescue-cancel-no").textContent).toBe("לא, להשאיר");
+    expect(cancelOrder).not.toHaveBeenCalled();
+  });
+
+  it("«לא, להשאיר» closes the question and keeps the code", async () => {
+    await reservedSection();
+    fireEvent.click(screen.getByTestId("rescue-confirmation-cancel"));
+    fireEvent.click(screen.getByTestId("rescue-cancel-no"));
+    expect(screen.queryByTestId("rescue-cancel-ask")).toBeNull();
+    expect(screen.getByTestId("rescue-confirmation-code").textContent).toBe("0431");
+    expect(cancelOrder).not.toHaveBeenCalled();
+  });
+
+  it("«כן, לבטל» cancels and says so, and the reserve button is back", async () => {
+    cancelOrder.mockResolvedValue({ ...order(), status: "cancelled" });
+    await reservedSection();
+    fireEvent.click(screen.getByTestId("rescue-confirmation-cancel"));
+    fireEvent.click(screen.getByTestId("rescue-cancel-yes"));
+    const done = await screen.findByTestId("rescue-cancelled-notice");
+    expect(done.textContent).toBe("השריון בוטל, והסל חזר לרשימה.");
+    expect(cancelOrder).toHaveBeenCalledWith("ord1");
+    expect(screen.queryByTestId("rescue-confirmation-code")).toBeNull();
+    expect(screen.getByTestId("rescue-reserve")).toBeTruthy();
+  });
+
+  it("the notice shows even when the bag had been sold out and left the list", async () => {
+    // Her bag was the last one: the public list dropped it, so the section
+    // holds only her order. After the cancel there is no offer to show — the
+    // notice must still render instead of the section vanishing.
+    fetchOffers.mockResolvedValue([]);
+    fetchMyOrders.mockResolvedValue([{ ...order(), producer_id: PRODUCER.id }]);
+    cancelOrder.mockResolvedValue({ ...order(), status: "cancelled" });
+    render(<RescueSection producer={PRODUCER} />);
+    fireEvent.click(await screen.findByTestId("rescue-confirmation-cancel"));
+    // The cancel put the bag back on the list; the re-read brings the card back.
+    fetchOffers.mockResolvedValue([offer({ qty_left: 1 })]);
+    fireEvent.click(screen.getByTestId("rescue-cancel-yes"));
+    expect((await screen.findByTestId("rescue-cancelled-notice")).textContent).toBe(
+      "השריון בוטל, והסל חזר לרשימה.",
+    );
+    expect((await screen.findByTestId("rescue-section-stock")).textContent).toContain("1");
+  });
+
+  it("a cancel refused because the cutoff passed says so, and the code stays", async () => {
+    cancelOrder.mockRejectedValue({
+      response: { status: 409, data: { detail: "מועד הביטול החופשי חלף" } },
+    });
+    await reservedSection();
+    fireEvent.click(screen.getByTestId("rescue-confirmation-cancel"));
+    fireEvent.click(screen.getByTestId("rescue-cancel-yes"));
+    const err = await screen.findByTestId("rescue-section-error");
+    expect(err.textContent).toBe("מועד הביטול החינמי כבר עבר, אז השריון נשאר בתוקף.");
+    expect(screen.getByTestId("rescue-confirmation-code").textContent).toBe("0431");
+    // The question is closed: a second «כן» could only be refused again.
+    await waitFor(() => expect(screen.queryByTestId("rescue-cancel-ask")).toBeNull());
+  });
+
+  it("any other cancel failure shows the generic line next to the code", async () => {
+    cancelOrder.mockRejectedValue({ response: { status: 500 } });
+    await reservedSection();
+    fireEvent.click(screen.getByTestId("rescue-confirmation-cancel"));
+    fireEvent.click(screen.getByTestId("rescue-cancel-yes"));
+    expect((await screen.findByTestId("rescue-section-error")).textContent).toBe(
+      lookup("rescue.errors.generic"),
+    );
+  });
+});
+
+describe("reserving after the free-cancel cutoff (MEH-2737)", () => {
+  const past = () => new Date(Date.now() - 60_000).toISOString();
+
+  it("under the CTA: the bag can no longer be cancelled, never a time that has passed", async () => {
+    fetchOffers.mockResolvedValue([offer({ cancel_until: past() })]);
+    render(<RescueSection producer={PRODUCER} />);
+    const terms = await screen.findByTestId("rescue-section-terms");
+    expect(terms.textContent).toBe("את הסל הזה כבר אי אפשר לבטל");
+  });
+
+  it("before the cutoff the line still gives the time (control)", async () => {
+    render(<RescueSection producer={PRODUCER} />);
+    const terms = await screen.findByTestId("rescue-section-terms");
+    expect(terms.textContent).toMatch(/^ביטול חינם עד \d{2}:\d{2}$/);
+  });
+
+  it("the confirmation keeps the no-show rule and drops the time", () => {
+    render(<RescueConfirmation order={order({ cancel_until: past() })} onCancel={() => {}} />);
+    expect(screen.getByTestId("rescue-confirmation-terms").textContent).toBe(
+      "אי אפשר לבטל · שתי אי-הגעות = חסימה",
+    );
+  });
+});

@@ -372,3 +372,52 @@ class TestTypicalItems:
             "/producers/me/rescue/typical-items", headers=auth_header(shop["owner"])
         ).json()
         assert mine["items"] == []
+
+
+class TestPilotMetricsCancellations:
+    """MEH-2737 — cancelled reservations and cancelled bags must not move the
+    two numbers the pilot is judged on (no-show rate → prepay decision, and
+    sell-through)."""
+
+    def test_cancelled_orders_leave_the_no_show_denominator(
+        self, client, db, shop, rescue_on
+    ):
+        admin = make_user(db, email="m-cancel@example.com", role="admin")
+        a = make_user(db, email="m-a@example.com")
+        b = make_user(db, email="m-b@example.com")
+        db.commit()
+        offer = _seed_offer(db, shop["location"], qty_total=10, qty_left=8)
+        db.add_all(
+            [
+                RescueOrder(offer_id=offer.id, user_id=a.id, qty=1,
+                            pickup_code="2001", status="handed"),
+                RescueOrder(offer_id=offer.id, user_id=a.id, qty=1,
+                            pickup_code="2002", status="no_show"),
+                RescueOrder(offer_id=offer.id, user_id=b.id, qty=1,
+                            pickup_code="2003", status="cancelled"),
+                RescueOrder(offer_id=offer.id, user_id=b.id, qty=1,
+                            pickup_code="2004", status="cancelled"),
+            ]
+        )
+        db.commit()
+        body = client.get("/admin/rescue/metrics", headers=auth_header(admin)).json()
+        assert body["orders_total"] == 4
+        assert body["orders_cancelled"] == 2
+        assert body["no_show_rate"] == 0.5, "1 no-show of 2 orders that stood"
+        assert body["buyers_total"] == 1, "a buyer who only cancelled bought nothing"
+        assert body["repeat_buyers"] == 1
+
+    def test_a_cancelled_bag_is_neither_offered_nor_reserved(
+        self, client, db, shop, rescue_on
+    ):
+        admin = make_user(db, email="m-offer@example.com", role="admin")
+        db.commit()
+        _seed_offer(db, shop["location"], qty_total=10, qty_left=5)
+        _seed_offer(
+            db, shop["location"], qty_total=6, qty_left=2, status="cancelled"
+        )
+        body = client.get("/admin/rescue/metrics", headers=auth_header(admin)).json()
+        assert body["bags_offered"] == 10
+        assert body["bags_reserved"] == 5
+        assert body["sell_through"] == 0.5
+        assert body["offers_cancelled"] == 1

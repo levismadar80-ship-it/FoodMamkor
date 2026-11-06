@@ -5723,7 +5723,9 @@
       "typical": "Usually: {items}",
       "allergens": "May contain gluten, milk, nuts and sesame. Ask at the business before pickup.",
       "allergens_title": "Allergens",
-      "cancel_until": "Free cancellation until {time}"
+      "cancel_until": "Free cancellation until {time}",
+      "no_cancel": "This bag can no longer be cancelled",
+      "cancelled": "Your reservation is cancelled, and the bag is back on the list."
     },
     "confirm": {
       "title": "Your bag is reserved",
@@ -5733,7 +5735,12 @@
       "step_reserved": "Reserved",
       "step_collect": "To collect",
       "step_done": "Handed over",
-      "cancel": "Cancel the reservation"
+      "cancel": "Cancel the reservation",
+      "terms_no_cancel": "No cancellation · two no-shows = blocked",
+      "cancel_ask_title": "Cancel the reservation?",
+      "cancel_ask_body": "The bag goes back on the list and someone else can reserve it.",
+      "cancel_yes": "Yes, cancel",
+      "cancel_no": "No, keep it"
     },
     "review": {
       "title": "How was the bag?",
@@ -5758,7 +5765,8 @@
       "max_two": "You can reserve up to two bags.",
       "sign_in": "Sign in to reserve a bag.",
       "gone": "Rescue bags aren't active right now.",
-      "generic": "Something got stuck. Try again."
+      "generic": "Something got stuck. Try again.",
+      "cancel_too_late": "The free cancellation time has passed, so your reservation stands."
     },
     "dashboard": {
       "title": "Rescue bags",

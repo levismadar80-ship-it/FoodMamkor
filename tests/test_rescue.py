@@ -910,3 +910,169 @@ class TestReserveEmail:
         assert sent == []
         db.refresh(offer)
         assert offer.qty_left == 1
+
+
+class TestBuyerCancelHardening:
+    """MEH-2737 — the buyer's cancel, after the 6/11 research.
+
+    Copy in these assertions was approved word for word by Sapir on 6/11
+    («מאשרת 1-8», texts 4 and 5 here).
+    """
+
+    @staticmethod
+    def _capture(monkeypatch):
+        sent = []
+        monkeypatch.setattr(
+            "app.services.rescue_emails.send_email",
+            lambda to, subject, body, html=None, reply_to=None: sent.append(
+                {"to": to, "subject": subject, "body": body, "html": html}
+            ),
+        )
+        return sent
+
+    def _reserve(self, client, offer, buyer, qty=1):
+        r = client.post(
+            "/rescue/orders",
+            json={"offer_id": str(offer.id), "qty": qty},
+            headers=auth_header(buyer),
+        )
+        assert r.status_code == 201, r.text
+        return r.json()
+
+    def test_the_cancel_path_locks_the_order_row_before_giving_stock_back(
+        self, client, db, shop, rescue_on
+    ):
+        """Two cancels of one order (a double tap, or the page and the email
+        at once) both read `reserved` before either commits; without a lock on
+        the ORDER both add its bags back and the offer shows a bag that does
+        not exist. The offer lock alone does not stop it — the order was read
+        before the lock. Observed on the statements the handler issues, the
+        same way the reservation lock is tested above."""
+        offer = _seed_offer(db, shop["location"], qty_total=2)
+        buyer = make_user(db, email="lockcancel@example.com")
+        db.commit()
+        order = self._reserve(client, offer, buyer)
+
+        seen: list[str] = []
+
+        def _capture(conn, cursor, statement, params, context, executemany):
+            seen.append(statement)
+
+        event.listen(engine, "before_cursor_execute", _capture)
+        try:
+            r = client.post(
+                f"/rescue/orders/{order['id']}/cancel", headers=auth_header(buyer)
+            )
+        finally:
+            event.remove(engine, "before_cursor_execute", _capture)
+
+        assert r.status_code == 200, r.text
+        assert any("rescue_orders" in s for s in seen), "the listener saw nothing"
+        locking = [
+            s
+            for s in seen
+            if "FOR UPDATE" in s.upper()
+            and "FROM rescue_orders" in s
+            and "rescue_offers" not in s.split("FROM", 1)[1].split("WHERE", 1)[0]
+        ]
+        assert locking, (
+            "cancelling did not lock the order row — "
+            f"{len(seen)} statements seen, none a FOR UPDATE on rescue_orders"
+        )
+
+    def test_a_second_cancel_is_409_and_stock_rises_once(
+        self, client, db, shop, rescue_on
+    ):
+        offer = _seed_offer(db, shop["location"], qty_total=3)
+        buyer = make_user(db, email="twice@example.com")
+        db.commit()
+        order = self._reserve(client, offer, buyer)
+        first = client.post(
+            f"/rescue/orders/{order['id']}/cancel", headers=auth_header(buyer)
+        )
+        second = client.post(
+            f"/rescue/orders/{order['id']}/cancel", headers=auth_header(buyer)
+        )
+        assert first.status_code == 200
+        assert second.status_code == 409
+        db.refresh(offer)
+        assert offer.qty_left == 3
+
+    def test_a_cancel_emails_the_buyer(self, client, db, shop, rescue_on, monkeypatch):
+        sent = self._capture(monkeypatch)
+        offer = _seed_offer(db, shop["location"], qty_total=2)
+        buyer = make_user(db, email="cancelmail@example.com")
+        db.commit()
+        order = self._reserve(client, offer, buyer)
+        sent.clear()  # the reservation email
+
+        r = client.post(
+            f"/rescue/orders/{order['id']}/cancel", headers=auth_header(buyer)
+        )
+        assert r.status_code == 200
+        assert len(sent) == 1, sent
+        mail = sent[0]
+        assert mail["to"] == "cancelmail@example.com"
+        assert mail["subject"] == "השריון במאפיית ההצלה בוטל"
+        html_text = re.sub(r"<[^>]+>", "", mail["html"]).replace("&nbsp;", " ")
+        for part in (mail["body"], html_text):
+            assert (
+                "ביטלנו את השריון שלכם לסל במאפיית ההצלה. "
+                "הקוד כבר לא בתוקף ואין צורך להגיע." in part
+            )
+            assert "תודה שביטלתם בזמן, ככה הסל יגיע למישהו אחר." in part
+            assert "צוות מהמקור 🌱" in part
+        assert order["pickup_code"] not in mail["body"]
+
+    def test_a_refused_cancel_sends_nothing(
+        self, client, db, shop, rescue_on, monkeypatch
+    ):
+        sent = self._capture(monkeypatch)
+        offer = _seed_offer(db, shop["location"], qty_total=2)
+        buyer = make_user(db, email="latecancel@example.com")
+        db.commit()
+        order = self._reserve(client, offer, buyer)
+        sent.clear()
+        offer.cancel_until = utc_now() - timedelta(minutes=1)
+        db.commit()
+        r = client.post(
+            f"/rescue/orders/{order['id']}/cancel", headers=auth_header(buyer)
+        )
+        assert r.status_code == 409
+        assert sent == []
+
+    def test_a_reservation_after_the_cutoff_emails_no_cancel_line_or_button(
+        self, client, db, shop, rescue_on, monkeypatch
+    ):
+        sent = self._capture(monkeypatch)
+        now = utc_now()
+        offer = _seed_offer(
+            db,
+            shop["location"],
+            pickup_start=now - timedelta(minutes=30),
+            pickup_end=now + timedelta(hours=1),
+            cancel_until=now - timedelta(hours=1),
+        )
+        buyer = make_user(db, email="aftercut@example.com")
+        db.commit()
+        self._reserve(client, offer, buyer)
+        mail = sent[0]
+        assert "אפשר לבטל בחינם" not in mail["body"]
+        assert "אפשר לבטל בחינם" not in mail["html"]
+        assert "לבטל את השריון" not in mail["html"]
+        assert "לבטל את השריון" not in mail["body"]
+        # The rest of the email is unchanged.
+        assert "צוות מהמקור 🌱" in mail["body"]
+
+    def test_a_reservation_before_the_cutoff_still_carries_the_cancel_line(
+        self, client, db, shop, rescue_on, monkeypatch
+    ):
+        """Control for the test above: the same assertions inverted, so a
+        change that dropped the line for everyone cannot pass both."""
+        sent = self._capture(monkeypatch)
+        offer = _seed_offer(db, shop["location"])
+        buyer = make_user(db, email="beforecut@example.com")
+        db.commit()
+        self._reserve(client, offer, buyer)
+        assert "אפשר לבטל בחינם עד" in sent[0]["body"]
+        assert "לבטל את השריון" in sent[0]["html"]
