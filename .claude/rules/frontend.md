@@ -255,7 +255,7 @@ only; the desktop chip stayed until MEH-2769.
   detail, rescue card), build both from one function and change both together.
 - A fix that touches one copy only says why in the PR, and asks Sapir when the
   reason is not a locked decision.
-- `/map` is guarded: `map.spec.ts` «one control, one place (MEH-2776)» fails
+- `/map` is guarded: `map.spec.ts` «/map desktop ↔ phone: one control, one place (MEH-2776)» fails
   when a control sits in a different container per shell, or exists in one
   shell without a reason in `SHELL_ONLY`. Add a reason there; don't loosen it.
 

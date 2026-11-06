@@ -1669,6 +1669,8 @@ const TRANSIENT = new Set(["map-search-this-area"]);
 const SHELL_WRAPPERS = new Set(["map-mobile-bar", "map-bottom-sheet", "map-sheet-content"]);
 
 async function shellInventory(page: Page, shellId: string): Promise<Map<string, string>> {
+  // id → sorted, de-duplicated set of containers, so a control that sits in two
+  // containers inside ONE shell is visible to the comparison too.
   const rows = await page.evaluate(
     ([id, wrappers, transient]) => {
       const root = document.querySelector(`[data-testid="${id}"]`);
@@ -1686,7 +1688,9 @@ async function shellInventory(page: Page, shellId: string): Promise<Map<string, 
     },
     [shellId, [...SHELL_WRAPPERS], [...TRANSIENT]] as const,
   );
-  return new Map(rows);
+  const byId = new Map<string, Set<string>>();
+  for (const [id, parent] of rows) byId.set(id, (byId.get(id) ?? new Set()).add(parent));
+  return new Map([...byId].map(([id, parents]) => [id, [...parents].sort().join(" + ")]));
 }
 
 test.describe("manual › /map desktop ↔ phone: one control, one place (MEH-2776)", () => {
@@ -1714,9 +1718,16 @@ test.describe("manual › /map desktop ↔ phone: one control, one place (MEH-27
     expect(moved, "same control, different container").toEqual([]);
 
     const oneShell = [
-      ...[...desktop.keys()].filter((id) => !mobile.has(id)).map((id) => `desktop only: ${id}`),
-      ...[...mobile.keys()].filter((id) => !desktop.has(id)).map((id) => `phone only: ${id}`),
-    ].filter((row) => !(row.split(": ")[1] in SHELL_ONLY));
-    expect(oneShell, "control in one shell only — put it in both, or list it in SHELL_ONLY with why").toEqual([]);
+      ...[...desktop.keys()].filter((id) => !mobile.has(id)).map((id) => ({ id, label: `desktop only: ${id}` })),
+      ...[...mobile.keys()].filter((id) => !desktop.has(id)).map((id) => ({ id, label: `phone only: ${id}` })),
+    ];
+    expect(
+      oneShell.filter(({ id }) => !(id in SHELL_ONLY)).map(({ label }) => label),
+      "control in one shell only — put it in both, or list it in SHELL_ONLY with why",
+    ).toEqual([]);
+    // The exemptions go stale too: an entry that gained a twin, or no longer
+    // renders, would silently hide the drift it was written for.
+    const seenOnce = new Set(oneShell.map(({ id }) => id));
+    expect(Object.keys(SHELL_ONLY).filter((id) => !seenOnce.has(id)), "stale SHELL_ONLY entry").toEqual([]);
   });
 });
