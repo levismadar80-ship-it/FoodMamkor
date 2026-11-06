@@ -44,6 +44,11 @@
 - [ ] העסק מסמן «נמסר», הקונה חוזר ללשונית — **תוצאה מצופה:** טופס הביקורת מופיע בלי רענון; אחרי שליחה ורענון — «תודה», בלי הטופס
 - [ ] אורח פותח דף עסק עם סל — **תוצאה מצופה:** אין הודעת «פג תוקף ההתחברות»
 
+## MEH-2751 — כרטיס בית עסק: בלי נקודת זמינות (06/11/2026)
+- [ ] עסק שסימן «זמין היום» / «עמוס השבוע» / «בהפסקה» — 375, דף הבית — **תוצאה מצופה:** אין נקודה צבעונית ליד הקטגוריה או ליד העיר
+- [ ] אותו עסק בדף העסק — **תוצאה מצופה:** המצב עדיין מוצג שם כמו קודם
+- [ ] עסק בחופשה עם חלון הזמנות פתוח — **תוצאה מצופה:** אין שורת «פתוח להזמנות» בכרטיס (כמו קודם)
+
 ## MEH-2676 — כרטיס בית עסק: משלוח חינם בשורת המשלוח (05/11/2026)
 - [ ] עסק עם מחיר משלוח + הטבת «משלוח חינם מעל» — 375, /producers — **תוצאה מצופה:** שורת משאית אחת «משלוח מ-₪20 · חינם מעל ₪150», הסכום גלוי, אין «…», אין תגית מתנה
 - [ ] עסק בלי מחיר משלוח, עם ההטבה — **תוצאה מצופה:** «משלוח חינם מעל ₪150» בשורת המשאית
@@ -2914,7 +2919,7 @@ _(Desktop top-banner case is covered by the legend assertion above, MEH-1009.)_
 - [ ] **Image ratio** — resize viewport from 375→768→1280; image stays square on mobile, shifts to 4:3 at `lg` breakpoint. No letterboxing / stretching.
 - [ ] **Cloudinary smart-crop** — for a Cloudinary source image, the URL has `c_fill,g_auto,ar_4:3` injected. Portrait producer photos don't crop heads off.
 - [ ] **Rating gate** — producer with `reviews_count = 2` shows no rating; `reviews_count >= 3` shows `★ 4.5 · 12` in the name row, `dir="ltr"`.
-- [ ] **Availability dot** — `availability_state="available_today"` → green; `"on_vacation"` → orange; `"accepting_orders"` → no dot. (The legacy `is_available_today` / `availability_status` are in no API response since MEH-2272 — `curl /producers` shows neither key.)
+- [ ] **Availability dot** — removed from the card in MEH-2751 (06/11/2026): no dot in any `availability_state`. (The legacy `is_available_today` / `availability_status` are in no API response since MEH-2272 — `curl /producers` shows neither key.)
 - [ ] **Description fallback** — `short_description` shown when present; else `top_product_name`; else row hidden. Descriptions past 80 chars get a trailing `…`.
 - [ ] **BadgeRow fold** — producer with `is_verified + is_recommended + organic_certified + grass_fed` shows exactly 2 pills (verified + recommended) per the new 8-key priority.
 - [ ] **Footer** — price truncates at `max-w-[120px]`; primary-method icon switches per `primary_contact_method` (whatsapp → WhatsappLogo, phone → Phone, website → Globe, email → EnvelopeSimple).
