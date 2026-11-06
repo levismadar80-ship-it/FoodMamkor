@@ -35,6 +35,7 @@ import { showToast } from "@/lib/toast";
 import { formatPriceRange } from "@/lib/utils";
 import EmptyState from "@/components/ui/EmptyState";
 import Input from "@/components/ui/Input";
+import Button from "@/components/ui/Button";
 
 // MEH-2047: the diet tags that carry a definition, in the order the chip row
 // above them renders. Each key resolves BOTH strings — the term from the chip's
@@ -715,13 +716,13 @@ export default function ProductsSection({
                 </div>
               </div>
               <div className="flex gap-2">
-                <button
+                <Button
                   type="submit"
                   disabled={savingEdit || editUploading}
-                  className="flex-1 bg-primary text-white rounded-sm py-2 text-sm font-medium hover:bg-primary-dark transition disabled:opacity-50"
+                  variant="primary" size="sm" className="flex-1"
                 >
                   {savingEdit ? t("save_edit_saving") : t("save_edit_cta")}
-                </button>
+                </Button>
                 <button
                   type="button"
                   onClick={cancelEdit}
@@ -942,13 +943,13 @@ export default function ProductsSection({
             </div>
           </div>
           <div className="flex gap-2">
-            <button
+            <Button
               type="submit"
               disabled={saving || uploading}
-              className="flex-1 bg-primary text-white rounded-sm py-2 text-sm font-medium hover:bg-primary-dark transition disabled:opacity-50"
+              variant="primary" size="sm" className="flex-1"
             >
               {saving ? t("add_submitting") : t("add_submit_cta")}
-            </button>
+            </Button>
           </div>
         </form>
       )}
@@ -972,14 +973,14 @@ export default function ProductsSection({
             <p className="text-sm text-fg-muted">{t("delete_confirm.body")}</p>
             {error && <p className="text-sm text-danger-600">{error}</p>}
             <div className="flex gap-3 justify-start pt-1">
-              <button
+              <Button
                 type="button"
                 disabled={deletingId != null}
                 onClick={() => handleDelete(confirmDelete.id)}
-                className="px-4 py-2 rounded-[10px] text-sm font-medium text-white transition bg-danger-600 hover:bg-danger-700 disabled:opacity-50"
+                variant="danger" size="sm"
               >
                 {t("delete_confirm.confirm")}
-              </button>
+              </Button>
               <button
                 type="button"
                 data-autofocus
@@ -1011,7 +1012,7 @@ export default function ProductsSection({
               {t("duplicate_name_confirm.title")}
             </p>
             <div className="flex gap-3 justify-start pt-1">
-              <button
+              <Button
                 type="button"
                 data-testid="duplicate-confirm"
                 disabled={saving}
@@ -1019,10 +1020,10 @@ export default function ProductsSection({
                   setConfirmDuplicate(false);
                   submitAdd();
                 }}
-                className="px-4 py-2 rounded-[10px] text-sm font-medium text-white transition bg-primary hover:opacity-90 disabled:opacity-50"
+                variant="primary" size="sm"
               >
                 {t("duplicate_name_confirm.confirm")}
-              </button>
+              </Button>
               <button
                 type="button"
                 data-testid="duplicate-cancel"

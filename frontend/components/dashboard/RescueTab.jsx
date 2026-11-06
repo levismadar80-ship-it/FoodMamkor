@@ -6,6 +6,7 @@ import { Link as LocaleLink } from "@/i18n/navigation";
 
 import api from "@/lib/api";
 import { israelTime, leftoverGroupUrl, shekels } from "@/lib/rescue";
+import Button from "@/components/ui/Button";
 
 /**
  * Module:   RescueTab
@@ -259,14 +260,14 @@ export default function RescueTab() {
           data-testid="rescue-code-input"
           className="flex-1 border border-border rounded-md px-3 py-2 text-center tracking-[0.3em]"
         />
-        <button
+        <Button
           type="button"
           onClick={handByCode}
           data-testid="rescue-code-submit"
-          className="bg-primary text-white px-4 rounded-md font-medium"
+          variant="primary"
         >
           {t("hand_over")}
-        </button>
+        </Button>
       </div>
 
       {notice && (
@@ -414,22 +415,22 @@ export default function RescueTab() {
               </select>
             </label>
           </div>
-          <button
+          <Button
             type="button"
             onClick={() => publish(0)}
             data-testid="rescue-publish-today"
-            className="w-full bg-primary text-white py-2 rounded-md font-medium"
+            variant="primary" className="w-full"
           >
             {t("publish_today", { price: shekels(Number(form.price) * 100) ?? form.price })}
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={() => publish(1)}
             data-testid="rescue-publish-tomorrow"
-            className="w-full border border-primary text-primary py-2 rounded-md font-medium"
+            variant="outlined" className="w-full"
           >
             {t("publish_tomorrow", { n: form.qty_total })}
-          </button>
+          </Button>
         </section>
       )}
 
@@ -443,14 +444,14 @@ export default function RescueTab() {
           data-testid="rescue-items-input"
           className="w-full border border-border rounded-md px-3 py-2"
         />
-        <button
+        <Button
           type="button"
           onClick={saveItems}
           data-testid="rescue-items-save"
-          className="border border-primary text-primary px-4 py-2 rounded-md font-medium"
+          variant="outlined"
         >
           {t("items_save")}
-        </button>
+        </Button>
       </section>
 
       {/* MEH-2703: only once the window closed and something was not
@@ -520,15 +521,15 @@ export default function RescueTab() {
                   ))}
                 </select>
               </div>
-              <button
+              <Button
                 type="button"
                 onClick={() => markDonated(chosenQty)}
                 disabled={donating}
                 data-testid="rescue-leftover-donated"
-                className="w-full border border-primary text-primary py-2 rounded-md font-medium disabled:opacity-60"
+                variant="outlined" className="w-full"
               >
                 {t("leftover_donated")}
-              </button>
+              </Button>
               <p className="font-body-sm text-xs text-fg-muted">{t("leftover_donated_help")}</p>
             </div>
           )}

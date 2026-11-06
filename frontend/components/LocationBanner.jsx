@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { MapPin, X } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { COOKIE_CONSENT_EVENT, hasCookieConsent } from "@/lib/cookie-consent";
+import Button from "@/components/ui/Button";
 
 const DISMISS_KEY = "location_banner_dismissed";
 
@@ -68,13 +69,13 @@ export default function LocationBanner({ hasCity, onOpenModal, suppressed = fals
         </p>
       </div>
       <div className="flex items-center gap-2 shrink-0">
-        <button
+        <Button
           type="button"
           onClick={onOpenModal}
-          className="bg-primary text-white text-sm font-medium px-4 py-1.5 rounded-sm hover:bg-primary-dark transition whitespace-nowrap"
+          variant="primary" size="sm" className="whitespace-nowrap"
         >
           {t("choose_city")}
-        </button>
+        </Button>
         <button
           type="button"
           onClick={dismiss}

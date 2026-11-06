@@ -44,6 +44,7 @@ import {
 } from "@/lib/register-draft";
 import { FARMER_DECLARATION_CATEGORIES } from "@/lib/farmer-declaration";
 import BrandLoader from "@/components/BrandLoader";
+import Button from "@/components/ui/Button";
 
 // MEH-847 (S7 Chunk B): wizard step enum — single source for the 3→5 re-index.
 const STEP = { ACCOUNT: 1, DETAILS: 2, CATEGORY: 3, STORY: 4, CONFIRM: 5 };
@@ -1099,7 +1100,7 @@ function RegisterProducerPageBody() {
               <PasswordStrength password={form.password} />
             </div>
             {stepError && <p role="alert" className="text-error text-sm">{stepError}</p>}
-            <button
+            <Button
               data-testid="register-account-next"
               onClick={() => {
                 // MEH-1807: ACCOUNT already validated its OWN fields on its own
@@ -1132,10 +1133,10 @@ function RegisterProducerPageBody() {
                 setStepError("");
                 setStep(STEP.DETAILS);
               }}
-              className="w-full bg-primary text-white py-3 rounded-md hover:bg-primary-dark transition font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
+              variant="primary" size="lg" className="w-full"
             >
               {t("auth.register.producer.actions.next")}
-            </button>
+            </Button>
           </div>
         )}
 
@@ -1300,7 +1301,7 @@ function RegisterProducerPageBody() {
               {!isUpgrade && (
                 <button data-testid="register-details-back" onClick={() => { setStepError(""); setError(""); setStep(STEP.ACCOUNT); }} className="text-muted">{t("auth.register.producer.actions.back")}</button>
               )}
-              <button
+              <Button
                 data-testid="register-details-next"
                 onClick={() => {
                   // MEH-1807: producer_name + phone + city (MEH-2015 chunk B) are
@@ -1336,10 +1337,10 @@ function RegisterProducerPageBody() {
                   setStepError("");
                   setStep(STEP.CATEGORY);
                 }}
-                className="flex-1 bg-primary text-white py-3 rounded-md hover:bg-primary-dark transition font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
+                variant="primary" size="lg" className="flex-1"
               >
                 {t("auth.register.producer.actions.next")}
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -1509,7 +1510,7 @@ function RegisterProducerPageBody() {
 
             <div className="flex gap-3">
               <button data-testid="register-category-back" onClick={() => { setStepError(""); setError(""); setLicenseRequiredError(false); setStep(STEP.DETAILS); }} className="text-muted">{t("auth.register.producer.actions.back")}</button>
-              <button
+              <Button
                 data-testid="register-category-next"
                 onClick={() => {
                   // MEH-1807: "at least one category" is validated on the step
@@ -1535,10 +1536,10 @@ function RegisterProducerPageBody() {
                   setLicenseRequiredError(false);
                   setStep(STEP.STORY);
                 }}
-                className="flex-1 bg-primary text-white py-3 rounded-md hover:bg-primary-dark transition font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
+                variant="primary" size="lg" className="flex-1"
               >
                 {t("auth.register.producer.actions.next")}
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -1829,7 +1830,7 @@ function RegisterProducerPageBody() {
 
             <div className="flex gap-3">
               <button data-testid="register-story-back" onClick={() => { setStepError(""); setError(""); setStep(isOrganizer ? STEP.DETAILS : STEP.CATEGORY); }} className="text-muted">{t("auth.register.producer.actions.back")}</button>
-              <button
+              <Button
                 data-testid="register-story-submit"
                 onClick={() => {
                   // Clear stale error first so the next failure renders a
@@ -1873,7 +1874,7 @@ function RegisterProducerPageBody() {
                   handleSubmit();
                 }}
                 disabled={loading}
-                className="flex-1 bg-primary text-white py-3 rounded-md hover:bg-primary-dark transition font-medium disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
+                variant="primary" size="lg" className="flex-1"
               >
                 {loading ? (
                   <span className="inline-flex items-center gap-2">
@@ -1883,7 +1884,7 @@ function RegisterProducerPageBody() {
                 ) : (
                   t("auth.register.producer.actions.submit")
                 )}
-              </button>
+              </Button>
             </div>
           </div>
         )}

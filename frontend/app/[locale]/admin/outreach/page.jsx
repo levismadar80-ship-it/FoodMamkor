@@ -11,6 +11,7 @@ import { instagramHandle, instagramUrl } from "@/lib/social-links";
 import Input from "@/components/ui/Input";
 import AdminLoadError from "@/components/admin/AdminLoadError";
 import Pagination from "@/components/Pagination";
+import Button from "@/components/ui/Button";
 
 /**
  * /admin/outreach — manual lead pipeline (MEH-22).
@@ -218,14 +219,14 @@ export default function AdminOutreachPage() {
           onChange={(e) => setCityFilter(e.target.value)}
           className="flex-1 border border-border rounded-md px-3 py-2"
         />
-        <button
+        <Button
           type="button"
           onClick={() => setAddOpen(true)}
           data-testid="outreach-new-lead"
-          className="bg-primary text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-dark transition"
+          variant="primary" size="sm"
         >
           {t("outreach.filters.new_lead")}
-        </button>
+        </Button>
       </div>
 
       {/* Leads table */}
@@ -629,13 +630,13 @@ function AddLeadModal({ onClose, onCreated }) {
           >
             {t("common.cancel")}
           </button>
-          <button
+          <Button
             type="submit"
             disabled={saving}
-            className="flex-1 bg-primary text-white rounded-md py-2 text-sm font-medium disabled:opacity-60"
+            variant="primary" size="sm" className="flex-1"
           >
             {saving ? t("outreach.modal_add.submit_saving") : t("outreach.modal_add.submit")}
-          </button>
+          </Button>
         </div>
       </form>
     </div>
@@ -662,13 +663,13 @@ function ScriptModal({ onClose }) {
         <pre className="whitespace-pre-wrap text-sm text-text font-body-md leading-relaxed">
           {t("outreach.call_script")}
         </pre>
-        <button
+        <Button
           type="button"
           onClick={onClose}
-          className="mt-4 w-full bg-primary text-white rounded-md py-2 text-sm font-medium"
+          variant="primary" size="sm" className="mt-4 w-full"
         >
           {t("outreach.modal_script.close")}
-        </button>
+        </Button>
       </div>
     </div>
   );

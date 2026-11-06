@@ -360,6 +360,12 @@ in-between for smaller cards and chips; modals use `rounded.xl` (20px). **No
 actions, full rounding is reserved for genuinely circular elements (avatars,
 icon buttons).
 
+**Actions are the shared `<Button>` (MEH-1687 phase 6, 06/11/2026).** A filled
+primary, destructive or outlined action is `components/ui/Button.jsx`
+(`variant="primary" | "danger" | "outlined"`, `size="sm" | "md" | "lg"`), never a
+hand-styled `<button>`; layout classes (`w-full`, `flex-1`, margins) go in
+`className`. `ButtonPrimitiveGuard.test.js` ratchets the hand-styled remainder.
+
 _As-of 03/11: the front-matter `button-primary` binding still reads
 `{rounded.sm}`, because the token scale has no `full` step. Adding one changes
 `frontend/tailwind.tokens.json` (the design-token drift gate re-exports it), so

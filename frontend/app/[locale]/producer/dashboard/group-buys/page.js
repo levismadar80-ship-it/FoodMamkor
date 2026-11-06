@@ -26,6 +26,7 @@ import { STATUS_CLASSES } from "@/lib/dashboard-status-classes";
 import useDialogFocus from "@/hooks/useDialogFocus";
 import { GroupBuyStatusResultSchema, OwnerGroupBuySchema } from "@/lib/api-schemas";
 import { SkeletonList } from "@/components/Skeleton";
+import Button from "@/components/ui/Button";
 
 const STATUS_CLS = {
   open: STATUS_CLASSES.info,
@@ -312,13 +313,13 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
       {/* MEH-1165: role="alert" so the submit error is announced to AT. */}
       {unverified && <UnverifiedEmailNotice />}
       {error && <p className="text-danger-500 text-sm" role="alert">{error}</p>}
-      <button
+      <Button
         type="submit"
         disabled={submitting || priceInvalid}
-        className="bg-primary text-white px-6 py-2.5 min-h-touch rounded-sm hover:bg-primary-dark transition font-medium disabled:opacity-50"
+        variant="primary" size="lg"
       >
         {submitting ? t("submitting") : t("submit")}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -581,12 +582,12 @@ export default function ProducerGroupBuysPage() {
             EmptyState description below — so the explanation still has a
             home and nothing on screen invites a dead press. */}
         {items !== null && !notApproved && !(items.length === 0 && !showForm) && (
-          <button
+          <Button
             onClick={() => setShowForm((v) => !v)}
-            className="bg-primary text-white px-4 py-2 min-h-touch rounded-sm text-sm font-medium hover:bg-primary-dark transition"
+            variant="primary" size="sm"
           >
             {showForm ? t("btn_close_form") : t("btn_open_form")}
-          </button>
+          </Button>
         )}
       </div>
 

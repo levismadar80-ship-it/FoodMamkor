@@ -54,6 +54,7 @@ import Input from "@/components/ui/Input";
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";
 import { DELIVERY_DAYS } from "@/lib/delivery-days";
 import { SkeletonForm } from "@/components/Skeleton";
+import Button from "@/components/ui/Button";
 
 // ============================================================
 // MEH-1306: "view on page" back-link — closes the edit↔public loop from the
@@ -216,13 +217,13 @@ export function CategoriesCard({ profile, onSave, reportDirty = () => {} }) {
         </p>
       )}
 
-      <button
+      <Button
         onClick={handleSave}
         disabled={saving || !dirty}
-        className="mt-4 bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
+        variant="primary" size="sm" className="mt-4"
       >
         {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -469,15 +470,15 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
         </p>
       )}
 
-      <button
+      <Button
         onClick={handleSave}
         disabled={saving || uploading || !dirty}
-        className="mt-4 bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
+        variant="primary" size="sm" className="mt-4"
       >
         <span aria-live="polite" aria-atomic="true">
           {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
         </span>
-      </button>
+      </Button>
     </div>
   );
 }
@@ -797,15 +798,15 @@ export function DescriptionCard({ profile, onSave, reportDirty = () => {} }) {
       </div>
 
       {/* ONE explicit save for the whole card. */}
-      <button
+      <Button
         onClick={save}
         disabled={saving || !dirty}
-        className="bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium disabled:opacity-60 hover:bg-primary-dark transition"
+        variant="primary" size="sm"
       >
         <span aria-live="polite" aria-atomic="true">
           {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
         </span>
-      </button>
+      </Button>
 
       {error && !assistOpen && (
         <p className="text-xs text-error flex items-start gap-1.5" role="alert">
@@ -1015,15 +1016,15 @@ export function OwnerStoryCard({ profile, onSave, reportDirty = () => {} }) {
       </div>
 
       {/* ONE explicit save for the bio (the photo self-persists on upload). */}
-      <button
+      <Button
         onClick={save}
         disabled={saving || !dirty}
-        className="bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium disabled:opacity-60 hover:bg-primary-dark transition"
+        variant="primary" size="sm"
       >
         <span aria-live="polite" aria-atomic="true">
           {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
         </span>
-      </button>
+      </Button>
 
       {error && (
         <p className="text-xs text-error flex items-start gap-1.5" role="alert">
@@ -1118,15 +1119,15 @@ export function PricingCard({ profile, onSave, reportDirty = () => {} }) {
         </p>
       )}
 
-      <button
+      <Button
         onClick={handleSave}
         disabled={saving || !dirty}
-        className="mt-4 bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
+        variant="primary" size="sm" className="mt-4"
       >
         <span aria-live="polite" aria-atomic="true">
           {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
         </span>
-      </button>
+      </Button>
     </div>
   );
 }
@@ -1248,13 +1249,13 @@ export function LicenseCard({ profile, onSave, reportDirty = () => {} }) {
         </p>
       )}
 
-      <button
+      <Button
         onClick={handleSave}
         disabled={saving || !dirty}
-        className="mt-4 bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
+        variant="primary" size="sm" className="mt-4"
       >
         {saving ? t("saving") : t("save_cta")}
-      </button>
+      </Button>
 
       {/* MEH-1270: explicit, persistent success confirmation — the single
           live region for the card (the button no longer swaps its label, so
@@ -1526,15 +1527,15 @@ export function KashrutCard({ profile, reportDirty = () => {} }) {
           </div>
         </div>
 
-        <button
+        <Button
           onClick={submit}
           disabled={submitting || !badgeCode}
-          className="bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium disabled:opacity-60 hover:bg-primary-dark transition"
+          variant="primary" size="sm"
         >
           <span aria-live="polite" aria-atomic="true">
             {submitting ? t("submitting") : t("submit_cta")}
           </span>
-        </button>
+        </Button>
 
         {error && (
           <p className="text-xs text-error flex items-start gap-1.5" role="alert">
@@ -2066,15 +2067,15 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
         </p>
       )}
 
-      <button
+      <Button
         onClick={handleSave}
         disabled={saving || !dirty || blocked}
-        className="mt-4 bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
+        variant="primary" size="sm" className="mt-4"
       >
         <span aria-live="polite" aria-atomic="true">
           {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
         </span>
-      </button>
+      </Button>
     </div>
   );
 }
@@ -2356,16 +2357,16 @@ export function OffersCard({ profile, onSave, reportDirty = () => {} }) {
         </p>
       )}
 
-      <button
+      <Button
         onClick={handleSave}
         disabled={saving || !dirty || blocked}
         data-testid="offer-save"
-        className="mt-4 bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
+        variant="primary" size="sm" className="mt-4"
       >
         <span aria-live="polite" aria-atomic="true">
           {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
         </span>
-      </button>
+      </Button>
     </div>
   );
 }
@@ -2517,14 +2518,14 @@ export function BusinessNameCard({ profile }) {
               {error}
             </p>
           )}
-          <button
+          <Button
             type="submit"
             disabled={!canSubmit}
-            className="bg-primary text-white rounded-full px-5 py-2.5 text-sm font-semibold disabled:opacity-50 focus-ring"
+            variant="primary" size="sm"
             data-testid="name-change-submit"
           >
             {saving ? t("submitting") : t("submit_cta")}
-          </button>
+          </Button>
         </form>
       )}
     </div>

@@ -21,6 +21,7 @@ import DeliveryChecker from "@/components/DeliveryChecker";
 import api from "@/lib/api";
 import { GroupBuyProducerDeliverySchema } from "@/lib/api-schemas";
 import { SkeletonDetail } from "@/components/Skeleton";
+import Button from "@/components/ui/Button";
 
 // MEH-975: schema bounds for GroupBuyCommitRequest.quantity
 // (backend/app/schemas/schemas.py:1602 — int, ge=1, le=100). Clamp the
@@ -388,13 +389,13 @@ export default function GroupBuyDetailClient({ id }) {
               dir="ltr"
             />
             {error && <p className="text-error text-sm" role="alert">{error}</p>}
-            <button
+            <Button
               type="submit"
               disabled={submitting}
-              className="w-full bg-primary text-white py-3 rounded-md hover:bg-primary-dark transition font-medium disabled:opacity-50"
+              variant="primary" size="lg" className="w-full"
             >
               {submitting ? t("submitting") : user ? t("submit_join") : t("submit_login")}
-            </button>
+            </Button>
             {!user && (
               <p className="text-center text-xs text-fg-muted">
                 {t("login_required")}
@@ -649,13 +650,13 @@ export default function GroupBuyDetailClient({ id }) {
               {t("cancel_confirm")}
             </h2>
             <div className="flex gap-3">
-              <button
+              <Button
                 onClick={doCancel}
                 disabled={cancelling}
-                className="flex-1 bg-primary text-white py-2.5 rounded-[10px] hover:bg-primary-dark transition text-sm font-medium disabled:opacity-50"
+                variant="primary" size="sm" className="flex-1"
               >
                 {cancelling ? t("cancelling") : t("cancel_cta")}
-              </button>
+              </Button>
               <button
                 onClick={() => setConfirmCancelOpen(false)}
                 className="flex-1 bg-surface border border-border text-text py-2.5 rounded-[10px] hover:bg-green-50 transition text-sm font-medium"

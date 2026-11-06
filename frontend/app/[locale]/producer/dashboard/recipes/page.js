@@ -29,6 +29,7 @@ import BackLink from "@/components/ui/BackLink";
 // MEH-1640: shared status colours across the four tools spokes.
 import { STATUS_CLASSES } from "@/lib/dashboard-status-classes";
 import { SkeletonList } from "@/components/Skeleton";
+import Button from "@/components/ui/Button";
 
 export default function ProducerRecipesPage() {
   const t = useTranslations("recipes.dashboard");
@@ -88,12 +89,12 @@ export default function ProducerRecipesPage() {
             MEH-1655: also hidden while loading (items === null) — it used to
             render then jump to the EmptyState CTA on an empty result. */}
         {items !== null && !(items.length === 0 && !showForm) && (
-          <button
+          <Button
             onClick={() => setShowForm((v) => !v)}
-            className="bg-primary text-white px-4 py-2 min-h-touch rounded-sm text-sm font-medium hover:bg-primary-dark transition"
+            variant="primary" size="sm"
           >
             {showForm ? t("btn_close_form") : t("btn_open_form")}
-          </button>
+          </Button>
         )}
       </div>
 

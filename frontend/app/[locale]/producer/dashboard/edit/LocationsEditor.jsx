@@ -49,6 +49,7 @@ import { LocationInputSchema } from "@/lib/schemas";
 import EmptyState from "@/components/ui/EmptyState";
 import CitySearch from "@/components/CitySearch";
 import AddressSearch from "@/components/AddressSearch";
+import Button from "@/components/ui/Button";
 
 // Leaflet touches `window` at import time, so the confirmation map is loaded
 // client-side only. REUSES: RegisterProducerClient.jsx:24 — same dynamic import
@@ -997,14 +998,14 @@ function LocationForm({
       </details>
 
       <div className="flex items-center gap-2">
-        <button
+        <Button
           type="submit"
           disabled={saving}
-          className="rounded-full bg-primary px-4 py-1.5 text-sm font-medium text-white hover:bg-primary-dark disabled:opacity-50"
+          variant="primary" size="sm"
           data-testid="location-save"
         >
           {saving ? t("saving") : t("save_cta")}
-        </button>
+        </Button>
         <button
           type="button"
           onClick={onCancel}

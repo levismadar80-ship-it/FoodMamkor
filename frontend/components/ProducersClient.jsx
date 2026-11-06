@@ -47,6 +47,7 @@ import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
 import EnSearchNotice from "@/components/EnSearchNotice";
 import { CategoriesResponseSchema } from "@/lib/api-schemas";
+import Button from "@/components/ui/Button";
 
 const FILTER_LIMIT = 100;
 const PAGE_SIZE = 24; // matches PER_PAGE in page.jsx
@@ -894,12 +895,12 @@ export default function ProducersClient({
             className="flex-1 min-w-0 bg-transparent outline-none text-text placeholder:text-fg-muted text-sm"
           />
         </div>
-        <button
+        <Button
           type="submit"
-          className="shrink-0 bg-primary text-white px-4 min-h-touch rounded-full text-sm font-medium hover:bg-primary-dark transition"
+          variant="primary" size="sm" className="shrink-0"
         >
           {t("search_input.submit")}
-        </button>
+        </Button>
       </form>
       {/* MEH-1812 notice, moved here from /search when MEH-819 made this the
           one results page. Renders null outside /en. */}
@@ -1223,14 +1224,14 @@ function FilterEmptyState({ onClear, searchQ, categories = [] }) {
           ))}
         </div>
       )}
-      <button
+      <Button
         type="button"
         onClick={onClear}
         data-testid="producers-empty-clear"
-        className="bg-primary text-white px-6 py-3 rounded-md font-medium hover:bg-primary-dark transition"
+        variant="primary" size="lg"
       >
         {t("empty.clear_all_show_all")}
-      </button>
+      </Button>
     </div>
   );
 }

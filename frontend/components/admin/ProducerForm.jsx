@@ -24,6 +24,7 @@ import {
   hasLicenseFormatWarning,
   requiresProducerLicense,
 } from "@/lib/license-required-categories";
+import Button from "@/components/ui/Button";
 
 // MEH-1297: a producer may hold at most 3 categories; the first-selected is the
 // primary (drives categories[0] on the card/map pin). Mirrors the backend cap
@@ -1249,17 +1250,17 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       )}
 
       <div className="flex gap-3">
-        <button
+        <Button
           type="submit"
           disabled={
             isBusy("producer-save") ||
             (!form.has_physical_location && !form.offers_delivery) ||
             (form.offers_delivery && !form.delivery_nationwide && form.delivery_cities.length === 0)
           }
-          className="bg-primary text-white px-8 py-3 rounded-md hover:bg-primary-dark transition font-medium disabled:opacity-50"
+          variant="primary" size="lg"
         >
           {isBusy("producer-save") ? t("common.saving") : producerId ? t("producers.form.submit_update") : t("producers.form.submit_create")}
-        </button>
+        </Button>
         <button
           type="button"
           onClick={() => router.push("/admin?tab=producers")}

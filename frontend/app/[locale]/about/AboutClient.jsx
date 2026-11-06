@@ -36,6 +36,7 @@ import ButtonSpinner from "@/components/ButtonSpinner";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 // MEH-788: gentle scroll-reveal on the content sections (hero excluded — LCP).
 import FadeInSection, { REVEAL_PRESET } from "@/components/FadeInSection";
+import Button from "@/components/ui/Button";
 
 // MEH-1130: the editorial image layer. Raw asset URLs — every transform is
 // applied by optimizeCloudinary at the call site, never baked into the string
@@ -788,10 +789,10 @@ export default function AboutPage() {
                 className="w-full bg-surface-card border border-border rounded-sm px-4 py-3 outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/40 transition resize-y min-h-[120px] leading-relaxed"
               />
             </div>
-            <button
+            <Button
               type="submit"
               disabled={contactStatus === "loading"}
-              className="md:col-span-2 justify-self-start inline-flex items-center gap-2 min-h-[52px] px-7 py-3.5 bg-primary text-white rounded-lg font-semibold text-base hover:bg-primary-dark transition-colors duration-base disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
+              variant="primary" size="lg" className="md:col-span-2 justify-self-start"
             >
               {contactStatus === "loading" ? (
                 <span className="inline-flex items-center gap-2">
@@ -804,7 +805,7 @@ export default function AboutPage() {
                   <PaperPlaneTilt size={18} aria-hidden="true" />
                 </>
               )}
-            </button>
+            </Button>
 
             {contactMsg && (
               <p

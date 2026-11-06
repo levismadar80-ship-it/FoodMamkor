@@ -10,6 +10,7 @@ import { useAdminAction } from "@/lib/use-admin-action";
 import AdminRowMenu from "@/components/admin/AdminRowMenu";
 import AdminLoadError from "@/components/admin/AdminLoadError";
 import { SkeletonTable } from "@/components/Skeleton";
+import Button from "@/components/ui/Button";
 
 const SUPER_ADMIN_EMAIL = "levismadar80@gmail.com";
 
@@ -156,9 +157,9 @@ export default function AdminUsersPage() {
           <option value="producer">{t("users.role_filter.producer")}</option>
           <option value="admin">{t("users.role_filter.admin")}</option>
         </select>
-        <button onClick={searchUsers} className="bg-primary text-white px-4 py-2 rounded-md text-sm">
+        <Button onClick={searchUsers} variant="primary" size="sm">
           {t("common.search")}
-        </button>
+        </Button>
       </div>
 
       <div className="bg-surface border border-border rounded-md overflow-hidden">

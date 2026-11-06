@@ -6,6 +6,7 @@ import { formatEventDate } from "@/lib/format-date";
 import api from "@/lib/api";
 import { useAdminAction } from "@/lib/use-admin-action";
 import AdminLoadError from "@/components/admin/AdminLoadError";
+import Button from "@/components/ui/Button";
 
 export default function AdminReportsPage() {
   const t = useTranslations("admin");
@@ -150,15 +151,15 @@ export default function AdminReportsPage() {
               {t("reports.actions.dismiss_confirm", { name: dismissTarget.producer_name })}
             </p>
             <div className="flex gap-3 justify-start">
-              <button
+              <Button
                 disabled={isBusy(`dismiss:${dismissTarget.producer_id}`)}
                 onClick={confirmDismiss}
-                className="px-4 py-2 rounded-[10px] text-sm font-medium text-white transition bg-danger-600 hover:bg-danger-700 disabled:opacity-50"
+                variant="danger" size="sm"
               >
                 {isBusy(`dismiss:${dismissTarget.producer_id}`)
                   ? t("reports.actions.dismissing")
                   : t("reports.actions.ignore")}
-              </button>
+              </Button>
               <button
                 disabled={isBusy(`dismiss:${dismissTarget.producer_id}`)}
                 onClick={() => setDismissTarget(null)}

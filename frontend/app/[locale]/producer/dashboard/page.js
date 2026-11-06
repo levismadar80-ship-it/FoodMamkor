@@ -25,6 +25,7 @@ import { producerCompleteness } from "@/lib/producer-completeness";
 // MEH-1267: canonical public domain (MEH-1242 PR4) — mehamakor.online is the
 // staging alias, never public-facing. SITE_URL is the mehamakor.co.il origin.
 import { SITE_URL, env } from "@/lib/env";
+import Button from "@/components/ui/Button";
 
 function VanityLinkCard({ slug }) {
   const t = useTranslations("dashboard.producer.vanity_link");
@@ -838,13 +839,13 @@ export default function ProducerDashboardPage() {
                   <X size={14} weight="bold" aria-hidden="true" />
                 </button>
               )}
-              <button
+              <Button
                 type="button"
                 onClick={() => setAvailabilityState("on_vacation")}
-                className="px-4 py-1.5 rounded-[10px] text-sm font-medium bg-primary text-white border border-primary hover:bg-primary/90 transition focus-visible:ring-2 focus-visible:ring-primary/40"
+                variant="primary" size="sm"
               >
                 {t("availability.vacation_confirm")}
-              </button>
+              </Button>
             </div>
             {vacationDateError && (
               <p id="vacation-until-error" role="alert" className="mt-2 text-sm text-danger-600">

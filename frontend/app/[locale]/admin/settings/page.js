@@ -9,6 +9,7 @@ import InfoTooltip from "@/components/InfoTooltip";
 import Input from "@/components/ui/Input";
 import ChecklistSettings from "./ChecklistSettings";
 import { SkeletonForm } from "@/components/Skeleton";
+import Button from "@/components/ui/Button";
 
 export default function AdminSettingsPage() {
   const t = useTranslations("admin");
@@ -277,13 +278,13 @@ export default function AdminSettingsPage() {
           />
         )}
         <div className="flex items-center gap-3 flex-wrap">
-          <button
+          <Button
             onClick={saveVacation}
             disabled={vacationSaving || !vacationCanSave}
-            className="bg-primary text-white px-5 py-2 rounded-md text-sm disabled:opacity-50"
+            variant="primary" size="sm"
           >
             {vacationSaving ? t("settings.save.saving") : t("settings.sections.vacation_save")}
-          </button>
+          </Button>
           {vacation.active && !vacation.return_date && (
             <span className="text-xs text-danger-600">
               {t("settings.sections.vacation_date_required")}
@@ -338,14 +339,14 @@ export default function AdminSettingsPage() {
       </div>
 
       <div className="flex items-center gap-3">
-        <button
+        <Button
           onClick={save}
           disabled={saving || !isDirty}
-          className="bg-primary text-white px-5 py-2 rounded-md text-sm disabled:opacity-50"
+          variant="primary" size="sm"
           title={isDirty ? undefined : t("settings.save.nothing_to_save_title")}
         >
           {saving ? t("settings.save.saving") : t("settings.save.submit")}
-        </button>
+        </Button>
         {isDirty && !saving && (
           <span className="text-xs text-fg-muted">
             {t("settings.save.unsaved_count", { count: changedKeys.length })}
