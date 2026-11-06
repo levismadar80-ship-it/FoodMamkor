@@ -163,7 +163,7 @@ function probe(page) {
         tierTrust.getBoundingClientRect()
       ),
       signatureColor: getComputedStyle(signature).color,
-      cardBg: getComputedStyle(root.closest("div.bg-white") || root).backgroundColor,
+      cardBg: getComputedStyle(root.closest("div.bg-surface") || root).backgroundColor,
       // Where the CTA sits on the page, in absolute terms. This is the ticket's
       // actual premise ("Sapir registered and did not find the dashboard"), so
       // it gets measured rather than told: below the fold at 375 means a seller

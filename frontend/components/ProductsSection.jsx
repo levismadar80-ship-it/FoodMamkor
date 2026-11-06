@@ -35,6 +35,7 @@ import { showToast } from "@/lib/toast";
 import { formatPriceRange } from "@/lib/utils";
 import EmptyState from "@/components/ui/EmptyState";
 import Input from "@/components/ui/Input";
+import Button from "@/components/ui/Button";
 
 // MEH-2047: the diet tags that carry a definition, in the order the chip row
 // above them renders. Each key resolves BOTH strings — the term from the chip's
@@ -520,7 +521,7 @@ export default function ProductsSection({
     <div
       ref={sectionRef}
       tabIndex={-1}
-      className={`focus:outline-none ${embedded ? "" : "bg-white border border-border rounded-lg p-6"}`}
+      className={`focus:outline-none ${embedded ? "" : "bg-surface border border-border rounded-lg p-6"}`}
     >
       <div className={embedded ? "flex items-center justify-end mb-4" : "flex items-center justify-between mb-4"}>
         {!embedded && (
@@ -563,7 +564,7 @@ export default function ProductsSection({
         <div
           role="alert"
           data-testid="products-load-error"
-          className="border border-border rounded-[10px] p-4 bg-danger-50 text-center"
+          className="border border-border rounded-md p-4 bg-danger-50 text-center"
         >
           <p className="text-sm text-text mb-2">{tErr("load_failed")}</p>
           <button
@@ -586,7 +587,7 @@ export default function ProductsSection({
             // MEH-1172: no floating decorative icon — the example card IS the
             // visual (Carbon empty-state pattern). Full opacity, slightly wider.
             <div className="w-full max-w-sm text-start">
-              <p className="text-[11px] text-fg-muted mb-1">{t("empty.sample_label")}</p>
+              <p className="text-2xs text-fg-muted mb-1">{t("empty.sample_label")}</p>
               <div className="border border-border rounded-md p-3 bg-surface-card flex items-center gap-3">
                 <div className="w-14 h-14 rounded-sm bg-green-50 flex items-center justify-center shrink-0">
                   <Package size={22} className="text-fg-muted" aria-hidden="true" />
@@ -608,7 +609,7 @@ export default function ProductsSection({
               key={product.id}
               onSubmit={(e) => handleEdit(product.id, e)}
               noValidate
-              className="border border-border rounded-[10px] p-4 space-y-5 bg-green-50"
+              className="border border-border rounded-md p-4 space-y-5 bg-green-50"
             >
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium text-text">{t("edit_heading")}</p>
@@ -715,17 +716,17 @@ export default function ProductsSection({
                 </div>
               </div>
               <div className="flex gap-2">
-                <button
+                <Button
                   type="submit"
                   disabled={savingEdit || editUploading}
-                  className="flex-1 bg-primary text-white rounded-sm py-2 text-sm font-medium hover:bg-primary-dark transition disabled:opacity-50"
+                  variant="primary" size="sm" className="flex-1"
                 >
                   {savingEdit ? t("save_edit_saving") : t("save_edit_cta")}
-                </button>
+                </Button>
                 <button
                   type="button"
                   onClick={cancelEdit}
-                  className="px-4 bg-white border border-border text-text rounded-sm py-2 text-sm font-medium hover:bg-green-50 transition"
+                  className="px-4 bg-surface border border-border text-text rounded-sm py-2 text-sm font-medium hover:bg-green-50 transition"
                 >
                   {t("cancel_edit_cta")}
                 </button>
@@ -738,14 +739,14 @@ export default function ProductsSection({
               // MEH-2094: the marked row is distinguishable AT REST (ring +
               // tinted fill), not only on hover — a hover-only cue is invisible
               // on touch, which is the primary surface here.
-              className={`flex items-center gap-3 p-3 rounded-[10px] ${
+              className={`flex items-center gap-3 p-3 rounded-md ${
                 isTopProduct(product)
                   ? "bg-primary/5 ring-2 ring-primary"
                   : "bg-green-50"
               }`}
             >
               {product.image_url && failedThumbs[product.id] !== product.image_url ? (
-                <div className="relative w-12 h-12 shrink-0 rounded-[6px] overflow-hidden">
+                <div className="relative w-12 h-12 shrink-0 rounded-sm overflow-hidden">
                   <Image
                     src={product.image_url}
                     alt={product.name}
@@ -761,14 +762,14 @@ export default function ProductsSection({
                   />
                 </div>
               ) : (
-                <div className="w-12 h-12 shrink-0 rounded-[6px] bg-white border border-border flex items-center justify-center">
+                <div className="w-12 h-12 shrink-0 rounded-sm bg-surface border border-border flex items-center justify-center">
                   <Package size={20} className="text-fg-muted/60" aria-hidden="true" />
                 </div>
               )}
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-sm text-text truncate">{product.name}</p>
                 {isTopProduct(product) && (
-                  <p className="text-[11px] font-medium text-primary">{t("card.top_product_badge")}</p>
+                  <p className="text-2xs font-medium text-primary">{t("card.top_product_badge")}</p>
                 )}
                 {(() => {
                   if (product.price_min != null)
@@ -802,7 +803,7 @@ export default function ProductsSection({
                       : "card.top_product_mark_aria_template",
                     { name: product.name },
                   )}
-                  className={`p-1.5 rounded-[6px] transition disabled:opacity-40 ${
+                  className={`p-1.5 rounded-full transition disabled:opacity-40 ${
                     isTopProduct(product)
                       ? "text-primary hover:bg-primary/10"
                       : "text-fg-muted hover:text-primary hover:bg-primary/5"
@@ -818,7 +819,7 @@ export default function ProductsSection({
               <button
                 onClick={() => startEdit(product)}
                 aria-label={t("card.edit_aria_template", { name: product.name })}
-                className="p-1.5 rounded-[6px] text-fg-muted hover:text-primary hover:bg-primary/5 transition"
+                className="p-1.5 rounded-full text-fg-muted hover:text-primary hover:bg-primary/5 transition"
               >
                 <Pencil size={16} aria-hidden="true" />
               </button>
@@ -826,7 +827,7 @@ export default function ProductsSection({
                 onClick={() => { setError(""); setConfirmDelete({ id: product.id, name: product.name }); }}
                 disabled={deletingId === product.id}
                 aria-label={t("card.delete_aria_template", { name: product.name })}
-                className="p-1.5 rounded-[6px] text-fg-muted hover:text-error hover:bg-danger-50 transition disabled:opacity-40"
+                className="p-1.5 rounded-full text-fg-muted hover:text-error hover:bg-danger-50 transition disabled:opacity-40"
               >
                 <Trash size={16} aria-hidden="true" />
               </button>
@@ -836,7 +837,7 @@ export default function ProductsSection({
       </div>
 
       {adding && (
-        <form onSubmit={handleAdd} noValidate className="border border-border rounded-[10px] p-4 space-y-5 bg-green-50">
+        <form onSubmit={handleAdd} noValidate className="border border-border rounded-md p-4 space-y-5 bg-green-50">
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium text-text">{t("add_heading")}</p>
             <button type="button" onClick={() => { setAdding(false); setError(""); setFormErrors({}); }} aria-label={t("cancel_aria")}>
@@ -942,13 +943,13 @@ export default function ProductsSection({
             </div>
           </div>
           <div className="flex gap-2">
-            <button
+            <Button
               type="submit"
               disabled={saving || uploading}
-              className="flex-1 bg-primary text-white rounded-sm py-2 text-sm font-medium hover:bg-primary-dark transition disabled:opacity-50"
+              variant="primary" size="sm" className="flex-1"
             >
               {saving ? t("add_submitting") : t("add_submit_cta")}
-            </button>
+            </Button>
           </div>
         </form>
       )}
@@ -964,7 +965,7 @@ export default function ProductsSection({
             role="dialog"
             aria-modal="true"
             aria-labelledby="product-delete-title"
-            className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full text-start space-y-3"
+            className="bg-surface rounded-lg shadow-xl p-6 max-w-sm w-full text-start space-y-3"
           >
             <p id="product-delete-title" className="font-medium text-base text-text">
               {t("delete_confirm.title", { name: confirmDelete.name })}
@@ -972,20 +973,20 @@ export default function ProductsSection({
             <p className="text-sm text-fg-muted">{t("delete_confirm.body")}</p>
             {error && <p className="text-sm text-danger-600">{error}</p>}
             <div className="flex gap-3 justify-start pt-1">
-              <button
+              <Button
                 type="button"
                 disabled={deletingId != null}
                 onClick={() => handleDelete(confirmDelete.id)}
-                className="px-4 py-2 rounded-[10px] text-sm font-medium text-white transition bg-danger-600 hover:bg-danger-700 disabled:opacity-50"
+                variant="danger" size="sm"
               >
                 {t("delete_confirm.confirm")}
-              </button>
+              </Button>
               <button
                 type="button"
                 data-autofocus
                 disabled={deletingId != null}
                 onClick={() => setConfirmDelete(null)}
-                className="px-4 py-2 rounded-[10px] text-sm border border-border text-fg-muted hover:bg-gray-50 transition disabled:opacity-50"
+                className="px-4 py-2 rounded-full text-sm border border-border text-fg-muted hover:bg-gray-50 transition disabled:opacity-50"
               >
                 {t("delete_confirm.cancel")}
               </button>
@@ -1005,13 +1006,13 @@ export default function ProductsSection({
             role="dialog"
             aria-modal="true"
             aria-labelledby="product-duplicate-title"
-            className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full text-start space-y-3"
+            className="bg-surface rounded-lg shadow-xl p-6 max-w-sm w-full text-start space-y-3"
           >
             <p id="product-duplicate-title" className="font-medium text-base text-text">
               {t("duplicate_name_confirm.title")}
             </p>
             <div className="flex gap-3 justify-start pt-1">
-              <button
+              <Button
                 type="button"
                 data-testid="duplicate-confirm"
                 disabled={saving}
@@ -1019,17 +1020,17 @@ export default function ProductsSection({
                   setConfirmDuplicate(false);
                   submitAdd();
                 }}
-                className="px-4 py-2 rounded-[10px] text-sm font-medium text-white transition bg-primary hover:opacity-90 disabled:opacity-50"
+                variant="primary" size="sm"
               >
                 {t("duplicate_name_confirm.confirm")}
-              </button>
+              </Button>
               <button
                 type="button"
                 data-testid="duplicate-cancel"
                 data-autofocus
                 disabled={saving}
                 onClick={() => setConfirmDuplicate(false)}
-                className="px-4 py-2 rounded-[10px] text-sm border border-border text-fg-muted hover:bg-gray-50 transition disabled:opacity-50"
+                className="px-4 py-2 rounded-full text-sm border border-border text-fg-muted hover:bg-gray-50 transition disabled:opacity-50"
               >
                 {t("duplicate_name_confirm.cancel")}
               </button>
@@ -1144,7 +1145,7 @@ function IngredientsAllergensFields({ idPrefix, ingredients, allergens, onIngred
           value={ingredients}
           placeholder={tForm("ingredients_placeholder")}
           onChange={(e) => onIngredients(e.target.value)}
-          className="w-full rounded-[10px] border border-border bg-white px-3 py-2 text-sm text-text focus-ring"
+          className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm text-text focus-ring"
         />
       </div>
       <div>
@@ -1180,10 +1181,10 @@ function DietChip({ label, pressed, onToggle, iconKey }) {
       onClick={onToggle}
       aria-pressed={pressed}
       className={[
-        "inline-flex items-center gap-1.5 min-h-touch rounded-[10px] border px-4 py-2 text-sm text-start transition focus-ring",
+        "inline-flex items-center gap-1.5 min-h-touch rounded-full border px-4 py-2 text-sm text-start transition focus-ring",
         pressed
           ? "border-primary bg-green-50 text-text"
-          : "border-border bg-white text-text hover:border-primary",
+          : "border-border bg-surface text-text hover:border-primary",
       ].join(" ")}
     >
       {icon && <span aria-hidden="true">{icon}</span>}
@@ -1210,7 +1211,7 @@ function UploadZone({ imageUrl, uploading, onUpload, onRemove, tForm }) {
             display:none removes it and the wrapping label is not natively
             focusable (WCAG 2.1.1). Ring on focus-within is the keyboard
             affordance; this label has no border, so the ring alone carries it. */}
-        <label className="cursor-pointer text-sm text-primary hover:underline rounded-[4px] focus-within:ring-2 focus-within:ring-primary/30">
+        <label className="cursor-pointer text-sm text-primary hover:underline rounded focus-within:ring-2 focus-within:ring-primary/30">
           {uploading ? tForm("image_uploading") : tForm("image_replace")}
           <input
             type="file"

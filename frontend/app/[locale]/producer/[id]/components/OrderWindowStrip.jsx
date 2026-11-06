@@ -206,7 +206,7 @@ export function OrderWindowScheduleBlock({ orderWindow, specialHours = null }) {
       </h2>
       {/* Container copied from components/OpeningHours.jsx:52 so the order
           schedule and the store hours read as one family of Info cards. */}
-      <div className="border border-border rounded-md bg-white overflow-hidden">
+      <div className="border border-border rounded-md bg-surface overflow-hidden">
         <div className="flex items-center gap-2 px-3.5 py-2.5 border-b border-border text-sm text-text">
           <CalendarCheck size={16} className="text-primary-dark shrink-0" aria-hidden="true" />
           <span>{t("schedule_subtitle")}</span>
@@ -221,7 +221,7 @@ export function OrderWindowScheduleBlock({ orderWindow, specialHours = null }) {
           {rows.map((row) => (
             <div
               key={row.fromDay}
-              className="flex justify-between gap-4 text-[13px] py-1.5 text-fg-muted"
+              className="flex justify-between gap-4 text-sm py-1.5 text-fg-muted"
               data-testid="order-window-schedule-row"
             >
               {/* shrink-0: the day label is the shorter side, so without it flex
@@ -260,7 +260,7 @@ export function OrderWindowScheduleBlock({ orderWindow, specialHours = null }) {
               // (qa-meh1917-order-window.mjs P6), which is under the tap target.
               // The floor is explicit rather than tuned via padding so a future
               // font-size change cannot quietly drop it back under.
-              className="flex min-h-touch w-full items-center justify-center gap-1 border-t border-border px-3.5 py-2.5 text-[13px] text-fg-muted transition hover:text-text focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="flex min-h-touch w-full items-center justify-center gap-1 border-t border-border px-3.5 py-2.5 text-sm text-fg-muted transition hover:text-text focus-visible:ring-2 focus-visible:ring-primary/40"
             >
               {expanded ? t("hide_week") : t("show_week")}
               <CaretDown
@@ -281,7 +281,7 @@ export function OrderWindowScheduleBlock({ orderWindow, specialHours = null }) {
                   return (
                     <div
                       key={day.dayIndex}
-                      className={`flex justify-between gap-4 py-1.5 text-[13px] ${
+                      className={`flex justify-between gap-4 py-1.5 text-sm ${
                         isToday ? "font-medium text-text" : "text-fg-muted"
                       }`}
                       data-testid="order-window-week-row"
@@ -293,7 +293,7 @@ export function OrderWindowScheduleBlock({ orderWindow, specialHours = null }) {
                         {isToday && (
                           <span
                             data-testid="order-window-today-chip"
-                            className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[11px] text-primary-dark"
+                            className="rounded-full bg-primary/10 px-1.5 py-0.5 text-2xs text-primary-dark"
                           >
                             {t("today")}
                           </span>
@@ -327,18 +327,18 @@ export function OrderWindowScheduleBlock({ orderWindow, specialHours = null }) {
             className="border-t border-border px-3.5 py-2"
             data-testid="order-window-special"
           >
-            <div className="py-1 text-[13px] font-medium text-text">{t("special_heading")}</div>
+            <div className="py-1 text-sm font-medium text-text">{t("special_heading")}</div>
             {upcoming.map((d) => (
               <div
                 key={d.date}
-                className="flex justify-between gap-4 py-1.5 text-[13px] text-fg-muted"
+                className="flex justify-between gap-4 py-1.5 text-sm text-fg-muted"
                 data-testid="order-window-special-row"
                 data-date={d.date}
                 data-closed={d.closed ? "true" : undefined}
               >
                 <span className="flex shrink-0 flex-col">
                   <span>{formatSpecialDate(d.date, locale)}</span>
-                  {d.note && <span className="text-[12px]">{d.note}</span>}
+                  {d.note && <span className="text-xs">{d.note}</span>}
                 </span>
                 {d.closed ? (
                   <span className="text-end">{t("special_closed")}</span>

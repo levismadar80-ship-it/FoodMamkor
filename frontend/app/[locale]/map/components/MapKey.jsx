@@ -57,7 +57,7 @@ function SampleVerified() {
 function SampleCluster() {
   return (
     <span
-      className="shrink-0 w-7 h-7 rounded-full bg-primary text-white border-2 border-white shadow-md flex items-center justify-center text-[11px] font-semibold numeric"
+      className="shrink-0 w-7 h-7 rounded-full bg-primary text-white border-2 border-white shadow-md flex items-center justify-center text-2xs font-semibold numeric"
       aria-hidden="true"
     >
       5
@@ -68,7 +68,7 @@ function SampleCluster() {
 function SamplePickup() {
   return (
     <span className="shrink-0 w-7 h-7 flex items-center justify-center" aria-hidden="true">
-      <span className="w-5 h-5 rounded-full bg-white border-2 border-primary flex items-center justify-center">
+      <span className="w-5 h-5 rounded-full bg-surface border-2 border-primary flex items-center justify-center">
         <Leaf size={10} className="text-primary" />
       </span>
     </span>

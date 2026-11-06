@@ -73,14 +73,14 @@ export default function ProducerDashboardToolsPage() {
       <div className="max-w-5xl mx-auto px-4 py-16">
         <div
           data-testid="tools-load-error"
-          className="bg-white border border-border rounded-lg p-6 text-center"
+          className="bg-surface border border-border rounded-lg p-6 text-center"
           role="alert"
         >
           <p className="text-fg-muted mb-4">{t("section_errors.tools")}</p>
           <button
             type="button"
             onClick={() => setAttempt((n) => n + 1)}
-            className="inline-block bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition"
+            className="inline-block bg-primary text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-dark transition"
           >
             {t("section_errors.retry_cta")}
           </button>
@@ -112,7 +112,7 @@ export default function ProducerDashboardToolsPage() {
         {/* MEH-1405: card now opens the manage list (create is reachable there). */}
         <Link
           href="/producer/dashboard/events"
-          className="bg-white border border-border rounded-lg p-5 hover:border-primary transition"
+          className="bg-surface border border-border rounded-lg p-5 hover:border-primary transition"
         >
           <CalendarPlus size={24} className="text-primary mb-2" aria-hidden="true" />
           <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.manage_events.title")}</p>
@@ -121,7 +121,7 @@ export default function ProducerDashboardToolsPage() {
         {/* MEH-1405: manage own experiences (list + edit + delete). */}
         <Link
           href="/producer/dashboard/experiences"
-          className="bg-white border border-border rounded-lg p-5 hover:border-primary transition"
+          className="bg-surface border border-border rounded-lg p-5 hover:border-primary transition"
         >
           <Sparkle size={24} className="text-primary mb-2" aria-hidden="true" />
           <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.manage_experiences.title")}</p>
@@ -132,7 +132,7 @@ export default function ProducerDashboardToolsPage() {
             (layout.js). Verdict Sapir 18/07 (MEH-999 dogfood). */}
         <Link
           href="/producer/dashboard/group-buys"
-          className="bg-white border border-border rounded-lg p-5 hover:border-primary transition"
+          className="bg-surface border border-border rounded-lg p-5 hover:border-primary transition"
         >
           <UsersThree size={24} className="text-primary mb-2" aria-hidden="true" />
           <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.group_buys.title")}</p>
@@ -145,7 +145,7 @@ export default function ProducerDashboardToolsPage() {
           <Link
             href="/producer/dashboard/rescue"
             data-testid="tools-rescue-tile"
-            className="bg-white border border-border rounded-lg p-5 hover:border-primary transition"
+            className="bg-surface border border-border rounded-lg p-5 hover:border-primary transition"
           >
             <ShoppingBag size={24} className="text-primary mb-2" aria-hidden="true" />
             <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.rescue.title")}</p>
@@ -155,7 +155,7 @@ export default function ProducerDashboardToolsPage() {
         {/* MEH-590: producer recipes tab (chunk 3/4 of the producer-recipes epic). */}
         <Link
           href="/producer/dashboard/recipes"
-          className="bg-white border border-border rounded-lg p-5 hover:border-primary transition"
+          className="bg-surface border border-border rounded-lg p-5 hover:border-primary transition"
         >
           <CookingPot size={24} className="text-primary mb-2" aria-hidden="true" />
           <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.recipes.title")}</p>
@@ -168,7 +168,7 @@ export default function ProducerDashboardToolsPage() {
             only, no change now (full object-nav split is MEH-964 Phase 2). */}
         <Link
           href={`/producer/${producer.id}#reviews`}
-          className="bg-white border border-border rounded-lg p-5 hover:border-primary transition"
+          className="bg-surface border border-border rounded-lg p-5 hover:border-primary transition"
         >
           <Star size={24} className="text-primary mb-2" aria-hidden="true" />
           <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.reviews.title")}</p>

@@ -25,6 +25,7 @@ import { producerCompleteness } from "@/lib/producer-completeness";
 // MEH-1267: canonical public domain (MEH-1242 PR4) — mehamakor.online is the
 // staging alias, never public-facing. SITE_URL is the mehamakor.co.il origin.
 import { SITE_URL, env } from "@/lib/env";
+import Button from "@/components/ui/Button";
 
 function VanityLinkCard({ slug }) {
   const t = useTranslations("dashboard.producer.vanity_link");
@@ -43,9 +44,9 @@ function VanityLinkCard({ slug }) {
   );
 
   return (
-    <div className="bg-white border border-border rounded-lg p-5 mb-6">
+    <div className="bg-surface border border-border rounded-lg p-5 mb-6">
       <p className="text-sm font-medium text-text mb-2">{t("label")}</p>
-      <div className="flex items-center gap-2 bg-green-50 rounded-[10px] px-3 py-2 mb-3">
+      <div className="flex items-center gap-2 bg-green-50 rounded-md px-3 py-2 mb-3">
         <span className="text-sm text-primary font-mono flex-1 truncate" dir="ltr">{url}</span>
       </div>
       <div className="flex gap-2">
@@ -92,7 +93,7 @@ function ShareKitSection({ profile }) {
     <section
       data-testid="share-kit-section"
       aria-label={t("section_title")}
-      className="bg-white border border-border rounded-lg p-5 mb-6"
+      className="bg-surface border border-border rounded-lg p-5 mb-6"
     >
       <h2 className="font-headline-md text-lg font-bold text-text mb-1">
         {t("section_title")}
@@ -132,7 +133,7 @@ function SectionFetchError({ message, retryLabel, onRetry, testid }) {
     <div
       role="alert"
       data-testid={testid}
-      className="bg-white border border-border rounded-lg p-4 mb-6 flex items-center justify-between gap-3"
+      className="bg-surface border border-border rounded-lg p-4 mb-6 flex items-center justify-between gap-3"
     >
       <p className="text-sm text-fg-muted">{message}</p>
       <button
@@ -159,14 +160,14 @@ function StatusSupportModal({ onClose }) {
       aria-label={t("section_aria")}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-white rounded-t-[24px] sm:rounded-xl w-full max-w-sm p-6 space-y-4">
+      <div className="bg-surface rounded-t-3xl sm:rounded-xl w-full max-w-sm p-6 space-y-4">
         <h2 className="font-semibold text-text text-lg">{t("heading")}</h2>
         <p className="text-sm text-fg-muted">{t("body")}</p>
         <a
           href={`https://wa.me/${env.NEXT_PUBLIC_SUPPORT_PHONE || "972500000000"}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-3 rounded-[14px] border border-border px-4 py-3 hover:bg-green-50 transition"
+          className="flex items-center gap-3 rounded-lg border border-border px-4 py-3 hover:bg-green-50 transition"
         >
           <WhatsappLogo size={22} weight="fill" className="text-[#25D366] shrink-0" />
           <div>
@@ -176,7 +177,7 @@ function StatusSupportModal({ onClose }) {
         </a>
         <a
           href="mailto:contact@mehamakor.co.il"
-          className="flex items-center gap-3 rounded-[14px] border border-border px-4 py-3 hover:bg-green-50 transition"
+          className="flex items-center gap-3 rounded-lg border border-border px-4 py-3 hover:bg-green-50 transition"
         >
           <EnvelopeSimple size={22} className="text-primary shrink-0" />
           <div>
@@ -408,7 +409,7 @@ export default function ProducerDashboardPage() {
       <div className="max-w-5xl mx-auto px-4 py-16">
         <div
           data-testid="dashboard-load-error"
-          className="bg-white border border-border rounded-lg p-6 text-center"
+          className="bg-surface border border-border rounded-lg p-6 text-center"
           role="alert"
         >
           <p className="font-headline-md text-xl font-bold text-text mb-2">
@@ -420,7 +421,7 @@ export default function ProducerDashboardPage() {
           <LocaleLink
             href="/contact"
             data-testid="dashboard-load-error-cta"
-            className="inline-block bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition"
+            className="inline-block bg-primary text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-dark transition"
           >
             {t("load_error.cta")}
           </LocaleLink>
@@ -690,7 +691,7 @@ export default function ProducerDashboardPage() {
       ) : producer.slug ? (
         <div
           data-testid="share-locked-hint"
-          className="bg-white border border-border rounded-lg p-5 mb-6 flex items-center gap-3"
+          className="bg-surface border border-border rounded-lg p-5 mb-6 flex items-center gap-3"
         >
           <LockSimple size={18} className="text-fg-muted shrink-0" aria-hidden="true" />
           <p className="text-sm text-fg-muted">{t("states.share_locked")}</p>
@@ -709,7 +710,7 @@ export default function ProducerDashboardPage() {
       {/* MEH-2460: no availability states for an organizer — it takes no
           orders (ADR-036). */}
       {!isOrganizer && (
-      <div className="bg-white border border-border rounded-lg p-6 mb-8">
+      <div className="bg-surface border border-border rounded-lg p-6 mb-8">
         <p className="text-sm uppercase tracking-wider text-fg-muted mb-1">
           {/* MEH-1842: the id sits on a span around the heading TEXT, not on the
               <p>. The <p> also contains InfoTooltip, whose trigger is a button
@@ -779,7 +780,7 @@ export default function ProducerDashboardPage() {
                 className={`inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition border focus-visible:ring-2 focus-visible:ring-primary/40 ${
                   showActive
                     ? "bg-primary text-white border-primary"
-                    : "bg-white text-text border-border hover:bg-green-50"
+                    : "bg-surface text-text border-border hover:bg-green-50"
                 } ${!isApproved ? "opacity-50 cursor-not-allowed" : ""}`}
               >
                 <span
@@ -838,13 +839,13 @@ export default function ProducerDashboardPage() {
                   <X size={14} weight="bold" aria-hidden="true" />
                 </button>
               )}
-              <button
+              <Button
                 type="button"
                 onClick={() => setAvailabilityState("on_vacation")}
-                className="px-4 py-1.5 rounded-[10px] text-sm font-medium bg-primary text-white border border-primary hover:bg-primary/90 transition focus-visible:ring-2 focus-visible:ring-primary/40"
+                variant="primary" size="sm"
               >
                 {t("availability.vacation_confirm")}
-              </button>
+              </Button>
             </div>
             {vacationDateError && (
               <p id="vacation-until-error" role="alert" className="mt-2 text-sm text-danger-600">
@@ -897,7 +898,7 @@ export default function ProducerDashboardPage() {
         // specific copy.
         <div
           data-testid="overview-zero-state"
-          className="bg-white border border-border rounded-lg p-6 mb-8"
+          className="bg-surface border border-border rounded-lg p-6 mb-8"
         >
           <p className="font-semibold text-text mb-1">{t("states.zero_activity_title")}</p>
           <div className="flex items-center gap-3">
@@ -973,7 +974,7 @@ function ActivityPulse({ analytics }) {
     <section
       data-testid="activity-pulse"
       aria-label={t("section_aria")}
-      className="bg-white border border-border rounded-lg p-6"
+      className="bg-surface border border-border rounded-lg p-6"
     >
       {rows.length === 0 ? (
         // MEH-1345: visible title so the empty pulse card is identifiable
@@ -1053,7 +1054,7 @@ function OverviewStatsHero({ analytics }) {
           no deltas/arrows (data reality; see header). */}
       <div data-testid="overview-kpi-strip" className="grid grid-cols-2 gap-3">
         {kpis.map((kpi) => (
-          <div key={kpi.key} className="bg-white border border-border rounded-lg p-4 text-center">
+          <div key={kpi.key} className="bg-surface border border-border rounded-lg p-4 text-center">
             <p className="text-xs text-fg-muted mb-1">{t(`kpi.${kpi.key}`)}</p>
             <p className="font-headline-lg text-3xl font-bold text-primary">{kpi.value}</p>
             <p className="text-xs text-fg-muted mt-1">{kpi.sub}</p>

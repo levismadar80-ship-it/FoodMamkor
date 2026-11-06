@@ -9,6 +9,7 @@ import CollectionNotice from "@/components/CollectionNotice";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { CONTACT_EMAIL } from "@/lib/env.client";
+import Button from "@/components/ui/Button";
 
 // MEH-653: CONTACT_EMAIL now read from NEXT_PUBLIC_CONTACT_EMAIL (lib/env.client)
 // with a "contact@mehamakor.co.il" fallback. Must still match the backend
@@ -52,7 +53,7 @@ export default function ContactClient() {
     <section className="min-h-screen">
       <div className="max-w-2xl mx-auto px-4 py-16">
         {/* MEH-2565: card from md up only — on a phone the form uses the full width. */}
-        <div className="md:bg-white md:rounded-lg md:p-8 md:border md:border-border md:shadow-[0_2px_12px_rgba(46,104,83,0.04)]">
+        <div className="md:bg-surface md:rounded-lg md:p-8 md:border md:border-border md:shadow-[0_2px_12px_rgba(46,104,83,0.04)]">
           <h1 className="font-headline-display text-5xl font-bold text-text mb-2 text-center">
             {t("title")}
           </h1>
@@ -161,13 +162,13 @@ export default function ContactClient() {
                 </div>
               )}
 
-              <button
+              <Button
                 type="submit"
                 disabled={status === "loading"}
-                className="w-full bg-primary text-white py-3 rounded-md hover:bg-primary-dark transition font-medium disabled:opacity-50"
+                variant="primary" size="lg" className="w-full"
               >
                 {status === "loading" ? t("submit_loading") : t("submit")}
-              </button>
+              </Button>
 
               <p className="text-xs text-fg-muted text-center">
                 {t.rich("privacy_notice", {

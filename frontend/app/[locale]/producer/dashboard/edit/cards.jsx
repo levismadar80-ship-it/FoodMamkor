@@ -54,6 +54,7 @@ import Input from "@/components/ui/Input";
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";
 import { DELIVERY_DAYS } from "@/lib/delivery-days";
 import { SkeletonForm } from "@/components/Skeleton";
+import Button from "@/components/ui/Button";
 
 // ============================================================
 // MEH-1306: "view on page" back-link — closes the edit↔public loop from the
@@ -216,13 +217,13 @@ export function CategoriesCard({ profile, onSave, reportDirty = () => {} }) {
         </p>
       )}
 
-      <button
+      <Button
         onClick={handleSave}
         disabled={saving || !dirty}
-        className="mt-4 bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
+        variant="primary" size="sm" className="mt-4"
       >
         {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -385,7 +386,7 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
           if (!e.currentTarget.contains(e.relatedTarget)) setDragOver(false);
         }}
         onDrop={atCap ? (e) => e.preventDefault() : handleDrop}
-        className={`inline-flex items-center text-sm border border-dashed rounded-[10px] px-4 py-3 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30 ${
+        className={`inline-flex items-center text-sm border border-dashed rounded-md px-4 py-3 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30 ${
           atCap
             ? "border-border text-fg-muted cursor-not-allowed"
             : dragOver
@@ -469,15 +470,15 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
         </p>
       )}
 
-      <button
+      <Button
         onClick={handleSave}
         disabled={saving || uploading || !dirty}
-        className="mt-4 bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
+        variant="primary" size="sm" className="mt-4"
       >
         <span aria-live="polite" aria-atomic="true">
           {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
         </span>
-      </button>
+      </Button>
     </div>
   );
 }
@@ -554,7 +555,7 @@ function AssistForm({ t, assist }) {
       <div className="space-y-1">
         <div className="flex items-center gap-2">
           <label className="text-xs font-medium">{t("instagram_label")}</label>
-          <span className="text-[10px] text-fg-muted border border-border rounded-full px-2 py-px">
+          <span className="text-2xs text-fg-muted border border-border rounded-full px-2 py-px">
             {t("optional")}
           </span>
         </div>
@@ -566,24 +567,24 @@ function AssistForm({ t, assist }) {
           value={instagram}
           onChange={(e) => setInstagram(e.target.value.slice(0, 200))}
           placeholder={t("instagram_placeholder")}
-          className="w-full border border-border bg-surface rounded-[10px] px-3 py-2 text-sm"
+          className="w-full border border-border bg-surface rounded-sm px-3 py-2 text-sm"
           dir="ltr"
           maxLength={200}
         />
-        <p className="text-[11px] text-fg-muted">{t("instagram_hint")}</p>
+        <p className="text-2xs text-fg-muted">{t("instagram_hint")}</p>
       </div>
 
       <button
         type="button"
         onClick={generate}
         disabled={!canGenerate || loading}
-        className="w-full bg-primary text-white py-2 rounded-[10px] text-sm font-medium disabled:opacity-50 hover:bg-primary-dark transition flex items-center justify-center gap-2"
+        className="w-full bg-primary text-white py-2 rounded-full text-sm font-medium disabled:opacity-50 hover:bg-primary-dark transition flex items-center justify-center gap-2"
       >
         <Sparkle size={15} weight="fill" aria-hidden="true" />
         {loading ? t("generating") : t("generate_cta")}
       </button>
       {!canGenerate && (
-        <p className="text-[11px] text-fg-muted text-center">{t("generate_hint_disabled")}</p>
+        <p className="text-2xs text-fg-muted text-center">{t("generate_hint_disabled")}</p>
       )}
       {error && (
         <p className="text-xs text-error flex items-start gap-1.5" role="alert">
@@ -603,7 +604,7 @@ function AssistField({ label, value, onChange, placeholder, optional }) {
       <div className="flex items-center gap-2">
         <label className="text-xs font-medium">{label}</label>
         {optional && (
-          <span className="text-[10px] text-fg-muted border border-border rounded-full px-2 py-px">
+          <span className="text-2xs text-fg-muted border border-border rounded-full px-2 py-px">
             {optional}
           </span>
         )}
@@ -613,7 +614,7 @@ function AssistField({ label, value, onChange, placeholder, optional }) {
         value={value}
         onChange={(e) => onChange(e.target.value.slice(0, 200))}
         placeholder={placeholder}
-        className="w-full border border-border bg-surface rounded-[10px] px-3 py-2 text-sm"
+        className="w-full border border-border bg-surface rounded-sm px-3 py-2 text-sm"
         dir="auto"
         maxLength={200}
       />
@@ -728,13 +729,13 @@ export function DescriptionCard({ profile, onSave, reportDirty = () => {} }) {
       <div className="space-y-1.5">
         <div className="flex items-baseline gap-2">
           <label className="text-sm font-medium">{t("desc_label")}</label>
-          <span className="text-[11px] text-fg-muted">{t("desc_where")}</span>
+          <span className="text-2xs text-fg-muted">{t("desc_where")}</span>
         </div>
         <textarea
           value={description}
           onChange={(e) => { setDescription(e.target.value.slice(0, DESC_MAX)); setSaved(false); }}
           placeholder={t("desc_placeholder")}
-          className={`w-full rounded-[10px] px-3 py-2 text-sm resize-none h-24 transition-colors duration-500 ${
+          className={`w-full rounded-sm px-3 py-2 text-sm resize-none h-24 transition-colors duration-500 ${
             highlight
               ? "border border-primary bg-primary/10 ring-2 ring-primary/20"
               : "border border-primary/30 bg-primary/5"
@@ -778,14 +779,14 @@ export function DescriptionCard({ profile, onSave, reportDirty = () => {} }) {
       <div className="space-y-1.5">
         <div className="flex items-baseline gap-2">
           <label className="text-sm font-medium">{t("tagline_label")}</label>
-          <span className="text-[11px] text-fg-muted">{t("tagline_where")}</span>
+          <span className="text-2xs text-fg-muted">{t("tagline_where")}</span>
         </div>
         <input
           type="text"
           value={tagline}
           onChange={(e) => { setTagline(e.target.value.slice(0, TAGLINE_MAX)); setSaved(false); }}
           placeholder={t("tagline_placeholder")}
-          className="w-full border border-primary/30 bg-primary/5 rounded-[10px] px-3 py-2 text-sm"
+          className="w-full border border-primary/30 bg-primary/5 rounded-sm px-3 py-2 text-sm"
           dir="auto"
           maxLength={TAGLINE_MAX}
         />
@@ -797,15 +798,15 @@ export function DescriptionCard({ profile, onSave, reportDirty = () => {} }) {
       </div>
 
       {/* ONE explicit save for the whole card. */}
-      <button
+      <Button
         onClick={save}
         disabled={saving || !dirty}
-        className="bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium disabled:opacity-60 hover:bg-primary-dark transition"
+        variant="primary" size="sm"
       >
         <span aria-live="polite" aria-atomic="true">
           {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
         </span>
-      </button>
+      </Button>
 
       {error && !assistOpen && (
         <p className="text-xs text-error flex items-start gap-1.5" role="alert">
@@ -996,13 +997,13 @@ export function OwnerStoryCard({ profile, onSave, reportDirty = () => {} }) {
       <div className="space-y-1.5">
         <div className="flex items-baseline gap-2">
           <label className="text-sm font-medium">{t("bio_label")}</label>
-          <span className="text-[11px] text-fg-muted">{t("bio_where")}</span>
+          <span className="text-2xs text-fg-muted">{t("bio_where")}</span>
         </div>
         <textarea
           value={bio}
           onChange={(e) => { setBio(e.target.value.slice(0, OWNER_BIO_MAX)); setSaved(false); }}
           placeholder={t("bio_placeholder")}
-          className="w-full border border-primary/30 bg-primary/5 rounded-[10px] px-3 py-2 text-sm resize-none h-24"
+          className="w-full border border-primary/30 bg-primary/5 rounded-sm px-3 py-2 text-sm resize-none h-24"
           dir="auto"
           maxLength={OWNER_BIO_MAX}
           data-testid="owner-bio-input"
@@ -1015,15 +1016,15 @@ export function OwnerStoryCard({ profile, onSave, reportDirty = () => {} }) {
       </div>
 
       {/* ONE explicit save for the bio (the photo self-persists on upload). */}
-      <button
+      <Button
         onClick={save}
         disabled={saving || !dirty}
-        className="bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium disabled:opacity-60 hover:bg-primary-dark transition"
+        variant="primary" size="sm"
       >
         <span aria-live="polite" aria-atomic="true">
           {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
         </span>
-      </button>
+      </Button>
 
       {error && (
         <p className="text-xs text-error flex items-start gap-1.5" role="alert">
@@ -1118,15 +1119,15 @@ export function PricingCard({ profile, onSave, reportDirty = () => {} }) {
         </p>
       )}
 
-      <button
+      <Button
         onClick={handleSave}
         disabled={saving || !dirty}
-        className="mt-4 bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
+        variant="primary" size="sm" className="mt-4"
       >
         <span aria-live="polite" aria-atomic="true">
           {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
         </span>
-      </button>
+      </Button>
     </div>
   );
 }
@@ -1248,13 +1249,13 @@ export function LicenseCard({ profile, onSave, reportDirty = () => {} }) {
         </p>
       )}
 
-      <button
+      <Button
         onClick={handleSave}
         disabled={saving || !dirty}
-        className="mt-4 bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
+        variant="primary" size="sm" className="mt-4"
       >
         {saving ? t("saving") : t("save_cta")}
-      </button>
+      </Button>
 
       {/* MEH-1270: explicit, persistent success confirmation — the single
           live region for the card (the button no longer swaps its label, so
@@ -1481,7 +1482,7 @@ export function KashrutCard({ profile, reportDirty = () => {} }) {
               setBadgeCode(e.target.value);
               setSubmitted(false);
             }}
-            className="w-full border border-primary/30 bg-primary/5 rounded-[10px] px-3 py-2 text-sm"
+            className="w-full border border-primary/30 bg-primary/5 rounded-sm px-3 py-2 text-sm"
             data-testid="kashrut-badge-select"
           >
             <option value="">{t("select_placeholder")}</option>
@@ -1526,15 +1527,15 @@ export function KashrutCard({ profile, reportDirty = () => {} }) {
           </div>
         </div>
 
-        <button
+        <Button
           onClick={submit}
           disabled={submitting || !badgeCode}
-          className="bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium disabled:opacity-60 hover:bg-primary-dark transition"
+          variant="primary" size="sm"
         >
           <span aria-live="polite" aria-atomic="true">
             {submitting ? t("submitting") : t("submit_cta")}
           </span>
-        </button>
+        </Button>
 
         {error && (
           <p className="text-xs text-error flex items-start gap-1.5" role="alert">
@@ -1807,7 +1808,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
             <span
               key={tag.key}
               data-testid={`delivery-map-preview-${tag.key}`}
-              className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] leading-4 whitespace-nowrap ${
+              className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-2xs leading-4 whitespace-nowrap ${
                 tag.neutral ? FULFILLMENT_WASH_NEUTRAL : FULFILLMENT_WASH_GREEN
               }`}
             >
@@ -1914,7 +1915,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
                   value={form.fee}
                   onChange={(e) => set({ fee: e.target.value })}
                   placeholder={t("fee_placeholder")}
-                  className="w-32 border border-border rounded-[10px] px-3 py-2 text-sm"
+                  className="w-32 border border-border rounded-sm px-3 py-2 text-sm"
                 />
               </div>
               <div>
@@ -1937,7 +1938,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
                   value={form.freeAbove}
                   onChange={(e) => set({ freeAbove: e.target.value })}
                   placeholder={t("free_above_placeholder")}
-                  className="w-32 border border-border rounded-[10px] px-3 py-2 text-sm"
+                  className="w-32 border border-border rounded-sm px-3 py-2 text-sm"
                 />
               </div>
             </div>
@@ -2066,15 +2067,15 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
         </p>
       )}
 
-      <button
+      <Button
         onClick={handleSave}
         disabled={saving || !dirty || blocked}
-        className="mt-4 bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
+        variant="primary" size="sm" className="mt-4"
       >
         <span aria-live="polite" aria-atomic="true">
           {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
         </span>
-      </button>
+      </Button>
     </div>
   );
 }
@@ -2240,7 +2241,7 @@ export function OffersCard({ profile, onSave, reportDirty = () => {} }) {
             value={form.type}
             data-testid="offer-type-select"
             onChange={(e) => set({ type: e.target.value })}
-            className="w-full border border-border rounded-[10px] px-3 py-2 text-sm bg-surface"
+            className="w-full border border-border rounded-sm px-3 py-2 text-sm bg-surface"
           >
             <option value="">{t("type_none")}</option>
             {OFFER_TYPES.map((ot) => (
@@ -2272,14 +2273,14 @@ export function OffersCard({ profile, onSave, reportDirty = () => {} }) {
                   data-testid="offer-threshold-input"
                   onChange={(e) => set({ threshold: e.target.value })}
                   placeholder={t("threshold_placeholder")}
-                  className="w-24 border border-border rounded-[10px] px-3 py-2 text-sm"
+                  className="w-24 border border-border rounded-sm px-3 py-2 text-sm"
                 />
                 <select
                   value={form.unit}
                   aria-label={t("unit_label")}
                   data-testid="offer-unit-select"
                   onChange={(e) => set({ unit: e.target.value })}
-                  className="border border-border rounded-[10px] px-3 py-2 text-sm bg-surface"
+                  className="border border-border rounded-sm px-3 py-2 text-sm bg-surface"
                 >
                   <option value="">{t("unit_label")}</option>
                   {THRESHOLD_UNITS.map((u) => (
@@ -2317,7 +2318,7 @@ export function OffersCard({ profile, onSave, reportDirty = () => {} }) {
                 data-testid="offer-headline-input"
                 onChange={(e) => set({ headline: e.target.value })}
                 placeholder={t("headline_placeholder")}
-                className="w-full border border-border rounded-[10px] px-3 py-2 text-sm"
+                className="w-full border border-border rounded-sm px-3 py-2 text-sm"
               />
               {missingCustomHeadline && (
                 <p className="text-xs text-danger-600 mt-1" data-testid="offer-headline-error">
@@ -2337,7 +2338,7 @@ export function OffersCard({ profile, onSave, reportDirty = () => {} }) {
                 value={form.expires}
                 data-testid="offer-expires-input"
                 onChange={(e) => set({ expires: e.target.value })}
-                className="border border-border rounded-[10px] px-3 py-2 text-sm"
+                className="border border-border rounded-sm px-3 py-2 text-sm"
               />
               {missingExpiry && (
                 <p className="text-xs text-danger-600 mt-1" data-testid="offer-expiry-error">
@@ -2356,16 +2357,16 @@ export function OffersCard({ profile, onSave, reportDirty = () => {} }) {
         </p>
       )}
 
-      <button
+      <Button
         onClick={handleSave}
         disabled={saving || !dirty || blocked}
         data-testid="offer-save"
-        className="mt-4 bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
+        variant="primary" size="sm" className="mt-4"
       >
         <span aria-live="polite" aria-atomic="true">
           {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
         </span>
-      </button>
+      </Button>
     </div>
   );
 }
@@ -2459,7 +2460,7 @@ export function BusinessNameCard({ profile }) {
       {/* Current name is shown read-only so the comparison the owner is about
           to request is visible without leaving the card. */}
       <div>
-        <p className="text-[13px] font-semibold text-text mb-1">{t("current_label")}</p>
+        <p className="text-sm font-semibold text-text mb-1">{t("current_label")}</p>
         <p
           className="text-base font-bold text-text bg-bg-subtle border border-border rounded-sm px-3 py-2"
           data-testid="name-change-current"
@@ -2517,14 +2518,14 @@ export function BusinessNameCard({ profile }) {
               {error}
             </p>
           )}
-          <button
+          <Button
             type="submit"
             disabled={!canSubmit}
-            className="bg-primary text-white rounded-full px-5 py-2.5 text-sm font-semibold disabled:opacity-50 focus-ring"
+            variant="primary" size="sm"
             data-testid="name-change-submit"
           >
             {saving ? t("submitting") : t("submit_cta")}
-          </button>
+          </Button>
         </form>
       )}
     </div>

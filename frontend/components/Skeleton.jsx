@@ -141,7 +141,7 @@ export function SkeletonList({ count = 4, label, className = "", testId }) {
           className="flex items-center gap-3 bg-surface-card border border-border rounded-md p-3"
           aria-hidden="true"
         >
-          <div className="skeleton-box rounded-[9px] w-11 h-11 shrink-0" />
+          <div className="skeleton-box rounded-sm w-11 h-11 shrink-0" />
           <div className="flex-1 min-w-0 flex flex-col gap-2">
             <div className="skeleton-box rounded-lg h-[14px] w-[62%]" />
             <div className="skeleton-box rounded-lg h-[10px] w-[38%]" />
@@ -252,7 +252,7 @@ export function SkeletonDetail({ hero = true, width = "max-w-3xl", label, classN
           MEH-2559): inside the page column, 210/300/380 px, rounded on lg. */}
       {hero && (
         <div className={`${width} mx-auto lg:px-4 lg:pt-6`} aria-hidden="true">
-          <div className="skeleton-box h-[210px] md:h-[300px] lg:h-[380px] lg:rounded-[18px]" data-skeleton="hero" />
+          <div className="skeleton-box h-[210px] md:h-[300px] lg:h-[380px] lg:rounded-xl" data-skeleton="hero" />
         </div>
       )}
       <div className={`${width} mx-auto px-4 py-12`} aria-hidden="true" data-skeleton="column">

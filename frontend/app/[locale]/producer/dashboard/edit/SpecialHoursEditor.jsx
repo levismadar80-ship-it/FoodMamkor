@@ -38,6 +38,7 @@ import {
   specialHoursIssues,
   canAddSpecialRange,
 } from "@/lib/special-hours";
+import Button from "@/components/ui/Button";
 
 export default function SpecialHoursEditor({ profile, onSave, reportDirty = () => {} }) {
   const t = useTranslations("dashboard.producer.special_hours");
@@ -340,21 +341,21 @@ export default function SpecialHoursEditor({ profile, onSave, reportDirty = () =
       )}
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
-        <button
+        <Button
           onClick={handleSave}
           disabled={!canSave}
           data-testid="special-hours-save"
-          className="bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
+          variant="primary" size="sm"
         >
           {saving ? tRange("saving") : tRange("save_cta")}
-        </button>
+        </Button>
         {dirty && (
           <button
             type="button"
             onClick={revertChanges}
             disabled={saving}
             data-testid="special-hours-revert"
-            className="border border-border text-fg-muted px-4 py-2 rounded-[10px] text-sm font-medium hover:border-primary hover:text-text transition disabled:opacity-60"
+            className="border border-border text-fg-muted px-4 py-2 rounded-full text-sm font-medium hover:border-primary hover:text-text transition disabled:opacity-60"
           >
             {tRange("revert_cta")}
           </button>

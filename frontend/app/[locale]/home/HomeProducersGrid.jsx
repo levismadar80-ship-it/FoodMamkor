@@ -31,6 +31,7 @@ import {
   withChipGroups,       // MEH-2173 — sheet group metadata
 } from "@/lib/producer-filters";
 import { LOAD_MORE_CAP } from "@/lib/use-home-page";
+import Button from "@/components/ui/Button";
 
 // 🔒 The axes the home row PROMOTES onto the surface; every other axis stays
 // one tap away inside the FilterSheet. CHANGING THIS LIST IS A SAPIR DECISION,
@@ -332,7 +333,7 @@ export function HomeProducersGrid({
             data-testid="home-filters-button"
             // REUSES: frontend/components/ProducersClient.jsx:775-787 — same
             // trigger, same inactive chip visuals, same inline count.
-            className="inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 rounded-md text-sm font-medium border transition bg-white text-text border-border hover:border-primary hover:text-primary"
+            className="inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 rounded-md text-sm font-medium border transition bg-surface text-text border-border hover:border-primary hover:text-primary"
           >
             {/* `Faders`, not `FadersHorizontal` as the card's prose says: the
                 two shipped sheet triggers both use `Faders`
@@ -419,9 +420,9 @@ export function HomeProducersGrid({
                 // each button a distinct name. Caught by the CI reviewer.
                 aria-label={`${t("home.producers.clear_filter")} ${chip.label}`}
                 data-testid={`home-active-filter-${chip.key}`}
-                className="inline-flex items-center gap-1 bg-white text-primary border border-primary rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap shrink-0"
+                className="inline-flex items-center gap-1 bg-surface text-primary border border-primary rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap shrink-0"
               >
-                <span aria-hidden="true" className="text-[10px] font-bold">×</span>
+                <span aria-hidden="true" className="text-2xs font-bold">×</span>
                 {chip.label}
               </button>
           ))}
@@ -616,13 +617,13 @@ export function HomeProducersGrid({
                 {t(filters.category ? "home.producers.empty_subtext_category" : "home.producers.empty_subtext")}
               </p>
               {filters.category ? (
-                <button
+                <Button
                   type="button"
                   onClick={onClearCategory}
-                  className="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-sm hover:bg-primary-dark transition font-medium"
+                  variant="primary" size="lg"
                 >
                   {t("home.producers.clear_category_cta")}
-                </button>
+                </Button>
               ) : (
                 <Link
                   href="/map"
@@ -641,14 +642,14 @@ export function HomeProducersGrid({
               {visibleCount >= LOAD_MORE_CAP ? (
                 <Link
                   href="/producers"
-                  className="inline-block bg-white text-primary border-2 border-primary px-8 py-3 rounded-sm hover:bg-green-50 transition font-medium"
+                  className="inline-block bg-surface text-primary border-2 border-primary px-8 py-3 rounded-sm hover:bg-green-50 transition font-medium"
                 >
                   {t("home.producers.all_businesses")}
                 </Link>
               ) : (
                 <button
                   onClick={onLoadMore}
-                  className="bg-white text-primary border-2 border-primary px-8 py-3 rounded-sm hover:bg-green-50 transition font-medium"
+                  className="bg-surface text-primary border-2 border-primary px-8 py-3 rounded-sm hover:bg-green-50 transition font-medium"
                 >
                   {t("home.producers.load_more")}
                 </button>

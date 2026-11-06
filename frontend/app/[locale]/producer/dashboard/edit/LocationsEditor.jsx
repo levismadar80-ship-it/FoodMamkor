@@ -49,6 +49,7 @@ import { LocationInputSchema } from "@/lib/schemas";
 import EmptyState from "@/components/ui/EmptyState";
 import CitySearch from "@/components/CitySearch";
 import AddressSearch from "@/components/AddressSearch";
+import Button from "@/components/ui/Button";
 
 // Leaflet touches `window` at import time, so the confirmation map is loaded
 // client-side only. REUSES: RegisterProducerClient.jsx:24 — same dynamic import
@@ -741,7 +742,7 @@ function LocationForm({
 
       {/* MEH-1563: every field carries a hint and/or an example placeholder
           (MEH-1539 standard items 2–3). REUSES: edit/cards.jsx `*_where` /
-          `scope_helper` lines — same `text-[11px] text-fg-muted` treatment.
+          `scope_helper` lines — same `text-2xs text-fg-muted` treatment.
           MEH-1595: single column below `sm`. Two columns gave each input 134px
           at 375px (108px usable) while the example placeholders measure
           125–186px, so four of five were cut mid-example — `למשל: 050-1234567`
@@ -754,7 +755,7 @@ function LocationForm({
           <select
             value={form.kind}
             onChange={set("kind")}
-            className="w-full rounded-[10px] border border-border bg-surface px-3 py-2 text-sm"
+            className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
             data-testid="location-kind"
           >
             {KINDS.map((k) => (
@@ -777,7 +778,7 @@ function LocationForm({
             ref={errorRef}
             role="alert"
             data-testid="location-form-error"
-            className="rounded-[10px] border border-error/30 border-s-4 border-s-error bg-error/5 px-3 py-2 text-xs leading-relaxed text-error sm:col-span-2"
+            className="rounded-md border border-error/30 border-s-4 border-s-error bg-error/5 px-3 py-2 text-xs leading-relaxed text-error sm:col-span-2"
           >
             {error}
           </div>
@@ -800,7 +801,7 @@ function LocationForm({
             value={form.city}
             onChange={handleCityChange}
           />
-          <span className="mt-1 block text-[11px] text-fg-muted">{placeHint}</span>
+          <span className="mt-1 block text-2xs text-fg-muted">{placeHint}</span>
         </div>
         <div className="text-xs" data-testid="location-address-field">
           <label
@@ -817,7 +818,7 @@ function LocationForm({
             onSelect={handleAddressSelect}
             placeholder={tForm("address_placeholder")}
           />
-          <span className="mt-1 block text-[11px] text-fg-muted">{placeHint}</span>
+          <span className="mt-1 block text-2xs text-fg-muted">{placeHint}</span>
         </div>
       </div>
 
@@ -862,7 +863,7 @@ function LocationForm({
       <details
         open={detailsOpen}
         onToggle={(e) => setDetailsOpen(e.currentTarget.open)}
-        className="rounded-[10px] border border-border bg-surface px-3 py-2"
+        className="rounded-md border border-border bg-surface px-3 py-2"
         data-testid="location-details"
       >
         {/* 44px tap target and no `display` override — same two constraints
@@ -921,7 +922,7 @@ function LocationForm({
                 setPrecisionTouched(true);
                 set("location_precision")(e);
               }}
-              className="w-full rounded-[10px] border border-border bg-surface px-3 py-2 text-sm"
+              className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
               data-testid="location-precision"
             >
               <option value="exact">{tForm("precision_exact")}</option>
@@ -958,7 +959,7 @@ function LocationForm({
           (MEH-1242 PR2 manual-coords disclosure). */}
       <details
         open={coordsOpen}
-        className="rounded-[10px] border border-border bg-surface px-3 py-2"
+        className="rounded-md border border-border bg-surface px-3 py-2"
       >
         {/* MEH-1595: 44px minimum tap target — the row was 16px tall, on the
             one control an owner has to go looking for. Padding + min-height
@@ -971,7 +972,7 @@ function LocationForm({
         >
           {tForm("coords_summary")}
         </summary>
-        <p className="mt-1 text-[11px] text-fg-muted">{tForm("coords_hint")}</p>
+        <p className="mt-1 text-2xs text-fg-muted">{tForm("coords_hint")}</p>
         <div className="mt-2 grid grid-cols-2 gap-2">
           <Field label={tForm("lat_label")}>
             <TextInput
@@ -997,14 +998,14 @@ function LocationForm({
       </details>
 
       <div className="flex items-center gap-2">
-        <button
+        <Button
           type="submit"
           disabled={saving}
-          className="rounded-full bg-primary px-4 py-1.5 text-sm font-medium text-white hover:bg-primary-dark disabled:opacity-50"
+          variant="primary" size="sm"
           data-testid="location-save"
         >
           {saving ? t("saving") : t("save_cta")}
-        </button>
+        </Button>
         <button
           type="button"
           onClick={onCancel}
@@ -1077,7 +1078,7 @@ function AddressState({ geocoded, unresolved, confirmLabel, lat, lng, name }) {
     return (
       <p
         data-testid="location-address-unresolved"
-        className="text-[11px] text-fg-muted text-start"
+        className="text-2xs text-fg-muted text-start"
       >
         {tForm("address_unresolved")}
       </p>
@@ -1102,7 +1103,7 @@ function Field({ label, hint, children }) {
         {children}
       </label>
       {hint ? (
-        <span className="mt-1 block text-[11px] text-fg-muted">{hint}</span>
+        <span className="mt-1 block text-2xs text-fg-muted">{hint}</span>
       ) : null}
     </div>
   );
@@ -1126,7 +1127,7 @@ const TextInput = forwardRef(function TextInput(
       onChange={onChange}
       placeholder={placeholder}
       data-testid={testid}
-      className="w-full rounded-[10px] border border-border bg-surface px-3 py-2 text-sm"
+      className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
     />
   );
 });

@@ -26,6 +26,7 @@ import { STATUS_CLASSES } from "@/lib/dashboard-status-classes";
 import useDialogFocus from "@/hooks/useDialogFocus";
 import { GroupBuyStatusResultSchema, OwnerGroupBuySchema } from "@/lib/api-schemas";
 import { SkeletonList } from "@/components/Skeleton";
+import Button from "@/components/ui/Button";
 
 const STATUS_CLS = {
   open: STATUS_CLASSES.info,
@@ -126,7 +127,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 bg-white rounded-lg border border-border p-6">
+    <form onSubmit={handleSubmit} className="space-y-4 bg-surface rounded-lg border border-border p-6">
       <h2 className="font-headline-lg text-lg font-bold text-text">{t("heading")}</h2>
       {/* MEH-992: one-line concept intro — what a group-buy is */}
       <p className="text-sm text-fg-muted">{t("concept_intro")}</p>
@@ -312,13 +313,13 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
       {/* MEH-1165: role="alert" so the submit error is announced to AT. */}
       {unverified && <UnverifiedEmailNotice />}
       {error && <p className="text-danger-500 text-sm" role="alert">{error}</p>}
-      <button
+      <Button
         type="submit"
         disabled={submitting || priceInvalid}
-        className="bg-primary text-white px-6 py-2.5 min-h-touch rounded-sm hover:bg-primary-dark transition font-medium disabled:opacity-50"
+        variant="primary" size="lg"
       >
         {submitting ? t("submitting") : t("submit")}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -368,7 +369,7 @@ function GroupBuyActionDialog({ pending, busy, stale, error, onConfirm, onClose 
         aria-modal="true"
         aria-labelledby="group-buy-action-title"
         data-testid="group-buy-action-dialog"
-        className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full text-start space-y-3"
+        className="bg-surface rounded-lg shadow-xl p-6 max-w-sm w-full text-start space-y-3"
       >
         <p id="group-buy-action-title" className="font-medium text-base text-text">
           {t(`${action}_title`)}
@@ -389,7 +390,7 @@ function GroupBuyActionDialog({ pending, busy, stale, error, onConfirm, onClose 
             // «חזרה» returns her to the card, which now shows the real state.
             disabled={busy || stale}
             onClick={onConfirm}
-            className={`px-4 py-2 min-h-touch rounded-[10px] text-sm font-medium text-white transition disabled:opacity-50 ${
+            className={`px-4 py-2 min-h-touch rounded-full text-sm font-medium text-white transition disabled:opacity-50 ${
               destructive ? "bg-danger-600 hover:bg-danger-700" : "bg-primary hover:bg-primary-dark"
             }`}
           >
@@ -405,7 +406,7 @@ function GroupBuyActionDialog({ pending, busy, stale, error, onConfirm, onClose 
             data-autofocus
             disabled={busy}
             onClick={onClose}
-            className="px-4 py-2 min-h-touch rounded-[10px] text-sm border border-border text-fg-muted hover:bg-gray-50 transition disabled:opacity-50"
+            className="px-4 py-2 min-h-touch rounded-full text-sm border border-border text-fg-muted hover:bg-gray-50 transition disabled:opacity-50"
           >
             {t("back")}
           </button>
@@ -581,12 +582,12 @@ export default function ProducerGroupBuysPage() {
             EmptyState description below — so the explanation still has a
             home and nothing on screen invites a dead press. */}
         {items !== null && !notApproved && !(items.length === 0 && !showForm) && (
-          <button
+          <Button
             onClick={() => setShowForm((v) => !v)}
-            className="bg-primary text-white px-4 py-2 min-h-touch rounded-sm text-sm font-medium hover:bg-primary-dark transition"
+            variant="primary" size="sm"
           >
             {showForm ? t("btn_close_form") : t("btn_open_form")}
-          </button>
+          </Button>
         )}
       </div>
 
@@ -666,7 +667,7 @@ export default function ProducerGroupBuysPage() {
                 // whose action buttons are gone (useDialogFocus fallback).
                 data-group-buy-card={gb.id}
                 tabIndex={-1}
-                className="bg-white rounded-[14px] border border-border p-5 focus:outline-none"
+                className="bg-surface rounded-lg border border-border p-5 focus:outline-none"
               >
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div>

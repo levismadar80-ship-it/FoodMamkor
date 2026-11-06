@@ -39,6 +39,7 @@ import Input from "@/components/ui/Input";
 import CitySearch from "@/components/CitySearch";
 import CollectionNotice from "@/components/CollectionNotice";
 import api from "@/lib/api";
+import Button from "@/components/ui/Button";
 
 const EMPTY = {
   name: "",
@@ -110,7 +111,7 @@ export default function RecommendClient() {
   return (
     <section className="min-h-screen">
       <div className="max-w-2xl mx-auto px-4 py-16">
-        <div className="md:bg-white md:rounded-lg md:p-8 md:border md:border-border md:shadow-[0_2px_12px_rgba(46,104,83,0.04)]">
+        <div className="md:bg-surface md:rounded-lg md:p-8 md:border md:border-border md:shadow-[0_2px_12px_rgba(46,104,83,0.04)]">
           <h1 className="font-headline-display text-5xl font-bold text-text mb-2 text-center">
             {t("title")}
           </h1>
@@ -284,14 +285,14 @@ export default function RecommendClient() {
               </p>
             )}
 
-            <button
+            <Button
               type="submit"
               disabled={status === "submitting"}
               data-testid="recommend-submit"
-              className="mt-6 w-full min-h-[48px] rounded-md bg-primary text-white font-medium disabled:opacity-60"
+              variant="primary" size="lg" className="mt-6 w-full"
             >
               {status === "submitting" ? tContact("submit_loading") : t("submit")}
-            </button>
+            </Button>
 
             {/* t.rich, NOT t(): this string carries <link> markup and a plain
                 t() prints the tags on screen. ContactClient.jsx:173 is the

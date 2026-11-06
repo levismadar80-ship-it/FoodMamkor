@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { useFocusReturn } from "@/lib/use-focus-return";
+import Button from "@/components/ui/Button";
 
 export default function ReportButton({ producerId }) {
   const t = useTranslations("report");
@@ -47,18 +48,18 @@ export default function ReportButton({ producerId }) {
             role="dialog"
             aria-modal="true"
             aria-labelledby="report-dialog-title"
-            className="bg-white rounded-md p-6 max-w-md w-full"
+            className="bg-surface rounded-md p-6 max-w-md w-full"
           >
             {submitted ? (
               <div className="text-center">
                 <p className="text-lg font-semibold mb-2">{t("success_title")}</p>
                 <p className="text-muted mb-4">{t("success_message")}</p>
-                <button
+                <Button
                   onClick={() => { setShowModal(false); setSubmitted(false); setReason(""); }}
-                  className="bg-primary text-white px-6 py-2 rounded-md"
+                  variant="primary" size="lg"
                 >
                   {t("success_close")}
-                </button>
+                </Button>
               </div>
             ) : (
               <form onSubmit={handleSubmit}>

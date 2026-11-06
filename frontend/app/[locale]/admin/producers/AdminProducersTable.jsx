@@ -63,7 +63,7 @@ export function AwaitingCompletionBadge({ producer }) {
     : null;
   return (
     <span
-      className="inline-flex items-center gap-1 rounded-full bg-warning-100 text-warning-800 px-2 py-0.5 text-[10px] font-medium"
+      className="inline-flex items-center gap-1 rounded-full bg-warning-100 text-warning-800 px-2 py-0.5 text-2xs font-medium"
       title={producer.requested_changes}
     >
       {t("producers.table.awaiting_completion")}
@@ -86,7 +86,7 @@ export function ResubmissionBadge({ producer }) {
   if (count <= 0 || producer.status !== "pending") return null;
   return (
     <span
-      className="inline-flex items-center gap-1 rounded-full bg-sky-100 text-sky-800 px-2 py-0.5 text-[10px] font-medium"
+      className="inline-flex items-center gap-1 rounded-full bg-sky-100 text-sky-800 px-2 py-0.5 text-2xs font-medium"
       title={producer.rejection_reason || undefined}
       data-testid="resubmission-badge"
       data-count={count}
@@ -133,7 +133,7 @@ export function WaitingBadge({ producer }) {
 
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${cls}`}
+      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-2xs font-medium ${cls}`}
       data-testid="waiting-badge"
       data-days={days}
       title={title}
@@ -228,7 +228,7 @@ export function ProducerTags({ producer }) {
         <span
           title={t("producers.table.tags.organizer_title")}
           aria-label={t("producers.table.tags.organizer_title")}
-          className="inline-flex items-center rounded-full bg-primary/10 text-primary px-1.5 py-0.5 text-[10px] font-medium"
+          className="inline-flex items-center rounded-full bg-primary/10 text-primary px-1.5 py-0.5 text-2xs font-medium"
         >
           {t("producers.table.tags.organizer")}
         </span>
@@ -253,7 +253,7 @@ export function ProducerTags({ producer }) {
         <span
           title={t("producers.table.tags.license_pending_title")}
           aria-label={t("producers.table.tags.license_pending_title")}
-          className="inline-flex items-center rounded-full bg-warning-100 text-warning-800 px-1.5 py-0.5 text-[10px] font-medium"
+          className="inline-flex items-center rounded-full bg-warning-100 text-warning-800 px-1.5 py-0.5 text-2xs font-medium"
         >
           {t("producers.table.tags.license_pending")}
         </span>
@@ -270,7 +270,7 @@ export function ProducerTags({ producer }) {
                 : "producers.table.tags.dedup_city_title",
           )}
           aria-label={t("producers.table.tags.dedup")}
-          className="inline-flex items-center gap-0.5 rounded-full bg-orange-100 text-orange-800 px-1.5 py-0.5 text-[10px] font-medium"
+          className="inline-flex items-center gap-0.5 rounded-full bg-orange-100 text-orange-800 px-1.5 py-0.5 text-2xs font-medium"
         >
           <Warning size={ICON_SIZE_SM} weight="fill" aria-hidden="true" />
           {t("producers.table.tags.dedup")}
@@ -299,7 +299,7 @@ function ReferralSource({ producer }) {
     value = tOpt(key);
   }
   return (
-    <div className="text-[11px] text-muted mt-0.5">
+    <div className="text-2xs text-muted mt-0.5">
       {t("producers.table.referral.label")}: {value}
     </div>
   );
@@ -481,7 +481,7 @@ function PendingPhotoStrip({ producer }) {
   const extra = images.length - shown.length;
   return (
     <div className="flex items-center gap-2 pt-1">
-      <span className="text-[11px] text-muted me-1">{t("producers.table.photo_preview.label")}</span>
+      <span className="text-2xs text-muted me-1">{t("producers.table.photo_preview.label")}</span>
       {shown.map((url, i) => (
         <PendingPhotoThumb key={`${url}-${i}`} url={url} index={i} producerName={producer.name} t={t} />
       ))}
@@ -646,7 +646,7 @@ export default function AdminProducersTable({
     onReload: onRetryLoad,
   };
   return (
-    <div className="bg-white border border-border rounded-md overflow-hidden">
+    <div className="bg-surface border border-border rounded-md overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <TableHead />

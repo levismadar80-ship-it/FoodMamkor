@@ -76,6 +76,12 @@
         ]
       },
       "fontSize": {
+        "2xs": [
+          "11px",
+          {
+            "lineHeight": "16px"
+          }
+        ],
         "headline-display": [
           "48px",
           {

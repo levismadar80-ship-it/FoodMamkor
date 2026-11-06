@@ -137,7 +137,7 @@ export default function DeliveryChecker({
     <div className="mb-6 rounded-2xl bg-green-50 p-3.5" data-testid="delivery-checker">
       <div
         data-testid="delivery-checker-input"
-        className="[&_label]:text-[15px] [&_label]:font-bold [&_label]:mb-2"
+        className="[&_label]:text-base [&_label]:font-bold [&_label]:mb-2"
       >
         <CitySearch
           id="delivery-checker-city"
@@ -178,7 +178,7 @@ export default function DeliveryChecker({
               {t(VERDICT_KEY[result.status], { city: result.city })}
             </p>
             {(day || price) && (
-              <p className="mt-0.5 text-[13px] text-fg-muted ms-6">
+              <p className="mt-0.5 text-sm text-fg-muted ms-6">
                 {day}
                 {day && price ? <span aria-hidden="true"> · </span> : null}
                 {price && (

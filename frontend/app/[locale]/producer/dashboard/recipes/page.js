@@ -29,6 +29,7 @@ import BackLink from "@/components/ui/BackLink";
 // MEH-1640: shared status colours across the four tools spokes.
 import { STATUS_CLASSES } from "@/lib/dashboard-status-classes";
 import { SkeletonList } from "@/components/Skeleton";
+import Button from "@/components/ui/Button";
 
 export default function ProducerRecipesPage() {
   const t = useTranslations("recipes.dashboard");
@@ -88,12 +89,12 @@ export default function ProducerRecipesPage() {
             MEH-1655: also hidden while loading (items === null) — it used to
             render then jump to the EmptyState CTA on an empty result. */}
         {items !== null && !(items.length === 0 && !showForm) && (
-          <button
+          <Button
             onClick={() => setShowForm((v) => !v)}
-            className="bg-primary text-white px-4 py-2 min-h-touch rounded-sm text-sm font-medium hover:bg-primary-dark transition"
+            variant="primary" size="sm"
           >
             {showForm ? t("btn_close_form") : t("btn_open_form")}
-          </button>
+          </Button>
         )}
       </div>
 
@@ -124,7 +125,7 @@ export default function ProducerRecipesPage() {
             ctaOnClick={() => setShowForm(true)}
             example={
               <div className="w-full max-w-xs text-start opacity-70">
-                <p className="text-[11px] text-fg-muted mb-1">{t("sample_label")}</p>
+                <p className="text-2xs text-fg-muted mb-1">{t("sample_label")}</p>
                 <div className="border border-border rounded-md p-3 bg-surface-card flex items-center gap-3">
                   <div className="w-14 h-14 rounded-sm bg-green-50 flex items-center justify-center shrink-0">
                     <Bread size={22} className="text-fg-muted" aria-hidden="true" />
@@ -143,7 +144,7 @@ export default function ProducerRecipesPage() {
           {items.map((r) => (
             <div
               key={r.id}
-              className="bg-white rounded-[14px] border border-border p-5"
+              className="bg-surface rounded-lg border border-border p-5"
             >
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div className="min-w-0">

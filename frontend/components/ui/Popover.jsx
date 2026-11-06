@@ -342,14 +342,14 @@ export default function Popover({
           ? // MEH-2622: select-none + no touch-callout — on iOS a long press
             // on the sheet selected it and the page behind it, painting the
             // whole screen in the blue selection tint (Sapir's screenshots).
-            `fixed inset-x-0 bottom-0 z-[1210] block select-none [-webkit-touch-callout:none] rounded-t-2xl border-t border-border bg-white p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] shadow-2xl text-sm text-text leading-relaxed text-start ${sheetContentClassName}`
+            `fixed inset-x-0 bottom-0 z-[1210] block select-none [-webkit-touch-callout:none] rounded-t-2xl border-t border-border bg-surface p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] shadow-2xl text-sm text-text leading-relaxed text-start ${sheetContentClassName}`
           : overlayActive
             ? // Same visual as the anchored panel; `fixed` + measured offsets
               // replace `absolute` + the placement classes. z unchanged at 800
               // (rtl.md ledger) — portalling to <body> already lifts it out of
               // the card's overflow-hidden and its stacking context.
-              `fixed z-[800] block bg-white border border-border rounded-md shadow-lg p-3 text-xs text-text leading-relaxed text-start ${contentClassName}`
-            : `absolute ${PLACEMENT_CLASSES[placement] ?? PLACEMENT_CLASSES.bottom} z-[800] bg-white border border-border rounded-md shadow-lg p-3 text-xs text-text leading-relaxed text-start ${contentClassName}`
+              `fixed z-[800] block bg-surface border border-border rounded-md shadow-lg p-3 text-xs text-text leading-relaxed text-start ${contentClassName}`
+            : `absolute ${PLACEMENT_CLASSES[placement] ?? PLACEMENT_CLASSES.bottom} z-[800] bg-surface border border-border rounded-md shadow-lg p-3 text-xs text-text leading-relaxed text-start ${contentClassName}`
       }
     >
       {children}

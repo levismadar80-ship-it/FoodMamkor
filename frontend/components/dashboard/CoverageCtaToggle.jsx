@@ -76,7 +76,7 @@ export default function CoverageCtaToggle({ producer, onSaved }) {
           className={`relative block w-10 h-6 rounded-full transition-colors group-focus-visible:ring-2 group-focus-visible:ring-primary/40 ${on ? "bg-primary" : "bg-border"}`}
         >
           <span
-            className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${
+            className={`absolute top-1 w-4 h-4 rounded-full bg-surface shadow transition-all ${
               on ? "end-1" : "start-1"
             }`}
           />

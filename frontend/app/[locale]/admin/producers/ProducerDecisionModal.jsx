@@ -27,6 +27,7 @@
 
 import { useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
+import Button from "@/components/ui/Button";
 
 // The completion group. EVERY other preset key — `not_eligible` and any key
 // the backend grows later — falls to the terminal group. Fail-closed on
@@ -123,15 +124,15 @@ function ConfirmStep({ onCancelConfirm, onSubmit, submitting }) {
         >
           {t("common.cancel")}
         </button>
-        <button
+        <Button
           type="button"
           onClick={onSubmit}
           disabled={submitting}
           data-testid="decision-confirm-submit"
-          className="px-4 py-2 rounded-sm text-white bg-danger-600 hover:bg-danger-700 disabled:opacity-50"
+          variant="danger"
         >
           {submitting ? t("common.sending") : t("producers.decision.submit_reject")}
-        </button>
+        </Button>
       </div>
     </>
   );
@@ -208,7 +209,7 @@ function DecisionForm({ presets, presetsError, value, setValue, freeText, setFre
         onChange={(e) => setFreeText(e.target.value)}
         rows={4}
         aria-required={isOther}
-        className="w-full border border-border rounded-md px-3 py-2 text-sm bg-white"
+        className="w-full border border-border rounded-md px-3 py-2 text-sm bg-surface"
         placeholder={t("producers.decision.free_text_placeholder")}
       />
 

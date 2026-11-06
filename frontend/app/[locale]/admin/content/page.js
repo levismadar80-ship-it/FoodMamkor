@@ -8,6 +8,7 @@ import { showToast } from "@/lib/toast";
 // double-submit hook — create/update/delete/page-save all lacked an
 // in-flight lock (and create/update/page-save swallowed errors silently).
 import { useAdminAction } from "@/lib/use-admin-action";
+import Button from "@/components/ui/Button";
 
 export default function AdminContentPage() {
   const t = useTranslations("admin");
@@ -27,7 +28,7 @@ export default function AdminContentPage() {
             key={s.id}
             onClick={() => setSection(s.id)}
             className={`px-3 py-1.5 rounded-md text-sm transition ${
-              section === s.id ? "bg-primary text-white" : "bg-white border border-border hover:bg-accent"
+              section === s.id ? "bg-primary text-white" : "bg-surface border border-border hover:bg-accent"
             }`}
           >
             {s.label}
@@ -116,7 +117,7 @@ function CategoriesEditor() {
   }, [confirmDelete, deleting]);
 
   return (
-    <div className="bg-white border border-border rounded-md p-5 space-y-4">
+    <div className="bg-surface border border-border rounded-md p-5 space-y-4">
       <form onSubmit={create} className="flex gap-2">
         <input
           placeholder={t("content.categories.name_placeholder")}
@@ -124,13 +125,13 @@ function CategoriesEditor() {
           onChange={(e) => setName(e.target.value)}
           className="flex-1 min-w-0 border border-border rounded-md px-3 py-2"
         />
-        <button
+        <Button
           type="submit"
           disabled={isBusy("category-create")}
-          className="bg-primary text-white px-4 py-2 rounded-md text-sm disabled:opacity-50"
+          variant="primary" size="sm"
         >
           {t("content.categories.add")}
-        </button>
+        </Button>
       </form>
 
       <ul className="space-y-2">
@@ -156,7 +157,7 @@ function CategoriesEditor() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="category-delete-title"
-            className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full mx-4 text-start space-y-4"
+            className="bg-surface rounded-lg shadow-xl p-6 max-w-sm w-full mx-4 text-start space-y-4"
           >
             <p id="category-delete-title" className="font-medium text-base">
               {t("content.categories.confirm_delete", {
@@ -165,17 +166,17 @@ function CategoriesEditor() {
               })}
             </p>
             <div className="flex gap-3 justify-start">
-              <button
+              <Button
                 disabled={deleting}
                 onClick={confirmRemove}
-                className="px-4 py-2 rounded-[10px] text-sm font-medium text-white transition bg-danger-600 hover:bg-danger-700 disabled:opacity-50"
+                variant="danger" size="sm"
               >
                 {deleting ? t("content.categories.deleting") : t("content.categories.delete")}
-              </button>
+              </Button>
               <button
                 disabled={deleting}
                 onClick={() => setConfirmDelete(null)}
-                className="px-4 py-2 rounded-[10px] text-sm border border-border text-muted hover:bg-gray-50 transition disabled:opacity-50"
+                className="px-4 py-2 rounded-full text-sm border border-border text-muted hover:bg-gray-50 transition disabled:opacity-50"
               >
                 {t("common.cancel")}
               </button>
@@ -276,7 +277,7 @@ function PageEditor({ slug }) {
     });
 
   return (
-    <div className="bg-white border border-border rounded-md p-5 space-y-3">
+    <div className="bg-surface border border-border rounded-md p-5 space-y-3">
       <input
         value={page.title}
         onChange={(e) => { setPage({ ...page, title: e.target.value }); setSaved(false); }}
@@ -291,9 +292,9 @@ function PageEditor({ slug }) {
         className="w-full border border-border rounded-md px-3 py-2 font-mono text-sm"
       />
       <div className="flex items-center gap-3">
-        <button onClick={save} disabled={saving} className="bg-primary text-white px-4 py-2 rounded-md text-sm disabled:opacity-50">
+        <Button onClick={save} disabled={saving} variant="primary" size="sm">
           {saving ? t("content.page_editor.saving") : t("content.page_editor.save")}
-        </button>
+        </Button>
         {saved && <span className="text-sm text-primary">{t("content.page_editor.saved")}</span>}
       </div>
     </div>

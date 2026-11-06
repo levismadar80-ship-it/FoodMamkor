@@ -46,6 +46,7 @@ import frankRuhlLibreHebrewUrl from "@/app/fonts/frank-ruhl-libre-hebrew.woff2";
 import frankRuhlLibreLatinUrl from "@/app/fonts/frank-ruhl-libre-latin.woff2";
 import heeboHebrewUrl from "@/app/fonts/heebo-hebrew.woff2";
 import heeboLatinUrl from "@/app/fonts/heebo-latin.woff2";
+import Button from "@/components/ui/Button";
 
 const W = 1080;
 const H = 1920;
@@ -486,14 +487,14 @@ export default function StoryCardCanvas({ producer, mode = "admin", onUploaded, 
             owner mode the button is not rendered at all (a disabled button
             would advertise an action she can never take). */}
         {!isOwner && (
-          <button
+          <Button
             onClick={uploadToCloudinary}
             disabled={!rendered || uploading}
             data-testid="story-card-upload"
-            className="text-sm bg-primary text-white px-4 py-2 rounded-sm hover:bg-primary-dark transition disabled:opacity-40"
+            variant="primary" size="sm"
           >
             {uploading ? t("uploading") : t("save_cloudinary")}
-          </button>
+          </Button>
         )}
         <button
           onClick={copyCaption}

@@ -36,6 +36,7 @@ import ButtonSpinner from "@/components/ButtonSpinner";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 // MEH-788: gentle scroll-reveal on the content sections (hero excluded — LCP).
 import FadeInSection, { REVEAL_PRESET } from "@/components/FadeInSection";
+import Button from "@/components/ui/Button";
 
 // MEH-1130: the editorial image layer. Raw asset URLs — every transform is
 // applied by optimizeCloudinary at the call site, never baked into the string
@@ -125,7 +126,7 @@ const COMPARE_STOPS = ["row1", "row2", "row3"];
 function Chapter({ label, as: Tag = "p" }) {
   return (
     <div className="flex items-center gap-3 mb-3 md:mb-4">
-      <Tag className="block font-body-md text-[13px] font-semibold text-gold-deep shrink-0">
+      <Tag className="block font-body-md text-sm font-semibold text-gold-deep shrink-0">
         {label}
       </Tag>
       <span aria-hidden="true" className="h-px flex-1 bg-accent/35" />
@@ -219,7 +220,7 @@ export default function AboutPage() {
           <h1 className="font-headline-display font-black text-text tracking-tight leading-[1.05] text-[clamp(28px,5vw,52px)] max-w-[15ch]">
             {t("hero.heading")}
           </h1>
-          <p className="mt-4 font-body-md text-[17px] md:text-lg text-text/90 leading-relaxed max-w-[46ch]">
+          <p className="mt-4 font-body-md text-lg md:text-lg text-text/90 leading-relaxed max-w-[46ch]">
             {t("hero.subheading")}
           </p>
           {/* MEH-2634: the page opened with no way out of it. Every other
@@ -238,7 +239,7 @@ export default function AboutPage() {
               of the hero — an E-E-A-T freshness signal a reader can check. */}
           <p
             data-testid="about-updated-at"
-            className="mt-4 font-body-md text-[13px] text-fg-muted"
+            className="mt-4 font-body-md text-sm text-fg-muted"
           >
             {tAbout("updated_at")}
           </p>
@@ -296,7 +297,7 @@ export default function AboutPage() {
                 />
               )}
             </div>
-            <figcaption className="mt-3 px-4 md:px-0 font-body-md text-[13px] text-fg-muted leading-snug">
+            <figcaption className="mt-3 px-4 md:px-0 font-body-md text-sm text-fg-muted leading-snug">
               {tAbout("img.story_caption")}
             </figcaption>
           </figure>
@@ -315,7 +316,7 @@ export default function AboutPage() {
       <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
         <div className="max-w-3xl mx-auto px-4 md:px-12">
           <Chapter label={tAbout("chapter.1.label")} />
-          <div className="font-body-md text-[17px] text-text/90 leading-[1.75] space-y-5">
+          <div className="font-body-md text-lg text-text/90 leading-[1.75] space-y-5">
             {/* Chapter 01's h2. It carries `about-story-h2` so the chapter-02
                 heading below can be asserted to share these exact classes —
                 the two chapter headings must read as one rank, and a class
@@ -343,13 +344,13 @@ export default function AboutPage() {
                 en.json untouched, so restoring either is a one-line change
                 if Sapir wants it back. */}
             <div data-testid="about-signature" className="!mt-9 border-s-2 border-accent ps-4 rounded-none">
-              <p className="font-headline-display font-black text-primary text-[26px] md:text-[28px] leading-tight">
+              <p className="font-headline-display font-black text-primary text-2xl md:text-3xl leading-tight">
                 {tAbout("signature.name")}
               </p>
               <p className="mt-1 font-body-md text-sm text-fg-muted leading-snug">
                 {tAbout("signature.role")}
               </p>
-              <p className="mt-2.5 font-body-md text-[15px] text-text font-medium leading-snug max-w-[46ch]">
+              <p className="mt-2.5 font-body-md text-base text-text font-medium leading-snug max-w-[46ch]">
                 {t("story.caption3")}
               </p>
             </div>
@@ -381,7 +382,7 @@ export default function AboutPage() {
           <div className="mt-10 border-t border-border pt-6">
             <p
               id="about-biz-lead"
-              className="font-body-md text-[15px] text-fg-muted leading-snug"
+              className="font-body-md text-base text-fg-muted leading-snug"
             >
               {tAbout("biz_strip_lead")}
             </p>
@@ -453,10 +454,10 @@ export default function AboutPage() {
           <table className="w-full border-collapse table-fixed">
             <thead>
               <tr>
-                <th scope="col" className="pb-2.5 text-start align-bottom font-body-md text-[13px] md:text-sm font-semibold text-primary-dark border-b border-text">
+                <th scope="col" className="pb-2.5 text-start align-bottom font-body-md text-sm md:text-sm font-semibold text-primary-dark border-b border-text">
                   {tCompare("col_brand")}
                 </th>
-                <th scope="col" className="pb-2.5 text-start align-bottom font-body-md text-[13px] md:text-sm font-semibold text-fg-muted border-b border-text">
+                <th scope="col" className="pb-2.5 text-start align-bottom font-body-md text-sm md:text-sm font-semibold text-fg-muted border-b border-text">
                   {tCompare("col_super")}
                 </th>
               </tr>
@@ -464,10 +465,10 @@ export default function AboutPage() {
             <tbody>
               {COMPARE_STOPS.map((row) => (
                 <tr key={row} className="border-b border-border">
-                  <th scope="row" className="py-4 md:py-5 pe-4 md:pe-8 text-start align-top font-headline-md font-bold text-primary-dark text-[18px] md:text-2xl leading-snug">
+                  <th scope="row" className="py-4 md:py-5 pe-4 md:pe-8 text-start align-top font-headline-md font-bold text-primary-dark text-lg md:text-2xl leading-snug">
                     {tCompare(`${row}_brand`)}
                   </th>
-                  <td className="py-4 md:py-5 align-top font-body-md text-fg-muted text-[15px] md:text-lg leading-relaxed">
+                  <td className="py-4 md:py-5 align-top font-body-md text-fg-muted text-base md:text-lg leading-relaxed">
                     {tCompare(`${row}_super`)}
                   </td>
                 </tr>
@@ -484,7 +485,7 @@ export default function AboutPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-12">
             {BENEFITS.map(({ key }) => (
               <div key={key} className="text-center">
-                <h3 className="font-headline-md font-bold text-text text-[22px] leading-tight mb-2.5">
+                <h3 className="font-headline-md font-bold text-text text-2xl leading-tight mb-2.5">
                   {t(`benefits.${key}.title`)}
                 </h3>
                 <p className="font-body-md text-base text-fg-muted leading-relaxed whitespace-pre-line">
@@ -538,7 +539,7 @@ export default function AboutPage() {
                 priority={false}
               />
             </div>
-            <figcaption className="mt-4 font-body-md text-[13px] text-fg-muted leading-snug">
+            <figcaption className="mt-4 font-body-md text-sm text-fg-muted leading-snug">
               {tAbout("img.duo_caption")}
             </figcaption>
           </figure>
@@ -559,7 +560,7 @@ export default function AboutPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-7 md:gap-x-14 md:gap-y-9 mt-8">
               {VALUES.map(({ key }) => (
                 <article key={key}>
-                  <h3 className="font-headline-md font-bold text-text text-[21px]">
+                  <h3 className="font-headline-md font-bold text-text text-xl">
                     {t(`values.${key}.title`)}
                   </h3>
                   <p className="font-body-md text-fg-muted text-base leading-relaxed mt-2">
@@ -671,7 +672,7 @@ export default function AboutPage() {
             <ArrowLeft size={20} aria-hidden="true" />
           </Link>
           {/* business pitch line — lead-in for the demoted actions below (cta.heading verbatim). MEH-2439: set in the headline face on the green so the band reads as an ending, still after the one primary button. */}
-          <p className="mt-7 font-headline-md font-bold text-[20px] text-background max-w-[44ch] mx-auto leading-relaxed">
+          <p className="mt-7 font-headline-md font-bold text-xl text-background max-w-[44ch] mx-auto leading-relaxed">
             {t("cta.heading")}
           </p>
           {/* MEH-1112: two secondary actions (business hub + MEH-534 acceptance-process
@@ -788,10 +789,10 @@ export default function AboutPage() {
                 className="w-full bg-surface-card border border-border rounded-sm px-4 py-3 outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/40 transition resize-y min-h-[120px] leading-relaxed"
               />
             </div>
-            <button
+            <Button
               type="submit"
               disabled={contactStatus === "loading"}
-              className="md:col-span-2 justify-self-start inline-flex items-center gap-2 min-h-[52px] px-7 py-3.5 bg-primary text-white rounded-lg font-semibold text-base hover:bg-primary-dark transition-colors duration-base disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
+              variant="primary" size="lg" className="md:col-span-2 justify-self-start"
             >
               {contactStatus === "loading" ? (
                 <span className="inline-flex items-center gap-2">
@@ -804,7 +805,7 @@ export default function AboutPage() {
                   <PaperPlaneTilt size={18} aria-hidden="true" />
                 </>
               )}
-            </button>
+            </Button>
 
             {contactMsg && (
               <p

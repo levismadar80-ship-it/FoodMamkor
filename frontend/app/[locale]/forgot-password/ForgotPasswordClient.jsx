@@ -8,6 +8,7 @@ import api from "@/lib/api";
 import Input from "@/components/ui/Input";
 import CollectionNotice from "@/components/CollectionNotice";
 import { CONTACT_EMAIL } from "@/lib/env.client";
+import Button from "@/components/ui/Button";
 
 export default function ForgotPasswordClient() {
   const t = useTranslations();
@@ -85,16 +86,16 @@ export default function ForgotPasswordClient() {
               {error}
             </p>
           )}
-          <button
+          <Button
             type="submit"
             data-testid="forgot-submit"
             disabled={loading || !email}
-            className="w-full bg-primary text-white py-3.5 rounded-[10px] hover:bg-primary-dark transition font-medium disabled:opacity-50"
+            variant="primary" size="lg" className="w-full"
           >
             {loading
               ? t("auth.passwordRecovery.forgot.submit_sending")
               : t("auth.passwordRecovery.forgot.submit")}
-          </button>
+          </Button>
           <p className="text-center text-sm text-fg-muted">
             <Link
               href="/login"

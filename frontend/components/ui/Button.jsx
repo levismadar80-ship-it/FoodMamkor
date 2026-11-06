@@ -14,7 +14,7 @@ import { CircleNotch } from "@phosphor-icons/react";
  *           (.focus-ring, .duration-fast, .ease-quart).
  * History:  MEH-602 (creation).
  *
- * Variants : primary | secondary | ghost | outlined | text
+ * Variants : primary | secondary | ghost | outlined | text | danger
  * Sizes    : sm | md | lg  (all keep a ≥44px touch target — WCAG 2.5.5)
  * States   : default | hover | active | disabled | loading
  * Slots    : leadingIcon / trailingIcon (logical start/end — RTL-correct by
@@ -38,6 +38,9 @@ const VARIANT_CLASSES = {
     "bg-transparent hover:bg-primary/5 active:bg-primary/10 text-text border border-transparent",
   text:
     "bg-transparent text-primary hover:text-primary-dark active:text-primary-dark border border-transparent",
+  // MEH-1687 phase 6: destructive actions (delete, reject, block). ADR-038 tokens.
+  danger:
+    "bg-danger-600 hover:bg-danger-700 active:bg-danger-700 text-white border border-transparent",
 };
 
 const SIZE_CLASSES = {

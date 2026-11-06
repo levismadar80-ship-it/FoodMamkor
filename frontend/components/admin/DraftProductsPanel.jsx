@@ -7,6 +7,7 @@ import { detailToMessage } from "@/lib/errors";
 import { DraftProductSchema } from "@/lib/api-schemas";
 import { formatPriceRange } from "@/lib/utils";
 import Input from "@/components/ui/Input";
+import Button from "@/components/ui/Button";
 
 /**
  * Module:   DraftProductsPanel
@@ -106,7 +107,7 @@ export default function DraftProductsPanel({ producerId, initialProducts = [] })
   return (
     <section
       data-testid="draft-products-panel"
-      className="bg-white rounded-md border border-border p-6 mb-6 max-w-4xl"
+      className="bg-surface rounded-md border border-border p-6 mb-6 max-w-4xl"
     >
       <h2 className="font-semibold text-lg mb-2 text-primary">{t("title")}</h2>
       <p className="text-sm text-muted mb-4">{t("intro")}</p>
@@ -213,14 +214,14 @@ export default function DraftProductsPanel({ producerId, initialProducts = [] })
             error={fieldErrors.price_max}
           />
         </div>
-        <button
+        <Button
           type="submit"
           data-testid="draft-product-add"
           disabled={saving}
-          className="min-h-touch bg-primary text-white rounded-md px-6 py-2 text-sm font-medium hover:bg-primary-dark transition disabled:opacity-50"
+          variant="primary" size="sm"
         >
           {saving ? tProducts("add_submitting") : tProducts("add_submit_cta")}
-        </button>
+        </Button>
       </form>
     </section>
   );

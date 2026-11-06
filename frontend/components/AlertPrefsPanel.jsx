@@ -12,6 +12,7 @@ import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import { useAuth } from "@/lib/auth-context";
 import { validateIsraeliPhone } from "@/lib/validators";
+import Button from "@/components/ui/Button";
 
 const DEFAULT_PREFS = {
   notify_new_event: true,
@@ -177,7 +178,7 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
         }`}
       >
         <span
-          className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${
+          className={`absolute top-1 w-4 h-4 rounded-full bg-surface shadow transition-all ${
             prefs[key] ? "end-1" : "start-1"
           }`}
         />
@@ -197,7 +198,7 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
       // behaviour their role promised; this one sheds a role it never meant.
       role="group"
       aria-labelledby={headingId}
-      className="rounded-md border border-border bg-white p-4 space-y-3 shadow-sm max-h-[70vh] overflow-y-auto"
+      className="rounded-md border border-border bg-surface p-4 space-y-3 shadow-sm max-h-[70vh] overflow-y-auto"
       dir="rtl"
     >
       <div className="flex items-center justify-between gap-2">
@@ -263,13 +264,13 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
                 <p className="text-xs text-fg-muted">{t("phone_helper")}</p>
               )}
               <div className="flex items-center gap-2">
-                <button
+                <Button
                   onClick={savePhoneAndEnable}
                   disabled={!phoneValid || phoneSaving}
-                  className="flex-1 bg-primary text-white text-sm py-2 rounded-sm hover:bg-primary-dark transition disabled:opacity-50"
+                  variant="primary" size="sm" className="flex-1"
                 >
                   {phoneSaving ? t("saving") : t("phone_save_cta")}
-                </button>
+                </Button>
                 <button
                   onClick={cancelPhone}
                   className="text-fg-muted hover:text-text text-lg leading-none px-2 py-2"
@@ -321,13 +322,13 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
         </div>
       </div>
 
-      <button
+      <Button
         onClick={() => save()}
         disabled={saving}
-        className="w-full bg-primary text-white text-sm py-2 rounded-sm hover:bg-primary-dark transition disabled:opacity-50"
+        variant="primary" size="sm" className="w-full"
       >
         {saving ? t("saving") : t("save_cta")}
-      </button>
+      </Button>
     </div>
   );
 }

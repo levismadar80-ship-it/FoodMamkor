@@ -426,7 +426,7 @@ export default function HeroSearch({
           id={listboxId}
           role="listbox"
           data-testid="hero-search-dropdown"
-          className="absolute z-[1000] top-full mt-2 inset-x-0 bg-white border border-border rounded-md shadow-xl max-h-[70vh] overflow-auto text-start"
+          className="absolute z-[1000] top-full mt-2 inset-x-0 bg-surface border border-border rounded-md shadow-xl max-h-[70vh] overflow-auto text-start"
           dir="rtl"
         >
           {loading && !hasAutoResults && (
@@ -530,7 +530,7 @@ export default function HeroSearch({
           id={listboxId}
           role="listbox"
           data-testid="hero-search-history"
-          className="absolute z-[1000] top-full mt-2 inset-x-0 bg-white border border-border rounded-md shadow-xl text-start"
+          className="absolute z-[1000] top-full mt-2 inset-x-0 bg-surface border border-border rounded-md shadow-xl text-start"
           dir="rtl"
         >
           {recentSearches.length > 0 ? (
@@ -656,7 +656,7 @@ function Section({ title, children }) {
     <div className="py-1">
       {/* MEH-1103: uppercase/tracking-wider dropped (MEH-867 rule — Hebrew has
           no uppercase and letter-spacing harms RTL legibility). Refs MEH-1073 T10. */}
-      <div className="px-3 pt-2 pb-1 text-[11px] font-semibold text-fg-muted">
+      <div className="px-3 pt-2 pb-1 text-2xs font-semibold text-fg-muted">
         {title}
       </div>
       <ul className="py-1">{children}</ul>

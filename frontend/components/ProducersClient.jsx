@@ -47,6 +47,7 @@ import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
 import EnSearchNotice from "@/components/EnSearchNotice";
 import { CategoriesResponseSchema } from "@/lib/api-schemas";
+import Button from "@/components/ui/Button";
 
 const FILTER_LIMIT = 100;
 const PAGE_SIZE = 24; // matches PER_PAGE in page.jsx
@@ -882,7 +883,7 @@ export default function ProducersClient({
         <label htmlFor="producers-search-input" className="sr-only">
           {t("search_input.label")}
         </label>
-        <div className="flex-1 min-w-0 flex items-center gap-2 border border-border rounded-full px-4 min-h-touch bg-white focus-within:ring-2 focus-within:ring-primary/40">
+        <div className="flex-1 min-w-0 flex items-center gap-2 border border-border rounded-full px-4 min-h-touch bg-surface focus-within:ring-2 focus-within:ring-primary/40">
           <MagnifyingGlass size={18} weight="regular" aria-hidden="true" className="text-fg-muted" />
           <input
             id="producers-search-input"
@@ -894,12 +895,12 @@ export default function ProducersClient({
             className="flex-1 min-w-0 bg-transparent outline-none text-text placeholder:text-fg-muted text-sm"
           />
         </div>
-        <button
+        <Button
           type="submit"
-          className="shrink-0 bg-primary text-white px-4 min-h-touch rounded-full text-sm font-medium hover:bg-primary-dark transition"
+          variant="primary" size="sm" className="shrink-0"
         >
           {t("search_input.submit")}
-        </button>
+        </Button>
       </form>
       {/* MEH-1812 notice, moved here from /search when MEH-819 made this the
           one results page. Renders null outside /en. */}
@@ -970,7 +971,7 @@ export default function ProducersClient({
             data-testid="producers-filters-button"
             // REUSES: frontend/app/[locale]/map/components/FilterChipsBar.jsx:80-96
             // — same trigger, same inactive chip visuals, same inline count.
-            className="inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 rounded-md text-sm font-medium border transition bg-white text-text border-border hover:border-primary hover:text-primary"
+            className="inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 rounded-md text-sm font-medium border transition bg-surface text-text border-border hover:border-primary hover:text-primary"
           >
             <Faders size={16} aria-hidden="true" />
             {t("filters.filter_label")}
@@ -1043,9 +1044,9 @@ export default function ProducersClient({
               key={chip.key}
               type="button"
               onClick={() => toggleChip(chip.key)}
-              className="inline-flex items-center gap-1 bg-white text-primary border border-primary rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap shrink-0"
+              className="inline-flex items-center gap-1 bg-surface text-primary border border-primary rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap shrink-0"
             >
-              <span aria-hidden="true" className="text-[10px] font-bold">×</span>
+              <span aria-hidden="true" className="text-2xs font-bold">×</span>
               {chip.label}
             </button>
           ))}
@@ -1064,9 +1065,9 @@ export default function ProducersClient({
                 syncUrl(chips, cityFilter, "", categoryFilter);
                 fetchFiltered(chips, cityFilter, "", categoryFilter);
               }}
-              className="inline-flex items-center gap-1 bg-white text-primary border border-primary rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap shrink-0"
+              className="inline-flex items-center gap-1 bg-surface text-primary border border-primary rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap shrink-0"
             >
-              <span aria-hidden="true" className="text-[10px] font-bold">×</span>
+              <span aria-hidden="true" className="text-2xs font-bold">×</span>
               <MagnifyingGlass size={13} weight="bold" aria-hidden="true" />{searchQ}
             </button>
           )}
@@ -1216,21 +1217,21 @@ function FilterEmptyState({ onClear, searchQ, categories = [] }) {
             <Link
               key={c.id}
               href={`/producers?category=${encodeURIComponent(String(c.id))}`}
-              className="bg-white border border-border text-text rounded-full px-4 py-1.5 text-sm hover:border-primary hover:text-primary transition"
+              className="bg-surface border border-border text-text rounded-full px-4 py-1.5 text-sm hover:border-primary hover:text-primary transition"
             >
               {c.name}
             </Link>
           ))}
         </div>
       )}
-      <button
+      <Button
         type="button"
         onClick={onClear}
         data-testid="producers-empty-clear"
-        className="bg-primary text-white px-6 py-3 rounded-md font-medium hover:bg-primary-dark transition"
+        variant="primary" size="lg"
       >
         {t("empty.clear_all_show_all")}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -1312,7 +1313,7 @@ function ServerPageLinks({ page, totalPages }) {
       {prev ? (
         <Link
           href={prev}
-          className="border border-border bg-white text-text px-4 py-2 rounded-md hover:bg-green-50 transition"
+          className="border border-border bg-surface text-text px-4 py-2 rounded-md hover:bg-green-50 transition"
         >
           {t("prev")}
         </Link>
@@ -1325,7 +1326,7 @@ function ServerPageLinks({ page, totalPages }) {
       {next ? (
         <Link
           href={next}
-          className="border border-border bg-white text-text px-4 py-2 rounded-md hover:bg-green-50 transition"
+          className="border border-border bg-surface text-text px-4 py-2 rounded-md hover:bg-green-50 transition"
         >
           {t("next")}
         </Link>

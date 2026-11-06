@@ -26,6 +26,7 @@ import { formatEventDate } from "@/lib/format-date";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import { SkeletonList } from "@/components/Skeleton";
+import Button from "@/components/ui/Button";
 
 export default function AdminNameChangeRequestsPage() {
   const t = useTranslations("admin.name_change_requests");
@@ -87,7 +88,7 @@ export default function AdminNameChangeRequestsPage() {
 
       {requests.length === 0 && (
         <div
-          className="bg-white border border-border rounded-md p-8 text-center text-fg-muted"
+          className="bg-surface border border-border rounded-md p-8 text-center text-fg-muted"
           data-testid="name-change-queue-empty"
         >
           {t("empty")}
@@ -97,7 +98,7 @@ export default function AdminNameChangeRequestsPage() {
       {requests.map((r) => (
         <div
           key={r.id}
-          className="bg-white border border-border rounded-md p-5 space-y-4"
+          className="bg-surface border border-border rounded-md p-5 space-y-4"
           data-testid="name-change-queue-row"
         >
           {/* The comparison is the whole point of this screen — old and new
@@ -107,7 +108,7 @@ export default function AdminNameChangeRequestsPage() {
               was actually asked to approve. */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <p className="text-[13px] font-semibold text-fg-muted mb-1">
+              <p className="text-sm font-semibold text-fg-muted mb-1">
                 {t("current_label")}
               </p>
               <p className="text-base text-text" data-testid="name-change-old">
@@ -115,7 +116,7 @@ export default function AdminNameChangeRequestsPage() {
               </p>
             </div>
             <div>
-              <p className="text-[13px] font-semibold text-fg-muted mb-1">
+              <p className="text-sm font-semibold text-fg-muted mb-1">
                 {t("requested_label")}
               </p>
               <p
@@ -129,7 +130,7 @@ export default function AdminNameChangeRequestsPage() {
 
           {r.reason && (
             <div>
-              <p className="text-[13px] font-semibold text-fg-muted mb-1">
+              <p className="text-sm font-semibold text-fg-muted mb-1">
                 {t("reason_label")}
               </p>
               <p className="text-sm text-text">{r.reason}</p>
@@ -151,15 +152,15 @@ export default function AdminNameChangeRequestsPage() {
 
           {r.status === "pending" && (
             <div className="flex gap-3 flex-wrap">
-              <button
+              <Button
                 type="button"
                 onClick={() => review(r.id, "approved")}
                 disabled={actionLoading === r.id}
-                className="bg-primary text-white rounded-full px-5 py-2.5 text-sm font-semibold disabled:opacity-50 focus-ring"
+                variant="primary" size="sm"
                 data-testid="name-change-approve"
               >
                 {t("approve")}
-              </button>
+              </Button>
               <button
                 type="button"
                 onClick={() => review(r.id, "rejected")}

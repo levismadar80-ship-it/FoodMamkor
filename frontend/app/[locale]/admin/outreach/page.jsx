@@ -11,6 +11,7 @@ import { instagramHandle, instagramUrl } from "@/lib/social-links";
 import Input from "@/components/ui/Input";
 import AdminLoadError from "@/components/admin/AdminLoadError";
 import Pagination from "@/components/Pagination";
+import Button from "@/components/ui/Button";
 
 /**
  * /admin/outreach — manual lead pipeline (MEH-22).
@@ -218,18 +219,18 @@ export default function AdminOutreachPage() {
           onChange={(e) => setCityFilter(e.target.value)}
           className="flex-1 border border-border rounded-md px-3 py-2"
         />
-        <button
+        <Button
           type="button"
           onClick={() => setAddOpen(true)}
           data-testid="outreach-new-lead"
-          className="bg-primary text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-dark transition"
+          variant="primary" size="sm"
         >
           {t("outreach.filters.new_lead")}
-        </button>
+        </Button>
       </div>
 
       {/* Leads table */}
-      <div className="bg-white border border-border rounded-md overflow-hidden">
+      <div className="bg-surface border border-border rounded-md overflow-hidden">
         <div className="overflow-x-auto">
           {/* MEH-2426: one card per row below md (globals.css .table-stack). */}
           <table className="table-stack w-full text-sm">
@@ -273,7 +274,7 @@ export default function AdminOutreachPage() {
                       {lead.name}
                       {lead.source === "community" && (
                         <span
-                          className="ms-2 align-middle inline-block text-[11px] px-2 py-0.5 rounded-full bg-green-50 text-primary border border-border"
+                          className="ms-2 align-middle inline-block text-2xs px-2 py-0.5 rounded-full bg-green-50 text-primary border border-border"
                           data-testid={`community-badge-${lead.id}`}
                         >
                           {t("outreach.badge_community")}
@@ -331,7 +332,7 @@ export default function AdminOutreachPage() {
                       <select
                         value={lead.status}
                         onChange={(e) => handleStatusChange(lead.id, e.target.value)}
-                        className="text-xs border border-border rounded-lg px-2 py-1 bg-white"
+                        className="text-xs border border-border rounded-lg px-2 py-1 bg-surface"
                         aria-label={t("outreach.columns.status")}
                         data-testid={`status-select-${lead.id}`}
                       >
@@ -512,7 +513,7 @@ function StatusChip({ id, label, count, active, onClick }) {
       className={`inline-flex items-center gap-2 min-h-touch px-4 rounded-full border text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
         active
           ? "bg-primary text-white border-primary"
-          : "bg-white text-text border-border hover:border-primary/40"
+          : "bg-surface text-text border-border hover:border-primary/40"
       }`}
     >
       {label}
@@ -572,7 +573,7 @@ function AddLeadModal({ onClose, onCreated }) {
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
         onSubmit={handleSubmit}
-        className="bg-white rounded-lg p-6 max-w-md w-full space-y-3"
+        className="bg-surface rounded-lg p-6 max-w-md w-full space-y-3"
       >
         <h2 className="font-headline-md text-xl font-bold">{t("outreach.modal_add.title")}</h2>
         {/* MEH-1128 Wave C: label-less ui/Input — placeholder-only parity
@@ -629,13 +630,13 @@ function AddLeadModal({ onClose, onCreated }) {
           >
             {t("common.cancel")}
           </button>
-          <button
+          <Button
             type="submit"
             disabled={saving}
-            className="flex-1 bg-primary text-white rounded-md py-2 text-sm font-medium disabled:opacity-60"
+            variant="primary" size="sm" className="flex-1"
           >
             {saving ? t("outreach.modal_add.submit_saving") : t("outreach.modal_add.submit")}
-          </button>
+          </Button>
         </div>
       </form>
     </div>
@@ -653,7 +654,7 @@ function ScriptModal({ onClose }) {
         role="dialog"
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-lg p-6 max-w-lg w-full"
+        className="bg-surface rounded-lg p-6 max-w-lg w-full"
       >
         <h2 className="font-headline-md text-xl font-bold mb-3 inline-flex items-center gap-2">
           <Phone size={20} className="text-primary" aria-hidden="true" />
@@ -662,13 +663,13 @@ function ScriptModal({ onClose }) {
         <pre className="whitespace-pre-wrap text-sm text-text font-body-md leading-relaxed">
           {t("outreach.call_script")}
         </pre>
-        <button
+        <Button
           type="button"
           onClick={onClose}
-          className="mt-4 w-full bg-primary text-white rounded-md py-2 text-sm font-medium"
+          variant="primary" size="sm" className="mt-4 w-full"
         >
           {t("outreach.modal_script.close")}
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -726,7 +727,7 @@ function WhatsAppModal({ lead, onClose, onPrefillMinted }) {
         role="dialog"
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-lg p-6 max-w-lg w-full space-y-4"
+        className="bg-surface rounded-lg p-6 max-w-lg w-full space-y-4"
       >
         <h2 className="font-headline-md text-xl font-bold">
           {t("outreach.modal_wa.title", { name: lead.name })}

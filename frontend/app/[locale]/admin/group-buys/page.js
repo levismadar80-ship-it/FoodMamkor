@@ -75,7 +75,7 @@ export default function AdminGroupBuysPage() {
       </div>
 
       {error && (
-        <div className="bg-danger-50 border border-danger-200 text-danger-700 rounded-[10px] px-4 py-3 mb-4 text-sm">
+        <div className="bg-danger-50 border border-danger-200 text-danger-700 rounded-md px-4 py-3 mb-4 text-sm">
           {error}
         </div>
       )}
@@ -85,7 +85,7 @@ export default function AdminGroupBuysPage() {
         <button
           onClick={() => setStatusFilter("")}
           className={`px-4 py-1.5 rounded-full text-sm border transition ${
-            !statusFilter ? "bg-primary text-white border-primary" : "bg-white text-fg-muted border-border"
+            !statusFilter ? "bg-primary text-white border-primary" : "bg-surface text-fg-muted border-border"
           }`}
         >
           {t("group_buys.all")}
@@ -95,7 +95,7 @@ export default function AdminGroupBuysPage() {
             key={s}
             onClick={() => setStatusFilter(s)}
             className={`px-4 py-1.5 rounded-full text-sm border transition ${
-              statusFilter === s ? "bg-primary text-white border-primary" : "bg-white text-fg-muted border-border"
+              statusFilter === s ? "bg-primary text-white border-primary" : "bg-surface text-fg-muted border-border"
             }`}
           >
             {statusLabel(s)}
@@ -116,7 +116,7 @@ export default function AdminGroupBuysPage() {
             const cls = STATUS_CLS[gb.status] || "bg-gray-100 text-gray-600";
             const pct = Math.min(100, Math.round((gb.commits_count / gb.min_participants) * 100));
             return (
-              <div key={gb.id} className="bg-white rounded-[14px] border border-border p-5">
+              <div key={gb.id} className="bg-surface rounded-lg border border-border p-5">
                 <div className="flex items-start justify-between gap-3 mb-2">
                   <div>
                     <h2 className="font-semibold text-text">{gb.title}</h2>
