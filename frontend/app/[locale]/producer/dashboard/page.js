@@ -13,8 +13,6 @@ import { israelToday } from "@/lib/israel-date";
 import { showToast } from "@/lib/toast";
 import { getUpcomingHoliday } from "@/lib/holidays";
 import HolidayIcon from "@/components/HolidayIcon";
-import InfoTooltip from "@/components/InfoTooltip";
-import WhatsThis from "@/components/WhatsThis";
 import ProfileCompletenessCard from "@/components/ProfileCompletenessCard";
 import DraftSubmitBanner from "@/components/producer/DraftSubmitBanner";
 import ReviewCardCanvas from "@/components/ReviewCardCanvas";
@@ -197,58 +195,15 @@ function StatusSupportModal({ onClose }) {
   );
 }
 
-// MEH-2199: the availability options, lifted out of the JSX so the roving tab
-// stop and each radio's own state read from ONE evaluation of the rule rather
-// than two. A second copy of "which option is active" is exactly the shape that
-// drifts (.claude/rules/workflow.md — Smell #1).
-const AVAILABILITY_OPTIONS = [
-  { value: "accepting_orders", color: "#22c55e" },
-  { value: "available_today",  color: "#2e6853" },
-  { value: "full_this_week",   color: "#f97316" },
-  { value: "on_vacation",      color: "#9ca3af" },
-];
-
-// MEH-2199: W3C APG Radio Group keyboard layer. The group declared
-// role="radiogroup" + role="radio" + aria-checked and carried no arrow keys, so
-// a keyboard user met a widget that announces itself as a radio group and then
-// behaves like four unrelated buttons.
-//
-// Arrow mapping: ArrowLeft = next, ArrowRight = previous — the house RTL
-// contract (Lightbox.jsx:58), which mirrors the HORIZONTAL axis for Hebrew
-// reading order. ArrowDown = next, ArrowUp = previous, unmirrored: the vertical
-// axis has no reading direction to follow, and APG lists both axes for this
-// pattern.
-const RADIO_ARROW_DELTA = { ArrowLeft: 1, ArrowDown: 1, ArrowRight: -1, ArrowUp: -1 };
-
-function handleAvailabilityKeyDown(e) {
-  // Only ENABLED radios participate. Pre-approval every radio is disabled
-  // (MEH-964 1D), so this list is empty, `from` is -1, and the group is inert
-  // with no separate branch to keep in sync with the disabled attribute.
-  const radios = Array.from(
-    e.currentTarget.querySelectorAll('[role="radio"]:not([disabled])'),
-  );
-  const from = radios.indexOf(e.target.closest?.('[role="radio"]'));
-  if (from === -1) return;
-  // Object.hasOwn, not `in` — see hooks/useTabsKeyboard.js for why this is
-  // defensive rather than a fix for a reachable bug.
-  if (!Object.hasOwn(RADIO_ARROW_DELTA, e.key)) return;
-  const to = (from + RADIO_ARROW_DELTA[e.key] + radios.length) % radios.length;
-  e.preventDefault();
-  radios[to].focus();
-  // .click() rather than a parallel activation path. Whatever clicking a radio
-  // means today is what arrowing onto it means — including vacation's
-  // reveal-then-confirm, which must NOT post (MEH-999). One authority for
-  // activation, so the mouse and keyboard paths cannot diverge later.
-  radios[to].click();
-}
+// MEH-2759 (MEH-2757 chunk 2): the four availability radios (and their
+// MEH-2199 arrow-key layer) became ONE «בהפסקה» switch. Owners set hours plus a
+// pause, like Google / Etsy / Wolt / Uber Eats; «פתוח להזמנות» as a status
+// clashed with the order-window line «פתוח להזמנות · עד …». Off = the server's
+// accepting_orders; legacy available_today / full_this_week rows read as off.
 
 export default function ProducerDashboardPage() {
   const t = useTranslations("dashboard.producer");
   const tHoliday = useTranslations("holidays");
-  // MEH-1773: explainer for the availability card below. Its twin lives on the
-  // order-window card in edit/page.js — the pair is the point, so if one moves
-  // the other has to follow.
-  const tWhat = useTranslations("whats_this");
   const { user, loading: authLoading } = useAuth();
   const [data, setData] = useState(null);
   // MEH-956: track a failed dashboard fetch separately from the not-yet-loaded
@@ -273,18 +228,6 @@ export default function ProducerDashboardPage() {
   const [vacationDateError, setVacationDateError] = useState("");
   // MEH-1355: support-contact modal, opened from the rejected + inactive banners.
   const [supportOpen, setSupportOpen] = useState(false);
-
-  const AVAILABILITY_TOOLTIP = (
-    <>
-      {t("availability.tooltip_line_default")}
-      <br />
-      {t("availability.tooltip_line_today")}
-      <br />
-      {t("availability.tooltip_line_full")}
-      <br />
-      {t("availability.tooltip_line_vacation")}
-    </>
-  );
 
   useEffect(() => {
     if (authLoading) return;
@@ -456,28 +399,26 @@ export default function ProducerDashboardPage() {
     (analytics?.whatsapp_clicks?.total ?? 0) > 0;
   const isApproved = producer.status === "approved";
 
-  // MEH-2199: one evaluation of the active-state rule, consumed by both the
-  // roving tab stop and each radio's aria-checked.
-  // MEH-999: while vacation is selected-but-not-yet-confirmed only the vacation
-  // radio reads active, so the group never lights up two.
-  // MEH-1092 F4: pre-approval the pills show NEUTRAL — a locked block must not
-  // read as a live status in the air — hence `&& isApproved`.
+  // MEH-2759: the switch reads ON while vacation is saved OR selected-but-not-
+  // yet-confirmed (MEH-999 reveal-then-confirm). MEH-1092 F4: pre-approval it
+  // shows OFF — a locked control must not read as a live status.
   const savedAvailability = producer.availability_state || "accepting_orders";
-  const availabilityRadios = AVAILABILITY_OPTIONS.map((opt) => {
-    const isVacation = opt.value === "on_vacation";
-    const active = isVacation
-      ? vacationSelected || savedAvailability === "on_vacation"
-      : !vacationSelected && savedAvailability === opt.value;
-    return { ...opt, isVacation, showActive: active && isApproved };
-  });
-  // APG: the checked radio holds the group's single tab stop; when NOTHING is
-  // checked the FIRST radio holds it, so the group can never become unreachable
-  // by Tab (which is what a bare `showActive ? 0 : -1` would do if the server
-  // ever returned a state outside this list).
-  const availabilityTabStop = Math.max(
-    0,
-    availabilityRadios.findIndex((o) => o.showActive),
-  );
+  const pauseOn = vacationSelected || savedAvailability === "on_vacation";
+  const togglePause = () => {
+    if (!pauseOn) {
+      // Reveal the date field first; the POST waits for «שמרו» so it always
+      // carries a return date (MEH-999).
+      setVacationSelected(true);
+      setVacationDateError("");
+    } else if (savedAvailability === "on_vacation") {
+      setVacationSelected(false);
+      setAvailabilityState("accepting_orders");
+    } else {
+      // Selected but never saved — nothing to undo on the server.
+      setVacationSelected(false);
+      setVacationDateError("");
+    }
+  };
 
   // MEH-1134: state-aware card order. While the business is pending OR the
   // completeness heuristic still reports missing fields, the completeness
@@ -713,94 +654,45 @@ export default function ProducerDashboardPage() {
       {!isOrganizer && (
       <div className="bg-surface border border-border rounded-lg p-6 mb-8">
         <p className="text-sm uppercase tracking-wider text-fg-muted mb-1">
-          {/* MEH-1842: the id sits on a span around the heading TEXT, not on the
-              <p>. The <p> also contains InfoTooltip, whose trigger is a button
-              with its own aria-label ("מה ההבדל בין המצבים?") — labelling the
-              radiogroup from the <p> would fold that into the computed name and
-              yield "מצב נוכחי מה ההבדל בין המצבים?". Measured, not assumed. */}
           <span id="availability-heading">{t("availability.heading")}</span>
-          <InfoTooltip content={AVAILABILITY_TOOLTIP} label={t("availability.info_label")} position="bottom" />
         </p>
         <p className="text-fg-muted text-sm mb-4">
           {t("availability.intro")}
         </p>
-        {/* MEH-1773: owners could not tell "זמינות" from "חלון הזמנות" — both
-            read as "when am I open". This says the half that is only true
-            here: temporary, manual, an exception. The other half is stated on
-            the order-window card in edit/page.js. */}
-        <WhatsThis
-          content={tWhat("availability")}
-          className="mb-2"
-          testId="whats-this-availability"
-        />
-        <div
-          role="radiogroup"
-          // MEH-1842: derived from the visible heading rather than a parallel
-          // string. The old aria-label held the pre-MEH-1830 name, so the
-          // accessible name and the visible one had drifted apart. Deriving it
-          // means they cannot drift again; the group_aria key is now deleted.
-          // NOT a WCAG 2.5.3 failure — "Label in Name" (and its ACT rule) covers
-          // widget roles named from content, and radiogroup is named from author.
-          // The basis is MDN + W3C APG: where a visible label exists, point
-          // aria-labelledby at it; aria-label is for when none does.
-          aria-labelledby="availability-heading"
+        {/* MEH-2759: the MEH-1773 «מה זה?» explainer that sat here named the
+            removed states («עמוס השבוע … זמין היום»); with one switch left the
+            intro line above already says it. Its order-window twin in
+            edit/page.js stays. */}
+        <button
+          type="button"
+          role="switch"
+          data-testid="availability-pause-switch"
+          aria-checked={pauseOn && isApproved}
           aria-describedby={!isApproved ? "availability-disabled-hint" : undefined}
-          className="flex flex-wrap gap-2"
-          // MEH-2199: the arrow-key layer the role already promised. Inert while
-          // the radios are disabled — the handler only walks enabled ones.
-          onKeyDown={handleAvailabilityKeyDown}
+          // MEH-964 1D: locked until the business is published (approved) — an
+          // unpublished listing has no public surface for a pause to affect.
+          disabled={!isApproved}
+          onClick={togglePause}
+          // MEH-2759: same switch as CoverageCtaToggle.jsx (house pattern).
+          className={`group inline-flex items-center gap-3 min-h-touch text-sm font-medium text-text focus-visible:outline-none ${
+            !isApproved ? "opacity-50 cursor-not-allowed" : ""
+          }`}
         >
-          {availabilityRadios.map((opt, i) => {
-            const { isVacation, showActive } = opt;
-            return (
-              <button
-                key={opt.value}
-                type="button"
-                role="radio"
-                // MEH-2199: data-radio-value is what the QA harness and tests
-                // name a radio by; tabIndex is the APG roving tab stop, so Tab
-                // enters the group once instead of walking all four.
-                data-radio-value={opt.value}
-                tabIndex={i === availabilityTabStop ? 0 : -1}
-                aria-checked={showActive}
-                // MEH-964 1D: availability is disabled until the business is
-                // published (approved) — an unpublished listing has no public
-                // surface for the state to affect. Hint below carries the why.
-                disabled={!isApproved}
-                onClick={() => {
-                  if (isVacation) {
-                    // Reveal the date field first; defer the POST to the
-                    // combined mini-form below so it always carries a date.
-                    setVacationSelected(true);
-                    setVacationDateError("");
-                  } else {
-                    setVacationSelected(false);
-                    setAvailabilityState(opt.value);
-                  }
-                }}
-                className={`inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition border focus-visible:ring-2 focus-visible:ring-primary/40 ${
-                  showActive
-                    ? "bg-primary text-white border-primary"
-                    : "bg-surface text-text border-border hover:bg-green-50"
-                } ${!isApproved ? "opacity-50 cursor-not-allowed" : ""}`}
-              >
-                <span
-                  aria-hidden="true"
-                  style={{
-                    width: "8px",
-                    height: "8px",
-                    borderRadius: "50%",
-                    display: "inline-block",
-                    background: opt.color,
-                    flexShrink: 0,
-                  }}
-                />
-                {t(`availability.options.${opt.value}`)}
-              </button>
-            );
-          })}
-        </div>
-        {/* MEH-964 1D: why-locked hint, associated with the radiogroup via
+          <span
+            aria-hidden="true"
+            className={`relative block w-10 h-6 shrink-0 rounded-full transition-colors group-focus-visible:ring-2 group-focus-visible:ring-primary/40 ${
+              pauseOn && isApproved ? "bg-primary" : "bg-border"
+            }`}
+          >
+            <span
+              className={`absolute top-1 w-4 h-4 rounded-full bg-surface shadow transition-all ${
+                pauseOn && isApproved ? "end-1" : "start-1"
+              }`}
+            />
+          </span>
+          {t("availability.options.on_vacation")}
+        </button>
+        {/* MEH-964 1D: why-locked hint, associated with the pause switch via
             aria-describedby so it's announced (not colour/opacity-only). */}
         {!isApproved && (
           <p id="availability-disabled-hint" data-testid="availability-disabled-hint" className="text-xs text-fg-muted mt-3">
