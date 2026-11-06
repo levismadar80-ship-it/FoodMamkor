@@ -72,10 +72,10 @@ export const CATEGORY_CHIPS = [
   // (backend category_slug.NAME_TO_SLUG, serialized on CategoryOut since
   // MEH-2139), not the Hebrew name, so the Hebrew-literal ratchet does not grow;
   // `iconSlug` is resolved to the glyph's name key from the loaded DB categories
-  // (withResolvedIcons) instead of a frontend slug→name table. Colours reuse CATEGORY_STYLES (honey textColor;
-  // the legacy care purple #9b59b6 = 4.67:1 white / 4.12:1 cream).
-  { key: "pantry", matches: [], slugs: ["honey", "oil", "spices", "ferments", "prepared", "drinks", "chocolate"], iconSlug: "honey", iconColor: "#A8681A" },
-  { key: "care", matches: [], slugs: ["care", "cosmetics", "herbs", "candles"], iconSlug: "care", iconColor: "#9b59b6" },
+  // (withResolvedIcons) instead of a frontend slug→name table; the tint comes
+  // from that category's CATEGORY_STYLES row (no new palette colour).
+  { key: "pantry", matches: [], slugs: ["honey", "oil", "spices", "ferments", "prepared", "drinks", "chocolate"], iconSlug: "honey" },
+  { key: "care", matches: [], slugs: ["care", "cosmetics", "herbs", "candles"], iconSlug: "care" },
 ];
 
 // MEH-58 Phase 3: RTL order right→left. Boolean toggles are
@@ -197,11 +197,17 @@ export function resolveCategoryIds(chip, dbCategories) {
  * `iconName` (the CATEGORY_ICONS name key) from the loaded DB categories.
  * No DB row for the slug → the chip stays text-only.
  */
-export function withResolvedIcons(chips, dbCategories = []) {
+export function withResolvedIcons(chips, dbCategories = [], styles = {}) {
   return chips.map((chip) => {
     if (!chip.iconSlug || chip.iconName) return chip;
     const name = dbCategories.find((c) => c.slug === chip.iconSlug)?.name;
-    return name ? { ...chip, iconName: name } : chip;
+    if (!name) return chip;
+    // The tint is the category's own CATEGORY_STYLES colour (WCAG-safe
+    // textColor first), passed in by the caller so this module stays
+    // React-free; a category with no style row stays untinted (MEH-763 lock).
+    const style = styles[name];
+    const iconColor = style ? (style.textColor ?? style.color) : undefined;
+    return { ...chip, iconName: name, ...(iconColor ? { iconColor } : {}) };
   });
 }
 
@@ -307,11 +313,11 @@ export function boundsToCenterRadius(bounds) {
  * `{ key: String(id), ids: [String(id)], dbCategory }`, so nothing is ever
  * unreachable. The URL stays ?category=<id> — home cards deep-link one id.
  */
-export function categoryGroupRow(dbCategories = [], visibleCategories = dbCategories) {
+export function categoryGroupRow(dbCategories = [], visibleCategories = dbCategories, styles = {}) {
   const visible = new Set(visibleCategories.map((c) => String(c.id)));
   const claimed = new Set();
   const rows = [];
-  for (const chip of withResolvedIcons(CATEGORY_CHIPS, dbCategories)) {
+  for (const chip of withResolvedIcons(CATEGORY_CHIPS, dbCategories, styles)) {
     if (!chip.matches) continue;
     const ids = resolveCategoryIds(chip, dbCategories).map(String);
     ids.forEach((id) => claimed.add(id));

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { CATEGORY_LEGEND } from "@/lib/category-registry";
+import { CATEGORY_LEGEND, CATEGORY_STYLES } from "@/lib/category-registry";
 import {
   CATEGORY_CHIPS,
   SERVICE_CHIP_KEYS,
@@ -439,6 +439,7 @@ export function useMapFilters({
               (c) => c.key === "all" || resolveCategoryId(c, categories) != null,
             ),
             categories,
+            CATEGORY_STYLES,
           )
         : CATEGORY_CHIPS,
     [categories],

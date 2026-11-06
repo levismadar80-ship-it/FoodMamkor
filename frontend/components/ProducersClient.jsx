@@ -807,7 +807,7 @@ export default function ProducersClient({
   // (lib/map-chips.js CATEGORY_CHIPS), not one chip per DB category. A group
   // is offered when any of its categories is visible (the same data gate as
   // before), and a category no group claims keeps its own chip.
-  const categoryRow = categoryGroupRow(categories, visibleCategories);
+  const categoryRow = categoryGroupRow(categories, visibleCategories, CATEGORY_STYLES);
   const categoryChips = [
     { key: "all", label: t("filters.category_all") },
     ...categoryRow.map((g) => {

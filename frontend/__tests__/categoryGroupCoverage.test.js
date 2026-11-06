@@ -22,6 +22,8 @@ const groups = CATEGORY_CHIPS.filter((c) => c.matches);
 describe("MEH-2783 category groups cover the taxonomy", () => {
   it("control: the parser read the real table", () => {
     expect(CANON.length).toBeGreaterThanOrEqual(18);
+    // Exact parity with the block: every entry line parsed, none dropped.
+    expect(CANON.length).toBe(block.split("\n").filter((l) => /^\s+"/.test(l)).length);
     expect(CANON).toContainEqual({ name: "דבש", slug: "honey" });
   });
 
