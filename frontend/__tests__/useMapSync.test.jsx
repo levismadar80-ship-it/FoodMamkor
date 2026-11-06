@@ -9,7 +9,7 @@ import { useMapSync } from "@/app/[locale]/map/state/useMapSync";
 vi.mock("next-intl", () => ({ useTranslations: () => (k) => k }));
 vi.mock("@/lib/api", () => ({ default: { get: vi.fn(() => Promise.resolve({ data: [] })) } }));
 vi.mock("@/lib/toast", () => ({ showToast: { info: vi.fn() } }));
-vi.mock("@/lib/schemas", () => ({ GeoSearchSchema: { safeParse: () => ({ success: true, data: {} }) } }));
+vi.mock("@/lib/schemas", () => ({ GEO_SEARCH_ERROR_KEYS: [], GeoSearchSchema: { safeParse: () => ({ success: true, data: {} }) } }));
 vi.mock("@/lib/map-chips", () => ({ boundsToCenterRadius: () => ({ lat: 0, lng: 0, radius_km: 5 }) }));
 vi.mock("@/components/MapBottomSheet", () => ({ HALF: 45 }));
 
