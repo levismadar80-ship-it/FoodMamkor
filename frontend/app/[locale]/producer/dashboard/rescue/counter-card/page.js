@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
 import { rescueBagsEnabled } from "@/lib/rescue";
+import BackLink from "@/components/ui/BackLink";
 
 /**
  * Route:    /producer/dashboard/rescue/counter-card
@@ -20,14 +21,18 @@ export default async function CounterCardPage() {
     <main className="min-h-screen bg-surface" data-testid="rescue-counter-card">
       {/* Screen-only: the button must never appear on the paper. */}
       <div className="print:hidden px-4 py-3 border-b border-border">
-        <p className="font-body-sm text-sm text-fg-muted">{t("print_hint")}</p>
+        {/* MEH-2733: a way back to the rescue screen; screen-only like the hint. */}
+        <BackLink href="/producer/dashboard/rescue" label={t("back")} />
+        <p className="font-body-sm text-sm text-fg-muted mt-1">{t("print_hint")}</p>
       </div>
 
       {/* A5 is 148×210mm. The card is sized in mm so what prints matches what
-          the business expects to tape beside the till. */}
+          the business expects to tape beside the till. MEH-2733: on screen it
+          is capped at 148mm instead of fixed to it — a fixed 148mm (~559px)
+          overflowed a 375px phone. Print keeps the exact A5 width. */}
       <article
-        className="mx-auto bg-surface text-black px-8 py-10"
-        style={{ width: "148mm", minHeight: "210mm" }}
+        className="w-full max-w-[148mm] print:w-[148mm] print:max-w-none mx-auto bg-surface text-black px-5 sm:px-8 print:px-8 py-10"
+        style={{ minHeight: "210mm" }}
       >
         <h1 className="font-headline-md text-3xl font-black mb-1">{t("title")}</h1>
         <p className="font-body-sm text-base mb-8">{t("subtitle")}</p>

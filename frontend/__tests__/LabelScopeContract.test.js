@@ -134,13 +134,14 @@ describe("MEH-1507 Label Scope Contract — every label declares scope + evidenc
 
   // ── MEH-1753 ─────────────────────────────────────────────────────────────
 
-  it("BADGE_CONFIG carries all fourteen badges (guards a shrinking scan)", () => {
+  it("BADGE_CONFIG carries all fifteen badges (guards a shrinking scan)", () => {
     // A COUNT, not a list of names: the loop above is satisfied by an empty
     // BADGE_CONFIG, so without this a deleted entry would leave the contract
     // reporting a clean pass over ten.
     // MEH-1508 chunk 3ב-2: 11 → 13 (vegan_all + vegetarian_all).
     // MEH-2693: 13 → 14 (reservist_owned).
-    expect(Object.keys(BADGE_CONFIG)).toHaveLength(14);
+    // MEH-2716: 14 → 15 (rescue_saving).
+    expect(Object.keys(BADGE_CONFIG)).toHaveLength(15);
   });
 
   it("every badge that is also a filter axis agrees with it on scope + evidence", () => {
@@ -299,6 +300,14 @@ describe("MEH-1507 Label Scope Contract — every label declares scope + evidenc
         key: "reservist_owned",
         label: "עסק של מילואימניקים",
         tooltip: "לפי הצהרת בית העסק, אחד הבעלים משרת במילואים.",
+        color: "muted",
+        aboutHref: null,
+      },
+      // MEH-2716: Sapir approved the automatic badge 06/11.
+      rescue_saving: {
+        key: "rescue_saving",
+        label: "מצילים מזון",
+        tooltip: "בחודש האחרון העסק מסר סלי הפתעה, כך שאוכל לא נזרק.",
         color: "muted",
         aboutHref: null,
       },

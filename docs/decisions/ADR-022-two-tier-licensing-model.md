@@ -56,3 +56,20 @@ license number, **one business at a time**, via «אשרי בלי רישיון»
   exist and are valid. A business approved through the override has signed it while
   lacking one. Whether that wording should change is a counsel question (Q1–Q5 above).
 
+
+## Amendment 06/11/2026 — no badge-absence line on the business page (MEH-2710)
+Sapir's ruling, 06/11: the «ללא תג מאומת · מה זה אומר?» line on a declared
+business's page is removed (PR #4032). A tier-2 business page now says nothing about
+the badge, the way directories show a badge only when it exists (Yelp Verified
+License, Airbnb, Thumbtack).
+- **Gate 1 still holds, on one surface:** "badge absence is affirmatively explained
+  in consumer copy" names no surface. The explanation lives on /about/process
+  (`process.badge.absence_*`, `process.steps.badge_aside_body`), reached from the
+  verified badge's «איך אנחנו מאמתים?» link and the footer. The Mitigations line
+  above ("affirmative tier-2 explanation copy (gate 1)") is satisfied by that page.
+- **Why this also serves "never negatively labeled":** the removed line labelled a
+  business by the badge it lacks.
+- **Open (counsel, brief Q2.3):** a preliminary, non-binding analysis is in the
+  brief's 06/11 addendum. It flags that /about/process says a badge is absent
+  because the category is exempt, which is not true for a business approved through
+  the MEH-2299 override.

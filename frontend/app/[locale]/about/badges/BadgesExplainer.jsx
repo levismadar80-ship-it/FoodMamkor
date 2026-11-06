@@ -15,6 +15,7 @@ import { badgesByEvidence } from "@/lib/badges";
 import { useBadgeCopy } from "@/lib/use-badge-copy";
 import { badgeIcon } from "@/lib/chip-icons";
 import { COLOR_CLASSES } from "@/components/BadgeRow";
+import { rescueBagsEnabled } from "@/lib/rescue";
 
 // Target of the <link> tag inside a group's intro, when it has one. The link
 // text lives inside the sentence (t.rich), so no locale is left with a
@@ -26,8 +27,16 @@ const GROUP_LINKS = {
 
 export default function BadgesExplainer() {
   const t = useTranslations("about_badges");
+  // MEH-2716: «מצילים מזון» can only light while the rescue pilot is on, so
+  // the page does not explain a badge nobody can see.
+  const pilotOn = rescueBagsEnabled();
   const withCopy = useBadgeCopy();
-  const groups = badgesByEvidence().map((g) => ({ ...g, badges: g.badges.map(withCopy) }));
+  const groups = badgesByEvidence()
+    .map((g) => ({
+      ...g,
+      badges: g.badges.filter((b) => b.key !== "rescue_saving" || pilotOn).map(withCopy),
+    }))
+    .filter((g) => g.badges.length > 0);
 
   return (
     <section className="min-h-screen bg-background text-text">

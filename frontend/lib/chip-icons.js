@@ -34,6 +34,7 @@ import {
   Cube,
   Clock,
   Storefront,
+  HandHeart,
 } from "@phosphor-icons/react";
 
 // key → Phosphor icon component. Keys mirror the attribute chip keys in
@@ -67,6 +68,8 @@ const CHIP_ICON_COMPONENTS = {
   grass_fed: Barn,
   // MEH-2693: a plain medal — not MedalMilitary, not a tick (self-declared).
   reservist_owned: Medal,
+  // MEH-2716: food given rather than thrown away — no tick, it is not a check.
+  rescue_saving: HandHeart,
   lactose_free: DropSlash,
   no_added_sugar: Cube,
   open_for_orders_now: Clock,  // MEH-2131

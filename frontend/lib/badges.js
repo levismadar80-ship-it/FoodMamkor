@@ -290,6 +290,17 @@ export const BADGE_CONFIG = {
     evidence: "self-declared",
     color: "muted",
   },
+  // MEH-2716 «מצילים מזון» — the second `system` badge, after «חדש». Nobody
+  // declares it: the server sets `rescued_recently` when the business saved a
+  // surprise bag (handed over, or given away free) in the last 30 days, and
+  // never while the rescue pilot is off. Approved by Sapir 06/11 as an
+  // automatic badge rather than a self-declaration (research §4).
+  rescue_saving: {
+    key: "rescue_saving",
+    scope: "business",
+    evidence: "system",
+    color: "muted",
+  },
   // MEH-1846: the products badge is REMOVED. It lit on products_count >= 3,
   // which is true for effectively every approved business — manual approval
   // means a business with no catalog is not live — so it differentiated
@@ -330,6 +341,9 @@ export const BADGE_PRIORITY = [
   "no_added_sugar",
   "kosher",
   "delivery",
+  // MEH-2716: after the product facts, ahead of the identity claim — earned
+  // by what the business did this month, never by what it says.
+  "rescue_saving",
   // MEH-1846: products removed — see the BADGE_CONFIG note above.
   // MEH-2693: last on purpose — an identity claim, not a product fact; it
   // never displaces a badge a card already shows (ADR-027: no ranking either).
@@ -363,6 +377,8 @@ function earnsBadge(producer, key) {
       return !!producer.grass_fed;
     case "reservist_owned":
       return producer.reservist_owned === true;
+    case "rescue_saving":
+      return producer.rescued_recently === true;
     case "gluten_free":
       // MEH-293/MEH-479: aggregated from products.is_gluten_free.
       return !!producer.has_gluten_free_products;

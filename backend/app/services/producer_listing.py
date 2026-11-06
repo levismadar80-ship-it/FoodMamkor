@@ -42,6 +42,7 @@ from app.services.availability_validation import ON_VACATION
 from app.services.producer_queries import (
     attach_badge_fields,
     attach_favorites_counts,
+    attach_rescue_saving,
     haversine_min_km,
     weighted_rating_expr,
 )
@@ -1157,12 +1158,14 @@ def _finalize_results(q, db: Session, *, with_distance: bool, limit: int, offset
             attach_badge_fields(producer)
             results.append(producer)
         attach_favorites_counts(results, db)
+        attach_rescue_saving(results, db)
         return results
 
     rows = q.offset(offset).limit(limit).all()
     for p in rows:
         attach_badge_fields(p)
     attach_favorites_counts(rows, db)
+    attach_rescue_saving(rows, db)
     return rows
 
 
