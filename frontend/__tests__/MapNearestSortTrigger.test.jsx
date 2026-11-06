@@ -54,7 +54,10 @@ const toast = { success: vi.fn(), error: vi.fn(), info: vi.fn() };
 vi.mock("@/lib/toast", () => ({ showToast: toast }));
 
 vi.mock("@/lib/use-user-city", () => ({ useUserCity: () => ({}) }));
-vi.mock("@/lib/rating-gate", () => ({ isRatingSortEnabled: () => false }));
+vi.mock("@/lib/rating-gate", () => ({
+  isRatingSortEnabled: () => false,
+  mapRatingGateSource: (snap, all) => (Array.isArray(snap) ? snap : all),
+}));
 
 // --- heavy children: stubbed to nothing. None renders the sort control. ---
 vi.mock("@/components/CitySearch", () => ({ default: () => null }));
