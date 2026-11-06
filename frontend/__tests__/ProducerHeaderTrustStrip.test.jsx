@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 
 // MEH-1048: the header "trust strip" turns the rating + review count into an
 // anchor (#reviews) next to the h1. Zero reviews → nothing. This covers the
@@ -107,64 +107,27 @@ describe("ProducerHeader trust strip (MEH-1048)", () => {
   // longer exists, so nothing can put it back in the header.
 });
 
-// MEH-1170: the removed BadgeRow "מוצהר" chip's tooltip was the only surface of
-// declared_explainer; Option 1 relocated it here as quiet visible copy so the
-// tier-2 badge absence stays "affirmatively explained" (ADR-022 gate 1). The
-// next-intl mock echoes the key, so we assert on the key path.
-describe("ProducerHeader declared explainer (MEH-1170)", () => {
-  // MEH-2634: the explainer moved behind a Popover. ADR-022 gate 1 asks that
-  // the badge absence be "affirmatively explained in consumer copy" — so the
-  // test that matters is no longer "the paragraph is on screen" but "the
-  // explanation is REACHABLE from the header", which is what the two cells
-  // below assert: the trigger is there, and tapping it produces the copy.
-  it("shows the declared trigger, not the explainer paragraph, for the declared tier", () => {
-    render(
-      <ProducerHeader
-        producer={{ ...baseProducer, verification_tier: "declared" }}
-        primaryCategory={null}
-        hasImages
-      />,
-    );
-    expect(screen.getByTestId("declared-explainer-trigger")).toBeInTheDocument();
-    expect(screen.getByText("producer.badge.declared_trigger")).toBeInTheDocument();
-    // The discriminating half: before the tap the three sentences are absent.
-    // Without this, the cell below would pass against the OLD always-open
-    // paragraph too, and would not be evidence for this change.
-    expect(screen.queryByText("producer.badge.declared_explainer")).not.toBeInTheDocument();
-  });
-
-  it("reveals declared_explainer when the trigger is tapped (ADR-022 gate 1)", () => {
-    render(
-      <ProducerHeader
-        producer={{ ...baseProducer, verification_tier: "declared" }}
-        primaryCategory={null}
-        hasImages
-      />,
-    );
-    fireEvent.click(screen.getByTestId("declared-explainer-trigger"));
-    expect(screen.getByText("producer.badge.declared_explainer")).toBeInTheDocument();
-  });
-
-  it("does not render the explainer for verified or null tiers", () => {
-    const { rerender } = render(
-      <ProducerHeader
-        producer={{ ...baseProducer, verification_tier: "verified" }}
-        primaryCategory={null}
-        hasImages
-      />,
-    );
-    expect(screen.queryByText("producer.badge.declared_explainer")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("declared-explainer-trigger")).not.toBeInTheDocument();
-    rerender(
-      <ProducerHeader
-        producer={{ ...baseProducer, verification_tier: null }}
-        primaryCategory={null}
-        hasImages
-      />,
-    );
-    expect(screen.queryByText("producer.badge.declared_explainer")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("declared-explainer-trigger")).not.toBeInTheDocument();
-  });
+// MEH-2710: the declared (tier 2) header carries NO line about the badge it
+// lacks — «ללא תג מאומת · מה זה אומר?» was removed (Sapir 06/11). ADR-022
+// gate 1's affirmative explanation lives on /about/process. The cells assert
+// on rendered text, not a testid, so a re-added line under a new testid still
+// goes red: the next-intl mock echoes keys, so any producer.badge.* key or the
+// Hebrew "מאומת" in the header would show up in textContent.
+describe("ProducerHeader declared tier — no badge-absence line (MEH-2710)", () => {
+  for (const tier of ["declared", "verified", null]) {
+    it(`renders no badge-absence copy for tier=${tier}`, () => {
+      const { container } = render(
+        <ProducerHeader
+          producer={{ ...baseProducer, verification_tier: tier }}
+          primaryCategory={null}
+          hasImages
+        />,
+      );
+      expect(container.textContent).not.toMatch(/producer\.badge\.declared/);
+      expect(container.textContent).not.toMatch(/ללא תג/);
+      expect(screen.queryByTestId("declared-explainer-trigger")).not.toBeInTheDocument();
+    });
+  }
 });
 
 // MEH-1334 chunk 1: the page's single order-status line lives in the header
