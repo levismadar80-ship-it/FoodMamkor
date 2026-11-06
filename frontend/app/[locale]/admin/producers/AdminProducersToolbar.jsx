@@ -56,7 +56,7 @@ function IncompleteToggle({ active, count, onToggle }) {
     >
       <Warning size={ICON_SIZE_SM} weight="fill" className="inline align-[-2px]" aria-hidden="true" /> {active ? t("producers.toolbar.show_all") : t("producers.toolbar.incomplete_label")}
       {count > 0 && (
-        <span className="me-2 inline-flex items-center justify-center min-w-[1.5rem] h-5 px-1.5 rounded-full bg-yellow-500 text-white text-xs font-bold">
+        <span className="me-2 inline-flex items-center justify-center min-w-[1.5rem] h-5 px-1.5 rounded-full bg-yellow-500 text-text text-xs font-bold">
           {count}
         </span>
       )}
