@@ -72,8 +72,12 @@ export const ANCHOR_TO_KEY = {
   // MEH-2433: dietary scope + grass-fed were sub-sections of the trust card
   // with no deep link of their own; in the five-group hub each is its own
   // card in the products group, so each gets an entry in all three maps.
-  "dietary-scope": "dietaryScope",
-  "grass-fed": "grassFed",
+  // MEH-2729: both became sub-sections of one «תגים» card. The old anchors
+  // stay as aliases so an existing #dietary-scope / #grass-fed link still
+  // opens the card that now holds them.
+  tags: "tags",
+  "dietary-scope": "tags",
+  "grass-fed": "tags",
   // MEH-2693 → MEH-2699: «עסק של מילואימניקים» is now a switch INSIDE the
   // owner-story card, so the old #reservist-owned link opens that card (an
   // alias — the canonical scroll target is "owner-story").
@@ -115,8 +119,7 @@ export const KEY_TO_ANCHOR = {
   // without an entry renders but is unreachable by anchor, which is the
   // silent-gap class .claude/rules/testing.md documents for path registries.
   offer: "offer",
-  dietaryScope: "dietary-scope",
-  grassFed: "grass-fed",
+  tags: "tags",
   organizerCity: "organizer-city",
 };
 
@@ -136,8 +139,7 @@ export const KEY_TO_GROUP = {
   // two owner-declared catalog claims moved in beside them.
   products: "products",
   pricing: "products",
-  dietaryScope: "products",
-  grassFed: "products",
+  tags: "products",
   // MEH-2262: the MEH-1872 business-name card had an ANCHOR_TO_KEY entry but
   // no group, so the resolver returned early and #business-name never opened
   // it. Deliberately NOT a GROUP_MEMBERS entry — a rename request is not a

@@ -4643,6 +4643,10 @@
         "prompt": "Missing a tag that fits your business?",
         "link": "Write to us"
       },
+      "tags": {
+        "heading": "Tags",
+        "summary": "{count, plural, =0 {No tags yet} one {One active tag} other {# active tags}}"
+      },
       "dietaryScope": {
         "heading": "Diet",
         "helper": "We cross-check these answers against the catalog before publishing.",
