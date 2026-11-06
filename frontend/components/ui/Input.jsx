@@ -88,9 +88,9 @@ export default function Input({
         // Clearing pad follows the input's own dir (see header: MEH-992 parity).
         startAdornment
           ? rest.dir === "ltr"
-            ? "w-full min-h-[44px] rounded-md border bg-surface-card ps-3 pe-10 text-text"
-            : "w-full min-h-[44px] rounded-md border bg-surface-card ps-10 pe-3 text-text"
-          : "w-full min-h-[44px] rounded-md border bg-surface-card px-3 text-text",
+            ? "w-full min-h-touch rounded-md border bg-surface-card ps-3 pe-10 text-text"
+            : "w-full min-h-touch rounded-md border bg-surface-card ps-10 pe-3 text-text"
+          : "w-full min-h-touch rounded-md border bg-surface-card px-3 text-text",
         "placeholder:text-fg-muted transition-colors duration-fast ease-quart focus-ring",
         hasError
           ? "border-error"

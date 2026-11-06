@@ -140,7 +140,7 @@ function contactChannels(organizer) {
 }
 
 const LINK_BASE =
-  "inline-flex items-center min-h-[44px] px-4 rounded-full border text-sm transition focus-ring";
+  "inline-flex items-center min-h-touch px-4 rounded-full border text-sm transition focus-ring";
 
 function ContactLinks({ organizer, t }) {
   const links = contactChannels(organizer);

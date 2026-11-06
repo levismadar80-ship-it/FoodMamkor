@@ -703,7 +703,7 @@ function EditPageInner() {
       type="button"
       onClick={backToHub}
       data-testid="hub-back"
-      className="inline-flex items-center gap-1.5 min-h-[44px] text-sm font-medium text-primary hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+      className="inline-flex items-center gap-1.5 min-h-touch text-sm font-medium text-primary hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
     >
       <CaretLeft size={16} aria-hidden="true" className="rtl:rotate-180" />
       {tAcc("hub_back")}
@@ -1046,7 +1046,7 @@ function EditPageInner() {
           {t("badge_request.prompt")}{" "}
           <Link
             href="/about#contact"
-            className="inline-flex items-center min-h-[44px] font-medium text-primary underline underline-offset-2"
+            className="inline-flex items-center min-h-touch font-medium text-primary underline underline-offset-2"
           >
             {t("badge_request.link")}
           </Link>

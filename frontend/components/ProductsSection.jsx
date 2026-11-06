@@ -1180,7 +1180,7 @@ function DietChip({ label, pressed, onToggle, iconKey }) {
       onClick={onToggle}
       aria-pressed={pressed}
       className={[
-        "inline-flex items-center gap-1.5 min-h-[44px] rounded-[10px] border px-4 py-2 text-sm text-start transition focus-ring",
+        "inline-flex items-center gap-1.5 min-h-touch rounded-[10px] border px-4 py-2 text-sm text-start transition focus-ring",
         pressed
           ? "border-primary bg-green-50 text-text"
           : "border-border bg-white text-text hover:border-primary",

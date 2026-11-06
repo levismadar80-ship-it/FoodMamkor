@@ -1044,7 +1044,7 @@ function RegisterProducerPageBody() {
                 placeholder-only — no persistent label. Each now gets a visible
                 <label htmlFor> (the *_label key carries the "*"); the *.fields.<x>
                 key is repurposed as an example placeholder. required attr added.
-                (F3): min-h-[44px] enforces the WCAG 2.5.5 touch-target floor,
+                (F3): min-h-touch enforces the WCAG 2.5.5 touch-target floor,
                 matching CitySearch.jsx:118. */}
             <Input
               id="producer-account-name"
@@ -1091,7 +1091,7 @@ function RegisterProducerPageBody() {
                 value={form.password}
                 onChange={set("password")}
                 required
-                className="w-full border rounded-md px-3 py-2 min-h-[44px]"
+                className="w-full border rounded-md px-3 py-2 min-h-touch"
                 dir="ltr"
                 minLength={12}
                 autoComplete="new-password"
@@ -1183,7 +1183,7 @@ function RegisterProducerPageBody() {
                 required
                 aria-invalid={phoneErrorMessage ? "true" : undefined}
                 aria-describedby={phoneErrorMessage ? "register-phone-error" : undefined}
-                className={`w-full border rounded-md px-3 py-2 min-h-[44px] ${
+                className={`w-full border rounded-md px-3 py-2 min-h-touch ${
                   phoneErrorMessage ? "border-danger-400" : ""
                 }`}
                 dir="ltr"
@@ -1259,7 +1259,7 @@ function RegisterProducerPageBody() {
                 <label
                   key={opt.value}
                   htmlFor={`fulfilment-${opt.value}`}
-                  className="flex items-center gap-3 min-h-[44px] cursor-pointer"
+                  className="flex items-center gap-3 min-h-touch cursor-pointer"
                 >
                   <input
                     type="radio"
@@ -1415,7 +1415,7 @@ function RegisterProducerPageBody() {
                   maxLength={20}
                   inputMode="numeric"
                   // text-right kept: dir="ltr" numeric license — physical right = start side in the RTL form; logical text-start would follow the field's own ltr direction instead
-                  className="w-full border rounded-md ps-3 pe-3 py-2 min-h-[44px] text-right"
+                  className="w-full border rounded-md ps-3 pe-3 py-2 min-h-touch text-right"
                   dir="ltr"
                 />
                 {licenseWarning && (
@@ -1487,7 +1487,7 @@ function RegisterProducerPageBody() {
                   maxLength={20}
                   inputMode="numeric"
                   // text-right kept: dir="ltr" numeric license — physical right = start side in the RTL form; logical text-start would follow the field's own ltr direction instead
-                  className="w-full border rounded-md ps-3 pe-3 py-2 min-h-[44px] text-right"
+                  className="w-full border rounded-md ps-3 pe-3 py-2 min-h-touch text-right"
                   dir="ltr"
                 />
                 {licenseWarning && (
@@ -1689,7 +1689,7 @@ function RegisterProducerPageBody() {
                       value === "other" ? prev.referral_source_other : "",
                   }));
                 }}
-                className="w-full border rounded-md px-3 py-2 min-h-[44px] bg-white text-start"
+                className="w-full border rounded-md px-3 py-2 min-h-touch bg-white text-start"
               >
                 <option value="" disabled>
                   {t("auth.register.producer.fields.referral_source.placeholder")}
@@ -1719,7 +1719,7 @@ function RegisterProducerPageBody() {
                   aria-label={t(
                     "auth.register.producer.fields.referral_source.other_placeholder",
                   )}
-                  className="w-full border rounded-md px-3 py-2 min-h-[44px] mt-2 text-start"
+                  className="w-full border rounded-md px-3 py-2 min-h-touch mt-2 text-start"
                 />
               )}
             </div>

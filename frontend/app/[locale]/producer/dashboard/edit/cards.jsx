@@ -82,7 +82,7 @@ export function ViewOnPageLink({ producerId, anchor, testId }) {
         data-testid={testId || `view-on-page-${anchor}`}
         // Calm idiom (ADR-019): muted text link, never a primary CTA;
         // min-h 44px keeps the tap target (MEH-813).
-        className="inline-flex items-center gap-1.5 min-h-[44px] text-sm text-fg-muted hover:text-accent focus-visible:underline transition-colors"
+        className="inline-flex items-center gap-1.5 min-h-touch text-sm text-fg-muted hover:text-accent focus-visible:underline transition-colors"
       >
         <Eye size={16} aria-hidden="true" />
         {t("view_on_page")}

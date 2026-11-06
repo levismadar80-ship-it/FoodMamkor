@@ -142,7 +142,8 @@
         "4xl": "64px",
         "5xl": "96px",
         "6xl": "128px",
-        "gutter": "16px"
+        "gutter": "16px",
+        "touch": "44px"
       }
     }
   }

@@ -413,7 +413,7 @@ export default function HeroSearch({
         // ~1.6:1 and fails WCAG 1.4.11's 3:1 for focus indicators. On the cream
         // chips the same ring is fine; on this control the browser default
         // outline is the stronger indicator, so it is deliberately left alone.
-        className="shrink-0 bg-action-primary hover:bg-action-primary-hover text-white rounded-full transition p-1 min-h-[44px] min-w-[44px] flex items-center justify-center"
+        className="shrink-0 bg-action-primary hover:bg-action-primary-hover text-white rounded-full transition p-1 min-h-touch min-w-touch flex items-center justify-center"
         aria-label={t("submit_aria")}
         data-testid="hero-search-submit"
       >
@@ -541,7 +541,7 @@ export default function HeroSearch({
                   id={rowId(i)}
                   role="option"
                   aria-selected={i === highlightIdx}
-                  className={`flex items-center justify-between px-3 py-2.5 text-sm cursor-pointer min-h-[44px] ${
+                  className={`flex items-center justify-between px-3 py-2.5 text-sm cursor-pointer min-h-touch ${
                     i === highlightIdx ? "bg-green-50 text-primary" : "text-text hover:bg-green-50/50"
                   }`}
                   onMouseEnter={() => setHighlightIdx(i)}
@@ -563,7 +563,7 @@ export default function HeroSearch({
                   <button
                     type="button"
                     tabIndex={-1}
-                    className="text-fg-muted hover:text-text p-1.5 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                    className="text-fg-muted hover:text-text p-1.5 min-h-touch min-w-touch flex items-center justify-center"
                     aria-label={t("remove_recent_aria", { q })}
                     onMouseDown={(e) => {
                       e.preventDefault();
@@ -584,7 +584,7 @@ export default function HeroSearch({
                   id={rowId(i)}
                   role="option"
                   aria-selected={i === highlightIdx}
-                  className={`flex items-center gap-2 px-3 py-2.5 text-sm cursor-pointer min-h-[44px] ${
+                  className={`flex items-center gap-2 px-3 py-2.5 text-sm cursor-pointer min-h-touch ${
                     i === highlightIdx ? "bg-green-50 text-primary" : "text-text hover:bg-green-50/50"
                   }`}
                   onMouseEnter={() => setHighlightIdx(i)}
@@ -675,7 +675,7 @@ function Row({ id, active, onSelect, onHover, children }) {
         onSelect();
       }}
       onMouseEnter={onHover}
-      className={`px-3 py-2.5 cursor-pointer text-sm min-h-[44px] flex items-start flex-col justify-center ${
+      className={`px-3 py-2.5 cursor-pointer text-sm min-h-touch flex items-start flex-col justify-center ${
         active ? "bg-green-50 text-primary" : "text-text hover:bg-green-50/50"
       }`}
     >
