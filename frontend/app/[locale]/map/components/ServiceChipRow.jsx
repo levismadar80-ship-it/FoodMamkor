@@ -34,7 +34,8 @@ import { keepFocusedChipClear } from "@/lib/keepFocusedChipClear";
 
 // MEH-2046: the axes this row promotes are SERVICE_CHIP_KEYS (lib/map-chips —
 // MEH-2425 moved it there so the tag row can skip them). Labels come from
-// TOGGLE_CHIPS / ATTRIBUTE_LABELS and cannot drift from FilterSheet's copy.
+// messages `filter_axes.<key>.label` via useChipCopy() — the same message
+// FilterSheet renders, so the two cannot drift (MEH-2748).
 // MEH-2598: `chips` is REQUIRED-in-practice and defaults to none — it must be
 // the caller's already-gated list (FilterChipsBar's visibleToggleChips), so a
 // caller that forgets it renders no chip rather than an ungated on_site.
