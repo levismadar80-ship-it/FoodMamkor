@@ -1,16 +1,22 @@
 # MEH-2779 — CI speedup: pytest + vitest in 3 parallel shards, E2E on label
 
-> **For Sapir to commit (Chrome prompt).** `.github/workflows/**` is denied to
-> CC's filesystem tools and the Contents API is refused at the sandbox proxy
-> (`.claude/rules/security.md`). CC wrote the full new files next to this note
-> (`docs/ci/meh-2779/pr-checks.yml`, `docs/ci/meh-2779/e2e.yml`) and the diff
-> below; Sapir pastes the two files over the originals on the PR branch, and CC
-> then verifies the branch copies byte-for-byte against these two files.
+> **Applied — the live files in `.github/workflows/` are the source of truth.**
+> `.github/workflows/**` is denied to CC's filesystem tools and the Contents API
+> is refused at the sandbox proxy (`.claude/rules/security.md`), so CC staged
+> full copies under `docs/ci/meh-2779/` for Sapir to paste. Those copies were
+> deleted once applied and byte-checked (one owner per fact, workflow smell #1);
+> the diff below is the record.
 
 > **Applied 06/11/2026** by Sapir via the GitHub web editor: `89a3ec45`
 > (`pr-checks.yml`) and `084dad07` (`e2e.yml`). CC verified both branch files
-> byte-identical (`cmp`) to `docs/ci/meh-2779/pr-checks.yml` (sha256
-> `67729153…`) and `docs/ci/meh-2779/e2e.yml` (sha256 `e88763d7…`).
+> byte-identical (`cmp`) to the staged copies (sha256 `67729153…` and
+> `e88763d7…`), since deleted.
+>
+> **First sharded run** (`a68a9acb`, 06/11 19:54Z): CI gate 6.3 min from push
+> (median before: 10.8). pytest shards 5.1 / 4.3 / 3.8 min (shard 1 carries the
+> 74 s serial pass); vitest shards 2.9 / 2.7 / 4.7 min. Combined pytest
+> coverage 12,943 stmts / 841 miss, the same as the single-job runs; partition
+> check `3 shards ran 5170 of 5170`; vitest ratchet OK on the merged summary.
 
 ## Why — measured 4–6/11/2026 (≈840 PR runs, `gh api actions/runs` + jobs)
 
