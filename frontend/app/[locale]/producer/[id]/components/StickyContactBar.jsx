@@ -60,7 +60,11 @@ export default function StickyContactBar({
   // carries referral UTM and drops `noreferrer` (keeps `noopener`). Website
   // method only; every other method's href + rel stay exactly as before.
   const isWebsite = getPrimaryMethod(producer) === "website";
-  const rawHref = getPrimaryContactHref(producer);
+  // MEH-2753: WhatsApp prefill + label from messages (contact_cta.*).
+  const rawHref = getPrimaryContactHref(
+    producer,
+    t("contact_cta.wa_greeting", { name: producer?.name || "" }),
+  );
   const href = isWebsite ? withReferralParams(rawHref) : rawHref;
   return (
     <div
@@ -154,7 +158,7 @@ export default function StickyContactBar({
             }`}
           >
             <CtaIcon size={20} weight="fill" aria-hidden="true" />
-            {isVacation ? t("producer.detail.sticky_bar.vacation_msg") : getPrimaryContactLabel(producer)}
+            {isVacation ? t("producer.detail.sticky_bar.vacation_msg") : getPrimaryContactLabel(producer, t)}
           </a>
         )}
       </div>
