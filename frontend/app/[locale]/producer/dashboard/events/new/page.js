@@ -74,7 +74,7 @@ export default function NewEventPage() {
       <h1 className="font-headline-lg text-4xl font-bold text-text mb-2">{t("heading")}</h1>
       <p className="text-fg-muted mb-8">{t("subtitle")}</p>
 
-      <p className="text-sm text-fg-muted bg-green-50 rounded-[10px] px-4 py-3 mb-6 leading-relaxed">
+      <p className="text-sm text-fg-muted bg-green-50 rounded-md px-4 py-3 mb-6 leading-relaxed">
         {t("info_paragraph")}
       </p>
 

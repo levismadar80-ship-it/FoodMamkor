@@ -56,7 +56,7 @@ export default function LocationBanner({ hasCity, onOpenModal, suppressed = fals
 
   return (
     <div
-      className="mx-4 md:mx-auto max-w-3xl mb-6 flex items-start justify-between gap-3 rounded-[10px] px-4 py-3"
+      className="mx-4 md:mx-auto max-w-3xl mb-6 flex items-start justify-between gap-3 rounded-md px-4 py-3"
       style={{ backgroundColor: "#EAF3DE", color: "#2e6853" }}
       role="status"
     >

@@ -386,7 +386,7 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
           if (!e.currentTarget.contains(e.relatedTarget)) setDragOver(false);
         }}
         onDrop={atCap ? (e) => e.preventDefault() : handleDrop}
-        className={`inline-flex items-center text-sm border border-dashed rounded-[10px] px-4 py-3 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30 ${
+        className={`inline-flex items-center text-sm border border-dashed rounded-md px-4 py-3 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30 ${
           atCap
             ? "border-border text-fg-muted cursor-not-allowed"
             : dragOver
@@ -567,7 +567,7 @@ function AssistForm({ t, assist }) {
           value={instagram}
           onChange={(e) => setInstagram(e.target.value.slice(0, 200))}
           placeholder={t("instagram_placeholder")}
-          className="w-full border border-border bg-surface rounded-[10px] px-3 py-2 text-sm"
+          className="w-full border border-border bg-surface rounded-sm px-3 py-2 text-sm"
           dir="ltr"
           maxLength={200}
         />
@@ -578,7 +578,7 @@ function AssistForm({ t, assist }) {
         type="button"
         onClick={generate}
         disabled={!canGenerate || loading}
-        className="w-full bg-primary text-white py-2 rounded-[10px] text-sm font-medium disabled:opacity-50 hover:bg-primary-dark transition flex items-center justify-center gap-2"
+        className="w-full bg-primary text-white py-2 rounded-full text-sm font-medium disabled:opacity-50 hover:bg-primary-dark transition flex items-center justify-center gap-2"
       >
         <Sparkle size={15} weight="fill" aria-hidden="true" />
         {loading ? t("generating") : t("generate_cta")}
@@ -614,7 +614,7 @@ function AssistField({ label, value, onChange, placeholder, optional }) {
         value={value}
         onChange={(e) => onChange(e.target.value.slice(0, 200))}
         placeholder={placeholder}
-        className="w-full border border-border bg-surface rounded-[10px] px-3 py-2 text-sm"
+        className="w-full border border-border bg-surface rounded-sm px-3 py-2 text-sm"
         dir="auto"
         maxLength={200}
       />
@@ -735,7 +735,7 @@ export function DescriptionCard({ profile, onSave, reportDirty = () => {} }) {
           value={description}
           onChange={(e) => { setDescription(e.target.value.slice(0, DESC_MAX)); setSaved(false); }}
           placeholder={t("desc_placeholder")}
-          className={`w-full rounded-[10px] px-3 py-2 text-sm resize-none h-24 transition-colors duration-500 ${
+          className={`w-full rounded-sm px-3 py-2 text-sm resize-none h-24 transition-colors duration-500 ${
             highlight
               ? "border border-primary bg-primary/10 ring-2 ring-primary/20"
               : "border border-primary/30 bg-primary/5"
@@ -786,7 +786,7 @@ export function DescriptionCard({ profile, onSave, reportDirty = () => {} }) {
           value={tagline}
           onChange={(e) => { setTagline(e.target.value.slice(0, TAGLINE_MAX)); setSaved(false); }}
           placeholder={t("tagline_placeholder")}
-          className="w-full border border-primary/30 bg-primary/5 rounded-[10px] px-3 py-2 text-sm"
+          className="w-full border border-primary/30 bg-primary/5 rounded-sm px-3 py-2 text-sm"
           dir="auto"
           maxLength={TAGLINE_MAX}
         />
@@ -1003,7 +1003,7 @@ export function OwnerStoryCard({ profile, onSave, reportDirty = () => {} }) {
           value={bio}
           onChange={(e) => { setBio(e.target.value.slice(0, OWNER_BIO_MAX)); setSaved(false); }}
           placeholder={t("bio_placeholder")}
-          className="w-full border border-primary/30 bg-primary/5 rounded-[10px] px-3 py-2 text-sm resize-none h-24"
+          className="w-full border border-primary/30 bg-primary/5 rounded-sm px-3 py-2 text-sm resize-none h-24"
           dir="auto"
           maxLength={OWNER_BIO_MAX}
           data-testid="owner-bio-input"
@@ -1482,7 +1482,7 @@ export function KashrutCard({ profile, reportDirty = () => {} }) {
               setBadgeCode(e.target.value);
               setSubmitted(false);
             }}
-            className="w-full border border-primary/30 bg-primary/5 rounded-[10px] px-3 py-2 text-sm"
+            className="w-full border border-primary/30 bg-primary/5 rounded-sm px-3 py-2 text-sm"
             data-testid="kashrut-badge-select"
           >
             <option value="">{t("select_placeholder")}</option>
@@ -1915,7 +1915,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
                   value={form.fee}
                   onChange={(e) => set({ fee: e.target.value })}
                   placeholder={t("fee_placeholder")}
-                  className="w-32 border border-border rounded-[10px] px-3 py-2 text-sm"
+                  className="w-32 border border-border rounded-sm px-3 py-2 text-sm"
                 />
               </div>
               <div>
@@ -1938,7 +1938,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
                   value={form.freeAbove}
                   onChange={(e) => set({ freeAbove: e.target.value })}
                   placeholder={t("free_above_placeholder")}
-                  className="w-32 border border-border rounded-[10px] px-3 py-2 text-sm"
+                  className="w-32 border border-border rounded-sm px-3 py-2 text-sm"
                 />
               </div>
             </div>
@@ -2241,7 +2241,7 @@ export function OffersCard({ profile, onSave, reportDirty = () => {} }) {
             value={form.type}
             data-testid="offer-type-select"
             onChange={(e) => set({ type: e.target.value })}
-            className="w-full border border-border rounded-[10px] px-3 py-2 text-sm bg-surface"
+            className="w-full border border-border rounded-sm px-3 py-2 text-sm bg-surface"
           >
             <option value="">{t("type_none")}</option>
             {OFFER_TYPES.map((ot) => (
@@ -2273,14 +2273,14 @@ export function OffersCard({ profile, onSave, reportDirty = () => {} }) {
                   data-testid="offer-threshold-input"
                   onChange={(e) => set({ threshold: e.target.value })}
                   placeholder={t("threshold_placeholder")}
-                  className="w-24 border border-border rounded-[10px] px-3 py-2 text-sm"
+                  className="w-24 border border-border rounded-sm px-3 py-2 text-sm"
                 />
                 <select
                   value={form.unit}
                   aria-label={t("unit_label")}
                   data-testid="offer-unit-select"
                   onChange={(e) => set({ unit: e.target.value })}
-                  className="border border-border rounded-[10px] px-3 py-2 text-sm bg-surface"
+                  className="border border-border rounded-sm px-3 py-2 text-sm bg-surface"
                 >
                   <option value="">{t("unit_label")}</option>
                   {THRESHOLD_UNITS.map((u) => (
@@ -2318,7 +2318,7 @@ export function OffersCard({ profile, onSave, reportDirty = () => {} }) {
                 data-testid="offer-headline-input"
                 onChange={(e) => set({ headline: e.target.value })}
                 placeholder={t("headline_placeholder")}
-                className="w-full border border-border rounded-[10px] px-3 py-2 text-sm"
+                className="w-full border border-border rounded-sm px-3 py-2 text-sm"
               />
               {missingCustomHeadline && (
                 <p className="text-xs text-danger-600 mt-1" data-testid="offer-headline-error">
@@ -2338,7 +2338,7 @@ export function OffersCard({ profile, onSave, reportDirty = () => {} }) {
                 value={form.expires}
                 data-testid="offer-expires-input"
                 onChange={(e) => set({ expires: e.target.value })}
-                className="border border-border rounded-[10px] px-3 py-2 text-sm"
+                className="border border-border rounded-sm px-3 py-2 text-sm"
               />
               {missingExpiry && (
                 <p className="text-xs text-danger-600 mt-1" data-testid="offer-expiry-error">

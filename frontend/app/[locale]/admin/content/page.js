@@ -176,7 +176,7 @@ function CategoriesEditor() {
               <button
                 disabled={deleting}
                 onClick={() => setConfirmDelete(null)}
-                className="px-4 py-2 rounded-[10px] text-sm border border-border text-muted hover:bg-gray-50 transition disabled:opacity-50"
+                className="px-4 py-2 rounded-full text-sm border border-border text-muted hover:bg-gray-50 transition disabled:opacity-50"
               >
                 {t("common.cancel")}
               </button>

@@ -390,7 +390,7 @@ export default function AdminUsersPage() {
                     ? deleteUser(confirm.userId)
                     : applyRole(confirm.userId, confirm.action === "promote" ? "admin" : "consumer")
                 }
-                className={`px-4 py-2 rounded-[10px] text-sm font-medium text-white transition ${
+                className={`px-4 py-2 rounded-full text-sm font-medium text-white transition ${
                   confirm.action === "promote"
                     ? "bg-primary hover:bg-primary-dark"
                     : "bg-danger-600 hover:bg-danger-700"
@@ -407,7 +407,7 @@ export default function AdminUsersPage() {
                   ambiguous dismissal (Escape), not on the deliberate one. */}
               <button
                 onClick={() => setConfirm(null)}
-                className="px-4 py-2 rounded-[10px] text-sm border border-border text-muted hover:bg-gray-50 transition"
+                className="px-4 py-2 rounded-full text-sm border border-border text-muted hover:bg-gray-50 transition"
               >
                 {t("common.cancel")}
               </button>

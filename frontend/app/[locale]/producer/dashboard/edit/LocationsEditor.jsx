@@ -755,7 +755,7 @@ function LocationForm({
           <select
             value={form.kind}
             onChange={set("kind")}
-            className="w-full rounded-[10px] border border-border bg-surface px-3 py-2 text-sm"
+            className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
             data-testid="location-kind"
           >
             {KINDS.map((k) => (
@@ -778,7 +778,7 @@ function LocationForm({
             ref={errorRef}
             role="alert"
             data-testid="location-form-error"
-            className="rounded-[10px] border border-error/30 border-s-4 border-s-error bg-error/5 px-3 py-2 text-xs leading-relaxed text-error sm:col-span-2"
+            className="rounded-md border border-error/30 border-s-4 border-s-error bg-error/5 px-3 py-2 text-xs leading-relaxed text-error sm:col-span-2"
           >
             {error}
           </div>
@@ -863,7 +863,7 @@ function LocationForm({
       <details
         open={detailsOpen}
         onToggle={(e) => setDetailsOpen(e.currentTarget.open)}
-        className="rounded-[10px] border border-border bg-surface px-3 py-2"
+        className="rounded-md border border-border bg-surface px-3 py-2"
         data-testid="location-details"
       >
         {/* 44px tap target and no `display` override — same two constraints
@@ -922,7 +922,7 @@ function LocationForm({
                 setPrecisionTouched(true);
                 set("location_precision")(e);
               }}
-              className="w-full rounded-[10px] border border-border bg-surface px-3 py-2 text-sm"
+              className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
               data-testid="location-precision"
             >
               <option value="exact">{tForm("precision_exact")}</option>
@@ -959,7 +959,7 @@ function LocationForm({
           (MEH-1242 PR2 manual-coords disclosure). */}
       <details
         open={coordsOpen}
-        className="rounded-[10px] border border-border bg-surface px-3 py-2"
+        className="rounded-md border border-border bg-surface px-3 py-2"
       >
         {/* MEH-1595: 44px minimum tap target — the row was 16px tall, on the
             one control an owner has to go looking for. Padding + min-height
@@ -1127,7 +1127,7 @@ const TextInput = forwardRef(function TextInput(
       onChange={onChange}
       placeholder={placeholder}
       data-testid={testid}
-      className="w-full rounded-[10px] border border-border bg-surface px-3 py-2 text-sm"
+      className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
     />
   );
 });

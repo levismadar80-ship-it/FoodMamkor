@@ -180,7 +180,7 @@ export default function RescueSection({ producer }) {
               the price on the top row next to the stock tag. */}
           <div className="grid gap-3 min-w-0">
             <div className="flex items-center gap-2.5">
-              <span aria-hidden="true" className="w-11 h-11 rounded-[10px] bg-green-50 text-primary grid place-items-center shrink-0">
+              <span aria-hidden="true" className="w-11 h-11 rounded-md bg-green-50 text-primary grid place-items-center shrink-0">
                 <Basket size={24} weight="duotone" />
               </span>
               {/* The only gold on the card, as on the home row: the stock is what makes someone hurry. */}

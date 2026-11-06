@@ -135,7 +135,7 @@ export default function BagRow({ offer, headingTag = "h3" }) {
       <div
         aria-hidden="true"
         data-testid="rescue-row-image"
-        className={`my-4 me-4 w-16 h-16 md:w-20 md:h-20 rounded-[10px] bg-cover bg-center grid place-items-center ${image ? "bg-border" : "bg-green-50 text-primary"}`}
+        className={`my-4 me-4 w-16 h-16 md:w-20 md:h-20 rounded-md bg-cover bg-center grid place-items-center ${image ? "bg-border" : "bg-green-50 text-primary"}`}
         style={thumbBg}
       >
         {image ? null : <Basket size={24} weight="duotone" />}

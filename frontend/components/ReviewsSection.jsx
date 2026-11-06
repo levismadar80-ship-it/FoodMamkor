@@ -454,7 +454,7 @@ export default function ReviewsSection({
           !showForm ? (
             <button
               onClick={openReviewForm}
-              className="mb-6 min-h-touch border border-text text-text px-5 py-2 rounded-[6px] text-sm font-medium hover:bg-green-50 transition"
+              className="mb-6 min-h-touch border border-text text-text px-5 py-2 rounded-full text-sm font-medium hover:bg-green-50 transition"
             >
               {t("write_cta")}
             </button>

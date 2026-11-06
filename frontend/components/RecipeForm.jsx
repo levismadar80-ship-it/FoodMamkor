@@ -35,7 +35,7 @@ import Button from "@/components/ui/Button";
 // MEH-1128 Wave B: single-line fields render via ui/Input; baseInput remains
 // for the textareas only (no textarea primitive yet — epic Wave D+).
 const baseInput =
-  "w-full border border-border rounded-[10px] px-3 py-2 bg-surface text-start focus-visible:ring-2 focus-visible:ring-primary/40 outline-none";
+  "w-full border border-border rounded-sm px-3 py-2 bg-surface text-start focus-visible:ring-2 focus-visible:ring-primary/40 outline-none";
 
 const EMPTY = {
   title: "",
@@ -292,7 +292,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
             <img
               src={form.image_url}
               alt={t("image_label")}
-              className="w-24 h-24 object-cover rounded-[10px] border border-border"
+              className="w-24 h-24 object-cover rounded-sm border border-border"
             />
             <button
               type="button"
@@ -303,7 +303,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
             </button>
           </div>
         ) : (
-          <label className="inline-flex items-center text-sm border border-dashed border-border rounded-[10px] px-4 py-3 cursor-pointer hover:bg-green-50 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30">
+          <label className="inline-flex items-center text-sm border border-dashed border-border rounded-sm px-4 py-3 cursor-pointer hover:bg-green-50 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30">
             {/* MEH-2033: sr-only + focus-within — keyboard reachability, the
                 MEH-2031 pattern. */}
             <input
@@ -335,7 +335,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
             {t("no_products")}
           </p>
         ) : (
-          <ul className="space-y-1 max-h-48 overflow-y-auto border border-border rounded-[10px] p-2 bg-green-50">
+          <ul className="space-y-1 max-h-48 overflow-y-auto border border-border rounded-sm p-2 bg-green-50">
             {products.map((p) => (
               <li key={p.id}>
                 <label className="flex items-center gap-2 text-sm cursor-pointer py-1">

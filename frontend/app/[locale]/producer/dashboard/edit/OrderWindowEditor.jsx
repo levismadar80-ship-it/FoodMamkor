@@ -279,7 +279,7 @@ export default function OrderWindowEditor({
             onClick={revertChanges}
             disabled={saving}
             data-testid="order-window-revert"
-            className="border border-border text-fg-muted px-4 py-2 rounded-[10px] text-sm font-medium hover:border-primary hover:text-text transition disabled:opacity-60"
+            className="border border-border text-fg-muted px-4 py-2 rounded-full text-sm font-medium hover:border-primary hover:text-text transition disabled:opacity-60"
           >
             {t("revert_cta")}
           </button>

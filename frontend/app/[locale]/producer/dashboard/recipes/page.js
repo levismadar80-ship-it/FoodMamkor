@@ -144,7 +144,7 @@ export default function ProducerRecipesPage() {
           {items.map((r) => (
             <div
               key={r.id}
-              className="bg-surface rounded-[14px] border border-border p-5"
+              className="bg-surface rounded-lg border border-border p-5"
             >
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div className="min-w-0">
