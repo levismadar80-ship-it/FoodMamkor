@@ -3952,6 +3952,12 @@
         "customer_messages": "Response time, tone, and 5 ready-made templates. The small things that decide whether a conversation closes in an order."
       }
     },
+    "article": {
+      "eyebrow": "A guide for business owners · {minutes} min read",
+      "founder_name": "Sapir Schnapp",
+      "founder_role": "Founder · {brand}",
+      "back": "Back to guides"
+    },
     "business_story": {
       "title": "How to write a good story about your business",
       "subtitle": "Write the story once, properly. The rest takes care of itself.",
