@@ -35,7 +35,7 @@ export { SITE_URL };
 // HOT-006 (MEH-778): JSON-LD must declare the page's actual locale instead of
 // always claiming Hebrew. `inLanguage` uses hyphenated BCP-47 (schema.org
 // convention) — mirrors lib/i18n-seo.js OG_LOCALE (underscore form) and
-// format-date.js LOCALE_TAG. the country crumb is
+// format-date.js LOCALE_TAG. The country crumb is
 // seo.producer.country (MEH-2774). Producer name/description and DB category
 // names are user content with no message-key translation, so they stay as-is
 // (locale-invariant), per the issue's "name/address unchanged" rule.
@@ -45,9 +45,13 @@ const IN_LANGUAGE = { he: "he-IL", en: "en-US" };
 // Hebrew (the default locale), never a raw key.
 const SEO_MESSAGES = { he, en };
 const BRAND_FOR = { he: BRAND_NAME, en: BRAND_NAME_LATIN };
+// Server-only module (no client component imports lib/seo), so the two
+// message files never reach a browser bundle. One translator per locale.
+const SEO_T = {};
 function producerSeoT(locale) {
   const loc = SEO_MESSAGES[locale] ? locale : "he";
-  return createTranslator({ locale: loc, messages: SEO_MESSAGES[loc], namespace: "seo.producer" });
+  SEO_T[loc] ??= createTranslator({ locale: loc, messages: SEO_MESSAGES[loc], namespace: "seo.producer" });
+  return SEO_T[loc];
 }
 const countryLabel = (locale) => producerSeoT(locale)("country");
 const brandFor = (locale) => BRAND_FOR[locale] ?? BRAND_NAME;
