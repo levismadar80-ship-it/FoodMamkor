@@ -837,8 +837,8 @@ describe("ProducerCard — badge overflow chip (MEH-991)", () => {
     render(<ProducerCard producer={overflowProducer} />);
     const chip = screen.getByTestId("badge-overflow");
     const chipClasses = chip.className.split(/\s+/);
-    expect(chipClasses).toContain("min-h-[44px]");
-    expect(chipClasses).toContain("min-w-[44px]");
+    expect(chipClasses).toContain("min-h-touch");
+    expect(chipClasses).toContain("min-w-touch");
     const strip = chip.closest("div.absolute");
     expect(strip, "the +N must sit in the absolutely-positioned badge strip").not.toBeNull();
     const stripClasses = strip.className.split(/\s+/);

@@ -90,7 +90,7 @@ export default function RequestReviewCard() {
           data-testid="request-review-copy"
           onClick={handleCopy}
           disabled={!url}
-          className="min-h-[44px] bg-primary text-white rounded-full px-6 py-2 text-sm font-medium hover:bg-primary-dark transition disabled:opacity-50"
+          className="min-h-touch bg-primary text-white rounded-full px-6 py-2 text-sm font-medium hover:bg-primary-dark transition disabled:opacity-50"
         >
           {copied ? t("cta_copied") : t("cta")}
         </button>

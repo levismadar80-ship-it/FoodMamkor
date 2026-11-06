@@ -207,7 +207,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
                         type="button"
                         aria-pressed={on}
                         onClick={() => toggleIngredient(i)}
-                        className="w-full min-h-[44px] flex items-center gap-3 py-2 text-start focus-ring rounded-sm"
+                        className="w-full min-h-touch flex items-center gap-3 py-2 text-start focus-ring rounded-sm"
                       >
                         <span
                           aria-hidden="true"

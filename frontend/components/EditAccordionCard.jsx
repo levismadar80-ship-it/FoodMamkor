@@ -159,7 +159,7 @@ export default function EditAccordionCard({
           aria-controls={bodyId}
           onClick={onToggle}
           data-testid={`accordion-${anchorId}`}
-          className="w-full min-h-[44px] flex items-center justify-between gap-3 p-5 text-start rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition"
+          className="w-full min-h-touch flex items-center justify-between gap-3 p-5 text-start rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition"
         >
           <span className="min-w-0">
             <span className="flex items-center gap-2 text-base font-bold text-text">

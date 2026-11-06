@@ -43,13 +43,13 @@ export default function OwnerEditBar({ producer }) {
       <PencilSimple size={18} weight="regular" className="text-accent shrink-0" aria-hidden="true" />
       {/* Label truncates before the CTA so 375px stays one line, no wrap. */}
       <span className="text-text truncate">{t("producer.detail.owner_bar.label")}</span>
-      {/* CTA pinned to the inline-end; min-h-[44px] keeps the tap target ≥44px
+      {/* CTA pinned to the inline-end; min-h-touch keeps the tap target ≥44px
           (MEH-813). The pencil icon + accent link colour carry the edit
           affordance (MEH-868 / MEH-1146 fix 12 — no static underline glyph). */}
       <LocaleLink
         href="/producer/dashboard/edit"
         data-testid="owner-edit-cta"
-        className="ms-auto shrink-0 inline-flex items-center min-h-[44px] font-medium text-accent hover:underline focus-visible:underline"
+        className="ms-auto shrink-0 inline-flex items-center min-h-touch font-medium text-accent hover:underline focus-visible:underline"
       >
         {t("producer.detail.owner_bar.cta")}
       </LocaleLink>
