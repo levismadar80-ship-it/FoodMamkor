@@ -240,11 +240,8 @@ beforeEach(() => {
 // MEH-994: the wizard now opens on the pre-flight screen. Real click-through
 // of "מתחילים" (not an auto-skip-under-test flag) so every walk exercises the
 // production entry path before reaching frame 01.
-// MEH-2640: the organizer entry MOVED. It was a checkbox in the middle of
-// step 2 — which asked every bakery owner to consider a path that is not hers
-// — and it is now a secondary line under the preflight's main CTA (Sapir,
-// 03/11). Same wizard, same kind="organizer", different door. So these cases
-// now choose the door at render time instead of ticking a box mid-form.
+// MEH-2640 removed the step-2 organizer checkbox; the door is chosen before
+// the wizard starts.
 // MEH-2773: the door is now the ROUTE. /register/organizer renders the client
 // with kind="organizer" and skips the business preflight; /register/producer
 // renders it bare and the preflight CTA starts the business flow.
@@ -321,6 +318,34 @@ describe("MEH-2460 / MEH-2640 — registering as a markets / events organizer", 
     fireEvent.click(nextBtn());
     await screen.findByPlaceholderText(STORY_MARKER);
     expect(screen.queryByTestId("register-frame-category")).toBeNull();
+  });
+
+  it("MEH-2773: business-only answers in a restored draft never reach the organizer POST", async () => {
+    localStorage.setItem(
+      "producer_registration_draft",
+      JSON.stringify({
+        v: 2, savedAt: Date.now(), step: null,
+        form: { producer_name: "מאפייה", kind: "producer", category_ids: [7], fulfilment: "delivery" },
+      }),
+    );
+    await renderWizard({ as: "organizer" });
+    fireEvent.click(await screen.findByTestId("register-draft-continue"));
+    await fillAccountToDetails();
+    fillDetailsFields();
+    fireEvent.click(nextBtn());
+    await screen.findByPlaceholderText(STORY_MARKER);
+    fireEvent.change(screen.getByTestId("register-referral-source"), {
+      target: { value: "instagram" },
+    });
+    screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
+    fireEvent.click(screen.getByText(`${K}.actions.submit`));
+    await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
+    const body = api.post.mock.calls[0][1];
+    expect(body.kind).toBe("organizer");
+    expect(body.category_ids).toEqual([]);
+    // The organizer default shape, not the business's «delivery» answer.
+    expect(body.offers_delivery).toBe(false);
+    expect(body.has_physical_location).toBe(true);
   });
 
   it("organizer door: DETAILS goes straight to STORY, and the stepper drops CATEGORY", async () => {

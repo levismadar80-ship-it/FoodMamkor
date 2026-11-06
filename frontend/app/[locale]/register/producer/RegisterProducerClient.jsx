@@ -751,7 +751,9 @@ function RegisterProducerPageBody({ routeKind }) {
         // on the same default shape. That silence is why this needs a test that
         // reads the POST body, not one that asserts the request returned 200.
         // MEH-2640: computed from the one answer step 2 collects.
-        ...fulfilmentBooleans(form.fulfilment),
+        // MEH-2773: an organizer is never asked, so a business answer carried
+        // in by a shared draft must not ride along — send the default shape.
+        ...fulfilmentBooleans(isOrganizer ? "" : form.fulfilment),
       };
       // Sent only when non-empty: a physical-only registration posts no empty
       // array (the card's own acceptance criterion) and the server default is
