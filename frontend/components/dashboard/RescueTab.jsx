@@ -46,12 +46,18 @@ export default function RescueTab() {
   // the code box for every action on the screen: a refused PUBLISH, far below,
   // showed up there as «משהו נתקע» and read as a failed handover (Sapir 6/11).
   const [notice, setNoticeState] = useState(null);
-  const setNotice = (at, text) => setNoticeState(text ? { at, text } : null);
+  // `error` picks the live-region role: a refusal is announced at once
+  // (alert), a confirmation politely (status).
+  const setNotice = (at, text, error = true) => setNoticeState(text ? { at, text, error } : null);
   const clearNotice = () => setNoticeState(null);
   // The server's own sentence when it sent one — string, {code, message}
   // (the verified-email gate) or a 422 list; the generic line otherwise.
   // A raw object here used to reach JSX as a child and could not render.
-  const reason = (err) => detailToMessage(err?.response?.data?.detail) || t("failed");
+  // A 5xx gets the generic line even with a detail: that text is a server or
+  // proxy message, not one written for the owner (same split as errorMessage()
+  // in lib/errors.js).
+  const reason = (err) =>
+    (err?.response?.status >= 500 ? null : detailToMessage(err?.response?.data?.detail)) || t("failed");
   const [items, setItems] = useState("");
   const [form, setForm] = useState({ qty_total: 4, price: 15, from: "18:00", to: "20:00", cancelMin: 30 });
   // MEH-2678: the tab loads its own pickup points. It used to take them as a
@@ -155,7 +161,7 @@ export default function RescueTab() {
       await api.put("/producers/me/rescue/typical-items", {
         items: items.split(",").map((s) => s.trim()).filter(Boolean),
       });
-      setNotice("items", t("items_saved"));
+      setNotice("items", t("items_saved"), false);
     } catch (err) {
       setNotice("items", reason(err));
     }
@@ -197,7 +203,7 @@ export default function RescueTab() {
         pickup_end: iso(form.to),
         cancel_until: cancel,
       });
-      setNotice("publish", t("published"));
+      setNotice("publish", t("published"), false);
       await load();
     } catch (err) {
       setNotice("publish", reason(err));
@@ -253,7 +259,11 @@ export default function RescueTab() {
   // One message on screen at most, rendered inside the box it belongs to.
   const noticeAt = (at) =>
     notice?.at === at ? (
-      <p className="font-body-sm text-sm text-text" role="status" data-testid="rescue-tab-notice">
+      <p
+        className="font-body-sm text-sm text-text"
+        role={notice.error ? "alert" : "status"}
+        data-testid="rescue-tab-notice"
+      >
         {notice.text}
       </p>
     ) : null;

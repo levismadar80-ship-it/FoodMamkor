@@ -673,7 +673,30 @@ describe("MEH-2730 each message sits next to what caused it", () => {
     fireEvent.click(screen.getByTestId("rescue-publish-today"));
     // The publish is still in flight: the code box's message must already be gone.
     await waitFor(() => expect(screen.queryByTestId("rescue-tab-notice")).toBeNull());
-    await act(async () => release?.({ data: {} }));
+    expect(release).toBeTypeOf("function");
+    await act(async () => release({ data: {} }));
+  });
+
+  it("a 5xx shows the generic line, not the server's own text", async () => {
+    post.mockRejectedValue({ response: { status: 502, data: { detail: "Bad Gateway" } } });
+    render(<RescueTab />);
+    await pointsLoaded();
+    fireEvent.click(screen.getByTestId("rescue-publish-today"));
+    expect((await screen.findByTestId("rescue-tab-notice")).textContent).toBe(lookup("rescue.dashboard.failed"));
+  });
+
+  it("a refusal is an alert, a confirmation is a status", async () => {
+    post.mockRejectedValueOnce({ response: { status: 403, data: { detail: "סירוב" } } });
+    render(<RescueTab />);
+    await pointsLoaded();
+    fireEvent.click(screen.getByTestId("rescue-publish-today"));
+    expect((await screen.findByTestId("rescue-tab-notice")).getAttribute("role")).toBe("alert");
+    put.mockResolvedValue({ data: { items: [] } });
+    fireEvent.click(screen.getByTestId("rescue-items-save"));
+    await waitFor(() =>
+      expect(screen.getByTestId("rescue-tab-notice").textContent).toBe(lookup("rescue.dashboard.items_saved")),
+    );
+    expect(screen.getByTestId("rescue-tab-notice").getAttribute("role")).toBe("status");
   });
 
   it("the time fields can shrink inside their column (iOS draws them wider)", async () => {
