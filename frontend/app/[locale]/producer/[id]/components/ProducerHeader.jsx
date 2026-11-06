@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { Star, StarOfDavid } from "@phosphor-icons/react";
@@ -144,6 +144,35 @@ export default function ProducerHeader({
   }, [favorited, onCloseAlerts]);
 
   const showAlerts = Boolean(favorited && user);
+
+  // MEH-2770: a floating panel needs a way out that an in-flow one did not —
+  // the same Esc + outside-click contract as the /favorites bell panel
+  // (MEH-1359). Esc hands focus back to whatever opened the panel. A tap on
+  // the bell itself counts as outside: the bell is a toggle and keeps its own
+  // click (it re-opens the panel when updates go on without a channel).
+  const alertsPanelRef = useRef(null);
+  const alertsOpener = useRef(null);
+  const panelVisible = showAlerts && alertsOpen;
+  useEffect(() => {
+    if (!panelVisible) return undefined;
+    alertsOpener.current = document.activeElement;
+    const handleDown = (e) => {
+      if (!alertsPanelRef.current?.contains(e.target)) onCloseAlerts?.();
+    };
+    const handleKey = (e) => {
+      if (e.key !== "Escape") return;
+      onCloseAlerts?.();
+      alertsOpener.current?.focus?.();
+    };
+    document.addEventListener("mousedown", handleDown);
+    document.addEventListener("touchstart", handleDown, { passive: true });
+    window.addEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("mousedown", handleDown);
+      document.removeEventListener("touchstart", handleDown);
+      window.removeEventListener("keydown", handleKey);
+    };
+  }, [panelVisible, onCloseAlerts]);
 
   // MEH-2759: «עמוס השבוע» no longer closes the page — the availability
   // choice is pause-only, so the status is vacation or the order window.
@@ -452,7 +481,7 @@ export default function ProducerHeader({
       </div>
 
       {/* MEH-1609 built this mount; MEH-1693 keeps it and changes only what
-          opens it. It sits OUTSIDE the actions row, in normal flow: the row is
+          opens it. It sits OUTSIDE the actions row (out of flow since MEH-2770): the row is
           `lg:absolute`-pinned to the title's inline-end, so a block panel
           inside it would be pinned too — the exact layout break MEH-1334 cited
           when it suppressed the auto-open panel for variant="quiet". It is
@@ -466,15 +495,36 @@ export default function ProducerHeader({
           (per-card bell). Accepted so the ask lands at the moment of interest
           rather than before it. Restoring re-entry here means a new control,
           not a revert of this wiring. */}
+      {/* MEH-2770: the mount stays here, but the panel is now OUT OF FLOW, so
+          opening it no longer pushes the page down (Sapir picked option א׳,
+          https://claude.ai/artifact/YEJXmQBcycfCg5MMx5aG2T — the YouTube /
+          GitHub bell-menu shape). lg+ → absolute, dropping from under the
+          pinned actions row (top-12 = the row's 44px + a gap), 320px wide,
+          inline-end aligned with «קבלת עדכונים». Below lg → the same floating
+          sheet above BottomNav that /favorites uses (FavoritesClient.jsx,
+          MEH-1359), with a scrim, because the mobile bell sits on the hero
+          and an in-flow panel under the title opened far from the thumb. The
+          scrim shares the panel's z token; DOM order puts the panel on top. */}
       {showAlerts && alertsOpen && (
-        <div className="mt-3" data-testid="alerts-reentry-panel">
-          <AlertPrefsPanel
-            key={panelKey}
-            producerId={producer.id}
-            producerName={producer.name}
-            onClose={onCloseAlerts}
+        <>
+          <div
+            aria-hidden="true"
+            data-testid="alerts-panel-scrim"
+            className="fixed inset-0 z-[1150] bg-black/40 lg:hidden"
           />
-        </div>
+          <div
+            ref={alertsPanelRef}
+            data-testid="alerts-reentry-panel"
+            className="fixed inset-x-3 bottom-[calc(var(--bottom-nav-clearance,calc(4.5rem+env(safe-area-inset-bottom,0px)))+8px)] z-[1150] lg:absolute lg:inset-x-auto lg:bottom-auto lg:top-12 lg:end-0 lg:w-80 lg:z-30"
+          >
+            <AlertPrefsPanel
+              key={panelKey}
+              producerId={producer.id}
+              producerName={producer.name}
+              onClose={onCloseAlerts}
+            />
+          </div>
+        </>
       )}
 
       {/* MEH-2759: the MEH-291 full_this_week «slow response» box is gone
