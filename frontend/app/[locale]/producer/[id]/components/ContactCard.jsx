@@ -329,6 +329,14 @@ export default function ContactCard({ producer, isVacation }) {
                     {...linkAttrs(key)}
                     role="listitem"
                     data-testid="contact-single-row"
+                    // MEH-2775: a bare value ("0501234567") says nothing to a
+                    // screen reader — prefix the channel's existing aria name.
+                    // The visible value stays inside the name (WCAG 2.5.3).
+                    aria-label={
+                      value
+                        ? `${t(channel.ariaKey ?? `producer.detail.contact_card.aria.${key}`)} ${value}`
+                        : undefined
+                    }
                     onClick={(e) => onChannelClick(e, channel)}
                     className={`${ROW_ANATOMY} text-primary-dark hover:text-primary hover:underline underline-offset-2 transition focus-visible:ring-2 focus-visible:ring-primary/40`}
                   >

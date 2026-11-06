@@ -101,11 +101,13 @@ describe("ContactCard degenerate states (MEH-1551)", () => {
     renderCard({ phone: "0501234567" });
     const rows = screen.getAllByTestId("contact-single-row");
     expect(rows).toHaveLength(1);
-    // the label is visible text, and it is the accessible name (no aria-label
-    // override) — the orphan circle had neither.
+    // the label is visible text, and it is inside the accessible name — the
+    // orphan circle had neither.
     // MEH-2775: the label is the number itself, not «חייגו אלינו».
     expect(rows[0]).toHaveTextContent("0501234567");
     expect(rows[0]).not.toHaveTextContent("חייגו אלינו");
+    // a screen reader hears what the number is for, and the visible value.
+    expect(rows[0]).toHaveAccessibleName("התקשרו 0501234567");
     expect(rows[0]).toHaveAttribute("href", "tel:0501234567");
     expect(rows[0].className).toContain("w-full");
     expect(screen.queryByLabelText("התקשרו")).not.toBeInTheDocument();
