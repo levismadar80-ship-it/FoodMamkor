@@ -258,7 +258,7 @@ export default function AdminReviewsPage() {
         <select
           value={starFilter}
           onChange={(e) => setStarFilter(e.target.value)}
-          className="border border-border rounded-md px-3 py-2 bg-white"
+          className="border border-border rounded-md px-3 py-2 bg-surface"
           aria-label={t("reviews.filter_aria")}
         >
           <option value="all">{t("reviews.all_ratings")}</option>
@@ -283,7 +283,7 @@ export default function AdminReviewsPage() {
         </label>
       </div>
 
-      <div className="bg-white border border-border rounded-md overflow-hidden">
+      <div className="bg-surface border border-border rounded-md overflow-hidden">
         <div className="overflow-x-auto">
           {/* MEH-2426: one card per row below md (globals.css .table-stack). */}
           <table className="table-stack w-full text-sm">
@@ -430,7 +430,7 @@ export default function AdminReviewsPage() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="review-delete-title"
-            className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full mx-4 text-start space-y-4"
+            className="bg-surface rounded-lg shadow-xl p-6 max-w-sm w-full mx-4 text-start space-y-4"
           >
             <p id="review-delete-title" className="font-medium text-base">
               {t("reviews.confirm_delete", {

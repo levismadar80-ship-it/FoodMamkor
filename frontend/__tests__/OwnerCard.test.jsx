@@ -112,8 +112,8 @@ describe("OwnerCard nested (MEH-2592)", () => {
     const card = screen.getByTestId("owner-card");
     expect(card.dataset.nested).toBe("true");
     expect(screen.getByRole("heading", { level: 3, name: "מאחורי העסק" })).toBeInTheDocument();
-    expect(card.querySelector(".bg-white")).toBeNull();
-    expect(card.className).not.toContain("bg-white");
+    expect(card.querySelector(".bg-surface")).toBeNull();
+    expect(card.className).not.toContain("bg-surface");
     expect(screen.getByTestId("owner-initial").className).toContain("bg-green-50");
     expect(screen.getByText("גדלתי בין העיזים.")).toBeInTheDocument();
   });
@@ -121,7 +121,7 @@ describe("OwnerCard nested (MEH-2592)", () => {
   it("standalone keeps its h2 + white card", () => {
     render(<OwnerCard producer={{ contact_name: "נועה קרן", city: "קצרין" }} />);
     expect(screen.getByRole("heading", { level: 2, name: "מאחורי העסק" })).toBeInTheDocument();
-    expect(screen.getByTestId("owner-card").querySelector(".bg-white")).not.toBeNull();
+    expect(screen.getByTestId("owner-card").querySelector(".bg-surface")).not.toBeNull();
   });
 
   it("nested still hides when there is nothing to show", () => {

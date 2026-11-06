@@ -520,7 +520,7 @@ export default function ProductsSection({
     <div
       ref={sectionRef}
       tabIndex={-1}
-      className={`focus:outline-none ${embedded ? "" : "bg-white border border-border rounded-lg p-6"}`}
+      className={`focus:outline-none ${embedded ? "" : "bg-surface border border-border rounded-lg p-6"}`}
     >
       <div className={embedded ? "flex items-center justify-end mb-4" : "flex items-center justify-between mb-4"}>
         {!embedded && (
@@ -725,7 +725,7 @@ export default function ProductsSection({
                 <button
                   type="button"
                   onClick={cancelEdit}
-                  className="px-4 bg-white border border-border text-text rounded-sm py-2 text-sm font-medium hover:bg-green-50 transition"
+                  className="px-4 bg-surface border border-border text-text rounded-sm py-2 text-sm font-medium hover:bg-green-50 transition"
                 >
                   {t("cancel_edit_cta")}
                 </button>
@@ -761,7 +761,7 @@ export default function ProductsSection({
                   />
                 </div>
               ) : (
-                <div className="w-12 h-12 shrink-0 rounded-sm bg-white border border-border flex items-center justify-center">
+                <div className="w-12 h-12 shrink-0 rounded-sm bg-surface border border-border flex items-center justify-center">
                   <Package size={20} className="text-fg-muted/60" aria-hidden="true" />
                 </div>
               )}
@@ -964,7 +964,7 @@ export default function ProductsSection({
             role="dialog"
             aria-modal="true"
             aria-labelledby="product-delete-title"
-            className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full text-start space-y-3"
+            className="bg-surface rounded-lg shadow-xl p-6 max-w-sm w-full text-start space-y-3"
           >
             <p id="product-delete-title" className="font-medium text-base text-text">
               {t("delete_confirm.title", { name: confirmDelete.name })}
@@ -1005,7 +1005,7 @@ export default function ProductsSection({
             role="dialog"
             aria-modal="true"
             aria-labelledby="product-duplicate-title"
-            className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full text-start space-y-3"
+            className="bg-surface rounded-lg shadow-xl p-6 max-w-sm w-full text-start space-y-3"
           >
             <p id="product-duplicate-title" className="font-medium text-base text-text">
               {t("duplicate_name_confirm.title")}
@@ -1144,7 +1144,7 @@ function IngredientsAllergensFields({ idPrefix, ingredients, allergens, onIngred
           value={ingredients}
           placeholder={tForm("ingredients_placeholder")}
           onChange={(e) => onIngredients(e.target.value)}
-          className="w-full rounded-sm border border-border bg-white px-3 py-2 text-sm text-text focus-ring"
+          className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm text-text focus-ring"
         />
       </div>
       <div>
@@ -1183,7 +1183,7 @@ function DietChip({ label, pressed, onToggle, iconKey }) {
         "inline-flex items-center gap-1.5 min-h-touch rounded-full border px-4 py-2 text-sm text-start transition focus-ring",
         pressed
           ? "border-primary bg-green-50 text-text"
-          : "border-border bg-white text-text hover:border-primary",
+          : "border-border bg-surface text-text hover:border-primary",
       ].join(" ")}
     >
       {icon && <span aria-hidden="true">{icon}</span>}

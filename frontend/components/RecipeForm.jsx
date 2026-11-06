@@ -34,7 +34,7 @@ import UnverifiedEmailNotice from "@/components/UnverifiedEmailNotice";
 // MEH-1128 Wave B: single-line fields render via ui/Input; baseInput remains
 // for the textareas only (no textarea primitive yet — epic Wave D+).
 const baseInput =
-  "w-full border border-border rounded-sm px-3 py-2 bg-white text-start focus-visible:ring-2 focus-visible:ring-primary/40 outline-none";
+  "w-full border border-border rounded-sm px-3 py-2 bg-surface text-start focus-visible:ring-2 focus-visible:ring-primary/40 outline-none";
 
 const EMPTY = {
   title: "",
@@ -169,7 +169,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-4 bg-white rounded-lg border border-border p-6"
+      className="space-y-4 bg-surface rounded-lg border border-border p-6"
     >
       <h2 className="font-headline-md text-lg font-bold text-text">
         {mode === "edit" ? t("heading_edit") : t("heading_create")}

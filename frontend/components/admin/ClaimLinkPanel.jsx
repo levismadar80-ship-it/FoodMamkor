@@ -85,7 +85,7 @@ export default function ClaimLinkPanel({ producerId }) {
   return (
     <section
       data-testid="claim-link-panel"
-      className="bg-white rounded-md border border-border p-6 mb-6 max-w-4xl"
+      className="bg-surface rounded-md border border-border p-6 mb-6 max-w-4xl"
     >
       <h2 className="font-semibold text-lg mb-2 text-primary">{t("title")}</h2>
       <p className="text-sm text-muted mb-4">{t("intro")}</p>
@@ -136,7 +136,7 @@ export default function ClaimLinkPanel({ producerId }) {
         data-testid="claim-link-create"
         onClick={create}
         disabled={busy}
-        className="min-h-touch bg-white border border-primary text-primary rounded-md px-6 py-2 text-sm font-medium hover:bg-background transition disabled:opacity-50"
+        className="min-h-touch bg-surface border border-primary text-primary rounded-md px-6 py-2 text-sm font-medium hover:bg-background transition disabled:opacity-50"
       >
         {busy ? t("creating") : t("create")}
       </button>

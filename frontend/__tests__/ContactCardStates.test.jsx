@@ -178,7 +178,7 @@ describe("ContactCard degenerate states (MEH-1551)", () => {
     "rounded-md",
     "border",
     "border-border",
-    "bg-white",
+    "bg-surface",
     "text-sm",
   ];
 

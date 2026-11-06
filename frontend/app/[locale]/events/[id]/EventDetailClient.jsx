@@ -205,7 +205,7 @@ export default function EventDetailClient() {
         <div
           aria-hidden="true"
           data-testid="event-date-tile"
-          className="lg:hidden absolute start-4 -bottom-7 w-16 rounded-md bg-white shadow-lg text-center overflow-hidden"
+          className="lg:hidden absolute start-4 -bottom-7 w-16 rounded-md bg-surface shadow-lg text-center overflow-hidden"
         >
           <span className="block bg-primary text-white text-[11px] font-bold py-0.5">{month}</span>
           <span className="block font-headline-display font-black text-[28px] leading-tight pt-1 numeric">{day}</span>
@@ -284,7 +284,7 @@ export default function EventDetailClient() {
         {/* Details card: below the title on mobile, a sticky side card on
             desktop (Airbnb / Eventbrite). */}
         <aside className="mt-6 lg:mt-0 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:sticky lg:top-24 space-y-4">
-          <div className="bg-white border border-border rounded-lg overflow-hidden lg:shadow-md" data-testid="event-info">
+          <div className="bg-surface border border-border rounded-lg overflow-hidden lg:shadow-md" data-testid="event-info">
             <div aria-hidden="true" className="hidden lg:block text-center border-b border-border">
               <span className="block bg-primary text-white text-sm font-bold py-1.5">
                 {formatEventDate(event.event_date, locale, { month: "long", year: "numeric" })}
@@ -370,7 +370,7 @@ export default function EventDetailClient() {
           {hasCoords && <MiniMap lat={event.lat} lng={event.lng} name={event.title} />}
 
           {event.description && (
-            <div className="bg-white border border-border rounded-lg p-6 leading-relaxed whitespace-pre-line text-text/90">
+            <div className="bg-surface border border-border rounded-lg p-6 leading-relaxed whitespace-pre-line text-text/90">
               {event.description}
             </div>
           )}

@@ -273,7 +273,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
                     <Link
                       href={`/${producer.slug}?product=${encodeURIComponent(p.id)}`}
                       data-testid="recipe-product-link"
-                      className={`bg-white rounded-md border border-border p-3 flex items-center gap-3 min-h-11 hover:border-primary transition-colors ${LINK_FOCUS}`}
+                      className={`bg-surface rounded-md border border-border p-3 flex items-center gap-3 min-h-11 hover:border-primary transition-colors ${LINK_FOCUS}`}
                     >
                       {p.image_url ? (
                         // MEH-1229: helper-routed square crop + graceful fallback.

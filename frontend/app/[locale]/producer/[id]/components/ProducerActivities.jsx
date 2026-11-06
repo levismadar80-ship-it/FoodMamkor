@@ -45,7 +45,7 @@ function GroupBuyRow({ gb }) {
     <Link
       href={`/group-buys/${gb.id}`}
       data-testid="producer-group-buy-row"
-      className="bg-white rounded-lg border border-border px-4 py-3 flex flex-col gap-2 hover:border-primary transition focus-ring"
+      className="bg-surface rounded-lg border border-border px-4 py-3 flex flex-col gap-2 hover:border-primary transition focus-ring"
     >
       <div className="flex items-start justify-between gap-3">
         <h3 className="font-headline-md text-lg font-bold text-text leading-snug line-clamp-2 min-w-0">

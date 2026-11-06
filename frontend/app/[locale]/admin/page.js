@@ -71,7 +71,7 @@ export default function AdminHome() {
           count is in the heading so the empty state is explicit, not blank. */}
       <section
         data-testid="admin-home-pending"
-        className={`bg-white border rounded-md p-5 ${
+        className={`bg-surface border rounded-md p-5 ${
           pendingCount > 0 ? "border-yellow-300" : "border-border"
         }`}
       >
@@ -125,7 +125,7 @@ export default function AdminHome() {
       </section>
 
       {/* 2. Every other queue — one row per non-empty queue; none → one line. */}
-      <section data-testid="admin-home-queues" className="bg-white border border-border rounded-md p-5">
+      <section data-testid="admin-home-queues" className="bg-surface border border-border rounded-md p-5">
         <h2 className="font-semibold mb-3">{t("dashboard.queues.heading")}</h2>
         {busyQueues.length === 0 && !countsUnknown ? (
           <p className="text-sm text-muted flex items-center gap-2">

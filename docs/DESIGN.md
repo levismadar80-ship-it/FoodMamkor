@@ -232,7 +232,10 @@ instead, and *Do's and Don'ts* for why.
 Tailwind's stock palettes (`red-*`, `gray-*`, `amber-*`, …) are **not** tokens.
 Use the semantic name: `text-error`, `bg-surface`, `border-border`,
 `text-fg-muted`, `text-muted`. `green-*` is the one exception — it **is** a token
-(the 6-stop scale above) and is exempt. An ESLint selector warns on the rest
+(the 6-stop scale above) and is exempt. A card or panel background is
+`bg-surface` (and `bg-surface/90`, `/95` for frosted bars), never `bg-white`;
+`bg-white/5…/60` stays raw on purpose, because it is a white tint over a dark or
+photo ground, not a surface, and must not follow the surface in a future theme. An ESLint selector warns on the rest
 (MEH-1629, `warn`: the ~170 historical hits are debt, not a build failure). If a
 raw shade is genuinely required, mark it `// token-ok` + `eslint-disable-next-line`.
 
