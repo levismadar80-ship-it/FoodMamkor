@@ -21,6 +21,7 @@ from app.auth import require_admin
 from app.database import get_db
 from app.models import Experience, User
 from app.routers.experiences import _serialize_detail
+from app.services.registrations import registered_counts
 from app.schemas.schemas import ExperienceDetailOut, ExperienceModerationAction
 from app.services.experience_notifications import (
     notify_host_approved,
@@ -49,7 +50,8 @@ def admin_list_experiences(
     if status and status != "all":
         q = q.filter(Experience.status == status)
     rows = q.order_by(Experience.created_at.desc()).all()
-    return [_serialize_detail(ex) for ex in rows]
+    counts = registered_counts(db, experience_ids=[ex.id for ex in rows])
+    return [_serialize_detail(ex, counts.get(ex.id, 0)) for ex in rows]
 
 
 # ---------- Approve ----------
