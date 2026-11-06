@@ -30,6 +30,7 @@ import BackLink from "@/components/ui/BackLink";
 // MEH-1640: shared status colours across the four tools spokes.
 import { STATUS_CLASSES } from "@/lib/dashboard-status-classes";
 import { SkeletonList } from "@/components/Skeleton";
+import RegistrationsList from "@/components/RegistrationsList";
 
 const STATUS_STYLE = {
   approved: STATUS_CLASSES.success,
@@ -45,7 +46,10 @@ const KNOWN_STATUSES = ["pending", "approved", "rejected", "changes_requested"];
 // blur / Enter as a bare {participants_count} PUT, which the backend keeps out
 // of moderation (experiences.py _NON_CONTENT_FIELDS). The page then shows
 // «נשארו N מקומות» at 3 or fewer and «הסדנה מלאה» + a waitlist at 0.
-function SignupCountField({ ex, t, onSaved }) {
+// MEH-2766: with «טופס הרשמה באתר» the site counts its own sign-ups, so this
+// field becomes the OTHER ones only («נרשמו מחוץ לאתר») and its ceiling is
+// what the site sign-ups leave.
+function SignupCountField({ ex, t, onSaved, label, max }) {
   const [value, setValue] = useState(String(ex.participants_count ?? 0));
   const [state, setState] = useState("idle"); // idle | saving | saved
   const id = `signed-up-${ex.id}`;
@@ -58,7 +62,7 @@ function SignupCountField({ ex, t, onSaved }) {
       setValue(String(current));
       return;
     }
-    const clamped = Math.min(n, ex.max_participants);
+    const clamped = Math.min(n, max);
     if (clamped === current) {
       setValue(String(current));
       return;
@@ -79,7 +83,7 @@ function SignupCountField({ ex, t, onSaved }) {
   return (
     <div className="mt-3 pt-3 border-t border-border flex items-center gap-3 flex-wrap" data-testid="experience-signup-count">
       <label htmlFor={id} className="text-sm font-medium text-text">
-        {t("signed_up_label")}
+        {label}
       </label>
       <div className="flex items-center gap-2">
         <input
@@ -87,7 +91,7 @@ function SignupCountField({ ex, t, onSaved }) {
           type="number"
           inputMode="numeric"
           min={0}
-          max={ex.max_participants}
+          max={max}
           value={value}
           aria-describedby={hintId}
           disabled={state === "saving"}
@@ -113,6 +117,7 @@ function SignupCountField({ ex, t, onSaved }) {
 
 export default function ManageExperiencesPage() {
   const t = useTranslations("dashboard.producer.manage_experiences");
+  const tReg = useTranslations("registration.list");
   const today = israelToday();
   const locale = useLocale();
   const router = useRouter();
@@ -210,6 +215,7 @@ export default function ManageExperiencesPage() {
             // «מאושרת» with a «ביטול» button (staging 27/10, three from 09/2026).
             const past = ex.status === "approved" && ex.event_date < today;
             const cancelled = !past && ex.status === "approved" && !ex.is_active;
+            const siteForm = ex.registration_method === "site_form";
             return (
             <li
               key={ex.id}
@@ -284,10 +290,16 @@ export default function ManageExperiencesPage() {
                 <SignupCountField
                   ex={ex}
                   t={t}
+                  label={siteForm ? tReg("offline_label") : t("signed_up_label")}
+                  max={Math.max(0, ex.max_participants - (siteForm ? ex.registered_count ?? 0 : 0))}
                   onSaved={(saved) =>
                     setItems((list) => list.map((e) => (e.id === ex.id ? { ...e, ...saved } : e)))
                   }
                 />
+              )}
+              {/* MEH-2766: «טופס הרשמה באתר» sign-ups, closed by default. */}
+              {siteForm && (
+                <RegistrationsList kind="experiences" itemId={ex.id} count={ex.registered_count ?? 0} />
               )}
             </li>
             );
