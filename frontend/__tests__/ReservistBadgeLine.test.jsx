@@ -7,6 +7,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render } from "@testing-library/react";
 
+vi.mock("@/lib/use-badge-copy", async () => (await import("./helpers/he-badge-copy")).badgeCopyMock);
 vi.mock("next-intl", () => ({
   useTranslations: () => (key) => key,
 }));

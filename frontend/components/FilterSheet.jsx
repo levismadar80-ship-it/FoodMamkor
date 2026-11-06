@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { TOGGLE_CHIPS } from "@/lib/map-chips";
 import { chipIcon } from "@/lib/chip-icons";
 import { BADGE_CONFIG } from "@/lib/badges";
+import { useBadgeCopy } from "@/lib/use-badge-copy";
 import Popover from "@/components/ui/Popover";
 
 /**
@@ -65,8 +66,9 @@ const GROUP_ORDER = ["diet", "quality", "service"];
 // row block for the measured reason). The diet axes no longer consult this
 // at all: their five subtexts were the same sentence with one word swapped, so the
 // group says it once (filters.sheet.diet_scope) and the pills carry none.
-function chipSubtext(chip) {
-  return chip.subtext ?? BADGE_CONFIG[chip.key]?.tooltip ?? null;
+function chipSubtext(chip, withBadgeCopy) {
+  // MEH-2740: badge tooltips live in messages (`badges.<key>.tooltip`).
+  return chip.subtext ?? withBadgeCopy(BADGE_CONFIG[chip.key])?.tooltip ?? null;
 }
 
 // MEH-1478: within-group render order. Default = TOGGLE_CHIPS array order; the
@@ -135,6 +137,7 @@ export default function FilterSheet({
   align = "end",
 }) {
   const t = useTranslations();
+  const withBadgeCopy = useBadgeCopy();
   const panelRef = useRef(null);
   const dragStartY = useRef(null);
 
@@ -380,7 +383,7 @@ export default function FilterSheet({
                     className={`grid grid-cols-2 gap-1.5 lg:gap-1 ${dietAnyProduct.length > 0 ? "mt-1.5 lg:mt-1" : ""}`}
                   >
                     {dietDeclared.map((chip) => {
-                      const subtext = chipSubtext(chip);
+                      const subtext = chipSubtext(chip, withBadgeCopy);
                       return (
                         <div key={chip.key} className="flex items-center min-w-0">
                           {subtext && (
@@ -430,7 +433,7 @@ export default function FilterSheet({
               {groupChips.map((chip) => {
                 const active = !!chipState[chip.key];
                 const icon = chipIcon(chip.key);
-                const subtext = chipSubtext(chip);
+                const subtext = chipSubtext(chip, withBadgeCopy);
                 return (
                   // MEH-2169 — three constraints decided this row's shape, all of
                   // them measured rather than assumed:
