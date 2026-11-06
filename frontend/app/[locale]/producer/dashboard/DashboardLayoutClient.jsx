@@ -46,7 +46,21 @@ const TABS = [
   { key: "overview", href: "/producer/dashboard", Icon: SquaresFour, exact: true },
   { key: "edit", href: "/producer/dashboard/edit", Icon: PencilSimple },
   { key: "insights", href: "/producer/dashboard/insights", Icon: ChartLine },
-  { key: "tools", href: "/producer/dashboard/tools", Icon: Wrench },
+  // MEH-2728: the screens opened from «כלים» keep it lit, so the owner can see
+  // where she is (they all link back to /tools). Not for an organizer — there
+  // /events IS a tab of its own (ORGANIZER_TABS below).
+  {
+    key: "tools",
+    href: "/producer/dashboard/tools",
+    Icon: Wrench,
+    also: [
+      "/producer/dashboard/events",
+      "/producer/dashboard/experiences",
+      "/producer/dashboard/group-buys",
+      "/producer/dashboard/recipes",
+      "/producer/dashboard/rescue",
+    ],
+  },
 ];
 
 // MEH-2460: an organizer (kind='organizer', ADR-036) sells nothing — no
@@ -88,7 +102,7 @@ function DashboardChromeSkeleton({ label }) {
       <span className="sr-only">{label}</span>
       {/* Mirrors the real <nav> below: same sticky/blur/border and the same
           max-w-5xl px-4 container, so the tab row does not shift on swap. */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border">
+      <div className="sticky top-[var(--chrome-top,82px)] z-10 bg-background/95 backdrop-blur border-b border-border">
         <div className="max-w-5xl mx-auto px-2 sm:px-4 flex gap-1">
           {TABS.map((tab) => (
             <div key={tab.key} className="flex-1 sm:flex-none flex justify-center px-1 sm:px-4 py-3">
@@ -168,7 +182,9 @@ export default function ProducerDashboardLayout({ children }) {
   }
 
   const isActive = (tab) =>
-    tab.exact ? pathname === tab.href : pathname.startsWith(tab.href);
+    tab.exact
+      ? pathname === tab.href
+      : [tab.href, ...(tab.also ?? [])].some((p) => pathname.startsWith(p));
   const tabs = tabsFor(user);
   const isOrganizer = user.producer_kind === "organizer";
 
@@ -176,7 +192,12 @@ export default function ProducerDashboardLayout({ children }) {
     <div>
       <nav
         aria-label={t("aria")}
-        className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border"
+        // MEH-2728: stick BELOW the site's sticky header. At top-0 the header
+        // (z-[1050]) covered the whole bar once the page scrolled, so on a
+        // phone the tabs simply vanished. --chrome-top is the header's live
+        // height, published by Header.jsx (MEH-1202); /admin's strip already
+        // sticks to it (AdminLayoutClient.jsx).
+        className="sticky top-[var(--chrome-top,82px)] z-10 bg-background/95 backdrop-blur border-b border-border"
       >
         {/* MEH-2429: at 375 the old scrolling row (MEH-964 1B) clipped the 4th
             tab and pushed "צפייה בדף" fully off-screen — measured on staging
@@ -241,18 +262,25 @@ export default function ProducerDashboardLayout({ children }) {
           menu is md+ only (Header.jsx UserMenu `hidden md:block`), and the
           consumer BottomNav, whose account sheet carried «התנתקות», is gated
           off this subtree (MEH-2431). Same key and icon as that sheet row; no
-          new copy. After logout the gate above sends her to /login. */}
-      <div className="md:hidden flex justify-center px-4 pt-2 pb-6">
-        <button
-          type="button"
-          data-testid="dashboard-mobile-logout"
-          onClick={logout}
-          className="inline-flex items-center gap-2 min-h-touch px-4 text-sm font-medium text-error focus-ring rounded-sm"
-        >
-          <SignOut size={18} aria-hidden="true" />
-          {tAccount("logout")}
-        </button>
-      </div>
+          new copy. After logout the gate above sends her to /login.
+          MEH-2728: once, at the bottom of «סקירה» — not under every working
+          screen — and muted, not red. Sign-out is a rare action and belongs
+          at the end of the account surface (Airbnb: last row of Profile); a
+          red button beside working controls invites a mis-tap. Every tab is
+          one tap from the overview, so it stays reachable. */}
+      {pathname === "/producer/dashboard" && (
+        <div className="md:hidden flex justify-center px-4 pt-2 pb-6">
+          <button
+            type="button"
+            data-testid="dashboard-mobile-logout"
+            onClick={logout}
+            className="inline-flex items-center gap-2 min-h-touch px-4 text-sm font-medium text-fg-muted hover:text-text focus-ring rounded-sm"
+          >
+            <SignOut size={18} aria-hidden="true" />
+            {tAccount("logout")}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

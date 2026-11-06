@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import CitySearch from "@/components/CitySearch";
 import { useFocusReturn } from "@/lib/use-focus-return";
 import { setUserLocation } from "@/lib/user-location";
+import Button from "@/components/ui/Button";
 
 // City keys → HE values are the API/canonical names (Hebrew). Display labels
 // resolve via t(`modals.location.popular_cities.${key}`) so /en/ shows the
@@ -278,15 +279,15 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
         {/* MEH-1430: hairline divider, then the outlined near-me button. */}
         <div className="border-t border-border mb-4" aria-hidden="true" />
 
-        <button
+        <Button
           type="button"
           onClick={handleGeo}
           disabled={geoLoading}
-          className="w-full inline-flex items-center justify-center gap-2 border border-primary text-primary bg-transparent py-2.5 min-h-touch rounded-full font-medium transition hover:bg-green-50 disabled:opacity-60 mb-3"
+          variant="outlined" className="w-full mb-3"
         >
           <Crosshair size={18} weight="bold" className={geoLoading ? "animate-spin" : ""} aria-hidden="true" />
           {geoLoading ? t("geo_loading") : t("geo_button")}
-        </button>
+        </Button>
 
         <button
           type="button"

@@ -6,6 +6,7 @@ import { formatEventDate } from "@/lib/format-date";
 import api from "@/lib/api";
 import { useAdminAction } from "@/lib/use-admin-action";
 import AdminLoadError from "@/components/admin/AdminLoadError";
+import Button from "@/components/ui/Button";
 
 export default function AdminReportsPage() {
   const t = useTranslations("admin");
@@ -106,7 +107,7 @@ export default function AdminReportsPage() {
                       <button
                         onClick={() => suspendProducer(r.producer_id)}
                         disabled={isBusy(`suspend:${r.producer_id}`)}
-                        className="bg-yellow-500 text-white px-3 py-1.5 rounded-md text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="bg-yellow-500 text-text px-3 py-1.5 rounded-md text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {t("reports.actions.suspend")}
                       </button>
@@ -150,15 +151,15 @@ export default function AdminReportsPage() {
               {t("reports.actions.dismiss_confirm", { name: dismissTarget.producer_name })}
             </p>
             <div className="flex gap-3 justify-start">
-              <button
+              <Button
                 disabled={isBusy(`dismiss:${dismissTarget.producer_id}`)}
                 onClick={confirmDismiss}
-                className="px-4 py-2 rounded-full text-sm font-medium text-white transition bg-danger-600 hover:bg-danger-700 disabled:opacity-50"
+                variant="danger" size="sm"
               >
                 {isBusy(`dismiss:${dismissTarget.producer_id}`)
                   ? t("reports.actions.dismissing")
                   : t("reports.actions.ignore")}
-              </button>
+              </Button>
               <button
                 disabled={isBusy(`dismiss:${dismissTarget.producer_id}`)}
                 onClick={() => setDismissTarget(null)}

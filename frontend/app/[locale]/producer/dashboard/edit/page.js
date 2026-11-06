@@ -111,6 +111,7 @@ import {
   KEY_TO_GROUP,
   OPEN_KEY_FOR,
 } from "@/lib/dashboard-edit-anchors";
+import Button from "@/components/ui/Button";
 
 // MEH-1158: Phosphor glyph per primary contact channel — feeds the contact
 // card's header preview (icon + existing channel_* label, no new i18n).
@@ -720,7 +721,10 @@ function EditPageInner() {
           a generic message, so the owner knows exactly what's unsaved + where. */}
       {anyDirty && (
         <div
-          className="sticky top-12 z-10 bg-surface border border-primary rounded-md px-4 py-2 text-sm text-text flex flex-wrap items-center gap-x-2 gap-y-1 shadow-sm"
+          // MEH-2728: under the header AND the tab bar (DashboardLayoutClient.jsx
+          // now sticks the tabs at --chrome-top; ~53px stacked below sm, ~45px
+          // inline from sm). top-12 sat under the header, out of sight.
+          className="sticky top-[calc(var(--chrome-top,82px)+3.5rem)] sm:top-[calc(var(--chrome-top,82px)+3rem)] z-10 bg-surface border border-primary rounded-md px-4 py-2 text-sm text-text flex flex-wrap items-center gap-x-2 gap-y-1 shadow-sm"
           role="status"
           data-testid="unsaved-banner"
         >
@@ -1494,14 +1498,14 @@ function CustomQuestionsCard({
           />
         ))}
       </div>
-      <button
+      <Button
         onClick={handleSave}
         disabled={saving || nothingToSave}
         data-testid="questions-save"
-        className="mt-4 bg-primary text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
+        variant="primary" size="sm" className="mt-4"
       >
         {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -1713,13 +1717,13 @@ function ContactChannelsCard({
         </p>
       )}
 
-      <button
+      <Button
         onClick={handleSave}
         disabled={saving || !dirty}
-        className="mt-4 bg-primary text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
+        variant="primary" size="sm" className="mt-4"
       >
         {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
-      </button>
+      </Button>
     </div>
   );
 }

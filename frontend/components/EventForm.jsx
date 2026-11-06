@@ -30,6 +30,7 @@ import Input from "@/components/ui/Input";
 import UnverifiedEmailNotice from "@/components/UnverifiedEmailNotice";
 import CollectionNotice from "@/components/CollectionNotice";
 import { EVENT_CATEGORIES as CATEGORY_KEYS } from "@/lib/event-categories";
+import Button from "@/components/ui/Button";
 
 const DEFAULTS = {
   title: "",
@@ -472,13 +473,13 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
         />
 
         <div className="flex gap-3 pt-4">
-          <button
+          <Button
             type="submit"
             disabled={submitting || uploading}
-            className="bg-primary text-white px-6 py-3 rounded-sm hover:bg-primary-dark transition font-medium disabled:opacity-60"
+            variant="primary" size="lg"
           >
             {submitting ? (isEdit ? t("saving") : t("submit_publishing")) : isEdit ? t("save") : t("submit")}
-          </button>
+          </Button>
           <Link
             href={cancelHref}
             className="border border-border text-text px-6 py-3 rounded-sm hover:bg-green-50 transition"

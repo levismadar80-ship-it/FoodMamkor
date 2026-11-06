@@ -24,6 +24,7 @@ import Input from "@/components/ui/Input";
 import PasswordInput from "@/components/PasswordInput";
 import { firstFailureMessage } from "@/lib/passwordMessages";
 import { validateIsraeliPhone } from "@/lib/validators";
+import Button from "@/components/ui/Button";
 
 function SettingsLoadingFallback() {
   const tCommon = useTranslations("settings.common");
@@ -433,13 +434,13 @@ export function ProfileTab() {
         )}
         {error && <p className="text-sm text-danger-600" role="alert">{error}</p>}
 
-        <button
+        <Button
           type="submit"
           disabled={!canSave || saving}
-          className="bg-primary text-white px-6 py-2.5 rounded-md hover:bg-primary-dark transition font-medium disabled:opacity-50"
+          variant="primary" size="lg"
         >
           {saving ? tCommon("saving") : tCommon("save_cta")}
-        </button>
+        </Button>
       </form>
     </section>
   );
@@ -642,13 +643,13 @@ function PasswordChangeCard({ isOAuth }) {
         )}
         {error && <p className="text-sm text-danger-600" role="alert">{error}</p>}
 
-        <button
+        <Button
           type="submit"
           disabled={!canSave || saving}
-          className="bg-primary text-white px-6 py-2.5 rounded-md hover:bg-primary-dark transition font-medium disabled:opacity-50"
+          variant="primary" size="lg"
         >
           {saving ? t("submit_saving") : t("submit_cta")}
-        </button>
+        </Button>
       </form>
     </section>
   );
@@ -808,13 +809,13 @@ function DangerZoneCard() {
           />
           {error && <p className="text-xs text-danger-600" role="alert">{error}</p>}
           <div className="flex gap-2">
-            <button
+            <Button
               type="submit"
               disabled={!emailMatch || loading}
-              className="bg-danger-600 text-white px-5 py-2 rounded-md text-sm font-medium hover:bg-danger-700 transition disabled:opacity-40"
+              variant="danger" size="sm"
             >
               {loading ? t("submit_deleting") : t("submit_cta")}
-            </button>
+            </Button>
             <button
               type="button"
               onClick={() => { setPhase("idle"); setEmailInput(""); setError(null); }}

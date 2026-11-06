@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { ShareNetwork } from "@phosphor-icons/react";
 import { BRAND_NAME } from "@/lib/constants";
 import { labelInName } from "@/lib/label-in-name";
+import Button from "@/components/ui/Button";
 
 /**
  * Variants (MEH-1334):
@@ -110,17 +111,17 @@ export default function ShareButton({
     // MEH-2548: one of a pair of equal buttons beside «הוספה ליומן» on the
     // event / experience page (Luma, Eventbrite). Same label as "quiet".
     return (
-      <button
+      <Button
         type="button"
         onClick={handleShare}
         data-testid="share-outline"
-        className="flex-1 inline-flex items-center justify-center gap-2 min-h-[46px] px-3 rounded-full border border-primary text-primary text-sm font-semibold hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40"
+        variant="outlined" size="sm" className="flex-1"
         title={t("copy_link")}
         aria-label={labelInName(t("quiet_label"), ariaLabel)}
       >
         <ShareNetwork size={18} aria-hidden="true" />
         {t("quiet_label")}
-      </button>
+      </Button>
     );
   }
 

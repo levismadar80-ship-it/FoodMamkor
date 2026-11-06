@@ -31,6 +31,7 @@ import {
   withChipGroups,       // MEH-2173 — sheet group metadata
 } from "@/lib/producer-filters";
 import { LOAD_MORE_CAP } from "@/lib/use-home-page";
+import Button from "@/components/ui/Button";
 
 // 🔒 The axes the home row PROMOTES onto the surface; every other axis stays
 // one tap away inside the FilterSheet. CHANGING THIS LIST IS A SAPIR DECISION,
@@ -616,13 +617,13 @@ export function HomeProducersGrid({
                 {t(filters.category ? "home.producers.empty_subtext_category" : "home.producers.empty_subtext")}
               </p>
               {filters.category ? (
-                <button
+                <Button
                   type="button"
                   onClick={onClearCategory}
-                  className="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-sm hover:bg-primary-dark transition font-medium"
+                  variant="primary" size="lg"
                 >
                   {t("home.producers.clear_category_cta")}
-                </button>
+                </Button>
               ) : (
                 <Link
                   href="/map"

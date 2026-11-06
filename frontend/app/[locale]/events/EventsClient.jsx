@@ -32,6 +32,7 @@ import { EVENT_CATEGORIES, EXPERIENCE_CATEGORIES, withAll } from "@/lib/event-ca
 // mapping would drift, and a drifted arrow direction is invisible in review —
 // it reads as a plausible line either way.
 import useTabsKeyboard from "@/hooks/useTabsKeyboard";
+import Button from "@/components/ui/Button";
 
 // MEH-134: S10 "The Almanac" visual port. Events API + filter logic +
 // date formatting (lib/format-date.js) untouched — layout layer only.
@@ -506,15 +507,15 @@ function LoadError({ tErr, onRetry }) {
       <h2 className="font-headline-md text-2xl font-bold text-text max-w-[22ch] leading-snug">
         {tErr("generic")}
       </h2>
-      <button
+      <Button
         type="button"
         onClick={onRetry}
         data-testid="events-retry"
-        className="mt-6 min-h-touch inline-flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold px-5 py-3 rounded-sm"
+        variant="primary" size="sm" className="mt-6"
       >
         <ArrowCounterClockwise size={18} />
         {tErr("retry")}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -529,15 +530,15 @@ function NoResults({ t, onReset }) {
       <h2 className="font-headline-md text-2xl font-bold text-text max-w-[22ch] leading-snug">
         {t("no_results_title")}
       </h2>
-      <button
+      <Button
         type="button"
         onClick={onReset}
         data-testid="events-clear-filters"
-        className="mt-6 min-h-touch inline-flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold px-5 py-3 rounded-sm"
+        variant="primary" size="sm" className="mt-6"
       >
         <ArrowCounterClockwise size={18} />
         {t("no_results_cta")}
-      </button>
+      </Button>
     </div>
   );
 }
