@@ -829,3 +829,25 @@ class TestReserveEmail:
         assert ", ." not in mail["body"]
         assert "📍" not in mail["html"]
         assert "ומשלמים 12.50" in mail["body"]
+
+    def test_a_failure_preparing_the_email_never_fails_a_committed_reservation(
+        self, client, db, shop, rescue_on, monkeypatch
+    ):
+        sent = self._capture(monkeypatch)
+
+        def _boom(_value):
+            raise RuntimeError("clock")
+
+        monkeypatch.setattr(rescue_module, "israel_hhmm", _boom)
+        offer = _seed_offer(db, shop["location"], qty_total=2)
+        buyer = make_user(db, email="boom@example.com")
+        db.commit()
+        r = client.post(
+            "/rescue/orders",
+            json={"offer_id": str(offer.id), "qty": 1},
+            headers=auth_header(buyer),
+        )
+        assert r.status_code == 201, r.text
+        assert sent == []
+        db.refresh(offer)
+        assert offer.qty_left == 1
