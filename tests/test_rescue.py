@@ -680,9 +680,47 @@ class TestPublicList:
         assert client.get("/rescue/offers").json() == []
         # Control: the same row is listed while its window is still open, so the
         # empty list above is the window filter and not a broken seed.
-        ended.pickup_end = now + timedelta(minutes=5)
+        # 20 minutes, not 5: MEH-2726 closes reservations 15 minutes before
+        # the end, so a 5-minute remainder is (correctly) unlisted too.
+        ended.pickup_end = now + timedelta(minutes=20)
         db.commit()
         assert [row["id"] for row in client.get("/rescue/offers").json()] == [str(ended.id)]
+
+    def test_reservations_close_15_minutes_before_the_pickup_window_ends(
+        self, client, db, shop, rescue_on
+    ):
+        """MEH-2726 (Sapir 6/11 «תחקור ותחליט»): someone who reserves a minute
+        before the end cannot get there, and the bag sits reserved for nobody.
+        With 10 minutes left the bag is neither listed nor reservable; with 20
+        it is both — the control that the 10-minute refusal is this rule."""
+        now = utc_now()
+        late = _seed_offer(
+            db,
+            shop["location"],
+            pickup_start=now - timedelta(hours=1),
+            pickup_end=now + timedelta(minutes=10),
+            cancel_until=now - timedelta(hours=2),
+        )
+        buyer = make_user(db, email="late@example.com")
+        db.commit()
+        assert client.get("/rescue/offers").json() == []
+        r = client.post(
+            "/rescue/orders",
+            json={"offer_id": str(late.id), "qty": 1},
+            headers=auth_header(buyer),
+        )
+        assert r.status_code == 409, r.text
+        assert r.json()["detail"] == "זמן האיסוף חלף"
+
+        late.pickup_end = now + timedelta(minutes=20)
+        db.commit()
+        assert [row["id"] for row in client.get("/rescue/offers").json()] == [str(late.id)]
+        ok = client.post(
+            "/rescue/orders",
+            json={"offer_id": str(late.id), "qty": 1},
+            headers=auth_header(buyer),
+        )
+        assert ok.status_code == 201, ok.text
 
     def test_distance_is_absent_when_the_caller_sends_no_coordinates(
         self, client, db, shop, rescue_on
