@@ -489,9 +489,23 @@ export function useMapFilters({
   // snapshot + the active state only — NOT from allProducers, which reloads
   // with the chip params after every toggle (circular) and is replaced by a
   // viewport-bounded list after «חפשי באזור זה» (frame-dependent).
+  //
+  // MEH-2767: + the open-now gate, which needs a clock. Same discipline as
+  // home and /producers: null until mounted, so the gate's answer cannot
+  // differ between the server and the first client render.
+  const [openNowClock, setOpenNowClock] = useState(null);
+  useEffect(() => {
+    setOpenNowClock(new Date());
+  }, []);
   const visibleToggleChips = useMemo(
-    () => visibleMapToggleChips({ catalogSnapshot, chipState, snapshotPending }),
-    [catalogSnapshot, chipState, snapshotPending],
+    () =>
+      visibleMapToggleChips({
+        catalogSnapshot,
+        chipState,
+        snapshotPending,
+        now: openNowClock,
+      }),
+    [catalogSnapshot, chipState, snapshotPending, openNowClock],
   );
 
   return {

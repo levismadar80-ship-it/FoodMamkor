@@ -28,13 +28,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
-import { isUnverifiedEmailError } from "@/lib/errors";
+import { detailToMessage, isUnverifiedEmailError } from "@/lib/errors";
 import { Warning, Lightbulb, XCircle } from "@phosphor-icons/react";
 import CitySearch from "@/components/CitySearch";
 import AddressSearch from "@/components/AddressSearch";
 import Input from "@/components/ui/Input";
 import UnverifiedEmailNotice from "@/components/UnverifiedEmailNotice";
 import CollectionNotice from "@/components/CollectionNotice";
+import RegistrationMethodField from "@/components/RegistrationMethodField";
 import { EXPERIENCE_CATEGORIES } from "@/lib/event-categories";
 import Button from "@/components/ui/Button";
 
@@ -67,6 +68,9 @@ const EMPTY = {
   requirements: "",
   is_recurring: false,
   recurring_schedule: "",
+  // MEH-2766: «איך נרשמים?» — a new workshop defaults to the on-site form.
+  registration_method: "site_form",
+  registration_url: "",
 };
 
 function seed(initial) {
@@ -94,6 +98,8 @@ function seed(initial) {
     requirements: initial.requirements ?? "",
     is_recurring: Boolean(initial.is_recurring),
     recurring_schedule: initial.recurring_schedule ?? "",
+    registration_method: initial.registration_method ?? "site_form",
+    registration_url: initial.registration_url ?? "",
   };
 }
 
@@ -115,6 +121,7 @@ const EXPERIENCE_FIELD_ORDER = [
   "price_per_person",
   "max_participants",
   "min_participants",
+  "registration_url",
 ];
 
 const EXPERIENCE_FIELD_ID = {
@@ -130,6 +137,7 @@ const EXPERIENCE_FIELD_ID = {
   price_per_person: "experience-price",
   max_participants: "experience-max-participants",
   min_participants: "experience-min-participants",
+  registration_url: "registration_url",
 };
 
 // MEH-2012: the `isNativeValidUrl` guard that lived here was REMOVED with the
@@ -147,7 +155,16 @@ const EXPERIENCE_FIELD_ID = {
 
 const isWholeNumber = (value) => Number.isInteger(Number(value));
 
-function validateExperienceForm(f, t) {
+// http(s) only — the server's _url_scheme_validator refuses anything else.
+function isUrl(value) {
+  try {
+    return ["http:", "https:"].includes(new URL(value).protocol);
+  } catch {
+    return false;
+  }
+}
+
+function validateExperienceForm(f, t, tReg) {
   const errors = {};
   if (f.title.trim().length < 4) errors.title = t("error_title_short");
   if (f.description.trim().length < 20) errors.description = t("error_description_short");
@@ -185,6 +202,12 @@ function validateExperienceForm(f, t) {
       errors.min_participants = t("error_min_above_max");
     }
   }
+  // MEH-2766: the URL is asked for (and sent) only with the external link.
+  if (f.registration_method === "external_url") {
+    const url = f.registration_url.trim();
+    if (!url) errors.registration_url = tReg("external_needs_url");
+    else if (!isUrl(url)) errors.registration_url = tReg("invalid_url");
+  }
   return errors;
 }
 
@@ -196,6 +219,7 @@ function validateExperienceForm(f, t) {
  */
 export default function ExperienceForm({ mode = "create", initial = null, onSuccess, cancelHref = "/experiences" }) {
   const t = useTranslations("experiences.new");
+  const tReg = useTranslations("registration.form");
   const tCat = useTranslations("experiences.categories");
   // MEH-1981: notice-at-collection (copy approved verbatim 02/09, rule 22).
   const tNotice = useTranslations("privacy.collection_notice");
@@ -322,7 +346,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
     setServerError("");
     setUnverified(false);
 
-    const errors = validateExperienceForm(form, t);
+    const errors = validateExperienceForm(form, t, tReg);
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
       const firstInvalid = EXPERIENCE_FIELD_ORDER.find((field) => errors[field]);
@@ -365,6 +389,9 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
       requirements: form.requirements || null,
       is_recurring: form.is_recurring,
       recurring_schedule: form.is_recurring ? form.recurring_schedule || null : null,
+      registration_method: form.registration_method,
+      registration_url:
+        form.registration_method === "external_url" ? form.registration_url.trim() || null : null,
     };
 
     setSubmitting(true);
@@ -378,7 +405,9 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
       if (isUnverifiedEmailError(err)) setUnverified(true);
       else if (detail && typeof detail === "object" && detail.reason) setServerError(detail.reason);
       else if (typeof detail === "string") setServerError(detail);
-      else setServerError(t("error_generic"));
+      // MEH-2766: «איך נרשמים?» prerequisites answer {code, message}.
+      else if (detail && typeof detail === "object" && detail.message) setServerError(detail.message);
+      else setServerError(detailToMessage(detail) || t("error_generic"));
     } finally {
       setSubmitting(false);
     }
@@ -735,6 +764,17 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
           </div>
         )}
       </div>
+
+      <RegistrationMethodField
+        value={form.registration_method}
+        onChange={(m) => {
+          setForm((f) => ({ ...f, registration_method: m }));
+          setFieldErrors((errs) => (errs.registration_url ? { ...errs, registration_url: undefined } : errs));
+        }}
+        url={form.registration_url}
+        onUrlChange={(v) => setField("registration_url")({ target: { value: v } })}
+        urlError={fieldErrors.registration_url}
+      />
 
       <CollectionNotice
         message={tNotice("experience")}
