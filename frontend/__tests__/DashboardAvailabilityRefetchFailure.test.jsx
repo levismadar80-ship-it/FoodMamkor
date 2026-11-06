@@ -6,7 +6,7 @@
  * and on a failed POST the ONLY thing undoing it was a refetch whose
  * `.catch(() => {})` swallowed its own failure. A write that failed AND a
  * refetch that failed (network, 401 mid token-refresh, 500) therefore left
- * the radio lit on a state the server had just refused — next to an error
+ * the control lit on a state the server had just refused — next to an error
  * toast saying it was refused. MEH-325 silent-except class.
  *
  * Renders the full dashboard page (whole-component convention from
@@ -112,7 +112,10 @@ vi.mock("@/lib/api", () => ({
   },
 }));
 
-const radio = (value) => screen.getByRole("radio", { name: new RegExp(`options\\.${value}`) });
+// MEH-2759: one «בהפסקה» switch replaced the four radios. The write under test
+// is now "resume" — a paused business flips the switch off, which POSTs
+// accepting_orders optimistically; the rollback must turn the switch back ON.
+const pauseSwitch = () => screen.getByRole("switch", { name: /options\.on_vacation/ });
 const availabilityPosts = () =>
   postSpy.mock.calls.filter((c) => c[0] === "/producers/me/availability-state");
 
@@ -121,7 +124,8 @@ const serverState = () => ({
     id: 1,
     name: "עסק לדוגמה",
     status: "approved",
-    availability_state: "accepting_orders",
+    availability_state: "on_vacation",
+    vacation_until: "2099-01-01",
   },
 });
 
@@ -135,25 +139,25 @@ describe("Dashboard availability — failed write never leaves the rejected stat
     refetchRef.current = () => Promise.resolve({ data: serverState() });
   });
 
-  it("write fails AND the refetch fails → the radio returns to the server state, and the failed re-sync is reported", async () => {
+  it("write fails AND the refetch fails → the switch returns to the server state, and the failed re-sync is reported", async () => {
     postSpy.mockImplementation(() => Promise.reject(new Error("network")));
     refetchRef.current = () => Promise.reject(new Error("network"));
 
     render(<ProducerDashboardPage />);
-    await screen.findByRole("radio", { name: /options\.full_this_week/ });
-    expect(radio("accepting_orders")).toHaveAttribute("aria-checked", "true");
+    await screen.findByRole("switch", { name: /options\.on_vacation/ });
+    expect(pauseSwitch()).toHaveAttribute("aria-checked", "true");
 
-    fireEvent.click(radio("full_this_week"));
+    fireEvent.click(pauseSwitch());
 
     // The optimistic write DID happen — otherwise a rollback proves nothing.
-    expect(radio("full_this_week")).toHaveAttribute("aria-checked", "true");
+    expect(pauseSwitch()).toHaveAttribute("aria-checked", "false");
     expect(availabilityPosts()).toHaveLength(1);
+    expect(availabilityPosts()[0][1]).toEqual({ state: "accepting_orders" });
 
     // After the POST rejects and the refetch rejects, the screen must show the
     // last server-confirmed state — not the one the server just refused.
     await waitFor(() => {
-      expect(radio("full_this_week")).toHaveAttribute("aria-checked", "false");
-      expect(radio("accepting_orders")).toHaveAttribute("aria-checked", "true");
+      expect(pauseSwitch()).toHaveAttribute("aria-checked", "true");
     });
 
     // The refetch was attempted (rollback does not replace the re-sync)...
@@ -168,31 +172,29 @@ describe("Dashboard availability — failed write never leaves the rejected stat
     refetchRef.current = () => Promise.resolve({ data: serverState() });
 
     render(<ProducerDashboardPage />);
-    await screen.findByRole("radio", { name: /options\.full_this_week/ });
-    fireEvent.click(radio("full_this_week"));
-    expect(radio("full_this_week")).toHaveAttribute("aria-checked", "true");
+    await screen.findByRole("switch", { name: /options\.on_vacation/ });
+    fireEvent.click(pauseSwitch());
+    expect(pauseSwitch()).toHaveAttribute("aria-checked", "false");
 
     await waitFor(() => {
-      expect(radio("full_this_week")).toHaveAttribute("aria-checked", "false");
-      expect(radio("accepting_orders")).toHaveAttribute("aria-checked", "true");
+      expect(pauseSwitch()).toHaveAttribute("aria-checked", "true");
     });
     expect(dashboardGets.count).toBe(2);
     // Exactly one error: the rejected write. The re-sync worked, so it adds none.
     expect(toastError).toHaveBeenCalledTimes(1);
   });
 
-  it("write succeeds → the selected state stays and nothing is refetched or rolled back", async () => {
+  it("write succeeds → the switch stays off and nothing is refetched or rolled back", async () => {
     postSpy.mockImplementation(() => Promise.resolve({}));
 
     render(<ProducerDashboardPage />);
-    await screen.findByRole("radio", { name: /options\.full_this_week/ });
-    fireEvent.click(radio("full_this_week"));
+    await screen.findByRole("switch", { name: /options\.on_vacation/ });
+    fireEvent.click(pauseSwitch());
 
     await waitFor(() => expect(availabilityPosts()).toHaveLength(1));
     // Give any (wrong) rollback a tick to land before asserting it did not.
     await new Promise((r) => setTimeout(r, 0));
-    expect(radio("full_this_week")).toHaveAttribute("aria-checked", "true");
-    expect(radio("accepting_orders")).toHaveAttribute("aria-checked", "false");
+    expect(pauseSwitch()).toHaveAttribute("aria-checked", "false");
     expect(dashboardGets.count).toBe(1);
     expect(toastError).not.toHaveBeenCalled();
   });
