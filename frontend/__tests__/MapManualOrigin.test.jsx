@@ -394,15 +394,22 @@ describe("MEH-2525 — the origin is announced, and the desktop chip keeps its t
     expect(screen.getByTestId("sort-origin-live")).toHaveTextContent("");
   });
 
-  it("the desktop chip (not the mobile tag) keeps min-h-touch and its border", async () => {
+  it("MEH-2769: on desktop too the origin is the small tag inside the filter bar", async () => {
+    // MEH-2506 changed only the phone; the desktop kept a 44px bordered chip
+    // over the card list (Sapir 6/11). One size now, in the filter bar of
+    // each shell.
     await renderMap();
     await pickCity();
     const bar = screen.getByTestId("map-mobile-bar");
     const desktop = screen.getAllByTestId("sort-origin").filter((el) => !bar.contains(el));
     expect(desktop).toHaveLength(1);
+    const desktopChips = screen.getAllByTestId("filter-chips-bar").filter((el) => !bar.contains(el));
+    expect(desktopChips).toHaveLength(1);
+    expect(desktopChips[0]).toContainElement(desktop[0]);
     const chip = within(desktop[0]).getByTestId("sort-origin-chip");
-    expect(chip.className).toContain("min-h-touch");
-    expect(chip.className).toMatch(/(^|\s)border(\s|$)/);
+    expect(chip.className).toContain("bg-green-50");
+    expect(chip.className).not.toContain("min-h-touch");
+    expect(chip.className).not.toMatch(/(^|\s)border(\s|$)/);
   });
 });
 
