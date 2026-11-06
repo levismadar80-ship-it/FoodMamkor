@@ -2773,7 +2773,7 @@
     "access_denied": {
       "producer": {
         "heading": "אין לך גישה ללוח הבקרה",
-        "message": "לוח הבקרה פתוח לבעלות בית עסק בלבד. החשבון שאיתו התחברת לא מקושר לבית עסק.",
+        "message": "לוח הבקרה פתוח לבעלי בתי עסק בלבד. החשבון שאיתו התחברת לא מקושר לבית עסק.",
         "cta": "רשמו בית עסק",
         "home": "חזרו לדף הבית"
       },
@@ -3198,8 +3198,8 @@
     }
   },
   "reviews": {
-    "section_heading": "מה אומרות הלקוחות",
-    "anonymous_fallback": "לקוחה",
+    "section_heading": "מה אומרים הלקוחות",
+    "anonymous_fallback": "לקוח",
     "star_aria": "{value, plural, one {כוכב אחד} two {{value} כוכבים} other {{value} כוכבים}}",
     "summary_based_on": "{total, plural, one {מבוסס על ביקורת אחת} two {מבוסס על {total} ביקורות} other {מבוסס על {total} ביקורות}}",
     "summary_count": "{count, plural, one {ביקורת אחת} two {{count} ביקורות} other {{count} ביקורות}}",
