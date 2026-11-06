@@ -689,7 +689,7 @@ export default function ProductSheet({
               <PrimaryIcon size={20} weight="fill" aria-hidden="true" />
               {waIsPrimary
                 ? t("producer.detail.sections.products.sheet_cta")
-                : getPrimaryContactLabel(producer)}
+                : getPrimaryContactLabel(producer, t)}
             </a>
 
             {showSecondaryWa && (
