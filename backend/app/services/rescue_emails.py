@@ -162,3 +162,44 @@ def send_cancel_email(to: str, producer_name: str) -> None:
 </body>
 </html>"""
     send_email(to, subject, body, html=html_body)
+
+
+def send_business_cancel_email(to: str, producer_name: str) -> None:
+    """MEH-2738 — the business cancelled today's bag, so the buyer's
+    reservation went with it. Copy approved word for word by Sapir on 6/11
+    (text 7). Links to today's bags elsewhere; no code, nothing to pay."""
+    name = " ".join(producer_name.split())
+    subject = f"הסל ב{name} בוטל"
+    line1 = (
+        f"בית העסק {name} ביטל את סל ההפתעה של היום, ולכן גם השריון שלכם בוטל. "
+        "אין צורך להגיע ואין מה לשלם."
+    )
+    line2 = "מצטערים. אולי יש סל אחר באזור:"
+    link_text = "לסלים של היום"
+    list_url = f"{settings.frontend_url}/rescue"
+    body = f"{line1}\n\n{line2} {link_text}\n{list_url}\n\nצוות מהמקור 🌱"
+
+    e = html_escape
+    html_body = f"""\
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#F5F0E8;">
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#F5F0E8;padding:24px 12px;direction:rtl;font-family:Arial,Helvetica,sans-serif;">
+  <tr><td align="center">
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:520px;margin:0 auto;">
+      <tr><td style="text-align:right;padding:0 4px 14px;font-size:18px;font-weight:bold;color:#2e6853;">מהמקור</td></tr>
+      <tr><td style="background:#ffffff;border-radius:14px;border:1px solid #e5dfd3;overflow:hidden;">
+        <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+          <tr><td style="background:#2e6853;color:#ffffff;padding:18px 22px;text-align:right;font-size:19px;font-weight:bold;line-height:1.4;">{e(subject)}</td></tr>
+          <tr><td style="padding:20px 22px 8px;text-align:right;font-size:15px;color:#1c1a17;line-height:1.7;">{e(line1)}</td></tr>
+          <tr><td style="padding:8px 22px 24px;text-align:right;font-size:15px;color:#1c1a17;line-height:1.7;">{e(line2)} <a href="{e(list_url)}" style="color:#2e6853;font-weight:bold;">{e(link_text)}</a></td></tr>
+        </table>
+      </td></tr>
+      <tr><td style="text-align:center;padding:14px 4px 0;font-size:12px;color:#8a8478;">צוות מהמקור 🌱</td></tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>"""
+    send_email(to, subject, body, html=html_body)
