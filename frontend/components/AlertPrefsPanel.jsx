@@ -245,7 +245,7 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
           {toggleRow("whatsapp_opt_in", t("row_whatsapp_opt_in"), ChatCircle)}
 
           {showPhoneField && (
-            <div className="rounded-[8px] bg-primary/5 border border-primary/20 p-3 space-y-2">
+            <div className="rounded-sm bg-primary/5 border border-primary/20 p-3 space-y-2">
               <p className="text-xs text-text">{t("phone_required_prompt")}</p>
               <input
                 type="tel"
@@ -255,7 +255,7 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
                 placeholder={t("phone_placeholder")}
                 dir="ltr"
                 aria-label={t("phone_required_prompt")}
-                className="w-full border border-border rounded-[8px] px-3 py-2 text-sm text-start outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 transition"
+                className="w-full border border-border rounded-sm px-3 py-2 text-sm text-start outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 transition"
               />
               {/* MEH-1359: the save button is disabled until the phone is valid — say
                   why, so the greyed-out state isn't an unexplained dead end. */}
@@ -266,7 +266,7 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
                 <button
                   onClick={savePhoneAndEnable}
                   disabled={!phoneValid || phoneSaving}
-                  className="flex-1 bg-primary text-white text-sm py-2 rounded-[8px] hover:bg-primary-dark transition disabled:opacity-50"
+                  className="flex-1 bg-primary text-white text-sm py-2 rounded-sm hover:bg-primary-dark transition disabled:opacity-50"
                 >
                   {phoneSaving ? t("saving") : t("phone_save_cta")}
                 </button>
@@ -285,7 +285,7 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
             <button
               onClick={enablePush}
               disabled={pushStatus === "denied"}
-              className="w-full text-xs border border-primary/30 text-primary px-3 py-2 rounded-[8px] hover:bg-primary/5 transition disabled:opacity-40 flex items-center justify-center gap-1.5"
+              className="w-full text-xs border border-primary/30 text-primary px-3 py-2 rounded-sm hover:bg-primary/5 transition disabled:opacity-40 flex items-center justify-center gap-1.5"
             >
               {pushStatus === "denied" ? (
                 <>
@@ -324,7 +324,7 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
       <button
         onClick={() => save()}
         disabled={saving}
-        className="w-full bg-primary text-white text-sm py-2 rounded-[8px] hover:bg-primary-dark transition disabled:opacity-50"
+        className="w-full bg-primary text-white text-sm py-2 rounded-sm hover:bg-primary-dark transition disabled:opacity-50"
       >
         {saving ? t("saving") : t("save_cta")}
       </button>

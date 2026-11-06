@@ -55,8 +55,8 @@ function SettingsSkeleton({ label }) {
       {/* tab bar: p-1 pill + py-2 buttons ≈ 46px, mb-8 */}
       <div className="h-[46px] w-full max-w-xs bg-border rounded-full animate-pulse mb-8" />
       <div className="space-y-4">
-        <div className="h-28 bg-border rounded-[16px] animate-pulse" />
-        <div className="h-28 bg-border rounded-[16px] animate-pulse" />
+        <div className="h-28 bg-border rounded-lg animate-pulse" />
+        <div className="h-28 bg-border rounded-lg animate-pulse" />
       </div>
     </div>
   );
@@ -313,7 +313,7 @@ export function ProfileTab() {
   return (
     // MEH-2565: card from md up only. On a phone the profile form uses the full
     // width; the security tab keeps its cards (three separate sections).
-    <section role="tabpanel" aria-label={t("tabpanel_aria")} className="md:bg-white md:border md:border-border md:rounded-[16px] md:p-6">
+    <section role="tabpanel" aria-label={t("tabpanel_aria")} className="md:bg-white md:border md:border-border md:rounded-lg md:p-6">
       {/* Avatar */}
       <div className="flex items-center gap-4 mb-6">
         <label
@@ -526,7 +526,7 @@ function PasswordChangeCard({ isOAuth }) {
 
   if (isOAuth) {
     return (
-      <section role="tabpanel" aria-label={t("oauth_tabpanel_aria")} className="bg-white border border-border rounded-[16px] p-6">
+      <section role="tabpanel" aria-label={t("oauth_tabpanel_aria")} className="bg-white border border-border rounded-lg p-6">
         <h2 className="font-semibold text-text mb-2">{t("oauth_heading")}</h2>
         <p className="text-sm text-fg-muted">{t("oauth_body")}</p>
       </section>
@@ -534,7 +534,7 @@ function PasswordChangeCard({ isOAuth }) {
   }
 
   return (
-    <section className="bg-white border border-border rounded-[16px] p-6">
+    <section className="bg-white border border-border rounded-lg p-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-semibold text-text">{t("heading")}</h2>
         <Link href="/forgot-password" className="text-xs text-primary hover:underline">
@@ -681,7 +681,7 @@ function LogoutAllDevicesCard() {
   };
 
   return (
-    <section className="bg-white border border-border rounded-[16px] p-6">
+    <section className="bg-white border border-border rounded-lg p-6">
       <h2 className="font-semibold text-text mb-1">{t("heading")}</h2>
       <p className="text-sm text-fg-muted mb-4">
         {t("body")}
@@ -756,7 +756,7 @@ function DangerZoneCard() {
 
   if (phase === "grace") {
     return (
-      <section className="bg-white border border-red-200 rounded-[16px] p-6 text-center space-y-3">
+      <section className="bg-white border border-red-200 rounded-lg p-6 text-center space-y-3">
         {/* MEH-990: raw ⏳ emoji → Phosphor HourglassSimple (grace/waiting state) */}
         <HourglassSimple size={32} weight="regular" aria-hidden="true" className="text-fg-muted" />
         <h2 className="font-semibold text-text">{t("grace_heading")}</h2>
@@ -775,7 +775,7 @@ function DangerZoneCard() {
   }
 
   return (
-    <section className="bg-white border border-red-200 rounded-[16px] p-6">
+    <section className="bg-white border border-red-200 rounded-lg p-6">
       <h2 className="font-semibold text-red-700 mb-1">{t("heading")}</h2>
       <p className="text-sm text-fg-muted mb-4">
         {t("body")}

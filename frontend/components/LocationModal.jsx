@@ -172,7 +172,7 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
       <div
         ref={panelRef}
         tabIndex={-1}
-        className="bg-background rounded-t-[24px] sm:rounded-[16px] shadow-[0_8px_40px_rgba(0,0,0,0.15)] w-full sm:max-w-md px-6 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:p-6 relative overflow-hidden animate-[slide-up_0.2s_ease-out] focus:outline-none"
+        className="bg-background rounded-t-[24px] sm:rounded-lg shadow-[0_8px_40px_rgba(0,0,0,0.15)] w-full sm:max-w-md px-6 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:p-6 relative overflow-hidden animate-[slide-up_0.2s_ease-out] focus:outline-none"
         role="dialog"
         aria-modal="true"
         aria-labelledby="location-modal-title"
