@@ -34,7 +34,6 @@
   "lib/event-categories.js": 11,
   "lib/farmer-declaration.js": 2,
   "lib/filter-taxonomy.js": 25,
-  "lib/generated/api.zod.js": 5,
   "lib/holidays.js": 53,
   "lib/home-categories.js": 10,
   "lib/license-required-categories.js": 9,

@@ -25,18 +25,20 @@ import BASELINE from "./fixtures/hebrew-literals-baseline.json";
 
 const traverse = traverseMod.default || traverseMod;
 const ROOT = path.resolve(__dirname, "..");
-const HE = /[֐-׿]/;
+const HE = /[\u0590-\u05FF]/; // the Hebrew block, escaped so no editor can normalise it away
 
 function walk(dir, out = []) {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, e.name);
-    if (e.isDirectory()) walk(full, out);
+    // lib/generated/ is emitted from the backend OpenAPI schema; its strings are
+    // backend copy, and a regen must not red an unrelated frontend PR.
+    if (e.isDirectory()) { if (e.name !== "generated") walk(full, out); }
     else if (/\.(jsx?|tsx?)$/.test(e.name) && !/\.(test|spec)\./.test(e.name)) out.push(full);
   }
   return out;
 }
 
-export function countHebrewLiterals(src) {
+function countHebrewLiterals(src) {
   const ast = parse(src, { sourceType: "module", plugins: ["jsx", "typescript"] });
   let n = 0;
   traverse(ast, {
@@ -73,5 +75,5 @@ describe("MEH-1687 phase 7 — Hebrew copy in code only shrinks", () => {
     for (const rel of Object.keys(BASELINE)) if (!seen.has(rel)) problems.push(`${rel}: in the baseline but has none (or is gone) — remove the entry`);
     expect(total, "corpus control: the counter must find the known registries").toBeGreaterThan(100);
     expect(problems).toEqual([]);
-  });
+  }, 60_000); // parses ~400 files; the 5 s default timed out on CI (6873 ms)
 });
