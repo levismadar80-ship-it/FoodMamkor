@@ -32,7 +32,8 @@ vi.mock("@/components/ChipScrollRow", () => ({ default: () => null }));
 
 // Hook-test dependencies (Part 2).
 const router = { replace: vi.fn(), push: vi.fn() };
-vi.mock("next/navigation", () => ({ useRouter: () => router }));
+// MEH-2714: the home grids read the route via usePathname (route-memory).
+vi.mock("next/navigation", () => ({ useRouter: () => router, usePathname: () => "/" }));
 // MEH-1774: useHomePage now also takes the locale-aware router for the chip
 // deep-link; without this mock the real one runs outside a next-intl provider.
 vi.mock("@/i18n/navigation", () => ({ Link: ({ href, children, prefetch, ...p }) => <a href={typeof href === "string" ? href : href?.pathname} {...p}>{children}</a>,  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }) }));
