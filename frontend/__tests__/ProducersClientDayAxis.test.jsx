@@ -28,6 +28,9 @@ const { apiGet } = vi.hoisted(() => ({
 // next/navigation for real and fails under the partial mocks in this file.
 // Stubbed here; the notice's own contract lives in EnSearchNotice.test.jsx and
 // its mount on /producers is pinned in ProducersClientSearch.test.jsx.
+// MEH-2767: the chip gate counts the unfiltered snapshot hook; see the helper.
+vi.mock("@/lib/use-catalog-snapshot", async () =>
+  (await import("./helpers/catalog-snapshot")).catalogSnapshotMock);
 vi.mock("@/components/EnSearchNotice", () => ({ default: () => null }));
 vi.mock("next/navigation", () => ({
   useRouter: () => router,
@@ -106,6 +109,8 @@ vi.mock("@/components/LocationModal", () => ({
 }));
 vi.mock("@/components/Skeleton", () => ({ SkeletonProducerGrid: () => null }));
 vi.mock("@/lib/producer-filters", () => ({
+  // MEH-2767: the one chip gate. Identity — these specs do not exercise gating.
+  visibleAxisChips: ({ chips }) => chips,
   // MEH-1862: ProducersClient now imports this to attach FilterSheet group
   // metadata, and a partial vi.mock throws on any export it omits (same
   // reason the MEH-1881 names above are stubbed). Identity is the right
