@@ -62,7 +62,8 @@ export default function RescueSection({ producer }) {
   // the last bag would otherwise lose hers. Re-read on focus so a bag the
   // business just marked handed brings up the review without a reload.
   // Guests are skipped: their 401 would end in the "session expired" toast.
-  const userId = useOptionalAuth()?.user?.id;
+  const auth = useOptionalAuth();
+  const userId = auth?.user?.id;
   useEffect(() => {
     if (!rescueBagsEnabled() || !userId || !producer?.id) return undefined;
     let alive = true;
@@ -99,6 +100,13 @@ export default function RescueSection({ producer }) {
   if (!offer && !order) return null;
 
   async function reserve() {
+    // MEH-2700: a known guest gets the sign-in line straight away. Sending the
+    // request would 401, and the refresh interceptor would then add its
+    // "session expired" toast — wrong for someone who never signed in.
+    if (auth && !auth.loading && !auth.user) {
+      setErrorKey("errors.sign_in");
+      return;
+    }
     setBusy(true);
     setErrorKey(null);
     try {
