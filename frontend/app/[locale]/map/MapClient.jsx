@@ -13,7 +13,7 @@ import { TOGGLE_CHIPS, chipStateToParams } from "@/lib/map-chips";
 import { chipsFromQuery } from "@/lib/filter-url";
 import { geocodeCity } from "@/lib/places";
 import { producerPoints, hiddenWhenSecondaryOff } from "@/lib/producerPoints";
-import { isRatingSortEnabled } from "@/lib/rating-gate";
+import { isRatingSortEnabled, mapRatingGateSource } from "@/lib/rating-gate";
 import { showToast } from "@/lib/toast";
 import { useUserCity } from "@/lib/use-user-city";
 import {
@@ -321,9 +321,11 @@ export default function MapPage() {
   // read straight off it — no extra request. An axis already selected when the
   // feed drops below the threshold falls back to the auto default rather than
   // leaving the <select> on a value it no longer renders.
+  // MEH-2778: counted on the UNFILTERED mount snapshot, as /producers counts
+  // the whole catalog — not on the filtered/viewport feed (see rating-gate.js).
   const ratingSortEnabled = useMemo(
-    () => isRatingSortEnabled(feed.allProducers),
-    [feed.allProducers],
+    () => isRatingSortEnabled(mapRatingGateSource(feed.catalogSnapshot, feed.allProducers)),
+    [feed.catalogSnapshot, feed.allProducers],
   );
   const effectiveSort =
     requestedSort === "rating" && !ratingSortEnabled ? autoSort : requestedSort;
