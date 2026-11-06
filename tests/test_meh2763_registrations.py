@@ -487,3 +487,19 @@ class TestPurge:
         assert result.registrations_deleted == 2
         left = db.query(Registration).all()
         assert [r.event_id for r in left] == [edge.id]
+
+
+# ---------- MEH-2768: the public page dials the business ----------
+
+
+def test_event_out_carries_the_business_phone_for_the_cta(client, db):
+    """The event page's WhatsApp / phone CTA (and «או שאלה למארחת») needs the
+    business number; EventOut had none, so the page could only offer a
+    recipient-less link."""
+    owner = _owner(db, phone=MOBILE)
+    ev = _event(db, owner, registration_method="whatsapp")
+    r = client.get(f"/events/{ev.id}")
+    assert r.status_code == 200, r.text
+    assert r.json()["producer_phone"] == MOBILE
+    listed = {e["id"]: e for e in client.get("/events").json()}
+    assert listed[str(ev.id)]["producer_phone"] == MOBILE

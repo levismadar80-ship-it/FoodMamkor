@@ -37,6 +37,7 @@ import { AddressNavLinks } from "@/components/NavAppGlyphs";
 import { SkeletonDetail } from "@/components/Skeleton";
 import { splitBringList } from "@/lib/bring-list";
 import { findExperienceCategory } from "@/lib/event-categories";
+import RegistrationCta from "@/components/RegistrationCta";
 
 // MEH-1404: reuse the producer-detail static map + Waze/Gmaps block on
 // experiences with coords. ssr:false — leaflet touches window at module eval.
@@ -146,13 +147,12 @@ export default function ExperienceDetailClient() {
       : `/producer/${hostBiz.producer_id}`
     : null;
   const hostName = hostBiz?.producer_name || ex.host?.name;
-  // normalizePhone accepts Israeli MOBILE numbers only, so a landline (which
-  // WhatsApp cannot reach) falls back to the recipient-less link below.
+  // normalizePhone accepts Israeli MOBILE numbers only — "" for a landline,
+  // which WhatsApp cannot reach.
   const hostPhone = normalizePhone(hostBiz?.producer_phone);
-  const waText = t("whatsapp_message", { title: ex.title });
   const waitText = t("waitlist_message", { title: ex.title });
-  const waLink = (text) =>
-    hostPhone ? getWhatsAppHref(hostPhone, text) : `https://wa.me/?text=${encodeURIComponent(text)}`;
+  // MEH-2768: no recipient-less fallback any more — callers check hostPhone.
+  const waLink = (text) => getWhatsAppHref(hostPhone, text);
 
   // MEH-2549: the event page's structure (MEH-2548) in the experience's
   // gold — cover + date tile, host byline, one details card with share +
@@ -183,7 +183,9 @@ export default function ExperienceDetailClient() {
   // A minimum of 1 opens on any sign-up, so there is nothing to say (and
   // «ב-1 נרשמים» would read wrong).
   const showMin = ex.min_participants != null && ex.min_participants > 1 && !isPast;
-  const minReached = showMin && (ex.participants_count ?? 0) >= ex.min_participants;
+  // MEH-2768: the host's own tally plus the on-site sign-ups.
+  const signedUp = (ex.participants_count ?? 0) + (ex.registered_count ?? 0);
+  const minReached = showMin && signedUp >= ex.min_participants;
   const canCalendar = isApproved && !ex.is_recurring && !isPast;
   const icsEvent = {
     id: `experience-${ex.id}`,
@@ -370,8 +372,8 @@ export default function ExperienceDetailClient() {
               <div className={`${infoRow} border-t border-border`}>
                 <span className={infoIcon}><Users size={18} aria-hidden="true" /></span>
                 <div>
-                  {/* Sign-up is on WhatsApp; the host reports the count from her
-                      dashboard. The page names the spots only when few are left
+                  {/* spots_left counts the host's own tally and the on-site
+                      sign-ups (MEH-2763). The page names the spots only when few are left
                       (Airbnb / Eventbrite do the same) and otherwise the cap. */}
                   {ex.max_participants != null && (
                     <p
@@ -401,16 +403,21 @@ export default function ExperienceDetailClient() {
             )}
             {isApproved && (
               <div className="border-t border-border p-4 space-y-3">
+                {/* MEH-2768: the CTA follows the host's «איך נרשמים?» choice.
+                    A full workshop keeps the WhatsApp waitlist, but only when
+                    there is a mobile to reach. */}
                 {showCta && (
-                  <a
-                    href={waLink(isFull ? waitText : waText)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    data-testid="experience-whatsapp-cta"
-                    className="flex items-center justify-center min-h-[48px] w-full bg-primary text-white px-6 rounded-full font-semibold hover:bg-primary-dark transition focus-ring"
-                  >
-                    {isFull ? t("waitlist_cta") : t("whatsapp_cta")}
-                  </a>
+                  <RegistrationCta
+                    kind="experiences"
+                    itemId={ex.id}
+                    title={ex.title}
+                    method={ex.registration_method}
+                    phone={hostBiz?.producer_phone}
+                    url={ex.registration_url}
+                    isFull={isFull}
+                    waitlistHref={hostPhone ? waLink(waitText) : null}
+                    waitlistLabel={t("waitlist_cta")}
+                  />
                 )}
                 {/* MEH-2549: share + add-to-calendar, as on the event page. */}
                 <div className="flex gap-3" data-testid="experience-actions">

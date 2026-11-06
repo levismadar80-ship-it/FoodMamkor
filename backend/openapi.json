@@ -1550,6 +1550,17 @@
             ],
             "title": "Producer Name"
           },
+          "producer_phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Producer Phone"
+          },
           "registered_count": {
             "default": 0,
             "title": "Registered Count",
@@ -13900,6 +13911,17 @@
               }
             ],
             "title": "Producer Name"
+          },
+          "producer_phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Producer Phone"
           },
           "registered_count": {
             "default": 0,

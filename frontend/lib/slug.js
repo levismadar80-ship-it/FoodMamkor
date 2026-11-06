@@ -54,6 +54,8 @@ const RESERVED = new Set([
   // asked the backend for `/producers/by-slug/rescue` on every visit to
   // /rescue, which is the exact failure the MEH-2148 drift guard exists for.
   "rescue",
+  // MEH-2768: the sign-up cancel link (/registration/{token}).
+  "registration",
 ]);
 
 // Real slugs are produced by backend _slugify
