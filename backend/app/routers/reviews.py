@@ -408,7 +408,7 @@ def create_review_nested(  # noqa: PLR0913 — all 6 args are FastAPI-injected (
     if user.producer_id is not None and str(user.producer_id) == str(producer_id):
         raise HTTPException(
             status_code=403,
-            detail="בעלת עסק לא יכולה לדרג את עצמה",
+            detail="אי אפשר לכתוב ביקורת על בית העסק שלך",
         )
 
     # Guard 2b (MEH-2076): a business owner cannot review a DIRECT competitor —
@@ -423,7 +423,7 @@ def create_review_nested(  # noqa: PLR0913 — all 6 args are FastAPI-injected (
     ):
         raise HTTPException(
             status_code=403,
-            detail="כבעלת עסק מאותה קטגוריה לא ניתן להשאיר ביקורת — כך אנחנו שומרות על הוגנות.",
+            detail="אי אפשר להשאיר ביקורת לבית עסק מאותה קטגוריה — כך אנחנו שומרות על הוגנות.",
         )
 
     existing_review = (

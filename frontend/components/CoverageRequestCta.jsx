@@ -33,7 +33,7 @@ import { pingWhatsAppBeacon } from "@/lib/contact-tracking";
 // endpoint still accepts no body at all, so every other WhatsApp CTA on the site
 // is unchanged and stores NULL.
 
-export default function CoverageRequestCta({ producer = null, city = "" }) {
+export default function CoverageRequestCta({ producer = null, city = "", describedBy = undefined }) {
   const t = useTranslations("group_buys.delivery");
   const tChips = useTranslations("whatsapp.question_chips");
 
@@ -56,17 +56,18 @@ export default function CoverageRequestCta({ producer = null, city = "" }) {
   );
 
   return (
-    <p className="mt-2" data-testid="coverage-request-cta">
+    <p data-testid="coverage-request-cta">
       <a
         href={href}
         target="_blank"
         rel="noopener noreferrer"
         onClick={() => pingWhatsAppBeacon(producer?.id, value)}
         data-testid="coverage-request-link"
-        className="inline-flex items-center gap-2 min-h-[44px] text-sm text-primary transition hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+        aria-describedby={describedBy}
+        className="inline-flex items-center gap-1.5 min-h-[44px] rounded-full border border-primary/20 bg-white px-3 text-sm font-medium text-primary transition hover:bg-green-50 focus-visible:ring-2 focus-visible:ring-primary/40"
       >
         <ChatCircle size={16} weight="regular" className="flex-shrink-0" aria-hidden="true" />
-        {t("coverage_cta.known_city", { city: value })}
+        {t("coverage_cta.known_city")}
       </a>
     </p>
   );
