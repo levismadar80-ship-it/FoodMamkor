@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import {
   WhatsappLogo,
   Phone,
@@ -67,8 +68,13 @@ const VARIANTS = {
 };
 
 export default function PrimaryContactButton({ producer, onClick }) {
+  const t = useTranslations();
   const method = getPrimaryMethod(producer);
-  const rawHref = getPrimaryContactHref(producer);
+  // MEH-2753: label + WhatsApp prefill come from messages (contact_cta.*).
+  const rawHref = getPrimaryContactHref(
+    producer,
+    t("contact_cta.wa_greeting", { name: producer?.name || "" }),
+  );
   if (!rawHref) return null;
 
   // MEH-1525: a business-website CTA carries referral UTM and drops
@@ -80,7 +86,7 @@ export default function PrimaryContactButton({ producer, onClick }) {
 
   const variant = VARIANTS[method] || VARIANTS.whatsapp;
   const Icon = variant.Icon;
-  const label = getPrimaryContactLabel(producer);
+  const label = getPrimaryContactLabel(producer, t);
   const external = isPrimaryExternal(producer);
 
   return (
