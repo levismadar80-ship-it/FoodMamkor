@@ -5287,6 +5287,7 @@ export const ListMyOrdersProducersMeRescueOrdersGetResponse = /*#__PURE__*/ zod.
  * @summary Get Typical Items
  */
 export const GetTypicalItemsProducersMeRescueTypicalItemsGetResponse = /*#__PURE__*/ zod.object({
+  "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "items": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "updated_at": /*#__PURE__*/ zod.iso.datetime({"offset":true})
@@ -5299,6 +5300,7 @@ export const GetTypicalItemsProducersMeRescueTypicalItemsGetResponse = /*#__PURE
  * @summary Set Typical Items
  */
 export const SetTypicalItemsProducersMeRescueTypicalItemsPutResponse = /*#__PURE__*/ zod.object({
+  "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "items": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "updated_at": /*#__PURE__*/ zod.iso.datetime({"offset":true})
@@ -5841,6 +5843,7 @@ export const ReportProducerInfoReportsProducerInfoPostResponse = /*#__PURE__*/ z
  * @summary List Offers
  */
 export const ListOffersRescueOffersGetResponseItem = /*#__PURE__*/ zod.object({
+  "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "cancel_until": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
   "date": /*#__PURE__*/ zod.iso.date(),
   "distance_km": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),
