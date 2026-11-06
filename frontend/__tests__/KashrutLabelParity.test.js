@@ -34,6 +34,7 @@
  *      only changes WHAT IT SAYS. Asserted directly so a future edit cannot
  *      quietly move the line.
  */
+import { heBadgeCopy } from "./helpers/he-badge-copy";
 import { describe, it, expect, vi } from "vitest";
 import { render, fireEvent } from "@testing-library/react";
 import he from "../messages/he.json";
@@ -193,9 +194,9 @@ describe("MEH-1711 — the whitelist survives (why the map is imported, not deri
 });
 
 describe("MEH-1711 — the bare word is gone, and the gates are not", () => {
-  it('BADGE_CONFIG.kosher.label is no longer the bare "כשר"', () => {
-    expect(BADGE_CONFIG.kosher.label).not.toBe("כשר");
-    expect(BADGE_CONFIG.kosher.label).toBe(FALLBACK);
+  it('heBadgeCopy(BADGE_CONFIG.kosher).label is no longer the bare "כשר"', () => {
+    expect(heBadgeCopy(BADGE_CONFIG.kosher).label).not.toBe("כשר");
+    expect(heBadgeCopy(BADGE_CONFIG.kosher).label).toBe(FALLBACK);
   });
 
   it('no consumer surface renders the bare "כשר" as its own word', () => {

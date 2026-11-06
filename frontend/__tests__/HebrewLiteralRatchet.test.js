@@ -32,7 +32,7 @@ function walk(dir, out = []) {
     const full = path.join(dir, e.name);
     // lib/generated/ is emitted from the backend OpenAPI schema; its strings are
     // backend copy, and a regen must not red an unrelated frontend PR.
-    if (e.isDirectory()) { if (e.name !== "generated") walk(full, out); }
+    if (e.isDirectory()) { if (path.relative(ROOT, full) !== path.join("lib", "generated")) walk(full, out); }
     else if (/\.(jsx?|tsx?)$/.test(e.name) && !/\.(test|spec)\./.test(e.name)) out.push(full);
   }
   return out;

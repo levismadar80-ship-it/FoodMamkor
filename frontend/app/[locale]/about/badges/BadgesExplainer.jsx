@@ -12,6 +12,7 @@
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { badgesByEvidence } from "@/lib/badges";
+import { useBadgeCopy } from "@/lib/use-badge-copy";
 import { badgeIcon } from "@/lib/chip-icons";
 import { COLOR_CLASSES } from "@/components/BadgeRow";
 
@@ -25,7 +26,8 @@ const GROUP_LINKS = {
 
 export default function BadgesExplainer() {
   const t = useTranslations("about_badges");
-  const groups = badgesByEvidence();
+  const withCopy = useBadgeCopy();
+  const groups = badgesByEvidence().map((g) => ({ ...g, badges: g.badges.map(withCopy) }));
 
   return (
     <section className="min-h-screen bg-background text-text">

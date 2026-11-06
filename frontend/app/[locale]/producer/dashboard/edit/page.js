@@ -44,6 +44,8 @@ import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, usePathname, Link } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { BADGE_CONFIG } from "@/lib/badges";
+import { useBadgeCopy } from "@/lib/use-badge-copy";
 // MEH-1158: per-channel glyphs feed the header previews below.
 // MEH-1408: CaretLeft — the "back to all sections" link's inline-start indicator
 // (base points inline-start in LTR; rtl:rotate-180 flips it to inline-start in RTL).
@@ -77,7 +79,6 @@ import EditAccordionCard, {
 import EditHubCard from "@/components/EditHubCard";
 import Input from "@/components/ui/Input";
 import { detailToMessage } from "@/lib/errors";
-import { BADGE_CONFIG } from "@/lib/badges";
 import ProductsSection from "@/components/ProductsSection";
 import LocationsEditor from "./LocationsEditor";
 import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, PricingCard, DeliveryCard, OffersCard, LicenseCard, KashrutCard, BusinessNameCard, ViewOnPageLink } from "./cards";
@@ -234,6 +235,7 @@ function EditPageInner() {
   const t = useTranslations("dashboard.producer");
   // MEH-1116: accordion titles + one-line status summaries.
   const tAcc = useTranslations("dashboard.producer.edit_accordion");
+  const reservistBadge = useBadgeCopy()(BADGE_CONFIG.reservist_owned);
   // MEH-2155: the public renderer's namespace — the accordion summary resolves
   // the live question list, and must feed the resolver the same label strings
   // WhatsAppQuestionChips does (lib/resolvedQuestions.js explains why).
@@ -863,7 +865,7 @@ function EditPageInner() {
               : tAcc("owner_missing"),
             // MEH-2699: the closed card says when the reservist claim is on —
             // the badge's own label, no new copy.
-            profile.reservist_owned ? BADGE_CONFIG.reservist_owned.label : null,
+            profile.reservist_owned ? reservistBadge.label : null,
           ]
             .filter(Boolean)
             .join(" · ")}

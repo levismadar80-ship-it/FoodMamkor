@@ -1,3 +1,4 @@
+import { heBadgeCopy } from "./helpers/he-badge-copy";
 import { describe, it, expect } from "vitest";
 import {
   BADGE_CONFIG,
@@ -404,7 +405,7 @@ describe("allBadges", () => {
   });
 
   it("each returned badge carries label + tooltip", () => {
-    const [badge] = allBadges({ verification_tier: "verified" });
+    const [badge] = allBadges({ verification_tier: "verified" }).map(heBadgeCopy);
     expect(badge.label).toBe("מאומת");
     expect(badge.tooltip).toMatch(/נבדק/);
   });
@@ -481,28 +482,28 @@ describe("topBadges", () => {
 // MEH-1259 organic. New copy = "לעסק יש מוצרים ... מסומנים בקטלוג".
 describe("dietary badge tooltips — any-product semantics (MEH-1439)", () => {
   it("vegan tooltip states any-product semantics, not 'all products'", () => {
-    expect(BADGE_CONFIG.vegan.tooltip).toBe(
+    expect(heBadgeCopy(BADGE_CONFIG.vegan).tooltip).toBe(
       "לעסק יש מוצרים טבעוניים מסומנים בקטלוג.",
     );
-    expect(BADGE_CONFIG.vegan.tooltip).not.toMatch(/כל המוצרים/);
+    expect(heBadgeCopy(BADGE_CONFIG.vegan).tooltip).not.toMatch(/כל המוצרים/);
   });
 
   it("gluten_free tooltip states any-product semantics", () => {
-    expect(BADGE_CONFIG.gluten_free.tooltip).toBe(
+    expect(heBadgeCopy(BADGE_CONFIG.gluten_free).tooltip).toBe(
       "לעסק יש מוצרים ללא גלוטן מסומנים בקטלוג.",
     );
-    expect(BADGE_CONFIG.gluten_free.tooltip).not.toMatch(/צליאק/);
+    expect(heBadgeCopy(BADGE_CONFIG.gluten_free).tooltip).not.toMatch(/צליאק/);
   });
 
   it("lactose_free tooltip states any-product semantics", () => {
-    expect(BADGE_CONFIG.lactose_free.tooltip).toBe(
+    expect(heBadgeCopy(BADGE_CONFIG.lactose_free).tooltip).toBe(
       "לעסק יש מוצרים ללא לקטוז מסומנים בקטלוג.",
     );
   });
 
   // MEH-1438: vegetarian tooltip mirrors the same any-product wording.
   it("vegetarian tooltip states any-product semantics", () => {
-    expect(BADGE_CONFIG.vegetarian.tooltip).toBe(
+    expect(heBadgeCopy(BADGE_CONFIG.vegetarian).tooltip).toBe(
       "לעסק יש מוצרים צמחוניים מסומנים בקטלוג.",
     );
   });
@@ -567,7 +568,7 @@ describe("reservist_owned badge (MEH-2693)", () => {
   });
 
   it("carries the approved copy and self-declared metadata", () => {
-    const c = BADGE_CONFIG.reservist_owned;
+    const c = heBadgeCopy(BADGE_CONFIG.reservist_owned);
     expect(c.label).toBe("עסק של מילואימניקים");
     expect(c.tooltip).toBe("לפי הצהרת בית העסק, אחד הבעלים משרת במילואים.");
     expect(c.scope).toBe("business");

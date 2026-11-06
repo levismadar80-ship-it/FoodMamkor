@@ -5835,5 +5835,63 @@
       },
       "footer": "Payment at the counter, at the price on the reservation. Questions — write to us."
     }
+  },
+  "badges": {
+    "verified": {
+      "label": "Verified",
+      "tooltip": "The business showed a licence or an official exemption document that was checked by hand."
+    },
+    "recommended": {
+      "label": "Editor's pick",
+      "tooltip": "A personal pick by the Mehamakor editor — for quality, freshness or a special story. This badge cannot be bought."
+    },
+    "new": {
+      "label": "New",
+      "tooltip": "The business joined us in the last month."
+    },
+    "grass_fed": {
+      "label": "Grass-fed",
+      "tooltip": "The animals graze on pasture rather than industrial feed, as declared by the business."
+    },
+    "gluten_free": {
+      "label": "Gluten-free",
+      "tooltip": "The business has products marked gluten-free in its catalog."
+    },
+    "vegetarian": {
+      "label": "Vegetarian options",
+      "tooltip": "The business has products marked vegetarian in its catalog."
+    },
+    "vegan": {
+      "label": "Vegan options",
+      "tooltip": "The business has products marked vegan in its catalog."
+    },
+    "vegan_all": {
+      "label": "Vegan",
+      "tooltip": "As declared by the business"
+    },
+    "vegetarian_all": {
+      "label": "Vegetarian",
+      "tooltip": "As declared by the business"
+    },
+    "lactose_free": {
+      "label": "Lactose-free",
+      "tooltip": "The business has products marked lactose-free in its catalog."
+    },
+    "no_added_sugar": {
+      "label": "No added sugar",
+      "tooltip": "The business has products marked no added sugar in its catalog."
+    },
+    "kosher": {
+      "label": "Verified kosher",
+      "tooltip": "The products are under kosher supervision."
+    },
+    "delivery": {
+      "label": "Delivery",
+      "tooltip": "The business delivers or ships to your address."
+    },
+    "reservist_owned": {
+      "label": "Reservist-owned business",
+      "tooltip": "As declared by the business, one of the owners serves in the reserves."
+    }
   }
 }

@@ -25,6 +25,7 @@ import { useUserLocation } from "@/lib/user-location";
 import { haversineKm, formatDistance } from "@/lib/distance";
 import { producerPoints } from "@/lib/producerPoints";
 import { allBadges, badgeCount } from "@/lib/badges";
+import { useBadgeCopy } from "@/lib/use-badge-copy";
 import { badgeIcon } from "@/lib/chip-icons";
 import { deriveAvailability, isAvailableToday } from "@/lib/availability";
 import Popover from "@/components/ui/Popover";
@@ -220,6 +221,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
   // overflow rows read the identical `kashrut.badges.*.label` strings the
   // visible pills and the detail page read.
   const tKashrut = useTranslations("kashrut");
+  const withBadgeCopy = useBadgeCopy();
   const router = useRouter();
   const [localFavCount, setLocalFavCount] = useState(producer.favorites_count ?? 0);
   // MEH-1592: collision boundary handed to the +N Popover — see the badge strip
@@ -550,6 +552,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
               <span className="flex flex-col gap-2" role="list">
                 {allBadges(producer)
                   .slice(2)
+                  .map(withBadgeCopy)
                   .map((b) => {
                     const icon = badgeIcon(b.key);
                     return (
