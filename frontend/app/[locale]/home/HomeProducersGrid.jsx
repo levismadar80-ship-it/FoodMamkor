@@ -20,17 +20,16 @@ import { useChipCopy } from "@/lib/use-chip-copy";
 import { DeliveryDayRow } from "@/components/DeliveryDayRow";
 import { keepFocusedChipClear } from "@/lib/keepFocusedChipClear";
 import { DELIVERY_DAYS } from "@/lib/delivery-days";
-// MEH-1934: visibleGatedDietKeys gates the two newest diet chips here too.
-// CHIPS_CONFIG is shared with /producers, so a chip added there appears on
-// this row automatically — gating only at /producers would leave the home
-// row deep-linking to a listing that returns nothing.
+// MEH-2767: visibleAxisChips is the one chip gate home, /producers and /map
+// share (it replaced MEH-1934's visibleGatedDietKeys + MEH-2131's open-now
+// call here). CHIPS_CONFIG is shared with /producers, so a chip added there
+// appears on this row automatically.
 import {
   CHIPS_CONFIG,
-  GATED_DIET_KEYS,
-  openNowChipVisible,   // MEH-2131
-  visibleGatedDietKeys,
+  visibleAxisChips,
   withChipGroups,       // MEH-2173 — sheet group metadata
 } from "@/lib/producer-filters";
+import { useCatalogSnapshot } from "@/lib/use-catalog-snapshot";
 import { LOAD_MORE_CAP } from "@/lib/use-home-page";
 import Button from "@/components/ui/Button";
 
@@ -159,37 +158,24 @@ export function HomeProducersGrid({
   // own glyphs: the promoted row via PromotedServiceChips, and FilterSheet internally
   // (FilterSheet.jsx calls chipIcon per row). This ticket changes WHERE an axis
   // renders, never WHETHER it is offered.
-  const gatedChips = useMemo(() => {
-    const shown = visibleGatedDietKeys(visibleProducers, chips);
-    const hidden = GATED_DIET_KEYS.filter((k) => !shown.includes(k));
-    // MEH-2131: the open-now axis reaches the home row via the unified config,
-    // so it needs the home row's copy of the gate. Gating only at /producers
-    // would leave this row deep-linking to a listing that returns nothing —
-    // the same reasoning MEH-1934 used for the diet gates.
-    //
-    // `catalogFullyLoaded: true`, and the distinction is load-bearing rather
-    // than a shortcut. Home's `hasMore` is `visibleCount < producers.length`
-    // (use-home-page.js:819) — a DISPLAY collapse behind "עוד בתי עסק", not
-    // "more pages unfetched". `producers` already holds everything home
-    // fetched, so it is the complete catalog from the guard's point of view.
-    //
-    // Passing `!hasMore` here was the first version of this line, and it was
-    // wrong in the way that matters: with more than one screenful of results
-    // `hasMore` is true, the zero-result half never ran, and the chip rendered
-    // at 3am exactly as before. The self-QA harness caught it (case B), which
-    // is the entire reason that harness asserts the withheld case and not only
-    // the visible one.
-    const openNowHidden =
-      !openNowChipVisible({
-        producers,
-        active: chips.open_for_orders_now,
-        catalogFullyLoaded: true,
+  //
+  // MEH-2767: one gate, over the UNFILTERED catalog snapshot — the same
+  // function and input /producers and /map use. The gate here used to count
+  // `visibleProducers` (the first screenful of the FILTERED results), so a
+  // diet chip could vanish because of another filter, or because its five
+  // businesses sat below the fold.
+  const catalogSnapshot = useCatalogSnapshot();
+  const gatedChips = useMemo(
+    () =>
+      visibleAxisChips({
+        chips: CHIPS_CONFIG,
+        catalog: catalogSnapshot.catalog,
+        status: catalogSnapshot.status,
+        chipState: chips,
         now: openNowClock,
-      }) && "open_for_orders_now";
-    return CHIPS_CONFIG.filter(
-      (c) => !hidden.includes(c.key) && c.key !== openNowHidden,
-    );
-  }, [visibleProducers, chips, producers, openNowClock]);
+      }),
+    [catalogSnapshot, chips, openNowClock],
+  );
 
   // MEH-2173: the promoted pair, resolved out of CHIPS_CONFIG — the same
   // taxonomy declaration `gatedChips` (and therefore the sheet) is built from.

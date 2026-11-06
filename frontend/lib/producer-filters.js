@@ -28,6 +28,8 @@ import {
   axisKeysFor,
   chipsForKeys,
   defaultsForKeys,
+  gatedAxisKeys,
+  FILTER_AXES,
 } from "@/lib/filter-taxonomy";
 // MEH-2131: the SHIPPED Asia/Jerusalem order-window evaluator (MEH-1546), not
 // a second one written for this ticket. See openNowChipVisible below for why
@@ -85,13 +87,27 @@ export const DIET_CHIP_MIN = 5;
 //
 // MEH-2677 (Sapir 05/11): the two whole-business axes left the filter (one
 // chip per diet); they live on as a card badge only, so they are not gated here.
-export const GATED_DIET_KEYS = ["no_added_sugar", "on_site"];
+//
+// MEH-2767 (Sapir 06/11, «כלל אחד, הסתרה מתחת ל-5»): the list is now DERIVED
+// from the `gate: "count"` field in lib/filter-taxonomy.js, and it grew to the
+// four older diet axes and grass_fed. That reverses the "never retro-gated"
+// note above on purpose: /map had gated the four since MEH-2170 (25/08), so
+// the same axis was hidden on one surface and offered on the other. One rule
+// was the choice; this is the rule /map already applied.
+export const GATED_DIET_KEYS = gatedAxisKeys("count");
 
 // Per gated axis: does this loaded producer count toward the gate? Read off
 // the same fields the badge layer reads, so chip visibility and badge display
 // cannot disagree. Exported because /map (lib/map-chips.js) gates the same two
 // 100% axes from its own snapshot and must not re-derive the predicate.
 export const GATED_AXIS_PREDICATES = {
+  // MEH-2767: the four older diet axes + grass_fed join — the same fields
+  // /map's DIET_FIELD read before this ticket folded it into here.
+  vegan: (p) => !!p.has_vegan_products,
+  vegetarian: (p) => !!p.has_vegetarian_products,
+  gluten_free: (p) => !!p.has_gluten_free_products,
+  lactose_free: (p) => !!p.has_lactose_free_products,
+  grass_fed: (p) => !!p.grass_fed,
   no_added_sugar: (p) => !!p.has_no_added_sugar_products,
   on_site: (p) => !!p.sells_on_site, // MEH-2598
 };
@@ -192,6 +208,61 @@ export function visibleGatedDietKeys(producers = [], chips = {}) {
     if (chips[key]) return true;
     const counts = GATED_AXIS_PREDICATES[key];
     const n = producers.filter((p) => p && counts(p)).length;
+    return n >= DIET_CHIP_MIN;
+  });
+}
+
+/**
+ * The largest page GET /producers returns (backend `limit` le=100,
+ * producers.py:221). A snapshot shorter than this is the whole catalog.
+ */
+export const CATALOG_SNAPSHOT_MAX = 100;
+
+/**
+ * MEH-2767 — THE gate. Which of `chips` a surface offers, given the unfiltered
+ * catalog. Home, /producers and /map all call this, with the same kind of
+ * input, so the same catalog yields the same set of chips everywhere
+ * (surfaceParity.test.js). Before this there were three gate implementations
+ * reading three different lists — home's counted its first screenful of the
+ * FILTERED results — and they disagreed in Sapir's two screenshots (06/11).
+ *
+ * @param chips      chip defs ({ key, … }) in the surface's own order.
+ * @param catalog    the UNFILTERED catalog snapshot (never the filtered
+ *                   result: counting that is circular — see openNowChipVisible).
+ * @param status     "ready" | "pending" | "failed". Pending ⇒ gated chips wait
+ *                   (a chip should arrive once, not arrive and vanish).
+ *                   Failed ⇒ nothing is hidden: hiding on an unknown would be
+ *                   the "probe never ran" green in the other direction.
+ * @param chipState  an ACTIVE axis always keeps its chip, or a deep link
+ *                   strands the visitor with a filter she cannot switch off.
+ * @param now        Date | null — see openNowChipVisible (null through SSR
+ *                   and the first client render).
+ */
+export function visibleAxisChips({
+  chips,
+  catalog = null,
+  status = "pending",
+  chipState = {},
+  now = null,
+}) {
+  if (status === "failed") return chips;
+  const list = Array.isArray(catalog) ? catalog : [];
+  const complete = status === "ready" && list.length < CATALOG_SNAPSHOT_MAX;
+  return chips.filter((chip) => {
+    const gate = FILTER_AXES[chip.key]?.gate;
+    if (!gate) return true;
+    if (chipState[chip.key]) return true;
+    if (status !== "ready") return false;
+    if (gate === "open_now") {
+      return openNowChipVisible({
+        producers: list,
+        active: false,
+        catalogFullyLoaded: complete,
+        now,
+      });
+    }
+    const counts = GATED_AXIS_PREDICATES[chip.key];
+    const n = list.filter((p) => p && counts(p)).length;
     return n >= DIET_CHIP_MIN;
   });
 }
