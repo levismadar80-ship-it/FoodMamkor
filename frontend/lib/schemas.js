@@ -554,13 +554,15 @@ export const ExperienceMetadataSchema = z.object({
 // 500 on the backend for very zoomed-out viewports (≥70 km observed).
 // boundsToCenterRadius() already clamps at the source; this schema is a
 // belt-and-braces safety net in case a future caller bypasses it.
+// MEH-2765: the messages are keys under map.errors in messages/{he,en}.json
+// (useMapSync resolves them); no reader copy lives here.
 export const GeoSearchSchema = z.object({
   lat: z.number().finite(),
   lng: z.number().finite(),
   radius_km: z
     .number()
-    .min(1, "הזיזי את המפה לפני החיפוש")
-    .max(50, "הקטיני את מרחק החיפוש — אזור גדול מדי"),
+    .min(1, "radius_too_small")
+    .max(50, "radius_too_large"),
 });
 
 // Validated coords before any Leaflet flyTo / marker creation call.

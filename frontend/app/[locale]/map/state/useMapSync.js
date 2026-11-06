@@ -7,6 +7,8 @@ import { GeoSearchSchema } from "@/lib/schemas";
 import { boundsToCenterRadius } from "@/lib/map-chips";
 import { HALF } from "@/components/MapBottomSheet";
 
+const GEO_SEARCH_ERROR_KEYS = new Set(["radius_too_small", "radius_too_large"]);
+
 /**
  * Map ↔ list synchronization for /map. Owns Leaflet refs, marker /
  * card click+hover handlers, and the "search this area" geo-fetch.
@@ -260,7 +262,9 @@ export function useMapSync({
     if (!geoValidation.success) {
       // Zod v4: issues (not errors). Fall back to a generic Hebrew message
       // if the shape ever changes again.
-      const msg = geoValidation.error.issues?.[0]?.message || t("map.errors.invalid_search");
+      // MEH-2765: the schema's message is a key under map.errors.
+      const key = geoValidation.error.issues?.[0]?.message;
+      const msg = GEO_SEARCH_ERROR_KEYS.has(key) ? t(`map.errors.${key}`) : t("map.errors.invalid_search");
       showToast.info(msg);
       return;
     }
