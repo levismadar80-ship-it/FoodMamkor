@@ -29,6 +29,10 @@ let params = {};
 // next/navigation for real and fails under the partial mocks in this file.
 // Stubbed here; the notice's own contract lives in EnSearchNotice.test.jsx and
 // its mount on /producers is pinned in ProducersClientSearch.test.jsx.
+// MEH-2767: the chip gate counts the unfiltered snapshot hook; see the helper.
+import { setCatalogSnapshot } from "./helpers/catalog-snapshot";
+vi.mock("@/lib/use-catalog-snapshot", async () =>
+  (await import("./helpers/catalog-snapshot")).catalogSnapshotMock);
 vi.mock("@/lib/use-chip-copy", async () => (await import("./helpers/he-chip-copy")).chipCopyMock);
 vi.mock("@/components/EnSearchNotice", () => ({ default: () => null }));
 vi.mock("next/navigation", () => ({
@@ -165,7 +169,9 @@ function items(n, extra = 0, window = WINDOW) {
   return rows;
 }
 
-const props = (initialItems) => ({
+// MEH-2767: the gate counts the snapshot — make it the rendered fixture.
+const props = (initialItems) => (setCatalogSnapshot(initialItems), propsBase(initialItems));
+const propsBase = (initialItems) => ({
   initialItems,
   initialTotal: initialItems.length,
   initialPage: 1,

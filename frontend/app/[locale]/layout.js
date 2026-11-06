@@ -22,7 +22,7 @@ import ClarityScript from "@/components/ClarityScript";
 import SpeedInsightsRedacted from "@/components/SpeedInsightsRedacted";
 import { env, SITE_URL } from "@/lib/env";
 import { rootClientMessages } from "@/lib/client-messages";
-import { BRAND_NAME, SITE_DESCRIPTION } from "@/lib/constants";
+import { BRAND_NAME, BRAND_NAME_LATIN, SITE_DESCRIPTION } from "@/lib/constants";
 import { routing } from "@/i18n/routing";
 import {
   buildAlternates,
@@ -144,7 +144,8 @@ export async function generateMetadata({ params }) {
     ...BASE_METADATA,
     title: {
       default: title,
-      template: `%s | ${BRAND_NAME}`,
+      // MEH-2780: /en pages end in the Latin brand, as seo.site.title does.
+      template: `%s | ${locale === "en" ? BRAND_NAME_LATIN : BRAND_NAME}`,
     },
     description,
     keywords: [...t.raw("keywords"), BRAND_NAME],
