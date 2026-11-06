@@ -295,7 +295,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
   // from screen readers, and visitors could not tell what it meant (Sapir,
   // 6/11). The state stays on the business page. Only the vacation check
   // below still reads it, to hide the order-window line.
-  const availability = deriveAvailability(producer);
+  const isOnVacation = deriveAvailability(producer) === "on_vacation";
   // MEH-2440: the line under the name holds the category, plus the distance
   // only when there is no city line to carry it. With neither, it is skipped
   // instead of rendering an empty row (claude[bot] review on #3694).
@@ -322,7 +322,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
   // shout "סגור" (MEH-1652 copy-honesty — describe declared mechanics, never
   // promise on the business's behalf), and the async CTA stays either way.
   //
-  // Vacation wins, matching the page's existing precedence. `availability`
+  // Vacation wins, matching the page's existing precedence. `isOnVacation`
   // is the one owner of "is this producer on vacation" on this card.
   //
   // `nextChange` is checked, not assumed. On the open branch it is always a
@@ -332,7 +332,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
   // than re-derive that the open branch is safe on every future edit to
   // getOrderWindowStatus, the render is gated on the value it actually needs.
   const showOrderWindowLine =
-    availability !== "on_vacation" &&
+    !isOnVacation &&
     (orderStatus?.state === "open" || orderStatus?.state === "closing_soon") &&
     orderStatus.nextChange != null;
 

@@ -337,11 +337,13 @@ describe("ProducerCard — Phase B anatomy", () => {
   it.each(["available_today", "full_this_week", "on_vacation", "accepting_orders"])(
     "renders no availability dot when availability_state=%s",
     (state) => {
-      const { container } = render(
-        <ProducerCard producer={{ ...fullProducer, availability_state: state }} />,
-      );
+      render(<ProducerCard producer={{ ...fullProducer, availability_state: state }} />);
       expect(screen.queryByTestId("availability-dot")).not.toBeInTheDocument();
-      expect(container.querySelector(".rounded-full.w-2.h-2")).toBeNull();
+      // Also without a testid: the two lines that used to carry the dot hold
+      // no round marker at all.
+      for (const id of ["location-line", "card-place"]) {
+        expect(screen.getByTestId(id).querySelector(".rounded-full")).toBeNull();
+      }
     },
   );
 
@@ -404,7 +406,6 @@ describe("ProducerCard — Phase B anatomy", () => {
     expect(screen.queryByTestId("location-line")).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 3, name: "חוות השקמה" })).toBeInTheDocument();
   });
-
 
   it("the name plate can break a single over-long token instead of overflowing", () => {
     render(<ProducerCard producer={{ ...fullProducer, images: [] }} />);
