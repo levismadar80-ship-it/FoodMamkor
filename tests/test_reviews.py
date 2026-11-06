@@ -104,7 +104,8 @@ def test_post_review_rejects_producer_owner(client, db):
         headers=auth_header(owner),
     )
     assert r.status_code == 403, r.text
-    assert "עסק" in r.json().get("detail", "") or "עצמ" in r.json().get("detail", "")
+    # MEH-2709 (ADR-037): gender-neutral, asserted by equality.
+    assert r.json().get("detail") == "אי אפשר לכתוב ביקורת על בית העסק שלך"
 
 
 # ---------------------------------------------------------------------------
@@ -118,7 +119,7 @@ def test_post_review_rejects_producer_owner(client, db):
 # ---------------------------------------------------------------------------
 
 SAME_CATEGORY_403 = (
-    "כבעלת עסק מאותה קטגוריה לא ניתן להשאיר ביקורת — כך אנחנו שומרות על הוגנות."
+    "אי אפשר להשאיר ביקורת לבית עסק מאותה קטגוריה — כך אנחנו שומרות על הוגנות."
 )
 
 

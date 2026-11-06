@@ -13,14 +13,14 @@ vi.mock("next-intl", () => ({
     const city = vars?.city ?? "";
     if (ns === "group_buys.delivery.waitlist") {
       const map = {
-        cta: `תודיעו לי כשתגיעו ל${city}`,
+        cta: "תודיעו לי כשתגיעו",
         email_label: "המייל שלך",
         email_placeholder: "name@example.com",
         submit: "עדכנו אותי",
         sending: "שולחים…",
         done: `נודיע לך כשיגיעו ל${city}`,
-        error: "משהו השתבש, נסי שוב",
-        whatsapp_hint: "רוצה גם בוואטסאפ?",
+        error: "משהו השתבש, אפשר לנסות שוב",
+        whatsapp_hint: "רוצים גם בוואטסאפ?",
         host_label: `אשמח לארח נקודת מסירה ב${city}`,
         host_hint: "נשלח לכם מייל לאישור, ורק אחרי האישור המייל שלכם יועבר לבית העסק.",
         host_sent: "שלחנו לכם מייל לאישור האירוח.",
@@ -31,7 +31,7 @@ vi.mock("next-intl", () => ({
     }
     if (ns === "whatsapp.question_chips") return key;
     if (key === "checker.yes") return `כן, מגיעים ל${city}`;
-    if (key === "checker.no") return `לצערנו לא מגיעים ל${city} כרגע`;
+    if (key === "checker.no") return `עדיין לא מגיעים ל${city}`;
     const map = {
       "checker.label": "מגיעים אלייך?",
       "checker.placeholder": "הקלידי עיר",
@@ -112,14 +112,42 @@ describe("DeliveryWaitlistForm on the checker's negative verdict (MEH-2618)", ()
     expect(form()).toBeNull();
   });
 
-  it("offers «תודיעו לי» for the city the verdict names", async () => {
+  // MEH-2709: the chip no longer repeats the city — the verdict right above
+  // it already names it, and saying it twice was the complaint.
+  it("offers «תודיעו לי» under the verdict, which alone names the city", async () => {
     setup();
     commitCity("נתניה");
     await waitFor(() => expect(form()).toBeTruthy());
     expect(form().dataset.phase).toBe("idle");
     expect(screen.getByTestId("delivery-waitlist-cta").textContent).toBe(
-      "תודיעו לי כשתגיעו לנתניה",
+      "תודיעו לי כשתגיעו",
     );
+    const box = screen.getByTestId("delivery-checker-result").textContent;
+    expect(box.split("נתניה").length - 1).toBe(1);
+  });
+
+  // MEH-2709: the chips are ordered in the DOM (not with CSS `order`), so
+  // the tab / screen-reader order is the order seen: waitlist, then WhatsApp.
+  it("puts the waitlist chip before the WhatsApp chip in DOM order", async () => {
+    setup();
+    commitCity("נתניה");
+    await waitFor(() => expect(form()).toBeTruthy());
+    const row = screen.getByTestId("delivery-checker-no-actions");
+    const ids = [...row.children].map((el) => el.dataset.testid);
+    expect(ids).toEqual(["delivery-waitlist", "coverage-request-cta"]);
+  });
+
+  // MEH-2709: the chips drop the city on screen, so each one is described by
+  // the verdict line — a screen reader still hears "…לנתניה".
+  it("describes both chips with the verdict line that names the city", async () => {
+    setup();
+    commitCity("נתניה");
+    await waitFor(() => expect(form()).toBeTruthy());
+    for (const id of ["delivery-waitlist-cta", "coverage-request-link"]) {
+      const ref = screen.getByTestId(id).getAttribute("aria-describedby");
+      expect(ref).toBeTruthy();
+      expect(document.getElementById(ref).textContent).toContain("נתניה");
+    }
   });
 
   it("guest: opens an empty email field and posts email + city, then confirms", async () => {
@@ -223,8 +251,9 @@ describe("DeliveryWaitlistForm on the checker's negative verdict (MEH-2618)", ()
     await waitFor(() =>
       expect(screen.getByTestId("delivery-waitlist-cta")).toBeTruthy(),
     );
-    expect(screen.getByTestId("delivery-waitlist-cta").textContent).toBe(
-      "תודיעו לי כשתגיעו לאשדוד",
+    expect(form().dataset.phase).toBe("idle");
+    expect(screen.getByTestId("delivery-checker-result").textContent).toContain(
+      "עדיין לא מגיעים לאשדוד",
     );
   });
 });

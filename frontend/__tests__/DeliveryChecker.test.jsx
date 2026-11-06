@@ -12,7 +12,7 @@ vi.mock("next-intl", () => ({
     const city = vars?.city ?? "";
     if (key === "checker.yes_nationwide") return `כן! משלוחים לכל הארץ — כולל ${city}`;
     if (key === "checker.yes") return `כן, מגיעים ל${city}`;
-    if (key === "checker.no") return `לצערנו לא מגיעים ל${city} כרגע`;
+    if (key === "checker.no") return `עדיין לא מגיעים ל${city}`;
     const map = {
       "checker.label": "מגיעים אלייך?",
       "checker.placeholder": "הקלידי עיר",
@@ -93,7 +93,7 @@ describe("DeliveryChecker — answer states (MEH-1536)", () => {
     setup({ nationwide: true, excluded: ["אילת"] });
     check("אילת");
     expect(result()).toHaveAttribute("data-result", "no");
-    expect(screen.getByText("לצערנו לא מגיעים לאילת כרגע")).toBeInTheDocument();
+    expect(screen.getByText("עדיין לא מגיעים לאילת")).toBeInTheDocument();
   });
 
   it("state 3 — yes with details: day + minimum on the secondary line", () => {
@@ -127,7 +127,7 @@ describe("DeliveryChecker — answer states (MEH-1536)", () => {
     setup({ areas: AREAS });
     check("אילת");
     expect(result()).toHaveAttribute("data-result", "no");
-    expect(screen.getByText("לצערנו לא מגיעים לאילת כרגע")).toBeInTheDocument();
+    expect(screen.getByText("עדיין לא מגיעים לאילת")).toBeInTheDocument();
   });
 
   it("renders no verdict while the field is empty, and the region is aria-live", () => {
@@ -139,7 +139,7 @@ describe("DeliveryChecker — answer states (MEH-1536)", () => {
   it("holds the verdict until the city is committed — no mid-typing false negative", () => {
     setup({ areas: AREAS });
     // "חיפ" is a prefix of a SERVED city; a live verdict would read
-    // "לצערנו לא מגיעים" to someone who is in fact covered.
+    // "עדיין לא מגיעים" to someone who is in fact covered.
     type("חיפ");
     expect(result()).toHaveAttribute("data-result", "none");
     check("חיפה");

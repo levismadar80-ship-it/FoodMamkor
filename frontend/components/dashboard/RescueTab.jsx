@@ -24,6 +24,8 @@ const MAX_QTY = 20;
 // refuses a bag dated in the past (MEH-2678).
 const ISRAEL_DATE = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jerusalem" });
 
+const ORDER_RANK = { reserved: 0, handed: 1, no_show: 2, cancelled: 3 };
+
 export default function RescueTab() {
   const t = useTranslations("rescue.dashboard");
   const [orders, setOrders] = useState(null);
@@ -40,12 +42,26 @@ export default function RescueTab() {
   // flash while it loads, nor replace the form when the request failed.
   const [locationsLoaded, setLocationsLoaded] = useState(false);
 
+  // MEH-2703: today's bags with what was not collected. Reloaded with the
+  // orders, so marking «לא הגיע» updates the leftover count at once.
+  const [offers, setOffers] = useState([]);
+  const [businessName, setBusinessName] = useState("");
+  const [donating, setDonating] = useState(false);
+  // How many of the leftover bags were given away; null = all of them.
+  const [donateQty, setDonateQty] = useState(null);
+
   const load = useCallback(async () => {
     try {
       const res = await api.get("/producers/me/rescue/orders");
       setOrders(Array.isArray(res.data) ? res.data : []);
     } catch {
       setOrders([]);
+    }
+    try {
+      const res = await api.get("/producers/me/rescue/offers");
+      setOffers(Array.isArray(res.data) ? res.data : []);
+    } catch {
+      setOffers([]);
     }
   }, []);
 
@@ -58,6 +74,11 @@ export default function RescueTab() {
         setLocationsLoaded(true);
       })
       .catch(() => setLocations([]));
+    api
+      .get("/producers/me")
+      .then((r) => setBusinessName(typeof r.data?.name === "string" ? r.data.name : ""))
+      // Silent on purpose: without a name the WhatsApp button stays hidden.
+      .catch(() => {});
     api
       .get("/producers/me/rescue/typical-items")
       .then((r) => setItems((r.data?.items || []).join(", ")))
@@ -73,6 +94,15 @@ export default function RescueTab() {
       no_show: rows.filter((o) => o.status === "no_show").length,
     };
   }, [orders]);
+  // Orders still waiting at the counter first, cancelled ones last; the
+  // server order is kept inside each group.
+  const sortedOrders = useMemo(
+    () =>
+      [...(orders || [])].sort(
+        (a, b) => (ORDER_RANK[a.status] ?? 9) - (ORDER_RANK[b.status] ?? 9),
+      ),
+    [orders],
+  );
 
   async function act(order, what) {
     setBusyId(order.id);
@@ -152,6 +182,47 @@ export default function RescueTab() {
   // MEH-2702: the group for the town of the point bags are published from,
   // national fallback otherwise.
   const leftoverHref = leftoverGroupUrl(exactLocation?.city);
+  // MEH-2703: bags not collected once the window closed (the server returns
+  // 0 before pickup_end), and how many of them the business gave away.
+  const leftoverRows = offers.filter((o) => Number(o.leftover) > 0);
+  const leftoverTotal = leftoverRows.reduce((n, o) => n + Number(o.leftover), 0);
+  const donatedTotal = leftoverRows.reduce((n, o) => n + Number(o.qty_donated || 0), 0);
+  // Today's bags whose window is still open: the box will appear after it,
+  // so the business is told where to look instead of finding it by chance.
+  const upcoming = offers.some((o) => o.status === "active" && new Date(o.pickup_end).getTime() > now);
+  const chosenQty = donateQty === null ? leftoverTotal : Math.min(donateQty, leftoverTotal);
+  // No recipient in the link: the business picks the contact or group in
+  // WhatsApp itself, so nothing about who receives it is stored here.
+  const shareHref = `https://wa.me/?text=${encodeURIComponent(
+    t("leftover_share_text", {
+      count: leftoverTotal,
+      name: businessName,
+      city: exactLocation?.city || "",
+    }),
+  )}`;
+
+  // `total` bags spread over today's offers in order, each capped at its own
+  // leftover. A set, not an increment, so 0 undoes the report.
+  async function markDonated(total) {
+    setDonating(true);
+    setNotice(null);
+    try {
+      let rest = total;
+      for (const o of leftoverRows) {
+        const qty = Math.min(Number(o.leftover), rest);
+        rest -= qty;
+        await api.put(`/producers/me/rescue/offers/${o.id}/donated`, { qty });
+      }
+      setDonateQty(null);
+    } catch (err) {
+      setNotice(err?.response?.data?.detail || t("failed"));
+    } finally {
+      // Reload even after a failure: earlier offers in the loop may already
+      // be saved, and the box must show what the server holds.
+      await load();
+      setDonating(false);
+    }
+  }
 
   return (
     <div data-testid="rescue-tab" className="space-y-6">
@@ -203,7 +274,7 @@ export default function RescueTab() {
           </p>
         )}
         <ul className="space-y-2">
-          {(orders || []).map((o) => {
+          {sortedOrders.map((o) => {
             // «לא הגיע» is only legal after the window closed — the server
             // refuses it earlier, so the button must not offer it earlier.
             const windowClosed = new Date(o.pickup_end).getTime() <= now;
@@ -211,24 +282,26 @@ export default function RescueTab() {
               <li
                 key={o.id}
                 data-testid="rescue-order-row"
-                className="flex items-center justify-between gap-3 border border-border rounded-md px-3 py-2"
+                // A fixed grid, so code and quantity line up whatever the
+                // status cell holds (two buttons, a time, or one word).
+                className="grid grid-cols-[3.5rem_4rem_1fr] items-center gap-2 border border-border rounded-md px-3 py-2"
               >
                 <span dir="ltr" className="font-headline-md font-black tracking-[0.2em]" data-testid="rescue-order-code">
                   {o.pickup_code}
                 </span>
                 <span className="font-body-sm text-sm text-fg-muted">{t("qty", { qty: o.qty })}</span>
                 {o.status === "handed" ? (
-                  <span className="font-body-sm text-sm text-fg-muted" data-testid="rescue-order-handed">
+                  <span className="justify-self-end font-body-sm text-sm text-fg-muted" data-testid="rescue-order-handed">
                     {t("handed_at", { time: israelTime(o.handed_at) || "" })}
                   </span>
                 ) : o.status === "reserved" ? (
-                  <span className="flex gap-2">
+                  <span className="justify-self-end flex gap-2">
                     <button
                       type="button"
                       disabled={busyId === o.id}
                       onClick={() => act(o, "handed")}
                       data-testid="rescue-order-hand"
-                      className="bg-primary text-white px-3 py-1 rounded-md font-body-sm text-sm disabled:opacity-50"
+                      className="whitespace-nowrap bg-primary text-white px-3 py-1 rounded-md font-body-sm text-sm disabled:opacity-50"
                     >
                       {t("hand_over")}
                     </button>
@@ -238,13 +311,13 @@ export default function RescueTab() {
                       title={windowClosed ? undefined : t("no_show_too_early")}
                       onClick={() => act(o, "no_show")}
                       data-testid="rescue-order-noshow"
-                      className="border border-border px-3 py-1 rounded-md font-body-sm text-sm disabled:opacity-40"
+                      className="whitespace-nowrap border border-border px-3 py-1 rounded-md font-body-sm text-sm disabled:opacity-40"
                     >
                       {t("no_show")}
                     </button>
                   </span>
                 ) : (
-                  <span className="font-body-sm text-sm text-fg-muted">{t(`status.${o.status}`)}</span>
+                  <span className="justify-self-end font-body-sm text-sm text-fg-muted">{t(`status.${o.status}`)}</span>
                 )}
               </li>
             );
@@ -355,19 +428,93 @@ export default function RescueTab() {
         </button>
       </section>
 
-      {/* No exact point → no bags can be published, so nothing can be left over. */}
-      {exactLocation && (
-        <p className="border border-border rounded-md px-4 py-3 font-body-sm text-sm text-fg-muted" data-testid="rescue-leftover-hint">
-          {t("leftover_hint")}{" "}
-          <a
-            href={leftoverHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            data-testid="rescue-leftover-link"
-            className="text-primary underline underline-offset-2"
-          >
-            {t("leftover_link")}
-          </a>
+      {/* MEH-2703: only once the window closed and something was not
+          collected; before that a bag may still be reserved or picked up. */}
+      {leftoverTotal > 0 && (
+        <section
+          className="border border-border rounded-md px-4 py-4 space-y-3"
+          data-testid="rescue-leftover"
+        >
+          <h3 className="font-headline-md text-base font-black text-text" data-testid="rescue-leftover-count">
+            {t("leftover_title", { count: leftoverTotal })}
+          </h3>
+          <p className="font-body-sm text-sm text-fg-muted">{t("leftover_hint")}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {/* Without the business name the text would carry an empty slot. */}
+            {businessName && (
+              <a
+                href={shareHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid="rescue-leftover-share"
+                className="block text-center bg-primary text-white py-2 rounded-md font-medium"
+              >
+                {t("leftover_share")}
+              </a>
+            )}
+            <a
+              href={leftoverHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-testid="rescue-leftover-link"
+              className="block text-center border border-primary text-primary py-2 rounded-md font-medium"
+            >
+              {t("leftover_link")}
+            </a>
+          </div>
+          {donatedTotal > 0 ? (
+            <p className="font-body-sm text-sm text-text" data-testid="rescue-leftover-done">
+              {t("leftover_done", { count: donatedTotal })}{" "}
+              <button
+                type="button"
+                onClick={() => markDonated(0)}
+                disabled={donating}
+                data-testid="rescue-leftover-undo"
+                className="underline text-primary font-medium disabled:opacity-60"
+              >
+                {t("leftover_undo")}
+              </button>
+            </p>
+          ) : (
+            <div className="space-y-2 border-t border-border pt-3">
+              <div className="flex items-center gap-2">
+                <label htmlFor="rescue-leftover-qty" className="font-body-sm text-sm text-text">
+                  {t("leftover_qty_label")}
+                </label>
+                <select
+                  id="rescue-leftover-qty"
+                  value={chosenQty}
+                  onChange={(e) => setDonateQty(Number(e.target.value))}
+                  data-testid="rescue-leftover-qty"
+                  className="border border-border rounded-md px-2 py-1 bg-white text-text"
+                >
+                  {Array.from({ length: leftoverTotal }, (_, i) => i + 1).map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <button
+                type="button"
+                onClick={() => markDonated(chosenQty)}
+                disabled={donating}
+                data-testid="rescue-leftover-donated"
+                className="w-full border border-primary text-primary py-2 rounded-md font-medium disabled:opacity-60"
+              >
+                {t("leftover_donated")}
+              </button>
+              <p className="font-body-sm text-xs text-fg-muted">{t("leftover_donated_help")}</p>
+            </div>
+          )}
+        </section>
+      )}
+      {leftoverTotal === 0 && upcoming && (
+        <p
+          className="border border-dashed border-border rounded-md px-4 py-3 font-body-sm text-sm text-fg-muted"
+          data-testid="rescue-leftover-upcoming"
+        >
+          {t("leftover_upcoming")}
         </p>
       )}
     </div>

@@ -193,6 +193,15 @@ def restore_schema(rev):
     yield
     if _present_tables() != set(RESCUE_TABLES) or not _users_has_counter():
         _run(rev, "upgrade")
+    # MEH-2703: a1c9f3e8d204's upgrade() builds the rescue tables as they
+    # stood in THAT revision — without columns later revisions added
+    # (rescue_offers.qty_donated). Hand the four tables back as the MODEL
+    # defines them, the way conftest's create_all built them, or every later
+    # module's ORM INSERT names a column that is not there.
+    tables = [Base.metadata.tables[name] for name in RESCUE_TABLES]
+    with engine.begin() as conn:
+        Base.metadata.drop_all(bind=conn, tables=tables)
+        Base.metadata.create_all(bind=conn, tables=tables)
 
 
 def test_revision_vocabularies_match_the_models(rev):

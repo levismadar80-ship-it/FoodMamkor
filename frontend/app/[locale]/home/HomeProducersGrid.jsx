@@ -239,7 +239,11 @@ export function HomeProducersGrid({
   const [dayPanelHost, setDayPanelHost] = useState(null);
   // MEH-2537: focus under the sticky «סינון» — lib/keepFocusedChipClear.js.
   return (
-    <section id="producers-grid" className="max-w-7xl mx-auto px-4 pb-20">
+    // MEH-2712: pb-8 below md. On phones this section sits in HomeClient's
+    // flex wrapper with the mini-map after it (MEH-2635), and flex children
+    // don't collapse margins — pb-20 + the map's mt-6 painted ~104px of empty
+    // page. md+ keeps pb-20 (block flow, unchanged desktop spacing).
+    <section id="producers-grid" className="max-w-7xl mx-auto px-4 pb-8 md:pb-20">
       {/* MEH-2394: the first-visit coach-mark tour (step 0 here, step 1 by the
           chips, steps 2–3 on the bottom nav) is gone. On a first visit it was
           the THIRD thing asking for attention above the content, after the

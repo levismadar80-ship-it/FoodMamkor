@@ -105,6 +105,22 @@ describe("the three counters", () => {
   });
 });
 
+describe("the order list", () => {
+  it("puts orders still waiting at the counter first and cancelled ones last", async () => {
+    mockOrders([
+      order({ id: "c", status: "cancelled", pickup_code: "0001" }),
+      order({ id: "h", status: "handed", pickup_code: "0002" }),
+      order({ id: "r", status: "reserved", pickup_code: "0003" }),
+      order({ id: "n", status: "no_show", pickup_code: "0004" }),
+      order({ id: "r2", status: "reserved", pickup_code: "0005" }),
+    ]);
+    render(<RescueTab />);
+    await screen.findAllByTestId("rescue-order-row");
+    const codes = screen.getAllByTestId("rescue-order-code").map((el) => el.textContent);
+    expect(codes).toEqual(["0003", "0005", "0002", "0004", "0001"]);
+  });
+});
+
 describe("«לא הגיע» and the pickup window", () => {
   it("is DISABLED while the window is still open", async () => {
     mockOrders([order()]);
@@ -334,37 +350,177 @@ describe("the empty day", () => {
 // MEH-2702 — where uncollected bags can go. The 05/11 scan found no local
 // food-rescue group in any Wave 1 town, so today every town gets the national
 // group; a town added to the map must get its own link instead.
-describe("the leftover-bags line", () => {
-  it("links the national group when the pickup town has no local group", async () => {
-    locs = [{ id: "loc1", location_precision: "exact", is_primary: true, city: "זכרון יעקב" }];
+// MEH-2703: what was not collected. The server sends `leftover` per offer —
+// 0 until pickup_end — so the box keys on it, never on the clock here.
+let todaysOffers = [];
+function mockDay({ offers = [], points = locs, name = "מאפיית הכרמל" } = {}) {
+  todaysOffers = offers;
+  get.mockImplementation((url) => {
+    if (url.includes("typical-items")) return Promise.resolve({ data: { items: [] } });
+    if (url === "/producers/me/locations") return Promise.resolve({ data: points });
+    if (url === "/producers/me/rescue/offers") return Promise.resolve({ data: todaysOffers });
+    if (url === "/producers/me") return Promise.resolve({ data: { name } });
+    return Promise.resolve({ data: [] });
+  });
+}
+function bag(over = {}) {
+  return { id: "of1", qty_total: 4, qty_left: 2, status: "active", leftover: 3, qty_donated: 0, ...over };
+}
+const ZICHRON = [{ id: "loc1", location_precision: "exact", is_primary: true, city: "זכרון יעקב" }];
+
+describe("what was not collected", () => {
+  it("shows nothing while no bag is left over (before the window closes the server sends 0)", async () => {
+    mockDay({ offers: [bag({ leftover: 0 })], points: ZICHRON });
     render(<RescueTab />);
     await pointsLoaded();
-    expect(screen.getByTestId("rescue-leftover-hint").textContent).toContain(
+    await waitFor(() => expect(get).toHaveBeenCalledWith("/producers/me/rescue/offers"));
+    await act(async () => {});
+    expect(screen.queryByTestId("rescue-leftover")).toBeNull();
+  });
+
+  it("offers WhatsApp, the rescue group and «נמסרו בחינם» once bags were left", async () => {
+    mockDay({ offers: [bag({ leftover: 3 })], points: ZICHRON });
+    render(<RescueTab />);
+    expect(await screen.findByTestId("rescue-leftover")).toBeTruthy();
+    expect(screen.getByTestId("rescue-leftover").textContent).toContain(
       lookup("rescue.dashboard.leftover_hint"),
     );
-    const link = screen.getByTestId("rescue-leftover-link");
-    expect(link.getAttribute("href")).toBe("https://www.facebook.com/groups/freefood/");
-    expect(link.getAttribute("target")).toBe("_blank");
-    expect(link.getAttribute("rel")).toContain("noopener");
+    // No recipient: the business picks the contact or group in WhatsApp.
+    const share = (await screen.findByTestId("rescue-leftover-share")).getAttribute("href");
+    expect(share.startsWith("https://wa.me/?text=")).toBe(true);
+    const text = decodeURIComponent(share.slice("https://wa.me/?text=".length));
+    await waitFor(() =>
+      expect(
+        decodeURIComponent(
+          screen.getByTestId("rescue-leftover-share").getAttribute("href").slice("https://wa.me/?text=".length),
+        ),
+      ).toContain("מאפיית הכרמל"),
+    );
+    expect(text).toContain("זכרון יעקב");
+    const group = screen.getByTestId("rescue-leftover-link");
+    expect(group.getAttribute("href")).toBe("https://www.facebook.com/groups/freefood/");
+    expect(group.getAttribute("rel")).toContain("noopener");
+    expect(screen.getByTestId("rescue-leftover-donated").textContent).toBe(
+      lookup("rescue.dashboard.leftover_donated"),
+    );
+  });
+
+  it("adds up the leftover across today's bags and reports each one as given", async () => {
+    mockDay({
+      offers: [bag({ id: "a", leftover: 2 }), bag({ id: "b", leftover: 1 }), bag({ id: "c", leftover: 0 })],
+      points: ZICHRON,
+    });
+    put.mockImplementation(async (url, body) => {
+      const id = url.split("/").at(-2);
+      todaysOffers = todaysOffers.map((o) => (o.id === id ? { ...o, qty_donated: body.qty } : o));
+      return { data: {} };
+    });
+    render(<RescueTab />);
+    fireEvent.click(await screen.findByTestId("rescue-leftover-donated"));
+    expect(await screen.findByTestId("rescue-leftover-done")).toBeTruthy();
+    expect(put).toHaveBeenCalledWith("/producers/me/rescue/offers/a/donated", { qty: 2 });
+    expect(put).toHaveBeenCalledWith("/producers/me/rescue/offers/b/donated", { qty: 1 });
+    // A bag with nothing left over is not reported at all.
+    expect(put).not.toHaveBeenCalledWith("/producers/me/rescue/offers/c/donated", expect.anything());
+    expect(screen.queryByTestId("rescue-leftover-donated")).toBeNull();
+  });
+
+  it("says what the server refused instead of claiming the bags were given", async () => {
+    mockDay({ offers: [bag({ leftover: 3 })], points: ZICHRON });
+    put.mockRejectedValue({ response: { data: { detail: "אפשר לסמן עד 2 סלים שלא נאספו" } } });
+    render(<RescueTab />);
+    fireEvent.click(await screen.findByTestId("rescue-leftover-donated"));
+    expect(await screen.findByTestId("rescue-tab-notice")).toHaveProperty(
+      "textContent",
+      "אפשר לסמן עד 2 סלים שלא נאספו",
+    );
+    expect(screen.queryByTestId("rescue-leftover-done")).toBeNull();
+  });
+
+  it("hides the WhatsApp button while the business name is missing, so the text has no empty slot", async () => {
+    mockDay({ offers: [bag({ leftover: 3 })], points: ZICHRON, name: "" });
+    render(<RescueTab />);
+    await screen.findByTestId("rescue-leftover");
+    await waitFor(() => expect(get).toHaveBeenCalledWith("/producers/me"));
+    await act(async () => {});
+    expect(screen.queryByTestId("rescue-leftover-share")).toBeNull();
+    // The group link and «נמסרו בחינם» need no name and stay.
+    expect(screen.getByTestId("rescue-leftover-link")).toBeTruthy();
+    expect(screen.getByTestId("rescue-leftover-donated")).toBeTruthy();
+  });
+
+  it("reloads after a failure part-way, so a bag already saved shows as given", async () => {
+    mockDay({ offers: [bag({ id: "a", leftover: 2 }), bag({ id: "b", leftover: 1 })], points: ZICHRON });
+    put.mockImplementation(async (url, body) => {
+      const id = url.split("/").at(-2);
+      if (id === "b") throw { response: { data: { detail: "שגיאה" } } };
+      todaysOffers = todaysOffers.map((o) => (o.id === id ? { ...o, qty_donated: body.qty } : o));
+      return { data: {} };
+    });
+    render(<RescueTab />);
+    fireEvent.click(await screen.findByTestId("rescue-leftover-donated"));
+    await screen.findByTestId("rescue-tab-notice");
+    const offerLoads = () => get.mock.calls.filter(([u]) => u === "/producers/me/rescue/offers").length;
+    await waitFor(() => expect(offerLoads()).toBeGreaterThanOrEqual(2));
+  });
+
+  it("reports only the number chosen when some bags were given, spread over the offers in order", async () => {
+    mockDay({ offers: [bag({ id: "a", leftover: 2 }), bag({ id: "b", leftover: 2 })], points: ZICHRON });
+    put.mockResolvedValue({ data: {} });
+    render(<RescueTab />);
+    const qty = await screen.findByTestId("rescue-leftover-qty");
+    expect(qty.value).toBe("4");
+    fireEvent.change(qty, { target: { value: "3" } });
+    fireEvent.click(screen.getByTestId("rescue-leftover-donated"));
+    await waitFor(() => expect(put).toHaveBeenCalledTimes(2));
+    expect(put).toHaveBeenCalledWith("/producers/me/rescue/offers/a/donated", { qty: 2 });
+    expect(put).toHaveBeenCalledWith("/producers/me/rescue/offers/b/donated", { qty: 1 });
+  });
+
+  it("undoes a report by setting every offer back to 0", async () => {
+    mockDay({ offers: [bag({ id: "a", leftover: 2, qty_donated: 2 }), bag({ id: "b", leftover: 1, qty_donated: 1 })], points: ZICHRON });
+    put.mockResolvedValue({ data: {} });
+    render(<RescueTab />);
+    expect(await screen.findByTestId("rescue-leftover-done")).toBeTruthy();
+    expect(screen.queryByTestId("rescue-leftover-donated")).toBeNull();
+    fireEvent.click(screen.getByTestId("rescue-leftover-undo"));
+    await waitFor(() => expect(put).toHaveBeenCalledTimes(2));
+    expect(put).toHaveBeenCalledWith("/producers/me/rescue/offers/a/donated", { qty: 0 });
+    expect(put).toHaveBeenCalledWith("/producers/me/rescue/offers/b/donated", { qty: 0 });
+  });
+
+  it("tells the business ahead of time where the box will appear while the window is open", async () => {
+    const later = new Date(Date.now() + 3600_000).toISOString();
+    mockDay({ offers: [bag({ leftover: 0, pickup_end: later })], points: ZICHRON });
+    render(<RescueTab />);
+    expect((await screen.findByTestId("rescue-leftover-upcoming")).textContent).toBe(
+      lookup("rescue.dashboard.leftover_upcoming"),
+    );
+    expect(screen.queryByTestId("rescue-leftover")).toBeNull();
+  });
+
+  it("says nothing ahead of time on a day with no bags published", async () => {
+    mockDay({ offers: [], points: ZICHRON });
+    render(<RescueTab />);
+    await pointsLoaded();
+    await waitFor(() => expect(get).toHaveBeenCalledWith("/producers/me/rescue/offers"));
+    await act(async () => {});
+    expect(screen.queryByTestId("rescue-leftover-upcoming")).toBeNull();
   });
 
   it("looks the group up by the town of the exact pickup point, not an approximate one", async () => {
-    locs = [
-      { id: "loc0", location_precision: "approximate", is_primary: true, city: "בנימינה" },
-      { id: "loc1", location_precision: "exact", is_primary: false, city: "חדרה" },
-    ];
+    mockDay({
+      offers: [bag()],
+      points: [
+        { id: "loc0", location_precision: "approximate", is_primary: true, city: "בנימינה" },
+        { id: "loc1", location_precision: "exact", is_primary: false, city: "חדרה" },
+      ],
+    });
     leftoverSpy.fn.mockClear();
     render(<RescueTab />);
-    await pointsLoaded();
+    await screen.findByTestId("rescue-leftover");
     expect(leftoverSpy.fn).toHaveBeenLastCalledWith("חדרה");
     expect(leftoverSpy.fn).not.toHaveBeenCalledWith("בנימינה");
-  });
-
-  it("is hidden when the business has no exact pickup point (no bags can be published)", async () => {
-    locs = [{ id: "loc0", location_precision: "approximate", is_primary: true, city: "בנימינה" }];
-    render(<RescueTab />);
-    await pointsLoaded();
-    expect(screen.queryByTestId("rescue-leftover-hint")).toBeNull();
   });
 });
 
