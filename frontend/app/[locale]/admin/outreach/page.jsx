@@ -229,7 +229,7 @@ export default function AdminOutreachPage() {
       </div>
 
       {/* Leads table */}
-      <div className="bg-white border border-border rounded-md overflow-hidden">
+      <div className="bg-surface border border-border rounded-md overflow-hidden">
         <div className="overflow-x-auto">
           {/* MEH-2426: one card per row below md (globals.css .table-stack). */}
           <table className="table-stack w-full text-sm">
@@ -331,7 +331,7 @@ export default function AdminOutreachPage() {
                       <select
                         value={lead.status}
                         onChange={(e) => handleStatusChange(lead.id, e.target.value)}
-                        className="text-xs border border-border rounded-lg px-2 py-1 bg-white"
+                        className="text-xs border border-border rounded-lg px-2 py-1 bg-surface"
                         aria-label={t("outreach.columns.status")}
                         data-testid={`status-select-${lead.id}`}
                       >
@@ -512,7 +512,7 @@ function StatusChip({ id, label, count, active, onClick }) {
       className={`inline-flex items-center gap-2 min-h-touch px-4 rounded-full border text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
         active
           ? "bg-primary text-white border-primary"
-          : "bg-white text-text border-border hover:border-primary/40"
+          : "bg-surface text-text border-border hover:border-primary/40"
       }`}
     >
       {label}
@@ -572,7 +572,7 @@ function AddLeadModal({ onClose, onCreated }) {
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
         onSubmit={handleSubmit}
-        className="bg-white rounded-lg p-6 max-w-md w-full space-y-3"
+        className="bg-surface rounded-lg p-6 max-w-md w-full space-y-3"
       >
         <h2 className="font-headline-md text-xl font-bold">{t("outreach.modal_add.title")}</h2>
         {/* MEH-1128 Wave C: label-less ui/Input — placeholder-only parity
@@ -653,7 +653,7 @@ function ScriptModal({ onClose }) {
         role="dialog"
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-lg p-6 max-w-lg w-full"
+        className="bg-surface rounded-lg p-6 max-w-lg w-full"
       >
         <h2 className="font-headline-md text-xl font-bold mb-3 inline-flex items-center gap-2">
           <Phone size={20} className="text-primary" aria-hidden="true" />
@@ -726,7 +726,7 @@ function WhatsAppModal({ lead, onClose, onPrefillMinted }) {
         role="dialog"
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-lg p-6 max-w-lg w-full space-y-4"
+        className="bg-surface rounded-lg p-6 max-w-lg w-full space-y-4"
       >
         <h2 className="font-headline-md text-xl font-bold">
           {t("outreach.modal_wa.title", { name: lead.name })}

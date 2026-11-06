@@ -162,7 +162,7 @@ export default function AdminSettingsPage() {
           nothing ever read. The real gallery cap is the hardcoded `>= 3` in
           backend/app/routers/upload.py:101. */}
 
-      <div className="bg-white border border-border rounded-md p-5 space-y-4">
+      <div className="bg-surface border border-border rounded-md p-5 space-y-4">
         <h2 className="font-semibold">
           {t("settings.sections.holiday")}
           <InfoTooltip
@@ -181,14 +181,14 @@ export default function AdminSettingsPage() {
             onClick={() => update("holiday_override_enabled", settings.holiday_override_enabled === "true" ? "false" : "true")}
             className={`relative inline-flex h-6 w-11 rounded-full transition-colors ${settings.holiday_override_enabled === "true" ? "bg-primary" : "bg-gray-200"}`}
           >
-            <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${settings.holiday_override_enabled === "true" ? "translate-x-5" : "translate-x-0.5"}`} />
+            <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-surface shadow transition-transform ${settings.holiday_override_enabled === "true" ? "translate-x-5" : "translate-x-0.5"}`} />
           </button>
         </div>
         <Field label={t("settings.fields.holiday_key_label")}>
           <select
             value={settings.holiday_override_key || ""}
             onChange={(event) => update("holiday_override_key", event.target.value)}
-            className="w-full border border-border rounded-md px-3 py-2 bg-white"
+            className="w-full border border-border rounded-md px-3 py-2 bg-surface"
           >
             <option value="">{t("settings.fields.holiday_none")}</option>
             <option value="pesach">{t("settings.fields.holiday_pesach")}</option>
@@ -201,7 +201,7 @@ export default function AdminSettingsPage() {
         </Field>
       </div>
 
-      <div className="bg-white border border-border rounded-md p-5 space-y-4">
+      <div className="bg-surface border border-border rounded-md p-5 space-y-4">
         <h2 className="font-semibold">
           {t("settings.sections.friday_mode")}
           <InfoTooltip
@@ -231,13 +231,13 @@ export default function AdminSettingsPage() {
             }}
             className={`relative inline-flex h-6 w-11 rounded-full transition-colors ${settings.friday_mode_override === "true" ? "bg-primary" : "bg-gray-200"}`}
           >
-            <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${settings.friday_mode_override === "true" ? "translate-x-5" : "translate-x-0.5"}`} />
+            <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-surface shadow transition-transform ${settings.friday_mode_override === "true" ? "translate-x-5" : "translate-x-0.5"}`} />
           </button>
         </div>
       </div>
 
       {/* MEH-509 PR2a — vacation mode (state only; PR2b watchdog consumes it). */}
-      <div className="bg-white border border-border rounded-md p-5 space-y-4">
+      <div className="bg-surface border border-border rounded-md p-5 space-y-4">
         <h2 className="font-semibold">
           {t("settings.sections.vacation")}
           <InfoTooltip
@@ -260,7 +260,7 @@ export default function AdminSettingsPage() {
             }}
             className={`relative inline-flex h-6 w-11 rounded-full transition-colors ${vacation.active ? "bg-primary" : "bg-gray-200"}`}
           >
-            <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${vacation.active ? "translate-x-5" : "translate-x-0.5"}`} />
+            <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-surface shadow transition-transform ${vacation.active ? "translate-x-5" : "translate-x-0.5"}`} />
           </button>
         </div>
         {vacation.active && (
@@ -298,7 +298,7 @@ export default function AdminSettingsPage() {
         </div>
       </div>
 
-      <div className="bg-white border border-border rounded-md p-5 space-y-3">
+      <div className="bg-surface border border-border rounded-md p-5 space-y-3">
         <h2 className="font-semibold">{t("settings.sections.tests")}</h2>
         {[
           { key: "whatsapp", label: "WhatsApp" },
@@ -329,7 +329,7 @@ export default function AdminSettingsPage() {
         })}
       </div>
 
-      <div className="bg-white border border-border rounded-md p-5">
+      <div className="bg-surface border border-border rounded-md p-5">
         <h2 className="font-semibold mb-2">{t("settings.sections.categories")}</h2>
         <p className="text-sm text-muted mb-3">{t("settings.sections.categories_hint")}</p>
         <Link href="/admin/content" className="text-primary text-sm hover:underline">

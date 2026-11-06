@@ -337,7 +337,7 @@ export default function GroupBuyDetailClient({ id }) {
   );
 
   const joinCard = (
-    <div className="bg-white rounded-lg border border-border p-5 md:p-6">
+    <div className="bg-surface rounded-lg border border-border p-5 md:p-6">
       <div className="flex items-baseline gap-2">
         <span dir="ltr" className="text-4xl font-bold text-primary">{formatPrice(Number(gb.price_per_unit_group).toFixed(0))}</span>
         <span dir="ltr" className="text-fg-muted line-through text-lg">{formatPrice(Number(gb.price_per_unit_regular).toFixed(0))}</span>
@@ -658,7 +658,7 @@ export default function GroupBuyDetailClient({ id }) {
               </button>
               <button
                 onClick={() => setConfirmCancelOpen(false)}
-                className="flex-1 bg-white border border-border text-text py-2.5 rounded-[10px] hover:bg-green-50 transition text-sm font-medium"
+                className="flex-1 bg-surface border border-border text-text py-2.5 rounded-[10px] hover:bg-green-50 transition text-sm font-medium"
               >
                 {t("cancel_dismiss")}
               </button>

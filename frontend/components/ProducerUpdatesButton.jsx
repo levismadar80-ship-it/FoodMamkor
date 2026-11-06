@@ -61,10 +61,10 @@ const VARIANT_CLASS = {
     `inline-flex items-center gap-1.5 min-h-touch px-4 rounded-full text-sm font-medium border ${FOCUS} ${
       on
         ? "bg-primary/10 text-primary border-primary/30 hover:bg-primary/15"
-        : "bg-white text-text border-border hover:bg-green-50"
+        : "bg-surface text-text border-border hover:bg-green-50"
     }`,
   gallery: () =>
-    `bg-white/95 hover:bg-white rounded-full w-11 h-11 flex items-center justify-center shadow-md hover:scale-105 ${FOCUS}`,
+    `bg-surface/95 hover:bg-surface rounded-full w-11 h-11 flex items-center justify-center shadow-md hover:scale-105 ${FOCUS}`,
   quiet: (on) =>
     `inline-flex items-center gap-1.5 min-h-touch py-2 text-sm font-medium rounded ${FOCUS} ${
       on ? "text-primary" : "text-text hover:text-primary"

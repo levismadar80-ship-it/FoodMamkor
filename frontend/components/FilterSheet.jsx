@@ -521,7 +521,7 @@ export default function FilterSheet({
                         }`}
                       >
                         <span
-                          className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${
+                          className={`absolute top-1 w-4 h-4 rounded-full bg-surface shadow transition-all ${
                             active ? "end-1" : "start-1"
                           }`}
                         />

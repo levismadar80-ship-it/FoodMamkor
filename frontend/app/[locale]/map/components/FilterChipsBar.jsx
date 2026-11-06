@@ -164,7 +164,7 @@ export default function FilterChipsBar({
             // `max-[359px]:min-h-[42px]`: with the word hidden and no count the
             // button holds only the 16px glyph and shrank to 38px beside 42px
             // chips (py-2.5 + the 20px text line + border) — measured.
-            className="inline-flex items-center gap-1.5 whitespace-nowrap px-4 max-[374px]:px-3 max-[359px]:min-h-[42px] py-2.5 rounded-md text-sm font-medium border transition bg-white text-text border-border hover:border-primary hover:text-primary"
+            className="inline-flex items-center gap-1.5 whitespace-nowrap px-4 max-[374px]:px-3 max-[359px]:min-h-[42px] py-2.5 rounded-md text-sm font-medium border transition bg-surface text-text border-border hover:border-primary hover:text-primary"
           >
             <Faders size={16} aria-hidden="true" />
             {/* MEH-2514: under 360px the word is for screen readers only — the

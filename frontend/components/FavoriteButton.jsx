@@ -192,7 +192,7 @@ export default function FavoriteButton({
     button = (
       <button
         {...commonProps}
-        className="bg-white/95 hover:bg-white rounded-full w-11 h-11 flex items-center justify-center shadow-md hover:scale-105 transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40"
+        className="bg-surface/95 hover:bg-surface rounded-full w-11 h-11 flex items-center justify-center shadow-md hover:scale-105 transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40"
       >
         <HeartStraight
           size={22}
@@ -232,7 +232,7 @@ export default function FavoriteButton({
         className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium min-h-[32px] border transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40 ${
           favorited
             ? "bg-primary/10 text-primary border-primary/30 hover:bg-primary/15"
-            : "bg-white text-text border-border hover:bg-green-50"
+            : "bg-surface text-text border-border hover:bg-green-50"
         }`}
       >
         <HeartStraight

@@ -115,7 +115,7 @@ export default function ReportInfoModal({ open, onClose, producerSlug }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="report-info-title"
-        className="bg-white rounded-lg shadow-xl w-full max-w-sm p-6 text-start"
+        className="bg-surface rounded-lg shadow-xl w-full max-w-sm p-6 text-start"
       >
         <h2
           id="report-info-title"

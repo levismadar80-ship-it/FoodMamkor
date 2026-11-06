@@ -17,7 +17,7 @@ export default async function CounterCardPage() {
   const t = await getTranslations("rescue.counter_card");
 
   return (
-    <main className="min-h-screen bg-white" data-testid="rescue-counter-card">
+    <main className="min-h-screen bg-surface" data-testid="rescue-counter-card">
       {/* Screen-only: the button must never appear on the paper. */}
       <div className="print:hidden px-4 py-3 border-b border-border">
         <p className="font-body-sm text-sm text-fg-muted">{t("print_hint")}</p>
@@ -26,7 +26,7 @@ export default async function CounterCardPage() {
       {/* A5 is 148×210mm. The card is sized in mm so what prints matches what
           the business expects to tape beside the till. */}
       <article
-        className="mx-auto bg-white text-black px-8 py-10"
+        className="mx-auto bg-surface text-black px-8 py-10"
         style={{ width: "148mm", minHeight: "210mm" }}
       >
         <h1 className="font-headline-md text-3xl font-black mb-1">{t("title")}</h1>

@@ -150,7 +150,7 @@ export default function EditAccordionCard({
     <section
       id={anchorId}
       aria-labelledby={headerId}
-      className="bg-white border border-border rounded-lg scroll-mt-24"
+      className="bg-surface border border-border rounded-lg scroll-mt-24"
     >
       <h2 id={headerId} className="font-headline-md text-base font-bold">
         <button

@@ -39,12 +39,12 @@ import LoginPromptModal from "./LoginPromptModal";
 const VARIANT = {
   overlay: {
     button:
-      "bg-white/95 hover:bg-white rounded-full w-11 h-11 flex items-center justify-center shadow-md hover:scale-105",
+      "bg-surface/95 hover:bg-surface rounded-full w-11 h-11 flex items-center justify-center shadow-md hover:scale-105",
     size: 22,
   },
   row: {
     button: "w-11 h-11 grid place-items-center rounded-full",
-    face: "w-8 h-8 grid place-items-center rounded-full bg-white/95 shadow-sm",
+    face: "w-8 h-8 grid place-items-center rounded-full bg-surface/95 shadow-sm",
     size: 18,
   },
 };

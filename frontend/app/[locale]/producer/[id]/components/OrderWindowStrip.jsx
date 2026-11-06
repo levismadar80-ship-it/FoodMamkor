@@ -206,7 +206,7 @@ export function OrderWindowScheduleBlock({ orderWindow, specialHours = null }) {
       </h2>
       {/* Container copied from components/OpeningHours.jsx:52 so the order
           schedule and the store hours read as one family of Info cards. */}
-      <div className="border border-border rounded-md bg-white overflow-hidden">
+      <div className="border border-border rounded-md bg-surface overflow-hidden">
         <div className="flex items-center gap-2 px-3.5 py-2.5 border-b border-border text-sm text-text">
           <CalendarCheck size={16} className="text-primary-dark shrink-0" aria-hidden="true" />
           <span>{t("schedule_subtitle")}</span>

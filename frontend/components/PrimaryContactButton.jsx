@@ -40,7 +40,7 @@ const VARIANTS = {
   website: {
     Icon: Globe,
     className:
-      "bg-white text-text border border-primary hover:bg-green-50 focus-visible:ring-primary/40",
+      "bg-surface text-text border border-primary hover:bg-green-50 focus-visible:ring-primary/40",
   },
   email: {
     Icon: EnvelopeSimple,

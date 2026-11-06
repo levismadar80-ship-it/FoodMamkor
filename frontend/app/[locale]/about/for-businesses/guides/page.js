@@ -73,7 +73,7 @@ export default async function GuidesIndexPage({ params }) {
             <li key={g.slug}>
               <Link
                 href={`/about/for-businesses/guides/${g.slug}`}
-                className="block rounded-lg border border-border bg-white p-5 sm:p-6 transition focus-visible:outline-none focus-visible:ring-2"
+                className="block rounded-lg border border-border bg-surface p-5 sm:p-6 transition focus-visible:outline-none focus-visible:ring-2"
               >
                 <p className="text-2xs sm:text-xs mb-2 text-accent">
                   {ti("minutes_label", { minutes: g.readMinutes })}

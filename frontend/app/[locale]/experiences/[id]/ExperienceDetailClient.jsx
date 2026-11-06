@@ -228,7 +228,7 @@ export default function ExperienceDetailClient() {
         )}
         <div
           aria-hidden="true"
-          className="lg:hidden absolute start-4 -bottom-7 w-16 rounded-md bg-white shadow-lg text-center overflow-hidden"
+          className="lg:hidden absolute start-4 -bottom-7 w-16 rounded-md bg-surface shadow-lg text-center overflow-hidden"
         >
           <span className="block bg-accent text-white text-2xs font-bold py-0.5">{month}</span>
           <span className="block font-headline-display font-black text-3xl leading-tight pt-1 numeric">{day}</span>
@@ -311,7 +311,7 @@ export default function ExperienceDetailClient() {
         </div>
 
         <aside className="mt-6 lg:mt-0 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:sticky lg:top-24">
-          <div className="bg-white border border-border rounded-[14px] overflow-hidden lg:shadow-md" data-testid="experience-info">
+          <div className="bg-surface border border-border rounded-[14px] overflow-hidden lg:shadow-md" data-testid="experience-info">
             <div aria-hidden="true" className="hidden lg:block text-center border-b border-border">
               <span className="block bg-accent text-white text-sm font-bold py-1.5">
                 {formatEventDate(ex.event_date, locale, { month: "long", year: "numeric" })}
@@ -449,7 +449,7 @@ export default function ExperienceDetailClient() {
               (or per comma when she wrote one line). White like the
               description — the old green box read as a warning. */}
           {bringItems.length > 0 && (
-            <div className="bg-white border border-border rounded-lg p-6" data-testid="experience-bring">
+            <div className="bg-surface border border-border rounded-lg p-6" data-testid="experience-bring">
               <h2 className="font-headline-md text-lg font-bold text-text mb-3">
                 {t("requirements_title")}
               </h2>
@@ -465,7 +465,7 @@ export default function ExperienceDetailClient() {
           )}
 
           {ex.description && (
-            <div className="bg-white border border-border rounded-lg p-6 leading-relaxed whitespace-pre-line text-text/90">
+            <div className="bg-surface border border-border rounded-lg p-6 leading-relaxed whitespace-pre-line text-text/90">
               {ex.description}
             </div>
           )}

@@ -17,7 +17,7 @@
  *
  * Two `fixed inset-0` surfaces are NOT scrims and are exempt by value:
  *   - components/Lightbox.jsx  bg-black/95 — the immersive photo viewer
- *   - components/MiniMap.jsx   bg-white    — the full-screen map surface
+ *   - components/MiniMap.jsx   bg-surface    — the full-screen map surface
  * They double as the positive control: the walk must find both, so a regex
  * that sees nothing cannot pass as clean.
  */
@@ -29,7 +29,7 @@ const ROOT = path.resolve(__dirname, "..");
 const SCRIM = "bg-black/40";
 const EXEMPT = {
   "components/Lightbox.jsx": "bg-black/95",
-  "components/MiniMap.jsx": "bg-white",
+  "components/MiniMap.jsx": "bg-surface",
 };
 
 function walk(dir, out = []) {

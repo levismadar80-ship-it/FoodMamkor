@@ -93,7 +93,7 @@ export default function EventEntryRow({ entry, freeLabel, compact = false }) {
     entry.image || !entry.ownerInitial ? null : (
       <span
         data-testid="event-row-owner-initial"
-        className="absolute bottom-1 end-1 w-5 h-5 rounded-full bg-white text-primary text-2xs font-bold grid place-items-center shadow-sm"
+        className="absolute bottom-1 end-1 w-5 h-5 rounded-full bg-surface text-primary text-2xs font-bold grid place-items-center shadow-sm"
       >
         {entry.ownerInitial}
       </span>
