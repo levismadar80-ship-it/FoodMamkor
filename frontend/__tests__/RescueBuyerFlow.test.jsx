@@ -439,7 +439,38 @@ describe("the business-page section — reserve and confirm", () => {
     expect(box.tagName).toBe("DETAILS");
     expect(box.open).toBe(false);
     expect(box.querySelector("summary").textContent).toBe("אלרגנים");
-    expect(box.textContent).toContain("ייתכנו גלוטן, חלב, אגוזים ושומשום");
+  });
+
+  it("MEH-2752: shows what THIS business declared, attributed to it", async () => {
+    fetchOffers.mockResolvedValue([offer({ allergens: ["gluten", "sesame"] })]);
+    render(<RescueSection producer={PRODUCER} />);
+    const line = await screen.findByTestId("rescue-section-allergens-declared");
+    // Hebrew labels come from the product sheet's vocabulary, not a second copy.
+    expect(line.textContent).toContain("גלוטן");
+    expect(line.textContent).toContain("שומשום");
+    // The attribution is the point: mehamakor does not verify this.
+    expect(line.textContent).toContain("לפי הצהרת בית העסק");
+    expect(screen.queryByTestId("rescue-section-allergens-none")).toBeNull();
+  });
+
+  it("MEH-2752: says plainly when nothing was declared, and warns nobody falsely", async () => {
+    fetchOffers.mockResolvedValue([offer({ allergens: null })]);
+    render(<RescueSection producer={PRODUCER} />);
+    const line = await screen.findByTestId("rescue-section-allergens-none");
+    expect(line.textContent).toBe("בית העסק לא ציין אלרגנים. שאלו לפני האיסוף.");
+    // The old fixed sentence warned every buyer about four allergens that may
+    // not be in the bag. It must not come back.
+    const box = screen.getByTestId("rescue-section-allergens");
+    expect(box.textContent).not.toContain("ייתכנו גלוטן");
+  });
+
+  it("MEH-2752: an empty list is treated as 'not declared', never as 'none'", async () => {
+    // The API should never send [], but if one ever arrives it must not read
+    // as a clean bill of health.
+    fetchOffers.mockResolvedValue([offer({ allergens: [] })]);
+    render(<RescueSection producer={PRODUCER} />);
+    expect(await screen.findByTestId("rescue-section-allergens-none")).toBeTruthy();
+    expect(screen.queryByTestId("rescue-section-allergens-declared")).toBeNull();
   });
 
   it("gives the pickup time and the address each its own icon row", async () => {

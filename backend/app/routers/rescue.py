@@ -483,9 +483,13 @@ def list_offers(
     offers = q.order_by(RescueOffer.pickup_start.asc()).all()
 
     producer_ids = {o.location.producer_id for o in offers if o.location is not None}
+    # MEH-2752: the row carries both «בדרך כלל» and the declared allergens, so
+    # one query serves both. `allergens` stays None when the business declared
+    # nothing — it is NOT coerced to [], because the card has to tell the buyer
+    # "not declared" rather than show an empty list that reads as "none".
     typical = (
         {
-            row.producer_id: (row.items or [])
+            row.producer_id: (row.items or [], row.allergens)
             for row in db.query(RescueTypicalItems)
             .filter(RescueTypicalItems.producer_id.in_(producer_ids))
             .all()
@@ -526,7 +530,8 @@ def list_offers(
                     "location_city": location.city,
                     "location_address": location.address,
                 },
-                "typical_items": list(typical.get(producer.id) or []),
+                "typical_items": list((typical.get(producer.id) or ([], None))[0]),
+                "allergens": (typical.get(producer.id) or ([], None))[1],
                 "distance_km": distance,
             }
         )
@@ -1247,6 +1252,7 @@ def get_typical_items(
     return {
         "producer_id": current_user.producer_id,
         "items": list(row.items or []) if row else [],
+        "allergens": row.allergens if row else None,
         "updated_at": row.updated_at if row else utc_now(),
     }
 
@@ -1275,15 +1281,26 @@ def set_typical_items(
         .filter(RescueTypicalItems.producer_id == current_user.producer_id)
         .first()
     )
+    # Already normalised by the schema validator: None / [] -> None, unknown
+    # code -> 422 before we get here. Assigning it straight through keeps ONE
+    # owner for what a valid declaration is (app/allergens.py).
     if row:
         row.items = cleaned
+        row.allergens = body.allergens
     else:
-        row = RescueTypicalItems(producer_id=current_user.producer_id, items=cleaned)
+        row = RescueTypicalItems(
+            producer_id=current_user.producer_id,
+            items=cleaned,
+            allergens=body.allergens,
+        )
         db.add(row)
     db.commit()
     db.refresh(row)
     return {
         "producer_id": row.producer_id,
         "items": list(row.items or []),
+        # Straight from the row, never `or []`: NULL has to survive the
+        # response or the caller cannot tell "not declared" from "none".
+        "allergens": row.allergens,
         "updated_at": row.updated_at,
     }

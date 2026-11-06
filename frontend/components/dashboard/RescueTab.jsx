@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Link as LocaleLink } from "@/i18n/navigation";
 
 import api from "@/lib/api";
+import { ALLERGEN_CODES, toggleAllergen } from "@/lib/allergens";
 import { detailToMessage, errorMessage } from "@/lib/errors";
 import { israelTime, leftoverGroupUrl, shekels } from "@/lib/rescue";
 import Button from "@/components/ui/Button";
@@ -39,6 +40,9 @@ const AT = { code: "code", orders: "orders", publish: "publish", items: "items",
 
 export default function RescueTab() {
   const t = useTranslations("rescue.dashboard");
+  // The allergen LABELS are the product sheet's, not a second copy: one
+  // vocabulary for the whole site (MEH-2662).
+  const tProducts = useTranslations("settings.products.form");
   const tError = useTranslations("error");
   const [orders, setOrders] = useState(null);
   const [code, setCode] = useState("");
@@ -66,6 +70,11 @@ export default function RescueTab() {
     return detailToMessage(err.response.data?.detail) || t("failed");
   };
   const [items, setItems] = useState("");
+  // MEH-2752: null = this business declared nothing, which is NOT the same as
+  // an empty selection the owner is mid-way through making. The save turns an
+  // empty selection into null on the wire; see allergens.py for why [] must
+  // never persist.
+  const [allergens, setAllergens] = useState([]);
   const [form, setForm] = useState({ qty_total: 4, price: 15, from: "18:00", to: "20:00", cancelMin: 30 });
   // MEH-2678: the tab loads its own pickup points. It used to take them as a
   // prop that the only page rendering it never passed, so every publish
@@ -79,6 +88,10 @@ export default function RescueTab() {
   // orders, so marking «לא הגיע» updates the leftover count at once.
   const [offers, setOffers] = useState([]);
   const [businessName, setBusinessName] = useState("");
+  // MEH-2784: the business status, from the /producers/me read below. null
+  // until it answers; the publish form waits for it, so a pending business
+  // never sees a form it cannot submit (the server 403s it, rescue.py:351).
+  const [producerStatus, setProducerStatus] = useState(null);
   const [donating, setDonating] = useState(false);
   // How many of the leftover bags were given away; null = all of them.
   const [donateQty, setDonateQty] = useState(null);
@@ -109,12 +122,18 @@ export default function RescueTab() {
       .catch(() => setLocations([]));
     api
       .get("/producers/me")
-      .then((r) => setBusinessName(typeof r.data?.name === "string" ? r.data.name : ""))
-      // Silent on purpose: without a name the WhatsApp button stays hidden.
-      .catch(() => {});
+      .then((r) => {
+        setBusinessName(typeof r.data?.name === "string" ? r.data.name : "");
+        setProducerStatus(typeof r.data?.status === "string" ? r.data.status : "unknown");
+      })
+      // A failed read hides the WhatsApp button (no name). An unknown status falls back to the form; the server still guards.
+      .catch(() => setProducerStatus("unknown"));
     api
       .get("/producers/me/rescue/typical-items")
-      .then((r) => setItems((r.data?.items || []).join(", ")))
+      .then((r) => {
+        setItems((r.data?.items || []).join(", "));
+        setAllergens(r.data?.allergens || []);
+      })
       .catch(() => {});
   }, [load]);
 
@@ -167,6 +186,10 @@ export default function RescueTab() {
     try {
       await api.put("/producers/me/rescue/typical-items", {
         items: items.split(",").map((s) => s.trim()).filter(Boolean),
+        // Nothing ticked is sent as [] and the server stores NULL. It is not
+        // sent as "no allergens": the owner ticking nothing is not a claim
+        // that the bag contains none of them.
+        allergens,
       });
       setNotice("items", t("items_saved"), false);
     } catch (err) {
@@ -275,8 +298,23 @@ export default function RescueTab() {
       </p>
     ) : null;
 
+  // MEH-2784 (Sapir 6/11, option א׳): an unapproved business is told up
+  // front, and gets no form. Pending reads «we are reviewing»; any other
+  // non-approved status (draft, rejected, suspended) gets the server's line.
+  const gated = producerStatus !== null && producerStatus !== "approved" && producerStatus !== "unknown";
   return (
     <div data-testid="rescue-tab" className="space-y-6">
+      {gated &&
+        (producerStatus === "pending" ? (
+          <div data-testid="rescue-pending-banner" role="status" className="bg-warning-50 border border-warning-200 rounded-md px-4 py-3">
+            <p className="font-semibold text-warning-800">{t("pending_title")}</p>
+            <p className="font-body-sm text-sm text-warning-800">{t("pending_body")}</p>
+          </div>
+        ) : (
+          <p data-testid="rescue-not-approved" role="status" className="font-body-sm text-sm text-text">
+            {t("not_approved")}
+          </p>
+        ))}
       <div className="grid grid-cols-3 gap-3" data-testid="rescue-counters">
         {["reserved", "handed", "no_show"].map((k) => (
           <div key={k} className="border border-border rounded-md px-3 py-3 text-center">
@@ -374,7 +412,17 @@ export default function RescueTab() {
         {noticeAt(AT.orders)}
       </section>
 
-      {locationsLoaded && !exactLocation ? (
+      {/* MEH-2784: only the publish form is gated. Codes, orders and «לא הגיע»
+          stay, so a business suspended with bags already out can still close
+          its open orders. */}
+      {producerStatus === null ? null : gated ? (
+        producerStatus === "pending" && (
+          <section className="border border-border rounded-md px-4 py-4 space-y-2">
+            <h3 className="font-headline-md text-base font-black text-text">{t("publish_title")}</h3>
+            <p className="font-body-sm text-sm text-fg-muted">{t("pending_form_note")}</p>
+          </section>
+        )
+      ) : locationsLoaded && !exactLocation ? (
         // MEH-2702: say what is missing up front, instead of an error after «לפרסם».
         <section
           className="border border-border rounded-md px-4 py-4 space-y-3"
@@ -487,6 +535,43 @@ export default function RescueTab() {
           data-testid="rescue-items-input"
           className="w-full border border-border rounded-md px-3 py-2"
         />
+
+        {/* MEH-2752: what this business declares about ITS bag. Before this,
+            every bag showed one fixed sentence naming four allergens — a
+            statement about food nobody had made. */}
+        <div className="mt-3">
+          <p id="rescue-allergens-heading" className="font-body-sm text-sm text-text font-medium">
+            {t("allergens_title")}
+          </p>
+          <p className="font-body-sm text-sm text-fg-muted mb-2">{t("allergens_help")}</p>
+          <div
+            role="group"
+            aria-labelledby="rescue-allergens-heading"
+            data-testid="rescue-allergens-group"
+            className="flex flex-wrap gap-2"
+          >
+            {ALLERGEN_CODES.map((code) => {
+              const pressed = allergens.includes(code);
+              return (
+                <button
+                  key={code}
+                  type="button"
+                  aria-pressed={pressed}
+                  onClick={() => setAllergens((prev) => toggleAllergen(prev, code))}
+                  data-testid={`rescue-allergen-${code}`}
+                  className={`inline-flex items-center min-h-touch rounded-full border px-4 py-2 font-body-sm text-sm transition focus-ring ${
+                    pressed
+                      ? "border-primary bg-green-50 text-primary"
+                      : "border-border text-fg-muted hover:border-primary"
+                  }`}
+                >
+                  {tProducts(`allergen_${code}`)}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         <Button
           type="button"
           onClick={saveItems}

@@ -50,6 +50,8 @@ No extra secrets needed — only the auto-provided `GITHUB_TOKEN`.
 
 GitHub keeps only **one pending** job per group. With 3+ PRs waiting, an older pending E2E job is cancelled by a newer one. A `cancelled` E2E on a PR therefore means "superseded in the queue", not a pass and not a failure (workflow rule 21): re-run it when the queue clears. E2E carries no merge vote, so this never blocks a merge.
 
+**On a PR, E2E runs only with the `run-e2e` label (MEH-2779).** Running it on every push of every PR, behind that one-at-a-time queue, made jobs wait up to 14 hours (measured 4–6/11/2026), and most were cancelled before anyone read them. Now a PR gets the suite when someone adds the `run-e2e` label (and on every later push while the label stays). Adding any other label does not start it. A push to `staging` still runs it; a burst of merges collapses to one running and one pending run (workflow-level group `e2e-staging-push`). A UI PR that needs the VRT verdict (workflow rule 23) adds the label once its code is ready.
+
 ### Adding a new test
 
 1. Create `frontend/e2e/flows/NN-my-feature.spec.ts`

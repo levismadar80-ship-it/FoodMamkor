@@ -415,6 +415,36 @@ def _run_retention_purge_job() -> None:
         db.close()
 
 
+def _run_rescue_digest_job() -> None:
+    """MEH-2756: 5-min tick that sends each due rescue offer's pickup codes to
+    the business at pickup_start.
+
+    Interval, not cron, because `pickup_start` is per-offer: a daily fire has
+    no hour that is "the start of the window" for every business. 5 minutes is
+    the watchdog's cadence and the same trade — a business sees its codes
+    within 5 minutes of the window opening, which is well inside the time it
+    takes a first customer to arrive.
+
+    Same shape as _run_watchdog_job: fresh session (the scheduler worker thread
+    cannot share request-scoped sessions), the service is fail-isolated per
+    offer and never raises, and this wrapper only logs the aggregate counters.
+    Logged only when something was scanned, so an idle night is quiet.
+    """
+    from app.database import SessionLocal
+    from app.services.rescue_digest import send_rescue_digests
+
+    db = SessionLocal()
+    try:
+        counters = send_rescue_digests(db)
+        if counters.get("scanned", 0):
+            log.info("[RESCUE-DIGEST] tick complete counters=%s", counters)
+    except Exception as exc:
+        capture_background_exception(exc, task="rescue_digest")
+        log.error("[RESCUE-DIGEST] tick crashed", exc_info=True)
+    finally:
+        db.close()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     log.info("=" * 60)
@@ -575,6 +605,35 @@ async def lifespan(app: FastAPI):
         coalesce=True,
         misfire_grace_time=6 * 3600,
     )
+    # MEH-2756: the rescue pickup-code digest. Registered only when the pilot
+    # AND the digest gate are both on — the digest cannot work before Meta
+    # approves `rescue_codes_digest_v1`, so RESCUE_DIGEST_ENABLED defaults
+    # False and merging the feature sends nothing. Interval rather than cron
+    # because pickup_start is per-offer; see _run_rescue_digest_job. The
+    # watchdog's guards, for the same reason it has them: max_instances=1 +
+    # coalesce so a slow run cannot overlap the next tick, and a 60s grace so
+    # a brief pause runs it late instead of skipping a window.
+    from app.services.rescue_digest import digest_enabled as _digest_enabled
+
+    if settings.rescue_bags_enabled and _digest_enabled():
+        from apscheduler.triggers.interval import IntervalTrigger
+
+        followup_scheduler.add_job(
+            _run_rescue_digest_job,
+            IntervalTrigger(minutes=5),
+            id="meh_2756_rescue_codes_digest",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+            misfire_grace_time=60,
+        )
+        log.info("[RESCUE-DIGEST] job registered — every 5 minutes")
+    else:
+        log.info(
+            "[RESCUE-DIGEST] disabled (pilot=%s, digest=%s) — no job registered",
+            settings.rescue_bags_enabled,
+            _digest_enabled(),
+        )
     followup_scheduler.start()
     app.state.followup_scheduler = followup_scheduler
     log.info(

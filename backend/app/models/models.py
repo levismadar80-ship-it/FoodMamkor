@@ -2941,6 +2941,22 @@ class RescueOffer(Base):
     # the API caps it at that leftover, the CHECK only at qty_total (the
     # no-show half lives on rescue_orders, out of a row CHECK's reach).
     qty_donated = Column(Integer, nullable=False, default=0, server_default=text("0"))
+    # MEH-2756: when the pickup_start WhatsApp digest of this offer's codes was
+    # sent to the business. NULL = not sent, and it is the ONLY duplicate-send
+    # guarantee the digest has. Delivery is at-least-once: the send is an
+    # outbound HTTP call and the commit follows it, so a failed commit after
+    # Meta accepted leaves this NULL and the next tick re-sends. Deliberate —
+    # for counter codes a duplicate is cheaper than a miss.
+    #
+    # Deliberately INTERNAL: no `*Out` schema carries it and no endpoint reads
+    # or writes it (ADR-006 R1/R2 — a new column reaches the schema unless it is
+    # internal, and this one is). Its only reader and writer is
+    # services/rescue_digest.py. A buyer has no use for it and the dashboard
+    # shows the codes themselves, not when they were messaged.
+    # DO NOT backfill: an existing offer was never digested, which is what NULL
+    # says. TIMESTAMPTZ here while pickup_start/pickup_end/created_at above are
+    # naive-UTC — deliberate, see the revision docstring and docs/DATA.md.
+    codes_sent_at = Column(DateTime(timezone=True), nullable=True)
 
     location = relationship("ProducerLocation")
     # passive_deletes defers to the DB ON DELETE CASCADE — without it a
@@ -3091,6 +3107,16 @@ class RescueTypicalItems(Base):
         nullable=False,
     )
     items = Column(JSONB, nullable=False, default=list)
+    # MEH-2752: the 14-code allergen list this business declares for its bag.
+    # NULL = nothing filled; [] is NEVER stored, because an empty list reads as
+    # "contains none of them", which is a food-safety claim nobody made.
+    # `normalize_allergens` collapses both to None on the way in.
+    # Annotated like the products column at models.py:1117 (MEH-2662): mypy
+    # --strict reaches this file transitively from app/auth.py and asks for an
+    # annotation on a generic ARRAY column (`var-annotated`). The six unannotated
+    # ones above are grandfathered in backend/mypy-baseline.txt; a NEW one is
+    # annotated rather than added to the baseline.
+    allergens: Column[list[str]] = Column(ARRAY(Text), nullable=True)
     created_at = Column(DateTime, default=utc_now, nullable=False)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 

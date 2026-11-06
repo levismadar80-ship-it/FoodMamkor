@@ -4902,27 +4902,9 @@ export const ProducerAnalyticsProducersMeAnalyticsGetResponse = /*#__PURE__*/ zo
 
 
 /**
- * Toggle today's availability for the logged-in producer.
- *
- * Legacy endpoint — kept during MEH-291 7-day overlap. Mirrors the toggle to
- * `availability_state` so consumers reading the new column stay consistent.
- * @summary Toggle Availability
- */
-export const ToggleAvailabilityProducersMeAvailabilityPostResponse = /*#__PURE__*/ zod.unknown()
-
-
-/**
  * @summary Set Availability State
  */
 export const SetAvailabilityStateProducersMeAvailabilityStatePostResponse = /*#__PURE__*/ zod.unknown()
-
-
-/**
- * Legacy endpoint — kept during MEH-291 7-day overlap. Mirrors the
- * durable status to `availability_state`.
- * @summary Set Availability Status
- */
-export const SetAvailabilityStatusProducersMeAvailabilityStatusPostResponse = /*#__PURE__*/ zod.unknown()
 
 
 /**
@@ -5426,6 +5408,7 @@ export const ListMyOrdersProducersMeRescueOrdersGetResponse = /*#__PURE__*/ zod.
  * @summary Get Typical Items
  */
 export const GetTypicalItemsProducersMeRescueTypicalItemsGetResponse = /*#__PURE__*/ zod.object({
+  "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "items": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "updated_at": /*#__PURE__*/ zod.iso.datetime({"offset":true})
@@ -5438,6 +5421,7 @@ export const GetTypicalItemsProducersMeRescueTypicalItemsGetResponse = /*#__PURE
  * @summary Set Typical Items
  */
 export const SetTypicalItemsProducersMeRescueTypicalItemsPutResponse = /*#__PURE__*/ zod.object({
+  "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "items": /*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),
   "producer_id": /*#__PURE__*/ zod.uuid(),
   "updated_at": /*#__PURE__*/ zod.iso.datetime({"offset":true})
@@ -6004,6 +5988,7 @@ export const ReportProducerInfoReportsProducerInfoPostResponse = /*#__PURE__*/ z
  * @summary List Offers
  */
 export const ListOffersRescueOffersGetResponseItem = /*#__PURE__*/ zod.object({
+  "allergens": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.array(/*#__PURE__*/ zod.string()),/*#__PURE__*/ zod.null()])),
   "cancel_until": /*#__PURE__*/ zod.iso.datetime({"offset":true}),
   "date": /*#__PURE__*/ zod.iso.date(),
   "distance_km": /*#__PURE__*/ zod.optional(/*#__PURE__*/ zod.union([/*#__PURE__*/ zod.number(),/*#__PURE__*/ zod.null()])),

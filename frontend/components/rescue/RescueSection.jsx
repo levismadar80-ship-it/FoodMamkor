@@ -46,6 +46,9 @@ function worthAgorot(offer) {
 }
 export default function RescueSection({ producer }) {
   const t = useTranslations("rescue");
+  // Allergen labels come from the product sheet's vocabulary (MEH-2662), so
+  // the bag and a product never name the same allergen differently.
+  const tProducts = useTranslations("settings.products.form");
   const [offer, setOffer] = useState(null);
   const [order, setOrder] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -277,7 +280,21 @@ export default function RescueSection({ producer }) {
             data-testid="rescue-section-allergens"
           >
             <summary className="cursor-pointer text-text font-medium">{t("section.allergens_title")}</summary>
-            <p className="mt-1.5">{t("section.allergens")}</p>
+            {/* MEH-2752: what THIS business declared, not one sentence for
+                everyone. `null` and a list are genuinely different answers —
+                an empty list would read as "contains none of the 14", which
+                is a claim nobody made, so the API never sends one. */}
+            {offer.allergens?.length ? (
+              <p className="mt-1.5" data-testid="rescue-section-allergens-declared">
+                {t("section.allergens_declared", {
+                  list: offer.allergens.map((code) => tProducts(`allergen_${code}`)).join(", "),
+                })}
+              </p>
+            ) : (
+              <p className="mt-1.5" data-testid="rescue-section-allergens-none">
+                {t("section.allergens_undeclared")}
+              </p>
+            )}
           </details>
         </div>
       ) : null}

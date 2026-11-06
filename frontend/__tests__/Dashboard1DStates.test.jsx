@@ -11,7 +11,8 @@
  * Locked behavior under test:
  *   - ShareCta (VanityLinkCard) renders ONLY when complete AND approved;
  *     otherwise a why-locked hint takes its place (never silent).
- *   - availability radios disabled until approved (+ described-by hint).
+ *   - availability pause switch disabled until approved (+ described-by hint).
+ *     MEH-2759: it was four radios.
  *   - KPI strip → warm zero-state when there's no activity yet.
  *   - view-public link points at /{slug}.
  */
@@ -136,22 +137,22 @@ describe("Dashboard 1D — share-gate (MEH-964)", () => {
 });
 
 describe("Dashboard 1D — availability-disable (MEH-964)", () => {
-  it("disables the availability radios + shows the hint until approved", async () => {
+  it("disables the availability pause switch + shows the hint until approved", async () => {
     setup({ status: "pending", complete: true });
     render(<ProducerDashboardPage />);
     await screen.findByTestId("producer-overview");
     expect(screen.getByTestId("availability-disabled-hint")).toBeInTheDocument();
-    const radios = screen.getAllByRole("radio");
-    expect(radios.length).toBeGreaterThan(0);
-    radios.forEach((r) => expect(r).toBeDisabled());
+    const sw = screen.getByTestId("availability-pause-switch");
+    expect(sw).toBeDisabled();
+    expect(sw).toHaveAttribute("aria-describedby", "availability-disabled-hint");
   });
 
-  it("enables the radios (no hint) once approved", async () => {
+  it("enables the pause switch (no hint) once approved", async () => {
     setup({ status: "approved", complete: true });
     render(<ProducerDashboardPage />);
     await screen.findByTestId("producer-overview");
     expect(screen.queryByTestId("availability-disabled-hint")).not.toBeInTheDocument();
-    screen.getAllByRole("radio").forEach((r) => expect(r).not.toBeDisabled());
+    expect(screen.getByTestId("availability-pause-switch")).not.toBeDisabled();
   });
 });
 

@@ -848,7 +848,6 @@
           "shared": "Gluten is present in the production facility — as declared by the business. If you have celiac disease, please confirm directly with the business.",
           "dedicated": "No gluten in the production facility — as declared by the business."
         },
-        "slow_response": "Longer response times this week",
         "vacation": "This business is on break right now",
         "vacation_return": "{label} — you can leave a message",
         "vacation_back": "Back on {date}",
@@ -940,7 +939,6 @@
       },
       "badges": {
         "delivery_only": "Delivery only",
-        "available_today": "Coming today",
         "overflow_aria": "Show {count} more badges",
         "overflow_heading": "More about this business"
       },
@@ -1767,8 +1765,6 @@
           "opening_hours_label": "Opening hours (format: \"Sun-Thu 09:00-18:00, Fri 09:00-14:00\")",
           "opening_hours_placeholder": "Sun-Thu 09:00-18:00, Fri 09:00-14:00",
           "avail_accepting": "Accepting orders",
-          "avail_today": "Available today",
-          "avail_full": "Busy this week",
           "avail_vacation": "On break",
           "vacation_until": "Return date (optional)",
           "as_draft": "Draft the owner will receive by invite link",
@@ -4368,17 +4364,10 @@
       },
       "holiday_catalog_cta": "Update the catalog →",
       "availability": {
-        "tooltip_line_default": "Open to orders = default.",
-        "tooltip_line_today": "Available today = fresh inventory now.",
-        "tooltip_line_full": "Busy this week = appears but marked.",
-        "tooltip_line_vacation": "On a break = hidden until a date you choose.",
         "heading": "Current status",
-        "info_label": "What's the difference between the states?",
         "intro": "A temporary update that overrides the schedule — like a note on the door.",
         "options": {
           "accepting_orders": "Open to orders",
-          "available_today": "Available today",
-          "full_this_week": "Busy this week",
           "on_vacation": "On a break"
         },
         "vacation_return_label": "Returning on:",
@@ -4389,6 +4378,7 @@
         "saved_vacation": "Saved — on a break until {date}"
       },
       "quick_links": {
+        "locked_until_approved": "Opens once your business is approved",
         "group_buys": {
           "title": "Manage group buys",
           "sub": "Manage group buys and open new ones"
@@ -4891,6 +4881,7 @@
       },
       "manage_events": {
         "heading": "My events",
+        "pending_note": "Your events will appear on the site once your business is approved.",
         "organizer_heading": "Your events",
         "create_cta": "New event",
         "empty_title": "No events yet",
@@ -5508,7 +5499,6 @@
     "primary_channel": "The primary channel is the big button on your business page — most customer inquiries arrive there. You can change it anytime.",
     "order_form": "A link to an external form (e.g. Google Forms) where customers leave a structured order instead of a free-text message.",
     "group_buy": "A pooled order: several customers order together until a preset deadline, and everything is delivered at once — fewer trips, more certainty.",
-    "availability": "A temporary exception — busy this week, on a break, or available today. It overrides the fixed schedule and is shown to customers on the card and the business page.",
     "order_window": "Like opening hours, but for orders. Fixed and weekly; it changes only when you change it. Shown on the business page as a status and a day strip. This schedule applies to the whole business. Branch or pickup-point hours are set separately in the location editor."
   },
   "about_badges": {
@@ -5764,11 +5754,12 @@
       "title": "Rescue bag",
       "cta": "Reserve · pay at the counter",
       "typical": "Usually: {items}",
-      "allergens": "May contain gluten, milk, nuts and sesame. Ask at the business before pickup.",
       "allergens_title": "Allergens",
       "cancel_until": "Free cancellation until {time}",
       "no_cancel": "This bag can no longer be cancelled",
-      "cancelled": "Your reservation is cancelled, and the bag is back on the list."
+      "cancelled": "Your reservation is cancelled, and the bag is back on the list.",
+      "allergens_declared": "Contains: {list} · as declared by the business",
+      "allergens_undeclared": "The business didn't list allergens. Ask before pickup."
     },
     "confirm": {
       "title": "Your bag is reserved",
@@ -5816,6 +5807,10 @@
       "lead": "Today's surplus — publish, hand over against a code, mark it.",
       "back": "Back to tools",
       "counter_card_link": "Counter card, to print",
+      "pending_title": "This tool opens once your business is approved",
+      "pending_body": "We are reviewing your business details, usually within 3 business days.",
+      "pending_form_note": "After approval, a form will appear here: how many bags, price and pickup times.",
+      "not_approved": "Only an approved business can publish a surprise bag",
       "loading": "Loading…",
       "failed": "Something got stuck. Try again.",
       "counter": {
@@ -5871,7 +5866,9 @@
       "leftover_donated_help": "Tap after you've given them away, so we know how many bags were saved.",
       "leftover_qty_label": "How many bags were given?",
       "leftover_undo": "Undo",
-      "leftover_upcoming": "After pickup time ends, what wasn't collected will show here."
+      "leftover_upcoming": "After pickup time ends, what wasn't collected will show here.",
+      "allergens_title": "Allergens in the bag",
+      "allergens_help": "What you tick is shown to buyers on the bag card, next to «as declared by the business»."
     },
     "counter_card": {
       "title": "Mehamakor rescue bag",
@@ -6116,7 +6113,9 @@
     "all": "All",
     "meat": "Meat & fish",
     "produce": "Fruit & vegetables",
-    "dairy": "Dairy & cheese",
-    "bread": "Bread & baking"
+    "dairy": "Dairy & eggs",
+    "bread": "Bread & baking",
+    "pantry": "Pantry",
+    "care": "Care & home"
   }
 }

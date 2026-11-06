@@ -360,8 +360,51 @@ describe("the «בדרך כלל» editor", () => {
     await waitFor(() =>
       expect(put).toHaveBeenCalledWith("/producers/me/rescue/typical-items", {
         items: ["לחם", "חלה", "בורקס"],
+        allergens: [],
       }),
     );
+  });
+
+  it("MEH-2752: ticking an allergen sends it, in canonical order", async () => {
+    render(<RescueTab />);
+    await waitFor(() => expect(screen.getByTestId("rescue-items-input").value).toBe("לחם"));
+    // Ticked out of order on purpose: the payload must still be canonical, so
+    // the bag card and the product sheet read the same way.
+    fireEvent.click(screen.getByTestId("rescue-allergen-sesame"));
+    fireEvent.click(screen.getByTestId("rescue-allergen-gluten"));
+    fireEvent.click(screen.getByTestId("rescue-items-save"));
+    await waitFor(() =>
+      expect(put.mock.calls.at(-1)[1].allergens).toEqual(["gluten", "sesame"]),
+    );
+  });
+
+  it("MEH-2752: ticking nothing sends [], which the server stores as NULL", async () => {
+    render(<RescueTab />);
+    await waitFor(() => expect(screen.getByTestId("rescue-items-input").value).toBe("לחם"));
+    fireEvent.click(screen.getByTestId("rescue-items-save"));
+    // NOT omitted and NOT a claim of "no allergens" — the server turns [] into
+    // NULL, which is "nothing declared". See backend/app/allergens.py.
+    await waitFor(() => expect(put.mock.calls.at(-1)[1].allergens).toEqual([]));
+  });
+
+  it("MEH-2752: unticking clears a previous declaration", async () => {
+    get.mockImplementation((url) =>
+      url.includes("typical-items")
+        ? Promise.resolve({ data: { items: ["לחם"], allergens: ["milk"] } })
+        : Promise.resolve({ data: [] }),
+    );
+    render(<RescueTab />);
+    const milk = await screen.findByTestId("rescue-allergen-milk");
+    await waitFor(() => expect(milk.getAttribute("aria-pressed")).toBe("true"));
+    fireEvent.click(milk);
+    fireEvent.click(screen.getByTestId("rescue-items-save"));
+    await waitFor(() => expect(put.mock.calls.at(-1)[1].allergens).toEqual([]));
+  });
+
+  it("MEH-2752: the chips use the product sheet's Hebrew labels", async () => {
+    render(<RescueTab />);
+    expect((await screen.findByTestId("rescue-allergen-sesame")).textContent).toBe("שומשום");
+    expect(screen.getByTestId("rescue-allergen-gluten").textContent).toBe("גלוטן");
   });
 });
 

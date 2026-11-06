@@ -22,8 +22,9 @@ from datetime import datetime, timezone
 from typing import Annotated, Literal
 from uuid import UUID
 
-from pydantic import AfterValidator, BaseModel, Field, model_validator
+from pydantic import AfterValidator, BaseModel, Field, field_validator, model_validator
 
+from app.allergens import normalize_allergens
 from app.models.models import (
     RESCUE_MAX_QTY_PER_OFFER,
     RESCUE_MAX_QTY_PER_ORDER,
@@ -180,11 +181,33 @@ class RescueTypicalItemsIn(BaseModel):
     stays one line on a phone."""
 
     items: list[str] = Field(default_factory=list, max_length=12)
+    # MEH-2752: the allergens this business declares for its bag. `None` and
+    # `[]` both mean "nothing filled" and are stored as NULL — see the
+    # validator and backend/app/allergens.py for why [] must never persist.
+    allergens: list[str] | None = None
+
+    @field_validator("allergens")
+    @classmethod
+    def _known_codes_only(cls, value):
+        """Normalise through the shared helper so the bag and the product
+        sheet cannot drift on what a valid code is.
+
+        An unknown code raises → 422, rather than being dropped silently: a
+        typo that vanishes would leave the business believing it declared an
+        allergen it did not.
+        """
+        try:
+            return normalize_allergens(value)
+        except ValueError as exc:
+            raise ValueError(str(exc)) from exc
 
 
 class RescueTypicalItemsOut(BaseModel):
     producer_id: UUID
     items: list[str]
+    # None means the business declared nothing. The UI must say that in words
+    # rather than render an empty list, which would read as "no allergens".
+    allergens: list[str] | None = None
     updated_at: UtcDatetimeOut
 
     model_config = {"from_attributes": True}
@@ -235,6 +258,10 @@ class RescueOfferPublicOut(BaseModel):
     cancel_until: UtcDatetimeOut
     producer: RescueProducerSummary
     typical_items: list[str] = Field(default_factory=list)
+    # MEH-2752: None = the business declared nothing. Deliberately nullable
+    # rather than defaulting to [], so the card can tell "not declared" from
+    # "declared none" — the second is a food-safety claim and nobody made it.
+    allergens: list[str] | None = None
     distance_km: float | None = None
 
 

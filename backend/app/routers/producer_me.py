@@ -43,10 +43,9 @@ import string
 
 from app.models.models import PhoneOtpToken, KashrutBadgeRequest
 from app.schemas.schemas import (
-    AVAILABILITY_STATES,
+    WRITABLE_AVAILABILITY_STATES,
     clean_display_city,
     AvailabilityStateUpdate,
-    AvailabilityStatusUpdate,
     BioGenerateIn,
     KashrutRequestCreate,
     KashrutRequestOut,
@@ -897,147 +896,11 @@ def update_my_producer(
     return producer
 
 
-# LEGACY(2026-11-30, MEH-1854)
-# MEH-291 — the two endpoints below are the legacy availability write paths.
-# MEH-2271 (chunk 3a) removed the dual-WRITE: nothing in this module writes
-# is_available_today or availability_status any more, so the two mapping
-# helpers that lived here are gone. What replaced them:
-#
-#   enum -> legacy   nothing. MEH-2272 removed the derived pair from every
-#                    response (typed contract in chunk 1, these dict responses
-#                    in chunk 2) and deleted schemas.state_to_legacy with them.
-#   legacy -> enum   _status_to_state below, which reads the CURRENT STATE
-#                    rather than the two columns. That is the whole point: the
-#                    old _legacy_to_state consulted columns this module had
-#                    stopped updating, so a producer who set full_this_week on
-#                    the new endpoint and then touched a legacy one would have
-#                    been silently reset from stale input.
-#
-# MEH-2273 deletes both endpoints and the columns. scripts/legacy-expiry-check.sh
-# fails once the date above passes, so the next person either finishes it or
-# extends the date in a reviewed PR.
-
-
-def _status_to_state(current_state: str | None, status: str) -> str:
-    """Map a legacy ``availability_status`` write onto the 4-value enum,
-    resolved against the producer's CURRENT state.
-
-    Only ``"available"`` is ambiguous: it means "not full and not on vacation"
-    and says nothing about today. Preserving `available_today` across such a
-    write is what keeps the legacy endpoint's observable behaviour identical to
-    the pre-MEH-2271 one, where writing status="available" left the separate
-    `is_available_today` boolean untouched.
-    """
-    if status == "vacation":
-        return "on_vacation"
-    if status == "full":
-        return "full_this_week"
-    return (
-        "available_today" if current_state == "available_today" else "accepting_orders"
-    )
-
-
-@router.post("/availability")
-@limiter.limit("20/hour")
-def toggle_availability(
-    request: Request,
-    user: User = Depends(require_producer),
-    db: Session = Depends(get_db),
-):
-    """Toggle today's availability for the logged-in producer.
-
-    Legacy endpoint — kept during MEH-291 7-day overlap. Mirrors the toggle to
-    `availability_state` so consumers reading the new column stay consistent.
-    """
-    producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
-    if not producer:
-        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
-    # MEH-2271: toggle the STATE. Previously this flipped the boolean column
-    # and derived the state from it; the column is no longer written by the
-    # canonical endpoint, so deriving from it would toggle against stale data.
-    #
-    # full_this_week and on_vacation are LEFT ALONE, and that is preservation
-    # rather than a new rule. The old `_legacy_to_state` ranked
-    # `availability_status` above `is_available_today`, so on a producer whose
-    # status was "full" or "vacation" the boolean flip changed nothing the
-    # state could see — this endpoint was already a no-op for them. Dragging
-    # them to available_today would be a behaviour change wearing a refactor's
-    # clothes, and the durable states are exactly the ones a "am I free today"
-    # toggle has no business clearing.
-    #
-    # (The first version of this block did exactly that, with a comment
-    # claiming parity that did not hold. Caught by the CI reviewer on #3460.)
-    if producer.availability_state in ("accepting_orders", "available_today"):
-        producer.availability_state = (
-            "accepting_orders"
-            if producer.availability_state == "available_today"
-            else "available_today"
-        )
-    producer.last_active_at = utc_now()
-    db.commit()
-    # MEH-2272 chunk 2: the derived `is_available_today` key is gone — the
-    # enum is the only availability field any response carries.
-    return {"availability_state": producer.availability_state}
-
-
-# MEH-12: durable availability status ("open | full | vacation") that
-# persists until the producer changes it, vs. the per-day
-# `is_available_today` flag above. Rendered as a colored-dot badge on
-# ProducerCard + ProducerDetail. Keep the two endpoints separate —
-# collapsing them would break the existing "זמין היום" UX.
-AVAILABILITY_STATUSES = {"available", "full", "vacation"}
-
-
-@router.post("/availability-status")
-def set_availability_status(
-    data: AvailabilityStatusUpdate,
-    user: User = Depends(require_producer),
-    db: Session = Depends(get_db),
-):
-    """Legacy endpoint — kept during MEH-291 7-day overlap. Mirrors the
-    durable status to `availability_state`."""
-    if data.status not in AVAILABILITY_STATUSES:
-        raise HTTPException(
-            status_code=400,
-            # MEH-1943 chunk 2: the allowed set moves to params, never the message.
-            detail={
-                "code": "invalid_availability_status",
-                "message": "סטטוס לא תקין",
-                "params": {"allowed": sorted(AVAILABILITY_STATUSES)},
-            },
-        )
-    # AUD-039: reject a past return date here too (Israel tz), so the legacy
-    # surface can't persist an already-expired vacation.
-    if (
-        data.status == "vacation"
-        and data.vacation_until is not None
-        and data.vacation_until < israel_today()
-    ):
-        raise HTTPException(
-            status_code=422, detail="תאריך החזרה לחופשה חייב להיות עתידי"
-        )
-    producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
-    if not producer:
-        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
-    # MEH-2271: state-only write, resolved against the current state so that
-    # status="available" does not silently clear an available_today producer.
-    producer.availability_state = _status_to_state(
-        producer.availability_state, data.status
-    )
-    producer.vacation_until = data.vacation_until if data.status == "vacation" else None
-    producer.last_active_at = utc_now()
-    db.commit()
-    # MEH-2272 chunk 2: the derived `availability_status` key is gone.
-    return {
-        "availability_state": producer.availability_state,
-        "vacation_until": producer.vacation_until.isoformat()
-        if producer.vacation_until
-        else None,
-    }
-
-
-# MEH-291 — new unified endpoint. Phase 3 frontend will call this exclusively;
-# the two legacy endpoints above stay during the 7-day overlap and dual-write.
+# MEH-2758 (MEH-2757 chunk 1): the two legacy availability write paths
+# (POST /availability, POST /availability-status — MEH-291, LEGACY MEH-1854)
+# are deleted. No frontend called either, and both could still write
+# `available_today` / `full_this_week`, which are no longer writable.
+# POST /availability-state below is the only availability write endpoint.
 
 
 @router.post("/availability-state")
@@ -1051,14 +914,15 @@ def set_availability_state(
     # Value membership stays a 400 before the DB hit (preserves existing
     # contract); the transition + return-date guards run against the
     # producer's current state below (AUD-039/040).
-    if data.state not in AVAILABILITY_STATES:
+    # MEH-2758: pause-only — the read-side enum is wider than what may be written.
+    if data.state not in WRITABLE_AVAILABILITY_STATES:
         raise HTTPException(
             status_code=400,
             # MEH-1943 chunk 2: the allowed set moves to params, never the message.
             detail={
                 "code": "invalid_availability_state",
                 "message": "מצב לא תקין",
-                "params": {"allowed": list(AVAILABILITY_STATES)},
+                "params": {"allowed": list(WRITABLE_AVAILABILITY_STATES)},
             },
         )
 
