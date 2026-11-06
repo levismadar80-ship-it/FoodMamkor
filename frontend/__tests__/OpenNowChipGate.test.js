@@ -10,6 +10,7 @@ import { TOGGLE_CHIPS, chipStateToParams } from "@/lib/map-chips";
 import { FILTER_AXES } from "@/lib/filter-taxonomy";
 import { ATTRIBUTE_LABELS } from "@/lib/attribute-labels";
 import { chipIcon } from "@/lib/chip-icons";
+import { heChipCopy } from "./helpers/he-chip-copy";
 
 /**
  * MEH-2131 — the "פתוחים להזמנות עכשיו" chip: the axis reaching all three
@@ -60,10 +61,10 @@ describe("MEH-2131 — the axis reaches all three surfaces", () => {
   });
 
   it("carries the Sapir-LOCKED plural copy, not MEH-1881's singular", () => {
-    expect(FILTER_AXES.open_for_orders_now.label).toBe("פתוחים להזמנות עכשיו");
+    expect(heChipCopy({ key: "open_for_orders_now" }).label).toBe("פתוחים להזמנות עכשיו");
     // The exact string this replaced. Asserting its ABSENCE is what makes a
     // silent revert to the old copy fail rather than pass unnoticed.
-    for (const chip of [...CHIPS_CONFIG, ...TOGGLE_CHIPS]) {
+    for (const chip of [...CHIPS_CONFIG, ...TOGGLE_CHIPS].map(heChipCopy)) {
       expect(chip.label).not.toBe("פתוח להזמנות עכשיו");
     }
   });
