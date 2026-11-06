@@ -53,7 +53,7 @@ export default function TrustBadge({ tier, compact = false, avoidRef = null }) {
       <span
         className={[
           "inline-flex items-center rounded-full border font-medium",
-          compact ? "text-[10px] px-1.5 py-0.5" : "text-xs px-2 py-0.5",
+          compact ? "text-2xs px-1.5 py-0.5" : "text-xs px-2 py-0.5",
           TIER_CLASSNAME[tierKey],
         ].join(" ")}
         aria-label={tooltip}

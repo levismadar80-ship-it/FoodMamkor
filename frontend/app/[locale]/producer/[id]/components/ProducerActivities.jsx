@@ -89,7 +89,7 @@ function GroupBuyRow({ gb }) {
         <div className="h-1.5 rounded-full bg-primary" style={{ width: `${pct}%` }} />
       </div>
 
-      <div className="flex items-center justify-between gap-3 text-[13px]">
+      <div className="flex items-center justify-between gap-3 text-sm">
         <span className="font-medium text-text" data-testid="group-buy-progress-line">
           {funded || remaining === 0
             ? t("progress_label", { commits: gb.commits_count, min: gb.min_participants })

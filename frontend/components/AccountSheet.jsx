@@ -103,7 +103,7 @@ export default function AccountSheet({ open, onClose, user, logout }) {
   // row carries layout + ink only.
   const liCls = "border-b border-white/10 last:border-b-0";
   const rowCls =
-    "flex items-center gap-3 w-full min-h-[48px] px-1 text-start text-[14.5px] font-medium text-background transition-colors duration-fast ease-quart motion-reduce:transition-none focus-ring";
+    "flex items-center gap-3 w-full min-h-[48px] px-1 text-start text-sm font-medium text-background transition-colors duration-fast ease-quart motion-reduce:transition-none focus-ring";
   const iconCls = "text-background/65";
 
   return (
@@ -241,7 +241,7 @@ export default function AccountSheet({ open, onClose, user, logout }) {
             <li className={liCls}>
               <LanguageToggle
                 variant={row("language").surface.variant}
-                className={rowCls + " text-background/65 text-[13.5px] hover:bg-white/10"}
+                className={rowCls + " text-background/65 text-sm hover:bg-white/10"}
               >
                 {/* MEH-1542: full native language names replace the "עב / EN"
                     abbreviation — W3C / NN/g best practice (language named in its
@@ -261,7 +261,7 @@ export default function AccountSheet({ open, onClose, user, logout }) {
                   logout();
                   onClose();
                 }}
-                className={rowCls + " text-background/65 text-[13.5px]"}
+                className={rowCls + " text-background/65 text-sm"}
               >
                 <SignOut size={19} weight="regular" className={iconCls} aria-hidden="true" />
                 {/* MEH-908: gerund "התנתקות" (ADR-014) via the shared

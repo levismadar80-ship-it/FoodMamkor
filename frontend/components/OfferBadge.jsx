@@ -177,7 +177,7 @@ export default function OfferBadge({ offer, variant = "badge", className = "" })
     return (
       <span
         data-testid="offer-chip"
-        className={`inline-flex w-fit max-w-full items-center gap-1 rounded-full bg-primary/10 border border-primary/30 text-primary px-2 py-0.5 text-[11px] font-semibold ${className}`}
+        className={`inline-flex w-fit max-w-full items-center gap-1 rounded-full bg-primary/10 border border-primary/30 text-primary px-2 py-0.5 text-2xs font-semibold ${className}`}
       >
         <Gift size={12} weight="fill" aria-hidden="true" className="shrink-0" />
         <span className="min-w-0 truncate">{content}</span>
