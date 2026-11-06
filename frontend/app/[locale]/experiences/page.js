@@ -42,9 +42,11 @@ export default async function ExperiencesPage({ params }) {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "events.list" });
   return (
+    // MEH-2754: min-h-screen keeps the footer below the fold while this
+    // fallback shows, so swapping in the page shifts nothing in view.
     <Suspense
       fallback={
-        <div className="max-w-5xl mx-auto px-4 py-16 text-center text-fg-muted">
+        <div className="max-w-5xl mx-auto px-4 py-16 text-center text-fg-muted min-h-screen" data-testid="page-suspense-fallback">
           {t("loading_experiences")}
         </div>
       }
