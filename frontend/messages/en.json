@@ -600,7 +600,15 @@
       "og_title": "Mehamakor — real food, straight from the source",
       "og_description": "Real food from local businesses — all in one place.",
       "twitter_title": "Mehamakor — real food, straight from the source",
-      "twitter_description": "Real food from local businesses — all in one place."
+      "twitter_description": "Real food from local businesses — all in one place.",
+      "keywords": [
+        "local products",
+        "grass-fed",
+        "healthy food",
+        "organic food",
+        "Israeli local businesses",
+        "farmers market"
+      ]
     },
     "about": {
       "title": "About Mehamakor — our vision and values",
@@ -711,6 +719,18 @@
     "claim": {
       "title": "Take your business page | Mehamakor",
       "description": "We prepared a page for you on Mehamakor"
+    },
+    "producer": {
+      "title_full": "{name} — {category} in {city} | {brand}",
+      "title_city": "{name} in {city} | {brand}",
+      "title_category": "{name} — {category} | {brand}",
+      "title_name": "{name} | {brand}",
+      "description_full": "{name} — a local business in {city}. {category}",
+      "description_city": "{name} — a local business in {city}",
+      "description_category": "{name} — a local business. {category}",
+      "description_name": "{name} — a local business",
+      "not_found": "Business not found | {brand}",
+      "country": "Israel"
     }
   },
   "producer": {
