@@ -33,8 +33,8 @@ const hoursMissing = (p) =>
   producerCompleteness(p).missing.includes(COMPLETENESS_FIELDS.hours);
 
 describe("producerCompleteness — opening_hours (MEH-1884)", () => {
-  it("exposes the hours label on the shared FIELDS map", () => {
-    expect(COMPLETENESS_FIELDS.hours).toBe("שעות פתיחה");
+  it("exposes the hours slug on the shared FIELDS map (MEH-2760: words in messages)", () => {
+    expect(COMPLETENESS_FIELDS.hours).toBe("hours");
   });
 
   it.each([

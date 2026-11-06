@@ -203,6 +203,7 @@ function StatusSupportModal({ onClose }) {
 
 export default function ProducerDashboardPage() {
   const t = useTranslations("dashboard.producer");
+  const tHoliday = useTranslations("holidays");
   const { user, loading: authLoading } = useAuth();
   const [data, setData] = useState(null);
   // MEH-956: track a failed dashboard fetch separately from the not-yet-loaded
@@ -605,7 +606,7 @@ export default function ProducerDashboardPage() {
             {/* MEH-1687 D: Phosphor icon, not a colour emoji. */}
             <span className="text-xl shrink-0 flex" aria-hidden="true"><HolidayIcon name={h.icon} /></span>
             <div>
-              <p className="font-semibold text-text">{h.dashboardHint}</p>
+              <p className="font-semibold text-text">{tHoliday(`${h.key}.dashboard_hint`)}</p>
               {/* MEH-2429: this pointed at /producer/dashboard — the page it
                   sits on, so the CTA did nothing. The catalog is the products
                   card on the edit tab (KEY_TO_ANCHOR.products). */}
