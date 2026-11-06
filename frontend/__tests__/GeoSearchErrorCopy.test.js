@@ -5,13 +5,12 @@
  * keys; the words live in messages/{he,en}.json under map.errors.
  */
 import { describe, it, expect } from "vitest";
-import { GeoSearchSchema } from "@/lib/schemas";
+import { GeoSearchSchema, GEO_SEARCH_ERROR_KEYS } from "@/lib/schemas";
 import he from "../messages/he.json";
 import en from "../messages/en.json";
 
 const issueKey = (radius_km) =>
   GeoSearchSchema.safeParse({ lat: 32.5, lng: 34.9, radius_km }).error?.issues?.[0]?.message;
-
 
 describe("GeoSearchSchema error copy comes from messages, gender-neutral", () => {
   it.each([
@@ -26,6 +25,13 @@ describe("GeoSearchSchema error copy comes from messages, gender-neutral", () =>
   it("the Hebrew copy is the plural imperative, not the old feminine strings", () => {
     expect(he.map.errors.radius_too_small).toBe("הזיזו את המפה לפני החיפוש");
     expect(he.map.errors.radius_too_large).toBe("האזור גדול מדי — הקטינו את מרחק החיפוש");
+  });
+
+  it("every key the hook accepts has copy in both locales", () => {
+    for (const key of GEO_SEARCH_ERROR_KEYS) {
+      expect(he.map.errors[key], `he ${key}`).toBeTruthy();
+      expect(en.map.errors[key], `en ${key}`).toBeTruthy();
+    }
   });
 
   it("a valid radius still parses", () => {
