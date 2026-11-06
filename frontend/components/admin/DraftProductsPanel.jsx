@@ -106,7 +106,7 @@ export default function DraftProductsPanel({ producerId, initialProducts = [] })
   return (
     <section
       data-testid="draft-products-panel"
-      className="bg-white rounded-md border border-border p-6 mb-6 max-w-4xl"
+      className="bg-surface rounded-md border border-border p-6 mb-6 max-w-4xl"
     >
       <h2 className="font-semibold text-lg mb-2 text-primary">{t("title")}</h2>
       <p className="text-sm text-muted mb-4">{t("intro")}</p>

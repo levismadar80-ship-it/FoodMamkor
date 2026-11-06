@@ -152,7 +152,7 @@ const linkAttrs = (key) =>
 // could show two geometric languages at once. Only the trailing state classes
 // (hover/text colour) differ per affordance.
 const ROW_ANATOMY =
-  "flex w-full items-center gap-2 min-h-touch px-3 rounded-[10px] border border-border bg-white text-sm";
+  "flex w-full items-center gap-2 min-h-touch px-3 rounded-[10px] border border-border bg-surface text-sm";
 
 export default function ContactCard({ producer, isVacation }) {
   const t = useTranslations();
@@ -218,7 +218,7 @@ export default function ContactCard({ producer, isVacation }) {
   // anywhere else would satisfy the negative check alone (MEH-1592). Class
   // selectors are brittle; docs/E2E-LOCATORS.md mandates data-testid.
   return (
-    <div className="bg-white rounded-lg p-6 border border-border" data-testid="contact-card">
+    <div className="bg-surface rounded-lg p-6 border border-border" data-testid="contact-card">
       <div className={isVacation ? "opacity-50 pointer-events-auto" : ""}>
         {/* MEH-1334: the "פתוח להזמנות" status line moved to the header meta
             line (3 states, one status home per page — revision-2 #2). */}

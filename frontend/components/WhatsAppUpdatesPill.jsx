@@ -27,7 +27,7 @@ import { trackContactClick } from "@/lib/contact-tracking";
 // class for class, except `flex-1 flex` → `inline-flex`: those two pills share
 // a row, this one stands alone and must hug its label rather than stretch.
 const PILL =
-  "inline-flex items-center justify-center gap-2 border border-border bg-white text-text px-4 py-2 min-h-touch rounded-full text-sm font-medium hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40";
+  "inline-flex items-center justify-center gap-2 border border-border bg-surface text-text px-4 py-2 min-h-touch rounded-full text-sm font-medium hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40";
 
 /** Trimmed link, or null when the business has none. */
 export function whatsappUpdatesHref(producer) {

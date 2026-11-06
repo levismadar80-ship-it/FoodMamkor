@@ -27,7 +27,7 @@ export default function WhatsAppShareButton({ producer, url }) {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex items-center justify-center gap-2 px-4 py-2.5 min-h-touch rounded-[10px] text-sm font-medium border border-border bg-white text-text hover:bg-background transition"
+      className="flex items-center justify-center gap-2 px-4 py-2.5 min-h-touch rounded-[10px] text-sm font-medium border border-border bg-surface text-text hover:bg-background transition"
       aria-label={t("share_aria")}
     >
       {/* MEH-1049 (MEH-1074 Task A): neutral ShareNetwork icon (was a green

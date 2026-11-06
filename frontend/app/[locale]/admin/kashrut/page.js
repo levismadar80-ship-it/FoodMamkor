@@ -171,7 +171,7 @@ export default function AdminKashrutPage() {
             type="button"
             onClick={() => runReminders(false)}
             disabled={remindersBusy}
-            className="bg-white border border-border text-text text-sm px-4 py-2 rounded-full hover:border-primary hover:text-primary transition disabled:opacity-50"
+            className="bg-surface border border-border text-text text-sm px-4 py-2 rounded-full hover:border-primary hover:text-primary transition disabled:opacity-50"
           >
             {remindersBusy ? t("kashrut.reminders.loading") : t("kashrut.reminders.preview")}
           </button>
@@ -300,7 +300,7 @@ export default function AdminKashrutPage() {
                         <button
                           onClick={() => { setRejectModal(row.id); setRejectNotes(""); }}
                           disabled={busy}
-                          className="bg-white border border-danger-300 text-danger-600 text-xs px-3 py-1.5 rounded-full hover:bg-danger-50 transition disabled:opacity-50"
+                          className="bg-surface border border-danger-300 text-danger-600 text-xs px-3 py-1.5 rounded-full hover:bg-danger-50 transition disabled:opacity-50"
                         >
                           {t("kashrut.actions.reject")}
                         </button>
@@ -312,7 +312,7 @@ export default function AdminKashrutPage() {
                       <button
                         onClick={() => { setRevokeModal(row.id); setRevokeNotes(""); }}
                         disabled={busy}
-                        className="bg-white border border-danger-300 text-danger-600 text-xs px-3 py-1.5 rounded-full hover:bg-danger-50 transition disabled:opacity-50"
+                        className="bg-surface border border-danger-300 text-danger-600 text-xs px-3 py-1.5 rounded-full hover:bg-danger-50 transition disabled:opacity-50"
                       >
                         {t("kashrut.actions.revoke")}
                       </button>
@@ -328,7 +328,7 @@ export default function AdminKashrutPage() {
       {/* MEH-2518: approve modal — the expiry printed on the certificate. */}
       {approveModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[9000] p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl" dir="rtl">
+          <div className="bg-surface rounded-lg p-6 w-full max-w-md shadow-xl" dir="rtl">
             <h2 className="font-semibold text-lg mb-3">{t("kashrut.approve_modal.title")}</h2>
             <label htmlFor="kashrut-expires-on" className="text-sm font-medium block mb-1.5">
               {t("kashrut.approve_modal.date_label")}
@@ -366,7 +366,7 @@ export default function AdminKashrutPage() {
       {/* MEH-2518: revoke modal — takes an approved badge down. */}
       {revokeModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[9000] p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl" dir="rtl">
+          <div className="bg-surface rounded-lg p-6 w-full max-w-md shadow-xl" dir="rtl">
             <h2 className="font-semibold text-lg mb-3">{t("kashrut.revoke_modal.title")}</h2>
             <p className="text-sm text-fg-muted mb-3">{t("kashrut.revoke_modal.body")}</p>
             <textarea
@@ -397,7 +397,7 @@ export default function AdminKashrutPage() {
       {/* Reject modal */}
       {rejectModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[9000] p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl" dir="rtl">
+          <div className="bg-surface rounded-lg p-6 w-full max-w-md shadow-xl" dir="rtl">
             <h2 className="font-semibold text-lg mb-3">{t("kashrut.reject_modal.title")}</h2>
             <textarea
               value={rejectNotes}

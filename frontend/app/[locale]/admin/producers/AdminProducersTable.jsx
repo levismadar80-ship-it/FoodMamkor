@@ -643,7 +643,7 @@ export default function AdminProducersTable({
     onReload: onRetryLoad,
   };
   return (
-    <div className="bg-white border border-border rounded-md overflow-hidden">
+    <div className="bg-surface border border-border rounded-md overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <TableHead />

@@ -87,7 +87,7 @@ export default function AdminNameChangeRequestsPage() {
 
       {requests.length === 0 && (
         <div
-          className="bg-white border border-border rounded-md p-8 text-center text-fg-muted"
+          className="bg-surface border border-border rounded-md p-8 text-center text-fg-muted"
           data-testid="name-change-queue-empty"
         >
           {t("empty")}
@@ -97,7 +97,7 @@ export default function AdminNameChangeRequestsPage() {
       {requests.map((r) => (
         <div
           key={r.id}
-          className="bg-white border border-border rounded-md p-5 space-y-4"
+          className="bg-surface border border-border rounded-md p-5 space-y-4"
           data-testid="name-change-queue-row"
         >
           {/* The comparison is the whole point of this screen — old and new

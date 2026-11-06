@@ -30,7 +30,7 @@ const Icon = (props) => <svg data-testid="icon" {...props} />;
 function expectNoCard() {
   for (let el = screen.getByTestId("status-page"); el; el = el.parentElement) {
     const cls = (el.className && String(el.className)) || "";
-    expect(cls).not.toMatch(/(^|\s)bg-white(\s|$)/);
+    expect(cls).not.toMatch(/(^|\s)bg-surface(\s|$)/);
     expect(cls).not.toMatch(/(^|\s)shadow-/);
   }
 }

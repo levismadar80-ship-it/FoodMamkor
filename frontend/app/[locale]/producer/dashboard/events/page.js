@@ -129,7 +129,7 @@ export default function ManageEventsPage() {
             <li
               key={ev.id}
               data-testid="manage-event-row"
-              className={`bg-white border rounded-md p-4 ${ev.is_active || past ? "border-border" : "border-yellow-300 bg-yellow-50/40"}`}
+              className={`bg-surface border rounded-md p-4 ${ev.is_active || past ? "border-border" : "border-yellow-300 bg-yellow-50/40"}`}
             >
               <div className="flex items-start justify-between gap-3 flex-wrap">
                 <div className="min-w-0">

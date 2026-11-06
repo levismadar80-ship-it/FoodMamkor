@@ -409,7 +409,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
           onChange={setField("description")}
           rows={5}
           placeholder={t("field_description_placeholder")}
-          className={`w-full border rounded-md px-3 py-2 bg-white ${
+          className={`w-full border rounded-md px-3 py-2 bg-surface ${
             fieldErrors.description ? "border-error" : "border-border"
           }`}
           required
@@ -440,7 +440,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
         <select
           value={form.category}
           onChange={setField("category")}
-          className="w-full border border-border rounded-md px-3 py-2 bg-white"
+          className="w-full border border-border rounded-md px-3 py-2 bg-surface"
         >
           <option value="">{t("category_none")}</option>
           {CATEGORY_KEYS.map((c) => (
@@ -614,7 +614,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
               className={`px-4 py-2 rounded-full text-sm transition ${
                 form.location_type === lt.value
                   ? "bg-primary text-white"
-                  : "bg-white text-text border border-border hover:bg-green-50"
+                  : "bg-surface text-text border border-border hover:bg-green-50"
               }`}
             >
               {t(lt.labelKey)}
@@ -709,7 +709,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
           onChange={setField("requirements")}
           rows={3}
           placeholder={t("field_requirements_placeholder")}
-          className="w-full border border-border rounded-md px-3 py-2 bg-white"
+          className="w-full border border-border rounded-md px-3 py-2 bg-surface"
         />
       </Field>
 

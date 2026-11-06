@@ -26,7 +26,7 @@ function StatusSelect({ value, onChange }) {
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="border border-border rounded-md px-3 py-2 bg-white"
+      className="border border-border rounded-md px-3 py-2 bg-surface"
     >
       <option value="all">{t("producers.toolbar.all_statuses")}</option>
       <option value="approved">{t("producers.toolbar.active")}</option>
@@ -46,7 +46,7 @@ function IncompleteToggle({ active, count, onToggle }) {
   const t = useTranslations("admin");
   const cls = active
     ? "bg-yellow-100 border-yellow-400 text-yellow-800"
-    : "bg-white border-border text-muted hover:border-yellow-400";
+    : "bg-surface border-border text-muted hover:border-yellow-400";
   return (
     <button
       onClick={() => onToggle((v) => !v)}
@@ -74,7 +74,7 @@ function ReviewDueToggle({ active, onToggle }) {
   const t = useTranslations("admin");
   const cls = active
     ? "bg-warning-100 border-warning-400 text-warning-900"
-    : "bg-white border-border text-muted hover:border-warning-400";
+    : "bg-surface border-border text-muted hover:border-warning-400";
   return (
     <button
       onClick={() => onToggle((v) => !v)}
@@ -92,7 +92,7 @@ function ToolbarActions({ onExport }) {
   const t = useTranslations("admin");
   return (
     <>
-      <button onClick={onExport} className="bg-white border border-border px-4 py-2 rounded-md text-sm">
+      <button onClick={onExport} className="bg-surface border border-border px-4 py-2 rounded-md text-sm">
         {t("producers.toolbar.export")}
       </button>
       <Link

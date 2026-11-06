@@ -96,7 +96,7 @@ export default function MobileSheetSelectedCard({
         onClick={onClose}
         aria-label={t("common.aria.close")}
         data-testid="map-selected-card-close"
-        className="absolute top-1 start-1 z-10 w-11 h-11 rounded-full bg-white/90 border border-border shadow-sm flex items-center justify-center text-fg-muted focus-ring"
+        className="absolute top-1 start-1 z-10 w-11 h-11 rounded-full bg-surface/90 border border-border shadow-sm flex items-center justify-center text-fg-muted focus-ring"
       >
         <X size={18} weight="bold" />
       </button>
