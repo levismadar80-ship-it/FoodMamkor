@@ -40,8 +40,8 @@ import Button from "@/components/ui/Button";
 // gesture); experiences render through the SAME EventEntryRow (gold accent),
 // so the old experience card is no longer imported here (the route-as-tab
 // merge deleted its last route consumer, the old /experiences client, and
-// MEH-2248 deleted the component itself). Calendar view keeps
-// CalendarView as-is.
+// MEH-2248 deleted the component itself). MEH-2771: the calendar view
+// lists its month through the same EventEntryRow (renderItem).
 
 // MEH-788: events hero — license-clean Pexels market-produce photo (3:4
 // 2400×3200, Pexels Free). Smart-cropped to a wide 16:9 band via g_auto
@@ -420,7 +420,13 @@ export default function EventsPage({ initialTab = "events" }) {
         ) : datasetEmpty ? (
           <EmptyState tab={tab} t={t} />
         ) : view === "calendar" ? (
-          <CalendarView items={events} linkPrefix={isExp ? "/experiences" : "/events"} />
+          <CalendarView
+            items={events}
+            kind={isExp ? "experiences" : "events"}
+            renderItem={(row) => (
+              <EventEntryRow entry={toEventEntry(row, tab, t)} freeLabel={t("free")} />
+            )}
+          />
         ) : (
           <div className="space-y-2">
             {groupedByMonth.map((group) => (
