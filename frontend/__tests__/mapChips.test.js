@@ -31,7 +31,9 @@ describe("CATEGORY_CHIPS + TOGGLE_CHIPS", () => {
     const labels = CATEGORY_CHIPS.map((c) => c.label);
     expect(labels).toContain("בשר ודגים");
     expect(labels).toContain("ירקות ופירות");
-    expect(labels).toContain("חלב וגבינות");
+    expect(labels).toContain("חלב וביצים");
+    expect(labels).toContain("מזווה");
+    expect(labels).toContain("טיפוח ובית");
     expect(labels).toContain("לחמים ואפייה");
   });
 

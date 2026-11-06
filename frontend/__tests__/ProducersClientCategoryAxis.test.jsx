@@ -137,10 +137,15 @@ vi.mock("@/lib/recently-viewed", () => ({ getRecentlyViewedIds: () => [] }));
 vi.mock("@/lib/analytics", () => ({ trackEvent: vi.fn() }));
 vi.mock("@/lib/auth-context", () => ({ useAuth: () => ({ user: null }) }));
 
+// MEH-2783: the row shows the /map department GROUPS. «בשר» (id 1) → the meat
+// group, «דבש» (id 18, slug honey) → the pantry group; the ids on the wire are
+// unchanged, so every URL/fetch assertion below is the pre-MEH-2783 one.
 const CATEGORIES = [
-  { id: 1, name: "בשר", emoji: null },
-  { id: 18, name: "דבש", emoji: null },
+  { id: 1, name: "בשר", slug: "meat", emoji: null },
+  { id: 18, name: "דבש", slug: "honey", emoji: null },
 ];
+const MEAT = "map_category_chips.meat";
+const PANTRY = "map_category_chips.pantry";
 
 vi.mock("@/lib/api", () => ({
   default: {
@@ -203,7 +208,7 @@ describe("/producers category axis (MEH-1081)", () => {
   it("clicking a category chip pushes ?category=<id> (Back cancels) and fetches with the id", async () => {
     render(<ProducersClient {...PROPS} />);
     const row = await screen.findByTestId("chip-row-category");
-    fireEvent.click(within(row).getByText("דבש"));
+    fireEvent.click(within(row).getByText(PANTRY));
     // MEH-1084: category selection is a push (new view), not a replace.
     expect(lastPushUrl()).toContain("category=18");
     expect(lastReplaceUrl()).not.toContain("category=18");
@@ -218,7 +223,7 @@ describe("/producers category axis (MEH-1081)", () => {
     // MEH-1465: the category renders ONLY in the chip row now (the removable
     // strip tag was removed) — scope to the row for the active-state assertion.
     const row = await screen.findByTestId("chip-row-category");
-    const chip = within(row).getByText("דבש");
+    const chip = within(row).getByText(PANTRY);
     expect(chip.dataset.active).toBe("true");
     await waitFor(() => {
       expect(producersCalls().some((p) => String(p.category) === "18")).toBe(true);
@@ -229,7 +234,7 @@ describe("/producers category axis (MEH-1081)", () => {
     // MEH-1259: was the "אורגני" toggle (now removed) — use "ללא גלוטן".
     render(<ProducersClient {...PROPS} />);
     const row = await screen.findByTestId("chip-row-category");
-    fireEvent.click(within(row).getByText("דבש"));
+    fireEvent.click(within(row).getByText(PANTRY));
     // MEH-1862: the attribute axes moved off the toggle row into the FilterSheet,
     // so reaching one now means opening the sheet first. The point of the case —
     // that a category and an attribute COMPOSE into one URL and one fetch — is
@@ -254,7 +259,7 @@ describe("/producers category axis (MEH-1081)", () => {
     fireEvent.click(within(row).getByText("producers.filters.category_all"));
     expect(lastReplaceUrl()).not.toContain("category=");
     // re-select a real category → push carries the id.
-    fireEvent.click(within(row).getByText("דבש"));
+    fireEvent.click(within(row).getByText(PANTRY));
     expect(lastPushUrl()).toContain("category=18");
     // clear everything via the active-strip clear-all → replace, category gone.
     fireEvent.click(screen.getByText("producers.filters.clear_all"));
@@ -271,12 +276,12 @@ describe("/producers category multi-select OR (MEH-1465)", () => {
   it("selecting two categories unions them: both active, both in URL, both fetched", async () => {
     render(<ProducersClient {...PROPS} />);
     const row = await screen.findByTestId("chip-row-category");
-    fireEvent.click(within(row).getByText("בשר")); // id 1
-    fireEvent.click(within(row).getByText("דבש")); // id 18
+    fireEvent.click(within(row).getByText(MEAT)); // id 1
+    fireEvent.click(within(row).getByText(PANTRY)); // id 18
     // adding grows the set → push; URL carries repeated ?category=.
     expect(catParams(lastPushUrl())).toEqual(["1", "18"]);
-    expect(within(row).getByText("בשר").dataset.active).toBe("true");
-    expect(within(row).getByText("דבש").dataset.active).toBe("true");
+    expect(within(row).getByText(MEAT).dataset.active).toBe("true");
+    expect(within(row).getByText(PANTRY).dataset.active).toBe("true");
     await waitFor(() => {
       const c = lastFetchCategory();
       expect(Array.isArray(c) && c.includes("1") && c.includes("18")).toBe(true);
@@ -286,13 +291,13 @@ describe("/producers category multi-select OR (MEH-1465)", () => {
   it("re-tapping a selected category removes just that one (replace, union shrinks)", async () => {
     render(<ProducersClient {...PROPS} />);
     const row = await screen.findByTestId("chip-row-category");
-    fireEvent.click(within(row).getByText("בשר"));
-    fireEvent.click(within(row).getByText("דבש"));
+    fireEvent.click(within(row).getByText(MEAT));
+    fireEvent.click(within(row).getByText(PANTRY));
     // re-tap בשר → removed; only דבש remains. Shrinking → replace, not push.
-    fireEvent.click(within(row).getByText("בשר"));
+    fireEvent.click(within(row).getByText(MEAT));
     expect(catParams(lastReplaceUrl())).toEqual(["18"]);
-    expect(within(row).getByText("בשר").dataset.active).toBe("false");
-    expect(within(row).getByText("דבש").dataset.active).toBe("true");
+    expect(within(row).getByText(MEAT).dataset.active).toBe("false");
+    expect(within(row).getByText(PANTRY).dataset.active).toBe("true");
     await waitFor(() => expect(lastFetchCategory()).toEqual(["18"]));
   });
 
@@ -300,8 +305,8 @@ describe("/producers category multi-select OR (MEH-1465)", () => {
     params = { category: ["1", "18"] };
     render(<ProducersClient {...PROPS} />);
     const row = await screen.findByTestId("chip-row-category");
-    expect(within(row).getByText("בשר").dataset.active).toBe("true");
-    expect(within(row).getByText("דבש").dataset.active).toBe("true");
+    expect(within(row).getByText(MEAT).dataset.active).toBe("true");
+    expect(within(row).getByText(PANTRY).dataset.active).toBe("true");
     await waitFor(() => {
       const c = lastFetchCategory();
       expect(Array.isArray(c) && c.includes("1") && c.includes("18")).toBe(true);
@@ -314,8 +319,8 @@ describe("/producers category multi-select OR (MEH-1465)", () => {
     const row = await screen.findByTestId("chip-row-category");
     fireEvent.click(within(row).getByText("producers.filters.category_all"));
     expect(catParams(lastReplaceUrl())).toEqual([]);
-    expect(within(row).getByText("בשר").dataset.active).toBe("false");
-    expect(within(row).getByText("דבש").dataset.active).toBe("false");
+    expect(within(row).getByText(MEAT).dataset.active).toBe("false");
+    expect(within(row).getByText(PANTRY).dataset.active).toBe("false");
   });
 });
 
@@ -330,24 +335,24 @@ describe("MEH-1088 Part A — hide zero-producer category chips", () => {
     render(<ProducersClient {...PROPS} initialItems={ONLY_MEAT} initialTotal={1} />);
     const row = await screen.findByTestId("chip-row-category");
     expect(within(row).getByText("producers.filters.category_all")).toBeInTheDocument();
-    expect(within(row).getByText("בשר")).toBeInTheDocument();
-    expect(within(row).queryByText("דבש")).toBeNull();
+    expect(within(row).getByText(MEAT)).toBeInTheDocument();
+    expect(within(row).queryByText(PANTRY)).toBeNull();
   });
 
   it("keeps a URL-active category visible even at 0 producers (clear flow intact)", async () => {
     params = { category: "18" }; // דבש active via URL, but no דבש producer loaded
     render(<ProducersClient {...PROPS} initialItems={ONLY_MEAT} initialTotal={1} />);
     const row = await screen.findByTestId("chip-row-category");
-    expect(within(row).getByText("דבש")).toBeInTheDocument();
-    expect(within(row).getByText("דבש").dataset.active).toBe("true");
+    expect(within(row).getByText(PANTRY)).toBeInTheDocument();
+    expect(within(row).getByText(PANTRY).dataset.active).toBe("true");
   });
 
   it("does NOT hide any category while the catalog is not fully loaded (more pages)", async () => {
     // totalPages 2 → hasMore true → nothing filtered (a later page may hold דבש).
     render(<ProducersClient {...PROPS} initialItems={ONLY_MEAT} initialTotal={20} totalPages={2} />);
     const row = await screen.findByTestId("chip-row-category");
-    expect(within(row).getByText("בשר")).toBeInTheDocument();
-    expect(within(row).getByText("דבש")).toBeInTheDocument();
+    expect(within(row).getByText(MEAT)).toBeInTheDocument();
+    expect(within(row).getByText(PANTRY)).toBeInTheDocument();
   });
 });
 
@@ -359,8 +364,8 @@ describe("/producers — removing city/search preserves the category selection (
     params = { city: "חיפה" }; // city seeded from the URL → the lit city chip renders
     render(<ProducersClient {...PROPS} />);
     const row = await screen.findByTestId("chip-row-category");
-    fireEvent.click(within(row).getByText("בשר")); // id 1
-    fireEvent.click(within(row).getByText("דבש")); // id 18
+    fireEvent.click(within(row).getByText(MEAT)); // id 1
+    fireEvent.click(within(row).getByText(PANTRY)); // id 18
     // remove the city via its chip (MEH-2428: the chip is the ONLY city control)
     const cityBtn = screen.getAllByRole("button").find((b) => b.textContent.includes("חיפה"));
     fireEvent.click(cityBtn);
@@ -377,7 +382,7 @@ describe("/producers — removing city/search preserves the category selection (
     params = { q: "עגבניה" };
     render(<ProducersClient {...PROPS} />);
     const row = await screen.findByTestId("chip-row-category");
-    fireEvent.click(within(row).getByText("דבש")); // id 18
+    fireEvent.click(within(row).getByText(PANTRY)); // id 18
     fireEvent.click(screen.getByTestId("active-search-chip"));
     expect(catParams(lastReplaceUrl())).toEqual(["18"]);
     expect(lastReplaceUrl()).not.toContain("q=");
