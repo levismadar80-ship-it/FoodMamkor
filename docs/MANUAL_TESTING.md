@@ -3,6 +3,9 @@
 
 ---
 
+## MEH-2708 — נגישות: שמות לשדות, רשימת פרטים, ניגודיות (06/11/2026)
+- [ ] סריקת axe (wcag2a/aa, critical+serious) על /producer/dashboard/experiences/new, /group-buys/<id>, /producer/dashboard/insights ו-/admin/{kashrut,outreach,producers,producers/new,settings,users,analytics} — **תוצאה מצופה:** אין select-name, label, button-name, aria-prohibited-attr, definition-list, dlitem, scrollable-region-focusable, link-in-text-block
+- [ ] /group-buys/<id> בנייד (375) — **תוצאה מצופה:** «איסוף»/«משלוח» עם האייקון מימין לכותרת, כמו קודם; כפתור «שיתוף בוואטסאפ» המתאר בירוק כהה (#16803E)
 ## MEH-2703 — סלי הפתעה: מה שלא נאסף (06/11/2026)
 - [ ] סל שפורסם להיום, לפני שזמן האיסוף נגמר → לשונית «סלי הפתעה» — **תוצאה מצופה:** אין תיבת «לא נאספו היום»; במקומה השורה «אחרי שזמן האיסוף נגמר, יופיע כאן מה שלא נאסף.»
 - [ ] יום בלי סלים שפורסמו — **תוצאה מצופה:** לא התיבה ולא השורה
