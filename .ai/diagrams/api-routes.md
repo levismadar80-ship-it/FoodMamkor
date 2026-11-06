@@ -214,13 +214,13 @@ the buyer pays the business at the counter (03/11 pilot ruling).
 ```mermaid
 graph LR
     Dash[business dashboard · chunk 5] --> Publish[POST /rescue/offers<br/>✅👤 approved business only<br/>pickup point must be location_precision=exact MEH-829<br/>qty_total 1..20 · one active bag per point per day → 409]
-    Dash --> OfferCancel[POST /rescue/offers/:id/cancel<br/>👤 owner or admin<br/>cancels every open reservation with it<br/>NO message to buyers yet — needs a Meta-approved template]
+    Dash --> OfferCancel[POST /rescue/offers/:id/cancel<br/>👤 owner or admin · 409 after pickup_end<br/>cancels every open reservation with it, handed stays handed<br/>after commit: one email per buyer MEH-2738 · no WhatsApp]
 
     List[/rescue list · chunk 4] --> Browse[GET /rescue/offers?city=&lat=&lng=<br/>🌐 today's active bags with stock<br/>distance is to THE pickup point, not the nearest branch<br/>+ producer summary + typical_items]
 
     Buyer[buyer] --> Reserve[POST /rescue/orders<br/>🔑 qty 1..2 · SELECT … FOR UPDATE on the offer MEH-773<br/>returns a 4-digit pickup_code, UNIQUE per offer<br/>422 when 2 no-shows in 30 days are on record<br/>after commit: confirmation email to the buyer, BackgroundTask MEH-2715]
     Buyer --> BuyerCancel[POST /rescue/orders/:id/cancel<br/>🔑 own order, only before cancel_until<br/>locks the offer, then the order, re-reads its status MEH-2737<br/>returns the bag once · emails the buyer a cancel confirmation]
-    Buyer --> Mine[GET /rescue/orders/mine<br/>🔑 own reserved/handed orders on today's bags<br/>+ reviewed, producer_id — restores the code after a reload MEH-2680]
+    Buyer --> Mine[GET /rescue/orders/mine<br/>🔑 own reserved/handed orders on today's bags<br/>+ reviewed, producer_id — restores the code after a reload MEH-2680<br/>+ business-cancelled ones, cancelled_by_business MEH-2738]
     Buyer --> Review[POST /rescue/orders/:id/review<br/>🔑 own order, only after handed, once<br/>uq_rescue_reviews_order]
 
     Counter[at the counter] --> Handed[POST /rescue/orders/:id/handed<br/>👤 owner or admin<br/>second call → 409 naming handed_at, never a silent 200]
