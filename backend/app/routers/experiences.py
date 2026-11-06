@@ -490,7 +490,13 @@ def _check_method_edit(db: Session, ex: Experience, payload: dict) -> None:
     Mutates `payload`: an explicit null method means "unchanged"."""
     if "registration_method" in payload and payload["registration_method"] is None:
         payload.pop("registration_method")  # NOT NULL column
-    if "registration_method" not in payload and "registration_url" not in payload:
+    # A form re-sends both fields on every save; a value equal to the stored
+    # one is not a change (every legacy experience was backfilled to whatsapp).
+    if (
+        payload.get("registration_method", ex.registration_method)
+        == ex.registration_method
+        and payload.get("registration_url", ex.registration_url) == ex.registration_url
+    ):
         return
     problem = method_problem(
         payload.get("registration_method") or ex.registration_method,
@@ -571,6 +577,7 @@ def update_experience(
                     str(ex.price_per_person) if ex.price_per_person else None
                 ),
                 "max_participants": ex.max_participants,
+                "registration_url": ex.registration_url,
             }
         )
         ex.moderation_status = verdict["status"]
