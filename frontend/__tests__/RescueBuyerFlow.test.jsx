@@ -391,11 +391,63 @@ describe("the row", () => {
 });
 
 describe("the business-page section — reserve and confirm", () => {
-  it("quotes the price AT THE COUNTER on the CTA", async () => {
+  it("shows the price big, and says on the CTA that payment is AT THE COUNTER", async () => {
     render(<RescueSection producer={PRODUCER} />);
     const cta = await screen.findByTestId("rescue-reserve");
-    expect(cta.textContent).toBe("לשריין · 15 ₪ בקופה");
-    expect(cta.textContent).toContain("בקופה");
+    expect(cta.textContent).toBe("לשריין · משלמים בקופה");
+    expect(screen.getByTestId("rescue-section-price").textContent).toBe("15 ₪");
+  });
+
+  // MEH-2713: the struck "worth" is the business's own LOW estimate, shown only
+  // when it is above the price — the same rule BagRow uses on the home page.
+  it("strikes through the declared worth only when it is above the price", async () => {
+    fetchOffers.mockResolvedValue([offer({ value_min_agorot: 4500 })]);
+    const { unmount } = render(<RescueSection producer={PRODUCER} />);
+    const worth = await screen.findByTestId("rescue-section-worth");
+    expect(worth.tagName).toBe("S");
+    expect(worth.textContent).toBe("45 ₪");
+    unmount();
+
+    fetchOffers.mockResolvedValue([offer({ value_min_agorot: 1000 })]);
+    render(<RescueSection producer={PRODUCER} />);
+    await screen.findByTestId("rescue-reserve");
+    expect(screen.queryByTestId("rescue-section-worth")).toBeNull();
+  });
+
+  it("shows the stock as a short tag: one bag and many", async () => {
+    fetchOffers.mockResolvedValue([offer({ qty_left: 1 })]);
+    const { unmount } = render(<RescueSection producer={PRODUCER} />);
+    expect((await screen.findByTestId("rescue-section-stock")).textContent).toBe("נשאר 1");
+    unmount();
+    fetchOffers.mockResolvedValue([offer({ qty_left: 4 })]);
+    render(<RescueSection producer={PRODUCER} />);
+    expect((await screen.findByTestId("rescue-section-stock")).textContent).toBe("נשארו 4");
+  });
+
+  // Sapir 6/11: the no-show rule is too much on the card; it stays on the
+  // confirmation, where it applies (asserted in "reserve swaps the CTA…").
+  it("keeps only the free-cancel cutoff under the CTA, without the no-show rule", async () => {
+    render(<RescueSection producer={PRODUCER} />);
+    const terms = await screen.findByTestId("rescue-section-terms");
+    expect(terms.textContent).toMatch(/^ביטול חינם עד \d{2}:\d{2}$/);
+    expect(terms.textContent).not.toContain("אי-הגעות");
+  });
+
+  it("folds the allergens under «אלרגנים», closed until tapped", async () => {
+    render(<RescueSection producer={PRODUCER} />);
+    const box = await screen.findByTestId("rescue-section-allergens");
+    expect(box.tagName).toBe("DETAILS");
+    expect(box.open).toBe(false);
+    expect(box.querySelector("summary").textContent).toBe("אלרגנים");
+    expect(box.textContent).toContain("ייתכנו גלוטן, חלב, אגוזים ושומשום");
+  });
+
+  it("gives the pickup time and the address each its own icon row", async () => {
+    render(<RescueSection producer={PRODUCER} />);
+    const pickup = await screen.findByTestId("rescue-section-pickup");
+    expect(pickup.textContent).toMatch(/^איסוף \d{2}:\d{2}–\d{2}:\d{2}$/);
+    expect(pickup.closest("li").querySelector("svg")).not.toBeNull();
+    expect(screen.getByTestId("rescue-section-address").closest("li").querySelector("svg")).not.toBeNull();
   });
 
   it("shows the full address and the typical contents", async () => {
