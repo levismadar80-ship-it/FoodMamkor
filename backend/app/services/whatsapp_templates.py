@@ -221,6 +221,8 @@ class KashrutExpiryReminderV1(WhatsAppTemplate):
     owner_name: str
     producer_name: str
     expires_at: str
+
+
 class RescueCodesDigestV1(WhatsAppTemplate):
     """MEH-2756: at pickup_start, the day's pickup codes for one rescue offer,
     sent to the BUSINESS so the counter has the list without opening the
