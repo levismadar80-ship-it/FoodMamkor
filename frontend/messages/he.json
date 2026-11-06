@@ -980,7 +980,7 @@
       "save_cta": "שמירה",
       "save_error": "השמירה נכשלה. נסו שוב.",
       "card_free_above": "חינם מעל {amount}",
-      "card_free_above_alone": "משלוח חינם מעל {amount}"
+      "card_delivery_sr": "משלוח"
     }
   },
   "recipes": {
