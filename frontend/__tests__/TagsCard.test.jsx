@@ -93,6 +93,20 @@ describe("TagsCard — diet (ported from DietaryScopeCard, MEH-1508)", () => {
   });
 });
 
+describe("TagsCard — «נשמר» clears on the next edit (MEH-2729 review)", () => {
+  it("a radio change after a save drops the saved confirmation, like the checkbox does", async () => {
+    renderCard({ vegan_scope: "unknown" });
+    fireEvent.click(radio("vegan_scope", D.opt_yes));
+    fireEvent.click(saveBtn());
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: CHROME.saved })).toBeInTheDocument(),
+    );
+    fireEvent.click(radio("vegan_scope", D.opt_no));
+    expect(screen.queryByRole("button", { name: CHROME.saved })).toBeNull();
+    expect(saveBtn()).toBeEnabled();
+  });
+});
+
 describe("TagsCard — grass-fed (ported from GrassFedCard, MEH-1851 row 23)", () => {
   it("seeds the checkbox from producer.grass_fed", () => {
     const { unmount } = renderCard({ grass_fed: true });

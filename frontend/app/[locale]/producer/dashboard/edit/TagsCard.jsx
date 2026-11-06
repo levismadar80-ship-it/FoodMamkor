@@ -102,6 +102,12 @@ export default function TagsCard({ profile, onSave, reportDirty = () => {} }) {
     return () => reportDirty("tags", false);
   }, [dirty, reportDirty]);
 
+  // Any edit clears the «נשמר» confirmation — radios and the checkbox alike.
+  const edit = (setter) => (v) => {
+    setter(v);
+    setSaved(false);
+  };
+
   const handleSave = async () => {
     setSaving(true);
     setSaved(false);
@@ -138,14 +144,14 @@ export default function TagsCard({ profile, onSave, reportDirty = () => {} }) {
           name="vegan_scope"
           value={vegan}
           options={yesNo}
-          onChange={setVegan}
+          onChange={edit(setVegan)}
         />
         <RadioGroup
           legend={tDiet("q_vegetarian")}
           name="vegetarian_scope"
           value={vegetarian}
           options={yesNo}
-          onChange={setVegetarian}
+          onChange={edit(setVegetarian)}
         />
         <RadioGroup
           legend={tDiet("q_gluten")}
@@ -156,7 +162,7 @@ export default function TagsCard({ profile, onSave, reportDirty = () => {} }) {
             ["shared", tDiet("gluten_shared")],
             ["unknown", tDiet("opt_unknown")],
           ]}
-          onChange={setGluten}
+          onChange={edit(setGluten)}
         />
       </section>
 

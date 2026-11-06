@@ -82,10 +82,8 @@ import ProductsSection from "@/components/ProductsSection";
 import LocationsEditor from "./LocationsEditor";
 import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, PricingCard, DeliveryCard, OffersCard, LicenseCard, KashrutCard, BusinessNameCard, ViewOnPageLink } from "./cards";
 import OrganizerCityCard from "./OrganizerCityCard";
-// MEH-1508 ch2 Phase B: owner-facing business-level dietary scope (own file —
-// cards.jsx is already >1600 lines).
-// MEH-1851 row 23: owner-declared grass_fed (own file, same reason as above —
-// cards.jsx is already >1600 lines).
+// MEH-2729: one «תגים» card holds the dietary scope (MEH-1508) and grass_fed
+// (MEH-1851) sections; future tags go inside it (own file — cards.jsx is >1600 lines).
 import TagsCard, { activeTagCount } from "./TagsCard";
 // «עסק של מילואימניקים» (MEH-2693): owner-declared reservist_owned (own file, same reason).
 import ReservistOwnedCard from "./ReservistOwnedCard";
