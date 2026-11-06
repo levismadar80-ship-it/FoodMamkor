@@ -5797,11 +5797,16 @@
       "items_help": "מפרידים בפסיקים. זה מה שהקונים רואים לפני שהם משריינים.",
       "items_save": "לשמור",
       "items_saved": "נשמר.",
-      "leftover_hint": "נשארו סלים? אפשר למסור אותם בחינם בקבוצת הצלת מזון.",
-      "leftover_link": "לקבוצה",
+      "leftover_hint": "במקום לזרוק, אפשר למסור אותם בחינם.",
+      "leftover_link": "לקבוצת הצלה",
       "needs_address": "כדי לפרסם סלים צריך כתובת איסוף מדויקת.",
       "needs_address_privacy": "את הכתובת המלאה רואים רק מי ששריינו סל.",
-      "needs_address_cta": "להוספת כתובת"
+      "needs_address_cta": "להוספת כתובת",
+      "leftover_title": "{count, plural, one {לא נאסף היום: סל אחד} other {לא נאספו היום: # סלים}}",
+      "leftover_share": "לשתף בוואטסאפ",
+      "leftover_donated": "נמסרו בחינם",
+      "leftover_done": "{count, plural, one {✓ סל אחד נמסר בחינם} other {✓ # סלים נמסרו בחינם}}",
+      "leftover_share_text": "{count, plural, one {נשאר לנו היום סל אחד} other {נשארו לנו היום # סלים}} של {name} ב{city}, למסירה בחינם. מי שרוצה, כתבו לנו."
     },
     "counter_card": {
       "title": "סל הפתעה של מהמקור",

@@ -40,12 +40,24 @@ export default function RescueTab() {
   // flash while it loads, nor replace the form when the request failed.
   const [locationsLoaded, setLocationsLoaded] = useState(false);
 
+  // MEH-2703: today's bags with what was not collected. Reloaded with the
+  // orders, so marking «לא הגיע» updates the leftover count at once.
+  const [offers, setOffers] = useState([]);
+  const [businessName, setBusinessName] = useState("");
+  const [donating, setDonating] = useState(false);
+
   const load = useCallback(async () => {
     try {
       const res = await api.get("/producers/me/rescue/orders");
       setOrders(Array.isArray(res.data) ? res.data : []);
     } catch {
       setOrders([]);
+    }
+    try {
+      const res = await api.get("/producers/me/rescue/offers");
+      setOffers(Array.isArray(res.data) ? res.data : []);
+    } catch {
+      setOffers([]);
     }
   }, []);
 
@@ -58,6 +70,10 @@ export default function RescueTab() {
         setLocationsLoaded(true);
       })
       .catch(() => setLocations([]));
+    api
+      .get("/producers/me")
+      .then((r) => setBusinessName(typeof r.data?.name === "string" ? r.data.name : ""))
+      .catch(() => {});
     api
       .get("/producers/me/rescue/typical-items")
       .then((r) => setItems((r.data?.items || []).join(", ")))
@@ -152,6 +168,36 @@ export default function RescueTab() {
   // MEH-2702: the group for the town of the point bags are published from,
   // national fallback otherwise.
   const leftoverHref = leftoverGroupUrl(exactLocation?.city);
+  // MEH-2703: bags not collected once the window closed (the server returns
+  // 0 before pickup_end), and how many of them the business gave away.
+  const leftoverRows = offers.filter((o) => Number(o.leftover) > 0);
+  const leftoverTotal = leftoverRows.reduce((n, o) => n + Number(o.leftover), 0);
+  const donatedTotal = leftoverRows.reduce((n, o) => n + Number(o.qty_donated || 0), 0);
+  // No recipient in the link: the business picks the contact or group in
+  // WhatsApp itself, so nothing about who receives it is stored here.
+  const shareHref = `https://wa.me/?text=${encodeURIComponent(
+    t("leftover_share_text", {
+      count: leftoverTotal,
+      name: businessName,
+      city: exactLocation?.city || "",
+    }),
+  )}`;
+
+  async function markDonated() {
+    setDonating(true);
+    setNotice(null);
+    try {
+      // A set, not an increment: every uncollected bag is reported given.
+      for (const o of leftoverRows) {
+        await api.put(`/producers/me/rescue/offers/${o.id}/donated`, { qty: Number(o.leftover) });
+      }
+      await load();
+    } catch (err) {
+      setNotice(err?.response?.data?.detail || t("failed"));
+    } finally {
+      setDonating(false);
+    }
+  }
 
   return (
     <div data-testid="rescue-tab" className="space-y-6">
@@ -355,20 +401,56 @@ export default function RescueTab() {
         </button>
       </section>
 
-      {/* No exact point → no bags can be published, so nothing can be left over. */}
-      {exactLocation && (
-        <p className="border border-border rounded-md px-4 py-3 font-body-sm text-sm text-fg-muted" data-testid="rescue-leftover-hint">
-          {t("leftover_hint")}{" "}
-          <a
-            href={leftoverHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            data-testid="rescue-leftover-link"
-            className="text-primary underline underline-offset-2"
-          >
-            {t("leftover_link")}
-          </a>
-        </p>
+      {/* MEH-2703: only once the window closed and something was not
+          collected; before that a bag may still be reserved or picked up. */}
+      {leftoverTotal > 0 && (
+        <section
+          className="border border-border rounded-md px-4 py-4 space-y-3"
+          data-testid="rescue-leftover"
+        >
+          <h3 className="font-headline-md text-base font-black text-text" data-testid="rescue-leftover-count">
+            {t("leftover_title", { count: leftoverTotal })}
+          </h3>
+          <p className="font-body-sm text-sm text-fg-muted">{t("leftover_hint")}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <a
+              href={shareHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-testid="rescue-leftover-share"
+              className="block text-center bg-primary text-white py-2 rounded-md font-medium"
+            >
+              {t("leftover_share")}
+            </a>
+            <a
+              href={leftoverHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-testid="rescue-leftover-link"
+              className="block text-center border border-primary text-primary py-2 rounded-md font-medium"
+            >
+              {t("leftover_link")}
+            </a>
+            {donatedTotal >= leftoverTotal ? (
+              <p
+                className="py-2 text-center font-body-sm text-sm text-text"
+                data-testid="rescue-leftover-done"
+              >
+                {t("leftover_done", { count: donatedTotal })}
+              </p>
+            ) : (
+              <button
+                type="button"
+                onClick={markDonated}
+                disabled={donating}
+                data-testid="rescue-leftover-donated"
+                className="border border-primary text-primary py-2 rounded-md font-medium disabled:opacity-60"
+              >
+                {t("leftover_donated")}
+              </button>
+            )}
+          </div>
+        </section>
       )}
     </div>
   );

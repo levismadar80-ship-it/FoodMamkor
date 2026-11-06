@@ -334,37 +334,106 @@ describe("the empty day", () => {
 // MEH-2702 — where uncollected bags can go. The 05/11 scan found no local
 // food-rescue group in any Wave 1 town, so today every town gets the national
 // group; a town added to the map must get its own link instead.
-describe("the leftover-bags line", () => {
-  it("links the national group when the pickup town has no local group", async () => {
-    locs = [{ id: "loc1", location_precision: "exact", is_primary: true, city: "זכרון יעקב" }];
+// MEH-2703: what was not collected. The server sends `leftover` per offer —
+// 0 until pickup_end — so the box keys on it, never on the clock here.
+let todaysOffers = [];
+function mockDay({ offers = [], points = locs, name = "מאפיית הכרמל" } = {}) {
+  todaysOffers = offers;
+  get.mockImplementation((url) => {
+    if (url.includes("typical-items")) return Promise.resolve({ data: { items: [] } });
+    if (url === "/producers/me/locations") return Promise.resolve({ data: points });
+    if (url === "/producers/me/rescue/offers") return Promise.resolve({ data: todaysOffers });
+    if (url === "/producers/me") return Promise.resolve({ data: { name } });
+    return Promise.resolve({ data: [] });
+  });
+}
+function bag(over = {}) {
+  return { id: "of1", qty_total: 4, qty_left: 2, status: "active", leftover: 3, qty_donated: 0, ...over };
+}
+const ZICHRON = [{ id: "loc1", location_precision: "exact", is_primary: true, city: "זכרון יעקב" }];
+
+describe("what was not collected", () => {
+  it("shows nothing while no bag is left over (before the window closes the server sends 0)", async () => {
+    mockDay({ offers: [bag({ leftover: 0 })], points: ZICHRON });
     render(<RescueTab />);
     await pointsLoaded();
-    expect(screen.getByTestId("rescue-leftover-hint").textContent).toContain(
+    await waitFor(() => expect(get).toHaveBeenCalledWith("/producers/me/rescue/offers"));
+    await act(async () => {});
+    expect(screen.queryByTestId("rescue-leftover")).toBeNull();
+  });
+
+  it("offers WhatsApp, the rescue group and «נמסרו בחינם» once bags were left", async () => {
+    mockDay({ offers: [bag({ leftover: 3 })], points: ZICHRON });
+    render(<RescueTab />);
+    expect(await screen.findByTestId("rescue-leftover")).toBeTruthy();
+    expect(screen.getByTestId("rescue-leftover").textContent).toContain(
       lookup("rescue.dashboard.leftover_hint"),
     );
-    const link = screen.getByTestId("rescue-leftover-link");
-    expect(link.getAttribute("href")).toBe("https://www.facebook.com/groups/freefood/");
-    expect(link.getAttribute("target")).toBe("_blank");
-    expect(link.getAttribute("rel")).toContain("noopener");
+    // No recipient: the business picks the contact or group in WhatsApp.
+    const share = screen.getByTestId("rescue-leftover-share").getAttribute("href");
+    expect(share.startsWith("https://wa.me/?text=")).toBe(true);
+    const text = decodeURIComponent(share.slice("https://wa.me/?text=".length));
+    await waitFor(() =>
+      expect(
+        decodeURIComponent(
+          screen.getByTestId("rescue-leftover-share").getAttribute("href").slice("https://wa.me/?text=".length),
+        ),
+      ).toContain("מאפיית הכרמל"),
+    );
+    expect(text).toContain("זכרון יעקב");
+    const group = screen.getByTestId("rescue-leftover-link");
+    expect(group.getAttribute("href")).toBe("https://www.facebook.com/groups/freefood/");
+    expect(group.getAttribute("rel")).toContain("noopener");
+    expect(screen.getByTestId("rescue-leftover-donated").textContent).toBe(
+      lookup("rescue.dashboard.leftover_donated"),
+    );
+  });
+
+  it("adds up the leftover across today's bags and reports each one as given", async () => {
+    mockDay({
+      offers: [bag({ id: "a", leftover: 2 }), bag({ id: "b", leftover: 1 }), bag({ id: "c", leftover: 0 })],
+      points: ZICHRON,
+    });
+    put.mockImplementation(async (url, body) => {
+      const id = url.split("/").at(-2);
+      todaysOffers = todaysOffers.map((o) => (o.id === id ? { ...o, qty_donated: body.qty } : o));
+      return { data: {} };
+    });
+    render(<RescueTab />);
+    fireEvent.click(await screen.findByTestId("rescue-leftover-donated"));
+    expect(await screen.findByTestId("rescue-leftover-done")).toBeTruthy();
+    expect(put).toHaveBeenCalledWith("/producers/me/rescue/offers/a/donated", { qty: 2 });
+    expect(put).toHaveBeenCalledWith("/producers/me/rescue/offers/b/donated", { qty: 1 });
+    // A bag with nothing left over is not reported at all.
+    expect(put).not.toHaveBeenCalledWith("/producers/me/rescue/offers/c/donated", expect.anything());
+    expect(screen.queryByTestId("rescue-leftover-donated")).toBeNull();
+  });
+
+  it("says what the server refused instead of claiming the bags were given", async () => {
+    mockDay({ offers: [bag({ leftover: 3 })], points: ZICHRON });
+    put.mockRejectedValue({ response: { data: { detail: "אפשר לסמן עד 2 סלים שלא נאספו" } } });
+    render(<RescueTab />);
+    fireEvent.click(await screen.findByTestId("rescue-leftover-donated"));
+    expect(await screen.findByTestId("rescue-tab-notice")).toHaveProperty(
+      "textContent",
+      "אפשר לסמן עד 2 סלים שלא נאספו",
+    );
+    expect(screen.queryByTestId("rescue-leftover-done")).toBeNull();
   });
 
   it("looks the group up by the town of the exact pickup point, not an approximate one", async () => {
-    locs = [
-      { id: "loc0", location_precision: "approximate", is_primary: true, city: "בנימינה" },
-      { id: "loc1", location_precision: "exact", is_primary: false, city: "חדרה" },
-    ];
+    mockDay({
+      offers: [bag()],
+      points: [
+        { id: "loc0", location_precision: "approximate", is_primary: true, city: "בנימינה" },
+        { id: "loc1", location_precision: "exact", is_primary: false, city: "חדרה" },
+      ],
+    });
     leftoverSpy.fn.mockClear();
     render(<RescueTab />);
-    await pointsLoaded();
+    await screen.findByTestId("rescue-leftover");
     expect(leftoverSpy.fn).toHaveBeenLastCalledWith("חדרה");
     expect(leftoverSpy.fn).not.toHaveBeenCalledWith("בנימינה");
-  });
-
-  it("is hidden when the business has no exact pickup point (no bags can be published)", async () => {
-    locs = [{ id: "loc0", location_precision: "approximate", is_primary: true, city: "בנימינה" }];
-    render(<RescueTab />);
-    await pointsLoaded();
-    expect(screen.queryByTestId("rescue-leftover-hint")).toBeNull();
   });
 });
 
