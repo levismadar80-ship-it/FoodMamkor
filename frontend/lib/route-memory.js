@@ -26,16 +26,26 @@ import { usePathname } from "next/navigation";
 const leftPaths = new Set();
 
 /**
+ * Route-level: records a path as LEFT when the pathname actually changes.
+ * Mounted once, in the root layout (SmoothScrollProvider), so a block that
+ * unmounts while the reader stays on the route (a conditional section, a
+ * skeleton→content swap) never marks it — only leaving the route does.
+ */
+export function useTrackRouteLeaves() {
+  const pathname = usePathname();
+  useEffect(() => () => leftPaths.add(pathname), [pathname]);
+}
+
+/**
  * True when the reader has already been on — and left — the current route in
- * this document. Marked on LEAVE (effect cleanup), not on mount: sections that
- * mount late on the first visit (after their data arrives) must still animate.
- * Always false on the server and on the first hydration render, so server and
- * client markup agree.
+ * this document. Sections that mount late on the first visit (after their data
+ * arrives) still animate, because the route is marked only on leave. Always
+ * false on the server and on the first hydration render, so server and client
+ * markup agree.
  */
 export function useRevealSkip() {
   const pathname = usePathname();
   const [skip] = useState(() => typeof window !== "undefined" && leftPaths.has(pathname));
-  useEffect(() => () => leftPaths.add(pathname), [pathname]);
   return skip;
 }
 
@@ -53,7 +63,10 @@ if (typeof window !== "undefined") {
 }
 
 /**
- * Call once per mount, from an effect. Returns true when this mount is a
+ * Call once per mount, from an effect (behind a ref guard — the call consumes
+ * module state, so a second StrictMode run must not call it again). A pending
+ * back step for a route that never asks (e.g. /about) stays set until the next
+ * call, which compares paths and drops it. Returns true when this mount is a
  * history return to the current route:
  *  - a client-side back/forward (popstate) that landed on this path, or
  *  - the document's own entry route, loaded by reload or back_forward.

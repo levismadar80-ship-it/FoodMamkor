@@ -141,7 +141,7 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
   const intlT = useTranslations();
   const t = useCallback((oldKey) => intlT(mapKey(oldKey)), [intlT]);
   // MEH-2714: set once by the mount effect — read by the scroll restore below.
-  const historyReturnRef = useRef(false);
+  const historyReturnRef = useRef(null);
   const [producers, setProducers] = useState(initialProducers ?? []);
   // MEH-1487: region fallback — { regionName, producers } when a delivery_city
   // filter returned 0 AND the city belongs to a region in data/regions.js;
@@ -258,7 +258,9 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
     // MEH-2714: restore the expanded grid only on a history return (back /
     // forward / reload). A fresh arrival — the logo, the bottom nav — starts
     // at the first page, the same as it starts at the top.
-    historyReturnRef.current = consumeHistoryReturn();
+    // Guarded: consumeHistoryReturn() consumes module state, and StrictMode
+    // runs this effect twice in dev — the second call would read `false`.
+    if (historyReturnRef.current === null) historyReturnRef.current = consumeHistoryReturn();
     const savedCount = historyReturnRef.current
       ? Number(window.sessionStorage?.getItem("home_visible_count"))
       : NaN;
@@ -361,7 +363,9 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
     if (!Number.isFinite(savedY) || savedY <= 0) return;
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        // MEH-2714: the browser restores the position itself on a back step;
+        // MEH-2714: the browser restores the position itself on a back step
+        // (Lenis, mounted in the root layout, is off on touch screens and only
+        // smooths wheel input — it does not take part in that restore);
         // step in only when it fell short (an expanded grid it could not
         // reach yet). Overriding a correct native restore shifted the
         // reader's card by 24px in the 375 measurement.
@@ -386,10 +390,15 @@ export function useHomePage({ initialProducers = null, initialCategories = null 
     // itself, capture phase, before the router moves anything. Not on unmount:
     // by then the router may already have scrolled for the next page (measured
     // 645 written for a reader who left at 1145).
-    document.addEventListener("click", stash, true);
+    // Links only: a chip, menu or load-more click is not a position the reader
+    // leaves from.
+    const stashOnLink = (e) => {
+      if (e.target instanceof Element && e.target.closest("a[href]")) stash();
+    };
+    document.addEventListener("click", stashOnLink, true);
     return () => {
       window.removeEventListener("pagehide", stash);
-      document.removeEventListener("click", stash, true);
+      document.removeEventListener("click", stashOnLink, true);
     };
   }, []);
 

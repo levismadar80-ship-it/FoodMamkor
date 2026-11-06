@@ -18,35 +18,47 @@ function Probe({ hook, onValue }) {
   return null;
 }
 
+function Tracker({ hook }) {
+  hook();
+  return null;
+}
+
 describe("useRevealSkip", () => {
   beforeEach(() => {
     mockPath = "/";
   });
 
-  it("is false on the first visit, true after leaving and coming back", async () => {
-    const { useRevealSkip } = await freshModule();
+  it("is false on the first visit, true after leaving the route and coming back", async () => {
+    const { useRevealSkip, useTrackRouteLeaves } = await freshModule();
     const seen = [];
+    const tracker = render(<Tracker hook={useTrackRouteLeaves} />);
     const first = render(<Probe hook={useRevealSkip} onValue={(v) => seen.push(v)} />);
     expect(seen.at(-1)).toBe(false);
-    first.unmount(); // navigate away
+    first.unmount();
+    mockPath = "/meshek-barak"; // navigate away: the layout-level tracker sees the change
+    tracker.rerender(<Tracker hook={useTrackRouteLeaves} />);
+    mockPath = "/"; // back
+    tracker.rerender(<Tracker hook={useTrackRouteLeaves} />);
     render(<Probe hook={useRevealSkip} onValue={(v) => seen.push(v)} />);
     expect(seen.at(-1)).toBe(true);
   });
 
-  it("does not skip a section that mounts late on the FIRST visit", async () => {
-    const { useRevealSkip } = await freshModule();
+  it("a block unmounting while the reader stays on the route does not mark it", async () => {
+    const { useRevealSkip, useTrackRouteLeaves } = await freshModule();
     const seen = [];
-    render(<Probe hook={useRevealSkip} onValue={(v) => seen.push(v)} />);
-    // a second block mounts while the reader is still on the route
+    render(<Tracker hook={useTrackRouteLeaves} />);
+    // skeleton → content swap on the same route
+    render(<Probe hook={useRevealSkip} onValue={(v) => seen.push(v)} />).unmount();
     render(<Probe hook={useRevealSkip} onValue={(v) => seen.push(v)} />);
     expect(seen).toEqual([false, false]);
   });
 
   it("is per route — leaving / does not skip /about", async () => {
-    const { useRevealSkip } = await freshModule();
+    const { useRevealSkip, useTrackRouteLeaves } = await freshModule();
     const seen = [];
-    render(<Probe hook={useRevealSkip} onValue={(v) => seen.push(v)} />).unmount();
+    const tracker = render(<Tracker hook={useTrackRouteLeaves} />);
     mockPath = "/about";
+    tracker.rerender(<Tracker hook={useTrackRouteLeaves} />);
     render(<Probe hook={useRevealSkip} onValue={(v) => seen.push(v)} />);
     expect(seen.at(-1)).toBe(false);
   });
