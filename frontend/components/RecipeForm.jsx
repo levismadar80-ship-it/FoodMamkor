@@ -169,7 +169,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-4 bg-white rounded-[16px] border border-border p-6"
+      className="space-y-4 bg-white rounded-lg border border-border p-6"
     >
       <h2 className="font-headline-md text-lg font-bold text-text">
         {mode === "edit" ? t("heading_edit") : t("heading_create")}
@@ -296,7 +296,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
             <button
               type="button"
               onClick={() => setForm({ ...form, image_url: "" })}
-              className="text-sm text-red-600 hover:underline"
+              className="text-sm text-danger-600 hover:underline"
             >
               {t("image_remove")}
             </button>

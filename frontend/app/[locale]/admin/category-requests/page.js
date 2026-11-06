@@ -24,7 +24,7 @@ export default function AdminCategoryRequestsPage() {
   const STATUS_COLORS = {
     pending: "bg-yellow-100 text-yellow-800",
     approved: "bg-green-100 text-green-700",
-    rejected: "bg-red-100 text-red-800",
+    rejected: "bg-danger-100 text-danger-800",
     merged: "bg-blue-100 text-blue-800",
   };
 
@@ -133,21 +133,21 @@ export default function AdminCategoryRequestsPage() {
                           <button
                             onClick={() => updateStatus(req.id, "approved")}
                             disabled={actionLoading === req.id}
-                            className="text-xs bg-green-50 text-green-700 border border-green-300 px-2 py-1 rounded-[8px] hover:bg-green-100 transition disabled:opacity-50"
+                            className="text-xs bg-green-50 text-green-700 border border-green-300 px-2 py-1 rounded-sm hover:bg-green-100 transition disabled:opacity-50"
                           >
                             {t("category_requests.actions.approve")}
                           </button>
                           <button
                             onClick={() => updateStatus(req.id, "rejected")}
                             disabled={actionLoading === req.id}
-                            className="text-xs bg-red-50 text-red-700 border border-red-200 px-2 py-1 rounded-[8px] hover:bg-red-100 transition disabled:opacity-50"
+                            className="text-xs bg-danger-50 text-danger-700 border border-danger-200 px-2 py-1 rounded-sm hover:bg-danger-100 transition disabled:opacity-50"
                           >
                             {t("category_requests.actions.reject")}
                           </button>
                           <button
                             onClick={() => updateStatus(req.id, "merged")}
                             disabled={actionLoading === req.id}
-                            className="text-xs bg-blue-50 text-blue-700 border border-blue-200 px-2 py-1 rounded-[8px] hover:bg-blue-100 transition disabled:opacity-50"
+                            className="text-xs bg-blue-50 text-blue-700 border border-blue-200 px-2 py-1 rounded-sm hover:bg-blue-100 transition disabled:opacity-50"
                           >
                             {t("category_requests.actions.merge")}
                           </button>

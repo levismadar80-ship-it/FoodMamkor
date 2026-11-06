@@ -337,7 +337,7 @@ export default function GroupBuyDetailClient({ id }) {
   );
 
   const joinCard = (
-    <div className="bg-white rounded-[16px] border border-border p-5 md:p-6">
+    <div className="bg-white rounded-lg border border-border p-5 md:p-6">
       <div className="flex items-baseline gap-2">
         <span dir="ltr" className="text-4xl font-bold text-primary">{formatPrice(Number(gb.price_per_unit_group).toFixed(0))}</span>
         <span dir="ltr" className="text-fg-muted line-through text-lg">{formatPrice(Number(gb.price_per_unit_regular).toFixed(0))}</span>
@@ -473,7 +473,7 @@ export default function GroupBuyDetailClient({ id }) {
 
         <div className="grid gap-6 lg:gap-x-10 lg:grid-cols-[1fr_380px] lg:items-start">
           <div className="min-w-0">
-            <div className="relative aspect-[16/9] rounded-[16px] overflow-hidden bg-green-50">
+            <div className="relative aspect-[16/9] rounded-lg overflow-hidden bg-green-50">
               {showHero ? (
                 <Image
                   src={heroSrc}
@@ -563,12 +563,16 @@ export default function GroupBuyDetailClient({ id }) {
                     ]
                       .filter(([, , note]) => note)
                       .map(([kind, Icon, note]) => (
-                        <div key={kind} className="flex gap-3" data-testid={`group-buy-${kind}-note`}>
-                          <Icon size={22} className="text-primary shrink-0 mt-0.5" aria-hidden="true" />
-                          <div className="min-w-0">
-                            <dt className="text-sm font-bold text-text">{t(`${kind}_label`)}</dt>
-                            <dd className="text-base text-text whitespace-pre-line">{note}</dd>
-                          </div>
+                        // MEH-2708: a <dl> may wrap each dt/dd pair in ONE <div>,
+                        // never two (axe definition-list + dlitem). The icon moves
+                        // into the <dt>, positioned at the start edge, so the
+                        // layout is the same: icon column, then label over note.
+                        <div key={kind} className="relative ps-[34px] min-w-0" data-testid={`group-buy-${kind}-note`}>
+                          <dt className="text-sm font-bold text-text">
+                            <Icon size={22} className="text-primary absolute start-0 top-0.5" aria-hidden="true" />
+                            {t(`${kind}_label`)}
+                          </dt>
+                          <dd className="text-base text-text whitespace-pre-line">{note}</dd>
                         </div>
                       ))}
                   </dl>
@@ -635,7 +639,7 @@ export default function GroupBuyDetailClient({ id }) {
             role="dialog"
             aria-modal="true"
             aria-labelledby="gb-cancel-title"
-            className="bg-background rounded-[16px] p-6 max-w-sm w-full border border-border"
+            className="bg-background rounded-lg p-6 max-w-sm w-full border border-border"
             onClick={(e) => e.stopPropagation()}
           >
             <h2

@@ -417,7 +417,7 @@ test.describe("/admin/users — pagination", () => {
     await row.getByRole("button", { name: "חסום", exact: true }).click();
     await expect.poll(() => writes.map((w) => `${w.method} ${w.url}`)).toEqual([`POST /admin/users/${uuid(130)}/block`]);
     await expect(row.getByRole("button", { name: "שחרר חסימה" }), "the reload shows the blocked state").toBeVisible();
-    await expect(row).toHaveClass(/bg-red-50/);
+    await expect(row).toHaveClass(/bg-danger-50/);
     await expect(page.getByText("עמוד 2 מתוך 3"), "still on page 2 after the reload").toBeVisible();
     await openKebab(row);
     await menu(page).getByRole("menuitem", { name: "העלי לאדמין" }).click();
@@ -509,7 +509,7 @@ test.describe("/admin/users — the role kebab", () => {
     await openKebab(row);
     const demote = menu(page).getByRole("menuitem", { name: "הסירי הרשאות" });
     await expect(demote).toBeVisible();
-    await expect(demote).toHaveClass(/text-red-600/);
+    await expect(demote).toHaveClass(/text-danger-600/);
     await expect(menu(page).getByRole("menuitem")).toHaveText(["הסירי הרשאות"]);
     await demote.click();
     await expect(roleDialog(page, "את בטוחה שברצונך להסיר הרשאות אדמין מרונית אדמין?")).toBeVisible();

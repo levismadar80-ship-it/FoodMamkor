@@ -114,13 +114,13 @@ export default function CalendarView({ items, linkPrefix }) {
     : [];
 
   return (
-    <div className="bg-background rounded-[16px] border border-border p-4 md:p-6">
+    <div className="bg-background rounded-lg border border-border p-4 md:p-6">
       <div className="flex items-center justify-between mb-4">
         <button
           type="button"
           onClick={prevMonth}
           aria-label={t("previous_month")}
-          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-green-50 transition"
+          className="min-w-touch min-h-touch flex items-center justify-center rounded-lg hover:bg-green-50 transition"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -133,7 +133,7 @@ export default function CalendarView({ items, linkPrefix }) {
           type="button"
           onClick={nextMonth}
           aria-label={t("next_month")}
-          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-green-50 transition"
+          className="min-w-touch min-h-touch flex items-center justify-center rounded-lg hover:bg-green-50 transition"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M15 6l-6 6 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -172,7 +172,7 @@ export default function CalendarView({ items, linkPrefix }) {
               onClick={() => setSelectedDate(d)}
               aria-pressed={isSelected ? "true" : "false"}
               aria-label={formatEventDate(d, locale, LONG_DATE)}
-              className={`aspect-square min-h-[44px] rounded-lg flex flex-col items-center justify-center text-sm transition ${
+              className={`aspect-square min-h-touch rounded-lg flex flex-col items-center justify-center text-sm transition ${
                 isSelected
                   ? "bg-primary text-white"
                   : isToday

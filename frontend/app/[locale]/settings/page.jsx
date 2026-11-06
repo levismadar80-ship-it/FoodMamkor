@@ -55,8 +55,8 @@ function SettingsSkeleton({ label }) {
       {/* tab bar: p-1 pill + py-2 buttons ≈ 46px, mb-8 */}
       <div className="h-[46px] w-full max-w-xs bg-border rounded-full animate-pulse mb-8" />
       <div className="space-y-4">
-        <div className="h-28 bg-border rounded-[16px] animate-pulse" />
-        <div className="h-28 bg-border rounded-[16px] animate-pulse" />
+        <div className="h-28 bg-border rounded-lg animate-pulse" />
+        <div className="h-28 bg-border rounded-lg animate-pulse" />
       </div>
     </div>
   );
@@ -313,7 +313,7 @@ export function ProfileTab() {
   return (
     // MEH-2565: card from md up only. On a phone the profile form uses the full
     // width; the security tab keeps its cards (three separate sections).
-    <section role="tabpanel" aria-label={t("tabpanel_aria")} className="md:bg-white md:border md:border-border md:rounded-[16px] md:p-6">
+    <section role="tabpanel" aria-label={t("tabpanel_aria")} className="md:bg-white md:border md:border-border md:rounded-lg md:p-6">
       {/* Avatar */}
       <div className="flex items-center gap-4 mb-6">
         <label
@@ -431,7 +431,7 @@ export function ProfileTab() {
             {message}
           </p>
         )}
-        {error && <p className="text-sm text-red-600" role="alert">{error}</p>}
+        {error && <p className="text-sm text-danger-600" role="alert">{error}</p>}
 
         <button
           type="submit"
@@ -526,7 +526,7 @@ function PasswordChangeCard({ isOAuth }) {
 
   if (isOAuth) {
     return (
-      <section role="tabpanel" aria-label={t("oauth_tabpanel_aria")} className="bg-white border border-border rounded-[16px] p-6">
+      <section role="tabpanel" aria-label={t("oauth_tabpanel_aria")} className="bg-white border border-border rounded-lg p-6">
         <h2 className="font-semibold text-text mb-2">{t("oauth_heading")}</h2>
         <p className="text-sm text-fg-muted">{t("oauth_body")}</p>
       </section>
@@ -534,7 +534,7 @@ function PasswordChangeCard({ isOAuth }) {
   }
 
   return (
-    <section className="bg-white border border-border rounded-[16px] p-6">
+    <section className="bg-white border border-border rounded-lg p-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-semibold text-text">{t("heading")}</h2>
         <Link href="/forgot-password" className="text-xs text-primary hover:underline">
@@ -615,7 +615,7 @@ function PasswordChangeCard({ isOAuth }) {
               required
               aria-invalid={mismatch || undefined}
               // rtl-ok
-              className={`w-full border rounded-md pr-11 pl-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition ${mismatch ? "border-red-400" : "border-border"}`}
+              className={`w-full border rounded-md pr-11 pl-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition ${mismatch ? "border-danger-400" : "border-border"}`}
               dir="ltr"
             />
             <button
@@ -640,7 +640,7 @@ function PasswordChangeCard({ isOAuth }) {
             {message}
           </p>
         )}
-        {error && <p className="text-sm text-red-600" role="alert">{error}</p>}
+        {error && <p className="text-sm text-danger-600" role="alert">{error}</p>}
 
         <button
           type="submit"
@@ -681,7 +681,7 @@ function LogoutAllDevicesCard() {
   };
 
   return (
-    <section className="bg-white border border-border rounded-[16px] p-6">
+    <section className="bg-white border border-border rounded-lg p-6">
       <h2 className="font-semibold text-text mb-1">{t("heading")}</h2>
       <p className="text-sm text-fg-muted mb-4">
         {t("body")}
@@ -691,19 +691,19 @@ function LogoutAllDevicesCard() {
         <button
           type="button"
           onClick={() => setConfirming(true)}
-          className="border border-amber-500 text-amber-700 px-5 py-2 rounded-md text-sm font-medium hover:bg-amber-50 transition"
+          className="border border-warning-500 text-warning-700 px-5 py-2 rounded-md text-sm font-medium hover:bg-warning-50 transition"
         >
           {t("heading")}
         </button>
       ) : (
-        <div className="rounded-md bg-amber-50 border border-amber-200 p-4 space-y-3">
-          <p className="text-sm text-amber-800 font-medium">{t("confirm_prompt")}</p>
+        <div className="rounded-md bg-warning-50 border border-warning-200 p-4 space-y-3">
+          <p className="text-sm text-warning-800 font-medium">{t("confirm_prompt")}</p>
           <div className="flex gap-2">
             <button
               type="button"
               onClick={handleLogout}
               disabled={loading}
-              className="bg-amber-500 text-white px-5 py-2 rounded-md text-sm font-medium hover:bg-amber-600 transition disabled:opacity-50"
+              className="bg-warning-500 text-white px-5 py-2 rounded-md text-sm font-medium hover:bg-warning-600 transition disabled:opacity-50"
             >
               {loading ? t("confirm_submitting") : t("confirm_submit")}
             </button>
@@ -715,7 +715,7 @@ function LogoutAllDevicesCard() {
               {tCommon("cancel")}
             </button>
           </div>
-          {error && <p className="text-xs text-red-600" role="alert">{error}</p>}
+          {error && <p className="text-xs text-danger-600" role="alert">{error}</p>}
         </div>
       )}
     </section>
@@ -756,7 +756,7 @@ function DangerZoneCard() {
 
   if (phase === "grace") {
     return (
-      <section className="bg-white border border-red-200 rounded-[16px] p-6 text-center space-y-3">
+      <section className="bg-white border border-danger-200 rounded-lg p-6 text-center space-y-3">
         {/* MEH-990: raw ⏳ emoji → Phosphor HourglassSimple (grace/waiting state) */}
         <HourglassSimple size={32} weight="regular" aria-hidden="true" className="text-fg-muted" />
         <h2 className="font-semibold text-text">{t("grace_heading")}</h2>
@@ -775,8 +775,8 @@ function DangerZoneCard() {
   }
 
   return (
-    <section className="bg-white border border-red-200 rounded-[16px] p-6">
-      <h2 className="font-semibold text-red-700 mb-1">{t("heading")}</h2>
+    <section className="bg-white border border-danger-200 rounded-lg p-6">
+      <h2 className="font-semibold text-danger-700 mb-1">{t("heading")}</h2>
       <p className="text-sm text-fg-muted mb-4">
         {t("body")}
       </p>
@@ -785,7 +785,7 @@ function DangerZoneCard() {
         <button
           type="button"
           onClick={() => setPhase("confirm")}
-          className="border border-red-400 text-red-600 px-5 py-2 rounded-md text-sm font-medium hover:bg-red-50 transition"
+          className="border border-danger-400 text-danger-600 px-5 py-2 rounded-md text-sm font-medium hover:bg-danger-50 transition"
         >
           {t("delete_cta")}
         </button>
@@ -793,7 +793,7 @@ function DangerZoneCard() {
 
       {phase === "confirm" && (
         <form onSubmit={handleDelete} className="space-y-3">
-          <label htmlFor="danger-email" className="block text-sm font-medium text-red-700">
+          <label htmlFor="danger-email" className="block text-sm font-medium text-danger-700">
             {t("confirm_email_label")}
           </label>
           <input
@@ -802,16 +802,16 @@ function DangerZoneCard() {
             value={emailInput}
             onChange={(e) => setEmailInput(e.target.value)}
             placeholder={user.email || ""}
-            className="w-full border border-red-300 rounded-md px-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-red-300 transition"
+            className="w-full border border-danger-300 rounded-md px-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-danger-300 transition"
             dir="ltr"
             autoComplete="off"
           />
-          {error && <p className="text-xs text-red-600" role="alert">{error}</p>}
+          {error && <p className="text-xs text-danger-600" role="alert">{error}</p>}
           <div className="flex gap-2">
             <button
               type="submit"
               disabled={!emailMatch || loading}
-              className="bg-red-600 text-white px-5 py-2 rounded-md text-sm font-medium hover:bg-red-700 transition disabled:opacity-40"
+              className="bg-danger-600 text-white px-5 py-2 rounded-md text-sm font-medium hover:bg-danger-700 transition disabled:opacity-40"
             >
               {loading ? t("submit_deleting") : t("submit_cta")}
             </button>

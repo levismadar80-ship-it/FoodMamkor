@@ -520,7 +520,7 @@ export default function ProductsSection({
     <div
       ref={sectionRef}
       tabIndex={-1}
-      className={`focus:outline-none ${embedded ? "" : "bg-white border border-border rounded-[16px] p-6"}`}
+      className={`focus:outline-none ${embedded ? "" : "bg-white border border-border rounded-lg p-6"}`}
     >
       <div className={embedded ? "flex items-center justify-end mb-4" : "flex items-center justify-between mb-4"}>
         {!embedded && (
@@ -532,7 +532,7 @@ export default function ProductsSection({
         {!adding && products?.length > 0 && (
           <button
             onClick={() => { setAdding(true); setError(""); setFormErrors({}); }}
-            className="inline-flex items-center gap-1.5 text-sm text-primary border border-primary/30 rounded-[8px] px-3 py-1.5 hover:bg-primary/5 transition"
+            className="inline-flex items-center gap-1.5 text-sm text-primary border border-primary/30 rounded-sm px-3 py-1.5 hover:bg-primary/5 transition"
           >
             <Plus size={14} aria-hidden="true" />
             {t("add_cta")}
@@ -563,7 +563,7 @@ export default function ProductsSection({
         <div
           role="alert"
           data-testid="products-load-error"
-          className="border border-border rounded-[10px] p-4 bg-red-50 text-center"
+          className="border border-border rounded-[10px] p-4 bg-danger-50 text-center"
         >
           <p className="text-sm text-text mb-2">{tErr("load_failed")}</p>
           <button
@@ -588,7 +588,7 @@ export default function ProductsSection({
             <div className="w-full max-w-sm text-start">
               <p className="text-[11px] text-fg-muted mb-1">{t("empty.sample_label")}</p>
               <div className="border border-border rounded-md p-3 bg-surface-card flex items-center gap-3">
-                <div className="w-14 h-14 rounded-[8px] bg-green-50 flex items-center justify-center shrink-0">
+                <div className="w-14 h-14 rounded-sm bg-green-50 flex items-center justify-center shrink-0">
                   <Package size={22} className="text-fg-muted" aria-hidden="true" />
                 </div>
                 <div className="min-w-0">
@@ -718,14 +718,14 @@ export default function ProductsSection({
                 <button
                   type="submit"
                   disabled={savingEdit || editUploading}
-                  className="flex-1 bg-primary text-white rounded-[8px] py-2 text-sm font-medium hover:bg-primary-dark transition disabled:opacity-50"
+                  className="flex-1 bg-primary text-white rounded-sm py-2 text-sm font-medium hover:bg-primary-dark transition disabled:opacity-50"
                 >
                   {savingEdit ? t("save_edit_saving") : t("save_edit_cta")}
                 </button>
                 <button
                   type="button"
                   onClick={cancelEdit}
-                  className="px-4 bg-white border border-border text-text rounded-[8px] py-2 text-sm font-medium hover:bg-green-50 transition"
+                  className="px-4 bg-white border border-border text-text rounded-sm py-2 text-sm font-medium hover:bg-green-50 transition"
                 >
                   {t("cancel_edit_cta")}
                 </button>
@@ -826,7 +826,7 @@ export default function ProductsSection({
                 onClick={() => { setError(""); setConfirmDelete({ id: product.id, name: product.name }); }}
                 disabled={deletingId === product.id}
                 aria-label={t("card.delete_aria_template", { name: product.name })}
-                className="p-1.5 rounded-[6px] text-fg-muted hover:text-error hover:bg-red-50 transition disabled:opacity-40"
+                className="p-1.5 rounded-[6px] text-fg-muted hover:text-error hover:bg-danger-50 transition disabled:opacity-40"
               >
                 <Trash size={16} aria-hidden="true" />
               </button>
@@ -945,7 +945,7 @@ export default function ProductsSection({
             <button
               type="submit"
               disabled={saving || uploading}
-              className="flex-1 bg-primary text-white rounded-[8px] py-2 text-sm font-medium hover:bg-primary-dark transition disabled:opacity-50"
+              className="flex-1 bg-primary text-white rounded-sm py-2 text-sm font-medium hover:bg-primary-dark transition disabled:opacity-50"
             >
               {saving ? t("add_submitting") : t("add_submit_cta")}
             </button>
@@ -964,19 +964,19 @@ export default function ProductsSection({
             role="dialog"
             aria-modal="true"
             aria-labelledby="product-delete-title"
-            className="bg-white rounded-[16px] shadow-xl p-6 max-w-sm w-full text-start space-y-3"
+            className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full text-start space-y-3"
           >
             <p id="product-delete-title" className="font-medium text-base text-text">
               {t("delete_confirm.title", { name: confirmDelete.name })}
             </p>
             <p className="text-sm text-fg-muted">{t("delete_confirm.body")}</p>
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && <p className="text-sm text-danger-600">{error}</p>}
             <div className="flex gap-3 justify-start pt-1">
               <button
                 type="button"
                 disabled={deletingId != null}
                 onClick={() => handleDelete(confirmDelete.id)}
-                className="px-4 py-2 rounded-[10px] text-sm font-medium text-white transition bg-red-600 hover:bg-red-700 disabled:opacity-50"
+                className="px-4 py-2 rounded-[10px] text-sm font-medium text-white transition bg-danger-600 hover:bg-danger-700 disabled:opacity-50"
               >
                 {t("delete_confirm.confirm")}
               </button>
@@ -1005,7 +1005,7 @@ export default function ProductsSection({
             role="dialog"
             aria-modal="true"
             aria-labelledby="product-duplicate-title"
-            className="bg-white rounded-[16px] shadow-xl p-6 max-w-sm w-full text-start space-y-3"
+            className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full text-start space-y-3"
           >
             <p id="product-duplicate-title" className="font-medium text-base text-text">
               {t("duplicate_name_confirm.title")}
@@ -1180,7 +1180,7 @@ function DietChip({ label, pressed, onToggle, iconKey }) {
       onClick={onToggle}
       aria-pressed={pressed}
       className={[
-        "inline-flex items-center gap-1.5 min-h-[44px] rounded-[10px] border px-4 py-2 text-sm text-start transition focus-ring",
+        "inline-flex items-center gap-1.5 min-h-touch rounded-[10px] border px-4 py-2 text-sm text-start transition focus-ring",
         pressed
           ? "border-primary bg-green-50 text-text"
           : "border-border bg-white text-text hover:border-primary",
@@ -1203,7 +1203,7 @@ function UploadZone({ imageUrl, uploading, onUpload, onRemove, tForm }) {
   if (imageUrl && failedSrc !== imageUrl) {
     return (
       <div className="flex items-center gap-3">
-        <div className="relative w-16 h-16 rounded-[8px] overflow-hidden shrink-0 border border-border">
+        <div className="relative w-16 h-16 rounded-sm overflow-hidden shrink-0 border border-border">
           <Image src={imageUrl} alt={tForm("image_alt")} fill className="object-cover" sizes="64px" onError={() => setFailedSrc(imageUrl)} />
         </div>
         {/* MEH-2033: sr-only (NOT hidden) keeps the input in the tab order —
@@ -1229,7 +1229,7 @@ function UploadZone({ imageUrl, uploading, onUpload, onRemove, tForm }) {
   // MEH-2033: sr-only + focus-within — same keyboard-reachability fix as
   // EventForm (MEH-2031) / ExperienceForm (MEH-2012), word for word.
   return (
-    <label className="flex flex-col items-center justify-center gap-1 text-center text-sm text-fg-muted border border-dashed border-border rounded-[8px] px-4 py-6 cursor-pointer hover:bg-green-50 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30">
+    <label className="flex flex-col items-center justify-center gap-1 text-center text-sm text-fg-muted border border-dashed border-border rounded-sm px-4 py-6 cursor-pointer hover:bg-green-50 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30">
       <Package size={20} className="text-fg-muted" aria-hidden="true" />
       <span>{uploading ? tForm("image_uploading") : tForm("image_upload_cta")}</span>
       <input

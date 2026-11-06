@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useRevealSkip } from "@/lib/route-memory";
 
 /**
  * Thin wrapper around framer-motion for the "fade + slide up" entry
@@ -44,8 +45,13 @@ export default function FadeInSection({
   ...rest
 }) {
   const MotionComponent = motion[Component] || motion.div;
+  // MEH-2714: the reveal belongs to the first visit. Coming back to a route
+  // (browser back from a business page) renders the block in place — no fade.
+  const skipReveal = useRevealSkip();
 
-  const animationProps = immediate
+  const animationProps = skipReveal
+    ? { initial: false }
+    : immediate
     ? {
         initial: { opacity: 0, y },
         animate: { opacity: 1, y: 0 },

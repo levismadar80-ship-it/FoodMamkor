@@ -224,7 +224,7 @@ export default function Footer() {
                         aria-expanded={open}
                         aria-controls={group.id}
                         onClick={() => setOpenGroup(open ? null : group.id)}
-                        className="flex w-full min-h-[44px] items-center justify-between gap-2 text-start md:min-h-0"
+                        className="flex w-full min-h-touch items-center justify-between gap-2 text-start md:min-h-0"
                       >
                         {group.heading}
                         <CaretDown
@@ -283,7 +283,7 @@ export default function Footer() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder={t("nav.footer.newsletter_placeholder")}
                 /* MEH-976: unicode-bidi:plaintext → Hebrew placeholder resolves RTL (opposite the end-0 arrow → clear gap), typed Latin email resolves LTR; pe-11 reserves the 44px on the arrow side for the LTR value. Replaces MEH-968 dir="ltr"+ps-11. */
-                className="w-full bg-transparent text-white placeholder:text-white/40 outline-none focus-visible:ring-2 focus-visible:ring-white/70 rounded-sm py-2 pe-11 min-h-[44px]"
+                className="w-full bg-transparent text-white placeholder:text-white/40 outline-none focus-visible:ring-2 focus-visible:ring-white/70 rounded-sm py-2 pe-11 min-h-touch"
                 style={{ borderBottom: "1px solid rgba(255,255,255,0.35)", unicodeBidi: "plaintext" }}
               />
               <button
@@ -362,12 +362,12 @@ export default function Footer() {
               <li key={link.href}>
                 {/* MEH-1103: 11px → 13px (DESIGN.md interactive floor is 14px
                     default-16px; 13px is the footer-utility compromise Sapir
-                    locked in the sweep spec) + min-h-[44px] inline-flex so the
+                    locked in the sweep spec) + min-h-touch inline-flex so the
                     tap target meets WCAG 2.5.5 without growing the visual bar
                     (the extra hit area is vertical padding, not layout). */}
                 <Link
                   href={link.href}
-                  className="inline-flex items-center min-h-[44px] text-[13px] text-green-100 hover:text-white transition"
+                  className="inline-flex items-center min-h-touch text-[13px] text-green-100 hover:text-white transition"
                 >
                   {link.label}
                 </Link>

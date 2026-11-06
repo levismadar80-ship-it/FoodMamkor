@@ -43,7 +43,7 @@ function VanityLinkCard({ slug }) {
   );
 
   return (
-    <div className="bg-white border border-border rounded-[16px] p-5 mb-6">
+    <div className="bg-white border border-border rounded-lg p-5 mb-6">
       <p className="text-sm font-medium text-text mb-2">{t("label")}</p>
       <div className="flex items-center gap-2 bg-green-50 rounded-[10px] px-3 py-2 mb-3">
         <span className="text-sm text-primary font-mono flex-1 truncate" dir="ltr">{url}</span>
@@ -51,7 +51,7 @@ function VanityLinkCard({ slug }) {
       <div className="flex gap-2">
         <button
           onClick={copy}
-          className="flex-1 text-sm border border-border rounded-[8px] px-3 py-1.5 hover:border-primary transition"
+          className="flex-1 text-sm border border-border rounded-sm px-3 py-1.5 hover:border-primary transition"
         >
           {copied ? t("copied") : t("copy_cta")}
         </button>
@@ -59,7 +59,7 @@ function VanityLinkCard({ slug }) {
           href={`https://wa.me/?text=${waText}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="btn-whatsapp-outline flex-1 text-sm text-center rounded-[8px] px-3 py-1.5"
+          className="btn-whatsapp-outline flex-1 text-sm text-center rounded-sm px-3 py-1.5"
         >
           {t("share_cta")}
         </a>
@@ -92,7 +92,7 @@ function ShareKitSection({ profile }) {
     <section
       data-testid="share-kit-section"
       aria-label={t("section_title")}
-      className="bg-white border border-border rounded-[16px] p-5 mb-6"
+      className="bg-white border border-border rounded-lg p-5 mb-6"
     >
       <h2 className="font-headline-md text-lg font-bold text-text mb-1">
         {t("section_title")}
@@ -132,7 +132,7 @@ function SectionFetchError({ message, retryLabel, onRetry, testid }) {
     <div
       role="alert"
       data-testid={testid}
-      className="bg-white border border-border rounded-[16px] p-4 mb-6 flex items-center justify-between gap-3"
+      className="bg-white border border-border rounded-lg p-4 mb-6 flex items-center justify-between gap-3"
     >
       <p className="text-sm text-fg-muted">{message}</p>
       <button
@@ -159,7 +159,7 @@ function StatusSupportModal({ onClose }) {
       aria-label={t("section_aria")}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-white rounded-t-[24px] sm:rounded-[20px] w-full max-w-sm p-6 space-y-4">
+      <div className="bg-white rounded-t-[24px] sm:rounded-xl w-full max-w-sm p-6 space-y-4">
         <h2 className="font-semibold text-text text-lg">{t("heading")}</h2>
         <p className="text-sm text-fg-muted">{t("body")}</p>
         <a
@@ -408,7 +408,7 @@ export default function ProducerDashboardPage() {
       <div className="max-w-5xl mx-auto px-4 py-16">
         <div
           data-testid="dashboard-load-error"
-          className="bg-white border border-border rounded-[16px] p-6 text-center"
+          className="bg-white border border-border rounded-lg p-6 text-center"
           role="alert"
         >
           <p className="font-headline-md text-xl font-bold text-text mb-2">
@@ -567,7 +567,7 @@ export default function ProducerDashboardPage() {
         // Hebrew-text locator is the anti-pattern docs/E2E-LOCATORS.md names.
         // Opportunistic conversion, per that file's migration policy.
         <div
-          className="bg-yellow-50 border border-yellow-200 rounded-[16px] p-4 mb-6 text-sm"
+          className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6 text-sm"
           role="status"
           data-testid="status-pending-banner"
         >
@@ -613,15 +613,15 @@ export default function ProducerDashboardPage() {
           never emits, so its banner was dead code. */}
       {producer.status === "inactive" && (
         <div
-          className="bg-amber-50 border border-amber-200 rounded-[16px] p-4 mb-6 text-sm space-y-3"
+          className="bg-warning-50 border border-warning-200 rounded-lg p-4 mb-6 text-sm space-y-3"
           role="alert"
           data-testid="status-inactive-banner"
         >
-          <p className="font-semibold text-amber-800 flex items-center gap-2">
+          <p className="font-semibold text-warning-800 flex items-center gap-2">
             <Warning size={18} weight="fill" aria-hidden="true" />
             {t("status.inactive.title")}
           </p>
-          <p className="text-amber-700">{t("status.inactive.body")}</p>
+          <p className="text-warning-700">{t("status.inactive.body")}</p>
           <button
             type="button"
             onClick={() => setSupportOpen(true)}
@@ -657,7 +657,7 @@ export default function ProducerDashboardPage() {
         if (!h) return null;
         return (
           <div
-            className="rounded-[16px] p-4 mb-6 text-sm flex items-start gap-3"
+            className="rounded-lg p-4 mb-6 text-sm flex items-start gap-3"
             style={{ backgroundColor: h.color + "15", border: `1.5px solid ${h.color}35` }}
           >
             {/* MEH-1687 D: Phosphor icon, not a colour emoji. */}
@@ -690,7 +690,7 @@ export default function ProducerDashboardPage() {
       ) : producer.slug ? (
         <div
           data-testid="share-locked-hint"
-          className="bg-white border border-border rounded-[16px] p-5 mb-6 flex items-center gap-3"
+          className="bg-white border border-border rounded-lg p-5 mb-6 flex items-center gap-3"
         >
           <LockSimple size={18} className="text-fg-muted shrink-0" aria-hidden="true" />
           <p className="text-sm text-fg-muted">{t("states.share_locked")}</p>
@@ -709,7 +709,7 @@ export default function ProducerDashboardPage() {
       {/* MEH-2460: no availability states for an organizer — it takes no
           orders (ADR-036). */}
       {!isOrganizer && (
-      <div className="bg-white border border-border rounded-[16px] p-6 mb-8">
+      <div className="bg-white border border-border rounded-lg p-6 mb-8">
         <p className="text-sm uppercase tracking-wider text-fg-muted mb-1">
           {/* MEH-1842: the id sits on a span around the heading TEXT, not on the
               <p>. The <p> also contains InfoTooltip, whose trigger is a button
@@ -823,7 +823,7 @@ export default function ProducerDashboardPage() {
                 // offered a value the server would then reject.
                 min={israelToday()}
                 onChange={(e) => { setVacationUntil(e.target.value); setVacationDateError(""); }}
-                className="border border-border rounded-[8px] px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                className="border border-border rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 dir="ltr"
                 aria-invalid={vacationDateError ? "true" : undefined}
                 aria-describedby={vacationDateError ? "vacation-until-error" : undefined}
@@ -832,7 +832,7 @@ export default function ProducerDashboardPage() {
                 <button
                   type="button"
                   onClick={() => { setVacationUntil(""); setVacationDateError(""); }}
-                  className="text-fg-muted hover:text-red-600 transition inline-flex"
+                  className="text-fg-muted hover:text-danger-600 transition inline-flex"
                   aria-label={t("availability.remove_vacation_date_aria")}
                 >
                   <X size={14} weight="bold" aria-hidden="true" />
@@ -847,7 +847,7 @@ export default function ProducerDashboardPage() {
               </button>
             </div>
             {vacationDateError && (
-              <p id="vacation-until-error" role="alert" className="mt-2 text-sm text-red-600">
+              <p id="vacation-until-error" role="alert" className="mt-2 text-sm text-danger-600">
                 {vacationDateError}
               </p>
             )}
@@ -897,7 +897,7 @@ export default function ProducerDashboardPage() {
         // specific copy.
         <div
           data-testid="overview-zero-state"
-          className="bg-white border border-border rounded-[16px] p-6 mb-8"
+          className="bg-white border border-border rounded-lg p-6 mb-8"
         >
           <p className="font-semibold text-text mb-1">{t("states.zero_activity_title")}</p>
           <div className="flex items-center gap-3">
@@ -973,7 +973,7 @@ function ActivityPulse({ analytics }) {
     <section
       data-testid="activity-pulse"
       aria-label={t("section_aria")}
-      className="bg-white border border-border rounded-[16px] p-6"
+      className="bg-white border border-border rounded-lg p-6"
     >
       {rows.length === 0 ? (
         // MEH-1345: visible title so the empty pulse card is identifiable
@@ -1016,7 +1016,7 @@ function ActivityPulse({ analytics }) {
               target="_blank"
               rel="noopener noreferrer"
               data-testid="activity-pulse-cta"
-              className="btn-whatsapp inline-flex items-center justify-center gap-2 min-h-[44px] px-6 rounded-full text-sm font-medium"
+              className="btn-whatsapp inline-flex items-center justify-center gap-2 min-h-touch px-6 rounded-full text-sm font-medium"
             >
               <WhatsappLogo size={18} weight="fill" aria-hidden="true" />
               {t("cta")}
@@ -1053,7 +1053,7 @@ function OverviewStatsHero({ analytics }) {
           no deltas/arrows (data reality; see header). */}
       <div data-testid="overview-kpi-strip" className="grid grid-cols-2 gap-3">
         {kpis.map((kpi) => (
-          <div key={kpi.key} className="bg-white border border-border rounded-[16px] p-4 text-center">
+          <div key={kpi.key} className="bg-white border border-border rounded-lg p-4 text-center">
             <p className="text-xs text-fg-muted mb-1">{t(`kpi.${kpi.key}`)}</p>
             <p className="font-headline-lg text-3xl font-bold text-primary">{kpi.value}</p>
             <p className="text-xs text-fg-muted mt-1">{kpi.sub}</p>

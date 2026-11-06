@@ -45,7 +45,7 @@ function GroupBuyCard({ gb }) {
     <Link
       href={`/group-buys/${gb.id}`}
       data-testid="group-buy-card"
-      className="group bg-white rounded-[16px] border border-border overflow-hidden flex flex-col hover:border-primary transition focus-ring"
+      className="group bg-white rounded-lg border border-border overflow-hidden flex flex-col hover:border-primary transition focus-ring"
     >
       <div className="relative aspect-[16/9] bg-green-50 overflow-hidden">
         {showImg ? (
@@ -220,7 +220,7 @@ export default function GroupBuysClient() {
                 key={s.key}
                 onClick={() => setStatusFilter(s.key)}
                 aria-pressed={statusFilter === s.key}
-                className={`min-h-[44px] inline-flex items-center justify-center px-4 py-2 rounded-full text-sm font-medium transition border ${
+                className={`min-h-touch inline-flex items-center justify-center px-4 py-2 rounded-full text-sm font-medium transition border ${
                   statusFilter === s.key
                     ? "bg-primary text-white border-primary"
                     : "bg-white text-fg-muted border-border hover:border-primary"
@@ -243,7 +243,7 @@ export default function GroupBuysClient() {
         {loading ? (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-64 rounded-[16px] bg-border animate-pulse" />
+              <div key={i} className="h-64 rounded-lg bg-border animate-pulse" />
             ))}
           </div>
         ) : error ? (
@@ -252,7 +252,7 @@ export default function GroupBuysClient() {
             <p className="text-fg-muted mb-4">{tErr("error.generic")}</p>
             <button
               onClick={load}
-              className="min-h-[44px] inline-flex items-center justify-center bg-primary text-white px-6 py-2 rounded-full font-medium hover:bg-primary-dark transition"
+              className="min-h-touch inline-flex items-center justify-center bg-primary text-white px-6 py-2 rounded-full font-medium hover:bg-primary-dark transition"
             >
               {tErr("errors.boundary.retry")}
             </button>

@@ -643,7 +643,7 @@ selling cheese in Tel Aviv. Use "מישהי שמחפשת אוכל מקומי ב�
 | **Current (he)** | `אין תג 'מאומת'? זה לא אומר פחות. חלק מהקטגוריות פטורות מרישיון לפי החוק — אין מסמך להציג, פשוט כי הוא לא נדרש. העסק חתם על הצהרה מחייבת שהוא פועל כדין, ועבר את אותה היכרות אישית כמו כולם.` |
 | **en** | `No 'Verified' badge? It doesn't mean less. Some categories are legally exempt from licensing — there's no document to show, simply because none is required. The business signed a binding declaration that it operates lawfully, and went through the same personal introduction as everyone else.` (⏳ en pending Sapir review) |
 | **i18n key** | `producer.badge.declared_explainer` |
-| **Status** | ✅ MEH-1170 — rendered as quiet **visible copy** on the producer-detail hero (`ProducerHeader.jsx`, declared tier only). Was briefly the tap-tooltip of an S12 "מוצהר" chip (MEH-76/#1051); that chip contradicted ADR-022 ("tier 2 = no badge") and was removed. The sibling keys `declared_label` / `aria_declared` were retired with the chip. |
+| **Status** | 🗑️ **Retired — MEH-2710 (06/11/2026, Sapir).** Key deleted from he/en; the producer page shows nothing for the declared tier (a line about a badge the business lacks was noise, and a negative label). ADR-022 gate 1 is carried by `process.badge.absence_*` on /about/process. History: MEH-1170 — rendered as quiet **visible copy** on the producer-detail hero (`ProducerHeader.jsx`, declared tier only). Was briefly the tap-tooltip of an S12 "מוצהר" chip (MEH-76/#1051); that chip contradicted ADR-022 ("tier 2 = no badge") and was removed. The sibling keys `declared_label` / `aria_declared` were retired with the chip. |
 | **Why** | template-05 research: absence of a badge needs a **positive** explanation, not silence (Yelp FAQ pattern; Saeedi et al. — relative effect is inherent, only mitigable). Affirms the מוצהר tier without negative labeling. Source MEH-758 / ADR-022 / S11-FINAL. |
 
 ### Gate 3 — /terms §5 two-tier (MEH-760)
@@ -701,7 +701,7 @@ outstanding. Source MEH-760 / ADR-022 / Brief Q1+Q3.
 `producer.badge.verified_tooltip_license` (`{date}` → literal `5.6.2026` here).
 
 **Cross-ref:** `process.badge.absence_body` mirrors the tier-2 framing of
-`producer.badge.declared_explainer` — **sync if the tier-2 wording changes
+`producer.badge.declared_explainer` (retired MEH-2710 — /about/process is now the only surface, nothing left to sync with) — **historical:** sync if the tier-2 wording changes
 (lawyer/ADR-022).** Kept as a separate string (not a shared key) so the page's
 editorial voice can diverge from the per-producer badge surface; the two must
 stay semantically aligned on the "exempt ≠ less trustworthy" message.

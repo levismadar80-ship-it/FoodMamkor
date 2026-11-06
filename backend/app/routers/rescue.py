@@ -32,12 +32,21 @@ Related:  app/models/models.py (RescueOffer and siblings, the status tuples),
 History:  MEH-2646 (creation, chunk 2/4 of the rescue-bags pilot MEH-2643)
 """
 
+import logging
 import math
 import secrets
 from datetime import timedelta
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    Query,
+    Request,
+    status,
+)
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
@@ -80,7 +89,15 @@ from app.schemas.rescue import (
     RescueTypicalItemsIn,
     RescueTypicalItemsOut,
 )
+from app.sentry import capture_background_exception
+from app.services.rescue_emails import (
+    ReservationEmail,
+    israel_hhmm,
+    send_reservation_email,
+)
 from app.utils.clock import israel_today, utc_now
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/rescue", tags=["rescue"])
 admin_router = APIRouter(prefix="/admin/rescue", tags=["admin-rescue"])
@@ -603,6 +620,40 @@ def list_my_reservations(
     ]
 
 
+def _queue_reservation_email(
+    background_tasks: BackgroundTasks,
+    user: User,
+    offer: RescueOffer,
+    order: RescueOrder,
+) -> None:
+    """MEH-2715: queue the buyer's confirmation email, after the commit.
+
+    Everything is read HERE, while the request's Session is open, and handed
+    to the task as plain values — a background task must never touch `db`
+    (the group_buys MEH-1651 convention). Queued only after the commit, so a
+    refused or rolled-back reservation sends nothing.
+    """
+    location = offer.location
+    producer = location.producer if location else None
+    if not user.email or producer is None:
+        return
+    address = ", ".join(p for p in (location.address, location.city) if p)
+    background_tasks.add_task(
+        send_reservation_email,
+        user.email,
+        ReservationEmail(
+            producer_name=producer.name or "",
+            producer_id=str(producer.id),
+            pickup_code=order.pickup_code,
+            total_agorot=offer.price_agorot * order.qty,
+            pickup_from=israel_hhmm(offer.pickup_start),
+            pickup_until=israel_hhmm(offer.pickup_end),
+            address=address,
+            cancel_until=israel_hhmm(offer.cancel_until),
+        ),
+    )
+
+
 @router.post(
     "/orders",
     response_model=RescueOrderCreatedOut,
@@ -613,6 +664,7 @@ def list_my_reservations(
 def create_order(
     request: Request,
     body: RescueOrderCreate,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -663,6 +715,13 @@ def create_order(
     offer.qty_left = offer.qty_left - body.qty
     db.commit()
     db.refresh(order)
+    # The reservation is committed. Nothing about preparing the email may turn
+    # it into a 500: the buyer would read that as "not reserved" and retry.
+    try:
+        _queue_reservation_email(background_tasks, current_user, offer, order)
+    except Exception as exc:  # noqa: BLE001 — fail-open by design (MEH-2715)
+        capture_background_exception(exc, task="rescue_reservation_email")
+        logger.error("rescue reservation email not queued: %s", type(exc).__name__)
     return {
         "id": order.id,
         "offer_id": order.offer_id,

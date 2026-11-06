@@ -79,7 +79,7 @@ export function DraftLinkAge({ producer }) {
       )}
       {age.daysWaiting >= WAITING_MARK_DAYS && (
         <span
-          className="inline-flex items-center rounded-full bg-amber-100 text-amber-800 px-2 py-0.5 text-[10px] font-medium"
+          className="inline-flex items-center rounded-full bg-warning-100 text-warning-800 px-2 py-0.5 text-[10px] font-medium"
           data-testid="draft-waiting-7"
         >
           {t("waiting_7_days")}

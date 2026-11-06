@@ -217,7 +217,7 @@ graph LR
 
     List[/rescue list · chunk 4] --> Browse[GET /rescue/offers?city=&lat=&lng=<br/>🌐 today's active bags with stock<br/>distance is to THE pickup point, not the nearest branch<br/>+ producer summary + typical_items]
 
-    Buyer[buyer] --> Reserve[POST /rescue/orders<br/>🔑 qty 1..2 · SELECT … FOR UPDATE on the offer MEH-773<br/>returns a 4-digit pickup_code, UNIQUE per offer<br/>422 when 2 no-shows in 30 days are on record]
+    Buyer[buyer] --> Reserve[POST /rescue/orders<br/>🔑 qty 1..2 · SELECT … FOR UPDATE on the offer MEH-773<br/>returns a 4-digit pickup_code, UNIQUE per offer<br/>422 when 2 no-shows in 30 days are on record<br/>after commit: confirmation email to the buyer, BackgroundTask MEH-2715]
     Buyer --> BuyerCancel[POST /rescue/orders/:id/cancel<br/>🔑 own order, only before cancel_until<br/>returns the bag to qty_left under the same lock]
     Buyer --> Mine[GET /rescue/orders/mine<br/>🔑 own reserved/handed orders on today's bags<br/>+ reviewed, producer_id — restores the code after a reload MEH-2680]
     Buyer --> Review[POST /rescue/orders/:id/review<br/>🔑 own order, only after handed, once<br/>uq_rescue_reviews_order]

@@ -235,8 +235,8 @@ async function openQueue(page: Page): Promise<void> {
 
 const TONE = {
   gray: /(^|\s)bg-gray-100(\s|$)/,
-  amber: /(^|\s)bg-amber-100(\s|$)/,
-  red: /(^|\s)bg-red-100(\s|$)/,
+  amber: /(^|\s)bg-warning-100(\s|$)/,
+  red: /(^|\s)bg-danger-100(\s|$)/,
 };
 
 // ── MT:MEH-2138-E — the SLA counter above the toolbar ──────────────────────
@@ -399,7 +399,7 @@ test.describe("approvals queue — pending photo strip", () => {
     const broken = page.getByRole("img", { name: "תמונה שבורה — לא נטענה" });
     await expect(broken).toHaveCount(1);
     await expect(broken).toBeVisible();
-    await expect(broken).toHaveClass(/text-red-600/);
+    await expect(broken).toHaveClass(/text-danger-600/);
     // Both anchors are still there (each carries the «תמונה N של …» title), but
     // only the good one is a thumbnail by accessible name — the broken one's
     // name is now the ⚠ marker's label, which is exactly the swap the row asks for.

@@ -53,9 +53,9 @@ function ResetPasswordForm() {
       >
         <div
           role="alert"
-          className="bg-red-50 border border-red-200 rounded-md p-4 grid gap-2"
+          className="bg-danger-50 border border-danger-200 rounded-md p-4 grid gap-2"
         >
-          <p className="text-red-700 font-medium">
+          <p className="text-danger-700 font-medium">
             {t("auth.passwordRecovery.reset.invalid_link")}
           </p>
           <Link
@@ -162,7 +162,7 @@ function ResetPasswordForm() {
             placeholder={t("auth.passwordRecovery.reset.confirm_placeholder")}
             required
             dir="ltr"
-            className="w-full min-h-[44px] border border-border rounded-[10px] ps-4 py-3 bg-white focus-visible:ring-2 focus-visible:ring-primary/40 outline-none transition focus:border-primary pr-12" // rtl-ok: pr-12 reserves the 44px eye toggle inside the dir="ltr" input (MEH-2554 PasswordInput fix)
+            className="w-full min-h-touch border border-border rounded-[10px] ps-4 py-3 bg-white focus-visible:ring-2 focus-visible:ring-primary/40 outline-none transition focus:border-primary pr-12" // rtl-ok: pr-12 reserves the 44px eye toggle inside the dir="ltr" input (MEH-2554 PasswordInput fix)
           />
           <button
             type="button"
@@ -179,7 +179,7 @@ function ResetPasswordForm() {
         </div>
 
         {error && (
-          <div className="text-red-600 text-sm text-center" role="alert">
+          <div className="text-danger-600 text-sm text-center" role="alert">
             <p>{error}</p>
             {isLinkError && (
               <Link

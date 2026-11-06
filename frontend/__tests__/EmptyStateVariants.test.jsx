@@ -230,7 +230,7 @@ describe("EmptyState — `gated` variant (MEH-1630 decision 4)", () => {
     // Four cues, four assertions — never `&&`-ed into one, so a failure names
     // exactly which one went missing (testing.md: an `||`/`&&` between cues
     // lets one carry the assertion and hides the loss of the other).
-    expect(link.className).toContain("min-h-[44px]");
+    expect(link.className).toContain("min-h-touch");
     // min-h alone does nothing on an inline element — the box has to be
     // inline-flex for the height to apply.
     expect(link.className).toContain("inline-flex");
@@ -238,7 +238,7 @@ describe("EmptyState — `gated` variant (MEH-1630 decision 4)", () => {
     // `unblockLabel` is a free prop — a short label ("עוד") renders a ~25px-wide
     // target under a 44px-tall box, which misses 44×44 on the axis the original
     // assertion never looked at.
-    expect(link.className).toContain("min-w-[44px]");
+    expect(link.className).toContain("min-w-touch");
     // …and centres a sub-44px label in that box instead of pinning it to the
     // inline start. No-op once the label is wider — which is why it was easy
     // to omit and impossible to notice on the one real consumer.

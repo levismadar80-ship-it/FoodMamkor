@@ -34,6 +34,26 @@ colors:
   state-selected: "#2E4A2E"
   error: "#B3261E"
   error-on-dark: "#FCA5A5"
+  danger-50: "#FEF2F2"
+  danger-100: "#FEE2E2"
+  danger-200: "#FECACA"
+  danger-300: "#FCA5A5"
+  danger-400: "#F87171"
+  danger-500: "#EF4444"
+  danger-600: "#DC2626"
+  danger-700: "#B91C1C"
+  danger-800: "#991B1B"
+  danger-900: "#7F1D1D"
+  warning-50: "#FFFBEB"
+  warning-100: "#FEF3C7"
+  warning-200: "#FDE68A"
+  warning-300: "#FCD34D"
+  warning-400: "#FBBF24"
+  warning-500: "#F59E0B"
+  warning-600: "#D97706"
+  warning-700: "#B45309"
+  warning-800: "#92400E"
+  warning-900: "#78350F"
 typography:
   headline-display:
     fontFamily: '"Frank Ruhl Libre", "David Libre", Georgia, serif'
@@ -87,6 +107,7 @@ spacing:
   "5xl": 96px
   "6xl": 128px
   gutter: 16px
+  touch: 44px
 rounded:
   sm: 8px
   md: 12px
@@ -214,6 +235,17 @@ Use the semantic name: `text-error`, `bg-surface`, `border-border`,
 (the 6-stop scale above) and is exempt. An ESLint selector warns on the rest
 (MEH-1629, `warn`: the ~170 historical hits are debt, not a build failure). If a
 raw shade is genuinely required, mark it `// token-ok` + `eslint-disable-next-line`.
+
+**The blocking gate is `scripts/checks/raw-color-tokens.sh` (MEH-2717, Repo guards).**
+It ratchets every raw colour in `frontend/{app,components,lib,hooks}` — palette
+classes including `white`/`black`, arbitrary `bg-[#…]` classes and hex literals in
+JS/CSS — against `scripts/checks/raw-color-baseline.txt`. Existing occurrences are
+frozen; a new one fails CI. `bg-white`, `border-white`, `ring-white` etc. are gated;
+only `text-white` and `bg-black/<n>` scrims are exempt. The
+`// token-ok` comment above silences only the ESLint warning; for the gate, a
+genuinely fixed colour (a third-party brand colour, an SVG fill) is
+`--update-baseline` plus a reason in the PR body. Why it matters: a future theme
+switch (dark mode) can only re-colour what goes through the tokens.
 
 ### Address/city fields must use the canonical component
 
@@ -578,6 +610,13 @@ state-color tokens, added for form/validation error text that failed AA as raw
 Tailwind reds. This is the "new ADR supersedes ADR-019" path in action — error
 only; `warning`/`info`/`success` remain un-tokenized (success = `primary`).
 
+**Status scales (ADR-038, 06/11/2026):** `danger-50…900` and `warning-50…900`
+are tokens, at exactly Tailwind's `red` / `amber` values, so `red-N → danger-N` and
+`amber-N → warning-N` was a pixel-identical codemod. Use them for status surfaces,
+borders and destructive buttons; keep `error` for error text on cream. Success
+stays `primary` / `green-*`. `yellow-*`, `gray-*` and `blue-*` are still raw debt —
+moving them changes colour and needs a mock first.
+
 ## S4 design tokens (MEH-136)
 
 The S4 homepage assembly (MEH-639) consumes a small set of **additive** tokens.
@@ -692,7 +731,9 @@ the floor and are known violations of this rule, not exceptions to it:
 `components/Header.jsx:761` (avatar button, `w-[34px] h-[34px]`). Their fix is
 a separate code PR, tracked on MEH-1687; until it lands, do not copy them._ When the
 visible control is smaller than 44px, the target is enlarged with
-`min-h-[44px] min-w-[44px]` plus `flex items-center justify-center` so the
+`min-h-touch min-w-touch` (the `spacing.touch` token = 44px, MEH-2719; the
+arbitrary `[44px]` spelling is forbidden by `TouchTokenCodemod.test.js`) plus
+`flex items-center justify-center` so the
 glyph stays centered inside the padded hit area — the `HeroSearch` submit
 button and `BadgeRow` (MEH-813) outer-button hit-area are the canonical
 patterns.

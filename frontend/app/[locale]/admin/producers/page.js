@@ -58,7 +58,7 @@ function DeleteConfirmDialog({ confirmDelete, deleting, onConfirm, onCancel }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="producer-delete-title"
-        className="bg-white rounded-[16px] shadow-xl p-6 max-w-sm w-full mx-4 text-start space-y-4"
+        className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full mx-4 text-start space-y-4"
       >
         <p id="producer-delete-title" className="font-medium text-base">
           {t("producers.table.confirm_delete", { name: confirmDelete.name })}
@@ -67,7 +67,7 @@ function DeleteConfirmDialog({ confirmDelete, deleting, onConfirm, onCancel }) {
           <button
             disabled={deleting}
             onClick={onConfirm}
-            className="px-4 py-2 rounded-[10px] text-sm font-medium text-white transition bg-red-600 hover:bg-red-700 disabled:opacity-50"
+            className="px-4 py-2 rounded-[10px] text-sm font-medium text-white transition bg-danger-600 hover:bg-danger-700 disabled:opacity-50"
           >
             {deleting ? t("producers.table.deleting") : t("common.delete")}
           </button>
@@ -105,7 +105,7 @@ function ApproveConfirmDialog({ approveConfirm, onConfirm, onCancel }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="approve-confirm-title"
-        className="bg-white rounded-[16px] shadow-xl p-6 max-w-sm w-full mx-4 text-start space-y-4"
+        className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full mx-4 text-start space-y-4"
       >
         <p id="approve-confirm-title" className="font-medium text-base">
           {ADMIN_REVIEW_APPROVE_CONFIRM.message(approveConfirm.count)}

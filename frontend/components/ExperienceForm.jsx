@@ -384,10 +384,10 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
   };
 
   return (
-    <form onSubmit={submit} noValidate className="bg-background border border-border rounded-[16px] p-6 space-y-5">
+    <form onSubmit={submit} noValidate className="bg-background border border-border rounded-lg p-6 space-y-5">
       {unverified && <UnverifiedEmailNotice />}
       {serverError && (
-        <div className="bg-red-50 border border-red-200 text-red-700 rounded-md p-3 text-sm">{serverError}</div>
+        <div className="bg-danger-50 border border-danger-200 text-danger-700 rounded-md p-3 text-sm">{serverError}</div>
       )}
 
       <Input
@@ -431,13 +431,16 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
         </div>
       )}
       {verdict?.status === "REJECTED" && (
-        <div className="bg-red-50 border border-red-300 text-red-800 rounded-md p-3 text-sm">
+        <div className="bg-danger-50 border border-danger-300 text-danger-800 rounded-md p-3 text-sm">
           <XCircle size={16} weight="fill" className="inline align-[-2px]" aria-hidden="true" /> {verdict.reason || t("rejected_fallback")}
         </div>
       )}
 
-      <Field label={t("field_category")}>
+      {/* MEH-2708: id ties the <label> to the control — without it axe
+          reported select-name (critical) and a screen reader read no name. */}
+      <Field id="experience-category" label={t("field_category")}>
         <select
+          id="experience-category"
           value={form.category}
           onChange={setField("category")}
           className="w-full border border-border rounded-md px-3 py-2 bg-white"
@@ -492,7 +495,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
             <img
               src={form.image_url}
               alt={t("field_image")}
-              className="w-24 h-24 object-cover rounded-[8px] border border-border"
+              className="w-24 h-24 object-cover rounded-sm border border-border"
             />
             {/* No aria-label: it carried "הסרת התמונה" while the visible text
                 is "הסרת תמונה", and WCAG 2.5.3 (Label in Name) requires the
@@ -508,7 +511,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
               type="button"
               onClick={() => setForm((f) => ({ ...f, image_url: "" }))}
               data-testid="experience-image-remove"
-              className="inline-flex items-center gap-1 text-sm text-red-600 hover:underline"
+              className="inline-flex items-center gap-1 text-sm text-danger-600 hover:underline"
             >
               <XCircle size={14} weight="bold" aria-hidden="true" />
               {t("field_image_remove")}
@@ -525,7 +528,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
              the same idiom as AddressSearch.jsx:196 / CitiesAutocomplete.jsx:206.
              EventForm.jsx has the original `hidden`; not touched from here, noted
              on the PR. (CI reviewer, PR #2814.) */
-          <label className="flex flex-col items-center justify-center text-center text-sm text-fg-muted border border-dashed border-border rounded-[8px] px-4 py-6 cursor-pointer hover:bg-green-50 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30">
+          <label className="flex flex-col items-center justify-center text-center text-sm text-fg-muted border border-dashed border-border rounded-sm px-4 py-6 cursor-pointer hover:bg-green-50 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30">
             <input
               id="experience-image"
               type="file"
@@ -544,7 +547,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
           </label>
         )}
         {fieldErrors.image_url && (
-          <span id="experience-image-error" role="alert" className="mt-1 block text-sm text-red-600">
+          <span id="experience-image-error" role="alert" className="mt-1 block text-sm text-danger-600">
             {fieldErrors.image_url}
           </span>
         )}
@@ -703,8 +706,9 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
         />
       </div>
 
-      <Field label={t("field_requirements")}>
+      <Field id="experience-requirements" label={t("field_requirements")}>
         <textarea
+          id="experience-requirements"
           value={form.requirements}
           onChange={setField("requirements")}
           rows={3}
@@ -747,7 +751,7 @@ export default function ExperienceForm({ mode = "create", initial = null, onSucc
           // save the PREVIOUS image_url while the owner watches a new one
           // upload — which reads as the upload having been ignored.
           disabled={submitting || uploading || verdict?.status === "REJECTED"}
-          className="bg-primary text-white px-6 py-3 rounded-[8px] font-medium hover:bg-primary-dark transition disabled:opacity-50 disabled:cursor-not-allowed"
+          className="bg-primary text-white px-6 py-3 rounded-sm font-medium hover:bg-primary-dark transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {submitting
             ? t("submitting")

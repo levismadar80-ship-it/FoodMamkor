@@ -99,7 +99,7 @@ function SignupCountField({ ex, t, onSaved }) {
           onKeyDown={(e) => {
             if (e.key === "Enter") e.currentTarget.blur();
           }}
-          className="w-20 min-h-[44px] border border-border rounded-[8px] px-3 text-center numeric focus-ring disabled:opacity-50"
+          className="w-20 min-h-touch border border-border rounded-sm px-3 text-center numeric focus-ring disabled:opacity-50"
         />
         <span className="text-sm text-fg-muted numeric" aria-hidden="true">/ {ex.max_participants}</span>
         {state === "saved" && <Check size={18} weight="bold" className="text-primary" aria-hidden="true" />}
@@ -174,7 +174,7 @@ export default function ManageExperiencesPage() {
       <BackLink href="/producer/dashboard/tools" label={t("back_to_tools")} />
       {/* MEH-1655: min-h pins the row at CTA height so the h1 doesn't grow
           when the button unmounts. */}
-      <div className="flex items-center justify-between gap-3 mt-1 mb-6 min-h-[44px]">
+      <div className="flex items-center justify-between gap-3 mt-1 mb-6 min-h-touch">
         <h1 className="font-headline-lg text-3xl font-bold text-text">{t("heading")}</h1>
         {/* MEH-999: single-CTA pattern (MEH-1097 F14 / MEH-1420) — the header
             CTA hides while the list is empty so the EmptyState's own CTA is the
@@ -184,7 +184,7 @@ export default function ManageExperiencesPage() {
         {Array.isArray(items) && items.length > 0 && (
           <Link
             href="/producer/dashboard/experiences/new"
-            className="inline-flex items-center gap-1.5 bg-primary text-white px-4 py-2 min-h-[44px] rounded-[8px] text-sm font-medium hover:bg-primary-dark transition"
+            className="inline-flex items-center gap-1.5 bg-primary text-white px-4 py-2 min-h-touch rounded-sm text-sm font-medium hover:bg-primary-dark transition"
           >
             <Sparkle size={18} weight="bold" aria-hidden="true" />
             {t("create_cta")}
@@ -243,7 +243,7 @@ export default function ManageExperiencesPage() {
                   <Link
                     href={`/producer/dashboard/experiences/${ex.id}/edit`}
                     aria-label={t("action_edit")}
-                    className="inline-flex items-center gap-1 border border-border rounded-[8px] px-3 py-1.5 min-h-[44px] text-xs hover:bg-green-50 transition"
+                    className="inline-flex items-center gap-1 border border-border rounded-sm px-3 py-1.5 min-h-touch text-xs hover:bg-green-50 transition"
                   >
                     <PencilSimple size={16} aria-hidden="true" />
                     {t("action_edit")}
@@ -253,7 +253,7 @@ export default function ManageExperiencesPage() {
                       type="button"
                       onClick={() => toggleActive(ex)}
                       disabled={busyId === ex.id}
-                      className="inline-flex items-center gap-1 border border-border rounded-[8px] px-3 py-1.5 min-h-[44px] text-xs hover:bg-green-50 transition disabled:opacity-50"
+                      className="inline-flex items-center gap-1 border border-border rounded-sm px-3 py-1.5 min-h-touch text-xs hover:bg-green-50 transition disabled:opacity-50"
                     >
                       {ex.is_active ? (
                         <>
@@ -273,7 +273,7 @@ export default function ManageExperiencesPage() {
                     onClick={() => remove(ex)}
                     disabled={busyId === ex.id}
                     aria-label={t("action_delete")}
-                    className="inline-flex items-center gap-1 border border-red-300 text-red-600 rounded-[8px] px-3 py-1.5 min-h-[44px] text-xs hover:bg-red-50 transition disabled:opacity-50"
+                    className="inline-flex items-center gap-1 border border-danger-300 text-danger-600 rounded-sm px-3 py-1.5 min-h-touch text-xs hover:bg-danger-50 transition disabled:opacity-50"
                   >
                     <Trash size={16} aria-hidden="true" />
                     {t("action_delete")}

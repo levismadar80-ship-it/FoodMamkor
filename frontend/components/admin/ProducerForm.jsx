@@ -106,7 +106,7 @@ function ProducerLicenseField({ form, categories, update }) {
         dir="ltr"
       />
       {warning && (
-        <p className="text-xs text-amber-600 mt-1">
+        <p className="text-xs text-warning-600 mt-1">
           {t("producers.form.fields.license_format_warning")}
         </p>
       )}
@@ -1027,7 +1027,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             {t("producers.form.fields.offers_delivery")}
           </label>
           {!form.has_physical_location && !form.offers_delivery && (
-            <p className="text-xs text-red-600">{t("producers.form.fields.type_validation")}</p>
+            <p className="text-xs text-danger-600">{t("producers.form.fields.type_validation")}</p>
           )}
           {form.offers_delivery && (
             <div className="ms-6 space-y-3 border-s-2 border-border ps-4 pt-1">
@@ -1054,7 +1054,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
                     showRegionChips
                   />
                   {form.delivery_cities.length === 0 && (
-                    <p className="text-xs text-red-600 mt-1">{t("producers.form.fields.delivery_cities_required")}</p>
+                    <p className="text-xs text-danger-600 mt-1">{t("producers.form.fields.delivery_cities_required")}</p>
                   )}
                 </div>
               )}
@@ -1141,6 +1141,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
           type="file"
           accept="image/*"
           multiple
+          aria-label={t("producers.form.sections.images")}
           onChange={handleImageUpload}
           disabled={isBusy("producer-images")}
           className="text-sm w-full max-w-full"
@@ -1158,12 +1159,12 @@ export default function ProducerForm({ initial = null, producerId = null }) {
                 <img
                   src={optimizeCloudinary(url)}
                   alt=""
-                  className="w-full h-24 object-cover rounded-[8px] border border-border"
+                  className="w-full h-24 object-cover rounded-sm border border-border"
                 />
                 <button
                   type="button"
                   onClick={() => removeImage(url)}
-                  className="absolute top-1 start-1 bg-red-500 text-white rounded-full w-6 h-6 inline-flex items-center justify-center opacity-100 [@media(hover:hover)_and_(pointer:fine)]:opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition"
+                  className="absolute top-1 start-1 bg-danger-500 text-white rounded-full w-6 h-6 inline-flex items-center justify-center opacity-100 [@media(hover:hover)_and_(pointer:fine)]:opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition"
                   aria-label={t("common.delete")}
                 >
                   <X size={14} weight="bold" aria-hidden="true" />
@@ -1223,6 +1224,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       <Section title={t("producers.form.sections.admin_notes")}>
         <textarea
           value={form.admin_notes}
+          aria-label={t("producers.form.sections.admin_notes")}
           onChange={(e) => update("admin_notes", e.target.value)}
           className={`${inputClass} h-20 resize-none`}
         />

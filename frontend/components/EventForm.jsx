@@ -233,7 +233,7 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
     <>
       {unverified && <UnverifiedEmailNotice className="mb-4" />}
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 rounded-[8px] p-3 mb-4 text-sm" role="alert">
+        <div className="bg-danger-50 border border-danger-200 text-danger-700 rounded-sm p-3 mb-4 text-sm" role="alert">
           {error}
         </div>
       )}
@@ -417,13 +417,13 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
               <img
                 src={form.image_url}
                 alt={t("image_label")}
-                className="w-24 h-24 object-cover rounded-[8px] border border-border"
+                className="w-24 h-24 object-cover rounded-sm border border-border"
               />
               <button
                 type="button"
                 onClick={() => setForm((f) => ({ ...f, image_url: "" }))}
                 aria-label={t("image_remove_aria")}
-                className="inline-flex items-center gap-1 text-sm text-red-600 hover:underline"
+                className="inline-flex items-center gap-1 text-sm text-danger-600 hover:underline"
               >
                 <X size={14} weight="bold" aria-hidden="true" />
                 {t("image_remove")}
@@ -441,7 +441,7 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
                :811/:829, RecipeForm:290, dashboard/edit/cards.jsx:382) — inventory
                on MEH-2031, deliberately out of this diff.
                REUSES: components/ExperienceForm.jsx:499-514 (MEH-2012). */
-            <label className="flex flex-col items-center justify-center text-center text-sm text-fg-muted border border-dashed border-border rounded-[8px] px-4 py-6 cursor-pointer hover:bg-green-50 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30">
+            <label className="flex flex-col items-center justify-center text-center text-sm text-fg-muted border border-dashed border-border rounded-sm px-4 py-6 cursor-pointer hover:bg-green-50 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30">
               <input
                 type="file"
                 accept="image/*"
@@ -475,13 +475,13 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
           <button
             type="submit"
             disabled={submitting || uploading}
-            className="bg-primary text-white px-6 py-3 rounded-[8px] hover:bg-primary-dark transition font-medium disabled:opacity-60"
+            className="bg-primary text-white px-6 py-3 rounded-sm hover:bg-primary-dark transition font-medium disabled:opacity-60"
           >
             {submitting ? (isEdit ? t("saving") : t("submit_publishing")) : isEdit ? t("save") : t("submit")}
           </button>
           <Link
             href={cancelHref}
-            className="border border-border text-text px-6 py-3 rounded-[8px] hover:bg-green-50 transition"
+            className="border border-border text-text px-6 py-3 rounded-sm hover:bg-green-50 transition"
           >
             {t("cancel")}
           </Link>
