@@ -42,7 +42,24 @@ import sys
 import time
 import urllib.request
 
-BUILD_ID_RE = re.compile(rb'\\?"b\\?":\\?"([A-Za-z0-9_-]{8,})')
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    """Never follow a redirect. urllib copies request headers onto the next
+    hop, so following a 3xx off-origin (vercel.com/sso-api when protection
+    rejects the header) would send the bypass secret to that host. A 3xx is
+    reported as its own status instead."""
+
+    def redirect_request(self, *args, **kwargs):
+        return None
+
+
+_OPENER = urllib.request.build_opener(_NoRedirect)
+
+# Next app-router flight data ends its root object with `"b":"<buildId>"}`
+# (escaped inside the inline script: \"b\":\"<id>\"}). Anchoring on the
+# closing brace keeps an unrelated `"b"` key elsewhere from matching; measured
+# 06/11 on production and staging: exactly one match, the build id.
+BUILD_ID_RE = re.compile(rb'\\?"b\\?":\\?"([A-Za-z0-9_-]{8,})\\?"\}')
 
 
 def _get(url: str) -> bytes:
@@ -52,15 +69,23 @@ def _get(url: str) -> bytes:
         headers["x-vercel-protection-bypass"] = secret
     req = urllib.request.Request(url, headers=headers)
     try:
-        with urllib.request.urlopen(req, timeout=20) as r:  # noqa: S310
+        with _OPENER.open(req, timeout=20) as r:
             return r.read()
     except Exception:
         return b""
 
 
 def frontend_build_id(base: str) -> str | None:
-    m = BUILD_ID_RE.search(_get(f"{base}/?_wfd={int(time.time())}"))
-    return m.group(1).decode() if m else None
+    ids = {
+        m.decode()
+        for m in BUILD_ID_RE.findall(_get(f"{base}/?_wfd={int(time.time())}"))
+    }
+    if len(ids) > 1:
+        print(
+            f"WARNING more than one build-id candidate in the home HTML: {sorted(ids)}"
+        )
+        return None
+    return ids.pop() if ids else None
 
 
 def backend_sha(base: str) -> str | None:
@@ -84,7 +109,14 @@ def main() -> int:
     args = ap.parse_args()
     base = args.base_url.rstrip("/")
 
-    start_build = frontend_build_id(base)
+    # A transient fetch failure on the FIRST read would leave nothing to
+    # compare against and force a 20-minute timeout, so retry it briefly.
+    start_build = None
+    for _ in range(5):
+        start_build = frontend_build_id(base)
+        if start_build:
+            break
+        time.sleep(5)
     print(
         f"start: frontend build {start_build} · backend {backend_sha(base)} · waiting for {args.sha[:7]}"
     )

@@ -247,15 +247,22 @@ function extractAnchors(html) {
  * exactly the thing this tool is asked to report.
  */
 // MEH-2749: the post-deploy workflow crawls staging, which sits behind Vercel
-// Deployment Protection. The bypass secret comes from the env only and goes to
-// this crawl's own origin only (the crawler never follows external hosts).
+// Deployment Protection. The bypass secret comes from the env only, and is
+// attached per hop ONLY when that hop's origin is the crawl's own origin: a
+// same-site URL can 3xx to another host (vercel.com/sso-api when protection
+// rejects the header, or any external redirect), and head() follows hops by
+// hand, so a static header map would hand the secret to that host.
 // Do NOT add `x-vercel-set-bypass-cookie`: it turns redirects into cookie
 // redirects, which this tool would then report as chains (measured 28/10).
 const BYPASS = (process.env.VERCEL_AUTOMATION_BYPASS_SECRET || "").trim();
-const REQUEST_HEADERS = {
-  "accept-language": "he-IL",
-  ...(BYPASS ? { "x-vercel-protection-bypass": BYPASS } : {}),
-};
+const BASE_ORIGIN = new URL(BASE).origin;
+function requestHeaders(url) {
+  const sameOrigin = new URL(url).origin === BASE_ORIGIN;
+  return {
+    "accept-language": "he-IL",
+    ...(BYPASS && sameOrigin ? { "x-vercel-protection-bypass": BYPASS } : {}),
+  };
+}
 
 async function head(url) {
   const chain = [];
@@ -263,7 +270,7 @@ async function head(url) {
   for (let hop = 0; hop < 6; hop += 1) {
     let res;
     try {
-      res = await fetch(current, { redirect: "manual", headers: REQUEST_HEADERS });
+      res = await fetch(current, { redirect: "manual", headers: requestHeaders(current) });
     } catch (err) {
       return { status: 0, error: err.message, chain, final: current };
     }
