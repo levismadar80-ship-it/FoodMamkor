@@ -448,6 +448,50 @@ describe("what was not collected", () => {
     await waitFor(() => expect(offerLoads()).toBeGreaterThanOrEqual(2));
   });
 
+  it("reports only the number chosen when some bags were given, spread over the offers in order", async () => {
+    mockDay({ offers: [bag({ id: "a", leftover: 2 }), bag({ id: "b", leftover: 2 })], points: ZICHRON });
+    put.mockResolvedValue({ data: {} });
+    render(<RescueTab />);
+    const qty = await screen.findByTestId("rescue-leftover-qty");
+    expect(qty.value).toBe("4");
+    fireEvent.change(qty, { target: { value: "3" } });
+    fireEvent.click(screen.getByTestId("rescue-leftover-donated"));
+    await waitFor(() => expect(put).toHaveBeenCalledTimes(2));
+    expect(put).toHaveBeenCalledWith("/producers/me/rescue/offers/a/donated", { qty: 2 });
+    expect(put).toHaveBeenCalledWith("/producers/me/rescue/offers/b/donated", { qty: 1 });
+  });
+
+  it("undoes a report by setting every offer back to 0", async () => {
+    mockDay({ offers: [bag({ id: "a", leftover: 2, qty_donated: 2 }), bag({ id: "b", leftover: 1, qty_donated: 1 })], points: ZICHRON });
+    put.mockResolvedValue({ data: {} });
+    render(<RescueTab />);
+    expect(await screen.findByTestId("rescue-leftover-done")).toBeTruthy();
+    expect(screen.queryByTestId("rescue-leftover-donated")).toBeNull();
+    fireEvent.click(screen.getByTestId("rescue-leftover-undo"));
+    await waitFor(() => expect(put).toHaveBeenCalledTimes(2));
+    expect(put).toHaveBeenCalledWith("/producers/me/rescue/offers/a/donated", { qty: 0 });
+    expect(put).toHaveBeenCalledWith("/producers/me/rescue/offers/b/donated", { qty: 0 });
+  });
+
+  it("tells the business ahead of time where the box will appear while the window is open", async () => {
+    const later = new Date(Date.now() + 3600_000).toISOString();
+    mockDay({ offers: [bag({ leftover: 0, pickup_end: later })], points: ZICHRON });
+    render(<RescueTab />);
+    expect((await screen.findByTestId("rescue-leftover-upcoming")).textContent).toBe(
+      lookup("rescue.dashboard.leftover_upcoming"),
+    );
+    expect(screen.queryByTestId("rescue-leftover")).toBeNull();
+  });
+
+  it("says nothing ahead of time on a day with no bags published", async () => {
+    mockDay({ offers: [], points: ZICHRON });
+    render(<RescueTab />);
+    await pointsLoaded();
+    await waitFor(() => expect(get).toHaveBeenCalledWith("/producers/me/rescue/offers"));
+    await act(async () => {});
+    expect(screen.queryByTestId("rescue-leftover-upcoming")).toBeNull();
+  });
+
   it("looks the group up by the town of the exact pickup point, not an approximate one", async () => {
     mockDay({
       offers: [bag()],
