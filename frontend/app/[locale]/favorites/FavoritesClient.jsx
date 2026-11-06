@@ -22,6 +22,7 @@ import EventEntryRow, { toEventEntry } from "@/components/EventEntryRow";
 import RecipeCard from "@/components/public/RecipeCard";
 import SaveButton from "@/components/SaveButton";
 import { EMPTY_SAVED, loadSavedItems, splitByTime } from "./savedItems";
+import Button from "@/components/ui/Button";
 
 // MEH-2560: the chips, in order. "all" mixes every type in sections headed by
 // the same labels; the others show one type.
@@ -397,12 +398,12 @@ export default function FavoritesClient() {
           {t("empty_subtitle")}
         </p>
         <div>
-          <button
+          <Button
             onClick={() => router.push("/")}
-            className="bg-primary text-white px-6 py-3 rounded-full hover:bg-primary-dark transition font-medium"
+            variant="primary" size="lg"
           >
             {t("empty_cta")}
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -504,12 +505,12 @@ export default function FavoritesClient() {
           </h2>
           <p className="text-fg-muted mb-6 max-w-md mx-auto">{t("empty_all_subtitle")}</p>
           <div>
-            <button
+            <Button
               onClick={() => router.push("/")}
-              className="bg-primary text-white px-6 py-3 rounded-full hover:bg-primary-dark transition font-medium"
+              variant="primary" size="lg"
             >
               {t("empty_cta")}
-            </button>
+            </Button>
           </div>
         </div>
       ) : (

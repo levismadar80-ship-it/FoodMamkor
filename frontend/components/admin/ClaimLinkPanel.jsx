@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { ProducerClaimLinkSchema } from "@/lib/api-schemas";
+import Button from "@/components/ui/Button";
 
 /**
  * Module:   ClaimLinkPanel
@@ -105,14 +106,14 @@ export default function ClaimLinkPanel({ producerId }) {
               onFocus={(e) => e.target.select()}
               className="flex-1 min-w-0 border border-border rounded-md px-3 py-2 text-sm bg-background"
             />
-            <button
+            <Button
               type="button"
               data-testid="claim-link-copy"
               onClick={copy}
-              className="min-h-touch bg-primary text-white rounded-md px-6 py-2 text-sm font-medium hover:bg-primary-dark transition"
+              variant="primary" size="sm"
             >
               {copied ? t("copied") : t("copy")}
-            </button>
+            </Button>
           </div>
           <p className="text-xs text-muted mt-2" data-testid="claim-link-expires">
             {t("expires", { date: expires })}

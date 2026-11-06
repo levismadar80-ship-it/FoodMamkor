@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { useOptionalAuth } from "@/lib/auth-context";
 import { JoinDeliveryWaitlistProducersProducerIdDeliveryWaitlistPostResponse as WaitlistOut } from "@/lib/generated/api.zod";
+import Button from "@/components/ui/Button";
 
 /**
  * Module:   DeliveryWaitlistForm
@@ -176,14 +177,14 @@ export default function DeliveryWaitlistForm({ producer = null, city = "", descr
              and the typed Latin address LTR, without flipping the field. */
           className="flex-1 min-h-touch rounded-full border border-primary/15 bg-surface px-4 text-sm [unicode-bidi:plaintext] focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
         />
-        <button
+        <Button
           type="submit"
           disabled={busy}
           data-testid="delivery-waitlist-submit"
-          className="min-h-touch rounded-full bg-primary px-5 text-sm font-medium text-white transition hover:bg-primary-dark disabled:opacity-50"
+          variant="primary" size="sm"
         >
           {busy ? t("sending") : t("submit")}
-        </button>
+        </Button>
       </div>
       {/* MEH-2674: opt-in to host a pickup point in this city. Unticked by
           default; the hint under it says the mail-confirmation step out loud

@@ -30,6 +30,7 @@ import { showToast } from "@/lib/toast";
 import { Leaf } from "@phosphor-icons/react";
 import Input from "@/components/ui/Input";
 import UnverifiedEmailNotice from "@/components/UnverifiedEmailNotice";
+import Button from "@/components/ui/Button";
 
 // MEH-1128 Wave B: single-line fields render via ui/Input; baseInput remains
 // for the textareas only (no textarea primitive yet — epic Wave D+).
@@ -360,13 +361,13 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
       )}
 
       <div className="flex items-center gap-3">
-        <button
+        <Button
           type="submit"
           disabled={submitting || uploading}
-          className="bg-primary text-white px-6 py-2.5 rounded-full hover:bg-primary-dark transition font-medium disabled:opacity-50"
+          variant="primary" size="lg"
         >
           {submitting ? t("submit_saving") : t("submit")}
-        </button>
+        </Button>
         {onCancel && (
           <button
             type="button"

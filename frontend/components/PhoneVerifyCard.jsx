@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
+import Button from "@/components/ui/Button";
 
 /**
  * PhoneVerifyCard — producer-facing WhatsApp OTP flow.
@@ -163,14 +164,14 @@ export default function PhoneVerifyCard({ onVerified }) {
               placeholder={t("code_placeholder")}
               className="w-40 text-center tracking-[0.3em] border border-border rounded-sm px-3 py-2 text-sm focus:border-primary outline-none"
             />
-            <button
+            <Button
               type="button"
               onClick={handleConfirm}
               disabled={confirming || code.length !== OTP_LENGTH}
-              className="bg-primary text-white min-h-touch text-sm rounded-sm px-4 py-2 font-medium hover:bg-primary-dark transition disabled:opacity-50"
+              variant="primary" size="sm"
             >
               {confirming ? t("confirming") : t("confirm_cta")}
-            </button>
+            </Button>
           </div>
         </div>
       )}

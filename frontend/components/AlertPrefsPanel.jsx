@@ -12,6 +12,7 @@ import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import { useAuth } from "@/lib/auth-context";
 import { validateIsraeliPhone } from "@/lib/validators";
+import Button from "@/components/ui/Button";
 
 const DEFAULT_PREFS = {
   notify_new_event: true,
@@ -263,13 +264,13 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
                 <p className="text-xs text-fg-muted">{t("phone_helper")}</p>
               )}
               <div className="flex items-center gap-2">
-                <button
+                <Button
                   onClick={savePhoneAndEnable}
                   disabled={!phoneValid || phoneSaving}
-                  className="flex-1 bg-primary text-white text-sm py-2 rounded-sm hover:bg-primary-dark transition disabled:opacity-50"
+                  variant="primary" size="sm" className="flex-1"
                 >
                   {phoneSaving ? t("saving") : t("phone_save_cta")}
-                </button>
+                </Button>
                 <button
                   onClick={cancelPhone}
                   className="text-fg-muted hover:text-text text-lg leading-none px-2 py-2"
@@ -321,13 +322,13 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
         </div>
       </div>
 
-      <button
+      <Button
         onClick={() => save()}
         disabled={saving}
-        className="w-full bg-primary text-white text-sm py-2 rounded-sm hover:bg-primary-dark transition disabled:opacity-50"
+        variant="primary" size="sm" className="w-full"
       >
         {saving ? t("saving") : t("save_cta")}
-      </button>
+      </Button>
     </div>
   );
 }

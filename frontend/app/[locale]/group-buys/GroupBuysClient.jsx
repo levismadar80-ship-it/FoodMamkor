@@ -11,6 +11,7 @@ import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import { formatPrice } from "@/lib/utils";
 import { groupBuyProgressPct, groupBuyDiscountPct } from "@/lib/group-buy-progress"; // MEH-2540, MEH-2544
 import CitySearch from "@/components/CitySearch";
+import Button from "@/components/ui/Button";
 
 // MEH-797: Sapir-mapped Cloudinary asset (staging/pick-pexels-35113948, 3732×4089)
 // replaces the Unsplash hero bg. w_1600 c_limit matches the old delivery width;
@@ -250,12 +251,12 @@ export default function GroupBuysClient() {
           // MEH-863 F12: distinct error state with retry (not the empty state).
           <div className="text-center py-20">
             <p className="text-fg-muted mb-4">{tErr("error.generic")}</p>
-            <button
+            <Button
               onClick={load}
-              className="min-h-touch inline-flex items-center justify-center bg-primary text-white px-6 py-2 rounded-full font-medium hover:bg-primary-dark transition"
+              variant="primary" size="lg"
             >
               {tErr("errors.boundary.retry")}
-            </button>
+            </Button>
           </div>
         ) : items.length === 0 ? (
           <div className="text-center py-20 text-fg-muted">

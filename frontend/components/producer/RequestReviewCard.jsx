@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import { ReviewInviteLinkSchema } from "@/lib/api-schemas";
+import Button from "@/components/ui/Button";
 
 /**
  * Module:   RequestReviewCard
@@ -85,15 +86,15 @@ export default function RequestReviewCard() {
           {tError("generic")}
         </p>
       ) : (
-        <button
+        <Button
           type="button"
           data-testid="request-review-copy"
           onClick={handleCopy}
           disabled={!url}
-          className="min-h-touch bg-primary text-white rounded-full px-6 py-2 text-sm font-medium hover:bg-primary-dark transition disabled:opacity-50"
+          variant="primary" size="sm"
         >
           {copied ? t("cta_copied") : t("cta")}
-        </button>
+        </Button>
       )}
     </section>
   );
