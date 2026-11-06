@@ -211,9 +211,8 @@ function CardHeart({ producer, onCountChange }) {
 export default function ProducerCard({ producer, active, onClick, referrer, fridayMode = false, highlightQuery = null }) {
   const t = useTranslations();
   const cardFee = resolveDeliveryFee(producer.delivery_fee, producer.delivery_areas);
-  // MEH-2676: a free-delivery offer with a threshold joins the delivery row
-  // («משלוח מ-₪20 · חינם מעל ₪150») instead of a chip. The full sentence did
-  // not fit a 375 card and truncated right before the amount (Sapir, 5/11).
+  // MEH-2676: a free-delivery offer with a threshold moves into the delivery
+  // row instead of a chip. MEH-2744: that row then shows only the threshold.
   const freeAbove = freeDeliveryThreshold(producer.active_offer);
   const alwaysFree = cardFee.fee === 0 && !cardFee.from;
   // Same namespace BadgeRow.jsx and KashrutBadgeStrip.jsx:115 use, so the
@@ -751,7 +750,18 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
             <span className="min-w-0">
               {alwaysFree ? (
                 t("group_buys.delivery.fee_free")
-              ) : cardFee.fee != null ? (
+              ) : freeAbove ? (
+                // MEH-2744: with a free-delivery threshold the row states that
+                // one fact, and the truck stands for the word «משלוח» (Sapir
+                // picked option D, 6/11). «משלוח מ-20₪ · חינם מעל 200₪» needs
+                // ~162px against 114–146px at 375–440, so it broke on every
+                // phone and left the «·» hanging. The fee itself stays on the
+                // business page. Screen readers still hear «משלוח».
+                <>
+                  <span className="sr-only">{t("producer.offer.card_delivery_sr")} </span>
+                  <FreeAboveText t={t} freeAbove={freeAbove} keyName="producer.offer.card_free_above" nowrap />
+                </>
+              ) : (
                 (() => {
                   const { before, after } = splitAroundAmount(
                     t(cardFee.from ? "group_buys.delivery.fee_from" : "group_buys.delivery.fee", {
@@ -763,17 +773,9 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
                       {before}
                       <bdi>{formatPrice(cardFee.fee)}</bdi>
                       {after}
-                      {freeAbove && (
-                        <>
-                          {" · "}
-                          <FreeAboveText t={t} freeAbove={freeAbove} keyName="producer.offer.card_free_above" nowrap />
-                        </>
-                      )}
                     </>
                   );
                 })()
-              ) : (
-                <FreeAboveText t={t} freeAbove={freeAbove} keyName="producer.offer.card_free_above_alone" />
               )}
             </span>
           </p>
