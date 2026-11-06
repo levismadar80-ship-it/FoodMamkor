@@ -20,6 +20,14 @@ different path: a normal route, the 404 handler, an auth dependency raising
 401, and a body-validation 422. A header set only on the happy path fails the
 error cases. `test_control_a_header_the_app_never_sets_is_absent` stops a
 client that echoes every name from passing the suite.
+
+KNOWN GAP — NOT COVERED: an unhandled exception (HTTP 500). Starlette's
+ServerErrorMiddleware sits outside `@app.middleware("http")`, so the 500 it
+builds carries NONE of these headers (measured 06/11: a route that raises →
+500 with zero security headers). Pinning that here would assert the gap, and
+fixing it means re-ordering the middleware stack — a security-layer change
+that is Sapir's call, reported on PR #4064, not folded into a tests-only PR.
+429 (slowapi) is not covered either.
 """
 
 from __future__ import annotations
