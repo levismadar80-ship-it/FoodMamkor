@@ -519,3 +519,61 @@ describe("ReviewsSection — loading state (MEH-2606)", () => {
     expect(screen.getAllByText("loading").every((el) => el.classList.contains("sr-only"))).toBe(true);
   });
 });
+
+// MEH-2705: the surname initial is the first LETTER of the surname, never a
+// bracket or other punctuation. «לקוחת בדיקות (QA)» rendered «לקוחת (.» on
+// staging (5/11).
+describe("ReviewsSection — author initial (MEH-2705)", () => {
+  async function renderedName(user_name) {
+    mockReviews([
+      {
+        id: "rev-n", user_id: "u-5", user_name, stars: 5, body: "מעולה מאוד",
+        created_at: "2026-07-01T11:00:00", reply: null, reply_at: null,
+      },
+    ]);
+    render(<ReviewsSection producerId="p-1" isOwner={false} />);
+    const initial = await screen.findByTestId("review-initial");
+    return initial.nextElementSibling.querySelector("p").textContent;
+  }
+
+  it("a surname in brackets takes its first letter, not the bracket", async () => {
+    const text = await renderedName("לקוחת בדיקות (QA)");
+    expect(text).toContain("לקוחת Q.");
+    expect(text).not.toContain("(.");
+  });
+
+  it("a plain two-word name is unchanged: first name + surname initial", async () => {
+    const text = await renderedName("דנה כהן");
+    expect(text).toContain("דנה כ.");
+  });
+
+  it("a trailing word with no letter at all is skipped (no «-.»)", async () => {
+    const text = await renderedName("דנה כהן -");
+    expect(text).toContain("דנה כ.");
+    expect(text).not.toContain("-.");
+  });
+});
+
+// MEH-2705: the header + sticky bar read producer.reviews_count from the
+// server render, so a new review left them one behind. ReviewsSection now
+// reports its live total upward.
+describe("ReviewsSection — live total reported upward (MEH-2705)", () => {
+  it("reports the fetched total, then total+1 after a first review", async () => {
+    authState.user = { id: "u-new", producer_id: null };
+    try { localStorage.setItem("wa_clicked_p-1", "1"); } catch {}
+    mockReviews([withReply, noReply, { ...noReply, id: "rev-3", user_id: "u-3" }]);
+    apiMock.post.mockResolvedValue({
+      data: { id: "rev-new", user_id: "u-new", user_name: "חדש", stars: 5, body: "מעולה מאוד מאוד", created_at: "2026-07-03T10:00:00", reply: null },
+    });
+    const onTotalChange = vi.fn();
+    render(<ReviewsSection producerId="p-1" reviewCount={3} onTotalChange={onTotalChange} />);
+    await screen.findByText("תודה רבה על המילים החמות!");
+    expect(onTotalChange).toHaveBeenLastCalledWith(3);
+    fireEvent.click(screen.getByText("write_cta"));
+    fireEvent.click(screen.getAllByRole("button", { name: "star_aria" })[4]);
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "מעולה מאוד מאוד" } });
+    fireEvent.submit(screen.getByRole("textbox").closest("form"));
+    await waitFor(() => expect(onTotalChange).toHaveBeenLastCalledWith(4));
+    try { localStorage.removeItem("wa_clicked_p-1"); } catch {}
+  });
+});
