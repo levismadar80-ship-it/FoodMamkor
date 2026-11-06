@@ -5,7 +5,6 @@
   "app/[locale]/admin/producers/use-admin-producers.js": 2,
   "app/[locale]/admin/settings/ChecklistSettings.jsx": 21,
   "app/[locale]/dev/components/page.jsx": 30,
-  "app/[locale]/layout.js": 6,
   "app/[locale]/map/components/CityPickerModal.jsx": 4,
   "app/[locale]/map/state/useMapSync.js": 1,
   "app/[locale]/map/state/useProducersFeed.js": 1,
@@ -40,7 +39,6 @@
   "lib/rescue.js": 1,
   "lib/resolvedQuestions.js": 2,
   "lib/schemas.js": 7,
-  "lib/seo.js": 7,
   "lib/utils.js": 1,
   "lib/validators.js": 2
 }
