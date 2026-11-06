@@ -234,8 +234,8 @@ def test_admin_put_pauses_with_a_return_date(client, db):
 
 
 def test_admin_put_unrelated_edit_of_a_dateless_pause_still_saves(client, db):
-    """Reviewer on #4100: a legacy on_vacation row with no date stays editable
-    when the PUT does not touch availability."""
+    """A dateless on_vacation row stays editable through a PUT that does not
+    touch availability."""
     _, producer = _owner(db, state="on_vacation")
     producer.vacation_until = None
     db.commit()
@@ -256,3 +256,24 @@ def test_admin_put_resumes_a_dateless_pause(client, db):
     assert resp.status_code == 200, resp.text
     db.refresh(producer)
     assert producer.availability_state == "accepting_orders"
+
+
+def test_admin_form_payload_on_a_dateless_pause_asks_for_a_date(client, db):
+    """ProducerForm resubmits availability_state and vacation_until (null when
+    empty) on every save, so on a dateless pause the admin is asked for a
+    return date: the form shows that field whenever «בהפסקה» is selected."""
+    _, producer = _owner(db, state="on_vacation")
+    producer.vacation_until = None
+    db.commit()
+    admin = make_user(db, role="admin")
+    resp = client.put(
+        f"/admin/producers/{producer.id}",
+        json={
+            "availability_state": "on_vacation",
+            "vacation_until": None,
+            "description": "תיאור חדש לבדיקה",
+        },
+        headers=auth_header(admin),
+    )
+    assert resp.status_code == 422, resp.text
+    assert resp.json()["detail"]["code"] == "vacation_return_date_required"
