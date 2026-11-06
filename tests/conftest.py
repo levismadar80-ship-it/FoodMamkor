@@ -175,6 +175,14 @@ def pytest_configure(config):
     )
 
 
+def pytest_collection_modifyitems(config, items):
+    # MEH-2779: CI splits the suite across parallel jobs (PYTEST_SHARD=i/n).
+    # Unset locally, so this is a no-op outside CI. See tests/ci_shard.py.
+    import ci_shard
+
+    ci_shard.apply(config, items)
+
+
 def pytest_sessionfinish(session, exitstatus):
     """MEH-1911: drop this xdist worker's database.
 
