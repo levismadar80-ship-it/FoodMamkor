@@ -20,6 +20,9 @@ let params = {}; // drives useSearchParams().get(key)
 // next/navigation for real and fails under the partial mocks in this file.
 // Stubbed here; the notice's own contract lives in EnSearchNotice.test.jsx and
 // its mount on /producers is pinned in ProducersClientSearch.test.jsx.
+// MEH-2767: the chip gate counts the unfiltered snapshot hook; see the helper.
+vi.mock("@/lib/use-catalog-snapshot", async () =>
+  (await import("./helpers/catalog-snapshot")).catalogSnapshotMock);
 vi.mock("@/components/EnSearchNotice", () => ({ default: () => null }));
 vi.mock("next/navigation", () => ({
   useRouter: () => router,

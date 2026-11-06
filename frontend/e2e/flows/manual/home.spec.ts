@@ -324,6 +324,9 @@ function producer(
     // promoted row is two chips or three. Declared on every row so the row is
     // the full trio and the sheet the full home axis set; censused in beforeAll.
     sells_on_site: true,
+    // MEH-2767: `grass_fed` reached home and is count-gated like the diet
+    // axes, so every row declares it; censused in beforeAll.
+    grass_fed: true,
     // MEH-2131: `open_for_orders_now` is the OTHER runtime-gated axis — the sheet
     // withholds it below OPEN_NOW_CHIP_MIN (5) declared windows, and again when
     // no business is open at the current clock. An all-week 00:00-23:59 window on
@@ -450,6 +453,9 @@ test.beforeAll(() => {
   const sugarDeclared = PRODUCERS.filter((p) => p.has_no_added_sugar_products).length;
   if (sugarDeclared < 5)
     throw new Error(`DIET_CHIP_MIN = 5 declared businesses are needed to un-gate no_added_sugar, got ${sugarDeclared}`);
+  const grassFed = PRODUCERS.filter((p) => p.grass_fed).length;
+  if (grassFed < 5)
+    throw new Error(`DIET_CHIP_MIN = 5 grass-fed businesses are needed to un-gate grass_fed, got ${grassFed}`);
   const onSite = PRODUCERS.filter((p) => p.sells_on_site).length;
   if (onSite < 5)
     throw new Error(`DIET_CHIP_MIN = 5 businesses selling on site are needed to un-gate on_site, got ${onSite}`);
@@ -2049,7 +2055,7 @@ test.describe("manual › producer grid geometry (MEH-1142 · task 9)", () => {
 });
 
 /**
- * The blocks sitting between the hero and the mini-map, as DESCRIPTIONS rather
+ * The blocks sitting between the businesses grid and the mini-map, as DESCRIPTIONS rather
  * than a bare count: a red that prints "1" says nothing about what is there,
  * and this row's whole subject is which block is second.
  *
@@ -2067,11 +2073,16 @@ test.describe("manual › producer grid geometry (MEH-1142 · task 9)", () => {
  */
 const NON_RENDERING = ["template", "script", "style", "link", "noscript"];
 
-function strangersBetweenHeroAndMap(page: Page): Promise<string[]> {
-  return page.evaluate((skip) => {
-    const heroEl = document.querySelector('[data-testid="home-hero"]');
+// MEH-2747: the rescue-bags module is the one block that may sit between the
+// grid and the map (MEH-2648 puts it right after the grid); it renders null
+// unless the pilot is on for the visitor's town.
+const ALLOWED_BETWEEN = ["rescue-home-module"];
+
+function strangersBetweenGridAndMap(page: Page): Promise<string[]> {
+  return page.evaluate(([skip, allowed]) => {
+    const heroEl = document.getElementById("producers-grid");
     const mapEl = document.querySelector('[data-testid="home-minimap"]');
-    if (!heroEl || !mapEl) return ["(hero or mini-map is not in the document)"];
+    if (!heroEl || !mapEl) return ["(businesses grid or mini-map is not in the document)"];
     // `?? heroEl` rather than a non-null assertion, and the symmetry with the
     // map branch below is the point: if the hero ever renders outside a
     // <section>, the assertion must report the strangers it finds — not throw a
@@ -2083,22 +2094,25 @@ function strangersBetweenHeroAndMap(page: Page): Promise<string[]> {
     let n: Element | null = hero.nextElementSibling;
     while (n && n !== mapSection && !n.contains(mapSection)) {
       const tag = n.tagName.toLowerCase();
-      if (!skip.includes(tag)) {
+      if (!skip.includes(tag) && !allowed.includes(n.getAttribute("data-testid") ?? "")) {
         const testid = n.getAttribute("data-testid");
         out.push(`${tag}${testid ? `[${testid}]` : ""}.${n.className || "(no class)"}`.slice(0, 90));
       }
       n = n.nextElementSibling;
     }
-    return n ? out : ["(the mini-map is not a following sibling of the hero at all)"];
-  }, NON_RENDERING);
+    return n ? out : ["(the mini-map is not a following sibling of the businesses grid at all)"];
+  }, [NON_RENDERING, ALLOWED_BETWEEN] as const);
 }
 
 // ════════════════════════════════════════════════════════════════════════════
 test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-607)", () => {
-  // MT:604:1 — the map is the SECOND block, not section #7. Asserted as DOM
-  //   order, read from the landmark rather than from a count of what happened
-  //   to render.
-  test("the mini-map is the second block on the page, right after the hero", async ({ page }) => {
+  // MT:604:1 — REVISED by MEH-2747 (Sapir 6/11, option א׳): the map comes
+  //   right AFTER the businesses grid on phone and desktop alike. MEH-604's
+  //   "second block, right under the hero" is retired. Asserted as DOM order
+  //   AND as painted order on both projects — MEH-2635 had moved it with CSS
+  //   `order-last` on phones only, which this row could not see in the DOM
+  //   while the painted half of it disagreed.
+  test("the mini-map comes right after the businesses grid, in the DOM and on screen", async ({ page }) => {
     await consent(page);
     await stubTiles(page);
     await mockApi(page);
@@ -2107,10 +2121,10 @@ test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-6
       await expect(scope(page).getByTestId(id), `${id} renders exactly once`).toHaveCount(1, FIRST_PAINT);
     }
     expect(
-      (await strangersBetweenHeroAndMap(page)).join(" | "),
-      "the mini-map is the hero's immediate next block; these sat between them",
+      (await strangersBetweenGridAndMap(page)).join(" | "),
+      "the mini-map is the businesses grid's next block; these sat between them",
     ).toBe("");
-    // …and the trust band comes after it, not before.
+    // …and on screen the trust band (above the grid) is above it, not below.
     // `home-minimap` is a `dynamic({ ssr:false, loading })` slot: the skeleton is
     // REPLACED by the live map, which detaches the node a boundingBox() read was
     // about to measure (observed on the mobile project: "element has no box").
@@ -2123,13 +2137,57 @@ test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-6
       return { map: y("home-minimap"), trust: y("home-trust-band") };
     });
     expect(Number.isNaN(tops.map) || Number.isNaN(tops.trust), "both blocks are in the document").toBe(false);
-    expect(tops.map, "the mini-map is above the trust band").toBeLessThan(tops.trust);
+    expect(tops.trust, "the trust band is above the mini-map").toBeLessThan(tops.map);
+  });
+
+  // MEH-2747 — one page order, phone and desktop. The same homepage at 375
+  //   and at 1440 must show the SAME top-level sections, and on each viewport
+  //   the painted order must equal the DOM order (what VoiceOver / the keyboard
+  //   walk). The static half of this rule is __tests__/VisualOrderGuard.test.js
+  //   (no CSS reorder utilities); this row is the rendered half, which also
+  //   catches a section that exists on one viewport only.
+  //   One test drives both viewports, so it runs on the desktop project only —
+  //   gated on the project name, which the product cannot move.
+  test("phone and desktop show the same sections, in the same order, painted as in the DOM", async ({ browser }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "drives 375 and 1440 itself; once is enough");
+    const read = async (viewport: { width: number; height: number }) => {
+      const ctx = await browser.newContext({ viewport, locale: "he-IL", timezoneId: "Asia/Jerusalem", reducedMotion: "reduce" });
+      const page = await ctx.newPage();
+      try {
+        await consent(page);
+        await stubTiles(page);
+        await mockApi(page);
+        await gotoHome(page);
+        await expect(scope(page).getByTestId("home-minimap")).toHaveCount(1, FIRST_PAINT);
+        return await page.evaluate(() => {
+          const all = Array.from(document.querySelectorAll("#main-content section[data-testid]"));
+          const top = all.filter((el) => !el.parentElement?.closest("section[data-testid]"));
+          const shown = top.filter((el) => el.getBoundingClientRect().height > 0);
+          const dom = shown.map((el) => el.getAttribute("data-testid")!);
+          const painted = shown
+            .map((el) => ({ id: el.getAttribute("data-testid")!, y: el.getBoundingClientRect().top }))
+            .sort((a, b) => a.y - b.y)
+            .map((x) => x.id);
+          return { dom, painted };
+        });
+      } finally {
+        await ctx.close();
+      }
+    };
+    const phone = await read({ width: 375, height: 812 });
+    const desk = await read({ width: 1440, height: 900 });
+    // Control: the reader saw real sections, including the map this ticket moved.
+    expect(phone.dom, "control: the reader found the mini-map on the phone").toContain("home-minimap");
+    expect(desk.dom.length, "control: more than a couple of sections were read").toBeGreaterThan(3);
+    expect(phone.painted, "375: painted order = DOM order (no CSS reorder)").toEqual(phone.dom);
+    expect(desk.painted, "1440: painted order = DOM order (no CSS reorder)").toEqual(desk.dom);
+    expect(phone.dom, "the same sections, in the same order, on phone and desktop").toEqual(desk.dom);
   });
 
   /**
    * SELF-TEST for the reader above, run against the REAL function on three
    * inputs whose answers are known — the testing.md rule for an assertion that
-   * is a classifier. It exercises `strangersBetweenHeroAndMap`, never a copy,
+   * is a classifier. It exercises `strangersBetweenGridAndMap`, never a copy,
    * so the two cannot drift.
    *
    * Without it the skip-list is a green of unknown wiring: a reader that
@@ -2149,7 +2207,7 @@ test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-6
     const insert = (tag: string, testid?: string) =>
       page.evaluate(
         ([t, id]) => {
-          const hero = document.querySelector('[data-testid="home-hero"]')!.closest("section")!;
+          const hero = document.getElementById("producers-grid")!;
           const el = document.createElement(t as string);
           if (id) el.setAttribute("data-testid", id as string);
           hero.after(el);
@@ -2160,13 +2218,13 @@ test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-6
       page.evaluate((sel) => document.querySelector(sel)?.remove(), selector);
 
     // 1 — the settled page: nothing between them.
-    expect(await strangersBetweenHeroAndMap(page), "control: the settled page has no strangers").toEqual([]);
+    expect(await strangersBetweenGridAndMap(page), "control: the settled page has no strangers").toEqual([]);
 
     // 2 — the measured flake, injected deterministically: React's streaming
     //     placeholder renders nothing, so it must not count as a block.
     await insert("template");
     expect(
-      await strangersBetweenHeroAndMap(page),
+      await strangersBetweenGridAndMap(page),
       "a <template> renders nothing and must not read as a block",
     ).toEqual([]);
     await remove("section[data-testid] + template, template");
@@ -2191,7 +2249,7 @@ test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-6
       "fixture precondition: the injected block must survive to sample time — if THIS fails the reader is not implicated",
     ).toHaveCount(1);
 
-    const caught = await strangersBetweenHeroAndMap(page);
+    const caught = await strangersBetweenGridAndMap(page);
     expect(caught.join(" | "), "a real element between the two must be reported by name").toContain(
       "div[interloper]",
     );
