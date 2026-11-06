@@ -31,6 +31,7 @@ describe("root layout metadata per locale", () => {
     const { generateMetadata } = await import("@/app/[locale]/layout");
     const m = await generateMetadata({ params: Promise.resolve({ locale: "en" }) });
     expect(m.title.default).toBe(en.seo.site.title);
+    expect(m.title.template).toBe("%s | Mehamakor");
     expect(m.openGraph.title).toBe(en.seo.site.og_title);
     expect(m.twitter.title).toBe(en.seo.site.twitter_title);
     const nonBrand = m.keywords.filter((k) => k !== "מהמקור");
@@ -42,6 +43,7 @@ describe("root layout metadata per locale", () => {
     const { generateMetadata } = await import("@/app/[locale]/layout");
     const m = await generateMetadata({ params: Promise.resolve({ locale: "he" }) });
     expect(m.title.default).toBe(he.seo.site.title);
+    expect(m.title.template).toBe("%s | מהמקור");
     expect([...m.keywords].sort()).toEqual(
       ["מוצרים מקומיים", "grass-fed", "אוכל בריא", "אוכל אורגני", "בעלי עסק ישראלים", "מהמקור", "שוק איכרים"].sort(),
     );
