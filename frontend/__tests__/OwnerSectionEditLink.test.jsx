@@ -43,8 +43,8 @@ describe("OwnerSectionEditLink (MEH-1306)", () => {
     expect(link).toHaveAttribute("href", "/producer/dashboard/edit#bio");
     expect(link).toHaveAttribute("data-testid", "section-edit-bio");
     // ≥44px tap target classes (MEH-813).
-    expect(link.className).toContain("min-h-[44px]");
-    expect(link.className).toContain("min-w-[44px]");
+    expect(link.className).toContain("min-h-touch");
+    expect(link.className).toContain("min-w-touch");
   });
 
   it("uses the existing contact-channels anchor for the contact section", () => {

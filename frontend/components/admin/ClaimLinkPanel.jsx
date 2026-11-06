@@ -109,7 +109,7 @@ export default function ClaimLinkPanel({ producerId }) {
               type="button"
               data-testid="claim-link-copy"
               onClick={copy}
-              className="min-h-[44px] bg-primary text-white rounded-md px-6 py-2 text-sm font-medium hover:bg-primary-dark transition"
+              className="min-h-touch bg-primary text-white rounded-md px-6 py-2 text-sm font-medium hover:bg-primary-dark transition"
             >
               {copied ? t("copied") : t("copy")}
             </button>
@@ -136,7 +136,7 @@ export default function ClaimLinkPanel({ producerId }) {
         data-testid="claim-link-create"
         onClick={create}
         disabled={busy}
-        className="min-h-[44px] bg-white border border-primary text-primary rounded-md px-6 py-2 text-sm font-medium hover:bg-background transition disabled:opacity-50"
+        className="min-h-touch bg-white border border-primary text-primary rounded-md px-6 py-2 text-sm font-medium hover:bg-background transition disabled:opacity-50"
       >
         {busy ? t("creating") : t("create")}
       </button>

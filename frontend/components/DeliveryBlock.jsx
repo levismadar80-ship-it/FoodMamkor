@@ -281,7 +281,7 @@ function PickupRow({ loc, t, tMap }) {
           <a
             href={telHref}
             dir="ltr"
-            className="inline-flex items-center gap-1 min-h-[44px] text-[13px] font-medium text-primary hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+            className="inline-flex items-center gap-1 min-h-touch text-[13px] font-medium text-primary hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
           >
             <Phone size={14} aria-hidden="true" />
             {phone}
@@ -635,7 +635,7 @@ export default function DeliveryBlock({
 
       {nationwide ? (
         <>
-          <span className="inline-flex items-center gap-1.5 bg-green-50 text-text border border-border rounded-[20px] text-[13px] px-3 py-1.5 font-medium mb-4">
+          <span className="inline-flex items-center gap-1.5 bg-green-50 text-text border border-border rounded-xl text-[13px] px-3 py-1.5 font-medium mb-4">
             <Truck size={14} className="text-current ms-1" aria-hidden="true" />
             {hasExclusions
               ? t("nationwide_except", { cities: excluded.join(", ") })

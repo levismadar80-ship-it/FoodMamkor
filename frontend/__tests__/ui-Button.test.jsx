@@ -41,7 +41,7 @@ describe("ui/Button", () => {
 
   it("falls back to the md size for an unknown size", () => {
     render(<Button size="huge">x</Button>);
-    expect(screen.getByRole("button").className).toContain("min-h-[44px]");
+    expect(screen.getByRole("button").className).toContain("min-h-touch");
   });
 
   it("fires onClick when enabled", () => {

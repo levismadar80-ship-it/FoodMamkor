@@ -130,7 +130,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
           />
         </div>
         {showPhoto ? (
-          <div className="relative aspect-[4/3] md:aspect-[21/9] bg-green-50 md:rounded-[16px] overflow-hidden">
+          <div className="relative aspect-[4/3] md:aspect-[21/9] bg-green-50 md:rounded-lg overflow-hidden">
             <Image
               src={heroSrc}
               alt={recipe.title}
@@ -143,7 +143,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
           </div>
         ) : (
           <div
-            className="h-24 md:h-28 bg-green-50 md:rounded-[16px] flex items-center justify-center"
+            className="h-24 md:h-28 bg-green-50 md:rounded-lg flex items-center justify-center"
             data-testid="recipe-hero-missing"
           >
             <Leaf size={40} weight="light" className="text-primary/70" aria-hidden="true" />
@@ -194,7 +194,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
 
         <div className="mt-8 grid gap-10 lg:grid-cols-[340px_1fr] lg:items-start">
           {ingredients.length > 0 && (
-            <section className="lg:sticky lg:top-24 bg-surface-card border border-border rounded-[16px] p-5">
+            <section className="lg:sticky lg:top-24 bg-surface-card border border-border rounded-lg p-5">
               <h2 className="font-headline-md text-2xl font-bold text-text mb-3">
                 {t("ingredients_heading")}
               </h2>
@@ -207,7 +207,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
                         type="button"
                         aria-pressed={on}
                         onClick={() => toggleIngredient(i)}
-                        className="w-full min-h-[44px] flex items-center gap-3 py-2 text-start focus-ring rounded-sm"
+                        className="w-full min-h-touch flex items-center gap-3 py-2 text-start focus-ring rounded-sm"
                       >
                         <span
                           aria-hidden="true"
@@ -284,12 +284,12 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
                           optimizeWidth={112}
                           width={56}
                           height={56}
-                          className="w-14 h-14 object-cover rounded-[8px]"
+                          className="w-14 h-14 object-cover rounded-sm"
                         />
                       ) : (
                         <span
                           aria-hidden="true"
-                          className="w-14 h-14 rounded-[8px] bg-green-50 flex items-center justify-center"
+                          className="w-14 h-14 rounded-sm bg-green-50 flex items-center justify-center"
                         >
                           <Leaf size={24} weight="fill" className="text-primary" />
                         </span>
@@ -314,7 +314,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
             {/* Producer contact CTA (MEH-1149; audit MEH-1144 G7).
                 PrimaryContactButton self-collapses to null for a contactless
                 producer, so the profile link renders alone. */}
-            <section className="mt-10 rounded-[16px] bg-green-50 p-5 md:p-6">
+            <section className="mt-10 rounded-lg bg-green-50 p-5 md:p-6">
               <h2 className="font-headline-md text-xl md:text-2xl font-bold text-text mb-4">
                 {t("producer_cta_heading", { name: producer.name })}
               </h2>

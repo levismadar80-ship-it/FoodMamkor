@@ -87,7 +87,7 @@ export default function EmptyState({
         // Tap-target floor (DESIGN.md § "Tap-target floor (reach)"): a bare text
         // link is ~20px tall, and in a gated state it is the ONLY control on
         // screen. The floor is on the hit AREA — "≥ 44 × 44px … enlarged with
-        // `min-h-[44px] min-w-[44px]` plus `flex items-center justify-center`"
+        // `min-h-touch min-w-touch` plus `flex items-center justify-center`"
         // — so BOTH axes are pinned, not just height. `unblockLabel` is a free
         // prop on a component used across 20+ surfaces: a long label satisfies
         // the width incidentally, a short one ("עוד") renders a ~25px-wide
@@ -98,7 +98,7 @@ export default function EmptyState({
         // out of scope here, flagged rather than changed.
         <Link
           href={unblockHref}
-          className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center text-sm font-medium text-primary underline underline-offset-2 hover:text-primary-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-[6px] transition"
+          className="min-h-touch min-w-touch inline-flex items-center justify-center text-sm font-medium text-primary underline underline-offset-2 hover:text-primary-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-[6px] transition"
         >
           {unblockLabel}
         </Link>

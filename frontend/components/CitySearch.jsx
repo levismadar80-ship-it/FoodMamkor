@@ -45,7 +45,7 @@ import api from "@/lib/api";
  * endAdornment — D1 excluded it by the over-engineering guard; and its border/
  * focus live on the input, not a focus-within wrapper). MEH-1127 already
  * converged the field recipe to the canon (`rounded-md` · `border-border` ·
- * `min-h-[44px]` · focus ring), and the leading magnifier is the same
+ * `min-h-touch` · focus ring), and the leading magnifier is the same
  * search-adornment the D1 gallery uses for its "יישוב" example — so no render
  * change here (a literal location-*pin* would misread on a city *search* field).
  */
@@ -271,14 +271,14 @@ export default function CitySearch({
           )}
         </label>
       )}
-      {/* MEH-1127: wrapper py-2 removed (input min-h-[44px] alone sets the ~44px
+      {/* MEH-1127: wrapper py-2 removed (input min-h-touch alone sets the ~44px
           field height, aligning with sibling register inputs); rounded-md matches. */}
       <div className={`flex items-center gap-2 bg-white border min-w-0 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30 transition ${pill ? "rounded-full px-4 border-primary/15" : "rounded-md px-3 border-border"}`}>
         <svg className="w-4 h-4 text-fg-muted shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1 1 0 01-1.414 0l-4.243-4.243a8 8 0 1111.314 0z" />
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
-        {/* MEH-833: min-h-[44px] on input enforces the WCAG 2.5.5 / iOS touch-target floor on every CitySearch surface */}
+        {/* MEH-833: min-h-touch on input enforces the WCAG 2.5.5 / iOS touch-target floor on every CitySearch surface */}
         <input
           ref={inputRef}
           id={id}
@@ -295,7 +295,7 @@ export default function CitySearch({
           onFocus={() => setIsOpen(true)}
           onKeyDown={handleKeyDown}
           placeholder={inputPlaceholder}
-          className="flex-1 min-w-0 min-h-[44px] bg-transparent outline-none text-text placeholder:text-fg-muted text-start"
+          className="flex-1 min-w-0 min-h-touch bg-transparent outline-none text-text placeholder:text-fg-muted text-start"
           dir="rtl"
           autoComplete="off"
           role="combobox"

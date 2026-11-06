@@ -230,7 +230,7 @@ export default function FilterSheet({
         // longer label overflow VISIBLY (one pill wider than its
         // column) instead of silently growing every pill's height,
         // which is the failure this constraint exists to catch.
-        className={`flex items-center justify-center gap-1.5 min-h-[44px] lg:min-h-[36px] rounded-full border px-2.5 py-2 lg:py-1 text-sm lg:text-[13px] font-medium whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${extraClass} ${
+        className={`flex items-center justify-center gap-1.5 min-h-touch lg:min-h-[36px] rounded-full border px-2.5 py-2 lg:py-1 text-sm lg:text-[13px] font-medium whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${extraClass} ${
           active
             ? "bg-primary text-white border-primary"
             : "bg-surface text-text border-border hover:border-primary"
@@ -393,7 +393,7 @@ export default function FilterSheet({
                                   type="button"
                                   data-testid={`chip-info-${chip.key}`}
                                   aria-label={subtext}
-                                  className="inline-flex shrink-0 items-center justify-center min-h-[44px] min-w-[44px] text-fg-muted focus:outline-none focus-visible:outline-none group"
+                                  className="inline-flex shrink-0 items-center justify-center min-h-touch min-w-touch text-fg-muted focus:outline-none focus-visible:outline-none group"
                                 >
                                   <span
                                     aria-hidden="true"
@@ -508,7 +508,7 @@ export default function FilterSheet({
                       // rewritten around a different query.
                       data-testid={`chip-${chip.key}`}
                       onClick={() => onToggleChip(chip.key)}
-                      className="flex flex-1 items-center justify-between gap-3 min-h-[44px] lg:min-h-[36px] py-1.5 lg:py-1 text-start rounded-md hover:bg-background-alt focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors"
+                      className="flex flex-1 items-center justify-between gap-3 min-h-touch lg:min-h-[36px] py-1.5 lg:py-1 text-start rounded-md hover:bg-background-alt focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-colors"
                     >
                       <span className="flex items-center gap-2 text-sm lg:text-[13px] font-medium text-text">
                         {icon && <span aria-hidden="true">{icon}</span>}
@@ -566,7 +566,7 @@ export default function FilterSheet({
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 min-h-[44px] lg:min-h-[36px] rounded-md bg-primary text-white text-sm lg:text-[13px] font-medium px-4 py-2.5 lg:py-1.5 hover:opacity-90 transition"
+            className="flex-1 min-h-touch lg:min-h-[36px] rounded-md bg-primary text-white text-sm lg:text-[13px] font-medium px-4 py-2.5 lg:py-1.5 hover:opacity-90 transition"
           >
             {/* MEH-2169: the count is the sheet's only feedback that a toggle did
                 anything — filters apply LIVE, so nothing else on this surface
@@ -582,7 +582,7 @@ export default function FilterSheet({
           <button
             type="button"
             onClick={onClearAll}
-            className="min-h-[44px] lg:min-h-[36px] text-primary text-sm lg:text-[13px] font-medium hover:opacity-80 transition"
+            className="min-h-touch lg:min-h-[36px] text-primary text-sm lg:text-[13px] font-medium hover:opacity-80 transition"
           >
             {t("filters.sheet.clear")}
           </button>

@@ -74,7 +74,7 @@ export default function RequestReviewCard() {
   return (
     <section
       data-testid="request-review-card"
-      className="bg-white border border-border rounded-[16px] p-5 mt-6"
+      className="bg-white border border-border rounded-lg p-5 mt-6"
     >
       <ChatCircleText size={24} className="text-primary mb-2" aria-hidden="true" />
       <h2 className="font-headline-md text-lg font-bold mb-1">{t("title")}</h2>
@@ -90,7 +90,7 @@ export default function RequestReviewCard() {
           data-testid="request-review-copy"
           onClick={handleCopy}
           disabled={!url}
-          className="min-h-[44px] bg-primary text-white rounded-full px-6 py-2 text-sm font-medium hover:bg-primary-dark transition disabled:opacity-50"
+          className="min-h-touch bg-primary text-white rounded-full px-6 py-2 text-sm font-medium hover:bg-primary-dark transition disabled:opacity-50"
         >
           {copied ? t("cta_copied") : t("cta")}
         </button>
