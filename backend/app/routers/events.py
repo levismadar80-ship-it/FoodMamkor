@@ -14,7 +14,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, object_session
 
 from app.auth import (
     get_current_user,
@@ -32,6 +32,7 @@ from app.schemas.schemas import (
     EventUpdate,
     event_end_time_problem,
 )
+from app.services.registrations import method_problem, registered_counts
 from app.utils.clock import israel_today, utc_now
 
 router = APIRouter(tags=["events"])
@@ -48,7 +49,22 @@ router = APIRouter(tags=["events"])
 VALID_CATEGORIES = {"שוק", "קטיף", "טעימות", "אחר"}
 
 
-def _serialize(event: Event) -> EventOut:
+def _serialize(event: Event, registered: int | None = None) -> EventOut:
+    """`registered` = active on-site sign-ups (MEH-2763). List routes pass it
+    from one grouped query; a single-event caller leaves it None and it is
+    counted here."""
+    if registered is None:
+        session = object_session(event)
+        registered = (
+            registered_counts(session, event_ids=[event.id]).get(event.id, 0)
+            if session is not None
+            else 0
+        )
+    spots_left = (
+        max(0, event.max_participants - registered)
+        if event.max_participants is not None
+        else None
+    )
     return EventOut(
         id=event.id,
         producer_id=event.producer_id,
@@ -82,9 +98,23 @@ def _serialize(event: Event) -> EventOut:
         price=int(event.price or 0),
         max_participants=event.max_participants,
         registration_url=event.registration_url,
+        registration_method=event.registration_method or "site_form",
+        registered_count=registered,
+        spots_left=spots_left,
         is_active=bool(event.is_active),
         created_at=event.created_at or utc_now(),
     )
+
+
+def _serialize_many(db: Session, events: list[Event]) -> list[EventOut]:
+    """MEH-2763: one grouped count for the whole list, not one per row."""
+    counts = registered_counts(db, event_ids=[ev.id for ev in events])
+    return [_serialize(ev, counts.get(ev.id, 0)) for ev in events]
+
+
+def _producer_phone(db: Session, producer_id) -> str | None:
+    producer = db.get(Producer, producer_id)
+    return producer.phone if producer else None
 
 
 # ============================================================
@@ -138,7 +168,7 @@ def list_events(
         q = q.filter(Event.event_date <= filters.to_date)
 
     events = q.order_by(Event.event_date.asc(), Event.event_time.asc()).all()
-    return [_serialize(ev) for ev in events]
+    return _serialize_many(db, events)
 
 
 @router.get("/events/upcoming", response_model=list[EventOut])
@@ -162,7 +192,7 @@ def upcoming_events(
         .limit(limit)
         .all()
     )
-    return [_serialize(ev) for ev in events]
+    return _serialize_many(db, events)
 
 
 # MEH-1405: owner-scoped list so a producer can manage her own events from the
@@ -181,7 +211,7 @@ def list_my_events(
         .order_by(Event.event_date.desc(), Event.event_time.desc())
         .all()
     )
-    return [_serialize(ev) for ev in events]
+    return _serialize_many(db, events)
 
 
 @router.get("/events/{event_id}", response_model=EventOut)
@@ -232,6 +262,14 @@ def create_event(
         )
     if not user.producer_id:
         raise HTTPException(status_code=403, detail="Producer account required")
+    # MEH-2763: the method's prerequisite (mobile / phone / URL).
+    problem = method_problem(
+        data.registration_method,
+        phone=_producer_phone(db, user.producer_id),
+        registration_url=data.registration_url,
+    )
+    if problem:
+        raise HTTPException(status_code=422, detail=problem)
 
     event = Event(
         producer_id=user.producer_id,
@@ -249,6 +287,7 @@ def create_event(
         price=data.price or 0,
         max_participants=data.max_participants,
         registration_url=data.registration_url,
+        registration_method=data.registration_method,
         is_active=True,
     )
     db.add(event)
@@ -307,6 +346,19 @@ def update_event(
     )
     if problem:
         raise HTTPException(status_code=422, detail=problem)
+    # MEH-2763: checked only when the edit touches the method or its URL, so a
+    # stored pair that no longer holds (the phone changed since) never blocks
+    # an unrelated edit.
+    if "registration_method" in changes and changes["registration_method"] is None:
+        changes.pop("registration_method")  # NOT NULL column — null = unchanged
+    if "registration_method" in changes or "registration_url" in changes:
+        method_issue = method_problem(
+            changes.get("registration_method") or event.registration_method,
+            phone=_producer_phone(db, event.producer_id),
+            registration_url=changes.get("registration_url", event.registration_url),
+        )
+        if method_issue:
+            raise HTTPException(status_code=422, detail=method_issue)
     for field, value in changes.items():
         if field == "category" and value not in VALID_CATEGORIES:
             raise HTTPException(status_code=400, detail="קטגוריה לא תקינה")
