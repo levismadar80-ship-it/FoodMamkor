@@ -140,16 +140,17 @@ describe("ProducerHeader status line + חדש fallback (MEH-1334)", () => {
     expect(screen.queryByTestId("status-closed")).not.toBeInTheDocument();
   });
 
-  it("renders the closed status for full_this_week (and no open status)", () => {
-    render(
+  it("MEH-2759: full_this_week renders the open status — no closed status, no slow-response box", () => {
+    const { container } = render(
       <ProducerHeader
         producer={{ ...baseProducer, availability_state: "full_this_week" }}
         primaryCategory={null}
         hasImages
       />,
     );
-    expect(screen.getByTestId("status-closed")).toBeInTheDocument();
-    expect(screen.queryByTestId("status-open")).not.toBeInTheDocument();
+    expect(screen.getByTestId("status-open")).toBeInTheDocument();
+    expect(screen.queryByTestId("status-closed")).not.toBeInTheDocument();
+    expect(container.textContent).not.toMatch(/slow_response/);
   });
 
   it("renders the gold vacation status when on vacation", () => {

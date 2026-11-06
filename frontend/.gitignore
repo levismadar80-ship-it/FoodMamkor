@@ -9,6 +9,8 @@ test-results/
 # meant to be durable. Added with the coverage baseline itself — before it,
 # any local `vitest --coverage` left the tree dirty.
 coverage/
+# MEH-2779: vitest --shard blob reports, merged in CI. Regenerated per run.
+.vitest-reports/
 # TypeScript incremental build state. Emitted by any local `tsc` run (the e2e
 # specs are TS, so verifying them writes this), machine-specific, and never
 # useful in a diff. CI regenerates it per run and discards it.

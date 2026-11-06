@@ -371,7 +371,7 @@
       "AvailabilityStateUpdate": {
         "properties": {
           "state": {
-            "description": "accepting_orders | available_today | full_this_week | on_vacation",
+            "description": "accepting_orders | on_vacation",
             "title": "State",
             "type": "string"
           },
@@ -393,33 +393,6 @@
           "state"
         ],
         "title": "AvailabilityStateUpdate",
-        "type": "object"
-      },
-      "AvailabilityStatusUpdate": {
-        "properties": {
-          "status": {
-            "description": "available | full | vacation",
-            "title": "Status",
-            "type": "string"
-          },
-          "vacation_until": {
-            "anyOf": [
-              {
-                "format": "date",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Optional return date (vacation only)",
-            "title": "Vacation Until"
-          }
-        },
-        "required": [
-          "status"
-        ],
-        "title": "AvailabilityStatusUpdate",
         "type": "object"
       },
       "BioGenerateIn": {
@@ -12814,6 +12787,20 @@
       "RescueOfferPublicOut": {
         "description": "One row of `GET /rescue/offers` — the offer, who is selling it, what is\nusually in it, and how far away it is.\n\n`distance_km` is None unless the caller sent lat/lng; chunk 4 renders it\nonly when present rather than inventing a zero.",
         "properties": {
+          "allergens": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allergens"
+          },
           "cancel_until": {
             "format": "date-time",
             "title": "Cancel Until",
@@ -13478,6 +13465,20 @@
       "RescueTypicalItemsIn": {
         "description": "«בדרך כלל: …» — the list a business edits once. Bounded so the line\nstays one line on a phone.",
         "properties": {
+          "allergens": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allergens"
+          },
           "items": {
             "items": {
               "type": "string"
@@ -13492,6 +13493,20 @@
       },
       "RescueTypicalItemsOut": {
         "properties": {
+          "allergens": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allergens"
+          },
           "items": {
             "items": {
               "type": "string"
@@ -22245,31 +22260,6 @@
         ]
       }
     },
-    "/producers/me/availability": {
-      "post": {
-        "description": "Toggle today's availability for the logged-in producer.\n\nLegacy endpoint — kept during MEH-291 7-day overlap. Mirrors the toggle to\n`availability_state` so consumers reading the new column stay consistent.",
-        "operationId": "toggle_availability_producers_me_availability_post",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "summary": "Toggle Availability",
-        "tags": [
-          "producer-management"
-        ]
-      }
-    },
     "/producers/me/availability-state": {
       "post": {
         "operationId": "set_availability_state_producers_me_availability_state_post",
@@ -22309,51 +22299,6 @@
           }
         ],
         "summary": "Set Availability State",
-        "tags": [
-          "producer-management"
-        ]
-      }
-    },
-    "/producers/me/availability-status": {
-      "post": {
-        "description": "Legacy endpoint — kept during MEH-291 7-day overlap. Mirrors the\ndurable status to `availability_state`.",
-        "operationId": "set_availability_status_producers_me_availability_status_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AvailabilityStatusUpdate"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "summary": "Set Availability Status",
         "tags": [
           "producer-management"
         ]

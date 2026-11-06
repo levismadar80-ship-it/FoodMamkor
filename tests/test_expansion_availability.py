@@ -165,16 +165,19 @@ def test_leaving_vacation_clears_return_date(client, db):
 
 
 def test_set_valid_state_happy_path(client, db):
-    """available_today persists and round-trips (sanity anchor for the
-    mutants above — proves the endpoint works on the original code)."""
+    """on_vacation persists and round-trips (sanity anchor for the mutants
+    above — proves the endpoint works on the original code). MEH-2758: was
+    available_today, which is no longer writable."""
     user, _ = _producer_user(db)
+    back = (israel_today() + timedelta(days=3)).isoformat()
     resp = client.post(
         "/producers/me/availability-state",
-        json={"state": "available_today"},
+        json={"state": "on_vacation", "vacation_until": back},
         headers=auth_header(user),
     )
     assert resp.status_code == 200, resp.text
-    assert resp.json()["availability_state"] == "available_today"
+    assert resp.json()["availability_state"] == "on_vacation"
+    assert resp.json()["vacation_until"] == back
 
 
 def test_set_availability_state_requires_producer_role(client, db):
