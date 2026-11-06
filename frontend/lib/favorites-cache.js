@@ -92,10 +92,6 @@ export function getFavoriteProducers() {
   return rows.filter((p) => ids.has(p.id));
 }
 
-export function isFavoritesLoaded() {
-  return loaded;
-}
-
 export function isFavorited(producerId) {
   return producerId != null && ids.has(producerId);
 }
