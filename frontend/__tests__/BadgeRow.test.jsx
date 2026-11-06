@@ -4,6 +4,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 // MEH-475 PR-C4a chunk 4b: mock next-intl per established precedent.
 // MEH-76 chunk 4: the mock now covers the producer.badge tier keys and does
 // simple {param} interpolation so the S12 tooltip strings stay assertable.
+vi.mock("@/lib/use-badge-copy", async () => (await import("./helpers/he-badge-copy")).badgeCopyMock);
 vi.mock("next-intl", () => ({
   useTranslations: () => (key, values = {}) => {
     const flat = {
