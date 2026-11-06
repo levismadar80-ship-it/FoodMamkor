@@ -165,3 +165,13 @@ def test_a_row_on_a_removed_state_still_lists(client, db, state):
     mine = [p for p in resp.json() if p["id"] == str(producer.id)]
     assert len(mine) == 1
     assert mine[0]["availability_state"] == state
+
+
+def test_admin_put_refuses_an_explicit_null_state(client, db):
+    """Reviewer on #4074: an explicit null is a change, so it is checked and
+    refused rather than written (the column is NOT NULL)."""
+    _, producer = _owner(db)
+    resp = _admin_put(client, db, producer, None)
+    assert resp.status_code == 422, resp.text
+    db.refresh(producer)
+    assert producer.availability_state == "accepting_orders"
