@@ -555,7 +555,7 @@ function AssistForm({ t, assist }) {
       <div className="space-y-1">
         <div className="flex items-center gap-2">
           <label className="text-xs font-medium">{t("instagram_label")}</label>
-          <span className="text-[10px] text-fg-muted border border-border rounded-full px-2 py-px">
+          <span className="text-2xs text-fg-muted border border-border rounded-full px-2 py-px">
             {t("optional")}
           </span>
         </div>
@@ -571,7 +571,7 @@ function AssistForm({ t, assist }) {
           dir="ltr"
           maxLength={200}
         />
-        <p className="text-[11px] text-fg-muted">{t("instagram_hint")}</p>
+        <p className="text-2xs text-fg-muted">{t("instagram_hint")}</p>
       </div>
 
       <button
@@ -584,7 +584,7 @@ function AssistForm({ t, assist }) {
         {loading ? t("generating") : t("generate_cta")}
       </button>
       {!canGenerate && (
-        <p className="text-[11px] text-fg-muted text-center">{t("generate_hint_disabled")}</p>
+        <p className="text-2xs text-fg-muted text-center">{t("generate_hint_disabled")}</p>
       )}
       {error && (
         <p className="text-xs text-error flex items-start gap-1.5" role="alert">
@@ -604,7 +604,7 @@ function AssistField({ label, value, onChange, placeholder, optional }) {
       <div className="flex items-center gap-2">
         <label className="text-xs font-medium">{label}</label>
         {optional && (
-          <span className="text-[10px] text-fg-muted border border-border rounded-full px-2 py-px">
+          <span className="text-2xs text-fg-muted border border-border rounded-full px-2 py-px">
             {optional}
           </span>
         )}
@@ -729,7 +729,7 @@ export function DescriptionCard({ profile, onSave, reportDirty = () => {} }) {
       <div className="space-y-1.5">
         <div className="flex items-baseline gap-2">
           <label className="text-sm font-medium">{t("desc_label")}</label>
-          <span className="text-[11px] text-fg-muted">{t("desc_where")}</span>
+          <span className="text-2xs text-fg-muted">{t("desc_where")}</span>
         </div>
         <textarea
           value={description}
@@ -779,7 +779,7 @@ export function DescriptionCard({ profile, onSave, reportDirty = () => {} }) {
       <div className="space-y-1.5">
         <div className="flex items-baseline gap-2">
           <label className="text-sm font-medium">{t("tagline_label")}</label>
-          <span className="text-[11px] text-fg-muted">{t("tagline_where")}</span>
+          <span className="text-2xs text-fg-muted">{t("tagline_where")}</span>
         </div>
         <input
           type="text"
@@ -997,7 +997,7 @@ export function OwnerStoryCard({ profile, onSave, reportDirty = () => {} }) {
       <div className="space-y-1.5">
         <div className="flex items-baseline gap-2">
           <label className="text-sm font-medium">{t("bio_label")}</label>
-          <span className="text-[11px] text-fg-muted">{t("bio_where")}</span>
+          <span className="text-2xs text-fg-muted">{t("bio_where")}</span>
         </div>
         <textarea
           value={bio}
@@ -1808,7 +1808,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
             <span
               key={tag.key}
               data-testid={`delivery-map-preview-${tag.key}`}
-              className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] leading-4 whitespace-nowrap ${
+              className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-2xs leading-4 whitespace-nowrap ${
                 tag.neutral ? FULFILLMENT_WASH_NEUTRAL : FULFILLMENT_WASH_GREEN
               }`}
             >
@@ -2460,7 +2460,7 @@ export function BusinessNameCard({ profile }) {
       {/* Current name is shown read-only so the comparison the owner is about
           to request is visible without leaving the card. */}
       <div>
-        <p className="text-[13px] font-semibold text-text mb-1">{t("current_label")}</p>
+        <p className="text-sm font-semibold text-text mb-1">{t("current_label")}</p>
         <p
           className="text-base font-bold text-text bg-bg-subtle border border-border rounded-sm px-3 py-2"
           data-testid="name-change-current"

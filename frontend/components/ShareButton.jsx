@@ -97,7 +97,7 @@ export default function ShareButton({
     return (
       <button
         onClick={handleShare}
-        className="inline-flex items-center gap-1.5 min-h-touch py-2 text-[13px] font-medium text-text hover:text-primary rounded transition focus-visible:ring-2 focus-visible:ring-primary/40"
+        className="inline-flex items-center gap-1.5 min-h-touch py-2 text-sm font-medium text-text hover:text-primary rounded transition focus-visible:ring-2 focus-visible:ring-primary/40"
         title={t("copy_link")}
         aria-label={labelInName(t("quiet_label"), ariaLabel)}
       >

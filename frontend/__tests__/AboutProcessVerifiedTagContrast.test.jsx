@@ -39,11 +39,11 @@ describe("AboutProcessClient VerifiedTag contrast (MEH-2069)", () => {
     // "process.tier.verified" also renders inside an unrelated illustrative
     // badge preview earlier on the page (bg-background, never had the bug) —
     // filter to the VerifiedTag chip specifically via its distinguishing
-    // classes (text-[12.5px] + text-accent), not just the label text.
+    // classes (text-xs + text-accent), not just the label text.
     const chips = screen
       .getAllByText("process.tier.verified")
       .map((label) => label.closest("span.rounded-full"))
-      .filter((el) => el?.className.includes("text-[12.5px]") && el?.className.includes("text-accent"));
+      .filter((el) => el?.className.includes("text-xs") && el?.className.includes("text-accent"));
     expect(chips.length).toBeGreaterThan(0);
     for (const chip of chips) {
       expect(chip.className).toContain("bg-surface-card");

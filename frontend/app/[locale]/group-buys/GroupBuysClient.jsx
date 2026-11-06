@@ -80,7 +80,7 @@ function GroupBuyCard({ gb }) {
       </div>
 
       <div className="p-4 flex flex-col gap-2 flex-1">
-        <p className="text-[13px] text-fg-muted">
+        <p className="text-sm text-fg-muted">
           {[gb.producer_name, gb.city].filter(Boolean).join(" · ")}
         </p>
         <h2 className="font-headline-md text-lg font-bold text-text leading-snug line-clamp-2">
@@ -108,14 +108,14 @@ function GroupBuyCard({ gb }) {
           <div className="w-full bg-border rounded-full h-2.5 overflow-hidden">
             <div className="h-2.5 rounded-full bg-primary" style={{ width: `${pct}%` }} />
           </div>
-          <p className="mt-1.5 text-[13px] font-medium text-text" data-testid="group-buy-progress-line">
+          <p className="mt-1.5 text-sm font-medium text-text" data-testid="group-buy-progress-line">
             {funded || remaining === 0
               ? t("progress_label", { commits: gb.commits_count, min: gb.min_participants })
               : td("remaining_to_open", { n: remaining })}
           </p>
         </div>
 
-        <div className="mt-auto pt-2 flex flex-col gap-1 text-[13px] text-fg-muted">
+        <div className="mt-auto pt-2 flex flex-col gap-1 text-sm text-fg-muted">
           <span className="inline-flex items-center gap-1.5">
             <Clock size={16} aria-hidden="true" className="shrink-0" />
             {daysLeft > 0 ? t("days_left", { days: daysLeft }) : t("expired")}

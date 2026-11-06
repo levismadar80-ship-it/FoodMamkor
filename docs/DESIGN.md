@@ -55,6 +55,9 @@ colors:
   warning-800: "#92400E"
   warning-900: "#78350F"
 typography:
+  2xs:
+    fontSize: 11px
+    lineHeight: 16px
   headline-display:
     fontFamily: '"Frank Ruhl Libre", "David Libre", Georgia, serif'
     fontSize: 48px
@@ -304,6 +307,15 @@ sheet) — but it only moves Hebrew glyphs, which had no brand face there before
 `text-wrap: balance` in `globals.css` (MEH-2488). **Hebrew is never
 letter-spaced** (no `tracking-*` on Hebrew; MEH-2488 removed the last two:
 the home trust band and the admin help ToC label).
+
+**One type scale (MEH-1687 phase 4, 06/11/2026).** Font sizes are scale steps,
+never `text-[Npx]`: `text-2xs` 11/16 (badges, chips; Material 3 label-small) ·
+`text-xs` 12 · `text-sm` 14 · `text-base` 16 · `text-lg` 18 · `text-xl` 20 ·
+`text-2xl` 24 · `text-3xl` 30 · `text-4xl` 36 · `text-5xl` 48 · `text-6xl` 60.
+The 308 arbitrary sizes (26 values: 10, 13, 15, 17, 22 …) were snapped to the
+nearest step, ties up for phone legibility. Fluid display headings
+(`text-[clamp(…)]`) are allowed — that is fluid type, not drift.
+`TypeScaleCodemod.test.js` blocks a new arbitrary size.
 
 ## Layout
 

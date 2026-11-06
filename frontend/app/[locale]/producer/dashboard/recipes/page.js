@@ -125,7 +125,7 @@ export default function ProducerRecipesPage() {
             ctaOnClick={() => setShowForm(true)}
             example={
               <div className="w-full max-w-xs text-start opacity-70">
-                <p className="text-[11px] text-fg-muted mb-1">{t("sample_label")}</p>
+                <p className="text-2xs text-fg-muted mb-1">{t("sample_label")}</p>
                 <div className="border border-border rounded-md p-3 bg-surface-card flex items-center gap-3">
                   <div className="w-14 h-14 rounded-sm bg-green-50 flex items-center justify-center shrink-0">
                     <Bread size={22} className="text-fg-muted" aria-hidden="true" />

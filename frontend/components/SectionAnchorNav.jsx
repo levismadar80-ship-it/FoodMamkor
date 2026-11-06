@@ -132,7 +132,7 @@ export default function SectionAnchorNav({ items, ariaLabel, className = "" }) {
               // tab is green with a bar under it. min-h-[48px] keeps the touch
               // target; pt-[3px] balances the 3px bottom border so the label
               // stays optically centred.
-              className={`inline-flex items-center whitespace-nowrap px-3 pt-[3px] min-h-[48px] text-[15px] font-semibold border-b-[3px] transition shrink-0 snap-start focus-ring ${
+              className={`inline-flex items-center whitespace-nowrap px-3 pt-[3px] min-h-[48px] text-base font-semibold border-b-[3px] transition shrink-0 snap-start focus-ring ${
                 active
                   ? "text-primary border-primary"
                   : "text-fg-muted border-transparent hover:text-text"

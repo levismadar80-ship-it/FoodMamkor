@@ -274,7 +274,7 @@ export default function AdminOutreachPage() {
                       {lead.name}
                       {lead.source === "community" && (
                         <span
-                          className="ms-2 align-middle inline-block text-[11px] px-2 py-0.5 rounded-full bg-green-50 text-primary border border-border"
+                          className="ms-2 align-middle inline-block text-2xs px-2 py-0.5 rounded-full bg-green-50 text-primary border border-border"
                           data-testid={`community-badge-${lead.id}`}
                         >
                           {t("outreach.badge_community")}
