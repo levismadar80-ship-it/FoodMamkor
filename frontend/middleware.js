@@ -290,7 +290,13 @@ export default async function middleware(request) {
   // keeps its real 404 and MEH-1398's SEO guarantee holds where it matters.
 
   let exists = existsUrl ? await producerExists(existsUrl) : true;
-  // MEH-2706: event and diet pages (see eventExists / dietPageExists).
+  // MEH-2706: event and diet pages (see eventExists / dietPageExists). These
+  // branches never overlap the slug check above (that one needs segs.length 1).
+  // DO NOT add a static route under /events/ (e.g. /events/new) without
+  // excluding it here: the backend would 404/422 it and this would mint a
+  // real 404 for a real page. app/[locale]/events/ today holds only [id].
+  // Cost: one uncached backend GET (≤3 s, then fail-open) per request on
+  // these two routes — the same trade the slug check already makes.
   if (segs.length === 2 && segs[0] === "events" && segs[1]) {
     exists = await eventExists(`${API_URL}/events/${encodeURIComponent(segs[1])}`);
   } else if (segs.length === 3 && segs[0] === "producers" && segs[1] === "diet") {

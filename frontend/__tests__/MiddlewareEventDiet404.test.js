@@ -61,6 +61,10 @@ describe("/events/<id> (MEH-2706)", () => {
     await middleware(requestFor(EVENT));
     expect(global.fetch.mock.calls[0][0]).toMatch(/\/events\/00000000-0000-0000-0000-000000000000$/);
   });
+  it("the /en/ locale gets the same real 404", async () => {
+    backend({ status: 404 });
+    expect(wasNotFound(await middleware(requestFor("/en/events/00000000-0000-0000-0000-000000000000")))).toBe(true);
+  });
   it("control: existing event passes through", async () => {
     backend({ status: 200 });
     expect(wasNotFound(await middleware(requestFor(EVENT)))).toBe(false);
@@ -93,6 +97,11 @@ describe("/producers/diet/<slug> (MEH-2706)", () => {
     backend({ total: 0 });
     await middleware(requestFor("/producers/diet/gluten-free"));
     expect(global.fetch.mock.calls[0][0]).toMatch(/\/producers\?gluten_free=true&limit=1/);
+  });
+  it("a percent-encoded known slug is decoded, not treated as unknown", async () => {
+    backend({ total: 9 });
+    expect(wasNotFound(await middleware(requestFor("/he/producers/diet/%76egan")))).toBe(false);
+    expect(global.fetch.mock.calls[0][0]).toMatch(/vegan=true/);
   });
   it("control: 5 or more passes through", async () => {
     backend({ total: 5 });
