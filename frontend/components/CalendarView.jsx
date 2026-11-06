@@ -140,7 +140,10 @@ export default function CalendarView({ items, renderItem, kind = "events" }) {
     // view. Desktop: the list is beside the grid; "nearest" moves it only
     // when the day's rows are off screen.
     const first = listRef.current?.querySelector(`[data-day="${key}"]`);
-    first?.scrollIntoView?.({ behavior: "smooth", block: "nearest" });
+    const reduceMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    first?.scrollIntoView?.({ behavior: reduceMotion ? "auto" : "smooth", block: "nearest" });
   };
 
   const monthLabel = formatEventDate(currentMonth, locale, {
@@ -233,7 +236,7 @@ export default function CalendarView({ items, renderItem, kind = "events" }) {
                     {t("today")}
                   </span>
                 )}
-                {active && !isToday && (
+                {active && (
                   <span className="flex gap-0.5 mt-1" aria-hidden="true" data-testid="calendar-day-dots">
                     {Array.from({ length: Math.min(count, MAX_DOTS) }, (_, i) => (
                       <span key={i} className="w-1 h-1 rounded-full bg-primary" />

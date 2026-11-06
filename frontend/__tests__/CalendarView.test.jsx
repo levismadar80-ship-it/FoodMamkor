@@ -78,6 +78,13 @@ describe("CalendarView day cells (MEH-2771)", () => {
     expect(within(day).getByTestId("calendar-day-dots").children).toHaveLength(2);
   });
 
+  it("today with events shows both «היום» and its dots", () => {
+    render(<CalendarView items={[ev(1, 10)]} renderItem={renderItem} />);
+    const today = cell(10);
+    expect(within(today).getByTestId("calendar-today-label")).toBeInTheDocument();
+    expect(within(today).getByTestId("calendar-day-dots").children).toHaveLength(1);
+  });
+
   it("dots stop at 3 for a busy day", () => {
     render(
       <CalendarView items={[ev(1, 16), ev(2, 16), ev(3, 16), ev(4, 16)]} renderItem={renderItem} />,
