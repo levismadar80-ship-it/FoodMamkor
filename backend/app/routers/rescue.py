@@ -6,25 +6,24 @@ Purpose:  The rescue-bags pilot API — a business publishes today's bags, a
           reserving again.
 Touches:  DB tables rescue_offers / rescue_orders / rescue_reviews /
           rescue_typical_items and `users.rescue_no_show_count` +
-          `users.rescue_block_cleared_at`. No outbound side effects at all in
-          this chunk — see "Does NOT".
+          `users.rescue_block_cleared_at`. Outbound: EMAIL only, to the buyer,
+          queued after the commit and fail-open (services/rescue_emails.py) —
+          on a reservation (MEH-2715), on the buyer's own cancel (MEH-2737),
+          and when the business cancels the offer (MEH-2738).
 Does NOT: take payment. There is none in the pilot: the buyer pays at the
           counter, no endpoint quotes a total to charge and no order row
           records money.
-          It also does NOT message anyone. Two notification pieces the chunk-2
-          spec asks for are blocked on things outside this file and are
-          deliberately absent rather than half-built:
+          It also sends no WhatsApp and nothing to the business:
             - the pickup_start digest of codes to the business. `fire_alerts`
               is the wrong mechanism (it fans out to CONSUMERS who opted in
               through FavoriteAlert columns, from inside a request, not on a
               clock), so this needs a scheduler job in the `pending_nudge`
               shape plus an idempotency stamp. MEH-2646 carries the decision.
-            - the WhatsApp to buyers when a business cancels a whole offer.
+            - a WhatsApp to buyers when a business cancels a whole offer.
               A business-initiated message needs a Meta-APPROVED template
               (`services/whatsapp.py:279` — send_text only works inside the
-              24h window), and no rescue template exists. Registering one is
-              Sapir's action. `cancel_offer` therefore moves status only and
-              says so.
+              24h window), and no rescue template exists. The email above is
+              what tells them instead.
 Related:  app/models/models.py (RescueOffer and siblings, the status tuples),
           app/schemas/rescue.py (every request/response shape),
           app/routers/group_buys.py:238-258 (the with_for_update pattern this
@@ -93,6 +92,7 @@ from app.sentry import capture_background_exception
 from app.services.rescue_emails import (
     ReservationEmail,
     israel_hhmm,
+    send_business_cancel_email,
     send_cancel_email,
     send_reservation_email,
 )
@@ -547,25 +547,38 @@ def list_offers(
 def cancel_offer(
     request: Request,
     offer_id: UUID,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """The business pulls the whole bag offer. Every open reservation on it is
-    cancelled with it.
+    cancelled with it; a bag already handed over stays handed.
 
-    No refund, because nothing was paid. No message either, yet: telling the
-    buyers needs a Meta-approved WhatsApp template and none exists for rescue
-    (see this module's "Does NOT"). Until one does, the buyers learn from the
-    app — which is a real gap, recorded on MEH-2646 rather than papered over
-    with a send that would silently fail outside the 24h window.
+    No refund, because nothing was paid. MEH-2738: each buyer whose
+    reservation went with it gets one email after the commit (fail-open), and
+    their page says the business cancelled (`list_my_reservations`). A window
+    that already closed is refused: by then every bag is collected or a
+    no-show, and cancelling would only rewrite the record.
     """
     offer = _offer_for_update(db, offer_id)
     _require_offer_owner(current_user, offer)
     if offer.status != "active":
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="הסל כבר בוטל")
+    now = utc_now()
+    if offer.pickup_end <= now:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="זמן האיסוף חלף"
+        )
 
     offer.status = "cancelled"
-    now = utc_now()
+    # Read who held a bag under the offer lock: a reservation or a buyer's
+    # cancel takes the same lock first, so this set cannot move until commit.
+    buyer_ids = {
+        user_id
+        for (user_id,) in db.query(RescueOrder.user_id).filter(
+            RescueOrder.offer_id == offer.id, RescueOrder.status == "reserved"
+        )
+    }
     (
         db.query(RescueOrder)
         .filter(RescueOrder.offer_id == offer.id, RescueOrder.status == "reserved")
@@ -573,7 +586,42 @@ def cancel_offer(
     )
     db.commit()
     db.refresh(offer)
+    try:
+        _queue_business_cancel_emails(background_tasks, db, offer, buyer_ids)
+    except Exception as exc:  # the cancel is committed; a mail never undoes it
+        capture_background_exception(exc, task="rescue_business_cancel_email")
     return offer
+
+
+def _queue_business_cancel_emails(
+    background_tasks: BackgroundTasks,
+    db: Session,
+    offer: RescueOffer,
+    buyer_ids: set,
+) -> None:
+    """MEH-2738: one email per buyer whose reservation the business cancelled.
+
+    Values are read here, while the Session is open, and handed to the task
+    as plain strings (the MEH-1651 convention). One per buyer, not per order:
+    a buyer may hold two orders on one offer.
+    """
+    if not buyer_ids:
+        return
+    location = offer.location
+    producer = location.producer if location else None
+    if producer is None:
+        return
+    emails = sorted(
+        {
+            email
+            for (email,) in db.query(User.email).filter(User.id.in_(buyer_ids))
+            if email
+        }
+    )
+    for email in emails:
+        background_tasks.add_task(
+            send_business_cancel_email, email, producer.name or ""
+        )
 
 
 @router.get(
@@ -590,10 +638,17 @@ def list_my_reservations(
     """The caller's own live reservations on today's bags (MEH-2680).
 
     Only the caller's rows, only today's offers (Israel date), only
-    `reserved` / `handed` — a cancelled or no-show order has no code left to
-    say and nothing to review. Carries the same fields as the reservation
-    response, so the confirmation renders from either without a second shape.
+    `reserved` / `handed` — a no-show or a buyer's own cancel has no code
+    left to say and nothing to review. Carries the same fields as the
+    reservation response, so the confirmation renders from either without a
+    second shape.
+
+    MEH-2738: plus the reservations the BUSINESS cancelled, flagged
+    `cancelled_by_business`, so the page can say so instead of silently
+    dropping the code. See `_business_cancelled_ids` for how they are told
+    apart from a buyer's own cancel without a column for it.
     """
+    today = israel_today()
     rows = (
         db.query(RescueOrder)
         .join(RescueOffer, RescueOrder.offer_id == RescueOffer.id)
@@ -603,12 +658,20 @@ def list_my_reservations(
         )
         .filter(
             RescueOrder.user_id == current_user.id,
-            RescueOrder.status.in_(("reserved", "handed")),
-            RescueOffer.date == israel_today(),
+            RescueOffer.date == today,
+            (RescueOrder.status.in_(("reserved", "handed")))
+            | (
+                (RescueOrder.status == "cancelled")
+                & (RescueOffer.status == "cancelled")
+            ),
         )
         .order_by(RescueOrder.created_at.asc())
         .all()
     )
+    by_business = _business_cancelled_ids(
+        db, {o.offer_id for o in rows if o.status == "cancelled"}
+    )
+    rows = [o for o in rows if o.status != "cancelled" or o.id in by_business]
     return [
         {
             "id": o.id,
@@ -626,9 +689,40 @@ def list_my_reservations(
             "pickup_end": o.offer.pickup_end,
             "reviewed": o.review is not None,
             "producer_id": o.offer.location.producer_id,
+            "cancelled_by_business": o.id in by_business,
         }
         for o in rows
     ]
+
+
+def _business_cancelled_ids(db: Session, offer_ids: set) -> set:
+    """Which cancelled orders on these cancelled offers the business cancelled.
+
+    There is no column saying who cancelled, and adding one is a schema
+    change; the stock arithmetic already says it. A buyer's cancel gives its
+    bags back to `qty_left`; the business cancel does not (the offer is gone).
+    So the bags the business took with it are
+        (qty_total - qty_left) - bags on orders that were never cancelled.
+    The business cancel stamps all its orders with one `cancelled_at`, the
+    latest on the offer. If the arithmetic says it took no bags, the latest
+    cancel was a buyer's — the edge case a timestamp rule alone gets wrong
+    (she cancelled, nobody else held a bag, then the business cancelled).
+    """
+    if not offer_ids:
+        return set()
+    found: set = set()
+    offers = db.query(RescueOffer).filter(RescueOffer.id.in_(offer_ids)).all()
+    orders = db.query(RescueOrder).filter(RescueOrder.offer_id.in_(offer_ids)).all()
+    for offer in offers:
+        mine = [o for o in orders if o.offer_id == offer.id]
+        kept = sum(o.qty for o in mine if o.status != "cancelled")
+        taken = (offer.qty_total - offer.qty_left) - kept
+        cancelled = [o for o in mine if o.status == "cancelled" and o.cancelled_at]
+        if taken <= 0 or not cancelled:
+            continue
+        last = max(o.cancelled_at for o in cancelled)
+        found.update(o.id for o in cancelled if o.cancelled_at == last)
+    return found
 
 
 def _queue_reservation_email(

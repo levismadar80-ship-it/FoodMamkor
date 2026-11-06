@@ -5759,7 +5759,8 @@
       "no_cancel": "This bag can no longer be cancelled",
       "cancelled": "Your reservation is cancelled, and the bag is back on the list.",
       "allergens_declared": "Contains: {list} · as declared by the business",
-      "allergens_undeclared": "The business didn't list allergens. Ask before pickup."
+      "allergens_undeclared": "The business didn't list allergens. Ask before pickup.",
+      "business_cancelled": "The business cancelled today's bag, so your reservation was cancelled too. No need to come."
     },
     "confirm": {
       "title": "Your bag is reserved",
@@ -5868,7 +5869,14 @@
       "leftover_undo": "Undo",
       "leftover_upcoming": "After pickup time ends, what wasn't collected will show here.",
       "allergens_title": "Allergens in the bag",
-      "allergens_help": "What you tick is shown to buyers on the bag card, next to «as declared by the business»."
+      "allergens_help": "What you tick is shown to buyers on the bag card, next to «as declared by the business».",
+      "cancel_offer": "Cancel the bag",
+      "cancel_offer_title": "Cancel today's bag?",
+      "cancel_offer_none": "Nobody has reserved yet.",
+      "cancel_offer_one": "There is one active reservation. We'll email them that the bag was cancelled.",
+      "cancel_offer_many": "There are {n} active reservations. We'll email all of them that the bag was cancelled.",
+      "cancel_offer_yes": "Yes, cancel",
+      "cancel_offer_no": "No"
     },
     "counter_card": {
       "title": "Mehamakor rescue bag",

@@ -36,7 +36,7 @@ const CANCEL_CUTOFFS = [
 ];
 
 // MEH-2730: the boxes a message can belong to (see `notice` below).
-const AT = { code: "code", orders: "orders", publish: "publish", items: "items", leftover: "leftover" };
+const AT = { code: "code", orders: "orders", cancel: "cancel", publish: "publish", items: "items", leftover: "leftover" };
 
 export default function RescueTab() {
   const t = useTranslations("rescue.dashboard");
@@ -95,6 +95,10 @@ export default function RescueTab() {
   const [donating, setDonating] = useState(false);
   // How many of the leftover bags were given away; null = all of them.
   const [donateQty, setDonateQty] = useState(null);
+  // MEH-2738: the bag whose «לבטל את הסל» question is open, and the one
+  // being cancelled right now.
+  const [askingOffer, setAskingOffer] = useState(null);
+  const [cancellingOffer, setCancellingOffer] = useState(null);
 
   const load = useCallback(async () => {
     try {
@@ -240,7 +244,30 @@ export default function RescueTab() {
     }
   }
 
+  // MEH-2738: the business cancels today's bag. The server cancels every
+  // open reservation with it and emails each buyer.
+  async function cancelOffer(offerId) {
+    setCancellingOffer(offerId);
+    clearNotice();
+    try {
+      await api.post(`/rescue/offers/${offerId}/cancel`);
+      await load();
+    } catch (err) {
+      setNotice(AT.cancel, reason(err));
+    } finally {
+      setAskingOffer(null);
+      setCancellingOffer(null);
+    }
+  }
+
   const now = Date.now();
+  // Bags that can still be cancelled: active, window not over (the server
+  // refuses after pickup_end — every bag is collected or a no-show by then).
+  const cancellable = offers.filter(
+    (o) => o.status === "active" && new Date(o.pickup_end).getTime() > now,
+  );
+  const openOn = (offerId) =>
+    (orders || []).filter((o) => o.offer_id === offerId && o.status === "reserved").length;
   // MEH-2702: the group for the town of the point bags are published from,
   // national fallback otherwise.
   const leftoverHref = leftoverGroupUrl(exactLocation?.city);
@@ -411,6 +438,69 @@ export default function RescueTab() {
         </ul>
         {noticeAt(AT.orders)}
       </section>
+
+      {cancellable.length > 0 && (
+        <section className="space-y-3" data-notice-scope="cancel" data-testid="rescue-offer-cancel-box">
+          {cancellable.map((o) => {
+            const open = openOn(o.id);
+            return askingOffer === o.id ? (
+              <div
+                key={o.id}
+                role="group"
+                aria-labelledby={`rescue-offer-cancel-title-${o.id}`}
+                data-testid="rescue-offer-cancel-ask"
+                className="border border-border rounded-md px-4 py-3 space-y-3 bg-surface-card"
+              >
+                <p id={`rescue-offer-cancel-title-${o.id}`} className="font-body-sm text-base font-bold text-text">
+                  {t("cancel_offer_title")}
+                </p>
+                <p className="font-body-sm text-sm text-text">
+                  {open === 0
+                    ? t("cancel_offer_none")
+                    : open === 1
+                      ? t("cancel_offer_one")
+                      : t("cancel_offer_many", { n: open })}
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    loading={cancellingOffer === o.id}
+                    onClick={() => cancelOffer(o.id)}
+                    data-testid="rescue-offer-cancel-yes"
+                  >
+                    {t("cancel_offer_yes")}
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    size="sm"
+                    disabled={cancellingOffer === o.id}
+                    onClick={() => setAskingOffer(null)}
+                    data-testid="rescue-offer-cancel-no"
+                  >
+                    {t("cancel_offer_no")}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button
+                key={o.id}
+                variant="text"
+                size="sm"
+                onClick={() => {
+                  clearNotice();
+                  setAskingOffer(o.id);
+                }}
+                data-testid="rescue-offer-cancel"
+                className="underline"
+              >
+                {t("cancel_offer")}
+              </Button>
+            );
+          })}
+          {noticeAt(AT.cancel)}
+        </section>
+      )}
 
       {/* MEH-2784: only the publish form is gated. Codes, orders and «לא הגיע»
           stay, so a business suspended with bags already out can still close
