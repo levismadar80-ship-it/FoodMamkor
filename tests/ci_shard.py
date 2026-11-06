@@ -1,28 +1,27 @@
 """MEH-2779: split the pytest suite across N parallel CI jobs.
 
 CI runs the suite as 3 jobs, each with its own Postgres service. Each job
-sets ``PYTEST_SHARD=<i>/<n>`` and keeps only the tests whose node id hashes
-to shard ``i``. A later job combines the coverage data of all shards and
-applies the coverage floor once, over the whole suite.
+sets ``PYTEST_SHARD=<i>/<n>`` and keeps only its share of the tests
+(below). A later job combines the coverage data of all shards and applies
+the coverage floor once, over the whole suite.
 
-The assignment is a stable hash of the node id (``sha1``, not ``hash()``,
-which is salted per process). That matters twice:
+The assignment is round-robin over the collection order: test number ``k``
+(0-based) goes to shard ``k % n + 1``. Every pytest-xdist worker in a job
+collects the suite on its own and xdist already requires all of them to
+collect the same items in the same order, so all workers deselect exactly
+the same tests. A hash of the node id was tried first and rejected:
+schemathesis yields ~470 items that share two node ids, and a hash sends
+each group to one shard (measured spread 1,569 / 1,720 / 1,876).
 
-* every pytest-xdist worker in a job collects the suite on its own, and all
-  of them must deselect exactly the same tests, or xdist aborts the run;
-* adding or removing one test moves only that test, never the others.
-
-The tests are close to uniform in cost (≈0.5 s each, dominated by the
+The tests are close to uniform in cost (about 0.5 s each, dominated by the
 per-test TRUNCATE in ``conftest._clean_tables``), so balancing by count is
-balancing by time. 5,151 tests over 3 shards: the largest shard is within
-about 2% of the mean.
+balancing by time; round-robin makes the shard sizes differ by at most 1.
 
 Without ``PYTEST_SHARD`` nothing is deselected — local runs are unchanged.
 """
 
 from __future__ import annotations
 
-import hashlib
 import os
 
 ENV_VAR = "PYTEST_SHARD"
@@ -45,17 +44,16 @@ def parse_shard(value: str) -> tuple[int, int]:
     return index, total
 
 
-def shard_of(nodeid: str, total: int) -> int:
-    """1-based shard that owns ``nodeid``."""
-    digest = hashlib.sha1(nodeid.encode("utf-8")).digest()
-    return int.from_bytes(digest[:8], "big") % total + 1
+def shard_of(position: int, total: int) -> int:
+    """1-based shard that owns the test at 0-based collection ``position``."""
+    return position % total + 1
 
 
-def split(nodeids, index: int, total: int) -> tuple[list, list]:
+def split(items, index: int, total: int) -> tuple[list, list]:
     """Return ``(kept, dropped)`` for shard ``index`` of ``total``."""
     kept, dropped = [], []
-    for nid in nodeids:
-        (kept if shard_of(nid, total) == index else dropped).append(nid)
+    for position, item in enumerate(items):
+        (kept if shard_of(position, total) == index else dropped).append(item)
     return kept, dropped
 
 
@@ -65,9 +63,7 @@ def apply(config, items) -> None:
     if not value:
         return
     index, total = parse_shard(value)
-    kept, dropped = [], []
-    for item in items:
-        (kept if shard_of(item.nodeid, total) == index else dropped).append(item)
+    kept, dropped = split(items, index, total)
     if dropped:
         config.hook.pytest_deselected(items=dropped)
     items[:] = kept

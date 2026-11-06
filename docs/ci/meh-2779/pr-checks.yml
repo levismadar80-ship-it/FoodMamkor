@@ -1,0 +1,1236 @@
+name: PR Checks
+
+# Runs on every PR targeting staging or main.
+# Four jobs: build, pytest (with coverage gate at 70%, MEH-489),
+# lint-backend (required, MEH-488/MEH-505), env-drift (MEH-491).
+# build + pytest + lint-backend + env-drift are required status checks
+# (configure in branch protection).
+# Adversarial review now lives in .github/workflows/claude-review.yml
+# (MEH-487 — anthropics/claude-code-action@v1, calibration mode).
+
+# Draft-skip (MEH-926): required checks skip on draft PRs to save CI. The
+# `ready_for_review` trigger type below is load-bearing — on draft→ready it
+# fires a real run so the (now non-draft) jobs execute and go green. Without
+# it the required checks would never run after the draft phase and would stay
+# pending = merge BLOCKED. This does NOT rely on "a skipped check satisfies
+# the requirement": under Rulesets a skipped required check reports as
+# "Expected" and BLOCKS merge — but a draft PR isn't mergeable anyway, so the
+# gate only matters once the PR is marked ready for review.
+on:
+  # MEH-1490 follow-up: allow a manual re-run of the required gates from the
+  # Actions tab (or `gh workflow run`). Useful when a push's webhook is dropped
+  # and the gates never registered against the current head. NOTE: only works
+  # once this workflow lives on the DEFAULT branch — a workflow_dispatch cannot
+  # target a run on a branch where the trigger isn't yet present.
+  workflow_dispatch:
+  pull_request:
+    # MEH-1523: `labeled`/`unlabeled` are load-bearing, exactly as
+    # `ready_for_review` is. The marker gate reads the labels on the event
+    # payload, so WITHOUT these two, adding the label after the last run does
+    # not re-run the gate and the stale green stands — the marker would never
+    # block anything. Removing it would likewise not clear the red without a
+    # push, which rule 30 does not permit CC to manufacture.
+    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
+    branches: [staging, main]
+
+# MEH-485: dorny/paths-filter@v3 needs pull-requests:read on pull_request
+# triggers (calls the PR Files API). Same shape as e2e.yml.
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  # MEH-1653: ready_for_review מקבל group נפרד כדי שלא יבטל ריצת synchronize
+  # שבאוויר. ריצה מבוטלת מדווחת cancelled, וה-aggregator ממפה cancelled ל-FAIL —
+  # אודם שקרי. GitHub Support על אותה מחלקה: community discussion #77942.
+  # MEH-1523 extends MEH-1653's reasoning to the two label actions. Buckets:
+  #   ...-ready_for_review | ...-labeled | ...-unlabeled | ...-code
+  # Each action class cancels only its own kind, so a label toggle can never
+  # cancel a synchronize run (cancelled maps to FAIL in the aggregator).
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}-${{ (github.event.action == 'ready_for_review' || github.event.action == 'labeled' || github.event.action == 'unlabeled') && github.event.action || 'code' }}
+  cancel-in-progress: true
+
+jobs:
+  branch-name-gate:
+    name: Branch name gate
+    runs-on: ubuntu-latest
+    # Skip for staging → main release PRs (MEH-1105): the head branch is always
+    # `staging`, which cannot match the feature/meh-* convention by design.
+    # Feature-branch enforcement (the grep below) is untouched.
+    if: ${{ github.head_ref && !(github.base_ref == 'main' && github.head_ref == 'staging') }}
+    steps:
+      - name: Assert branch name matches the locked convention (MEH-1141)
+        run: |
+          BRANCH="${{ github.head_ref }}"
+          if ! printf '%s' "$BRANCH" | grep -Eq '^(feature|levismadar80)/meh-[0-9]+(-[a-z0-9]+)*$|^dependabot/.*'; then
+            echo "::error::Branch '$BRANCH' violates the locked naming convention (workflow rule 3, MEH-1141)."
+            echo "Allowed: feature/meh-{N}-{slug} | levismadar80/meh-{N}-{slug} | dependabot/*"
+            exit 1
+          fi
+          echo "Branch '$BRANCH' OK."
+
+  do-not-merge-gate:
+    name: DO-NOT-MERGE marker gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Fail if the PR carries the marker label (MEH-1523)
+        env:
+          # Label NAMES only. `.*.name` flattens the label objects to a JSON
+          # array of strings; toJSON keeps it one safe scalar for the shell.
+          PR_LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+        run: |
+          set -euo pipefail
+          # MEH-1523: the marker is a LABEL. This step reads NOTHING else — no
+          # title, no body, no commit messages. That absence is asserted by
+          # scripts/checks/dnm-matcher-guard.sh, which fails if either of the
+          # old text-scanning env vars reappears anywhere in this job — so do
+          # not name them even in a comment, which is how the patch doc's own
+          # wording tripped this gate on first application (04/09).
+          #
+          # Why not text: PR #2637 was blocked by a pasted test name, and
+          # PR #2813 by CC's own prose — and clearing #2813's marker left no
+          # trace on the PR at all, so a cleared accident and a cleared
+          # deliberate block are indistinguishable. A label has an actor and a
+          # timestamp in the PR timeline; a sentence in a body has neither.
+          #
+          # The name DNM_LABEL_RE is load-bearing: the guard detects this patch
+          # by it and switches to the label fixture table. Do not rename it.
+          #
+          # Matched against each label name NORMALISED to lowercase with every
+          # non-alphanumeric stripped, so do-not-merge / DO NOT MERGE /
+          # do_not_merge / don't merge all collapse onto donotmerge|dontmerge.
+          # The two `tr` calls below are mirrored exactly in the guard's
+          # normalise_label(); they must stay identical.
+          # ANCHORED (^...$) deliberately. MEH-1523 acceptance criterion 2
+          # says to match "the normalized form /dono?tmerge/" — unanchored.
+          # Do NOT ship that: normalisation strips non-alphanumerics, so
+          # `audit-do-not-merge-findings` becomes `auditdonotmergefindings`,
+          # which CONTAINS `donotmerge` and would trip this BLOCKING gate on a
+          # documentation label. That is #2637's false positive moved from prose
+          # onto metadata — the swap shipping the very bug it was sent to fix.
+          # The variant-tolerance AC2 actually wants is fully preserved:
+          # `do_not_merge`, `DO NOT MERGE` and `don't merge` all normalise onto
+          # the two strings below.
+          DNM_LABEL_RE='^(dono?tmerge|dnmlock)$'
+          # Fail-closed: a jq error fails the assignment under `set -e` +
+          # pipefail, so a broken parse BLOCKS rather than falling through.
+          # Deliberately NOT a process substitution — that would swallow it.
+          #
+          # PR_LABELS is `null` (not an empty array) on `workflow_dispatch` —
+          # this job has no `pull_request` context there, so the expression
+          # above resolves to `toJSON(null)`. That is a legitimate "nothing to
+          # check", not a corrupt parse: `.[]` on a bare `null` is a real jq
+          # error (exit 5, "Cannot iterate over null"), which would have
+          # blocked every manual re-run of this workflow — the exact recovery
+          # path its own `workflow_dispatch` trigger exists for (see the `on:`
+          # block comment above). Guard the type instead of assuming an array;
+          # a non-array still yields zero names, so a PR with no marker label
+          # still passes.
+          names="$(printf '%s' "$PR_LABELS" | jq -r 'if type == "array" then .[] else empty end')"
+          hit=""
+          while IFS= read -r name; do
+            [ -n "$name" ] || continue
+            norm="$(printf '%s' "$name" | tr '[:upper:]' '[:lower:]' | tr -cd '[:alnum:]')"
+            [ -n "$norm" ] || continue
+            if printf '%s' "$norm" | grep -Eq "$DNM_LABEL_RE"; then hit="$name"; break; fi
+          done <<< "$names"
+          if [ -n "$hit" ]; then
+            echo "::error::This PR carries the '$hit' label. Per ADR-016 (amendment, MEH-1155) auto-merge authority is VOID regardless of risk tier. Only Sapir may remove the label."
+            exit 1
+          fi
+          echo "No marker label. OK."
+
+  repo-guards:
+    name: Repo guards
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # MEH-2224: fetch-depth 2 so builder-model-guard.sh can read the head
+      # commit's parent without a network fetch. Its MEH-2223 exemption branch
+      # needs the parent; on the default depth-1 checkout it must `git fetch`
+      # it, and a runner that cannot reach origin at that moment fails the
+      # guard closed — a false red on a PR with nothing wrong with it.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+      - name: Run every guard in scripts/checks/ (MEH-999)
+        run: bash scripts/checks/run-all.sh
+
+  qa-artifacts-size:
+    name: qa-artifacts size cap
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Cap qa-artifacts growth (MEH-1156)
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          MAX_BYTES: "2097152"
+        run: |
+          set -euo pipefail
+          # Release-PR exemption (MEH-1105): a staging → main release PR is a
+          # rollup of hundreds of already-merged per-PR diffs, so the 2 MB
+          # *per-PR* cap (MEH-1156) does not apply to it. Exempt exactly that
+          # one base/head combination; every other PR is enforced unchanged.
+          if [ "$BASE_REF" = "main" ] && [ "$HEAD_REF" = "staging" ]; then
+            echo "::notice::Release PR (staging → main) — the per-PR 2 MB qa-artifacts cap does not apply to a release rollup; skipping the cap. (MEH-1105)"
+            echo "qa-artifacts size cap OK (release-PR exemption)."
+            exit 0
+          fi
+          total=0
+          while read -r f; do
+            [ -n "$f" ] || continue
+            sz=$(git cat-file -s "$HEAD_SHA:$f" 2>/dev/null || echo 0)
+            total=$((total + sz))
+          # MEH-2184: a bare `qa-artifacts/` pathspec is anchored at the repo root, so
+          # it never matched frontend/qa-artifacts/ — which is where Playwright writes,
+          # because e2e.yml runs it with working-directory: frontend. Measured on
+          # staging: 495 tracked files / 14.8 MB were invisible to a 2 MB cap.
+          # `:(glob)` makes the leading `**/` match at any depth, root included.
+          done < <(git diff --name-only --diff-filter=AM "$BASE_SHA" "$HEAD_SHA" \
+                     -- ':(glob)**/qa-artifacts/**')
+          mb=$(awk -v t="$total" 'BEGIN{printf "%.2f", t/1048576}')
+          echo "qa-artifacts added/modified in this PR: ${total} bytes (${mb} MB)"
+          if [ "$total" -gt "$MAX_BYTES" ]; then
+            echo "::error::qa-artifacts grew by ${mb} MB (cap: 2.00 MB). Compress the screenshots (pngquant / WebP / JPEG q80) before committing. See MEH-1156."
+            exit 1
+          fi
+          echo "qa-artifacts size cap OK."
+
+  # ─────────────────────────────────────────────
+  # JOB 0: paths-filter (MEH-485)
+  # Gates downstream jobs so frontend-only PRs skip
+  # backend pytest and vice versa. Pattern mirrored
+  # from e2e.yml (MEH-424). Skipped jobs report
+  # conclusion=success → branch-protection required
+  # checks remain satisfied without manual override.
+  # ─────────────────────────────────────────────
+  changes:
+    name: Paths filter
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      backend: ${{ steps.filter.outputs.backend }}
+      workflows: ${{ steps.filter.outputs.workflows }}
+      deps: ${{ steps.filter.outputs.deps }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - 'frontend/**'
+              - 'package.json'
+              - 'package-lock.json'
+              # MEH-1980: the coverage ratchet and its baseline gate the
+              # frontend job, so an edit to EITHER must force that job to run.
+              # Without these lines a PR touching only these files skips the
+              # very job that would have checked them (patch §A0).
+              - 'scripts/checks/coverage-ratchet.mjs'
+              - 'scripts/checks/coverage-ratchet-baseline.json'
+              # MEH-1868: the Knip ratchet and its baseline gate the frontend
+              # job, so an edit to EITHER must force that job to run. Without
+              # these lines a PR touching only these files skips the very job
+              # that would have checked them (docs/ci/meh-1980-coverage-ratchet.patch.md §A0).
+              - 'scripts/checks/lint-ratchet.mjs'
+              - 'scripts/checks/lint-ratchet-baseline.tsv'
+            backend:
+              - 'backend/**'
+              - 'tests/**'
+              # MEH-2486: the contract tool is covered by tests/ (pytest, incl.
+              # --self-test) and by the static audit, both gated on this filter.
+              # Without this line a PR touching only the tool skips both.
+              - 'scripts/check_api_contract.py'
+            workflows:
+              - '.github/workflows/**'
+            # MEH-1585: mirrors dependency-audit.yml's backend manifests exactly.
+            # If the two lists diverge the gate silently stops covering a manifest.
+            deps:
+              - 'backend/pyproject.toml'
+              - 'backend/uv.lock'
+
+  # ─────────────────────────────────────────────
+  # JOB 1: npm run build
+  # ─────────────────────────────────────────────
+  build:
+    name: Frontend build (Next.js)
+    needs: changes
+    if: ${{ (needs.changes.outputs.frontend == 'true' || needs.changes.outputs.workflows == 'true') && github.event.pull_request.draft == false }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+        env:
+          # Silence telemetry noise in CI logs.
+          NEXT_TELEMETRY_DISABLED: "1"
+          # MEH-1754 item 5: NEXT_PUBLIC_API_URL is required by
+          # lib/env.client.js and the build now fails without it. Same Railway
+          # staging value the E2E build uses (e2e.yml:142) — build-time only,
+          # public by definition (NEXT_PUBLIC_* ships in the browser bundle),
+          # so plain env and deliberately not `secrets.*`.
+          NEXT_PUBLIC_API_URL: https://foodmamkor-staging.up.railway.app
+
+      # MEH-686 Step 18 — design-token drift gate (Flag B). Re-exports tokens
+      # from docs/DESIGN.md and fails if the committed tailwind.tokens.json
+      # drifts. Closes the two-owners gap (MEH-271) between DESIGN.md and the
+      # generated artifact that tailwind.config.js consumes via require().
+      - name: Verify tailwind.tokens.json sync with DESIGN.md
+        working-directory: frontend
+        run: |
+          npm run design:export
+          git diff --exit-code tailwind.tokens.json || {
+            echo "::error::tailwind.tokens.json is out of sync with docs/DESIGN.md."
+            echo "::error::Run 'cd frontend && npm run design:export' locally and commit the result."
+            exit 1
+          }
+
+  # ─────────────────────────────────────────────
+  # JOB 1b: ai-artifact-scan (MEH-449 Layer 2)
+  # ─────────────────────────────────────────────
+  # Fails the PR if any AI development artifact (by filename) or any
+  # sensitive internal literal reaches the frontend build output. Runs its
+  # own build: GitHub jobs don't share workspaces and the build job doesn't
+  # upload .next; a self-contained rebuild keeps the two jobs independent.
+  # Canonical pattern list: .claude/hooks/check-artifact-location.sh.
+  ai-artifact-scan:
+    name: AI artifact scan (build output)
+    needs: [changes, build]
+    if: ${{ (needs.changes.outputs.frontend == 'true' || needs.changes.outputs.workflows == 'true') && github.event.pull_request.draft == false }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build (scan target)
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+          # MEH-1754 item 5: required by lib/env.client.js — this job builds
+          # independently of the `build` job, so it needs its own copy.
+          NEXT_PUBLIC_API_URL: https://foodmamkor-staging.up.railway.app
+
+      - name: "Scan 2a — forbidden AI-artifact filenames in deployable output"
+        run: |
+          set -euo pipefail
+          # public/ is scanned alongside .next: next build does NOT copy
+          # public/ into .next (no standalone output), and on Vercel
+          # public/ IS the served static root — a CLAUDE.md planted there
+          # ships without ever touching .next.
+          hits=$(find .next public -type f \( \
+            -iname "CLAUDE.md" -o -iname "CLAUDE.local.md" \
+            -o -iname "HANDOFF.md" -o -iname "ROADMAP.md" \
+            -o -iname "AGENTS.md" \) 2>/dev/null || true)
+          if [ -n "$hits" ]; then
+            echo "::error::MEH-449 scan 2a — AI dev artifact file(s) found in deployable output:"
+            echo "$hits"
+            exit 1
+          fi
+          echo "Scan 2a clean — no forbidden filenames in .next or public/"
+
+      - name: "Scan 2b — forbidden content literals in deployable output"
+        run: |
+          set -euo pipefail
+          # Known-legitimate exception: the admin-help runbook i18n copy
+          # contains the string "_migrate_columns" (messages/he.json +
+          # en.json, admin.help.* namespace) and is bundled into the
+          # messages_* chunks. Those chunks are excluded; the same literal
+          # anywhere else still fails.
+          for lit in "_migrate_columns" "MEH-265" "JWT_SECRET_KEY="; do
+            hits=$(grep -rl --binary-files=text -- "$lit" .next public 2>/dev/null | grep -v "messages_.*json" || true)
+            if [ -n "$hits" ]; then
+              echo "::error::MEH-449 scan 2b — forbidden literal '$lit' found in deployable output:"
+              echo "$hits"
+              exit 1
+            fi
+          done
+          echo "Scan 2b clean — no forbidden literals in .next or public/"
+
+  # ─────────────────────────────────────────────
+  # JOB 2: pytest
+  # ─────────────────────────────────────────────
+  # MEH-2779: the suite runs as 3 parallel shards (one Postgres each) and the
+  # `pytest` job below combines their coverage and applies the floor once.
+  # Measured 4–6/11/2026: this job alone was ~10.4 min of the ~10.8 min
+  # CI-gate median. The split itself lives in tests/ci_shard.py (round-robin
+  # over collection order, PYTEST_SHARD=i/n); it is a no-op without the env.
+  pytest-shard:
+    name: Backend tests (pytest ${{ matrix.shard }}/3)
+    needs: changes
+    if: ${{ (needs.changes.outputs.backend == 'true' || needs.changes.outputs.workflows == 'true') && github.event.pull_request.draft == false }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      # Every shard reports, so one red shard does not hide another's failures.
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: mehamakor_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "latest"
+          enable-cache: true
+          cache-dependency-glob: "backend/uv.lock"
+
+      - name: Install dependencies
+        run: uv sync --frozen
+        working-directory: backend
+      - name: Lock consistency (uv.lock ↔ pyproject.toml)
+        run: uv lock --check
+        working-directory: backend
+
+      - name: Show installed packages
+        run: uv pip list
+        working-directory: backend
+
+      # ─────────────────────────────────────────────
+      # Migration drift gate (MEH-267)
+      # Runs alembic against the fresh Postgres service before pytest.
+      # Catches migration bugs (broken revision file, bad SQL, wrong deps)
+      # at PR time instead of on production boot.
+      # ─────────────────────────────────────────────
+      - name: Alembic upgrade head (migration drift gate)
+        working-directory: backend
+        run: .venv/bin/alembic upgrade head
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mehamakor_test
+          SECRET_KEY: ci-test-secret-not-for-production
+
+      - name: Verify alembic schema (36 tables)
+        env:
+          PGPASSWORD: postgres
+        run: |
+          set -euo pipefail
+          # MEH-530: head chain 80bbf0a24874 (MEH-479) → d7e3c9a82f5b (MEH-587
+          # drop recipes) → f4c8a91e2b07 (MEH-588 add producer_recipes +
+          # producer_recipe_products; tables 32 → 34) → e8a3c4b5d791 (this PR,
+          # add producer_license_number column to producers; no table count
+          # change). Second conflict on this line (after the MEH-587 resolution)
+          # — Rule 25 / MEH-585 staging-sync absorbed MEH-588 mid-PR.
+          # MEH-509 PR2b: d4046deb0dc1 adds the inbound_messages table for
+          # the after-hours watchdog (tables 34 → 35; populated by the future
+          # PR2c webhook receiver).
+          # MEH-509 PR3: a7f3e9c14d28 adds 2 nullable columns (risk_score,
+          # risk_reasoning) to producers — additive, no table count change.
+          # MEH-1338: alert_log (frequency-cap ledger for fire_alerts) — 36 -> 37.
+          # MEH-2079 chunk A: producer_analytics_daily (anonymous daily
+          # roll-up so the raw analytics tables can be pruned) — 42 -> 43.
+          # MEH-2392/2393: producer_followers + referral_clicks dropped — 43 -> 41.
+          # MEH-2528: retired_slugs (tombstones for deleted/renamed business URLs) — 41 -> 42.
+          # MEH-2556: saved_items (saved recipes/events/experiences) — 42 -> 43.
+          # MEH-2618: delivery_waitlist («תודיעו לי כשתגיעו ל{עיר}» per-city waitlist) — 43 -> 44.
+          # MEH-2644: rescue_offers + rescue_orders + rescue_reviews +
+          # rescue_typical_items (rescue-bags pilot) — 44 -> 48.
+          # MEH-2763: registrations (on-site sign-ups for events and
+          # experiences) — 48 -> 49.
+          EXPECTED_TABLES=49
+
+          TABLE_COUNT=$(psql -h localhost -U postgres -d mehamakor_test -tAc \
+            "SELECT COUNT(*) FROM information_schema.tables
+             WHERE table_schema='public'
+               AND table_type='BASE TABLE'
+               AND table_name <> 'alembic_version';")
+          if [ "$TABLE_COUNT" -ne "$EXPECTED_TABLES" ]; then
+            echo "::error::Table count=$TABLE_COUNT, expected $EXPECTED_TABLES"
+            psql -h localhost -U postgres -d mehamakor_test -c "\dt"
+            exit 1
+          fi
+          echo "Tables (excl. alembic_version) = $TABLE_COUNT ✓"
+
+      # MEH-492 — Model-vs-migration drift gate.
+      # Compares Base.metadata (target_metadata in alembic/env.py:36)
+      # against the schema produced by `alembic upgrade head` above.
+      # Catches the class of bug where a column is added to a model
+      # without a paired revision: pytest passes (tests don't touch
+      # the new column), upgrade head passes (chain is intact),
+      # EXPECTED_TABLES still matches (count unchanged) — but
+      # production boot fails when the model tries to read/write the
+      # missing column. Requires Alembic ≥ 1.9 (pyproject pins 1.13.2).
+      - name: Alembic drift check (models vs migrations)
+        working-directory: backend
+        run: .venv/bin/alembic check
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mehamakor_test
+          SECRET_KEY: ci-test-secret-not-for-production
+
+      # MEH-489 — coverage gate. Drops `-x` so the full suite runs
+      # (partial runs make coverage meaningless); drops `-v` for log
+      # signal-to-noise (the coverage summary is now the load-bearing
+      # output). `--tb=long` retained for failure trace quality.
+      # MEH-1980 (05/09): the 70% floor sat 21pt under the measured 91.19%
+      # (run 33960595330, 10,133 stmts) — a dead zone the gate could not
+      # see. Re-frozen as a ratchet at <measured, rounded down> - 2 = 89:
+      # the 2pt buffer is the backend analogue of the frontend's 0.5pt
+      # tolerance (pytest-cov has no tolerance mode). Raise it only from a
+      # fresh CI TOTAL line, never from a number quoted elsewhere.
+      # MEH-2779: this shard's third of the parallel suite. No coverage report
+      # here — a third of the suite reports a meaningless percentage; the
+      # floor is applied once, in the `pytest` job, over the combined data.
+      - name: Run tests (parallel, shard ${{ matrix.shard }}/3)
+        run: |
+          backend/.venv/bin/python -m pytest tests/ \
+            -n auto -m "not serial" \
+            --cov=backend/app \
+            --cov-report= \
+            --durations=15 \
+            --tb=long --timeout=60
+        env:
+          PYTEST_SHARD: ${{ matrix.shard }}/3
+          PYTEST_SHARD_REPORT: shard-report.txt
+          TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mehamakor_test
+          SECRET_KEY: ci-test-secret-not-for-production
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mehamakor_test
+
+      # The serial pass is NOT sharded (no PYTEST_SHARD): it runs whole, once,
+      # on shard 1, appending to that shard's coverage data.
+      - name: Run serial tests (shard 1 only)
+        if: matrix.shard == 1
+        run: |
+          backend/.venv/bin/python -m pytest tests/ \
+            -m serial \
+            --cov=backend/app --cov-append \
+            --cov-report= \
+            --tb=long --timeout=60
+        env:
+          TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mehamakor_test
+          SECRET_KEY: ci-test-secret-not-for-production
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mehamakor_test
+
+      - name: Stage coverage data for the combine job
+        run: |
+          set -euo pipefail
+          mkdir -p shard-out
+          mv .coverage "shard-out/.coverage.shard${{ matrix.shard }}"
+          mv shard-report.txt "shard-out/shard-report-${{ matrix.shard }}.txt"
+
+      - name: Upload coverage data
+        uses: actions/upload-artifact@v7
+        with:
+          name: pytest-coverage-${{ matrix.shard }}
+          path: shard-out/
+          # `.coverage.*` is a dotfile; upload-artifact skips those by default.
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+  # MEH-2779: the job the CI gate reads (`needs.pytest`) — same id, same name
+  # as the single job it replaces, so the gate and the ruleset are unchanged.
+  # `!cancelled()` so a red shard still reaches this job and is reported by
+  # name, instead of the gate seeing a bare `skipped`.
+  pytest:
+    name: Backend tests (pytest)
+    needs: [changes, pytest-shard]
+    if: ${{ !cancelled() && (needs.changes.outputs.backend == 'true' || needs.changes.outputs.workflows == 'true') && github.event.pull_request.draft == false }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: All shards passed
+        env:
+          R_SHARDS: ${{ needs.pytest-shard.result }}
+        run: |
+          if [ "$R_SHARDS" != "success" ]; then
+            echo "::error::A pytest shard did not pass (result=$R_SHARDS) — see the 'Backend tests (pytest N/3)' jobs."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v7
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "latest"
+          enable-cache: true
+          cache-dependency-glob: "backend/uv.lock"
+
+      - name: Install dependencies
+        run: uv sync --frozen
+        working-directory: backend
+
+      - name: Download shard coverage data
+        uses: actions/download-artifact@v8
+        with:
+          pattern: pytest-coverage-*
+          path: shard-out
+          merge-multiple: true
+
+      # The partition check: three distinct shards, the same suite size seen
+      # by each, and the kept counts summing to it. A shard that silently
+      # collected nothing, or two shards that both thought they were "1/3",
+      # fail here — not as a mysteriously lower coverage number.
+      - name: Shards together ran the whole suite
+        run: |
+          set -euo pipefail
+          cat shard-out/shard-report-*.txt
+          awk '
+            { idx[$1]=1; n=$2; kept+=$3; all[$4]=1; rows++ }
+            END {
+              nall=0; for (k in all) nall++
+              nidx=0; for (k in idx) nidx++
+              if (rows != n || nidx != n) { print "::error::expected " n " shard reports, got " rows " (" nidx " distinct)"; exit 1 }
+              if (nall != 1) { print "::error::shards disagree on the suite size"; exit 1 }
+              for (k in all) total=k
+              if (kept != total) { print "::error::shards ran " kept " of " total " tests"; exit 1 }
+              print "OK: " n " shards ran " kept " of " total " tests (parallel pass; the serial pass runs whole on shard 1)"
+            }' shard-out/shard-report-*.txt
+
+      # MEH-489 / MEH-1980 coverage floor, unchanged: 89, over the whole suite.
+      - name: Combine coverage + coverage gate
+        run: |
+          set -euo pipefail
+          backend/.venv/bin/coverage combine shard-out/.coverage.shard*
+          backend/.venv/bin/coverage report --fail-under=89
+          backend/.venv/bin/coverage xml
+          backend/.venv/bin/coverage html
+
+      # MEH-489 — Smokeshow upload (Tiangolo pattern).
+      # `continue-on-error: true` covers the calibration window before
+      # SMOKESHOW_AUTH_KEY lands as a repo secret post-merge. Fork PR
+      # guard skips the upload on forks (no secret access there).
+      - name: Upload coverage to Smokeshow
+        if: success() && github.event.pull_request.head.repo.full_name == github.repository
+        continue-on-error: true
+        run: |
+          backend/.venv/bin/python -m pip install smokeshow
+          backend/.venv/bin/smokeshow upload htmlcov
+        env:
+          SMOKESHOW_AUTH_KEY: ${{ secrets.SMOKESHOW_AUTH_KEY }}
+          SMOKESHOW_GITHUB_STATUS_DESCRIPTION: "Coverage {coverage-percentage}"
+          SMOKESHOW_GITHUB_CONTEXT: coverage
+          SMOKESHOW_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SMOKESHOW_GITHUB_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+
+  # ─────────────────────────────────────────────
+  # JOB 2b: seed-coverage (MEH-1706 chunk C)
+  # Runs backend/scripts/check_seed_coverage.py against the CI-local
+  # Postgres, seeded from scratch. Catches code drift — a surface added
+  # to the models with no seed row, or a table nobody classified.
+  # Does NOT protect staging: a wiped staging still passes here.
+  # ─────────────────────────────────────────────
+  seed-coverage:
+    name: Seed coverage contract (MEH-1706)
+    needs: changes
+    if: ${{ (needs.changes.outputs.backend == 'true' || needs.changes.outputs.workflows == 'true') && github.event.pull_request.draft == false }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: mehamakor_seed
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mehamakor_seed
+      SECRET_KEY: ci-test-secret-not-for-production
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "latest"
+          enable-cache: true
+          cache-dependency-glob: "backend/uv.lock"
+
+      - name: Install dependencies
+        run: uv sync --frozen
+        working-directory: backend
+
+      - name: Schema to head
+        run: .venv/bin/alembic upgrade head
+        working-directory: backend
+
+      # seed_data.py first (categories + sample producers + admin), then the
+      # demo business — the same order scripts/local-backend.sh uses. The
+      # DEMO_* passwords are deliberately absent: the seed falls back to a
+      # random unrecorded password (seed_demo_business.py:889-967), which is
+      # exactly right for a throwaway CI database.
+      - name: Seed base + demo
+        working-directory: backend
+        run: |
+          .venv/bin/python seed_data.py
+          .venv/bin/python -m scripts.seed_demo_business --refresh
+
+      - name: Seed coverage contract
+        working-directory: backend
+        run: .venv/bin/python scripts/check_seed_coverage.py
+
+  # ─────────────────────────────────────────────
+  # JOB 3: lint-backend (MEH-488 / MEH-505)
+  # ruff check + ruff format --check against backend/.
+  # `alembic/versions` excluded (auto-generated revisions don't follow
+  # ruff's style). MEH-505 flipped this to blocking after MEH-448
+  # cleaned the baseline (18 check errors + 56 format files → 0).
+  # Add "Backend lint (ruff)" to the required-checks list in
+  # `Settings → Branches → staging`/`main` after this PR's CI runs
+  # once on the protected branch (GitHub auto-suggests the check name
+  # only post-first-run on the target).
+  # ─────────────────────────────────────────────
+  lint-backend:
+    name: Backend lint (ruff)
+    needs: changes
+    if: ${{ (needs.changes.outputs.backend == 'true' || needs.changes.outputs.workflows == 'true') && github.event.pull_request.draft == false }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "latest"
+          enable-cache: true
+          cache-dependency-glob: "backend/uv.lock"
+
+      - name: Install dependencies (ruff comes from dev group)
+        run: uv sync --frozen
+        working-directory: backend
+      - name: Lock consistency (uv.lock ↔ pyproject.toml)
+        run: uv lock --check
+        working-directory: backend
+
+      # `--extend-exclude alembic/versions` is set on the CLI rather than in
+      # pyproject.toml because the lint-config protection hook
+      # (MEH-442 / MEH-466) blocks edits to [tool.ruff*] sections.
+      - name: ruff check
+        run: uv run ruff check . --extend-exclude alembic/versions
+        working-directory: backend
+
+      # `ruff format` only supports `--exclude` (not `--extend-exclude` —
+      # that's a `ruff check` only flag). Fixed in MEH-505 after the
+      # MEH-448 CHANGELOG surfaced the bug; calibration `continue-on-error`
+      # had been masking the unrecognized-flag failure as a format violation.
+      - name: ruff format --check
+        run: uv run ruff format --check . --exclude alembic/versions
+        working-directory: backend
+
+  # ─────────────────────────────────────────────
+  # JOB 4: env-drift (MEH-491)
+  # Detects env vars read by code but not documented in any .env.example.
+  # NOT paths-filter gated — env reads can land in any file (frontend
+  # config, backend router, observability setup), so the drift surface
+  # is broader than backend/ or frontend/ alone.
+  # Fast (<10s expected — pure grep + comm). Required.
+  # ─────────────────────────────────────────────
+  env-drift:
+    name: Env drift (.env.example)
+    if: ${{ github.event.pull_request.draft == false }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Run drift check
+        run: bash scripts/check_env_drift.sh
+
+  # ─────────────────────────────────────────────
+  # JOB 5: backend-mypy (MEH-562 Layer 2)
+  # Strict mypy on app/auth.py only — scoped from
+  # auth.py + schemas/ due to STOP-condition (a):
+  # combined count was 57 errors > 50 threshold.
+  #
+  # MEH-1868: ratcheted, no longer warn-only. Both swallows are
+  # gone (`|| true` and `continue-on-error`) — they reported
+  # success for a tool that was never installed (spawn failure,
+  # job 91623752935, 0s). `mypy` is now pinned in the dev group.
+  #
+  # backend/mypy-baseline.txt freezes the errors that existed
+  # at arming time (20 on 12/08, re-frozen to 21 on 05/09), keyed
+  # by (file, error-code) and NOT by line number. Everything in
+  # the baseline is grandfathered; only a count that RISES fails
+  # the job. Raising one requires an explicit --allow-increase,
+  # so loosening is visible in review.
+  # ─────────────────────────────────────────────
+  backend-mypy:
+    name: Backend mypy (ratchet)
+    needs: changes
+    if: ${{ needs.changes.outputs.backend == 'true' || needs.changes.outputs.workflows == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "latest"
+          enable-cache: true
+          cache-dependency-glob: "backend/uv.lock"
+
+      - name: Install dependencies (including mypy)
+        run: uv sync --dev --frozen
+        working-directory: backend
+
+      - name: mypy ratchet (frozen baseline — only increases fail)
+        run: uv run python scripts/mypy_baseline.py
+        working-directory: backend
+
+  # ─────────────────────────────────────────────
+  # JOB 6: frontend-knip (MEH-562 Layer 2)
+  # Dead-code + unused-deps detection.
+  # Ratcheted (MEH-1868): scripts/checks/lint-ratchet-baseline.tsv freezes the
+  # findings that existed at arming time. Everything in the baseline is
+  # grandfathered; only counts that RISE fail the job. Nobody is asked to clean
+  # up existing findings — that is the design, not an oversight.
+  # ─────────────────────────────────────────────
+  frontend-knip:
+    name: Frontend Knip (dead-code ratchet)
+    needs: changes
+    if: ${{ needs.changes.outputs.frontend == 'true' || needs.changes.outputs.workflows == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Ratchet self-test (the comparator must still discriminate)
+        run: node ../scripts/checks/lint-ratchet.mjs --self-test
+
+      - name: Knip ratchet (baseline frozen; only NEW findings fail)
+        run: npm run lint:ratchet
+
+  # ─────────────────────────────────────────────
+  # JOB 7: frontend-tsc-strict (MEH-562 Layer 2)
+  # TypeScript strict on e2e/*.ts files via
+  # tsconfig.e2e.json. Baseline: 24 errors in
+  # e2e/rtl.spec.ts (JSDoc `left-*/right-*` comment
+  # terminates block early — pre-existing, TS6 bug).
+  # Two-layer warn-only — see backend-mypy comment above.
+  # ─────────────────────────────────────────────
+  frontend-tsc-strict:
+    name: Frontend tsc strict (warn-only)
+    needs: changes
+    if: ${{ needs.changes.outputs.frontend == 'true' || needs.changes.outputs.workflows == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tsc strict (e2e files, warn-only — errors logged, check passes)
+        run: npx tsc --project tsconfig.e2e.json --noEmit || true
+
+  # MEH-2779: 3 parallel shards (`vitest --shard`, blob reporter); the
+  # `frontend-vitest` job below merges them (`--merge-reports --coverage`)
+  # and runs the coverage ratchet on the merged numbers. Measured 4–6/11/2026:
+  # ~9 min as one job, most of it per-file jsdom setup (vitest.config.js,
+  # MEH-1912), which is exactly the cost that splits across machines.
+  frontend-vitest-shard:
+    name: Frontend unit tests (vitest ${{ matrix.shard }}/3)
+    needs: changes
+    if: ${{ (needs.changes.outputs.frontend == 'true' || needs.changes.outputs.workflows == 'true') && github.event.pull_request.draft == false }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Run vitest shard ${{ matrix.shard }}/3 (with coverage — merged below)
+        run: npx vitest run --coverage --shard=${{ matrix.shard }}/3 --reporter=blob --reporter=default
+      - name: Upload blob report
+        uses: actions/upload-artifact@v7
+        with:
+          name: vitest-blob-${{ matrix.shard }}
+          path: frontend/.vitest-reports/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+  # MEH-2779: same id and name as the single job it replaces — the CI gate
+  # reads `needs.frontend-vitest` unchanged.
+  frontend-vitest:
+    name: Frontend unit tests (vitest)
+    needs: [changes, frontend-vitest-shard]
+    if: ${{ !cancelled() && (needs.changes.outputs.frontend == 'true' || needs.changes.outputs.workflows == 'true') && github.event.pull_request.draft == false }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: All shards passed
+        env:
+          R_SHARDS: ${{ needs.frontend-vitest-shard.result }}
+        working-directory: .
+        run: |
+          if [ "$R_SHARDS" != "success" ]; then
+            echo "::error::A vitest shard did not pass (result=$R_SHARDS) — see the 'Frontend unit tests (vitest N/3)' jobs."
+            exit 1
+          fi
+      - uses: actions/checkout@v7
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Download blob reports
+        uses: actions/download-artifact@v8
+        with:
+          pattern: vitest-blob-*
+          path: frontend/.vitest-reports
+          merge-multiple: true
+      - name: Exactly 3 blob reports
+        run: |
+          set -euo pipefail
+          ls -la .vitest-reports
+          n=$(ls .vitest-reports/blob-*-3.json | wc -l)
+          if [ "$n" -ne 3 ]; then echo "::error::expected 3 vitest blob reports, got $n"; exit 1; fi
+      - name: Merge shard reports + coverage (feeds the ratchet below)
+        run: npx vitest run --merge-reports --coverage
+
+      - name: Coverage ratchet self-test (the comparator must still discriminate)
+        run: node ../scripts/checks/coverage-ratchet.mjs --self-test
+
+      - name: Coverage ratchet (baseline frozen; only a DROP fails)
+        run: node ../scripts/checks/coverage-ratchet.mjs
+
+  # ─────────────────────────────────────────────
+  # JOB: linear-mentions — workflow.md rule 29 (Linear auto-reopen guard)
+  # Warn-only ratchet (mirrors backend-mypy):
+  #   1. `|| true` on the script → step exits 0 even on a finding
+  #   2. `continue-on-error: true` at the job → belt-and-braces
+  # Docs-only scope (rule 29 only bans mentions in docs/HANDOFF PRs):
+  # runs when neither frontend nor backend nor workflows changed.
+  # Findings surface as ::warning:: annotations. NOT added to the
+  # required-checks ruleset at this stage.
+  # ─────────────────────────────────────────────
+  linear-mentions:
+    name: Linear mention guard (rule 29, warn-only)
+    needs: changes
+    # MEH-1949: the docs-only gate was correct for rule 29's TEXT ban and is
+    # wrong for the branch-name consistency check, whose whole population is
+    # code PRs (a `feature/meh-<N>-*` branch is what the Branch name gate
+    # requires of them). Measured 02/09: the job reported `skipped` on #3292
+    # (frontend) and #3294 (backend) — the two shapes it needs to see.
+    # Removed rather than inverted: one job with both scopes beats two jobs
+    # sharing one script. The cost is stated below and it is warnings only.
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v7
+      - name: Write PR title and body to files
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          printf '%s' "$PR_TITLE" > "$RUNNER_TEMP/pr_title.txt"
+          printf '%s' "$PR_BODY"  > "$RUNNER_TEMP/pr_body.txt"
+      - name: Check for bare Linear identifiers (warn-only)
+        # MEH-1949: third argument = the head branch name. A `meh-<N>` in a
+        # branch name is an auto-link with no closing keyword available, so the
+        # script checks CONSISTENCY (is it declared as `Closes` in the body?)
+        # rather than banning the identifier — banning it would collide with
+        # the Branch name gate, which REQUIRES it.
+        env:
+          # Via env, never interpolated into the `run:` string. A branch name
+          # is attacker-controlled on a fork PR, and `${{ }}` inside `run:`
+          # is substituted before the shell sees it — the standard Actions
+          # script-injection sink. The step above already does this for the
+          # title and body; this is the same discipline for the same reason.
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: bash .claude/scripts/check-linear-mentions.sh "$RUNNER_TEMP/pr_title.txt" "$RUNNER_TEMP/pr_body.txt" "$PR_HEAD_REF" || true
+
+  # ─────────────────────────────────────────────
+  # MEH-1585: backend CVE gate, as a ci-gate LEG.
+  # Lives here and not in dependency-audit.yml because `needs:` cannot cross
+  # workflows, and that workflow's paths filter means it does not run at all
+  # on a normal PR — a directly-required context would hang as Expected.
+  # ─────────────────────────────────────────────
+  pip-audit:
+    name: Backend dependency audit (pip-audit)
+    needs: changes
+    if: ${{ needs.changes.outputs.deps == 'true' && github.event.pull_request.draft == false }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "latest"
+          enable-cache: true
+          cache-dependency-glob: "backend/uv.lock"
+      - name: Install dependencies (uv sync --frozen)
+        run: uv sync --frozen
+        working-directory: backend
+      - name: pip-audit
+        run: uv run --with pip-audit pip-audit
+        working-directory: backend
+
+  ci-gate:
+    name: CI gate (required)
+    if: always()
+    needs:
+      - changes
+      - do-not-merge-gate
+      - qa-artifacts-size
+      - repo-guards
+      - build
+      - ai-artifact-scan
+      - pytest
+      - lint-backend
+      - seed-coverage
+      - env-drift
+      - backend-mypy
+      - frontend-knip
+      - frontend-tsc-strict
+      - frontend-vitest
+      - pip-audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Aggregate required-check results
+        env:
+          FRONTEND_TOUCHED: ${{ needs.changes.outputs.frontend }}
+          BACKEND_TOUCHED: ${{ needs.changes.outputs.backend }}
+          # MEH-1907 F-1: this output was never loaded into the step, so the
+          # aggregator could not see it. Every frontend/backend job below
+          # carries `|| workflows == 'true'` in its `if:` — meaning a
+          # workflows-only PR RAN the full suite and enforced none of it.
+          # Nine legs reported, zero read. Not the same as a docs-only PR,
+          # where those jobs are skipped and there is nothing to enforce.
+          WORKFLOWS_TOUCHED: ${{ needs.changes.outputs.workflows }}
+          R_CHANGES: ${{ needs.changes.result }}
+          R_DNM: ${{ needs.do-not-merge-gate.result }}
+          R_QA_SIZE: ${{ needs.qa-artifacts-size.result }}
+          R_REPO_GUARDS: ${{ needs.repo-guards.result }}
+          R_BUILD: ${{ needs.build.result }}
+          R_AI_SCAN: ${{ needs.ai-artifact-scan.result }}
+          R_PYTEST: ${{ needs.pytest.result }}
+          R_LINT_BACKEND: ${{ needs.lint-backend.result }}
+          R_SEED_COVERAGE: ${{ needs.seed-coverage.result }}
+          R_ENV_DRIFT: ${{ needs.env-drift.result }}
+          R_BACKEND_MYPY: ${{ needs.backend-mypy.result }}
+          R_FRONTEND_KNIP: ${{ needs.frontend-knip.result }}
+          R_FRONTEND_TSC: ${{ needs.frontend-tsc-strict.result }}
+          R_FRONTEND_VITEST: ${{ needs.frontend-vitest.result }}
+          R_PIP_AUDIT: ${{ needs.pip-audit.result }}
+          DEPS_TOUCHED: ${{ needs.changes.outputs.deps }}
+        run: |
+          set -euo pipefail
+          fail=0
+
+          ok() {
+            case "$1" in
+              success|skipped) return 0 ;;
+              *) return 1 ;;
+            esac
+          }
+
+          # MEH-1907: `cancelled` means a newer push superseded this run
+          # before it finished — this workflow's own concurrency group
+          # (cancel-in-progress: true, line ~41) guarantees that. It is an
+          # absence of measurement, not a failed one. Mirror of MEH-1582's
+          # skip-green fix in the opposite direction.
+          # NON-BLOCKING BY DESIGN — see .claude/rules/testing.md for why.
+          is_cancelled() { [ "$1" = "cancelled" ]; }
+
+          check() {
+            if is_cancelled "$2"; then
+              echo "  SUPERSEDED $1: $2 (a newer push cancelled this run — not counted as a failure, MEH-1907)"
+            elif ok "$2"; then
+              echo "  OK  $1: $2"
+            else
+              echo "  FAIL $1: $2"
+              fail=1
+            fi
+          }
+
+          # MEH-1582: a job that the gate is actively enforcing must have RUN.
+          # `skipped` there means a draft suppressed it (or a future `if:` did) —
+          # that is an absence of evidence, not a pass.
+          strict_ok() {
+            case "$1" in
+              success) return 0 ;;
+              *) return 1 ;;
+            esac
+          }
+
+          check_ran() {
+            if is_cancelled "$2"; then
+              echo "  SUPERSEDED $1: $2 (a newer push cancelled this run — not counted as a failure, MEH-1907)"
+            elif strict_ok "$2"; then
+              echo "  OK  $1: $2"
+            else
+              echo "  FAIL $1: $2 (required job did not run — 'skipped' is not a pass)"
+              fail=1
+            fi
+          }
+
+          echo "Stack touched -> frontend=$FRONTEND_TOUCHED backend=$BACKEND_TOUCHED workflows=$WORKFLOWS_TOUCHED"
+
+          if ! ok "$R_CHANGES"; then
+            echo "::error::Paths-filter job did not succeed (result=$R_CHANGES) — cannot determine stack."
+            exit 1
+          fi
+
+          echo "Always required (stack-independent):"
+          check_ran "DO-NOT-MERGE marker gate" "$R_DNM"
+          check_ran "qa-artifacts size cap" "$R_QA_SIZE"
+          check_ran "Repo guards" "$R_REPO_GUARDS"
+          check_ran "Env drift (.env.example)" "$R_ENV_DRIFT"
+
+          # MEH-1907 F-1: mirror the `if:` of the jobs themselves
+          # (`backend == 'true' || workflows == 'true'`). A workflows-only PR
+          # runs pytest and ruff; before this, neither was read.
+          if [ "$BACKEND_TOUCHED" = "true" ] || [ "$WORKFLOWS_TOUCHED" = "true" ]; then
+            echo "Backend stack touched (or workflows changed) — enforcing backend checks:"
+            check_ran "Backend tests (pytest)" "$R_PYTEST"
+            check_ran "Backend lint (ruff)" "$R_LINT_BACKEND"
+            check_ran "Seed coverage contract (MEH-1706)" "$R_SEED_COVERAGE"
+            check_ran "Backend mypy (ratchet)" "$R_BACKEND_MYPY"
+          else
+            echo "Backend stack not touched — backend checks not enforced."
+          fi
+
+          # MEH-1585: enforced ONLY when a dependency manifest changed. On every
+          # other PR the job is `skipped` and this branch is not taken — so the
+          # gate neither blocks nor pretends the audit ran.
+          # DELIBERATELY NOT widened to workflows (MEH-1907 F-1): pip-audit's
+          # own `if:` is `deps == 'true'` alone, so on a workflows-only PR it is
+          # skipped. Enforcing it here would demand a leg that never ran and red
+          # every workflow PR — the #2794 class, in reverse.
+          if [ "$DEPS_TOUCHED" = "true" ]; then
+            echo "Dependency manifest touched — enforcing the CVE audit:"
+            check_ran "Backend dependency audit (pip-audit)" "$R_PIP_AUDIT"
+          else
+            echo "No dependency manifest touched — pip-audit not enforced."
+          fi
+
+          if [ "$FRONTEND_TOUCHED" = "true" ] || [ "$WORKFLOWS_TOUCHED" = "true" ]; then
+            echo "Frontend stack touched (or workflows changed) — enforcing frontend checks:"
+            check_ran "Frontend build (Next.js)" "$R_BUILD"
+            check_ran "AI artifact scan (MEH-449)" "$R_AI_SCAN"
+            check_ran "Frontend Knip (ratchet)" "$R_FRONTEND_KNIP"
+            check "Frontend tsc strict (warn-only)" "$R_FRONTEND_TSC"
+            check_ran "Frontend unit tests (vitest)" "$R_FRONTEND_VITEST"
+          else
+            echo "Frontend stack not touched — frontend checks not enforced."
+          fi
+
+          if [ "$BACKEND_TOUCHED" != "true" ] && [ "$FRONTEND_TOUCHED" != "true" ] && [ "$WORKFLOWS_TOUCHED" != "true" ]; then
+            echo "Neither stack touched (docs-only) — only the stack-independent legs enforced."
+          fi
+
+          if [ "$fail" -ne 0 ]; then
+            echo "::error::CI gate failed — one or more required checks for a touched stack did not pass."
+            exit 1
+          fi
+
+          echo "CI gate passed."

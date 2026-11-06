@@ -175,9 +175,11 @@ def pytest_configure(config):
     )
 
 
+@pytest.hookimpl(trylast=True)
 def pytest_collection_modifyitems(config, items):
     # MEH-2779: CI splits the suite across parallel jobs (PYTEST_SHARD=i/n).
     # Unset locally, so this is a no-op outside CI. See tests/ci_shard.py.
+    # trylast: split what `-m`/`-k` left, so each shard's count is what it RUNS.
     import ci_shard
 
     ci_shard.apply(config, items)

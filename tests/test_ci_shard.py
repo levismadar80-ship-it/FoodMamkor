@@ -16,12 +16,14 @@ TESTS_DIR = Path(__file__).parent
 
 # Anchored to real files: one node id per test function in the corpus, so a
 # hashing change that happens to work for synthetic ids is still checked here.
-REAL_NODEIDS = sorted({
-    f"tests/{p.name}::{line.split('def ', 1)[1].split('(', 1)[0]}"
-    for p in TESTS_DIR.glob("test_*.py")
-    for line in p.read_text(encoding="utf-8").splitlines()
-    if line.lstrip().startswith("def test_")
-})  # a set: same-named methods in different classes would repeat
+REAL_NODEIDS = sorted(
+    {
+        f"tests/{p.name}::{line.split('def ', 1)[1].split('(', 1)[0]}"
+        for p in TESTS_DIR.glob("test_*.py")
+        for line in p.read_text(encoding="utf-8").splitlines()
+        if line.lstrip().startswith("def test_")
+    }
+)  # a set: same-named methods in different classes would repeat
 
 
 def test_corpus_is_real():
@@ -44,14 +46,15 @@ def test_every_test_lands_in_exactly_one_shard(total):
 
 def test_shards_are_balanced():
     sizes = [len(ci_shard.split(REAL_NODEIDS, i, 3)[0]) for i in (1, 2, 3)]
-    mean = len(REAL_NODEIDS) / 3
-    assert max(sizes) <= mean * 1.05, sizes
+    assert max(sizes) - min(sizes) <= 1, sizes
 
 
-def test_assignment_is_stable_across_processes():
-    # sha1, not hash(): the value must not depend on PYTHONHASHSEED, or the
-    # xdist workers of one job would disagree about which tests they own.
-    assert ci_shard.shard_of("tests/test_api.py::test_health", 3) == 1
+def test_repeated_node_ids_are_spread():
+    # schemathesis yields hundreds of items under ONE node id. A split keyed
+    # on the id (the first version) sent all of them to one shard.
+    items = ["tests/test_fuzz_schemathesis.py::test_fuzz_authenticated"] * 300
+    sizes = [len(ci_shard.split(items, i, 3)[0]) for i in (1, 2, 3)]
+    assert sizes == [100, 100, 100], sizes
 
 
 @pytest.mark.parametrize("bad", ["", "3", "0/3", "4/3", "1/0", "a/b", "1/2/3"])
