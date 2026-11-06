@@ -20,6 +20,7 @@ THE FLAG: `settings.rescue_bags_enabled` does not exist yet —
 the field's absence can never read as "enabled".
 """
 
+import re
 from datetime import timedelta
 
 import pytest
@@ -713,3 +714,88 @@ class TestOfferCancel:
             ).status_code
             == 409
         )
+
+
+class TestReserveEmail:
+    """MEH-2715 — the buyer gets one confirmation email per reservation.
+
+    Copy approved word for word by Sapir on 6/11; the assertions quote it.
+    Sends are captured at the service's own `send_email` reference, so nothing
+    leaves the test (the same seam test_group_buys_api.py uses).
+    """
+
+    @staticmethod
+    def _capture(monkeypatch):
+        sent = []
+        monkeypatch.setattr(
+            "app.services.rescue_emails.send_email",
+            lambda to, subject, body, html=None, reply_to=None: sent.append(
+                {"to": to, "subject": subject, "body": body, "html": html}
+            ),
+        )
+        return sent
+
+    def test_a_reservation_emails_the_buyer_their_code_price_and_cutoff(
+        self, client, db, shop, rescue_on, monkeypatch
+    ):
+        sent = self._capture(monkeypatch)
+        offer = _seed_offer(db, shop["location"], qty_total=4)
+        buyer = make_user(db, email="mail@example.com")
+        db.commit()
+
+        r = client.post(
+            "/rescue/orders",
+            json={"offer_id": str(offer.id), "qty": 2},
+            headers=auth_header(buyer),
+        )
+        assert r.status_code == 201, r.text
+        code = r.json()["pickup_code"]
+
+        assert len(sent) == 1, sent
+        mail = sent[0]
+        assert mail["to"] == "mail@example.com"
+        assert mail["subject"] == "שמרנו לכם סל במאפיית ההצלה"
+        # The HTML is checked as rendered text: tags out, &nbsp; as a space.
+        html_text = re.sub(r"<[^>]+>", "", mail["html"]).replace("&nbsp;", " ")
+        for part in (mail["body"], html_text):
+            assert code in part
+            # Two bags at 15 ₪ each: the email quotes what is paid at the counter.
+            assert "ומשלמים 30" in part
+            assert "הנביאים 10, חיפה" in part
+            assert "וככה הסל יגיע למישהו אחר" in part
+            assert "צוות מהמקור 🌱" in part
+        assert "לבטל את השריון" in mail["html"]
+        assert f"/producer/{shop['producer'].id}" in mail["html"]
+
+    def test_a_refused_reservation_sends_nothing(
+        self, client, db, shop, rescue_on, monkeypatch
+    ):
+        sent = self._capture(monkeypatch)
+        offer = _seed_offer(db, shop["location"], qty_total=1, qty_left=0)
+        buyer = make_user(db, email="nomail@example.com")
+        db.commit()
+        r = client.post(
+            "/rescue/orders",
+            json={"offer_id": str(offer.id), "qty": 1},
+            headers=auth_header(buyer),
+        )
+        assert r.status_code == 409
+        assert sent == []
+
+    def test_the_business_name_is_escaped_in_the_html(
+        self, client, db, shop, rescue_on, monkeypatch
+    ):
+        sent = self._capture(monkeypatch)
+        shop["producer"].name = "<b>מאפה</b>"
+        db.commit()
+        offer = _seed_offer(db, shop["location"])
+        buyer = make_user(db, email="esc@example.com")
+        db.commit()
+        r = client.post(
+            "/rescue/orders",
+            json={"offer_id": str(offer.id), "qty": 1},
+            headers=auth_header(buyer),
+        )
+        assert r.status_code == 201, r.text
+        assert "<b>מאפה</b>" not in sent[0]["html"]
+        assert "&lt;b&gt;מאפה&lt;/b&gt;" in sent[0]["html"]
