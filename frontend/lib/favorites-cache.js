@@ -14,9 +14,17 @@
  */
 
 import api from "./api";
-import { FavoritesResponseSchema } from "@/lib/api-schemas";
+import {
+  FavoritesResponseSchema,
+  FavoriteWithProducerSchema,
+} from "@/lib/api-schemas";
 
 let ids = new Set();
+// MEH-2724: the full producer rows from the SAME response, newest first, for
+// the homepage «המועדפים שלך» strip. Parsed per row (one bad row costs one
+// card, as on /favorites). Filtered through `ids` on read, so a heart removed
+// anywhere drops the card at once.
+let rows = [];
 let loaded = false;
 let loadingPromise = null;
 const listeners = new Set();
@@ -51,6 +59,7 @@ export function ensureFavoritesLoaded() {
       const parsed = FavoritesResponseSchema.safeParse(res.data);
       const list = parsed.success ? parsed.data : [];
       ids = new Set(list.map((f) => f.producer_id ?? f.id).filter(Boolean));
+      rows = parseRows(res.data);
       loaded = true;
       notify();
       return ids;
@@ -63,6 +72,28 @@ export function ensureFavoritesLoaded() {
       loadingPromise = null;
     });
   return loadingPromise;
+}
+
+function parseRows(data) {
+  if (!Array.isArray(data)) return [];
+  return data
+    .map((row) => FavoriteWithProducerSchema.safeParse(row))
+    .filter((r) => r.success)
+    .map((r) => ({ ...r.data.producer, _savedAt: r.data.created_at || "" }))
+    .sort((a, b) => (a._savedAt < b._savedAt ? 1 : a._savedAt > b._savedAt ? -1 : 0));
+}
+
+/**
+ * MEH-2724: favorited producers (full card data), newest saved first.
+ * Only producers still in the heart set — so un-hearting drops them. A
+ * producer hearted after the load has no row here until the next load.
+ */
+export function getFavoriteProducers() {
+  return rows.filter((p) => ids.has(p.id));
+}
+
+export function isFavoritesLoaded() {
+  return loaded;
 }
 
 export function isFavorited(producerId) {
@@ -79,6 +110,7 @@ export function setFavoritedLocal(producerId, value) {
 /** Called by AuthContext on logout so the next login starts clean. */
 export function resetFavoritesCache() {
   ids = new Set();
+  rows = [];
   loaded = false;
   loadingPromise = null;
   notify();

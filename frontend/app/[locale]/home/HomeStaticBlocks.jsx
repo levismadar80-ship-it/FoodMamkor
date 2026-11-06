@@ -18,6 +18,57 @@ import useScrollAffordance, { ScrollArrows } from "@/hooks/useScrollAffordance";
  */
 export function HomeRecentlyViewed({ items }) {
   const t = useTranslations();
+  return (
+    <HomeProducerStrip
+      items={items}
+      heading={t("home.recent.heading")}
+      className="pb-10"
+      testIds={{
+        section: "home-recently-viewed",
+        rail: "home-recent-rail",
+        card: "home-recent-card",
+        image: "home-recent-card-image",
+      }}
+    />
+  );
+}
+
+/**
+ * MEH-2724 — «המועדפים שלך»: the signed-in user's saved businesses, right
+ * under the hero. Same card as «צפית לאחרונה». A separate row only — the main
+ * grid keeps one order for everyone (LOCK: nothing personal touches ranking).
+ * Hidden when signed out / 0 favorites / still loading (items = []).
+ * Capped at FAVORITES_STRIP_MAX, then «לכל המועדפים» → /favorites.
+ */
+export const FAVORITES_STRIP_MAX = 10;
+
+export function HomeFavoritesStrip({ items }) {
+  const t = useTranslations();
+  return (
+    <HomeProducerStrip
+      items={items.slice(0, FAVORITES_STRIP_MAX)}
+      heading={t("home.favorites_strip.heading")}
+      action={
+        <Link
+          href="/favorites"
+          data-testid="home-favorites-all"
+          className="text-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+        >
+          {t("home.favorites_strip.all")}
+        </Link>
+      }
+      className="pt-6 pb-2"
+      testIds={{
+        section: "home-favorites-strip",
+        rail: "home-favorites-rail",
+        card: "home-favorites-card",
+        image: "home-favorites-card-image",
+      }}
+    />
+  );
+}
+
+function HomeProducerStrip({ items, heading, action = null, className, testIds }) {
   // Hook must run unconditionally (rules of hooks) — before the empty-list return.
   const affordance = useScrollAffordance();
   // MEH-1976: producer id → the image src that failed to load. Keyed rather
@@ -28,16 +79,19 @@ export function HomeRecentlyViewed({ items }) {
   const [failedImgs, setFailedImgs] = useState({});
   if (!items.length) return null;
   return (
-    <section className="max-w-7xl mx-auto px-4 pb-10" data-testid="home-recently-viewed">
-      <h2 className="font-headline-md text-headline-md text-text mb-4">
-        {t("home.recent.heading")}
-      </h2>
+    <section className={`max-w-7xl mx-auto px-4 ${className}`} data-testid={testIds.section}>
+      <div className="flex items-baseline justify-between gap-4 mb-4">
+        <h2 className="font-headline-md text-headline-md text-text">
+          {heading}
+        </h2>
+        {action}
+      </div>
       {/* MEH-1391: relative wrapper hosts the absolute arrow pair. */}
       <div className="relative">
         <ScrollArrows affordance={affordance} />
         <div
           ref={affordance.scrollRef}
-          data-testid="home-recent-rail"
+          data-testid={testIds.rail}
           className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide -mx-1 ps-1 after:content-[''] after:shrink-0 after:w-4"
         >
           {items.map((p) => {
@@ -47,10 +101,10 @@ export function HomeRecentlyViewed({ items }) {
             <Link
               key={p.id}
               href={href}
-              data-testid="home-recent-card"
+              data-testid={testIds.card}
               className="shrink-0 w-[160px] bg-background border border-border rounded-md overflow-hidden transition group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40"
             >
-              <div className="relative w-full h-[100px] bg-green-50 overflow-hidden" data-testid="home-recent-card-image">
+              <div className="relative w-full h-[100px] bg-green-50 overflow-hidden" data-testid={testIds.image}>
                 {imgSrc && failedImgs[p.id] !== imgSrc ? (
                   <Image
                     src={imgSrc}
