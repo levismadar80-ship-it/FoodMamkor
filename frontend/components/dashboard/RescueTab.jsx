@@ -79,6 +79,10 @@ export default function RescueTab() {
   // orders, so marking «לא הגיע» updates the leftover count at once.
   const [offers, setOffers] = useState([]);
   const [businessName, setBusinessName] = useState("");
+  // MEH-2784: the business status, from the /producers/me read below. null
+  // until it answers; the publish form waits for it, so a pending business
+  // never sees a form it cannot submit (the server 403s it, rescue.py:351).
+  const [producerStatus, setProducerStatus] = useState(null);
   const [donating, setDonating] = useState(false);
   // How many of the leftover bags were given away; null = all of them.
   const [donateQty, setDonateQty] = useState(null);
@@ -109,9 +113,13 @@ export default function RescueTab() {
       .catch(() => setLocations([]));
     api
       .get("/producers/me")
-      .then((r) => setBusinessName(typeof r.data?.name === "string" ? r.data.name : ""))
+      .then((r) => {
+        setBusinessName(typeof r.data?.name === "string" ? r.data.name : "");
+        setProducerStatus(typeof r.data?.status === "string" ? r.data.status : "unknown");
+      })
       // Silent on purpose: without a name the WhatsApp button stays hidden.
-      .catch(() => {});
+      // An unknown status falls back to the form; the server still guards.
+      .catch(() => setProducerStatus("unknown"));
     api
       .get("/producers/me/rescue/typical-items")
       .then((r) => setItems((r.data?.items || []).join(", ")))
@@ -275,6 +283,33 @@ export default function RescueTab() {
       </p>
     ) : null;
 
+  // MEH-2784 (Sapir 6/11, option א׳): an unapproved business is told up
+  // front, and gets no form. Pending reads «we are reviewing»; any other
+  // non-approved status (draft, rejected, suspended) gets the server's line.
+  const gated = producerStatus !== null && producerStatus !== "approved" && producerStatus !== "unknown";
+  if (gated) {
+    return (
+      <div data-testid="rescue-tab" className="space-y-6">
+        {producerStatus === "pending" ? (
+          <div data-testid="rescue-pending-banner" role="status" className="bg-yellow-50 border border-yellow-200 rounded-md px-4 py-3">
+            <p className="font-semibold text-yellow-800">{t("pending_title")}</p>
+            <p className="font-body-sm text-sm text-yellow-800">{t("pending_body")}</p>
+          </div>
+        ) : (
+          <p data-testid="rescue-not-approved" role="status" className="font-body-sm text-sm text-text">
+            {t("not_approved")}
+          </p>
+        )}
+        {producerStatus === "pending" && (
+          <section className="border border-border rounded-md px-4 py-4 space-y-2">
+            <h3 className="font-headline-md text-base font-black text-text">{t("publish_title")}</h3>
+            <p className="font-body-sm text-sm text-fg-muted">{t("pending_form_note")}</p>
+          </section>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div data-testid="rescue-tab" className="space-y-6">
       <div className="grid grid-cols-3 gap-3" data-testid="rescue-counters">
@@ -374,7 +409,7 @@ export default function RescueTab() {
         {noticeAt(AT.orders)}
       </section>
 
-      {locationsLoaded && !exactLocation ? (
+      {producerStatus === null ? null : locationsLoaded && !exactLocation ? (
         // MEH-2702: say what is missing up front, instead of an error after «לפרסם».
         <section
           className="border border-border rounded-md px-4 py-4 space-y-3"

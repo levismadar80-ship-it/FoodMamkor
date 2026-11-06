@@ -98,6 +98,15 @@ export default function ProducerDashboardToolsPage() {
   }
 
   const { producer } = data;
+  // MEH-2784: tools the server refuses to an unapproved business say so on
+  // the tile, before the owner opens them. The tile stays a link so the
+  // owner can still see what the tool is.
+  const approved = producer.status === "approved";
+  const lockedLine = !approved && (
+    <p data-testid="tool-locked-line" className="text-xs font-medium text-yellow-800 mt-1">
+      {t("quick_links.locked_until_approved")}
+    </p>
+  );
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-12">
@@ -137,6 +146,7 @@ export default function ProducerDashboardToolsPage() {
           <UsersThree size={24} className="text-primary mb-2" aria-hidden="true" />
           <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.group_buys.title")}</p>
           <p className="text-sm text-fg-muted">{t("quick_links.group_buys.sub")}</p>
+          {lockedLine}
         </Link>
         {/* MEH-2649: the rescue-bags counter tool. The tile is flag-gated so
             the dashboard is unchanged until the pilot is switched on — the
@@ -150,6 +160,7 @@ export default function ProducerDashboardToolsPage() {
             <ShoppingBag size={24} className="text-primary mb-2" aria-hidden="true" />
             <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.rescue.title")}</p>
             <p className="text-sm text-fg-muted">{t("quick_links.rescue.sub")}</p>
+            {lockedLine}
           </Link>
         )}
         {/* MEH-590: producer recipes tab (chunk 3/4 of the producer-recipes epic). */}
@@ -166,6 +177,10 @@ export default function ProducerDashboardToolsPage() {
             and previously took 3+ taps via "הצגת העסק" + scroll.
             MEH-1357: candidate-to-move per Sapir's 18/07 verdict — documented
             only, no change now (full object-nav split is MEH-964 Phase 2). */}
+        {/* MEH-2784: an unapproved business has no public page yet
+            (producers.py:473 → 404), so the tile is hidden until approval,
+            the same rule as RequestReviewCard below. */}
+        {approved && (
         <Link
           href={`/producer/${producer.id}#reviews`}
           className="bg-surface border border-border rounded-lg p-5 hover:border-primary transition"
@@ -174,6 +189,7 @@ export default function ProducerDashboardToolsPage() {
           <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.reviews.title")}</p>
           <p className="text-sm text-fg-muted">{t("quick_links.reviews.sub")}</p>
         </Link>
+        )}
       </div>
       {/* MEH-1428 chunk 2: the "request a review" link. Approved only — the
           endpoint 403s for any other status, and a pending business's public

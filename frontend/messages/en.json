@@ -4389,6 +4389,7 @@
         "saved_vacation": "Saved — on a break until {date}"
       },
       "quick_links": {
+        "locked_until_approved": "Opens once your business is approved",
         "group_buys": {
           "title": "Manage group buys",
           "sub": "Manage group buys and open new ones"
@@ -4891,6 +4892,7 @@
       },
       "manage_events": {
         "heading": "My events",
+        "pending_note": "Your events will appear on the site once your business is approved.",
         "organizer_heading": "Your events",
         "create_cta": "New event",
         "empty_title": "No events yet",
@@ -5808,6 +5810,10 @@
       "lead": "Today's surplus — publish, hand over against a code, mark it.",
       "back": "Back to tools",
       "counter_card_link": "Counter card, to print",
+      "pending_title": "This tool opens once your business is approved",
+      "pending_body": "We are reviewing your business details, usually within 3 business days.",
+      "pending_form_note": "After approval, a form will appear here: how many bags, price and pickup times.",
+      "not_approved": "Only an approved business can publish a surprise bag",
       "loading": "Loading…",
       "failed": "Something got stuck. Try again.",
       "counter": {
