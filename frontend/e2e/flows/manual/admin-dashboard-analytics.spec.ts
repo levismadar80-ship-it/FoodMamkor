@@ -366,7 +366,7 @@ test.describe("/admin/settings — vacation mode", () => {
     await expect(vacationSave(page)).toBeDisabled();
     const warn = page.getByText("חובה לציין תאריך חזרה כשמצב חופשה מופעל");
     await expect(warn).toBeVisible();
-    await expect(warn).toHaveClass(/text-red-600/);
+    await expect(warn).toHaveClass(/text-danger-600/);
     await returnDate(page).fill("2026-10-01");
     await expect(warn).toHaveCount(0);
     await expect(vacationSave(page)).toBeEnabled();
@@ -399,7 +399,7 @@ test.describe("/admin/producers — the risk badge", () => {
     await expect(badge(page, "עסק צהוב")).toHaveText("סיכון בינוני (50)");
     await expect(badge(page, "עסק צהוב")).toHaveClass(/bg-yellow-100/);
     await expect(badge(page, "עסק אדום")).toHaveText("סיכון גבוה (90)");
-    await expect(badge(page, "עסק אדום")).toHaveClass(/bg-red-100/);
+    await expect(badge(page, "עסק אדום")).toHaveClass(/bg-danger-100/);
   });
 
   // MT:ANALYTICS:29 — the tooltip carries the full Hebrew reasoning, or «טרם דורג» when unscored.

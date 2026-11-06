@@ -191,7 +191,7 @@ export default function ProducerRecipesPage() {
                 <span>·</span>
                 <button
                   onClick={() => handleDelete(r.id)}
-                  className="text-red-600 hover:underline"
+                  className="text-danger-600 hover:underline"
                 >
                   {t("delete")}
                 </button>

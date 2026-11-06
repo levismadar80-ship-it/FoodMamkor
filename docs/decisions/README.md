@@ -56,6 +56,7 @@ Permanent architectural decisions recorded once, never re-litigated.
 | [035](./ADR-035-one-home-per-fact.md) | One home per fact — every other surface points, none keeps a copy; upkeep rules get a staleness guard | Accepted | 2026-10-26 | MEH-2344 |
 | [036](./ADR-036-organizer-kind.md) | An event organizer is a `Producer` row with `kind='organizer'`, hidden from every business surface by one shared predicate | Accepted | 2026-10-28 | MEH-2459 |
 | [037](./ADR-037-neutral-reader-address.md) | Reader address is gender-neutral on every surface; feminine only for the founder's own voice and admin (supersedes ADR-024 §1 feminine half) | Accepted | 2026-11-04 | MEH-2661 |
+| [038](./ADR-038-status-color-scales.md) | Status colours are tokens — `danger-*` / `warning-*` scales at Tailwind red/amber values (narrows ADR-019, extends ADR-026) | Accepted | 2026-11-06 | MEH-1687 |
 
 ## Related
 - `docs/LOCKED_DECISIONS.md` — older free-form decisions; being migrated

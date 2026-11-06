@@ -73,8 +73,8 @@ function IncompleteToggle({ active, count, onToggle }) {
 function ReviewDueToggle({ active, onToggle }) {
   const t = useTranslations("admin");
   const cls = active
-    ? "bg-amber-100 border-amber-400 text-amber-900"
-    : "bg-white border-border text-muted hover:border-amber-400";
+    ? "bg-warning-100 border-warning-400 text-warning-900"
+    : "bg-white border-border text-muted hover:border-warning-400";
   return (
     <button
       onClick={() => onToggle((v) => !v)}

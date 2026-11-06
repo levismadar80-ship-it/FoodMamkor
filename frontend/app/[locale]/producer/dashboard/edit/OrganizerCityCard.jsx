@@ -61,7 +61,7 @@ export default function OrganizerCityCard({ profile, onSave, reportDirty = () =>
       />
       <p className="text-xs text-fg-muted">{t("hint")}</p>
       {error && (
-        <p className="text-sm text-red-600" role="alert">
+        <p className="text-sm text-danger-600" role="alert">
           {error}
         </p>
       )}

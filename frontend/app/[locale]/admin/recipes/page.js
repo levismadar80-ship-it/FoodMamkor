@@ -145,7 +145,7 @@ export default function AdminRecipesPage() {
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 rounded-md p-4">
+        <div className="bg-danger-50 border border-danger-200 text-danger-700 rounded-md p-4">
           {error}
         </div>
       )}
@@ -233,7 +233,7 @@ export default function AdminRecipesPage() {
                 className={`px-4 py-2 rounded-sm text-white ${
                   modalAction === "changes"
                     ? "bg-accent hover:opacity-90"
-                    : "bg-red-600 hover:bg-red-700"
+                    : "bg-danger-600 hover:bg-danger-700"
                 } disabled:opacity-50`}
               >
                 {busy ? t("common.sending") : t("recipes.modal.submit")}
@@ -253,7 +253,7 @@ const STATUS_BADGE = {
   pending: "bg-gray-100 text-gray-600",
   needs_revision: "bg-yellow-100 text-yellow-800",
   approved: "bg-green-50 text-primary",
-  rejected: "bg-red-50 text-red-700",
+  rejected: "bg-danger-50 text-danger-700",
 };
 
 function RecipeRow({ recipe, busy, t, locale, onApprove, onChanges, onReject }) {
@@ -307,7 +307,7 @@ function RecipeRow({ recipe, busy, t, locale, onApprove, onChanges, onReject }) 
               <button
                 onClick={() => onReject(recipe)}
                 disabled={busy}
-                className="bg-red-600 text-white px-3 py-1 rounded-full text-xs hover:bg-red-700 disabled:opacity-50"
+                className="bg-danger-600 text-white px-3 py-1 rounded-full text-xs hover:bg-danger-700 disabled:opacity-50"
               >
                 {t("recipes.actions.reject")}
               </button>

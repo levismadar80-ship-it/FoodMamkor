@@ -64,7 +64,7 @@ export default function AdminSettingsPage() {
       });
   }, []);
 
-  if (loadError) return <div className="text-red-600 text-sm">{t("settings.load_error")}</div>;
+  if (loadError) return <div className="text-danger-600 text-sm">{t("settings.load_error")}</div>;
   if (!settings) return <SkeletonForm fields={6} label={t("common.loading")} className="max-w-2xl" />;
 
   const update = (key, value) => {
@@ -282,7 +282,7 @@ export default function AdminSettingsPage() {
             {vacationSaving ? t("settings.save.saving") : t("settings.sections.vacation_save")}
           </button>
           {vacation.active && !vacation.return_date && (
-            <span className="text-xs text-red-600">
+            <span className="text-xs text-danger-600">
               {t("settings.sections.vacation_date_required")}
             </span>
           )}
@@ -290,7 +290,7 @@ export default function AdminSettingsPage() {
             <span className="text-sm text-primary">{vacationToast}</span>
           )}
           {vacationError && (
-            <span className="text-sm text-red-600">{vacationError}</span>
+            <span className="text-sm text-danger-600">{vacationError}</span>
           )}
         </div>
       </div>
@@ -310,7 +310,7 @@ export default function AdminSettingsPage() {
               <span className="text-sm">{label}</span>
               <div className="flex items-center gap-3">
                 {result && (
-                  <span className={`text-xs ${result.ok ? "text-primary" : "text-red-600"}`}>
+                  <span className={`text-xs ${result.ok ? "text-primary" : "text-danger-600"}`}>
                     {statusText}
                   </span>
                 )}

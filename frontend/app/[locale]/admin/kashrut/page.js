@@ -205,7 +205,7 @@ export default function AdminKashrutPage() {
                           <span className="text-primary">{t("kashrut.reminders.row_sent")}</span>
                         )}
                         {row.sent === false && (
-                          <span className="text-red-600">
+                          <span className="text-danger-600">
                             {row.error || t("kashrut.reminders.row_failed")}
                           </span>
                         )}
@@ -300,7 +300,7 @@ export default function AdminKashrutPage() {
                         <button
                           onClick={() => { setRejectModal(row.id); setRejectNotes(""); }}
                           disabled={busy}
-                          className="bg-white border border-red-300 text-red-600 text-xs px-3 py-1.5 rounded-full hover:bg-red-50 transition disabled:opacity-50"
+                          className="bg-white border border-danger-300 text-danger-600 text-xs px-3 py-1.5 rounded-full hover:bg-danger-50 transition disabled:opacity-50"
                         >
                           {t("kashrut.actions.reject")}
                         </button>
@@ -312,7 +312,7 @@ export default function AdminKashrutPage() {
                       <button
                         onClick={() => { setRevokeModal(row.id); setRevokeNotes(""); }}
                         disabled={busy}
-                        className="bg-white border border-red-300 text-red-600 text-xs px-3 py-1.5 rounded-full hover:bg-red-50 transition disabled:opacity-50"
+                        className="bg-white border border-danger-300 text-danger-600 text-xs px-3 py-1.5 rounded-full hover:bg-danger-50 transition disabled:opacity-50"
                       >
                         {t("kashrut.actions.revoke")}
                       </button>
@@ -385,7 +385,7 @@ export default function AdminKashrutPage() {
               <button
                 onClick={() => revoke(revokeModal)}
                 disabled={busy}
-                className="flex-1 bg-red-500 text-white rounded-full py-2 text-sm disabled:opacity-50"
+                className="flex-1 bg-danger-500 text-white rounded-full py-2 text-sm disabled:opacity-50"
               >
                 {busy ? t("kashrut.revoke_modal.submitting") : t("kashrut.revoke_modal.submit")}
               </button>
@@ -415,7 +415,7 @@ export default function AdminKashrutPage() {
               <button
                 onClick={() => reject(rejectModal)}
                 disabled={busy}
-                className="flex-1 bg-red-500 text-white rounded-full py-2 text-sm disabled:opacity-50"
+                className="flex-1 bg-danger-500 text-white rounded-full py-2 text-sm disabled:opacity-50"
               >
                 {busy ? t("kashrut.reject_modal.submitting") : t("kashrut.reject_modal.submit")}
               </button>
