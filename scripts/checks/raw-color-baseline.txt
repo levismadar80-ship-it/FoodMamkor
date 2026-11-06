@@ -130,10 +130,6 @@ frontend/app/[locale]/producer/dashboard/group-buys/page.js:bg-gray-50
 frontend/app/[locale]/producer/dashboard/page.js:arb:#25d366
 frontend/app/[locale]/producer/dashboard/page.js:bg-yellow-50
 frontend/app/[locale]/producer/dashboard/page.js:border-yellow-200
-frontend/app/[locale]/producer/dashboard/page.js:hex:#22c55e
-frontend/app/[locale]/producer/dashboard/page.js:hex:#2e6853
-frontend/app/[locale]/producer/dashboard/page.js:hex:#9ca3af
-frontend/app/[locale]/producer/dashboard/page.js:hex:#f97316
 frontend/app/[locale]/producer/dashboard/page.js:text-yellow-700
 frontend/app/[locale]/producer/dashboard/page.js:text-yellow-800
 frontend/app/[locale]/producer/dashboard/rescue/counter-card/page.js:text-black
