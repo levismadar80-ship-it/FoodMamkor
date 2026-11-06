@@ -534,6 +534,10 @@
     "recent": {
       "heading": "Recently viewed"
     },
+    "favorites_strip": {
+      "heading": "Your favorites",
+      "all": "All favorites"
+    },
     "cta": {
       "heading": "Have a business? Join us",
       "body_l1": "Mehamakor is the home of local food businesses in Israel.",
