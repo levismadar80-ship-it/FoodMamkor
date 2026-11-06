@@ -41,7 +41,6 @@ import {
 // DO NOT add @font-face blocks for these families — next/font owns their
 // hosting, and a hand-written face would resolve to a different file.
 
-const SITE_TITLE = "מהמקור — בתי עסק מקומיים בתחום המזון, כולם במקום אחד";
 // MEH-2192: SITE_DESCRIPTION moved to lib/constants.js so the Organization
 // JSON-LD node and this <meta name="description"> cannot drift apart. Same
 // string, one owner.
@@ -60,20 +59,10 @@ export const revalidate = 3600;
 // title / description / OG content per locale — this PR is hreflang-only.
 const BASE_METADATA = {
   metadataBase: new URL(SITE_URL),
-  title: {
-    default: SITE_TITLE,
-    template: `%s | ${BRAND_NAME}`,
-  },
+  // MEH-2774: title, og/twitter titles and keywords are per locale in
+  // generateMetadata (seo.site.*); the old SITE_TITLE copy here was always
+  // overridden and is gone.
   description: SITE_DESCRIPTION,
-  keywords: [
-    "מוצרים מקומיים",
-    "grass-fed",
-    "אוכל בריא",
-    "אוכל אורגני",
-    "בעלי עסק ישראלים",
-    BRAND_NAME,
-    "שוק איכרים",
-  ],
   manifest: "/manifest.json",
   icons: {
     icon: [
@@ -90,20 +79,17 @@ const BASE_METADATA = {
     locale: "he_IL",
     url: SITE_URL,
     siteName: BRAND_NAME,
-    title: SITE_TITLE,
     description: SITE_DESCRIPTION,
     images: [
       {
         url: OG_IMAGE,
         width: 1200,
         height: 630,
-        alt: SITE_TITLE,
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: SITE_TITLE,
     description: SITE_DESCRIPTION,
     images: [OG_IMAGE],
   },
@@ -161,6 +147,7 @@ export async function generateMetadata({ params }) {
       template: `%s | ${BRAND_NAME}`,
     },
     description,
+    keywords: [...t.raw("keywords"), BRAND_NAME],
     openGraph: {
       ...BASE_METADATA.openGraph,
       title: t("og_title"),
