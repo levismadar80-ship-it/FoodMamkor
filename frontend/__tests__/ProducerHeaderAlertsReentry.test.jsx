@@ -209,4 +209,72 @@ describe("ProducerHeader — single AlertPrefsPanel mount (MEH-1693)", () => {
     await waitFor(() => expect(onCloseAlerts).toHaveBeenCalled());
     expect(screen.queryByTestId("alert-prefs-panel")).not.toBeInTheDocument();
   });
+
+});
+
+/**
+ * MEH-2770 — the panel floats instead of sitting in the page flow. Sapir picked
+ * option א׳ (bell menu on desktop, sheet on mobile). What is pinned here:
+ * the wrapper is out of flow on BOTH viewports (fixed below lg, absolute at
+ * lg+), a scrim exists only while open, and the floating panel has the way
+ * out an in-flow one never needed: Esc and an outside tap close it, a tap
+ * inside does not.
+ */
+describe("ProducerHeader — floating AlertPrefsPanel (MEH-2770)", () => {
+  beforeEach(() => {
+    mockUser = { id: "u-1" };
+    mockFavorited = true;
+    favListeners.clear();
+  });
+
+  it("the wrapper is out of flow on mobile (fixed) and desktop (lg:absolute)", async () => {
+    renderHeader({ alertsOpen: true });
+    const wrap = await screen.findByTestId("alerts-reentry-panel");
+    const cls = wrap.className.split(/\s+/);
+    expect(cls).toContain("fixed");
+    expect(cls).toContain("lg:absolute");
+    expect(cls).toContain("lg:w-80");
+    // the old in-flow spacer is gone
+    expect(cls).not.toContain("mt-3");
+  });
+
+  it("scrim renders only while open (mobile only)", async () => {
+    const { rerender } = renderHeader({ alertsOpen: true });
+    const scrim = await screen.findByTestId("alerts-panel-scrim");
+    expect(scrim.className.split(/\s+/)).toContain("lg:hidden");
+    rerender(<ProducerHeader producer={producer} primaryCategory={null} hasImages alertsOpen={false} />);
+    expect(screen.queryByTestId("alerts-panel-scrim")).not.toBeInTheDocument();
+  });
+
+  it("Escape closes the panel", async () => {
+    const onCloseAlerts = vi.fn();
+    renderHeader({ alertsOpen: true, onCloseAlerts });
+    await screen.findByTestId("alert-prefs-panel");
+    onCloseAlerts.mockClear();
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(onCloseAlerts).toHaveBeenCalledTimes(1);
+  });
+
+  it("a tap outside closes; a tap inside does not", async () => {
+    const onCloseAlerts = vi.fn();
+    renderHeader({ alertsOpen: true, onCloseAlerts });
+    const panel = await screen.findByTestId("alert-prefs-panel");
+    onCloseAlerts.mockClear();
+
+    fireEvent.mouseDown(panel);
+    expect(onCloseAlerts).not.toHaveBeenCalled();
+
+    fireEvent.mouseDown(document.body);
+    expect(onCloseAlerts).toHaveBeenCalledTimes(1);
+  });
+
+  it("closed panel listens to nothing — Esc and outside taps are inert", async () => {
+    const onCloseAlerts = vi.fn();
+    renderHeader({ alertsOpen: false, onCloseAlerts });
+    await screen.findByTestId("fav-quiet");
+    onCloseAlerts.mockClear();
+    fireEvent.keyDown(window, { key: "Escape" });
+    fireEvent.mouseDown(document.body);
+    expect(onCloseAlerts).not.toHaveBeenCalled();
+  });
 });
