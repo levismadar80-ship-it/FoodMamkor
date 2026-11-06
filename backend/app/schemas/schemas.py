@@ -3731,6 +3731,77 @@ def _experience_category(value: str | None) -> str | None:
     return value
 
 
+# --- MEH-2763: «איך נרשמים?» + on-site registrations ---
+RegistrationMethod = Literal["site_form", "whatsapp", "phone", "external_url"]
+
+
+class RegistrationCreate(BaseModel):
+    """The on-site sign-up form: name, phone and email, all required, no
+    account (approved 6/11)."""
+
+    name: str = Field(..., min_length=1, max_length=100)
+    phone: str = Field(..., min_length=1, max_length=20)
+    email: EmailStr = Field(..., max_length=200)
+
+    @field_validator("name")
+    @classmethod
+    def _clean_name(cls, v: str) -> str:
+        cleaned = (sanitize_text(v, max_length=100) or "").strip()
+        # MEH-555 pattern, but 2 letters, not 3: a name is the one free-text
+        # field where real two-letter values are common («טל», «Li»).
+        # _min_letters_validator's message names 3, so it is not reused here.
+        if len(_LETTER_REGEX.sub("", cleaned)) < 2:
+            raise ValueError("שדה זה חייב להכיל לפחות 2 אותיות")
+        return cleaned
+
+    @field_validator("phone")
+    @classmethod
+    def _clean_phone(cls, v: str) -> str:
+        cleaned = _phone_validator(v)
+        if cleaned is None:
+            raise ValueError("מספר טלפון לא תקין")
+        return cleaned
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def _clean_email(cls, v):
+        cleaned = _normalize_contact_email(v)
+        if cleaned is None:
+            raise ValueError("כתובת אימייל לא תקינה")
+        return cleaned.lower()
+
+
+class RegistrationCreatedOut(BaseModel):
+    """What the visitor gets back. Deliberately nothing she did not type, and
+    not the cancel token — that goes to her inbox only."""
+
+    status: Literal["registered"] = "registered"
+
+
+class RegistrationOwnerOut(BaseModel):
+    """One row of the owner's list (owner / admin only)."""
+
+    id: UUID
+    name: str
+    phone: str
+    email: str
+    status: str
+    created_at: datetime
+    cancelled_at: datetime | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class RegistrationCancelInfoOut(BaseModel):
+    """GET by cancel token — enough for the cancel page to say what it is."""
+
+    kind: Literal["event", "experience"]
+    item_id: UUID
+    title: str
+    event_date: date
+    status: str
+
+
 class ExperienceCreate(BaseModel):
     title: str = Field(..., min_length=4, max_length=300)
     description: str = Field(..., min_length=20)
@@ -3767,6 +3838,15 @@ class ExperienceCreate(BaseModel):
     requirements: str | None = None
     is_recurring: bool = False
     recurring_schedule: str | None = None
+    # MEH-2763: «איך נרשמים?» — the router checks the method's prerequisite
+    # (a mobile for whatsapp, a phone for phone, a URL for external_url).
+    registration_method: RegistrationMethod = "site_form"
+    registration_url: str | None = Field(None, max_length=500)  # column is 500
+
+    @field_validator("registration_url")
+    @classmethod
+    def _validate_registration_url(cls, v):
+        return _url_scheme_validator(v)
 
     @field_validator("title")
     @classmethod
@@ -3840,6 +3920,13 @@ class ExperienceUpdate(BaseModel):
     # MEH-2663: sign-up happens on WhatsApp, so the host reports the count.
     # Bookkeeping, not content — the router keeps it out of moderation.
     participants_count: int | None = Field(None, ge=0, le=500)
+    registration_method: RegistrationMethod | None = None  # MEH-2763
+    registration_url: str | None = Field(None, max_length=500)  # MEH-2763
+
+    @field_validator("registration_url")
+    @classmethod
+    def _validate_registration_url(cls, v):
+        return _url_scheme_validator(v)
 
     @field_validator("title")
     @classmethod
@@ -3936,7 +4023,13 @@ class ExperienceListOut(BaseModel):
     max_participants: int | None = None
     min_participants: int | None = None  # MEH-2665
     participants_count: int = 0
+    # MEH-2763: sign-ups taken through the on-site form. participants_count
+    # stays the host's own tally (WhatsApp / phone sign-ups); spots_left and
+    # the minimum read the two together.
+    registered_count: int = 0
     spots_left: int | None = None
+    registration_method: str = "site_form"
+    registration_url: str | None = None
     price_per_person: Decimal | None = None
     is_recurring: bool = False
     recurring_schedule: str | None = None
@@ -4609,6 +4702,7 @@ class EventCreate(BaseModel):
     price: int = 0
     max_participants: int | None = None
     registration_url: str | None = None
+    registration_method: RegistrationMethod = "site_form"  # MEH-2763
 
     # MEH-2469: wall-clock times, offsets dropped before any comparison.
     @field_validator("event_time", "end_time")
@@ -4684,6 +4778,7 @@ class EventUpdate(BaseModel):
     price: int | None = None
     max_participants: int | None = None
     registration_url: str | None = None
+    registration_method: RegistrationMethod | None = None  # MEH-2763
     is_active: bool | None = None
 
     # MEH-2469: wall-clock times, offsets dropped before any comparison.
@@ -4743,6 +4838,10 @@ class EventOut(BaseModel):
     price: int
     max_participants: int | None = None
     registration_url: str | None = None
+    # MEH-2763: «איך נרשמים?» + the on-site tally (0 for other methods).
+    registration_method: str = "site_form"
+    registered_count: int = 0
+    spots_left: int | None = None
     is_active: bool
     created_at: datetime
 

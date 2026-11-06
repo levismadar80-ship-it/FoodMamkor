@@ -511,10 +511,16 @@ front matter for the normative token bindings.
 
 ### Home page — section rhythm (MEH-2441, Sapir 27/10)
 
-- **Order:** hero → mini-map → category grid → businesses grid → **היכרות** (featured
+- **Order:** hero → category grid → businesses grid → mini-map → **היכרות** (featured
   business) → seasonal → events → recently viewed → closing CTA. "איך זה עובד"
   and the comparison teaser are **not** on home: `/about` carries the full
   comparison (MEH-841) and `/about/process` the real four steps.
+- **One order on every viewport (MEH-2747, Sapir 6/11).** Phone and desktop
+  render the same sections in the same order, and that order is the JSX order.
+  Never reorder sections with CSS (`order-*`, `*-reverse`, `row-start-*`): it
+  moves only the paint, so VoiceOver and the keyboard read a different page
+  (WCAG 1.3.2 / 2.4.3). Guards: `__tests__/VisualOrderGuard.test.js` (static)
+  and the 375 ↔ 1440 parity row in `e2e/flows/manual/home.spec.ts`.
 - **Featured business ("היכרות")** = the page's one strong colour moment: a
   full-bleed `bg-primary` band, `text-background`. h2 "היכרות" with a short
   `gold-on-dark` rule above it; photo 7/12 columns at 4:3 (`IMAGE_RATIOS.featured`);

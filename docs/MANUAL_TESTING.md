@@ -44,9 +44,18 @@
 - [ ] העסק מסמן «נמסר», הקונה חוזר ללשונית — **תוצאה מצופה:** טופס הביקורת מופיע בלי רענון; אחרי שליחה ורענון — «תודה», בלי הטופס
 - [ ] אורח פותח דף עסק עם סל — **תוצאה מצופה:** אין הודעת «פג תוקף ההתחברות»
 
+## MEH-2751 — כרטיס בית עסק: בלי נקודת זמינות (06/11/2026)
+- [ ] עסק שסימן «זמין היום» / «עמוס השבוע» / «בהפסקה» — 375, דף הבית — **תוצאה מצופה:** אין נקודה צבעונית ליד הקטגוריה או ליד העיר
+- [ ] אותו עסק בדף העסק — **תוצאה מצופה:** המצב עדיין מוצג שם כמו קודם
+- [ ] עסק בחופשה עם חלון הזמנות פתוח — **תוצאה מצופה:** אין שורת «פתוח להזמנות» בכרטיס (כמו קודם)
+## MEH-2744 — כרטיס בית עסק: שורת משלוח בשורה אחת (06/11/2026)
+- [ ] עסק עם מחיר משלוח + הטבת «משלוח חינם מעל» — 375, דף הבית — **תוצאה מצופה:** משאית ואחריה «חינם מעל 200₪» בירוק, בשורה אחת, בלי מחיר המשלוח ובלי «·»
+- [ ] עסק בלי מחיר משלוח, עם ההטבה — **תוצאה מצופה:** אותו דבר, משאית + «חינם מעל 150₪»
+- [ ] עסק עם מחיר משלוח בלבד — **תוצאה מצופה:** «משלוח מ-20₪» כמו קודם
+- [ ] קורא מסך על השורה — **תוצאה מצופה:** מקריא «משלוח חינם מעל …»
+
 ## MEH-2676 — כרטיס בית עסק: משלוח חינם בשורת המשלוח (05/11/2026)
-- [ ] עסק עם מחיר משלוח + הטבת «משלוח חינם מעל» — 375, /producers — **תוצאה מצופה:** שורת משאית אחת «משלוח מ-₪20 · חינם מעל ₪150», הסכום גלוי, אין «…», אין תגית מתנה
-- [ ] עסק בלי מחיר משלוח, עם ההטבה — **תוצאה מצופה:** «משלוח חינם מעל ₪150» בשורת המשאית
+- [ ] עסק עם הטבת «משלוח חינם מעל» — **תוצאה מצופה:** הסכום גלוי בשורת המשאית, אין «…», אין תגית מתנה (הנוסח עודכן ב-MEH-2744 למעלה)
 - [ ] עסק עם הטבה מסוג אחר (מתנה / הנחה באיסוף) — **תוצאה מצופה:** תגית מתנה כמו קודם
 
 ## MEH-2659 — דף בית העסק: הטבה למעלה, רכישה קבוצתית קומפקטית, אירועים וחוויות ברשימה אחת (04/11/2026)
@@ -1886,7 +1895,7 @@ Bundles F4 (copy reframe) + F10 (CLS-fixing skeleton). New copy: *"גליון {m
 
 Moves the mini-map preview from section #7 (after HolidayBanner) to section #2 (immediately after Hero). Adds an SSR-able skeleton placeholder so the slot reserves height before JS hydrates (CLS fix), and defers Leaflet bundle eval 200ms post-FCP via `setTimeout` + chained `requestIdleCallback` so it lands outside the LCP measurement window. Also adds OSM tile-shard preconnects (`a/b/c.tile.openstreetmap.org`) in the locale layout `<head>`.
 
-- ✅ → home.spec.ts (the mini-map is the second block on the page, right after the hero) — Section order — visit `/he` on mobile → scroll order is: Hero → **map** → Friday strip (if Fri) → stats → Location banner → Holiday banner → Categories. Map is the **second** visible block, not section #7.
+- ✅ → home.spec.ts (the mini-map comes right after the businesses grid, in the DOM and on screen) — SUPERSEDED by MEH-2747: the map now sits after the businesses grid on mobile and desktop; MEH-604's "second block" order is retired.
 - [ ] Skeleton on first paint — hard-reload `/he` with Network throttled to "Slow 3G" → for the first ~200ms the map slot shows the skeleton (pulsing `bg-light` + `MapTrifold` icon + "טוענת מפה..."). The slot is **the same height** as the rendered map — no layout jump when the live map appears.
 - ✅ → home.spec.ts (the document head preconnects to all three OSM tile hosts) — Tile preconnect in DOM — DevTools → Elements → `<head>` → 3 lines present: `<link rel="preconnect" href="https://a.tile.openstreetmap.org">` (also `b.`, `c.`). All have `crossOrigin="anonymous"`.
 - [ ] Leaflet load timing — DevTools → Performance → record initial page load → main thread should be free of Leaflet/`react-leaflet` script eval for the first ~200ms after FCP. Map markers appear after the defer window.
@@ -2914,7 +2923,7 @@ _(Desktop top-banner case is covered by the legend assertion above, MEH-1009.)_
 - [ ] **Image ratio** — resize viewport from 375→768→1280; image stays square on mobile, shifts to 4:3 at `lg` breakpoint. No letterboxing / stretching.
 - [ ] **Cloudinary smart-crop** — for a Cloudinary source image, the URL has `c_fill,g_auto,ar_4:3` injected. Portrait producer photos don't crop heads off.
 - [ ] **Rating gate** — producer with `reviews_count = 2` shows no rating; `reviews_count >= 3` shows `★ 4.5 · 12` in the name row, `dir="ltr"`.
-- [ ] **Availability dot** — `availability_state="available_today"` → green; `"on_vacation"` → orange; `"accepting_orders"` → no dot. (The legacy `is_available_today` / `availability_status` are in no API response since MEH-2272 — `curl /producers` shows neither key.)
+- [ ] **Availability dot** — removed from the card in MEH-2751 (06/11/2026): no dot in any `availability_state`. (The legacy `is_available_today` / `availability_status` are in no API response since MEH-2272 — `curl /producers` shows neither key.)
 - [ ] **Description fallback** — `short_description` shown when present; else `top_product_name`; else row hidden. Descriptions past 80 chars get a trailing `…`.
 - [ ] **BadgeRow fold** — producer with `is_verified + is_recommended + organic_certified + grass_fed` shows exactly 2 pills (verified + recommended) per the new 8-key priority.
 - [ ] **Footer** — price truncates at `max-w-[120px]`; primary-method icon switches per `primary_contact_method` (whatsapp → WhatsappLogo, phone → Phone, website → Globe, email → EnvelopeSimple).
@@ -4586,7 +4595,7 @@ ROLLBACK;   -- חובה. הבדיקה היא האם ה-DELETE נכשל, לא ה�
 ## MEH-2635 — המיני-מפה יורדת מתחת לגריד בנייד (03/11/2026)
 - [ ] דף הבית ב-375, גלילה אחת מה-hero — **תוצאה מצופה:** נוחתים על רצועת האמון ואז על הקטגוריות והגריד; המפה **לא** מופיעה מיד מתחת ל-hero.
 - [ ] דף הבית ב-375, גלילה עד סוף הגריד — **תוצאה מצופה:** המיני-מפה «כל בית עסק על המפה» מופיעה אחרי הגריד, עם כפתור «פתחו מפה מלאה».
-- [ ] דף הבית ב-1440 — **תוצאה מצופה:** הסדר הישן נשמר: המפה מיד אחרי ה-hero, הגריד למטה.
+- [ ] ~~דף הבית ב-1440 — הסדר הישן נשמר~~ — הוחלף ב-MEH-2747: המפה אחרי הגריד גם ב-1440.
 - [ ] בשני הרוחבים — **תוצאה מצופה:** תת-הכותרת «גלו בתי עסק לפי מיקום» לא מופיעה (הכותרת «כל בית עסק על המפה» לבדה).
 - [ ] דף הבית ב-375, גלילה אופקית — **תוצאה מצופה:** אין. הדף לא זז הצידה בשום גובה.
 - [ ] דף הבית ב-375 בחיבור איטי — **תוצאה מצופה:** שלד המפה שומר על אותו גובה (320px) כמו המפה הטעונה; אין קפיצה כשהיא נטענת.
@@ -4713,6 +4722,11 @@ ROLLBACK;   -- חובה. הבדיקה היא האם ה-DELETE נכשל, לא ה�
 - [ ] מחוברת עם מועדף אחד — תוצאה מצופה: מתחת לחיפוש, כרטיס אחד + «לכל המועדפים» → `/favorites`.
 - [ ] מחוברת עם 12 מועדפים — תוצאה מצופה: 10 כרטיסים, האחרון ששמרת ראשון, גלילה לצד.
 - [ ] להסיר לב מכרטיס ברשת למטה — תוצאה מצופה: הכרטיס נעלם מהשורה למעלה מיד.
+## MEH-2743 — «המועדפים שלך»: בלי קפיצת דף ומקרי קצה בטעינה (06/11/2026)
+- [ ] מחוברת עם מועדפים ← לרענן את `/` ב-375 (רשת איטית, DevTools «Slow 4G») — תוצאה מצופה: כבר בפריים הראשון יש כותרת «המועדפים שלך» ומסגרות ריקות; כשהכרטיסים מגיעים הם נכנסים במקום, והחלק שמתחת לא זז.
+- [ ] להסיר את כל המועדפים ← לרענן — תוצאה מצופה: אין מסגרות ריקות, אין שורה.
+- [ ] להתנתק ← `/` — תוצאה מצופה: אין מסגרות ריקות.
+- [ ] בזמן שהדף נטען, ללחוץ לב על עסק ברשת — תוצאה מצופה: הלב נשאר מסומן, והעסק מופיע בשורה למעלה.
 ## MEH-2728 — לוח הבקרה בנייד: התנתקות, חזרה לכלים, סרגל הלשוניות (06/11/2026)
 - [ ] לוח הבקרה ב-375 ← «עריכה» ← לגלול למטה — תוצאה מצופה: סרגל הלשוניות (סקירה / עריכה / תובנות / כלים) נשאר גלוי מתחת לכותרת, ואין «התנתקות» בתחתית.
 - [ ] «סקירה» ב-375 ← לגלול לסוף — תוצאה מצופה: «התנתקות» באפור (לא אדום); לחיצה מנתקת ומעבירה להתחברות.
@@ -4741,6 +4755,10 @@ ROLLBACK;   -- חובה. הבדיקה היא האם ה-DELETE נכשל, לא ה�
 - [ ] עסק שהשרת לא מאשר לו לפרסם (למשל עוד לא אושר) ← «לפרסם להיום» — תוצאה מצופה: הסיבה מהשרת מופיעה בתוך תיבת «לפרסם סלים», מתחת לכפתורים, ולא «משהו נתקע» מתחת לתיבת הקוד.
 - [ ] חשבון שהאימייל שלו לא אומת ← «לפרסם להיום» — תוצאה מצופה: «יש לאמת את כתובת האימייל תחילה» בתוך תיבת הפרסום (לפני כן המסך לא ידע להציג את זה).
 - [ ] אייפון, 375 — תוצאה מצופה: שדות «איסוף מ-» ו«עד» בתוך הכרטיס, לא חורגים מהקצה.
+## MEH-2747 — סדר אחד לדף הבית בנייד ובמחשב (06/11/2026)
+- [ ] דף הבית ב-375 וב-1440 — תוצאה מצופה: אותו סדר: פתיחה ← אמון ← קטגוריות ← בתי עסק ← (סלי הפתעה, אם יש) ← המפה «כל בית עסק על המפה» ← היכרות.
+- [ ] אייפון עם VoiceOver, החלקה ימינה מהפתיחה — תוצאה מצופה: המפה מוקראת אחרי בתי העסק, באותו מקום שרואים אותה.
+- [ ] 1440 — תוצאה מצופה: בין «הפתיעו אותי» לכותרת המפה רווח רגיל, לא חור גדול.
 
 ## MEH-2745 — סלי הפתעה: הודעה מסודרת בשגיאת התחברות / עומס / שרת (06/11/2026)
 

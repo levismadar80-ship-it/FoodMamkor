@@ -387,10 +387,30 @@ events (
   price int,                         -- 0 = free
   max_participants int,
   registration_url text,             -- external signup link
+  registration_method varchar(20) NOT NULL DEFAULT 'site_form',
+                                     -- MEH-2763 «איך נרשמים?»: site_form|whatsapp|phone|external_url (CHECK)
   is_active bool,
   created_at
 )
 ```
+
+### Registrations (on-site sign-ups — MEH-2763, migration `e8c4a1f2b7d9`)
+
+```sql
+registrations (
+  id uuid PK,
+  event_id FK events ON DELETE CASCADE,          -- exactly one of the two
+  experience_id FK experiences ON DELETE CASCADE,-- (CHECK ck_registrations_one_item)
+  name varchar(100), phone varchar(20), email varchar(200),  -- what the visitor typed; no account
+  cancel_token varchar(64) UNIQUE,               -- the visitor's only credential (cancel link in her email)
+  status: registered|cancelled,
+  created_at, cancelled_at
+)
+```
+
+Only items whose owner picked `registration_method = 'site_form'` take rows.
+PII is returned to the owner/admin only. Purged 30 days after the item's
+date (`retention_purge._purge_registrations`, the promise under the form).
 
 ### Experiences (community workshops — **admin-moderated**)
 
@@ -412,6 +432,8 @@ experiences (
   min_participants int,              -- nullable; minimum to run, ≤ max or 422 (MEH-2665, migration c4d8e1f05a27)
   price_per_person numeric(10,2),    -- NULL/0 = free
   requirements text,                 -- "what to bring / prerequisites"
+  registration_method varchar(20) NOT NULL DEFAULT 'site_form',  -- MEH-2763; rows before it backfilled to whatsapp
+  registration_url varchar(500),     -- MEH-2763: used by external_url only
 
   is_active bool NOT NULL DEFAULT true,  -- MEH-1419: reversible host cancel (mirrors Event.is_active). Public list filters is_active IS TRUE; /mine returns inactive too.
 
@@ -1038,6 +1060,34 @@ POST   /events                     producer — require_verified_producer (MEH-1
 PUT    /events/{event_id}          producer — owner only (cross-owner → 404)
 DELETE /events/{event_id}          auth    — owner or admin (stranger → 404)
 ```
+
+**MEH-2763 — «איך נרשמים?».** `EventCreate/Update.registration_method`
+(`site_form` default | `whatsapp` | `phone` | `external_url`). Prerequisites →
+422 `{code, message}`: whatsapp needs an Israeli **mobile** on the business
+(`registration_whatsapp_needs_mobile`), phone needs a phone
+(`registration_phone_needs_phone`), external_url needs `registration_url`
+(`registration_external_needs_url`). On PUT they are checked only when the
+edit touches the method or the URL. `EventOut` adds `registration_method`,
+`registered_count` (active on-site sign-ups) and `spots_left`
+(`max_participants − registered_count`, null without a cap). Same fields on
+experiences, where `spots_left` also subtracts the host's own
+`participants_count`, and a method change does not re-moderate.
+
+### Registrations (on-site sign-ups — `app/routers/registrations.py`, MEH-2763)
+
+```
+POST   /events/{id}/registrations         public — 10/hour/IP. {name, phone, email} all required. 201 {status:"registered"} (no token, no PII back).
+POST   /experiences/{id}/registrations    public — same. Item must be public + upcoming + active + registration_method=site_form, else 404 (not public) / 409 registration_closed. Full → 409 registration_full (row lock on the item). Same email twice → same 201, nothing stored or sent.
+GET    /events/{id}/registrations         auth — owner or admin; others 404 (MEH-1001). Rows incl. cancelled.
+GET    /experiences/{id}/registrations    auth — host or admin; others 404.
+GET    /registrations/{token}             public — {kind, item_id, title, event_date, status} for the cancel page.
+POST   /registrations/{token}/cancel      public — idempotent; first cancel emails the owner.
+```
+
+Emails (`services/registration_emails.py`, fail-open, queued after commit):
+visitor confirmation with the cancel link; owner «הרשמה חדשה» with name,
+phone, email and «נשארו N מקומות»; owner «ביטול הרשמה». A home experience's
+address never goes in the visitor email (city only, MEH-1417).
 
 No per-event moderation. An **approved** producer publishes and it's live;
 a **pending** producer's events exist but are invisible to the public until

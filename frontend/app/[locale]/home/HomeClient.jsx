@@ -108,38 +108,7 @@ export default function HomeClient({
           separate row — the businesses grid below keeps one order for
           everyone. Self-hides when signed out or with 0 favorites. Outside
           the mobile-reorder wrapper, so it stays at the top on phones too. */}
-      <HomeFavoritesStrip items={favoriteProducers} />
-
-      {/* MEH-2635: below `md` this wrapper is a flex column and the mini-map
-          carries `order-last`, so it renders AFTER HomeProducersGrid — the
-          first scroll on a phone lands on business cards, not on a 320px map
-          with four dots. At `md` and up the wrapper is `display:block` again,
-          which is a div's default, so `order` stops applying and the desktop
-          DOM order (map → … → grid) renders exactly as before this ticket.
-          Scoping the flex to THIS span is what makes `order-last` mean "after
-          the grid" rather than "at the end of the page": the sections below
-          (MeetAProducer, events, …) stay outside it.
-          Two flex-specific traps, both measured rather than reasoned about:
-          (1) `w-full` + `min-w-0` on the children. Several of these sections
-          centre themselves with `mx-auto`, and an auto margin on the cross
-          axis TURNS OFF `align-items: stretch` — so they sized to their
-          content instead of to the wrapper and the page scrolled sideways
-          (measured at 375: HomeCategoryGrid 1280px wide,
-          documentElement.scrollWidth 1280 vs clientWidth 375). `min-w-0` alone
-          did NOT fix it — that was measured too, and it is why both are here.
-          Scoped to `max-md` with everything else.
-          (2) margin collapsing is off inside a flex container, so mobile
-          spacing is verified in qa-artifacts rather than assumed; desktop
-          cannot move, since no flex context exists there at all.
-          MEH-538 + MEH-604 (unchanged on desktop): the mini-map sits
-          IMMEDIATELY after the hero so the country-shape of producer
-          distribution is visible within ~2s of FCP. The skeleton
-          (dynamic({ loading })) reserves height on first paint; Leaflet bundle
-          eval is deferred 200ms post-FCP via setTimeout + rIC. */}
-      <div className="flex flex-col md:block max-md:[&>*]:w-full max-md:[&>*]:min-w-0">
-        <div className="order-last md:order-none" data-testid="home-minimap-slot">
-          <HomepageMiniMap />
-        </div>
+      <HomeFavoritesStrip items={favoriteProducers.items} reserve={favoriteProducers.reserve} />
 
       {/* MEH-50: שוק שישי strip — shown Thu 18:00 → Fri 14:00 only.
           MEH-879: highest banner precedence — reports visibility so Holiday +
@@ -233,7 +202,9 @@ export default function HomeClient({
           real 24px gap even when the banner renders null (measured: this slot
           plus the holiday one below added 40px of blank page at 375px).
           Same idiom as ProducersClient.jsx's day-panel host, scoped to
-          `max-md` so desktop keeps its exact pre-ticket spacing. */}
+          `max-md` so desktop keeps its exact pre-ticket spacing. MEH-2747
+          removed that flex column; the class stays so phone spacing does not
+          move in the same PR (block flow, measured in qa-artifacts/MEH-2747). */}
       <div className="mt-6 max-md:empty:hidden">
         <LocationBanner
           hasCity={!!userCity}
@@ -297,12 +268,22 @@ export default function HomeClient({
       {/* MEH-2648: rescue-bags module, AFTER the businesses grid (Sapir 5/11:
           «אחרי בתי העסק» — the directory leads, a one-town pilot does not
           take the slot under the hero). Renders null while the pilot is off,
-          with no town, or when the town has no bags today. Inside the mobile
-          wrapper so it sits before the mini-map's `order-last` on phones. */}
+          with no town, or when the town has no bags today. Before the
+          mini-map on every viewport (MEH-2747). */}
       <RescueHomeModule city={userCity} />
-      </div>
-      {/* ^ MEH-2635: end of the mobile-reorder wrapper opened above the
-          mini-map. The mini-map's `order-last` is relative to THIS span. */}
+
+      {/* MEH-2747 (Sapir 6/11: one order on phone and desktop): the mini-map
+          comes AFTER the businesses grid on every viewport, by DOM position.
+          MEH-2635 got the same picture on phones with a flex wrapper +
+          `order-last`, which moved the map only visually — VoiceOver and the
+          keyboard still reached it before the businesses (WCAG 1.3.2 / 2.4.3),
+          and desktop kept a different order. Never reorder sections with CSS:
+          __tests__/VisualOrderGuard.test.js fails on a new `order-*` /
+          `*-reverse` outside its reasoned allowlist. The MEH-538/604 "map right
+          under the hero" placement is retired by this ticket on both viewports.
+          The skeleton (dynamic({ loading })) still reserves height on first
+          paint; Leaflet bundle eval is still deferred post-FCP. */}
+      <HomepageMiniMap />
 
       {/* =========================
           MEET A PRODUCER (P5 §10 · MEH-542) — fed by the first is_recommended

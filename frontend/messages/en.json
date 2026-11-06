@@ -978,7 +978,7 @@
       "save_cta": "Save",
       "save_error": "Save failed. Please try again.",
       "card_free_above": "free over {amount}",
-      "card_free_above_alone": "Free delivery over {amount}"
+      "card_delivery_sr": "Delivery"
     }
   },
   "recipes": {
