@@ -41,7 +41,7 @@ const HOST_LINES = {
 };
 
 // idle → open → (busy) → done; error keeps the form open with a message.
-export default function DeliveryWaitlistForm({ producer = null, city = "" }) {
+export default function DeliveryWaitlistForm({ producer = null, city = "", describedBy }) {
   const t = useTranslations("group_buys.delivery.waitlist");
   const auth = useOptionalAuth();
   const user = auth?.user ?? null;
@@ -132,6 +132,7 @@ export default function DeliveryWaitlistForm({ producer = null, city = "" }) {
           type="button"
           onClick={() => setPhase("open")}
           data-testid="delivery-waitlist-cta"
+          aria-describedby={describedBy}
           className="inline-flex items-center gap-1.5 min-h-[44px] rounded-full border border-primary/20 bg-white px-3 text-sm font-medium text-primary transition hover:bg-green-50 focus-visible:ring-2 focus-visible:ring-primary/40"
         >
           <BellRinging

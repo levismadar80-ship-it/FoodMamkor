@@ -350,8 +350,8 @@ function PickupHostsCard({ data }) {
 
 /**
  * MEH-1676 — "ביקוש מאזורים חדשים": one row per city whose visitors tapped
- * «לשאול בוואטסאפ» in the last 30 days, most
- * requested first (server order). Three count states (0 / 1 / many) per
+ * «לשאול בוואטסאפ» in the last 30 days, most requested first (server
+ * order). Three count states (0 / 1 / many) per
  * the 5-state rule; no open/closed state. The scope line follows the
  * Google Business Profile pattern: name the action counted, say what the
  * number does not capture.

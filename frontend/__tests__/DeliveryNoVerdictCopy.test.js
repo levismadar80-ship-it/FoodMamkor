@@ -21,6 +21,10 @@ describe.each([
     expect(d.checker.no).toContain("{city}");
   });
 
+  it("the verdict is the line that says «not delivering»", () => {
+    expect(d.checker.no.toLowerCase()).toContain(notDelivering);
+  });
+
   it.each(Object.entries(chips))("chip %s does not repeat the city", (_k, v) => {
     expect(v).not.toContain("{city}");
   });

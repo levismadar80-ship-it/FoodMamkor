@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { CheckCircle, XCircle } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { formatPrice } from "@/lib/utils";
@@ -96,6 +96,10 @@ export default function DeliveryChecker({
   // that no longer matches what the field says.
   const [city, setCity] = useState("");
   const [checked, setChecked] = useState("");
+  // MEH-2709: the no-verdict chips don't repeat the city on screen; they point
+  // at the verdict line with aria-describedby so a screen reader jumping
+  // between buttons still hears which city they are about.
+  const verdictId = useId();
 
   // MEH-1675: seed from the saved user_city so a visitor who already told us
   // where she is gets her answer — and, when it is "no", the coverage CTA —
@@ -161,6 +165,7 @@ export default function DeliveryChecker({
         {result && (
           <>
             <p
+              id={verdictId}
               className={`flex items-center gap-1.5 text-sm font-medium ${
                 positive ? "text-primary" : "text-text"
               }`}
@@ -214,8 +219,13 @@ export default function DeliveryChecker({
                   key={result.city}
                   producer={producer}
                   city={result.city}
+                  describedBy={verdictId}
                 />
-                <CoverageRequestCta producer={producer} city={result.city} />
+                <CoverageRequestCta
+                  producer={producer}
+                  city={result.city}
+                  describedBy={verdictId}
+                />
               </div>
             )}
           </>

@@ -137,6 +137,19 @@ describe("DeliveryWaitlistForm on the checker's negative verdict (MEH-2618)", ()
     expect(ids).toEqual(["delivery-waitlist", "coverage-request-cta"]);
   });
 
+  // MEH-2709: the chips drop the city on screen, so each one is described by
+  // the verdict line — a screen reader still hears "…לנתניה".
+  it("describes both chips with the verdict line that names the city", async () => {
+    setup();
+    commitCity("נתניה");
+    await waitFor(() => expect(form()).toBeTruthy());
+    for (const id of ["delivery-waitlist-cta", "coverage-request-link"]) {
+      const ref = screen.getByTestId(id).getAttribute("aria-describedby");
+      expect(ref).toBeTruthy();
+      expect(document.getElementById(ref).textContent).toContain("נתניה");
+    }
+  });
+
   it("guest: opens an empty email field and posts email + city, then confirms", async () => {
     post.mockResolvedValue({ status: 201, data: { status: "added" } });
     setup();
