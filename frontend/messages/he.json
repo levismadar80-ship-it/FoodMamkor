@@ -2636,6 +2636,11 @@
       "previous_month": "חודש קודם",
       "next_month": "חודש הבא",
       "label": "לוח שנה",
+      "today": "היום",
+      "list_heading": "כל האירועים ב{month}",
+      "list_heading_experiences": "כל החוויות ב{month}",
+      "empty_month": "אין אירועים בחודש הזה. אפשר לעבור לחודש הבא.",
+      "empty_month_experiences": "אין חוויות בחודש הזה. אפשר לעבור לחודש הבא.",
       "events_count": "{count, plural, =0 {אין אירועים} one {אירוע אחד} two {שני אירועים} other {# אירועים}}",
       "days": {
         "sun": "א׳",

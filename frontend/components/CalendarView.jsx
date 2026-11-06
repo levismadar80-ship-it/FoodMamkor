@@ -1,12 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Link } from "@/i18n/navigation";
+import { useMemo, useRef, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 
 // MEH-785: locale-aware dates via the shared helper — replaces 3 hardcoded
 // toLocaleDateString("he-IL") sites that escaped the MEH-753/MEH-777 sweeps.
 import { formatEventDate } from "@/lib/format-date";
+
+// A busy day shows at most this many dots; the count is in the aria-label.
+const MAX_DOTS = 3;
 
 const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 
@@ -15,19 +17,6 @@ function dateKey(date) {
   const m = String(date.getMonth() + 1).padStart(2, "0");
   const d = String(date.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
-}
-
-function sameDay(a, b) {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
-}
-
-function formatTime(t) {
-  if (!t) return "";
-  return t.slice(0, 5);
 }
 
 const LONG_DATE = { weekday: "long", day: "numeric", month: "long" };
@@ -45,7 +34,7 @@ const LONG_DATE = { weekday: "long", day: "numeric", month: "long" };
 //     `israel_today()` then rejected. This grid is browsing chrome; no value it
 //     computes is ever sent anywhere to be validated.
 //
-//  2. A HALF-MIGRATION WOULD BE A REGRESSION. `dateKey` (:13) and `cells` (:56)
+//  2. A HALF-MIGRATION WOULD BE A REGRESSION. `dateKey` (:13) and `cells` (below)
 //     build their keys and their month grid from local getFullYear/getMonth/
 //     getDate. Moving only `today` onto Israel time would let the "is this cell
 //     today" highlight disagree with the grid it sits in — for a viewer abroad,
@@ -57,14 +46,28 @@ const LONG_DATE = { weekday: "long", day: "numeric", month: "long" };
 //
 // DO NOT "align this with the israel-clock sweep" without re-reading (2) — the
 // cheap version of that change is the one that breaks it.
-export default function CalendarView({ items, linkPrefix }) {
+// MEH-2771 — Sapir picked option ב׳ (artifact 6A9W8DiPvJHkYHnSSkqWNR): a small
+// month grid beside (md+) / above (phone) a list of every event in the shown
+// month. Before, a day with events was marked only by a 6px dot, the selected
+// day (full green fill) out-shouted today, cells were ~140px squares at 1440,
+// and nothing listed until a day was clicked. Now:
+//   - a day with events: light-green fill, bold number, one dot per event (≤3);
+//   - a day without events, or a past day: muted and not clickable;
+//   - today: accent ring + «היום»; selected: primary ring (not a full fill);
+//   - the list is always there; clicking a day highlights its rows and
+//     scrolls to them, clicking it again clears the selection.
+// `renderItem(row)` draws each list row — the page passes EventEntryRow so the
+// calendar list looks exactly like the list view.
+export default function CalendarView({ items, renderItem, kind = "events" }) {
   const t = useTranslations("events.calendar");
   const locale = useLocale();
   const today = useMemo(() => new Date(), []);
+  const todayKey = dateKey(today);
   const [currentMonth, setCurrentMonth] = useState(
     new Date(today.getFullYear(), today.getMonth(), 1),
   );
   const [selectedDate, setSelectedDate] = useState(null);
+  const listRef = useRef(null);
 
   const itemsByDate = useMemo(() => {
     const map = new Map();
@@ -92,6 +95,25 @@ export default function CalendarView({ items, linkPrefix }) {
     return out;
   }, [currentMonth]);
 
+  // Every upcoming item in the shown month, by day then time. Past days are
+  // left out: the grid greys them, and a list that opens on last week reads
+  // as stale.
+  const monthItems = useMemo(() => {
+    const out = [];
+    for (const d of cells) {
+      if (!d) continue;
+      const key = dateKey(d);
+      if (key < todayKey) continue;
+      const dayItems = itemsByDate.get(key);
+      if (!dayItems) continue;
+      const sorted = [...dayItems].sort((a, b) =>
+        (a.event_time || "").localeCompare(b.event_time || ""),
+      );
+      for (const it of sorted) out.push({ key, item: it });
+    }
+    return out;
+  }, [cells, itemsByDate, todayKey]);
+
   const prevMonth = () => {
     setCurrentMonth(
       new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1),
@@ -105,135 +127,149 @@ export default function CalendarView({ items, linkPrefix }) {
     setSelectedDate(null);
   };
 
+  const selectedKey = selectedDate ? dateKey(selectedDate) : null;
+
+  const onDayClick = (d) => {
+    const key = dateKey(d);
+    if (key === selectedKey) {
+      setSelectedDate(null);
+      return;
+    }
+    setSelectedDate(d);
+    // Phone: the list sits under the grid, so the tap has to bring it into
+    // view. Desktop: the list is beside the grid; "nearest" moves it only
+    // when the day's rows are off screen.
+    const first = listRef.current?.querySelector(`[data-day="${key}"]`);
+    first?.scrollIntoView?.({ behavior: "smooth", block: "nearest" });
+  };
+
   const monthLabel = formatEventDate(currentMonth, locale, {
     month: "long",
     year: "numeric",
   });
-  const selectedItems = selectedDate
-    ? itemsByDate.get(dateKey(selectedDate)) || []
-    : [];
+  const monthName = formatEventDate(currentMonth, locale, { month: "long" });
 
   return (
-    <div className="bg-background rounded-lg border border-border p-4 md:p-6">
-      <div className="flex items-center justify-between mb-4">
-        <button
-          type="button"
-          onClick={prevMonth}
-          aria-label={t("previous_month")}
-          className="min-w-touch min-h-touch flex items-center justify-center rounded-lg hover:bg-green-50 transition"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-        <h3 className="font-headline-md text-lg md:text-xl font-bold text-text">
-          {monthLabel}
-        </h3>
-        <button
-          type="button"
-          onClick={nextMonth}
-          aria-label={t("next_month")}
-          className="min-w-touch min-h-touch flex items-center justify-center rounded-lg hover:bg-green-50 transition"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M15 6l-6 6 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-      </div>
-
-      <div
-        role="row"
-        className="grid grid-cols-7 mb-2 text-center text-xs font-semibold text-fg-muted"
-      >
-        {DAY_KEYS.map((key) => (
-          <div key={key} className="py-2" role="columnheader">
-            {t(`days.${key}`)}
-          </div>
-        ))}
-      </div>
-
-      <div role="grid" aria-label={t("label")} className="grid grid-cols-7 gap-1">
-        {cells.map((d, idx) => {
-          if (!d) {
-            return (
-              <div key={`empty-${idx}`} className="aspect-square" aria-hidden="true" />
-            );
-          }
-          const key = dateKey(d);
-          const hasEvents = itemsByDate.has(key);
-          const isToday = sameDay(d, today);
-          const isPast = key < dateKey(today);
-          const isSelected = selectedDate && sameDay(d, selectedDate);
-
-          return (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setSelectedDate(d)}
-              aria-pressed={isSelected ? "true" : "false"}
-              aria-label={formatEventDate(d, locale, LONG_DATE)}
-              className={`aspect-square min-h-touch rounded-lg flex flex-col items-center justify-center text-sm transition ${
-                isSelected
-                  ? "bg-primary text-white"
-                  : isToday
-                    ? "ring-2 ring-accent text-text"
-                    : isPast
-                      ? "text-fg-muted hover:bg-green-50"
-                      : "text-text hover:bg-green-50"
-              }`}
-            >
-              <span>{d.getDate()}</span>
-              {hasEvents && (
-                <span
-                  className={`w-1.5 h-1.5 rounded-full mt-1 ${
-                    isSelected ? "bg-surface" : "bg-primary"
-                  }`}
-                  aria-hidden="true"
-                />
-              )}
-            </button>
-          );
-        })}
-      </div>
-
-      {selectedDate && (
-        <div className="mt-6 pt-6 border-t border-border" data-testid="calendar-day-expansion">
-          <div className="flex items-baseline justify-between mb-3">
-            <h4 className="font-headline-md text-lg font-bold text-text">
-              {formatEventDate(selectedDate, locale, LONG_DATE)}
-            </h4>
-            <span className="text-sm text-fg-muted">
-              {t("events_count", { count: selectedItems.length })}
-            </span>
-          </div>
-          {selectedItems.length > 0 && (
-            <ul className="space-y-2">
-              {selectedItems.map((it) => (
-                <li key={it.id}>
-                  <Link
-                    href={`${linkPrefix}/${it.id}`}
-                    className="block rounded-lg border border-border p-3 hover:bg-green-50 transition"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-semibold text-text truncate">
-                        {it.title}
-                      </span>
-                      {it.event_time && (
-                        <span className="text-sm text-fg-muted shrink-0">
-                          {formatTime(it.event_time)}
-                        </span>
-                      )}
-                    </div>
-                    {it.city && (
-                      <p className="text-sm text-fg-muted mt-1">{it.city}</p>
-                    )}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
+    <div className="md:grid md:grid-cols-[18.75rem_minmax(0,1fr)] md:gap-6 md:items-start">
+      <div className="bg-background rounded-lg border border-border p-3 md:sticky md:top-24">
+        <div className="flex items-center justify-between mb-2">
+          <button
+            type="button"
+            onClick={prevMonth}
+            aria-label={t("previous_month")}
+            className="min-w-touch min-h-touch flex items-center justify-center rounded-lg hover:bg-green-50 transition"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+          <h3 className="font-headline-md text-lg font-bold text-text">
+            {monthLabel}
+          </h3>
+          <button
+            type="button"
+            onClick={nextMonth}
+            aria-label={t("next_month")}
+            className="min-w-touch min-h-touch flex items-center justify-center rounded-lg hover:bg-green-50 transition"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M15 6l-6 6 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
         </div>
-      )}
+
+        <div
+          role="row"
+          className="grid grid-cols-7 mb-1 text-center text-xs font-semibold text-fg-muted"
+        >
+          {DAY_KEYS.map((key) => (
+            <div key={key} className="py-1.5" role="columnheader">
+              {t(`days.${key}`)}
+            </div>
+          ))}
+        </div>
+
+        <div role="grid" aria-label={t("label")} className="grid grid-cols-7 gap-1">
+          {cells.map((d, idx) => {
+            if (!d) {
+              return (
+                <div key={`empty-${idx}`} className="min-h-touch" aria-hidden="true" />
+              );
+            }
+            const key = dateKey(d);
+            const count = itemsByDate.get(key)?.length ?? 0;
+            const isToday = key === todayKey;
+            const isPast = key < todayKey;
+            const active = count > 0 && !isPast;
+            const isSelected = key === selectedKey;
+
+            const tone = isSelected
+              ? "bg-green-100 text-primary font-bold ring-2 ring-primary"
+              : active
+                ? "bg-green-50 text-primary font-bold hover:bg-green-100"
+                : isPast
+                  ? "text-fg-muted opacity-50"
+                  : "text-fg-muted";
+            const todayRing = isToday && !isSelected ? " ring-2 ring-accent" : "";
+
+            return (
+              <button
+                key={key}
+                type="button"
+                disabled={!active}
+                onClick={() => onDayClick(d)}
+                aria-pressed={isSelected ? "true" : "false"}
+                aria-label={
+                  active
+                    ? `${formatEventDate(d, locale, LONG_DATE)}, ${t("events_count", { count })}`
+                    : formatEventDate(d, locale, LONG_DATE)
+                }
+                data-has-events={active ? "true" : "false"}
+                className={`min-h-touch rounded-lg flex flex-col items-center justify-center text-sm leading-none transition disabled:cursor-default ${tone}${todayRing}`}
+              >
+                <span>{d.getDate()}</span>
+                {isToday && (
+                  <span className="text-2xs font-semibold text-accent mt-0.5" data-testid="calendar-today-label">
+                    {t("today")}
+                  </span>
+                )}
+                {active && !isToday && (
+                  <span className="flex gap-0.5 mt-1" aria-hidden="true" data-testid="calendar-day-dots">
+                    {Array.from({ length: Math.min(count, MAX_DOTS) }, (_, i) => (
+                      <span key={i} className="w-1 h-1 rounded-full bg-primary" />
+                    ))}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div ref={listRef} className="mt-6 md:mt-0 min-w-0" data-testid="calendar-month-list">
+        <h4 className="font-headline-md text-lg font-bold text-text mb-2">
+          {t(kind === "experiences" ? "list_heading_experiences" : "list_heading", { month: monthName })}
+        </h4>
+        {monthItems.length === 0 ? (
+          <p className="text-sm text-fg-muted py-4" data-testid="calendar-month-empty">
+            {t(kind === "experiences" ? "empty_month_experiences" : "empty_month")}
+          </p>
+        ) : (
+          <ul>
+            {monthItems.map(({ key, item }) => (
+              <li
+                key={item.id}
+                data-day={key}
+                data-selected={key === selectedKey ? "true" : "false"}
+                data-testid="calendar-list-item"
+                className={`rounded-lg transition scroll-my-28 ${key === selectedKey ? "bg-green-50 ring-2 ring-primary" : ""}`}
+              >
+                {renderItem(item)}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }
