@@ -179,7 +179,7 @@ export default function RescueSection({ producer }) {
               the price on the top row next to the stock tag. */}
           <div className="grid gap-3 min-w-0">
             <div className="flex items-center gap-2.5">
-              <span aria-hidden="true" className="w-11 h-11 rounded-[10px] bg-green-50 text-primary grid place-items-center shrink-0">
+              <span aria-hidden="true" className="w-11 h-11 rounded-md bg-green-50 text-primary grid place-items-center shrink-0">
                 <Basket size={24} weight="duotone" />
               </span>
               {/* The only gold on the card, as on the home row: the stock is what makes someone hurry. */}
@@ -188,7 +188,7 @@ export default function RescueSection({ producer }) {
               </span>
               <PriceBlock className="ms-auto text-end md:hidden" price={price} worth={worth} t={t} testIds />
             </div>
-            <ul className="grid gap-2 font-body-sm text-[15px] text-text">
+            <ul className="grid gap-2 font-body-sm text-base text-text">
               {from && until && (
                 <li className="flex items-start gap-2">
                   <Clock aria-hidden="true" size={18} className="text-primary shrink-0 mt-0.5" />
@@ -261,12 +261,12 @@ function PriceBlock({ price, worth, t, className = "", testIds = false }) {
   if (price === null) return null;
   return (
     <span className={`leading-tight ${className}`}>
-      <b dir="ltr" className="block font-headline-display font-black text-[28px] text-primary numeric" data-testid={testIds ? "rescue-section-price" : undefined}>
+      <b dir="ltr" className="block font-headline-display font-black text-3xl text-primary numeric" data-testid={testIds ? "rescue-section-price" : undefined}>
         {t("row.price", { price })}
       </b>
       {worth !== null && (
         // aria-hidden: read aloud as a second bare price it says nothing useful.
-        <s dir="ltr" aria-hidden="true" className="block text-[13px] text-fg-muted numeric" data-testid={testIds ? "rescue-section-worth" : undefined}>
+        <s dir="ltr" aria-hidden="true" className="block text-sm text-fg-muted numeric" data-testid={testIds ? "rescue-section-worth" : undefined}>
           {t("row.price", { price: worth })}
         </s>
       )}

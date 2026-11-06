@@ -211,7 +211,7 @@ export default function FavoriteButton({
       <button
         {...commonProps}
         aria-label={labelInName(t("quiet_label"), label)}
-        className={`inline-flex items-center gap-1.5 min-h-touch py-2 text-[13px] font-medium rounded transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40 ${
+        className={`inline-flex items-center gap-1.5 min-h-touch py-2 text-sm font-medium rounded transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40 ${
           favorited ? "text-primary" : "text-text hover:text-primary"
         }`}
       >

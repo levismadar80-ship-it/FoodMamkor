@@ -187,7 +187,7 @@ function AreaGroup({ label, rows, t, feeOf = () => null }) {
       {/* MEH-2592 C: the day reads as a small gold heading. Its truck came
           back at Sapir's ask (30/10) — the icon is how the eye finds the
           delivery rows. */}
-      <p className="flex items-center gap-1.5 text-[13px] font-bold text-gold-deep mb-1.5">
+      <p className="flex items-center gap-1.5 text-sm font-bold text-gold-deep mb-1.5">
         <Truck size={16} className="text-primary" aria-hidden="true" data-testid="area-group-icon" />
         {label}
       </p>
@@ -266,10 +266,10 @@ function PickupRow({ loc, t, tMap }) {
       <div className="min-w-0">
         <p className="font-medium text-text">{heading}</p>
         {/* city as a subline only when a distinct label already owns the top line */}
-        {loc.city && loc.label && <p className="text-[13px] text-fg-muted">{loc.city}</p>}
+        {loc.city && loc.label && <p className="text-sm text-fg-muted">{loc.city}</p>}
         {/* MEH-2604: time ranges isolated LTR — raw «16:00–19:00» read «19:00–16:00» here. */}
         {loc.opening_hours && (
-          <p className="text-[13px] text-fg-muted">
+          <p className="text-sm text-fg-muted">
             <HoursText text={loc.opening_hours} />
           </p>
         )}
@@ -281,7 +281,7 @@ function PickupRow({ loc, t, tMap }) {
           <a
             href={telHref}
             dir="ltr"
-            className="inline-flex items-center gap-1 min-h-touch text-[13px] font-medium text-primary hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+            className="inline-flex items-center gap-1 min-h-touch text-sm font-medium text-primary hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
           >
             <Phone size={14} aria-hidden="true" />
             {phone}
@@ -349,7 +349,7 @@ function PickupRows({ locations, t, tMap }) {
     <div className="mb-4">
       {/* MEH-2592 C: «חינם» once, as a tag beside the heading, instead of on
           every row (MEH-1646 (b) still holds: every pickup shape says it). */}
-      <p className="flex items-center gap-2 text-[15px] font-bold text-text mb-2">
+      <p className="flex items-center gap-2 text-base font-bold text-text mb-2">
         <Package size={18} className="text-primary" aria-hidden="true" data-testid="pickup-heading-icon" />
         {t("pickup")}
         <span className="rounded-full bg-green-50 px-2 py-0.5 text-xs font-bold text-primary">
@@ -635,7 +635,7 @@ export default function DeliveryBlock({
 
       {nationwide ? (
         <>
-          <span className="inline-flex items-center gap-1.5 bg-green-50 text-text border border-border rounded-xl text-[13px] px-3 py-1.5 font-medium mb-4">
+          <span className="inline-flex items-center gap-1.5 bg-green-50 text-text border border-border rounded-xl text-sm px-3 py-1.5 font-medium mb-4">
             <Truck size={14} className="text-current ms-1" aria-hidden="true" />
             {hasExclusions
               ? t("nationwide_except", { cities: excluded.join(", ") })
@@ -741,7 +741,7 @@ export default function DeliveryBlock({
         <PickupRows locations={pickupLocations} t={t} tMap={tMap} />
       ) : (
         pickup && (
-          <p className="flex items-center gap-2 text-[15px] font-bold text-text mb-4">
+          <p className="flex items-center gap-2 text-base font-bold text-text mb-4">
             <Package size={18} className="text-primary" aria-hidden="true" data-testid="pickup-heading-icon" />
             {t("pickup")}
             {/* MEH-1646 (b): the generic fallback line carries the same tag

@@ -775,7 +775,7 @@ function UserMenu({ user, logout, open, setOpen, menuRef }) {
           role="menu"
           ref={menuListRef}
           onKeyDown={onMenuKeyDown}
-          className="absolute top-11 bg-surface-card border border-border rounded-[10px] shadow-[0_4px_16px_rgba(0,0,0,0.08)] py-1 z-[1001]"
+          className="absolute top-11 bg-surface-card border border-border rounded-md shadow-[0_4px_16px_rgba(0,0,0,0.08)] py-1 z-[1001]"
           style={{ minWidth: 160, insetInlineStart: 0 }}
         >
           {items.map((item, i) => (

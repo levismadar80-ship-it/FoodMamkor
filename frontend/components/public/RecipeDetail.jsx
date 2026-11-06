@@ -55,7 +55,7 @@ function FactTile({ icon: Icon, label, value }) {
   return (
     <div className="flex flex-col items-center gap-1 px-2 py-3 text-center">
       <Icon size={22} className="text-primary" aria-hidden="true" />
-      <span className="text-[13px] text-fg-muted">{label}</span>
+      <span className="text-sm text-fg-muted">{label}</span>
       <span className="text-base font-bold text-text">{value}</span>
     </div>
   );
@@ -165,8 +165,8 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
         </nav>
 
         <header className="max-w-3xl">
-          <p className="mt-4 text-[13px] font-medium text-accent">{t("eyebrow")}</p>
-          <h1 className="font-headline-lg text-3xl md:text-[44px] md:leading-tight font-black text-text mt-1">
+          <p className="mt-4 text-sm font-medium text-accent">{t("eyebrow")}</p>
+          <h1 className="font-headline-lg text-3xl md:text-5xl md:leading-tight font-black text-text mt-1">
             {recipe.title}
           </h1>
           {recipe.description && (
@@ -176,7 +176,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
           )}
           <div className="mt-5 max-w-md">
             <OwnerRow href={`/${producer.slug}`} name={producer.name} testId="recipe-owner-row">
-              <span className="block text-[13px] text-fg-muted">{t("by_label")}</span>
+              <span className="block text-sm text-fg-muted">{t("by_label")}</span>
               <span className="block font-medium">{producer.name}</span>
             </OwnerRow>
           </div>
@@ -211,7 +211,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
                       >
                         <span
                           aria-hidden="true"
-                          className={`shrink-0 w-5 h-5 rounded-[5px] border grid place-items-center transition-colors ${
+                          className={`shrink-0 w-5 h-5 rounded border grid place-items-center transition-colors ${
                             on ? "bg-primary border-primary" : "border-fg-muted/50"
                           }`}
                         >

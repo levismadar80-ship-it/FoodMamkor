@@ -69,7 +69,7 @@ export default function OrganizerCityCard({ profile, onSave, reportDirty = () =>
         type="button"
         onClick={save}
         disabled={!dirty || !trimmed || saving}
-        className="min-h-touch px-5 rounded-[10px] bg-primary text-white text-sm font-medium disabled:opacity-50 focus-ring"
+        className="min-h-touch px-5 rounded-full bg-primary text-white text-sm font-medium disabled:opacity-50 focus-ring"
       >
         {saving ? t("saving") : t("save")}
       </button>

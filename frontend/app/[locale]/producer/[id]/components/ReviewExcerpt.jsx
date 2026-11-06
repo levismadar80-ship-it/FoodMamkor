@@ -73,7 +73,7 @@ export default function ReviewExcerpt({ producerId, reviewsCount = 0 }) {
       className="mt-6 block border-s-[3px] border-accent ps-4 py-1 rounded-none transition-colors hover:bg-primary/[0.03] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/40"
       data-testid="review-excerpt"
     >
-      <span className="block font-headline-md text-[20px] leading-normal text-text">
+      <span className="block font-headline-md text-xl leading-normal text-text">
         {/* The quote text IS the link's accessible name so AT users hear the
             actual review; the nav purpose is an sr-only suffix instead of an
             aria-label (which would override — and hide — the quote). */}

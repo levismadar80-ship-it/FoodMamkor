@@ -188,7 +188,7 @@ export default function CitiesAutocomplete({
                 aria-pressed={done}
                 title={done ? t("region_remove_title", { region: region.name }) : undefined}
                 onClick={() => (done ? removeRegion(region) : addRegion(region))}
-                className={`rounded-full border text-[12px] px-2.5 py-0.5 transition ${
+                className={`rounded-full border text-xs px-2.5 py-0.5 transition ${
                   done
                     ? "bg-green-50 border-primary/40 text-text hover:bg-danger-50 hover:border-danger-300"
                     : "bg-surface border-border text-text hover:bg-background"
@@ -209,7 +209,7 @@ export default function CitiesAutocomplete({
         {value.map((city) => (
           <span
             key={city}
-            className="inline-flex items-center gap-1 bg-green-50 text-text border border-border rounded-full text-[12px] px-2.5 py-0.5"
+            className="inline-flex items-center gap-1 bg-green-50 text-text border border-border rounded-full text-xs px-2.5 py-0.5"
           >
             {city}
             <button

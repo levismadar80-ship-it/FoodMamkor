@@ -174,7 +174,7 @@ export default async function FaqForBusinessesPage({ params }) {
         <div className="flex flex-col gap-10 sm:gap-12">
           {CATEGORIES.map((cat) => (
             <section key={cat.key}>
-              <h2 className="font-headline-md mb-4 text-primary text-[20px] font-bold">
+              <h2 className="font-headline-md mb-4 text-primary text-xl font-bold">
                 {t(`categories.${cat.key}`)}
               </h2>
               <ul className="flex flex-col gap-3">
@@ -184,7 +184,7 @@ export default async function FaqForBusinessesPage({ params }) {
                       open={item.open || undefined}
                       className="group rounded-lg border border-border bg-surface transition-colors"
                     >
-                      <summary className="cursor-pointer list-none flex items-start justify-between gap-4 px-5 py-4 font-headline-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-lg text-text text-[17px] font-semibold">
+                      <summary className="cursor-pointer list-none flex items-start justify-between gap-4 px-5 py-4 font-headline-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-lg text-text text-lg font-semibold">
                         <span>{t(`faq.${item.key}.q`)}</span>
                         <CaretDown
                           aria-hidden="true"
@@ -193,7 +193,7 @@ export default async function FaqForBusinessesPage({ params }) {
                           className="shrink-0 mt-1 transition-transform group-open:rotate-180 text-primary"
                         />
                       </summary>
-                      <div className="px-5 pb-5 pt-1 text-[15px] leading-relaxed text-text/90">
+                      <div className="px-5 pb-5 pt-1 text-base leading-relaxed text-text/90">
                         {renderAnswer(t(`faq.${item.key}.a`))}
                       </div>
                     </details>
@@ -216,7 +216,7 @@ export default async function FaqForBusinessesPage({ params }) {
           <div className="flex items-center gap-3 mb-4">
             <h2
               id="showcase-heading"
-              className="font-headline-md text-primary text-[20px] font-bold"
+              className="font-headline-md text-primary text-xl font-bold"
             >
               {t("showcase.heading")}
             </h2>
@@ -224,18 +224,18 @@ export default async function FaqForBusinessesPage({ params }) {
               {t("showcase.label")}
             </span>
           </div>
-          <p className="text-[15px] leading-relaxed text-text/90 mb-6">
+          <p className="text-base leading-relaxed text-text/90 mb-6">
             {t("showcase.intro")}
           </p>
           <figure className="rounded-lg border border-border bg-surface p-6 sm:p-7">
             <figcaption className="mb-5">
-              <p className="font-headline-md text-[17px] font-bold text-text">
+              <p className="font-headline-md text-lg font-bold text-text">
                 {t("showcase.example_name")}{" "}
-                <span className="ms-1 align-middle rounded-full bg-surface px-2 py-0.5 text-[11px] font-semibold text-fg-muted">
+                <span className="ms-1 align-middle rounded-full bg-surface px-2 py-0.5 text-2xs font-semibold text-fg-muted">
                   {t("showcase.label")}
                 </span>
               </p>
-              <p className="text-[14px] text-fg-muted">
+              <p className="text-sm text-fg-muted">
                 {t("showcase.example_tagline")}
               </p>
             </figcaption>
@@ -257,17 +257,17 @@ export default async function FaqForBusinessesPage({ params }) {
                     aria-hidden="true"
                   />
                   <div>
-                    <p className="text-[15px] font-semibold text-text">
+                    <p className="text-base font-semibold text-text">
                       {t(`showcase.items.${key}.title`)}
                     </p>
-                    <p className="text-[14px] leading-relaxed text-text/80">
+                    <p className="text-sm leading-relaxed text-text/80">
                       {t(`showcase.items.${key}.desc`)}
                     </p>
                   </div>
                 </li>
               ))}
             </ul>
-            <p className="mt-6 border-t border-border pt-4 text-[14px] text-fg-muted">
+            <p className="mt-6 border-t border-border pt-4 text-sm text-fg-muted">
               {t("showcase.nudge")}
             </p>
           </figure>
@@ -275,7 +275,7 @@ export default async function FaqForBusinessesPage({ params }) {
 
         {/* MEH-1284: surface the /about/for-businesses/guides index (MEH-539,
             3 guides) — previously reachable only from onboarding emails. */}
-        <p className="mt-10 sm:mt-12 text-[15px]">
+        <p className="mt-10 sm:mt-12 text-base">
           <Link
             href="/about/for-businesses/guides"
             className="inline-flex items-center gap-1 underline text-primary focus-ring rounded-sm"
