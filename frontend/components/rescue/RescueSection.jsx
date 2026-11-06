@@ -19,6 +19,7 @@ import {
   reserveErrorKey,
   shekels,
 } from "@/lib/rescue";
+import Button from "@/components/ui/Button";
 
 /**
  * Module:   RescueSection
@@ -253,15 +254,15 @@ export default function RescueSection({ producer }) {
           <div className="grid gap-2 md:text-center">
             <PriceBlock className="hidden md:block" price={price} worth={worth} t={t} />
             {errorLine}
-            <button
+            <Button
               type="button"
               onClick={reserve}
               disabled={busy || offer.qty_left < 1}
               data-testid="rescue-reserve"
-              className="w-full bg-primary text-white py-3 rounded-md font-medium disabled:opacity-50 hover:bg-primary-dark transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              variant="primary" size="lg" className="w-full"
             >
               {t("section.cta")}
-            </button>
+            </Button>
             {/* Only the cutoff here (Sapir 6/11); the no-show rule stays on the
                 confirmation, where confirm.terms still carries it. */}
             {cancelUntil && (

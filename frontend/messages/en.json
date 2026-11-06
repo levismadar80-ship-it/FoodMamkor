@@ -1,6 +1,7 @@
 {
   "a11y": {
-    "loading": "Loading…"
+    "loading": "Loading…",
+    "back_to_top": "Back to top"
   },
   "nav": {
     "discover": "Discover",
@@ -533,6 +534,10 @@
     "recent": {
       "heading": "Recently viewed"
     },
+    "favorites_strip": {
+      "heading": "Your favorites",
+      "all": "All favorites"
+    },
     "cta": {
       "heading": "Have a business? Join us",
       "body_l1": "Mehamakor is the home of local food businesses in Israel.",
@@ -987,7 +992,8 @@
     },
     "card": {
       "minutes_suffix": "minutes",
-      "servings_suffix": "servings"
+      "servings_suffix": "servings",
+      "eyebrow": "Recipe"
     },
     "detail": {
       "breadcrumb_aria": "Breadcrumb navigation",
@@ -4643,6 +4649,10 @@
         "prompt": "Missing a tag that fits your business?",
         "link": "Write to us"
       },
+      "tags": {
+        "heading": "Tags",
+        "summary": "{count, plural, =0 {No tags yet} one {One active tag} other {# active tags}}"
+      },
       "dietaryScope": {
         "heading": "Diet",
         "helper": "We cross-check these answers against the catalog before publishing.",
@@ -5771,6 +5781,8 @@
     "dashboard": {
       "title": "Rescue bags",
       "lead": "Today's surplus — publish, hand over against a code, mark it.",
+      "back": "Back to tools",
+      "counter_card_link": "Counter card, to print",
       "loading": "Loading…",
       "failed": "Something got stuck. Try again.",
       "counter": {
@@ -5832,6 +5844,7 @@
       "title": "Mehamakor rescue bag",
       "subtitle": "Ask for the code, check it, hand it over, mark it",
       "print_hint": "To print: Ctrl+P (or Print in the browser menu). The card prints at A5.",
+      "back": "Back to rescue bags",
       "step": {
         "ask": "Ask the buyer for the code — four digits.",
         "check": "Check the code appears in the dashboard's reservation list.",

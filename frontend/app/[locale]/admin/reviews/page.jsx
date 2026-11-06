@@ -8,6 +8,7 @@ import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import InfoTooltip from "@/components/InfoTooltip";
 import AdminLoadError from "@/components/admin/AdminLoadError";
+import Button from "@/components/ui/Button";
 
 /**
  * Admin moderation page for producer reviews (MEH-10).
@@ -439,13 +440,13 @@ export default function AdminReviewsPage() {
               })}
             </p>
             <div className="flex gap-3 justify-start">
-              <button
+              <Button
                 disabled={deleting}
                 onClick={confirmRemove}
-                className="px-4 py-2 rounded-full text-sm font-medium text-white transition bg-danger-600 hover:bg-danger-700 disabled:opacity-50"
+                variant="danger" size="sm"
               >
                 {deleting ? t("reviews.deleting") : t("reviews.delete")}
-              </button>
+              </Button>
               <button
                 disabled={deleting}
                 onClick={() => setConfirmDelete(null)}

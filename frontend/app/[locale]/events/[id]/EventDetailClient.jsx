@@ -34,6 +34,7 @@ import { eventWhen, addressNavLinks } from "@/lib/event-when";
 import { AddressNavLinks } from "@/components/NavAppGlyphs";
 import { EVENT_CATEGORIES } from "@/lib/event-categories";
 import { downloadIcs } from "@/lib/event-ics";
+import Button from "@/components/ui/Button";
 
 // MEH-1404: reuse the producer-detail static map + Waze/Gmaps block on events
 // that carry coords. ssr:false — leaflet touches window at module eval.
@@ -350,15 +351,15 @@ export default function EventDetailClient() {
                   category={event.category}
                 />
                 {!isPast && (
-                  <button
+                  <Button
                     type="button"
                     onClick={() => downloadIcs(event, { url: pageUrl })}
                     data-testid="event-add-to-calendar"
-                    className="flex-1 inline-flex items-center justify-center gap-2 min-h-[46px] px-3 rounded-full border border-primary text-primary text-sm font-semibold hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40"
+                    variant="outlined" size="sm" className="flex-1"
                   >
                     <CalendarPlus size={18} aria-hidden="true" />
                     {t("add_to_calendar")}
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>

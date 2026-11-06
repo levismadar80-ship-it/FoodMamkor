@@ -15,6 +15,7 @@ import { clearClaimToken, readClaimToken, stashClaimToken } from "@/lib/claim-to
 import GoogleAuthButton from "@/components/GoogleAuthButton";
 import StatusPage from "@/components/StatusPage";
 import BrandLoader from "@/components/BrandLoader";
+import Button from "@/components/ui/Button";
 
 /**
  * Module:   ClaimClient
@@ -334,14 +335,14 @@ export default function ClaimClient({ tokenFromPath = null }) {
             </p>
           )}
 
-          <button
+          <Button
             type="submit"
             data-testid="claim-submit"
             disabled={submitting}
-            className="min-h-touch w-full bg-primary text-white rounded-md px-6 py-2 font-medium hover:bg-primary-dark transition disabled:opacity-50"
+            variant="primary" size="lg" className="w-full"
           >
             {submitting ? t("eligible.submitting") : t("eligible.submit")}
-          </button>
+          </Button>
         </form>
       )}
     </Shell>

@@ -44,8 +44,12 @@ vi.mock("@/app/[locale]/home/UpcomingEventsPreview", () => ({
 vi.mock("@/app/[locale]/home/HomeStaticBlocks", () => ({
   HomeFeaturedProducer: () => null,
   HomeRecentlyViewed: () => null,
+  HomeFavoritesStrip: () => null,
   HomeCTA: () => null,
 }));
+// MEH-2724: the favorites strip reads useAuth; this file renders HomeClient
+// without an AuthProvider, so the hook is stubbed like useHomePage below.
+vi.mock("@/lib/use-favorite-producers", () => ({ useFavoriteProducers: () => [] }));
 vi.mock("@/app/[locale]/home/HomeCategoryGrid", () => ({ HomeCategoryGrid: () => null }));
 vi.mock("@/app/[locale]/home/HomeProducersGrid", () => ({ HomeProducersGrid: () => null }));
 // MEH-1287 chunk B added a child to HomeClient. It is stubbed for the same

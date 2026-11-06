@@ -5787,6 +5787,11 @@
             ],
             "title": "Requested Changes"
           },
+          "rescued_recently": {
+            "default": false,
+            "title": "Rescued Recently",
+            "type": "boolean"
+          },
           "reservist_owned": {
             "default": false,
             "title": "Reservist Owned",
@@ -7557,6 +7562,11 @@
             "title": "Report Count",
             "type": "integer"
           },
+          "rescued_recently": {
+            "default": false,
+            "title": "Rescued Recently",
+            "type": "boolean"
+          },
           "reservist_owned": {
             "default": false,
             "title": "Reservist Owned",
@@ -8250,6 +8260,11 @@
             "default": 0,
             "title": "Products Count",
             "type": "integer"
+          },
+          "rescued_recently": {
+            "default": false,
+            "title": "Rescued Recently",
+            "type": "boolean"
           },
           "reservist_owned": {
             "default": false,
@@ -9765,6 +9780,11 @@
               }
             ],
             "title": "Requested Changes"
+          },
+          "rescued_recently": {
+            "default": false,
+            "title": "Rescued Recently",
+            "type": "boolean"
           },
           "reservist_owned": {
             "default": false,

@@ -12,6 +12,7 @@
 >   - ✅👤 = verified producer (`require_verified_producer` — producer role + verified email; unverified → 403 `יש לאמת את כתובת האימייל תחילה`, MEH-1164 F5). Applies to the **create** endpoints `POST /events`, `POST /experiences` (MEH-2246), `POST /producers/me/recipes`, `POST /group-buys`. Also `PATCH /group-buys/{id}/status` (MEH-2436: owner of that business only; an admin uses `PATCH /admin/group-buys/{id}/status`).
 >   - 🌐 group buys (MEH-2484): `GET /group-buys`, `GET /group-buys/{id}` and `POST /group-buys/{id}/commit` serve only a group buy whose business passes `is_business()` (approved, `kind='producer'`); otherwise 404 `קבוצת הרכש לא נמצאה`. The API still answers the owner and admin `200`; the public page itself is server-rendered without auth, so it 404s for them too. Leaving (`DELETE …/commit`) is not gated.
 >   - 🛡️ = admin role (`require_admin`)
+>   - MEH-2716: `GET /producers`, `/producers/{id}`, `/producers/by-slug/{slug}` and `GET /users/me/favorites` carry computed `rescued_recently` («מצילים מזון» badge: a surprise bag handed or given away free in the last 30 days; always false while the rescue pilot is off).
 
 ## 1. Registered routers at a glance
 

@@ -700,11 +700,12 @@ outstanding. Source MEH-760 / ADR-022 / Brief Q1+Q3.
 **Reused (not recreated):** the illustrative badge tooltip uses the existing
 `producer.badge.verified_tooltip_license` (`{date}` → literal `5.6.2026` here).
 
-**Cross-ref:** `process.badge.absence_body` mirrors the tier-2 framing of
-`producer.badge.declared_explainer` (retired MEH-2710 — /about/process is now the only surface, nothing left to sync with) — **historical:** sync if the tier-2 wording changes
-(lawyer/ADR-022).** Kept as a separate string (not a shared key) so the page's
-editorial voice can diverge from the per-producer badge surface; the two must
-stay semantically aligned on the "exempt ≠ less trustworthy" message.
+**Cross-ref (historical):** `process.badge.absence_body` used to mirror the tier-2
+framing of `producer.badge.declared_explainer`, and the two were kept in sync. That key
+was retired in MEH-2710 (06/11/2026), so /about/process is now the only tier-2
+explanation surface and there is nothing left to sync with. Open: its "exempt
+category" wording is inaccurate for MEH-2299 override businesses — see the lawyer
+brief's 06/11 addendum (MEH-2739).
 
 ## Brand phrasings
 

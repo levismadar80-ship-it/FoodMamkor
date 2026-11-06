@@ -222,6 +222,7 @@ export const ProducerListSchema = z.object({
   days_since_created: z.number().nullable().optional(),      // → new (חדש)
   grass_fed: z.boolean().nullable().optional(),              // → grass_fed
   reservist_owned: z.boolean().nullable().optional(),        // → reservist_owned («עסק של מילואימניקים»)
+  rescued_recently: z.boolean().nullable().optional(),       // → rescue_saving («מצילים מזון», MEH-2716)
   has_gluten_free_products: z.boolean().nullable().optional(),   // → gluten_free
   has_vegetarian_products: z.boolean().nullable().optional(),    // → vegetarian
   has_vegan_products: z.boolean().nullable().optional(),         // → vegan
