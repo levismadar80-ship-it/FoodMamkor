@@ -353,6 +353,34 @@ _שורה קודמת כאן טענה ש"נתיבים רב-מקטעיים כן נ
 `scripts/checks/run-all.sh` והופכת כל קובץ בה לרגל של שער **Repo guards**
 הנדרש; MEH-1963 הוציא חיווט ל-CI מהסקופ במפורש.
 
+**MEH-2749:** הבודק רץ עכשיו גם אחרי כל עלייה ל-staging ול-main, מול האתר
+החי, בתוך `post-deploy-checks.yml` (ראו הסעיף הבא). ל-staging הוא שולח את
+`VERCEL_AUTOMATION_BYPASS_SECRET` מה-env אם קיים.
+
+---
+
+## בדיקות אחרי עלייה (MEH-2749)
+
+אחרי כל push ל-`staging` / `main`, כשה-build החדש עלה, רצים מול האתר החי:
+
+```
+python scripts/checks/wait_for_deploy.py --base-url <URL> --sha <commit>  # מחכה ל-build id חדש
+python scripts/checks/smoke_production.py                                  # main בלבד
+node   scripts/link-check.mjs <URL>                                        # קישורים שבורים
+python scripts/checks/live_security_headers.py --base-url <URL>            # CSP, HSTS ועוד
+npx @lhci/cli@0.15.1 collect --config=scripts/checks/lighthouserc.cjs      # תקציב ביצועים
+npx @lhci/cli@0.15.1 assert  --config=scripts/checks/lighthouserc.cjs
+```
+
+- **תקציב Lighthouse:** בנייד, 3 הרצות לעמוד, החציון. בייטים, CLS ו-a11y/SEO
+  = אדום. זמני טעינה (ציון ביצועים, LCP, TBT) = אזהרה בלבד, כי מכונות CI
+  משתנות. המספרים הם ratchet מ-06/11 ולא היעד — הטבלה בראש
+  `lighthouserc.cjs`. כשה-LCP של MEH-2233 משתפר, להדק שם.
+- **לא בדיקה חוסמת** — רצה אחרי מיזוג. אדום = מייל רגיל מ-GitHub Actions.
+- הסקריפטים ב-`scripts/checks/` הם `.py`/`.cjs`, ו-`run-all.sh` מריץ רק `*.sh`,
+  כך שהם לא הופכים לרגל של Repo guards.
+- ה-workflow עצמו: [docs/ci/meh-2749-post-deploy-checks.patch.md](./ci/meh-2749-post-deploy-checks.patch.md).
+
 ---
 
 ## Agent Teams — בדיקה מתקדמת (מהתמונות)
