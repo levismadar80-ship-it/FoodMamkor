@@ -979,7 +979,7 @@
       "save_cta": "שמירה",
       "save_error": "השמירה נכשלה. נסו שוב.",
       "card_free_above": "חינם מעל {amount}",
-      "card_free_above_alone": "משלוח חינם מעל {amount}"
+      "card_delivery_sr": "משלוח"
     }
   },
   "recipes": {
@@ -1325,7 +1325,9 @@
     },
     "errors": {
       "load_failed": "לא הצלחנו לטעון עסקים — נסו שוב",
-      "invalid_search": "חיפוש לא תקין"
+      "invalid_search": "חיפוש לא תקין",
+      "radius_too_small": "הזיזו את המפה לפני החיפוש",
+      "radius_too_large": "האזור גדול מדי — הקטינו את מרחק החיפוש"
     },
     "city_picker": {
       "heading": "לאן לשלוח?",
@@ -1358,7 +1360,7 @@
     "pane": {
       "search_this_area": "חפשו באזור זה",
       "empty": {
-        "heading": "אין עסקים באזור זה עדיין"
+        "heading": "אין עדיין בתי עסק באזור הזה"
       },
       "aria": {
         "center_on_me": "מרכזו את המפה על המיקום שלי",
@@ -3925,6 +3927,12 @@
         "customer_messages": "זמן תגובה, טון, ו-5 תבניות מוכנות. הדברים הקטנים שמכריעים אם השיחה נסגרת בהזמנה."
       }
     },
+    "article": {
+      "eyebrow": "מדריך לבעלי עסקים · קריאה כ-{minutes} דקות",
+      "founder_name": "ספיר שנפ",
+      "founder_role": "מייסדת · {brand}",
+      "back": "חזרה למדריכים"
+    },
     "business_story": {
       "title": "איך לכתוב סיפור טוב על העסק שלך",
       "subtitle": "כתבו את הסיפור פעם אחת, נכון. השאר ידאג לעצמו.",
@@ -5050,8 +5058,6 @@
       "image_remove": "הסרת תמונה",
       "image_remove_aria": "הסרת התמונה",
       "image_upload_error": "העלאת התמונה נכשלה. נסו שוב.",
-      "field_registration_url_label": "לינק הרשמה חיצוני (אופציונלי)",
-      "field_registration_url_placeholder": "https://...",
       "submit_publishing": "בפרסום...",
       "submit": "פרסמו אירוע",
       "cancel": "ביטול",
@@ -5774,7 +5780,7 @@
       "loading": "טוענים…",
       "failed": "משהו נתקע. נסו שוב.",
       "counter": {
-        "reserved": "משוריינות",
+        "reserved": "משוריינים",
         "handed": "נמסרו",
         "no_show": "לא הגיעו"
       },
@@ -5951,6 +5957,30 @@
     "facebook": "שליחת הודעה בפייסבוק",
     "external_order": "להזמנה",
     "wa_greeting": "היי! הגעתי דרך מהמקור — {name}"
+  },
+  "registration": {
+    "form": {
+      "legend": "איך נרשמים?",
+      "site_form": "טופס הרשמה באתר",
+      "site_form_hint": "הנרשמות משאירות שם, טלפון ואימייל. את מקבלת אימייל על כל הרשמה, והרשימה מחכה לך כאן.",
+      "whatsapp": "WhatsApp",
+      "whatsapp_hint": "ייפתח וואטסאפ למספר של בית העסק.",
+      "phone": "טלפון",
+      "external_url": "קישור הרשמה חיצוני",
+      "external_url_hint": "למשל טופס גוגל או אתר כרטיסים.",
+      "external_url_placeholder": "https://...",
+      "whatsapp_needs_mobile": "כדי לבחור WhatsApp צריך מספר נייד בפרטי העסק",
+      "phone_needs_phone": "כדי לבחור טלפון צריך מספר טלפון בפרטי העסק",
+      "external_needs_url": "צריך להוסיף קישור הרשמה",
+      "invalid_url": "הכתובת אינה תקינה — התחילו ב-https://"
+    },
+    "list": {
+      "summary": "הרשמות באתר ({count})",
+      "empty": "עוד אין הרשמות באתר",
+      "cancelled": "בוטלה",
+      "offline_label": "נרשמו מחוץ לאתר",
+      "load_error": "לא הצלחנו לטעון את הרשימה."
+    }
   },
   "filter_axes": {
     "has_delivery": {

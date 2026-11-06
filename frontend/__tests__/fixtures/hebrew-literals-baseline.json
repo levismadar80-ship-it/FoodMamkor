@@ -15,7 +15,6 @@
   "components/AccountSheet.jsx": 1,
   "components/CategoryIcons.jsx": 18,
   "components/EventEntryRow.jsx": 9,
-  "components/GuideArticle.jsx": 5,
   "components/ImageGallery.jsx": 1,
   "components/LocationModal.jsx": 4,
   "components/StoryCardCanvas.jsx": 1,
@@ -40,7 +39,7 @@
   "lib/producer-status.js": 5,
   "lib/rescue.js": 1,
   "lib/resolvedQuestions.js": 2,
-  "lib/schemas.js": 9,
+  "lib/schemas.js": 7,
   "lib/seo.js": 7,
   "lib/utils.js": 1,
   "lib/validators.js": 2
