@@ -20,7 +20,7 @@ import traverseMod from "@babel/traverse";
 const traverse = traverseMod.default || traverseMod;
 const ROOT = path.resolve(__dirname, "..");
 
-export function recipeOf(cls) {
+function recipeOf(cls) {
   const t = cls.trim().split(/\s+/);
   if (t.includes("bg-primary") && t.includes("text-white")) return "primary";
   if (t.includes("bg-danger-600") && t.includes("text-white")) return "danger";
