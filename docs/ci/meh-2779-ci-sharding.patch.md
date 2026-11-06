@@ -26,7 +26,8 @@ alive > 60 min. E2E carries no merge vote.
 
 1. **pytest** → `pytest-shard` (matrix 1..3, own Postgres each, `PYTEST_SHARD=i/3`,
    split in `tests/ci_shard.py`) + `pytest` (same id and name as today) that
-   checks the 3 shard reports add up to the whole suite, combines coverage and
+   checks the 3 shard reports add up to the whole suite (same size, same
+   collection-order fingerprint, kept counts summing to it), combines coverage and
    applies the unchanged 89 floor. The serial pass runs whole on shard 1.
 2. **vitest** → `frontend-vitest-shard` (matrix 1..3, `--shard`, blob reporter)
    + `frontend-vitest` (same id and name) that merges with
@@ -86,7 +87,7 @@ job (`!cancelled()`), which fails by name.
  
      services:
        postgres:
-@@ -510,34 +520,125 @@
+@@ -510,34 +520,127 @@
        # the 2pt buffer is the backend analogue of the frontend's 0.5pt
        # tolerance (pytest-cov has no tolerance mode). Raise it only from a
        # fresh CI TOTAL line, never from a number quoted elsewhere.
@@ -196,12 +197,14 @@ job (`!cancelled()`), which fails by name.
 +          set -euo pipefail
 +          cat shard-out/shard-report-*.txt
 +          awk '
-+            { idx[$1]=1; n=$2; kept+=$3; all[$4]=1; rows++ }
++            { idx[$1]=1; n=$2; kept+=$3; all[$4]=1; ord[$5]=1; rows++ }
 +            END {
 +              nall=0; for (k in all) nall++
 +              nidx=0; for (k in idx) nidx++
++              nord=0; for (k in ord) nord++
 +              if (rows != n || nidx != n) { print "::error::expected " n " shard reports, got " rows " (" nidx " distinct)"; exit 1 }
 +              if (nall != 1) { print "::error::shards disagree on the suite size"; exit 1 }
++              if (nord != 1) { print "::error::shards collected the suite in different orders — round-robin is not a partition"; exit 1 }
 +              for (k in all) total=k
 +              if (kept != total) { print "::error::shards ran " kept " of " total " tests"; exit 1 }
 +              print "OK: " n " shards ran " kept " of " total " tests (parallel pass; the serial pass runs whole on shard 1)"
@@ -219,7 +222,7 @@ job (`!cancelled()`), which fails by name.
        # MEH-489 — Smokeshow upload (Tiangolo pattern).
        # `continue-on-error: true` covers the calibration window before
        # SMOKESHOW_AUTH_KEY lands as a repo secret post-merge. Fork PR
-@@ -806,16 +907,66 @@
+@@ -806,16 +909,66 @@
        - name: Run tsc strict (e2e files, warn-only — errors logged, check passes)
          run: npx tsc --project tsconfig.e2e.json --noEmit || true
  
@@ -288,7 +291,7 @@ job (`!cancelled()`), which fails by name.
        - uses: actions/checkout@v7
        - name: Set up Node.js 20
          uses: actions/setup-node@v7
-@@ -825,8 +976,20 @@
+@@ -825,8 +978,20 @@
            cache-dependency-path: frontend/package-lock.json
        - name: Install dependencies
          run: npm ci

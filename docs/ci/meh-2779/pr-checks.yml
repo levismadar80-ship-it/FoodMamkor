@@ -619,12 +619,14 @@ jobs:
           set -euo pipefail
           cat shard-out/shard-report-*.txt
           awk '
-            { idx[$1]=1; n=$2; kept+=$3; all[$4]=1; rows++ }
+            { idx[$1]=1; n=$2; kept+=$3; all[$4]=1; ord[$5]=1; rows++ }
             END {
               nall=0; for (k in all) nall++
               nidx=0; for (k in idx) nidx++
+              nord=0; for (k in ord) nord++
               if (rows != n || nidx != n) { print "::error::expected " n " shard reports, got " rows " (" nidx " distinct)"; exit 1 }
               if (nall != 1) { print "::error::shards disagree on the suite size"; exit 1 }
+              if (nord != 1) { print "::error::shards collected the suite in different orders — round-robin is not a partition"; exit 1 }
               for (k in all) total=k
               if (kept != total) { print "::error::shards ran " kept " of " total " tests"; exit 1 }
               print "OK: " n " shards ran " kept " of " total " tests (parallel pass; the serial pass runs whole on shard 1)"

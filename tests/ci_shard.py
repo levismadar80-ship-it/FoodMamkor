@@ -22,11 +22,13 @@ Without ``PYTEST_SHARD`` nothing is deselected — local runs are unchanged.
 
 from __future__ import annotations
 
+import hashlib
 import os
 
 ENV_VAR = "PYTEST_SHARD"
 # Written (when set) by the first worker of each shard, so the combine job can
-# prove that the shards together ran the whole suite.
+# prove that the shards together ran the whole suite. One line:
+# "<index> <total> <kept> <suite size> <order fingerprint>".
 REPORT_ENV_VAR = "PYTEST_SHARD_REPORT"
 
 
@@ -63,6 +65,10 @@ def apply(config, items) -> None:
     if not value:
         return
     index, total = parse_shard(value)
+    # Fingerprint of the ordered list being split. Round-robin is a partition
+    # only if every shard job split the SAME list in the SAME order; the
+    # combine job fails if the shards' fingerprints differ.
+    order = hashlib.sha256("\n".join(i.nodeid for i in items).encode()).hexdigest()[:16]
     kept, dropped = split(items, index, total)
     if dropped:
         config.hook.pytest_deselected(items=dropped)
@@ -74,4 +80,6 @@ def apply(config, items) -> None:
     worker = os.environ.get("PYTEST_XDIST_WORKER")
     if report and worker in (None, "gw0"):
         with open(report, "w", encoding="utf-8") as fh:
-            fh.write(f"{index} {total} {len(kept)} {len(kept) + len(dropped)}\n")
+            fh.write(
+                f"{index} {total} {len(kept)} {len(kept) + len(dropped)} {order}\n"
+            )
