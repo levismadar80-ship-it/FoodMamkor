@@ -251,6 +251,28 @@ class TestWhenTheStampMustStayNull:
         counts = send_rescue_digests(db)
 
         assert counts["skipped_no_phone"] == 1
+        # Its own counter, not merged with the no-owner case: when a digest
+        # silently does not arrive, "no number" and "no owner account" send you
+        # to different places.
+        assert counts["skipped_no_owner"] == 0
+        assert sent == []
+        db.refresh(offer)
+        assert offer.codes_sent_at is None
+
+    def test_a_business_with_no_owner_row_is_counted_separately(
+        self, db, shop, gates_on, sent
+    ):
+        # The owner row is what the AlertLog cap is keyed on, so without it
+        # nothing can be sent capped — but the reason is not "no phone".
+        shop["owner"].producer_id = None
+        db.commit()
+        offer = _offer(db, shop)
+        _order(db, offer, shop)
+
+        counts = send_rescue_digests(db)
+
+        assert counts["skipped_no_owner"] == 1
+        assert counts["skipped_no_phone"] == 0
         assert sent == []
         db.refresh(offer)
         assert offer.codes_sent_at is None

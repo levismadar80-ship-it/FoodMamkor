@@ -6,9 +6,14 @@ Create Date: 2026-11-06 14:45:00
 
 One nullable timestamp, and it is the whole duplicate-send guarantee for the
 pickup_start WhatsApp digest: NULL means "this offer's codes have not been sent
-to the business", any value means they have. The scheduler stamps it in the same
-transaction as the send, so a crash between the two leaves the offer unstamped
-and the next tick retries rather than losing the message.
+to the business", any value means they have.
+
+Delivery is **at-least-once**, and this column is not written in the same
+transaction as the send — `send_template` is an outbound HTTP call and the
+commit follows it. A commit that fails once Meta has accepted the message
+leaves this NULL and the next tick sends a second digest within 5 minutes.
+That direction is deliberate: for codes read aloud at a counter a duplicate is
+cheap and a missing message is not.
 
 Why NULL-able with no default and no backfill: offers that already exist were
 never digested, and NULL says exactly that. A `server_default now()` would
