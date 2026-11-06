@@ -126,6 +126,17 @@ describe("DeliveryWaitlistForm on the checker's negative verdict (MEH-2618)", ()
     expect(box.split("נתניה").length - 1).toBe(1);
   });
 
+  // MEH-2709: the chips are ordered in the DOM (not with CSS `order`), so
+  // the tab / screen-reader order is the order seen: waitlist, then WhatsApp.
+  it("puts the waitlist chip before the WhatsApp chip in DOM order", async () => {
+    setup();
+    commitCity("נתניה");
+    await waitFor(() => expect(form()).toBeTruthy());
+    const row = screen.getByTestId("delivery-checker-no-actions");
+    const ids = [...row.children].map((el) => el.dataset.testid);
+    expect(ids).toEqual(["delivery-waitlist", "coverage-request-cta"]);
+  });
+
   it("guest: opens an empty email field and posts email + city, then confirms", async () => {
     post.mockResolvedValue({ status: 201, data: { status: "added" } });
     setup();

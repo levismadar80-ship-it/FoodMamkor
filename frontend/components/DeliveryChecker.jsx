@@ -200,11 +200,13 @@ export default function DeliveryChecker({
                 page in every state. */}
             {/* MEH-2709: the two follow-ups sit as one row of chips under
                 the verdict (it already names the city, so they don't repeat
-                it). The waitlist chip is visually first via `order`; once it
-                opens into a form it takes a full row of its own below. */}
+                it). DOM order = visual order (waitlist first), so keyboard
+                and screen-reader order match what is seen. Once the waitlist
+                opens into a form it takes a full row and the WhatsApp chip
+                wraps below it. `empty:hidden`: both children return null
+                (no element at all) when they have nothing to offer. */}
             {result.status === "no" && (
               <div className="mt-2.5 flex flex-wrap gap-2 empty:hidden" data-testid="delivery-checker-no-actions">
-                <CoverageRequestCta producer={producer} city={result.city} />
                 {/* MEH-2618: the no-account waitlist, same single mount rule.
                     Keyed by city so a new verdict starts a fresh form instead
                     of showing "נודיע לך כשיגיעו לחיפה" under a נתניה verdict. */}
@@ -213,6 +215,7 @@ export default function DeliveryChecker({
                   producer={producer}
                   city={result.city}
                 />
+                <CoverageRequestCta producer={producer} city={result.city} />
               </div>
             )}
           </>

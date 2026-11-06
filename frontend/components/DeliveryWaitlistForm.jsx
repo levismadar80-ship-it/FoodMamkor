@@ -87,7 +87,7 @@ export default function DeliveryWaitlistForm({ producer = null, city = "" }) {
 
   if (phase === "done") {
     return (
-      <div className="order-last basis-full" data-testid="delivery-waitlist" data-phase="done">
+      <div className="basis-full" data-testid="delivery-waitlist" data-phase="done">
         <p
           className="flex items-center gap-2 text-sm font-medium text-primary"
           data-testid="delivery-waitlist-done"
@@ -127,7 +127,7 @@ export default function DeliveryWaitlistForm({ producer = null, city = "" }) {
 
   if (phase === "idle") {
     return (
-      <p className="order-first" data-testid="delivery-waitlist" data-phase="idle">
+      <p data-testid="delivery-waitlist" data-phase="idle">
         <button
           type="button"
           onClick={() => setPhase("open")}
@@ -150,7 +150,7 @@ export default function DeliveryWaitlistForm({ producer = null, city = "" }) {
   return (
     <form
       onSubmit={submit}
-      className="order-last basis-full"
+      className="basis-full"
       data-testid="delivery-waitlist"
       data-phase={phase}
     >
