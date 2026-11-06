@@ -5058,8 +5058,6 @@
       "image_remove": "הסרת תמונה",
       "image_remove_aria": "הסרת התמונה",
       "image_upload_error": "העלאת התמונה נכשלה. נסו שוב.",
-      "field_registration_url_label": "לינק הרשמה חיצוני (אופציונלי)",
-      "field_registration_url_placeholder": "https://...",
       "submit_publishing": "בפרסום...",
       "submit": "פרסמו אירוע",
       "cancel": "ביטול",
@@ -5959,6 +5957,30 @@
     "facebook": "שליחת הודעה בפייסבוק",
     "external_order": "להזמנה",
     "wa_greeting": "היי! הגעתי דרך מהמקור — {name}"
+  },
+  "registration": {
+    "form": {
+      "legend": "איך נרשמים?",
+      "site_form": "טופס הרשמה באתר",
+      "site_form_hint": "הנרשמות משאירות שם, טלפון ואימייל. את מקבלת אימייל על כל הרשמה, והרשימה מחכה לך כאן.",
+      "whatsapp": "WhatsApp",
+      "whatsapp_hint": "ייפתח וואטסאפ למספר של בית העסק.",
+      "phone": "טלפון",
+      "external_url": "קישור הרשמה חיצוני",
+      "external_url_hint": "למשל טופס גוגל או אתר כרטיסים.",
+      "external_url_placeholder": "https://...",
+      "whatsapp_needs_mobile": "כדי לבחור WhatsApp צריך מספר נייד בפרטי העסק",
+      "phone_needs_phone": "כדי לבחור טלפון צריך מספר טלפון בפרטי העסק",
+      "external_needs_url": "צריך להוסיף קישור הרשמה",
+      "invalid_url": "הכתובת אינה תקינה — התחילו ב-https://"
+    },
+    "list": {
+      "summary": "הרשמות באתר ({count})",
+      "empty": "עוד אין הרשמות באתר",
+      "cancelled": "בוטלה",
+      "offline_label": "נרשמו מחוץ לאתר",
+      "load_error": "לא הצלחנו לטעון את הרשימה."
+    }
   },
   "filter_axes": {
     "has_delivery": {

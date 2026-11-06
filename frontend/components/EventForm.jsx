@@ -31,6 +31,7 @@ import UnverifiedEmailNotice from "@/components/UnverifiedEmailNotice";
 import CollectionNotice from "@/components/CollectionNotice";
 import { EVENT_CATEGORIES as CATEGORY_KEYS } from "@/lib/event-categories";
 import Button from "@/components/ui/Button";
+import RegistrationMethodField from "@/components/RegistrationMethodField";
 
 const DEFAULTS = {
   title: "",
@@ -50,6 +51,8 @@ const DEFAULTS = {
   category: "",
   price: 0,
   max_participants: "",
+  // MEH-2766: «איך נרשמים?» — a new event defaults to the on-site form.
+  registration_method: "site_form",
   registration_url: "",
 };
 
@@ -72,6 +75,7 @@ function seed(initial) {
     category: initial.category ?? "",
     price: initial.price ?? 0,
     max_participants: initial.max_participants ?? "",
+    registration_method: initial.registration_method ?? "site_form",
     registration_url: initial.registration_url ?? "",
   };
 }
@@ -110,7 +114,7 @@ function isNativeValidUrl(value) {
 
 const isWholeNumber = (value) => Number.isInteger(Number(value));
 
-function validateEventForm(f, t) {
+function validateEventForm(f, t, tReg) {
   const errors = {};
   if (!f.title.trim()) errors.title = t("error_title_required");
   if (!f.event_date) errors.event_date = t("error_date_required");
@@ -136,8 +140,12 @@ function validateEventForm(f, t) {
     if (Number(f.max_participants) < 1) errors.max_participants = t("error_max_participants_min");
     else if (!isWholeNumber(f.max_participants)) errors.max_participants = t("error_whole_number");
   }
-  if (f.registration_url.trim() !== "" && !isNativeValidUrl(f.registration_url.trim())) {
-    errors.registration_url = t("error_invalid_url");
+  // MEH-2766: the URL is asked for (and sent) only when the owner picked the
+  // external link; the server rejects external_url without one.
+  if (f.registration_method === "external_url") {
+    const url = f.registration_url.trim();
+    if (!url) errors.registration_url = tReg("external_needs_url");
+    else if (!isNativeValidUrl(url)) errors.registration_url = t("error_invalid_url");
   }
   return errors;
 }
@@ -150,6 +158,7 @@ function validateEventForm(f, t) {
  */
 export default function EventForm({ mode = "create", initial = null, onSuccess, cancelHref = "/producer/dashboard" }) {
   const t = useTranslations("sweep_tail.event_new");
+  const tReg = useTranslations("registration.form");
   const tCat = useTranslations("events.categories");
   // MEH-1981: notice-at-collection (copy approved verbatim 02/09, rule 22).
   const tNotice = useTranslations("privacy.collection_notice");
@@ -192,7 +201,7 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
     setError("");
     setUnverified(false);
 
-    const errors = validateEventForm(form, t);
+    const errors = validateEventForm(form, t, tReg);
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
       const firstInvalid = EVENT_FIELD_ORDER.find((field) => errors[field]);
@@ -213,7 +222,8 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
         max_participants: form.max_participants ? Number(form.max_participants) : null,
         event_time: form.event_time || null,
         end_time: form.end_time || null, // MEH-2469
-        registration_url: form.registration_url || null,
+        registration_url:
+          form.registration_method === "external_url" ? form.registration_url.trim() || null : null,
       };
       const r = isEdit
         ? await api.put(`/events/${initial.id}`, payload)
@@ -455,15 +465,15 @@ export default function EventForm({ mode = "create", initial = null, onSuccess, 
           )}
         </div>
 
-        <Input
-          id="registration_url"
-          type="url"
-          label={t("field_registration_url_label")}
-          value={form.registration_url}
-          onChange={update("registration_url")}
-          placeholder={t("field_registration_url_placeholder")}
-          dir="ltr"
-          error={fieldErrors.registration_url}
+        <RegistrationMethodField
+          value={form.registration_method}
+          onChange={(m) => {
+            setForm((f) => ({ ...f, registration_method: m }));
+            setFieldErrors((errs) => (errs.registration_url ? { ...errs, registration_url: undefined } : errs));
+          }}
+          url={form.registration_url}
+          onUrlChange={(v) => update("registration_url")({ target: { value: v } })}
+          urlError={fieldErrors.registration_url}
         />
 
         <CollectionNotice

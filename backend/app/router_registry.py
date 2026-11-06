@@ -30,6 +30,7 @@ from app.routers import (
     producer_recipes,
     rescue,
     producers,
+    registrations,
     report_info,
     reports,
     reviews,
@@ -106,6 +107,8 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(events.router)
     app.include_router(experiences.router)
     app.include_router(admin_experiences.router)
+    # MEH-2763: on-site sign-ups for events + experiences.
+    app.include_router(registrations.router)
     # MEH-589: producer recipes chunk 2/4
     app.include_router(producer_recipes.router)
     app.include_router(admin_recipes.router)
