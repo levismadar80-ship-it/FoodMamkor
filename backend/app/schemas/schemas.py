@@ -2577,7 +2577,9 @@ class ProducerListOut(BaseModel):
     has_no_added_sugar_products: bool = False
     has_low_carb_products: bool = False
     # MEH-2716: «מצילים מזון» — set by attach_rescue_saving (a surprise bag
-    # saved in the last 30 days); False while the rescue pilot is off.
+    # saved in the last 30 days); False while the rescue pilot is off. Only the
+    # public list/detail and favorites routes compute it — admin payloads that
+    # reuse this schema carry a constant False, not data.
     rescued_recently: bool = False
     has_delivery: bool = False
     # MEH-2060: no longer the raw column value. attach_badge_fields overwrites

@@ -331,6 +331,9 @@ def attach_rescue_saving(producers, db: Session):
             ProducerLocation.producer_id.in_(ids),
             RescueOffer.qty_donated > 0,
             RescueOffer.pickup_end >= since,
+            # set_donated refuses a cancelled offer; this keeps the badge from
+            # trusting a count on one cancelled afterwards.
+            RescueOffer.status != "cancelled",
         )
         .distinct()
     )

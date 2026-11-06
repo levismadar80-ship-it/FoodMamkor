@@ -63,6 +63,22 @@ class TestRescueSavingBadge:
         db.commit()
         assert _detail(client, shop["producer"])["rescued_recently"] is True
 
+    def test_a_cancelled_offer_with_a_donation_count_does_not(
+        self, client, db, shop, rescue_on
+    ):
+        now = utc_now()
+        offer = _seed_offer(
+            db,
+            shop["location"],
+            pickup_start=now - timedelta(days=2, hours=2),
+            pickup_end=now - timedelta(days=2),
+            cancel_until=now - timedelta(days=2, hours=3),
+        )
+        offer.qty_donated = 1
+        offer.status = "cancelled"
+        db.commit()
+        assert _detail(client, shop["producer"])["rescued_recently"] is False
+
     def test_a_bag_saved_31_days_ago_does_not(self, client, db, shop, rescue_on):
         _handed(db, shop, days_ago=31)
         assert _detail(client, shop["producer"])["rescued_recently"] is False

@@ -28,8 +28,9 @@ export default function BadgesExplainer() {
   const t = useTranslations("about_badges");
   // MEH-2716: «מצילים מזון» can only light while the rescue pilot is on, so
   // the page does not explain a badge nobody can see.
+  const pilotOn = rescueBagsEnabled();
   const groups = badgesByEvidence()
-    .map((g) => ({ ...g, badges: g.badges.filter((b) => b.key !== "rescue_saving" || rescueBagsEnabled()) }))
+    .map((g) => ({ ...g, badges: g.badges.filter((b) => b.key !== "rescue_saving" || pilotOn) }))
     .filter((g) => g.badges.length > 0);
 
   return (
