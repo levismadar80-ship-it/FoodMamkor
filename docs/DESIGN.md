@@ -219,7 +219,8 @@ raw shade is genuinely required, mark it `// token-ok` + `eslint-disable-next-li
 It ratchets every raw colour in `frontend/{app,components,lib,hooks}` — palette
 classes including `white`/`black`, arbitrary `bg-[#…]` classes and hex literals in
 JS/CSS — against `scripts/checks/raw-color-baseline.txt`. Existing occurrences are
-frozen; a new one fails CI. `text-white` and `bg-black/<n>` scrims are exempt. The
+frozen; a new one fails CI. `bg-white`, `border-white`, `ring-white` etc. are gated;
+only `text-white` and `bg-black/<n>` scrims are exempt. The
 `// token-ok` comment above silences only the ESLint warning; for the gate, a
 genuinely fixed colour (a third-party brand colour, an SVG fill) is
 `--update-baseline` plus a reason in the PR body. Why it matters: a future theme

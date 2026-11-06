@@ -25,8 +25,11 @@
 #             - bg-black/<opacity>  — modal scrims; MEH-1687 ruled bg-black/40 the
 #                                     one scrim for every modal
 #           Tests, specs, e2e and qa-*.mjs probes are out of scope (not UI).
-#           Comment lines are not scanned (same isComment rule as
-#           z-index-tokens.sh).
+#           Comment lines and trailing `// …` comments are not scanned (same
+#           isComment rule as z-index-tokens.sh). Blind spot, same class as
+#           z-index-tokens.sh: a block-comment continuation line that starts
+#           with prose and names a hex colour ("cream = #F5F0E8") counts —
+#           spell such colours without the `#` in prose.
 # Related:  scripts/checks/z-index-tokens.sh (the ratchet shape this copies,
 #           incl. multiset keys, stale-line red and the parsed-0 control),
 #           scripts/checks/raw-color-baseline.txt (the frozen multiset),
@@ -84,6 +87,9 @@ scan() {
           {
             p=$1; l=$2; line=$0; sub(/^[^:]*:[0-9]+:/, "", line)
             iscss = (p ~ /\.css$/)
+            # A trailing `// …` comment is prose. Whitespace before `//` keeps
+            # URLs ("https://…") intact.
+            if (!iscss) sub(/[ \t]\/\/.*$/, "", line)
             # tw — palette classes. The leading boundary keeps `hover:bg-gray-100`
             # (":" boundary) and rejects `my-bg-gray` identifiers.
             r=line
@@ -104,11 +110,27 @@ scan() {
             r=line
             while (match(r, /-\[#[0-9a-fA-F]+\]/)) { t=substr(r, RSTART, RLENGTH); n=length(t)-4
               if (n==3||n==4||n==6||n==8) print p "\t" l "\tarb:" tolower(substr(t, 3, length(t)-3)); r=substr(r, RSTART+RLENGTH) }
-            # hex — a quoted JS literal, or a CSS declaration value
+            # hex — CSS: a declaration value. JS: a whole quoted literal ("#2e6853"),
+            # or a colour embedded in a longer string (`color:#fff`, `color-mix(…, #fff)`).
+            # The embedded form needs a hex LETTER, or 6/8 digits, so PR/issue refs
+            # in prose (#3974, #916) are not colours; `href="#add"` is an anchor.
             r=line
-            if (iscss) hre="[:,( ]#[0-9a-fA-F]+([; ,)!]|$)"; else hre="[\"\x27`]#[0-9a-fA-F]+[\"\x27`]"
-            while (match(r, hre)) { t=substr(r, RSTART+1, RLENGTH-1); sub(/[^0-9a-fA-F#]$/, "", t); n=length(t)-1
-              if (n==3||n==4||n==6||n==8) print p "\t" l "\thex:" tolower(t); r=substr(r, RSTART+RLENGTH-1) }
+            if (iscss) {
+              while (match(r, /[:,( ]#[0-9a-fA-F]+([; ,)!]|$)/)) { t=substr(r, RSTART+1, RLENGTH-1); sub(/[^0-9a-fA-F#]$/, "", t); n=length(t)-1
+                if (n==3||n==4||n==6||n==8) print p "\t" l "\thex:" tolower(t); r=substr(r, RSTART+RLENGTH-1) }
+            } else {
+              while (match(r, /[\"\x27`:,( ]#[0-9a-fA-F]+([^0-9a-zA-Z_-]|$)/)) {
+                pre=substr(r, RSTART, 1); t=substr(r, RSTART+1, RLENGTH-1); post=""
+                if (t ~ /[^0-9a-fA-F#]$/) { post=substr(t, length(t)); t=substr(t, 1, length(t)-1) }
+                n=length(t)-1; before=substr(r, 1, RSTART-1)
+                whole=(pre ~ /[\"\x27`]/ && post ~ /[\"\x27`]/)
+                ok=(n==3||n==4||n==6||n==8)
+                if (ok && !whole && !(t ~ /[a-fA-F]/ || n>=6)) ok=0
+                if (ok && before ~ /href=[{]?$/) ok=0
+                if (ok) print p "\t" l "\thex:" tolower(t)
+                r=substr(r, RSTART+RLENGTH-(post==""?0:1)); if (RLENGTH<1) break
+              }
+            }
           }'
   )
 }
@@ -195,7 +217,10 @@ self_test() {
 /* neither is text-red-500 here */
 const debugBgGray = 1;
 export default () => (
-  <div className="bg-primary text-muted bg-surface border-border bg-green-500 hover:bg-green-700 text-white bg-black/40 bg-[var(--x)]" href="#top" />
+  <div className="bg-primary text-muted bg-surface border-border bg-green-500 hover:bg-green-700 text-white bg-black/40 bg-[var(--x)]" href="#top" title="fixed in PR #3974 (see #916)" />
+);
+export const L = () => (
+  <a href="#add" className="p-2" /> // token = #1c1a17, see #3974
 );
 JSX
   printf 'export default () => <div className="bg-gray-100" style={{ color: "#fff" }} />;\n' > "$tmp/frontend/components/__tests__/A.test.jsx"
@@ -223,14 +248,14 @@ JSX
   fi; pass=$((pass+1))
 
   # 6 — every form is extracted: variants, opacity, sides, non-token green, arb, JS hex, CSS hex
-  printf 'export default () => <div className="hover:bg-gray-50 border-t-gray-200 bg-white/80 bg-black text-green-600 bg-[#F5F0E8]" style={{ color: "#2E6853", fill: `#abc` }} />;\n' > "$tmp/frontend/components/A.jsx"
+  printf 'export default () => <div className="hover:bg-gray-50 border-t-gray-200 bg-white/80 bg-black text-green-600 bg-[#F5F0E8]" style={{ color: "#2E6853", fill: `#abc` }} />;\nconst s = "color:#fff"; const m = `color-mix(in srgb, ${c} 12%%, #FFFFFF)`;\n' > "$tmp/frontend/components/A.jsx"
   printf '.a { color: #fff; background: linear-gradient(#000,#111111); }\n' > "$tmp/frontend/app/t.css"
   got="$(scan "$tmp" | keys_of)"
   expect="$(printf '%s\n' \
     frontend/app/t.css:hex:#000 frontend/app/t.css:hex:#111111 frontend/app/t.css:hex:#fff \
     frontend/components/A.jsx:arb:#f5f0e8 frontend/components/A.jsx:bg-black frontend/components/A.jsx:bg-gray-50 \
     frontend/components/A.jsx:bg-white frontend/components/A.jsx:border-t-gray-200 frontend/components/A.jsx:hex:#2e6853 \
-    frontend/components/A.jsx:hex:#abc frontend/components/A.jsx:text-green-600 | LC_ALL=C sort)"
+    frontend/components/A.jsx:hex:#abc frontend/components/A.jsx:hex:#fff frontend/components/A.jsx:hex:#ffffff frontend/components/A.jsx:text-green-600 | LC_ALL=C sort)"
   if [ "$got" != "$expect" ]; then
     echo "SELF-TEST FAIL 6: form extraction — expected:" >&2; printf '%s\n' "$expect" >&2; echo "got:" >&2; printf '%s\n' "$got" >&2; return 1
   fi; pass=$((pass+1))
