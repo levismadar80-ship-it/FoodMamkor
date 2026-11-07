@@ -29,12 +29,14 @@ import argparse
 import os
 import secrets
 import sys
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from urllib.parse import urlparse
 
 # Make `backend/` importable as package root when run directly.
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
+
+from sqlalchemy import inspect as sa_inspect  # noqa: E402  # imports must follow sys.path.insert (script shim)
 
 from app.auth import hash_password  # noqa: E402  # imports must follow sys.path.insert (script shim)
 from app.database import SessionLocal, engine  # noqa: E402  # imports must follow sys.path.insert (script shim)
@@ -48,15 +50,22 @@ from app.models import (  # noqa: E402  # imports must follow sys.path.insert (s
     ProducerRecipe,
 )
 from app.models.models import (  # noqa: E402  # imports must follow sys.path.insert (script shim)
+    ContactClick,
     Event,
     Experience,
+    Favorite,
     GroupBuy,
     GroupBuyCommit,
     KashrutBadgeRequest,
+    ProducerAnalyticsDaily,
+    ProducerOffer,
+    ProducerPageView,
     ProducerReview,
+    ProducerWhatsAppClick,
+    RescueOffer,
     User,
 )
-from app.utils.clock import utc_now  # noqa: E402  # imports must follow sys.path.insert (script shim)
+from app.utils.clock import ISRAEL_TZ, israel_today, utc_now  # noqa: E402  # imports must follow sys.path.insert (script shim)
 
 # ============================================================================
 # DEMO IDENTITY — APPROVED (Sapir, MEH-1074 closeout). The identity values
@@ -385,6 +394,95 @@ DEMO_REVIEWS = [
     },
 ]
 
+# ---------------------------------------------------------------------------
+# MEH-2794 — the marketing-screenshot fixtures. Everything below exists so the
+# /join page can be photographed from ONE complete business rather than from a
+# designed promo video, and so a dashboard shot does not read "0 WhatsApp
+# clicks" on a page whose whole job is to persuade.
+#
+# WHY THESE TABLES ARE SEEDED AT ALL, given that
+# `backend/scripts/check_seed_coverage.py` lists every one of them under
+# EXEMPT_TABLES: that file's exemptions mean "it is OK for this table to be
+# EMPTY" — `_empty_surfaces()` only ever reads SEEDED_SURFACES, so a row here
+# cannot red the gate. Four of its exemption REASONS do go stale with this
+# change, `producer_analytics_daily`'s most sharply ("seeding it would
+# fabricate traffic" — which is now exactly what happens, for one demo
+# producer, on Sapir's instruction in MEH-2794). That file is outside this
+# card's declared scope, so it is NOT edited here: tracked as MEH-2800, which
+# names both files and the choice to be made (enforce them in
+# SEEDED_SURFACES, or just reword). workflow.md's Smell #2 asks for exactly
+# that — a ticket naming both surfaces, not a note promising a future edit.
+# ---------------------------------------------------------------------------
+
+# An active first-order discount. `starts_at=None` means "active now"
+# (models.py:1281); `expires_at` is required and must stay in the future, so it
+# is relative to the run date like every other demo date.
+# `offer_type` MUST be one of the five the CHECK allows — 'free_delivery_above',
+# 'gift_above', 'first_order', 'pickup_discount', 'custom' (models.py:1378).
+# The ticket asks for "a first-order discount", which is 'first_order'.
+#
+# `headline` stays None deliberately. Only 'custom' renders its headline as the
+# offer text; every other type renders a TYPED SENTENCE and ignores it
+# (schemas.py:1512-1516, OfferBadge.jsx). A headline here would be dead data
+# that reads, to the next person, as the string on screen.
+#
+# Both threshold fields are None together, which is what
+# `producer_offer_threshold_pair` requires — an unconditional offer.
+DEMO_OFFER = {
+    "offer_type": "first_order",
+    "threshold_value": None,
+    "threshold_unit": None,
+    "headline": None,
+    "days_ahead": 30,
+}
+
+# One rescue bag for TODAY, so /rescue has a card to photograph. NOTE it hangs
+# off producer_location_id, NOT producer_id (models.py:2871) — a bag belongs to
+# the place it is collected from.
+# Every value here sits inside a DB CHECK, and none of it can be exercised from
+# the CC sandbox, so the envelope is written down rather than assumed:
+#   qty_total   1..20   (RESCUE_MAX_QTY_PER_OFFER, models.py:2859)
+#   qty_left    0..qty_total
+#   price_agorot >= 0
+#   pickup_end  > pickup_start
+#   qty_donated 0..qty_total  (defaults to 0, not set here)
+#   status      'active' | 'cancelled'  (defaults to 'active', not set here)
+DEMO_RESCUE_BAG = {
+    "qty_total": 6,
+    "qty_left": 4,
+    "price_agorot": 2500,
+    "value_min_agorot": 5000,
+    "value_max_agorot": 7000,
+    "pickup_from_hour": 18,
+    "pickup_to_hour": 19,
+}
+
+# Modest, mutually consistent numbers — Sapir 07/11: «מספרים צנועים וסבירים»,
+# and «כל המסכים מראים את אותו בית עסק ואת אותם מספרים». Spread over a 30-day
+# window so the insights line chart has a shape instead of one spike.
+#
+# The three raw tables and the roll-up MUST agree, because the dashboard reads
+# the windowed arms from the raw rows and the `total` arm through the roll-up
+# (producer_me.py's `windowed(..., rollup_col=...)`). Seeding only one side
+# would make the owner's "total" disagree with her own 30-day chart — the exact
+# inflation MEH-160 removed. `_seed_insights` derives the roll-up FROM the rows
+# it just inserted rather than from these constants, so they cannot drift.
+DEMO_INSIGHTS = {
+    "days": 30,
+    "views_total": 180,
+    "views_from_search": 64,  # a subset of views_total, not an addition
+    "whatsapp_clicks": 20,
+    "contact_clicks": 6,
+    "favorites": 9,
+    # Where the views come from. First entry is the business's own city, so the
+    # "top cities" panel is not dominated by somewhere it does not serve.
+    "top_cities": ["זכרון יעקב", "בנימינה-גבעת עדה", "חיפה"],
+}
+
+# MEH-2794 — display-only follower accounts, so `favorites` (= the follower
+# count since MEH-1364) can show more than one. 1-indexed in the address.
+DEMO_FOLLOWER_EMAIL_TEMPLATE = "demo-follower-{}@example.com"
+
 DEMO_OWNER_EMAIL = "demo-owner@example.com"
 # MEH-1241: dedicated QA consumer (code constant, NOT an env var). Distinct
 # from the 3 display-only review consumers (DEMO_REVIEWS), which keep their
@@ -709,7 +807,17 @@ def _delete_existing(db) -> None:
         db.query(Experience).filter(Experience.host_user_id == consumer.id).delete()
     # MEH-1528: DEMO_ADMIN_EMAIL joins the owner in the delete set (both are
     # recreated by seed_demo_business); the display reviewers stay by convention.
-    emails = [r["email"] for r in DEMO_REVIEWS] + [DEMO_OWNER_EMAIL, DEMO_ADMIN_EMAIL]
+    # MEH-2794: the display-only follower accounts join the delete set. Their
+    # `favorites` rows cascade with the producer, but the users themselves
+    # would otherwise accumulate across --refresh runs.
+    emails = (
+        [r["email"] for r in DEMO_REVIEWS]
+        + [DEMO_OWNER_EMAIL, DEMO_ADMIN_EMAIL]
+        + [
+            DEMO_FOLLOWER_EMAIL_TEMPLATE.format(i + 1)
+            for i in range(DEMO_INSIGHTS["favorites"])
+        ]
+    )
     # ORM-level deletes (not bulk .delete()) keep the session's identity map
     # consistent — a bulk delete here leaves stale review objects that emit a
     # spurious 0-rows-matched DELETE at the re-seed commit.
@@ -782,6 +890,367 @@ def _seed_group_buy(db, producer) -> None:
                 phone=DEMO_PRODUCER["phone"],
             )
         )
+
+
+def _israel_wall_to_utc(day: date, hour: int) -> datetime:
+    """An Israel wall-clock hour on `day`, as the NAIVE UTC instant the column holds.
+
+    MEH-2679 is the incident this exists to avoid repeating: `rescue_offers`'
+    `pickup_start` / `pickup_end` / `cancel_until` are naive `DateTime`
+    columns, and the convention across this codebase is that naive means UTC
+    (`utc_now()` writes naive UTC everywhere else in this file). Writing
+    `datetime.combine(israel_today(), time(18))` would store 18:00 as if it
+    were UTC — i.e. 20:00 or 21:00 in Israel, depending on the season — so a
+    bag advertised for 18:00 would open two hours late on the page.
+
+    Converting first and dropping the tzinfo keeps the stored value a real
+    instant, and keeps the Israel wall time the one a reader of the constants
+    expects.
+    """
+    local = datetime.combine(day, time(hour=hour), tzinfo=ISRAEL_TZ)
+    return local.astimezone(timezone.utc).replace(tzinfo=None)
+
+
+def _seed_offer(db, producer) -> None:
+    """MEH-2794 — the active offer, for the offer badge on the business page.
+
+    `starts_at` is left NULL on purpose: models.py:1281 defines NULL as "active
+    now", and a seeded date would make the offer scheduled-but-not-live, which
+    photographs as nothing at all.
+    """
+    db.add(
+        ProducerOffer(
+            producer_id=producer.id,
+            offer_type=DEMO_OFFER["offer_type"],
+            threshold_value=DEMO_OFFER["threshold_value"],
+            threshold_unit=DEMO_OFFER["threshold_unit"],
+            headline=DEMO_OFFER["headline"],
+            starts_at=None,
+            expires_at=israel_today() + timedelta(days=DEMO_OFFER["days_ahead"]),
+            is_active=True,
+        )
+    )
+
+
+def _seed_rescue_bag(db, producer) -> bool:
+    """MEH-2794 — one rescue bag for TODAY, so /rescue has a card to shoot.
+
+    Returns whether a bag was actually added, so the caller's count is derived
+    from what happened rather than from what was attempted.
+
+    SKIPS SILENTLY when the rescue tables are absent, per the ticket: the
+    rescue-bags pilot is dark behind a flag (MEH-2644) and an environment whose
+    schema predates it must still seed cleanly. Asked of the live schema via
+    `inspect`, not of a flag or a try/except around the INSERT — a flag says
+    what the product shows, not what the database has.
+
+    Hangs off producer_location_id, NOT producer_id (models.py:2871): a bag
+    belongs to the place it is collected from. Uses the producer's PRIMARY
+    location and does nothing if it has none, because a bag with no pickup
+    point is not collectable.
+    """
+    if not sa_inspect(db.get_bind()).has_table("rescue_offers"):
+        print(
+            "Rescue tables absent — skipping the demo rescue bag (MEH-2644 is dark here)."
+        )
+        return False
+
+    location = (
+        db.query(ProducerLocation)
+        .filter(
+            ProducerLocation.producer_id == producer.id,
+            ProducerLocation.is_primary.is_(True),
+        )
+        .first()
+    )
+    if location is None:
+        print("Demo producer has no primary location — skipping the rescue bag.")
+        return False
+
+    today = israel_today()
+    # IDEMPOTENT, per the ticket's "add if missing". Keyed on (location, date)
+    # because that is what a bag IS — one offer from one place on one day; the
+    # table indexes exactly that pair (ix_rescue_offers_location_date).
+    #
+    # This was missing in the first version: `seed_marketing_fixtures` guarded
+    # the offer and the insights but delegated the bag's check to this function,
+    # which never had one, so a second run left the demo business with two
+    # identical bags on /rescue — the "looks odd" the ticket exists to remove.
+    # Caught by test_marketing_fixtures_are_idempotent on its first CI run.
+    existing = (
+        db.query(RescueOffer)
+        .filter(
+            RescueOffer.producer_location_id == location.id,
+            RescueOffer.date == today,
+        )
+        .first()
+    )
+    if existing is not None:
+        return False
+
+    db.add(
+        RescueOffer(
+            producer_location_id=location.id,
+            date=today,
+            qty_total=DEMO_RESCUE_BAG["qty_total"],
+            qty_left=DEMO_RESCUE_BAG["qty_left"],
+            price_agorot=DEMO_RESCUE_BAG["price_agorot"],
+            value_min_agorot=DEMO_RESCUE_BAG["value_min_agorot"],
+            value_max_agorot=DEMO_RESCUE_BAG["value_max_agorot"],
+            pickup_start=_israel_wall_to_utc(
+                today, DEMO_RESCUE_BAG["pickup_from_hour"]
+            ),
+            pickup_end=_israel_wall_to_utc(today, DEMO_RESCUE_BAG["pickup_to_hour"]),
+            # REQUIRED and has no default — `cancel_until` is nullable=False
+            # with no server_default (models.py:2928), and the API takes it
+            # from the owner's own body (rescue.py:421). Set to the moment
+            # collection opens: "cancel any time until pickup starts", which
+            # is the only reading that needs no further policy decision.
+            cancel_until=_israel_wall_to_utc(
+                today, DEMO_RESCUE_BAG["pickup_from_hour"]
+            ),
+        )
+    )
+    return True
+
+
+def _spread(total: int, days: int) -> list[int]:
+    """`total` split across `days` buckets, newest last, summing EXACTLY to total.
+
+    Derived rather than written out: a hand-made list drifts from the constant
+    the moment either changes, and the roll-up below is built from these same
+    buckets, so a mismatch would put the dashboard's "total" at odds with its
+    own 30-day chart.
+
+    Shaped (a gentle rise toward today) rather than flat, so the insights line
+    chart has something to show. The remainder lands on the most recent days.
+    """
+    weights = [i + 1 for i in range(days)]
+    scale = sum(weights)
+    counts = [total * w // scale for w in weights]
+    for i in range(total - sum(counts)):
+        counts[-1 - (i % days)] += 1
+    return counts
+
+
+def _seed_insights(db, producer) -> None:
+    """MEH-2794 — believable dashboard numbers for the demo producer.
+
+    Sapir 07/11: a dashboard screenshot reading "0 WhatsApp clicks" on a page
+    whose job is to persuade reads as a dead product. These are modest and
+    mutually consistent.
+
+    THE RAW ROWS AND THE ROLL-UP MUST AGREE. The dashboard reads its 7d/30d
+    arms from the raw tables and its `total` arm through
+    `producer_analytics_daily` (producer_me.py's `windowed(..., rollup_col=)`).
+    So the roll-up here is DERIVED from the rows just inserted, never written
+    from DEMO_INSIGHTS directly — otherwise the owner's total could disagree
+    with her own chart, which is the MEH-160 inflation through a side door.
+
+    Page views dedupe per (israel-day, viewer_ip_hash) (MEH-160), so each
+    seeded view needs its OWN hash to count: reusing one hash would collapse a
+    whole day to 1 and the chart would read flat at 1 regardless of the numbers
+    above. The hashes are random hex of the real column width (64) — not real
+    IPs, hashed or otherwise.
+    """
+    view_buckets = _spread(DEMO_INSIGHTS["views_total"], DEMO_INSIGHTS["days"])
+    search_buckets = _spread(DEMO_INSIGHTS["views_from_search"], DEMO_INSIGHTS["days"])
+    wa_buckets = _spread(DEMO_INSIGHTS["whatsapp_clicks"], DEMO_INSIGHTS["days"])
+    cities = DEMO_INSIGHTS["top_cities"]
+    today = israel_today()
+
+    for offset in range(DEMO_INSIGHTS["days"]):
+        day_index = DEMO_INSIGHTS["days"] - 1 - offset  # 0 = oldest
+        day = today - timedelta(days=offset)
+        # ANCHORED AT MIDDAY ISRAEL, not at `now - N days`. The roll-up's `day`
+        # is an Israel calendar day; a UTC stamp N*24h back is the same Israel
+        # day only while the offset is unchanged at both ends, and near
+        # midnight Israel it lands on the day before or after (the MEH-2290
+        # class, and `.claude/rules/testing.md` names it). Midday has ~12 hours
+        # of margin on either side, so the raw row and its roll-up row always
+        # agree. The sums-only assertion in the test would NOT have caught the
+        # drift, which is why this is fixed rather than asserted around.
+        stamp = _israel_wall_to_utc(day, 12)
+        views = view_buckets[day_index]
+        searches = min(search_buckets[day_index], views)
+
+        for n in range(views):
+            db.add(
+                ProducerPageView(
+                    producer_id=producer.id,
+                    viewer_ip_hash=secrets.token_hex(32),
+                    # The first few views of a day round-robin the cities and
+                    # every view after that goes to the first one, so the top
+                    # city leads the panel by a wide margin while the others
+                    # still appear. (An earlier comment here said "weighted by
+                    # position", which described a different scheme than the
+                    # code: the fall-through is a hard default, not a weight.)
+                    city=cities[n % len(cities)] if n < len(cities) * 3 else cities[0],
+                    referrer="search" if n < searches else "home",
+                    created_at=stamp,
+                )
+            )
+        for _ in range(wa_buckets[day_index]):
+            db.add(
+                ProducerWhatsAppClick(
+                    producer_id=producer.id,
+                    clicked_at=stamp,
+                    city=cities[0],
+                )
+            )
+        db.add(
+            ProducerAnalyticsDaily(
+                producer_id=producer.id,
+                day=day,
+                views_unique=views,
+                views_search_unique=searches,
+                whatsapp_clicks=wa_buckets[day_index],
+            )
+        )
+
+    # Contact clicks — a phone/website breakdown beside the WhatsApp metric.
+    for i in range(DEMO_INSIGHTS["contact_clicks"]):
+        db.add(
+            ContactClick(
+                producer_id=producer.id,
+                method="phone" if i % 2 == 0 else "website",
+                # Same midday anchor as the views above: these are read in
+                # windows counted in Israel days.
+                clicked_at=_israel_wall_to_utc(today - timedelta(days=i * 3), 12),
+            )
+        )
+
+    _seed_followers(db, producer)
+
+
+def _seed_followers(db, producer) -> None:
+    """MEH-2794 — the follower count, which is `favorites` (MEH-1364 decision A).
+
+    `favorites` has a composite PK (user_id, producer_id), so N followers needs
+    N users — the count cannot be faked with repeated rows. These are
+    display-only accounts with random unrecorded passwords, exactly like
+    DEMO_REVIEWS' three reviewers, and they are torn down with the rest on
+    --refresh (see `_delete_existing`'s email set).
+    """
+    for i in range(DEMO_INSIGHTS["favorites"]):
+        email = DEMO_FOLLOWER_EMAIL_TEMPLATE.format(i + 1)
+        user = db.query(User).filter(User.email == email).first()
+        if user is None:
+            user = User(
+                email=email,
+                name=f"עוקבת {i + 1}",
+                password_hash=hash_password(secrets.token_urlsafe(32)),
+                role="consumer",
+                email_verified=True,
+            )
+            db.add(user)
+            db.flush()
+        existing = (
+            db.query(Favorite)
+            .filter(Favorite.user_id == user.id, Favorite.producer_id == producer.id)
+            .first()
+        )
+        if existing is None:
+            db.add(
+                Favorite(
+                    user_id=user.id,
+                    producer_id=producer.id,
+                    created_at=utc_now() - timedelta(days=i * 2),
+                )
+            )
+
+
+def seed_marketing_fixtures(db) -> int:
+    """MEH-2794 — the /join screenshot fixtures, added if missing.
+
+    Same contract as `seed_dietary_scope_demos` / `seed_availability_demos`:
+    idempotent, keyed off the demo producer's slug, and called from `main()`
+    rather than from `seed_demo_business`. Three reasons, in order of weight:
+
+    1. **"Add if missing", per the ticket.** Each part below checks before it
+       inserts, so running the seed twice without --refresh does not give the
+       demo business two offers and 60 days of doubled traffic.
+    2. It must run on the SKIP-IF-EXISTS path too. That path returns before
+       creating anything, so a business seeded last week would never get these
+       fixtures if they lived inside `seed_demo_business`.
+    3. `seed_demo_business` sits exactly at ruff's PLR0915 ceiling (50
+       statements) with no per-file-ignore, so three more calls inside it turn
+       `Backend lint (ruff)` red.
+
+    Returns the number of parts it actually seeded, so the caller can print a
+    DERIVED count rather than a sentence that may be false (MEH-1909).
+    """
+    producer = db.query(Producer).filter(Producer.slug == DEMO_SLUG).first()
+    if producer is None:
+        print(f"Demo producer /{DEMO_SLUG} not found — skipping MEH-2794 fixtures.")
+        return 0
+
+    seeded = 0
+    skipped: list[str] = []
+    if (
+        not db.query(ProducerOffer)
+        .filter(ProducerOffer.producer_id == producer.id)
+        .first()
+    ):
+        _seed_offer(db, producer)
+        seeded += 1
+    else:
+        skipped.append("offer (one already exists)")
+    if _seed_rescue_bag(db, producer):
+        seeded += 1
+    else:
+        skipped.append("rescue bag (already there today, or the tables are absent)")
+    # Probe the RAW table as well as the roll-up, and skip if EITHER holds a
+    # row. The roll-up alone is not a safe probe on staging, for two reasons
+    # that both really happen there:
+    #
+    #   * the roll-up job runs on staging, so real traffic to the demo page
+    #     writes `producer_analytics_daily` rows this seed did not create;
+    #   * raw rows are pruned after 90 days while the roll-up is kept forever
+    #     (MEH-2079), so an old database legitimately holds roll-up rows with
+    #     no raw rows behind them.
+    #
+    # In both cases a roll-up-only probe reads "already seeded" and the
+    # fixtures silently never land — the command in the PR body would appear
+    # to succeed and change nothing.
+    #
+    # Skipping on EITHER is the conservative direction: never stack fabricated
+    # traffic on top of numbers that are already there, whatever their origin.
+    # The staging flow runs `--refresh` first, which cascades all of these
+    # away with the producer, so the intended path still seeds.
+    already = (
+        db.query(ProducerAnalyticsDaily)
+        .filter(ProducerAnalyticsDaily.producer_id == producer.id)
+        .first()
+        or db.query(ProducerPageView)
+        .filter(ProducerPageView.producer_id == producer.id)
+        .first()
+    )
+    if not already:
+        _seed_insights(db, producer)
+        seeded += 1
+    else:
+        skipped.append(
+            "insights AND followers (analytics rows already exist for this "
+            "business — real traffic, or a previous run)"
+        )
+
+    db.commit()
+    # Say what was SKIPPED, not only what was seeded. A bare "0 part(s)
+    # seeded" on staging is indistinguishable from a broken run, and the
+    # operator running this from Railway has no other window into why. The
+    # followers are called out explicitly because they ride inside the
+    # insights block: skipping that skips them too, and the follower count is
+    # the one number whose absence would otherwise look like a product state.
+    print(f"MEH-2794 marketing fixtures: {seeded} part(s) seeded for /{DEMO_SLUG}.")
+    for note in skipped:
+        print(f"  skipped: {note}")
+    if skipped and not seeded:
+        print(
+            "  Nothing was seeded. Run with --refresh first if you want the "
+            "demo numbers replaced."
+        )
+    return seeded
 
 
 def _seed_moderation_experiences(db) -> None:
@@ -1283,6 +1752,9 @@ def main() -> None:
             # MEH-1706: same contract as the dietary demos — idempotent
             # per-slug, so it runs even when the main business already existed.
             seed_availability_demos(db)
+            # MEH-2794: same contract again — the /join screenshot fixtures
+            # (offer, rescue bag, insight numbers), added only if missing.
+            seed_marketing_fixtures(db)
     finally:
         db.close()
 
