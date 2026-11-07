@@ -397,6 +397,10 @@ def _build_base_queries(  # noqa: PLR0913 — keyword-only query axes; MEH-2602 
 # frontend/data/regions.js is ~18 cities; 40 is generous headroom while
 # still bounding a hostile caller's ?delivery_cities= list.
 _MAX_DELIVERY_CITIES = 40
+# MEH-2790: the same bound, under a public name, so the router can 422 on an
+# over-long ?cities= list without a second constant drifting from this one
+# (MEH-271 smell #1 — one owner for one number).
+MAX_CITIES_PER_QUERY = _MAX_DELIVERY_CITIES
 
 
 def _city_matches(column, city: str):
@@ -1011,6 +1015,29 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, P
     if city:
         q = q.filter(_city_matches(Producer.city, city))
         count_q = count_q.filter(_city_matches(Producer.city, city))
+
+    # MEH-2790: OR over several cities, for the category x region landing
+    # pages — a region is 7 to 18 towns, and `city` takes exactly one.
+    #
+    # The per-city condition is `_located_in_city_condition` (:445), i.e. the
+    # business IS there: its own city OR any of its location rows (store,
+    # pickup point, market stand). That is the same reading `near_city` uses,
+    # and the right one for "bakeries in Haifa" — a business registered in one
+    # town that keeps a market stall in Haifa belongs on Haifa's page.
+    #
+    # AND-ed like `city` and `near_city`, so it narrows whatever the service
+    # ladder above produced and combines with `category`.
+    #
+    # Capped at _MAX_DELIVERY_CITIES and empty-stripped, exactly like the
+    # MEH-1487 `delivery_cities` list: same shape of input, same hostile-caller
+    # bound. Over the cap the router 422s rather than silently truncating.
+    cities = filters.get("cities")
+    if cities:
+        clean = [c for c in cities if c and c.strip()][:_MAX_DELIVERY_CITIES]
+        if clean:
+            located = or_(*[_located_in_city_condition(c) for c in clean])
+            q = q.filter(located)
+            count_q = count_q.filter(located)
 
     near_city = (filters.get("near_city") or "").strip()
     if near_city:

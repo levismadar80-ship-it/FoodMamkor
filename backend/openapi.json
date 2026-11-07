@@ -21751,6 +21751,25 @@
           },
           {
             "in": "query",
+            "name": "cities",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cities"
+            }
+          },
+          {
+            "in": "query",
             "name": "near_city",
             "required": false,
             "schema": {

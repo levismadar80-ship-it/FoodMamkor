@@ -61,6 +61,7 @@ from app.services.analytics import (
 )
 from app.services.license_validation import ensure_license_for_categories
 from app.services.producer_listing import (
+    MAX_CITIES_PER_QUERY,
     build_producers_query,
     catalog_default_availability_condition,
     is_business,
@@ -169,6 +170,14 @@ def list_producers(
     open_for_orders_now: bool | None = None,
     # Producer city filter (producer's own city, not delivery area).
     city: str | None = None,
+    # MEH-2790: OR over several cities — ?cities=a&cities=b. A region is 7 to
+    # 18 towns and `city` takes one, so the category x region landing pages
+    # need the list form. Per-city semantics are `_located_in_city_condition`
+    # (the business IS there: its own city or any of its location rows), the
+    # same reading near_city uses. Capped at 40 like delivery_cities (MEH-1487)
+    # — over the cap this 422s below rather than truncating silently, because a
+    # truncated region would quietly under-count a landing page's gate.
+    cities: list[str] | None = Query(None),
     # MEH-2602: the map's «סננו לפי עיר» — businesses located in the city
     # (own city or any location row) OR delivering to it, located ones first.
     # delivery_city keeps its strict "delivers to" meaning for the other callers.
@@ -237,6 +246,18 @@ def list_producers(
         raise HTTPException(
             status_code=422, detail="מיון לפי מרחק דורש מיקום — lat ו-lng חובה"
         )
+    # MEH-2790: the region list is bounded. The largest region in
+    # frontend/data/regions.js is ~18 cities, so 40 is generous headroom while
+    # still bounding a hostile caller — the same number and the same reasoning
+    # as _MAX_DELIVERY_CITIES. A 422 rather than a silent truncation: a
+    # truncated region would under-count a landing page's >=5 gate and 404 a
+    # page that should exist, which is exactly the silent failure this feature
+    # must not have.
+    if cities is not None and len(cities) > MAX_CITIES_PER_QUERY:
+        raise HTTPException(
+            status_code=422,
+            detail=f"יותר מדי ערים בבקשה — עד {MAX_CITIES_PER_QUERY}",
+        )
     # MEH-1645: whitelist the day param against the canonical vocabulary —
     # same list DeliveryAreaCreate validates on the write path (MEH-1644).
     # MEH-2036: the plural is validated with the SAME whitelist and the SAME
@@ -270,6 +291,7 @@ def list_producers(
         kosher=kosher,
         open_for_orders_now=open_for_orders_now,  # MEH-1881
         city=city,
+        cities=cities,  # MEH-2790
         near_city=near_city,  # MEH-2602
         # MEH-291 — opt-in 4-value enum filter; default listing behavior
         # unchanged in Phase 2 (Q4b — default-hide-on_vacation ships in
