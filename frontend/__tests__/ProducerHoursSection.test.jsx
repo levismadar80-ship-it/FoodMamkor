@@ -211,6 +211,24 @@ describe("«שעות» states × disclosure (MEH-2803)", () => {
     expect(within(visit).getByTestId("visit-hours-week").textContent).toContain("6:30–13:00");
   });
 
+  it("a store string that parses to no well-formed range keeps its card, shown as typed", () => {
+    // English grammar does not check close > open; the shared card drops such
+    // ranges (normalizeDayEntries), so without the fallback the whole
+    // «פתוח למבקרים» card would vanish (review on #4128).
+    renderPage({ opening_hours: "Sun-Sat 22:00-02:00" });
+    expect(sets().map(labelOf)).toEqual([HOURS.label_visit]);
+    expect(within(sets()[0]).getByTestId("hours-raw").textContent).toContain("22:00-02:00");
+  });
+
+  it("a closed day is simply absent from the visit card — never a lone «סגור» row (option ב׳)", () => {
+    renderPage({ opening_hours: SEED_STORE });
+    const set = sets()[0];
+    const text = set.textContent;
+    expect(within(set).getAllByTestId("visit-hours-schedule-row")).toHaveLength(2);
+    expect(text).not.toContain("שבת");
+    expect(text).not.toContain("סגור");
+  });
+
   it("an unparseable store string is never merged: both sets, the store set shows the text as typed", () => {
     renderPage({ order_window: everyDay("07:00", "14:00"), opening_hours: "בתיאום מראש" });
     expect(sets().map(labelOf)).toEqual([HOURS.label_orders, HOURS.label_visit]);

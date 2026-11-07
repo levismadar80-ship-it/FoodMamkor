@@ -224,8 +224,8 @@ export function OrderWindowScheduleBlock({
     // MEH-2803: one labelled SET inside ProducerHoursSection's «שעות» section —
     // the section owns the heading; this owns its label and its card.
     <div data-testid="hours-set" data-set={setKey}>
-      {/* Container copied from components/OpeningHours.jsx:52 so the order
-          schedule and the store hours read as one family of Info cards. */}
+      {/* The Info-card container (same classes as components/OpeningHours.jsx);
+          since MEH-2809 both hours sets render through this one card. */}
       <div
         className="border border-border rounded-md bg-surface overflow-hidden"
         data-testid={tid("schedule")}
@@ -347,14 +347,14 @@ export function OrderWindowScheduleBlock({
         {upcoming.length > 0 && (
           <div
             className="border-t border-border px-3.5 py-2"
-            data-testid="order-window-special"
+            data-testid={tid("special")}
           >
             <div className="py-1 text-sm font-medium text-text">{t("special_heading")}</div>
             {upcoming.map((d) => (
               <div
                 key={d.date}
                 className="flex justify-between gap-4 py-1.5 text-sm text-fg-muted"
-                data-testid="order-window-special-row"
+                data-testid={tid("special-row")}
                 data-date={d.date}
                 data-closed={d.closed ? "true" : undefined}
               >
@@ -438,7 +438,15 @@ export function ProducerHoursSection({ producer }) {
   useEffect(() => setUpcoming(getUpcomingSpecialDates(specialHours)), [specialHours]);
 
   const storeHours = resolveStoreHours(producer);
-  const storeMap = storeHours ? parseHours(storeHours) : null;
+  // A map whose every range is malformed (the English grammar does not check
+  // close > open, e.g. an overnight «22:00-02:00») would render NO rows in the
+  // shared card, which then returns null and drops the visit set. Treat it as
+  // unreadable, so the MEH-2604 «as typed» fallback shows it.
+  const parsedStore = storeHours ? parseHours(storeHours) : null;
+  const storeMap =
+    parsedStore && getOrderWindowRanges(hoursMapAsOrderWindow(parsedStore)).length > 0
+      ? parsedStore
+      : null;
   const hasOrders = getOrderWindowRanges(orderWindow).length > 0 || upcoming.length > 0;
   if (!hasOrders && !storeHours) return null;
   const merged =
