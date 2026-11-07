@@ -452,7 +452,14 @@ async function login(page) {
   const fillBoth = async () => {
     await page.fill(EMAIL_SEL, OWNER_EMAIL);
     await page.fill(PW_SEL, OWNER_PASSWORD);
-    return (await page.inputValue(EMAIL_SEL)) === OWNER_EMAIL;
+    // BOTH fields, not just the email. Hydration happened to blank the email
+    // in the run that was measured, but nothing guarantees it is always that
+    // one — checking a single field would let the other slip through with
+    // `stuck` still true (reviewer on #4145).
+    return (
+      (await page.inputValue(EMAIL_SEL)) === OWNER_EMAIL &&
+      (await page.inputValue(PW_SEL)) === OWNER_PASSWORD
+    );
   };
   let stuck = false;
   for (let attempt = 0; attempt < 6 && !stuck; attempt += 1) {
@@ -461,7 +468,13 @@ async function login(page) {
   }
   // A late re-render can blank the field AFTER the loop passed, so re-read
   // both immediately before clicking and refill once if either slipped.
-  if (stuck && ((await page.inputValue(EMAIL_SEL)) !== OWNER_EMAIL || !(await page.inputValue(PW_SEL)))) {
+  // A late re-render can blank a field AFTER the loop passed, so re-verify
+  // both immediately before clicking and refill once if either slipped.
+  if (
+    stuck &&
+    ((await page.inputValue(EMAIL_SEL)) !== OWNER_EMAIL ||
+      (await page.inputValue(PW_SEL)) !== OWNER_PASSWORD)
+  ) {
     stuck = await fillBoth();
   }
   if (!stuck) {
@@ -571,6 +584,14 @@ async function captureStills(browser) {
   let authFailure = null;
 
   for (const shot of SHOTS) {
+    const entry = {
+      file: shot.file,
+      route: shot.route,
+      selector: shot.selector,
+      feature_ids: shot.feature_ids ?? [],
+      ...(shot.note ? { note: shot.note } : {}),
+    };
+
     // A FAILED LOGIN RECORDS MISSES; IT DOES NOT ABORT THE RUN. Letting
     // `login()` throw out of here destroyed the whole manifest, including the
     // shots that had already succeeded — the opposite of what it is for. The
@@ -599,13 +620,6 @@ async function captureStills(browser) {
     }
     const { page } = session;
 
-    const entry = {
-      file: shot.file,
-      route: shot.route,
-      selector: shot.selector,
-      feature_ids: shot.feature_ids ?? [],
-      ...(shot.note ? { note: shot.note } : {}),
-    };
 
     try {
       await page.goto(`${BASE}/he${shot.route}`, { waitUntil: "domcontentloaded" });
