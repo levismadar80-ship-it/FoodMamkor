@@ -1079,7 +1079,8 @@ def _seed_insights(db, producer, watermark: date | None) -> int:
     writing the first row would hand it a watermark it never earned, so this
     writes none.
 
-    Returns the number of aggregate rows written, so the caller reports a
+    Returns the number of aggregate rows written — days at or below the
+    watermark on which the producer was active — so the caller reports a
     derived count rather than a sentence that may be false (MEH-1909).
     """
     view_buckets = _spread(DEMO_INSIGHTS["views_total"], DEMO_INSIGHTS["days"])
@@ -1134,7 +1135,17 @@ def _seed_insights(db, producer, watermark: date | None) -> int:
         # count; `test_seeded_aggregate_matches_what_the_real_job_computes`
         # pins that against `roll_up_day` so the two cannot drift apart
         # quietly.
-        if watermark is not None and day <= watermark:
+        # ...and only for a day the producer was actually ACTIVE on, because
+        # that is the rule the real job follows: `_day_select` builds its row
+        # set from the UNION of producers with a page view OR a WhatsApp click
+        # that day, so a day with neither gets no row at all — not a row of
+        # zeros. `_spread` is a rising ramp, so the oldest days of the window
+        # genuinely have none (measured: 2 of 30 days have no view, 17 have no
+        # click), and writing zeros there made the seed emit rows the job never
+        # would. Found by test_seeded_aggregate_matches_what_the_real_job_
+        # computes once it looped over every day instead of sampling one.
+        active_that_day = views > 0 or wa_buckets[day_index] > 0
+        if watermark is not None and day <= watermark and active_that_day:
             db.add(
                 ProducerAnalyticsDaily(
                     producer_id=producer.id,

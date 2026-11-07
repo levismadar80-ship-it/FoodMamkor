@@ -493,12 +493,23 @@ def test_refresh_then_reseed_leaves_exactly_one_of_each(db, seed_mod, bakery_cat
     # this test demand a row for today and so assert the defect. The window is
     # `today-29 .. today`, so the rows are the days in it at or below the
     # watermark.
-    today = israel_today()
-    expected_days = [
-        today - timedelta(days=o)
-        for o in range(seed_mod.DEMO_INSIGHTS["days"])
-        if today - timedelta(days=o) <= watermark
-    ]
+    # Derived from the RAW rows, not from arithmetic over the window: the
+    # roll-up covers a day the producer was active on, and `_spread` is a
+    # rising ramp whose oldest days carry no traffic at all. Counting
+    # "every day <= watermark" would over-count those by exactly the number of
+    # silent days, which is drift of the kind this derivation exists to avoid.
+    active_days = {
+        _israel_date(v.created_at)
+        for v in db.query(ProducerPageView).filter(
+            ProducerPageView.producer_id == producer.id
+        )
+    } | {
+        _israel_date(c.clicked_at)
+        for c in db.query(ProducerWhatsAppClick).filter(
+            ProducerWhatsAppClick.producer_id == producer.id
+        )
+    }
+    expected_days = sorted(d for d in active_days if d <= watermark)
     assert expected_days, "arrangement failed — no day in the window is owned"
     demo_rollup = (
         db.query(ProducerAnalyticsDaily)
