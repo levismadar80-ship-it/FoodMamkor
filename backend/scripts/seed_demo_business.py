@@ -956,6 +956,20 @@ def _to_naive_utc(aware: datetime) -> datetime:
     return aware.astimezone(timezone.utc).replace(tzinfo=None)
 
 
+def _bag_still_open(now: datetime):
+    """The SQL predicate for "this bag is one `/rescue` will still show".
+
+    The same expression the public listing filters on (`rescue.py`), built from
+    the router's own `RESERVE_CLOSES_BEFORE_END` rather than a copy of it, so
+    the seed and the listing cannot disagree about what is visible.
+
+    Module-level so it can be exercised without `_seed_rescue_bag`: inside that
+    function the live-bag guard always returns before the sweep, so the
+    negation is never reachable on its own there.
+    """
+    return RescueOffer.pickup_end > now + RESERVE_CLOSES_BEFORE_END
+
+
 def _demo_pickup_window(now_utc: datetime) -> tuple[date, datetime, datetime]:
     """`(israel day, pickup_start, pickup_end)` for the demo bag, from `now`.
 
@@ -1110,9 +1124,10 @@ def _seed_rescue_bag(db, producer) -> bool:
     # Still scoped to bags that can no longer pass `rescue.py:463` — a LIVE bag
     # anywhere is left alone and short-circuits, so this does not reintroduce
     # the double-bag #4114 removed.
-    # The two filters are exact complements on `pickup_end`, so every bag at
-    # this location is in one set or the other and never in both.
-    still_open = RescueOffer.pickup_end > now + RESERVE_CLOSES_BEFORE_END
+    # `pickup_end` is nullable=False (models.py), so the predicate and its
+    # negation are exact complements: every bag at this location is in one set
+    # or the other and never in neither.
+    still_open = _bag_still_open(now)
     live = (
         db.query(RescueOffer)
         .filter(RescueOffer.producer_location_id == location.id, still_open)
@@ -1127,8 +1142,14 @@ def _seed_rescue_bag(db, producer) -> bool:
     # an edit to that guard would have turned this into a delete of live bags,
     # while the variable name told the reader a filter was already there. A
     # query that is safe only in context is a trap for whoever edits the
-    # context. `test_the_sweep_spares_a_live_bag_without_the_short_circuit`
-    # removes the guard and proves the filter stands alone.
+    # context.
+    #
+    # The predicate lives in `_bag_still_open` so it can be tested WITHOUT
+    # this function: `test_the_stale_filter_selects_only_closed_bags` runs it
+    # against a live bag and a closed one and requires exactly the closed one
+    # back. Through this function the guard above always returns first, so the
+    # filter is not reachable alone here — which is why it is tested there
+    # instead of asserted about here.
     stale = (
         db.query(RescueOffer)
         .filter(
@@ -1139,13 +1160,13 @@ def _seed_rescue_bag(db, producer) -> bool:
     )
     for dead in stale:
         # Deleting one takes its rescue_orders with it, and their
-        # rescue_reviews after that — all three FKs are ondelete="CASCADE"
+        # rescue_reviews after that — both FKs are ondelete="CASCADE"
         # (models.py: RescueOffer -> RescueOrder -> RescueReview). Deliberate:
         # this is the demo fixture on staging, and the alternative is the dead
         # rows MEH-2814 removed. Pinned by
         # `test_the_sweep_takes_orders_and_reviews_with_a_closed_bag` so a
-        # narrowed cascade is noticed rather than discovered as an
-        # IntegrityError on someone's seed run.
+        # narrowed cascade is noticed here rather than as an IntegrityError on
+        # a seed run.
         print(
             f"Removing the demo rescue bag for {dead.date}: its window closed "
             f"at {_israel_hhmm(dead.pickup_end)} Israel time."

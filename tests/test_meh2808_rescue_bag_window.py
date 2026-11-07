@@ -32,7 +32,12 @@ from datetime import date, datetime, timedelta, timezone
 
 import pytest
 
-from app.models.models import ProducerLocation, RescueOffer, RescueOrder
+from app.models.models import (
+    ProducerLocation,
+    RescueOffer,
+    RescueOrder,
+    RescueReview,
+)
 from app.routers.rescue import RESERVE_CLOSES_BEFORE_END
 from app.utils.clock import ISRAEL_TZ
 
@@ -73,10 +78,9 @@ def _utc_at_israel(hour, minute=0, *, on=None):
     offset is +2 or +3 depending on the date, and hardcoding either is the
     MEH-2290 class this file exists to avoid repeating.
 
-    Takes a whole date rather than a day-of-month (MEH-2816): the earlier
-    `day=` form pinned the month to November, so an arrangement reaching back
-    across a month boundary would have silently built a date in the wrong
-    month.
+    Takes a whole date rather than a day-of-month (MEH-2816): a day-of-month
+    form pins the month, so an arrangement reaching back across a month
+    boundary would silently build a date in the wrong one.
     """
     d = on or _ANCHOR
     aware = datetime(d.year, d.month, d.day, hour, minute, tzinfo=ISRAEL_TZ)
@@ -377,6 +381,66 @@ def test_refresh_clears_the_bag_through_the_location_cascade(
 
 
 # ── MEH-2816: the sweep is safe on its own, and what it takes with it ───────
+def test_the_stale_filter_selects_only_closed_bags(
+    db, seed_mod, bakery_category, monkeypatch
+):
+    """The sweep's predicate, exercised WITHOUT `_seed_rescue_bag`.
+
+    Inside that function the live-bag guard always returns before the sweep,
+    so the negated predicate is unreachable there and no test driving the
+    function can discriminate on it. That is the gap the reviewer found in the
+    first version of this PR, where a comment claimed a proof that did not
+    exist. `_bag_still_open` is module-level for exactly this reason.
+
+    DISCRIMINATES: one live bag and one closed bag at the same location, and
+    the filter must return exactly the closed one. Drop the predicate from the
+    query — select every bag at the location, which is what the code did
+    before MEH-2816 — and the live bag comes back too, failing by id.
+    """
+    now = _utc_at_israel(10, 0)
+    monkeypatch.setattr(seed_mod, "utc_now", lambda: now)
+    producer = seed_mod.seed_demo_business(db)
+    seed_mod.seed_marketing_fixtures(db)
+
+    location = (
+        db.query(ProducerLocation)
+        .filter(
+            ProducerLocation.producer_id == producer.id,
+            ProducerLocation.is_primary.is_(True),
+        )
+        .one()
+    )
+    live_id = db.query(RescueOffer).one().id
+
+    yesterday = _israel(now).date() - timedelta(days=1)
+    closed = RescueOffer(
+        producer_location_id=location.id,
+        date=yesterday,
+        qty_total=4,
+        qty_left=4,
+        price_agorot=2500,
+        pickup_start=_utc_at_israel(17, 0, on=yesterday),
+        pickup_end=_utc_at_israel(19, 0, on=yesterday),
+        cancel_until=_utc_at_israel(17, 0, on=yesterday),
+    )
+    db.add(closed)
+    db.commit()
+    closed_id = closed.id
+
+    selected = {
+        o.id
+        for o in db.query(RescueOffer).filter(
+            RescueOffer.producer_location_id == location.id,
+            ~seed_mod._bag_still_open(now),
+        )
+    }
+    assert closed_id in selected, "the closed bag was not selected for sweeping"
+    assert live_id not in selected, (
+        "the filter selected a LIVE bag — this is the query that deletes, so "
+        "that is a delete of a bag /rescue is currently showing"
+    )
+
+
 def test_the_sweep_is_per_location_and_a_live_bag_protects_the_rest(
     db, seed_mod, bakery_category, monkeypatch
 ):
@@ -384,13 +448,10 @@ def test_the_sweep_is_per_location_and_a_live_bag_protects_the_rest(
     location. This pins both halves of what that means, with several bags in
     the table rather than the single one every other test here arranges.
 
-    I first wrote this by monkeypatching `db.query` to defeat the `live`
-    short-circuit, so the sweep's own `pickup_end` filter would be the only
-    thing sparing a live bag. That is thrown away on purpose: the wrapper was
-    a second implementation of the thing under test, and a wrong wrapper makes
-    the test meaningless while still passing. The filter being safe standalone
-    is a property of the query, which reads plainly in the source; what needs
-    a test is the BEHAVIOUR with more than one row, which is new here.
+    The predicate's own behaviour is covered by
+    `test_the_stale_filter_selects_only_closed_bags`, which runs it directly;
+    what this one covers is the BEHAVIOUR with more than one row, which is
+    what the widened sweep changed.
 
     DISCRIMINATES: the first half fails if the sweep deletes anything while a
     live bag exists (the double-bag #4114 removed, reached from the other
@@ -449,7 +510,7 @@ def test_the_sweep_is_per_location_and_a_live_bag_protects_the_rest(
         f"{len(remaining)} bags left after the sweep; the per-location sweep "
         "should have taken all three closed ones and left exactly the new one"
     )
-    assert remaining[0].id not in {live_id}
+    assert remaining[0].id != live_id
     assert f"{_israel(remaining[0].pickup_start):%H:%M}" == "15:00"
 
 
@@ -485,17 +546,23 @@ def test_the_sweep_takes_orders_and_reviews_with_a_closed_bag(
         offer_id=bag.id,
         user_id=consumer.id,
         qty=1,
-        # FOUR DIGITS: the column is character(4) with a CHECK of
-        # `^[0-9]{4}$` (models.py). I first wrote "MEH2816" from imagination
-        # and CI answered with StringDataRightTruncation — the schema is right
-        # there and reading it was cheaper than the round trip.
+        # FOUR DIGITS: character(4) with a CHECK of `^[0-9]{4}$` (models.py).
         pickup_code="2816",
         status="reserved",
     )
     db.add(order)
-    db.commit()
+    db.flush()
     order_id = order.id
+
+    # ...and a review hanging off that order, so the test covers the second
+    # hop its name claims. Without it the name said "orders and reviews"
+    # while only orders were asserted (reviewer on #4136).
+    review = RescueReview(order_id=order_id, rating=5)
+    db.add(review)
+    db.commit()
+    review_id = review.id
     assert db.query(RescueOrder).filter(RescueOrder.id == order_id).one()
+    assert db.query(RescueReview).filter(RescueReview.id == review_id).one()
 
     # Past the window's close, so the bag is stale and the sweep takes it.
     monkeypatch.setattr(seed_mod, "utc_now", lambda: _utc_at_israel(14, 0))
@@ -505,3 +572,6 @@ def test_the_sweep_takes_orders_and_reviews_with_a_closed_bag(
     assert db.query(RescueOrder).filter(RescueOrder.id == order_id).first() is None, (
         "the reservation outlived the bag it belonged to — the cascade narrowed"
     )
+    assert (
+        db.query(RescueReview).filter(RescueReview.id == review_id).first() is None
+    ), "the review outlived the order it belonged to — the second hop narrowed"
