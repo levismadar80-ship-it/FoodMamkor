@@ -107,6 +107,24 @@ const EXPERIENCES_COUNT_RE = /\/api\/experiences\/count(?:\?[^#]*)?$/;
 // collapsed mobile footer; each PNG was opened and diffed before merge.
 const EVENTS_UPCOMING_RE = /\/api\/events\/upcoming(?:\?[^#]*)?$/;
 
+// MEH-2802: the home «אירועים קרובים» preview, which the pin above keeps out of
+// every other frame. Three rows chosen to stress the equal-height card: a long
+// two-line title + description (paid), a short title with no description
+// (free), and a row with no photo at all (category tile, paid). Dates sit after
+// VRT_FIXED_TIME. Shot ONLY by the "home upcoming events" test below.
+const EVENTS_UPCOMING_3_FIXTURE = fs.readFileSync(
+  path.join(__dirname, "fixtures", "events-upcoming-3.json"),
+  "utf-8"
+);
+// The fixture's two photos are Cloudinary URLs, and Cloudinary 401s on the
+// runner. Fulfil them with one fixed 1x1 PNG (a flat sage) so the band/thumbnail
+// is a deterministic filled area rather than whatever the CDN answered.
+const CLOUDINARY_IMAGE_RE = /res\.cloudinary\.com\/.*\/vrt\//;
+const FLAT_PNG = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGOYs6IOAAOmAcOWG3PHAAAAAElFTkSuQmCC",
+  "base64"
+);
+
 /**
  * MEH-991 Chunk 3 — visual parity baselines (VRT).
  * Baselines refreshed 2026-07-12 after MEH-1128 Wave D2 — the consumer
@@ -575,6 +593,53 @@ test.describe("Visual parity — MEH-991", () => {
         page.locator('[data-testid="producer-card"]'),
       ],
     });
+  });
+
+  // MEH-2802 — the «אירועים קרובים» preview as an ELEMENT shot, desktop + mobile.
+  // A separate test so the full-page "home" frame above keeps its events pin and
+  // its baseline. Name contains "home" on purpose: `vrt-regen:home` scopes the
+  // on-runner regen with --grep home (vrt-update.yml), which must reach it.
+  // Desktop = the lg 3-up grid (equal heights, one chip+price line); mobile =
+  // the phone list. The geometric assertion lives in
+  // e2e/flows/45-card-grid-equal-height.spec.ts; this pins the pixels.
+  test("home upcoming events", async ({ page }) => {
+    await preparePage(page);
+    // Registered AFTER preparePage, so it wins over the empty pin there.
+    await page.route(EVENTS_UPCOMING_RE, async (route) => {
+      await route.fulfill({ status: 200, contentType: "application/json", body: EVENTS_UPCOMING_3_FIXTURE });
+    });
+    await page.route(CLOUDINARY_IMAGE_RE, async (route) => {
+      await route.fulfill({ status: 200, contentType: "image/png", body: FLAT_PNG });
+    });
+    await page.goto("/");
+    const section = page.locator('section:has([data-testid="event-row-compact"])');
+    await expect(page.locator('[data-testid="event-row-compact"]')).toHaveCount(3, { timeout: 20_000 });
+    await section.scrollIntoViewIfNeeded();
+    await settle(page);
+    // An element shot still paints whatever is fixed/sticky over it (header,
+    // BottomNav, back-to-top, chat launcher) at whatever scroll offset the run
+    // landed on. Hide that chrome for THIS frame only — it is not the subject,
+    // and the "home" shot above keeps covering it. opacity, not visibility
+    // (a descendant can set `visibility: visible` and reappear) nor display
+    // (the sticky header is in flow); through an !important rule so an inline
+    // style written by an animation cannot undo it. NOTE for local runs: the
+    // round badge bottom-left under `next dev` is Next's dev-tools indicator —
+    // it does not exist under `next start`, which is what CI shoots.
+    await page.evaluate(() => {
+      const mark = (root: Element) => {
+        for (const el of [root, ...Array.from(root.querySelectorAll("*"))]) {
+          const pos = getComputedStyle(el).position;
+          if (pos === "fixed" || pos === "sticky") el.setAttribute("data-vrt-hide", "");
+        }
+      };
+      mark(document.body);
+      // Lazily mounted chrome (the chat launcher) can arrive after this pass.
+      new MutationObserver((records) => {
+        for (const r of records) r.addedNodes.forEach((n) => n instanceof Element && mark(n));
+      }).observe(document.body, { childList: true, subtree: true });
+    });
+    await page.addStyleTag({ content: "[data-vrt-hide]{opacity:0 !important}" });
+    await expect(section).toHaveScreenshot("home-upcoming-events.png", SHOT);
   });
 
   // MEH-1440 (2026-07-22): the /map chrome changed when the toggle-chip
