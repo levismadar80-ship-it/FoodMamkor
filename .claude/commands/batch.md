@@ -191,7 +191,7 @@ After merge, the verification ladder is split across three actors. `/batch` runs
 - **Tier 2 — Claude Code (this command)**: build/test/Playwright/grep automation, **post-merge autonomous verification via Vercel + Sentry MCPs** (Section 9).
 - **Tier 3 — Smadar**: real-device mobile perception only. Nothing else.
 
-Canonical checklist: `docs/MANUAL_TESTING.md` (MEH-498). Do not re-implement the checklist here.
+Canonical checklist: `docs/RELEASE_CHECKLIST.md` (MEH-2796; `docs/MANUAL_TESTING.md` archived). Do not re-implement the checklist here.
 
 ---
 

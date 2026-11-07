@@ -143,10 +143,14 @@ PR for its comment; never infer reviewer status from this file.
    no Vercel deployment (MEH-2062) unless Sapir runs `vercel deploy`; else cite
    the 375/1440 bundle + staging and never report an absent preview as
    rendered. Wait for approval before merging to staging.
-10. **After every PR — update docs/MANUAL_TESTING.md** with new features:
-    `[ ] Test — איך לבדוק — תוצאה מצופה`.
+10. **After every PR — a test, not a checklist line (MEH-2796).** New
+    behaviour gets an automated test (pytest / vitest / Playwright). Only what
+    automation cannot see (real iPhone Safari, a third-party console, a flag
+    flipped by hand) gets one line in
+    [docs/RELEASE_CHECKLIST.md](../../docs/RELEASE_CHECKLIST.md), cap 30.
+    `docs/MANUAL_TESTING.md` is archived — never add to it.
 11. **After every PR — auto-update every doc your code touched**, same PR
-    (DATA / ADMIN / DESIGN / FEATURES / MANUAL_TESTING / SECURITY / DEPLOYMENT,
+    (DATA / ADMIN / DESIGN / FEATURES / SECURITY / DEPLOYMENT,
     `.ai/diagrams/`; CHANGELOG via rule 31). Stop hooks run build + pytest.
 12. **After every PR that touches `backend/app/routers/**`,
     `backend/app/models/**` or `backend/app/auth.py` — update `.ai/diagrams/`.**
@@ -267,7 +271,8 @@ skips per [docs/EMERGENCY_OVERRIDE.md](../../docs/EMERGENCY_OVERRIDE.md).
      (`/`, `/map`, `/about`, `/login`, `/register`, producer detail) →
      regenerate `parity.spec.ts-snapshots/` in the SAME PR.
 3. **Add a regression rule** here if the pattern is likely to recur.
-4. **Add a test** that would have caught it; else a MANUAL_TESTING.md case.
+4. **Add a test** that would have caught it; else (real device only) a
+   line in `docs/RELEASE_CHECKLIST.md`.
 5. **Update docs** if the fix reveals a non-obvious convention.
 6. **An anomaly seen during QA is explained or reported — never attributed to
    the harness and dropped.** Label an unverified diagnosis as unverified. A
