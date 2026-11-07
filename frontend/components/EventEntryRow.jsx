@@ -47,9 +47,11 @@ export const CATEGORY_ICON = {
   "חקלאות": Plant,
 };
 
-// MEH-2804 / ADR-039: the price token, shared by free and paid (and mirrored on
-// the event page, EventDetailClient). Exported so both read one string.
-export const PRICE_TOKEN = "ms-auto font-headline-display font-bold text-base md:text-lg numeric";
+// MEH-2804 / ADR-039: the price token, shared by free and paid. PRICE_BASE is
+// the token itself and is imported by the event page (EventDetailClient), so
+// both read one string; the row adds ms-auto to push it to the row's end.
+export const PRICE_BASE = "font-headline-display font-bold text-base md:text-lg numeric";
+const PRICE_TOKEN = `ms-auto ${PRICE_BASE}`;
 
 // MEH-2547: toEventEntry lives in lib/event-entry.js (no "use client") so the
 // server-rendered organizer page can build rows too; re-exported for the

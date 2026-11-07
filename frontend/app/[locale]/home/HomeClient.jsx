@@ -56,6 +56,12 @@ const HomepageMiniMap = dynamic(() => import("@/components/HomepageMiniMap"), {
 const TRUST_ROW = "mx-auto grid max-w-3xl px-4";
 const trustColClass = (i) =>
   `flex flex-col items-center gap-2 px-2${i > 0 ? " border-s border-border" : ""}`;
+// The label box's reserved height, on the skeleton AND the loaded label. A
+// column is ~98px wide at 375, and "businesses, each chosen personally" needs
+// three lines there (Hebrew needs three at 320) — measured. So phones reserve
+// three lines (3 × text-sm's 20px = 3.75rem), sm+ two. A MIN height, never a
+// clamp: a longer label grows the band rather than being cut off.
+export const TRUST_LABEL_BOX = "min-h-[3.75rem] sm:min-h-10";
 
 export default function HomeClient({
   initialProducers = null,
@@ -174,15 +180,22 @@ export default function HomeClient({
           25+: count · categories · 0₪; below 5: the locked sentence, no
           numerals. The skeleton reserves the 3-column box by construction:
           the numeral is leading-none (h-9 / md:h-12 = text-4xl / text-5xl)
-          and every label box is a fixed two lines (h-10 = 2 × text-sm's 20px),
-          so loaded and busy differ in content, never in height (MEH-1686). */}
+          and every label box reserves the same lines (TRUST_LABEL_BOX), so
+          loaded and busy differ in content, not in height (MEH-1686). Two
+          known exceptions, both by design: a label longer than the reserve
+          (English at 320) grows the band, and the 5–24 row has 2 columns where
+          the skeleton has 3 (same height, wider columns) — the count is not
+          known until /stats answers. */}
       {!statsLoaded && (
         <section className="bg-background border-y border-border py-8" aria-busy="true" data-testid="home-trust-band">
           <div className={`${TRUST_ROW} grid-cols-3`}>
             {[0, 1, 2].map((i) => (
               <div key={i} className={trustColClass(i)} data-testid="trust-fact-skeleton">
                 <span className="block h-9 w-14 rounded-lg bg-text/10 animate-pulse md:h-12" />
-                <span className="block h-10 w-20 rounded-lg bg-text/10 animate-pulse" />
+                <span
+                  className={`block ${TRUST_LABEL_BOX} w-20 rounded-lg bg-text/10 animate-pulse`}
+                  data-testid="trust-fact-skeleton-label"
+                />
               </div>
             ))}
           </div>
@@ -204,7 +217,7 @@ export default function HomeClient({
                   >
                     {fact.value}
                   </span>
-                  <span className="h-10 line-clamp-2 text-sm text-text" data-testid="trust-fact-label">
+                  <span className={`${TRUST_LABEL_BOX} text-sm text-text`} data-testid="trust-fact-label">
                     {fact.label}
                   </span>
                 </div>

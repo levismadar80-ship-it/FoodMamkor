@@ -83,7 +83,7 @@ vi.mock("@/lib/use-home-page", () => ({ useHomePage: () => useHomePage() }));
 // trust band this file tests lives in the client body, which moved to
 // home/HomeClient.jsx. Same subject, same assertions — only the mount point
 // changed, because an async component cannot be rendered by RTL.
-import HomePage from "@/app/[locale]/home/HomeClient";
+import HomePage, { TRUST_LABEL_BOX } from "@/app/[locale]/home/HomeClient";
 
 const LOCKED_LEAD = "בלי מתווך באמצע · איסוף עצמי או משלוח, ישירות מבית העסק";
 const OLD_LEAD = "בתי עסק שכבר בדקנו בשבילך";
@@ -255,6 +255,28 @@ describe("MEH-2804 — the trust band fact row", () => {
     const cols = band.querySelectorAll('[data-testid="trust-fact-skeleton"]');
     expect(cols).toHaveLength(3);
     unmount();
+  });
+
+  // Reviewer, #4143: a 2-line clamp cut "businesses, each chosen personally"
+  // at 375 (measured: 3 lines needed, 2 shown). The label now reserves a MIN
+  // height and never clamps, and the skeleton reserves the same one.
+  it("the label is never clamped, and reserves the same height as the skeleton's label box", () => {
+    const { unmount } = renderAt(30);
+    for (const label of screen.getAllByTestId("trust-fact-label")) {
+      expect(label.className).not.toMatch(/line-clamp/);
+      for (const cls of TRUST_LABEL_BOX.split(" ")) expect(label.className, cls).toContain(cls);
+    }
+    unmount();
+    useHomePage.mockReturnValue({ ...hookState(30), statsLoaded: false, showStatsCounter: false, showTrustCount: false });
+    const { unmount: unmount2 } = render(
+      <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
+        <HomePage />
+      </NextIntlClientProvider>,
+    );
+    for (const box of screen.getAllByTestId("trust-fact-skeleton-label")) {
+      for (const cls of TRUST_LABEL_BOX.split(" ")) expect(box.className, cls).toContain(cls);
+    }
+    unmount2();
   });
 });
 

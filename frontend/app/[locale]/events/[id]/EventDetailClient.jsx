@@ -28,7 +28,7 @@ import Breadcrumb from "@/components/Breadcrumb";
 import ShareButton from "@/components/ShareButton";
 import SaveButton from "@/components/SaveButton";
 import OwnerRow from "@/components/OwnerRow";
-import EventEntryRow, { CATEGORY_ICON } from "@/components/EventEntryRow";
+import EventEntryRow, { CATEGORY_ICON, PRICE_BASE } from "@/components/EventEntryRow";
 import { toEventEntry } from "@/lib/event-entry";
 import { eventWhen, addressNavLinks } from "@/lib/event-when";
 import { AddressNavLinks } from "@/components/NavAppGlyphs";
@@ -334,7 +334,7 @@ export default function EventDetailClient() {
                   MEH-2804 / ADR-039: the same display-numeral token as the event
                   row (Frank Ruhl bold, primary) for free and paid alike — minus
                   ms-auto, since here it sits beside its icon, not at the row end. */}
-              <p className="font-headline-display font-bold text-base md:text-lg text-primary numeric" data-testid="event-detail-price">
+              <p className={`${PRICE_BASE} text-primary`} data-testid="event-detail-price">
                 {event.price > 0 ? <span dir="ltr">{formatPrice(event.price)}</span> : t("free")}
               </p>
             </div>
