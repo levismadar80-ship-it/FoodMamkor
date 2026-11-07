@@ -435,6 +435,91 @@ test.describe("manual › /join (MEH-995)", () => {
     });
   });
 
+  // Sapir, 07/11: "the move between sections isn't smooth; it looks like it
+  // reloads every time". Sampled frame by frame over ONE swipe on the code she
+  // saw: the selection flipped while the shelf was still moving (154 of
+  // 252px), and the panel's rows went to opacity 0 for ~215ms. This walks the
+  // same swipe and pins all three: no selection change mid-motion, the panel
+  // never blanks, no card ever shows an unloaded image.
+  test.describe("swipe smoothness, with motion", () => {
+    test.use({ reducedMotion: "no-preference" });
+
+    test("one swipe: selection only after the shelf settles, panel never blanks, no blank media", async ({ page }) => {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await gotoJoin(page);
+      const shelf = scope(page).getByTestId("join-shelf");
+      await shelf.scrollIntoViewIfNeeded();
+      // The cards ON SCREEN have loaded before the gesture, so the per-frame
+      // "no blank" check below measures what the swipe brings in, not first paint.
+      await expect
+        .poll(() =>
+          shelf.evaluate((node: HTMLElement) => {
+            const sb = node.getBoundingClientRect();
+            return [...node.querySelectorAll<HTMLElement>('[data-testid="join-group-card"]')]
+              .filter((k) => {
+                const r = k.getBoundingClientRect();
+                return r.right > sb.left + 1 && r.left < sb.right - 1;
+              })
+              .every((k) => {
+                const img = k.querySelector("img") as HTMLImageElement | null;
+                const vid = k.querySelector("video") as HTMLVideoElement | null;
+                return Boolean((img && img.complete && img.naturalWidth > 0) || (vid && vid.readyState >= 2));
+              });
+          }),
+        )
+        .toBe(true);
+      const frames = await shelf.evaluate(async (node: HTMLElement) => {
+        const out: { sl: number; sel: string; minOp: number; blank: number }[] = [];
+        const root = node.closest("#main-content")!;
+        const card = node.querySelector<HTMLElement>('[data-testid="join-group-card"][data-group="found"]')!;
+        const s = node.getBoundingClientRect();
+        const c = card.getBoundingClientRect();
+        node.scrollBy({ left: c.left + c.width / 2 - (s.left + s.width / 2), behavior: "smooth" });
+        const t0 = performance.now();
+        await new Promise<void>((done) => {
+          const tick = () => {
+            const rows = [...root.querySelectorAll<HTMLElement>('[data-testid="join-tile"],[data-testid="join-check-item"]')];
+            // Effective opacity = the row's own times every ancestor's, up to the panel.
+            const eff = (el: HTMLElement) => {
+              let o = 1;
+              for (let n: HTMLElement | null = el; n && n !== root; n = n.parentElement) o *= Number(getComputedStyle(n).opacity);
+              return o;
+            };
+            const sb = node.getBoundingClientRect();
+            const visible = [...node.querySelectorAll<HTMLElement>('[data-testid="join-group-card"]')].filter((k) => {
+              const r = k.getBoundingClientRect();
+              return r.right > sb.left + 1 && r.left < sb.right - 1;
+            });
+            const blank = visible.filter((k) => {
+              const img = k.querySelector("img") as HTMLImageElement | null;
+              return !img || !img.complete || img.naturalWidth === 0;
+            }).length;
+            out.push({
+              sl: Math.round(node.scrollLeft),
+              sel: node.querySelector<HTMLElement>('[data-selected="true"]')?.dataset.group ?? "",
+              minOp: Math.min(...rows.map(eff)),
+              blank,
+            });
+            if (performance.now() - t0 < 2000) requestAnimationFrame(tick);
+            else done();
+          };
+          requestAnimationFrame(tick);
+        });
+        return out;
+      });
+      const finalSl = frames[frames.length - 1].sl;
+      const moving = frames.filter((f) => f.sl !== finalSl);
+      expect(moving.length, "control: the shelf really moved").toBeGreaterThan(3);
+      expect(
+        moving.filter((f) => f.sel !== "page").map((f) => `${f.sl}:${f.sel}`),
+        "the selection changed while the shelf was still moving",
+      ).toEqual([]);
+      expect(frames[frames.length - 1].sel).toBe("found");
+      expect(Math.min(...frames.map((f) => f.minOp)), "the panel blanked during the swap").toBeGreaterThanOrEqual(0.5);
+      expect(frames.filter((f) => f.blank > 0).length, "a card showed an unloaded image").toBe(0);
+    });
+  });
+
   // The toggletip overlays: opening it moves nothing below it.
   test("toggletip opens over the list without moving it, and closes on Esc", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
