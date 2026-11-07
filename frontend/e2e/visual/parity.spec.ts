@@ -41,6 +41,23 @@ const TWO_CHANNEL_FIXTURE = fs.readFileSync(
 // stops it swallowing `/api/producers/{uuid}/reviews`.
 const PRODUCER_DETAIL_RE = /\/api\/producers\/[0-9a-f-]{36}(?:\?|$)/;
 
+// MEH-2803: the «שעות» section. producer-detail.json carries no order_window and
+// no opening_hours, and the producer shots are viewport-only, so neither hours
+// block had ever been in a pixel. Two fixtures = producer-detail.json plus hours:
+//   · DIFFERENT — the demo seed (seed_demo_business.py): Sun–Thu 7:00–14:00 both
+//     sides, Friday split for orders (6:30–10:00, 11:00–13:00) vs 6:30–13:00 to
+//     visit, store hours typed in Hebrew → TWO labelled sets.
+//   · IDENTICAL — Sun–Thu 7:00–14:00 both sides (store hours in Hebrew, H:MM,
+//     en-dashes) → ONE «הזמנות וביקור במקום» set.
+const PRODUCER_HOURS_DIFFERENT_FIXTURE = fs.readFileSync(
+  path.join(__dirname, "fixtures", "producer-hours-different.json"),
+  "utf-8"
+);
+const PRODUCER_HOURS_IDENTICAL_FIXTURE = fs.readFileSync(
+  path.join(__dirname, "fixtures", "producer-hours-identical.json"),
+  "utf-8"
+);
+
 // MEH-1591: fixed /map payloads. The map's results rail and category chip row
 // are UNMASKED live chrome (only `.leaflet-container` is masked), so the
 // baseline moved whenever a business was approved/deactivated — the 26/07 regen
@@ -1035,6 +1052,47 @@ test.describe("Visual parity — MEH-991", () => {
   // MEH-1113: the contact form gains a "נושא הפנייה" topic select above the
   // message field — another intentional /about visual change, so the baselines
   // regenerate again on this branch via the same vrt-update re-ride.
+  // MEH-2803 — ELEMENT shots of the «שעות» section, desktop + mobile, both
+  // states (two labelled sets / one merged set), disclosures closed. Named
+  // "producer-detail-hours-*" so vrt-regen:producer-detail (--grep
+  // producer.detail) reaches them. The OpeningHours «היום» row reads the frozen
+  // VRT clock (Wed), so it is deterministic. Existing producer shots untouched.
+  for (const [name, fixture, sets] of [
+    ["producer-detail-hours-different", PRODUCER_HOURS_DIFFERENT_FIXTURE, 2],
+    ["producer-detail-hours-identical", PRODUCER_HOURS_IDENTICAL_FIXTURE, 1],
+  ] as const) {
+    test(name, async ({ page }) => {
+      await preparePage(page);
+      await page.route(PRODUCER_DETAIL_RE, async (route) => {
+        await route.fulfill({ status: 200, contentType: "application/json", body: fixture });
+      });
+      const listRes = await page.request.get("/api/producers", { params: { limit: 1 } });
+      const list = listRes.ok() ? await listRes.json().catch(() => []) : [];
+      const borrowedId = Array.isArray(list) && list[0]?.id;
+      if (!borrowedId) {
+        test.skip(true, "No producer on staging to borrow an id from");
+        return;
+      }
+      await page.goto(`/producer/${borrowedId}`);
+      const hours = page.locator('[data-testid="producer-hours"]');
+      // The fixture reaches the page through the CLIENT re-fetch, so wait for
+      // the section to show the fixture's set count, not merely to exist.
+      await expect(hours.locator('[data-testid="hours-set"]')).toHaveCount(sets, { timeout: 20_000 });
+      await hours.scrollIntoViewIfNeeded();
+      await settle(page);
+      // Same reason as "home upcoming events": hide fixed/sticky chrome (header,
+      // section nav, StickyContactBar, BottomNav) that would paint over the element.
+      await page.evaluate(() => {
+        for (const el of Array.from(document.querySelectorAll("body *"))) {
+          const pos = getComputedStyle(el).position;
+          if (pos === "fixed" || pos === "sticky") el.setAttribute("data-vrt-hide", "");
+        }
+      });
+      await page.addStyleTag({ content: "[data-vrt-hide]{opacity:0 !important}" });
+      await expect(hours).toHaveScreenshot(`${name}.png`, SHOT);
+    });
+  }
+
   test("about", async ({ page }) => {
     await preparePage(page);
     await page.goto("/about");
