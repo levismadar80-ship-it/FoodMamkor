@@ -4,6 +4,7 @@
 // own captures internally). Key unset → this is never reached (early return
 // below), so the no-op behaviour that predated MEH-435 is preserved exactly.
 import { hasFullCookieConsent } from "@/lib/cookie-consent";
+import { scrubClaimTokens } from "@/lib/claim-token";
 let posthogPromise = null;
 
 function loadPosthog(key) {
@@ -32,11 +33,52 @@ function loadPosthog(key) {
         autocapture: false,
         capture_pageview: false,
         person_profiles: "identified_only",
+        // MEH-2777: strip bearer tokens out of every event before it leaves
+        // the browser. See scrubEvent below for why this is not redundant with
+        // the two `false`s above it.
+        before_send: scrubEvent,
       });
       return posthog;
     });
   }
   return posthogPromise;
+}
+
+/**
+ * PostHog `before_send` — runs on every event immediately before it is sent,
+ * and may edit it (`BeforeSendFn`, @posthog/types/dist/capture.d.ts:88).
+ *
+ * MEH-2777. Two bearer credentials live in a URL PATH on this site: the
+ * owner-claim link (/claim/<jwt>, MEH-2321) and the sign-up cancel link
+ * (/registration/<token>, MEH-2768). Whoever holds either one can act with it,
+ * so neither may reach a third-party analytics store. Sentry
+ * (sentry.*.config.js) and Speed Insights (SpeedInsightsRedacted.jsx) already
+ * scrub through the same helper; this is the third and last consumer.
+ *
+ * WHY THIS IS NOT ALREADY HANDLED by `autocapture: false` +
+ * `capture_pageview: false` above. Those suppress automatic EVENTS. They say
+ * nothing about the `$current_url` / `$pathname` PROPERTIES, which
+ * `getEventProperties()` attaches to EVERY capture from `location.href`
+ * unconditionally — measured in the installed package at
+ * @posthog/browser-common/dist/utils/event-utils.mjs:227 and :229. PostHog's
+ * own `maskQueryParams` masks query parameters only; a token in the path goes
+ * through whole.
+ *
+ * So today's safety is an accident of call sites, not a property of the
+ * config: every trackEvent() caller happens to sit on /, /producers or
+ * /register/producer, and the token routes import no analytics at all. One
+ * trackEvent added to CancelRegistrationClient.jsx would leak a live
+ * credential with nothing going red. This hook closes that by construction.
+ *
+ * NOT `sanitize_properties`, which is the obvious-looking option and is wrong:
+ * it is deprecated in the installed posthog-js 1.422.1
+ * (@posthog/types/dist/posthog-config.d.ts:1827) and logs a console error on
+ * every single event.
+ *
+ * Returning the event (never null) — this redacts, it does not drop.
+ */
+export function scrubEvent(captureResult) {
+  return scrubClaimTokens(captureResult);
 }
 
 export function trackEvent(name, props = {}) {

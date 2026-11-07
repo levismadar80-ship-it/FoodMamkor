@@ -3777,6 +3777,10 @@
           "ugc": {
             "label": "Content you create:",
             "value": "Ratings, comments, and inquiries through contact forms."
+          },
+          "registrations": {
+            "label": "Signing up for an event or workshop:",
+            "value": "Name, phone, and email. The details go to the business only for that sign-up, and are deleted 30 days after the date."
           }
         }
       },
