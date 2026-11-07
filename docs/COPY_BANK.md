@@ -1098,3 +1098,22 @@ is NOT reused — it is about orders, not opening hours.
 («למשל: ימים א׳–ה׳, 9:00–17:00») — it invited exactly the free-text format the
 picker replaces, and is unused once the text field is gone. The admin
 ProducerForm's own `opening_hours_placeholder` is untouched.
+
+---
+
+## Section 17 — Location hours: where they appear (MEH-2819)
+
+The dashboard field standard asks every field for a «where it appears» line.
+The location hours picker (MEH-2805) shows one, chosen by the location's kind,
+because the hours really appear in a different place for each:
+
+| Key | he | en | When |
+|---|---|---|---|
+| `settings.locations.form.hours_where_primary` | `מופיעות בעמוד העסק, בסקשן «שעות»` | `Shown on your business page, in the «Hours» section` | The primary location (`resolveStoreHours`) |
+| `settings.locations.form.hours_where_pickup` | `מופיעות בעמוד העסק ליד הנקודה, תחת «איסוף עצמי»` | `Shown on your business page next to this point, under «Pickup»` | A pickup point or market stall that is not primary (DeliveryBlock `PickupRow`) |
+| `settings.locations.form.hours_where_map` | `מופיעות בעמוד העסק, בחלון של הנקודה במפה` | `Shown on your business page, in this point's map popup` | Any other non-primary point (MiniMap popup) |
+
+Approved by Sapir 07/11 («תעשה מה שאתה חושב»). Neutral Hebrew — plural
+passive («מופיעות»), no addressed verb.
+
+**Status:** ⏳ PR open — watch MEH-2819.
