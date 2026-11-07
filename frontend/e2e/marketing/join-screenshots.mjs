@@ -556,7 +556,18 @@ async function preflight(browser) {
     // completely empty DOM. A guard that cannot fail, introduced while fixing
     // a guard that could not fail (MEH-2821). The length check reads the DOM
     // and only the DOM; the cleanliness check reads both.
-    const domText = await page.textContent("body").catch(() => "");
+    // innerText, NOT textContent: textContent includes <script> and <style>,
+    // and Next inlines a large RSC flight payload there. Measured on staging
+    // at this exact moment (domcontentloaded): textContent("body") is 203,328
+    // characters, 200,836 of them script/style — so a 500-character floor
+    // over it passes on any page that merely loaded its bundle, rendered or
+    // not. innerText is 563 there, which is the visible text this is about.
+    //
+    // 563 against a floor of 500 is thin, and that is worth knowing rather
+    // than tuning blind: the floor still separates a catastrophically empty
+    // page from a real one, which is its job, but it is not a margin to lean
+    // on. Raise it only against a measurement, not a hunch.
+    const domText = await page.innerText("body").catch(() => "");
     if (!domText || domText.length < 500)
       problems.push("the business page rendered almost no text");
     const body = domText + apiText;
