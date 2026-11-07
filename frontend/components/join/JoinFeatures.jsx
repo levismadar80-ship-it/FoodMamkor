@@ -81,8 +81,15 @@ const IN_VIEW_RATIO = 0.5;
 // A swipe is "done" when the shelf has had no scroll event for this long.
 // Safari has neither scroll-snap events nor (everywhere) `scrollend`, so this
 // quiet period is the portable signal; `scrollend` short-circuits it where it
-// exists. Long enough to outlast the gaps inside a momentum scroll.
-const SETTLE_QUIET_MS = 150;
+// exists. iOS fires a scroll event every frame until the motion ends, so 90ms
+// (~5 frames) outlasts any gap inside a momentum scroll. Was 150ms: measured
+// Safari-like, the panel then followed 167ms after the shelf stopped.
+const SETTLE_QUIET_MS = 90;
+// While the shelf moves, the card nearest the centre gets the light cues
+// (green header, dot) at once. Its clip starts loading only once it is within
+// this fraction of a card width of the centre, so a fast flick across several
+// cards does not start a download for each card it passes.
+const CLIP_PREVIEW_OFFSET = 0.25;
 // The sticky site header is 96px at its tallest; the stage is never scrolled under it.
 const HEADER_CLEARANCE_PX = 96;
 
@@ -250,7 +257,7 @@ function GroupMedia({ group, live, alt, labels, paused, setPaused }) {
   );
 }
 
-function GroupCard({ group, selected, index, onSelect, copy, media }) {
+function GroupCard({ group, selected, active, index, onSelect, copy, media }) {
   const Icon = GROUP_ICONS[group];
   return (
     // The whole card is a tap target on phone; the header <button> is the
@@ -260,6 +267,7 @@ function GroupCard({ group, selected, index, onSelect, copy, media }) {
       data-testid="join-group-card"
       data-group={group}
       data-selected={selected ? "true" : "false"}
+      data-active={active ? "true" : "false"}
       onClick={() => onSelect(group, index)}
       className="w-[78%] shrink-0 snap-center overflow-hidden rounded-md border border-border bg-surface-card min-[700px]:w-auto"
     >
@@ -272,12 +280,12 @@ function GroupCard({ group, selected, index, onSelect, copy, media }) {
           onSelect(group, index);
         }}
         className={`flex w-full items-center gap-3 px-3 py-3 text-start transition-colors duration-[220ms] ease-out motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40 ${
-          selected ? "bg-state-selected text-background" : "bg-surface-card text-text"
+          active ? "bg-state-selected text-background" : "bg-surface-card text-text"
         }`}
       >
         <span
           className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors duration-[220ms] ease-out motion-reduce:transition-none ${
-            selected ? "bg-background/[0.12] text-gold-on-dark" : "bg-green-50 text-primary"
+            active ? "bg-background/[0.12] text-gold-on-dark" : "bg-green-50 text-primary"
           }`}
         >
           <Icon size={20} aria-hidden="true" />
@@ -289,7 +297,7 @@ function GroupCard({ group, selected, index, onSelect, copy, media }) {
         {media}
         <div className="px-3 py-3">
           <p className="text-sm leading-relaxed text-text/85">{copy.line}</p>
-          <p className="mt-2 text-sm font-medium text-primary">{selected ? copy.hint : copy.more}</p>
+          <p className="mt-2 text-sm font-medium text-primary">{active ? copy.hint : copy.more}</p>
         </div>
       </div>
     </div>
@@ -366,6 +374,12 @@ export default function JoinFeatures() {
 
   const [selected, setSelected] = useState(BUSINESS_FEATURE_GROUPS[0]);
   const [entered, setEntered] = useState(true);
+  // Live cues during a swipe (phone): `preview` = the card nearest the centre
+  // (green header + dot); `clipPreview` = the card whose clip may start
+  // loading. Both clear when the shelf rests and the selection commits.
+  const [preview, setPreview] = useState(null);
+  const [clipPreview, setClipPreview] = useState(null);
+  const tapScrollingRef = useRef(false);
   const [clipPaused, setClipPaused] = useState(false);
   // Reduced motion → clips start paused. The query resolves after mount
   // (useMediaQuery is null on the server), so this follows it once.
@@ -401,6 +415,7 @@ export default function JoinFeatures() {
   const select = useCallback(
     (group, index) => {
       if (!applySelection(group, index)) return;
+      tapScrollingRef.current = true;
       const behavior = reducedMotion ? "auto" : "smooth";
       if (isDesktop) {
         const top = stageRef.current?.getBoundingClientRect().top ?? 0;
@@ -426,9 +441,7 @@ export default function JoinFeatures() {
     const shelf = shelfRef.current;
     if (isDesktop !== false || !shelf) return undefined;
     let quiet = null;
-    const settle = () => {
-      clearTimeout(quiet);
-      quiet = null;
+    const nearestCard = () => {
       const box = shelf.getBoundingClientRect();
       const middle = box.left + box.width / 2;
       let nearest = null;
@@ -438,14 +451,28 @@ export default function JoinFeatures() {
         const d = Math.abs(r.left + r.width / 2 - middle);
         if (d < distance) {
           distance = d;
-          nearest = card;
+          nearest = { group: card.dataset.group, offset: d / (r.width || 1) };
         }
       }
-      if (nearest?.dataset.group) applySelection(nearest.dataset.group);
+      return nearest;
+    };
+    const settle = () => {
+      clearTimeout(quiet);
+      quiet = null;
+      tapScrollingRef.current = false;
+      const nearest = nearestCard();
+      if (nearest?.group) applySelection(nearest.group);
+      setPreview(null);
+      setClipPreview(null);
     };
     const onScroll = () => {
       clearTimeout(quiet);
       quiet = setTimeout(settle, SETTLE_QUIET_MS);
+      if (tapScrollingRef.current) return; // a tap already chose; don't flash the cards it passes
+      const nearest = nearestCard();
+      if (!nearest?.group) return;
+      setPreview(nearest.group);
+      if (nearest.offset <= CLIP_PREVIEW_OFFSET) setClipPreview(nearest.group);
     };
     shelf.addEventListener("scroll", onScroll, { passive: true });
     shelf.addEventListener("scrollend", settle);
@@ -466,7 +493,10 @@ export default function JoinFeatures() {
   const mediaFor = (group, slot) => (
     <GroupMedia
       group={group}
-      live={group === selected && isDesktop !== null && (slot === "stage") === isDesktop}
+      live={
+        isDesktop !== null &&
+        (slot === "stage" ? isDesktop && group === selected : !isDesktop && group === (clipPreview ?? selected))
+      }
       alt={tj(`media_alt.${group}`)}
       labels={labels}
       paused={clipPaused}
@@ -500,6 +530,7 @@ export default function JoinFeatures() {
                   group={group}
                   index={index}
                   selected={group === selected}
+                  active={group === (preview ?? selected)}
                   onSelect={select}
                   copy={{
                     title: t(`groups.${group}.card_title`),
@@ -516,8 +547,8 @@ export default function JoinFeatures() {
                 <span
                   key={group}
                   data-testid="join-shelf-dot"
-                  data-active={group === selected ? "true" : "false"}
-                  className={`h-1.5 w-1.5 rounded-full ${group === selected ? "bg-primary" : "bg-primary/25"}`}
+                  data-active={group === (preview ?? selected) ? "true" : "false"}
+                  className={`h-1.5 w-1.5 rounded-full ${group === (preview ?? selected) ? "bg-primary" : "bg-primary/25"}`}
                 />
               ))}
             </div>
