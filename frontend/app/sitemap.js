@@ -18,6 +18,14 @@ import {
   DIET_PAGE_MIN,
   dietPagePath,
 } from "@/lib/diet-pages";
+// MEH-2790: the category x region landing pages share one threshold and one
+// path shape with the route, so both read them from here.
+import {
+  REGION_KEYS,
+  REGION_PAGE_MIN,
+  regionCities,
+  regionPagePath,
+} from "@/lib/region-pages";
 // MEH-2369: the three "something happening" hubs are listed only with supply.
 import { HUBS, getAllHubCounts, hubBelongsInSitemap } from "@/lib/listing-supply";
 // MEH-2478: one owner of "a group buy can still be joined" (open + before deadline).
@@ -256,6 +264,88 @@ export default async function sitemap() {
     // API unavailable during build — skip the diet pages.
   }
 
+  // MEH-2790: category x region landing pages. Emitted ONLY for cells that
+  // clear REGION_PAGE_MIN, read from the SAME filtered endpoint the route
+  // gates on, so the sitemap and the route cannot disagree about which cells
+  // exist. Fails OPEN (cells omitted) like the diet block above.
+  //
+  // PRUNING, AND WHY NOT THE WAY THE TICKET DESCRIBES IT.
+  // 18 categories x 7 regions is 126 cell counts, against an endpoint limited
+  // to 120/minute — so something must prune first. MEH-2790 prescribes one
+  // call to GET /producers/cities, bucketed by region, as an upper bound.
+  // Measured, that is NOT an upper bound: /producers/cities groups by
+  // `Producer.city` (producers.py), while `?cities=` matches
+  // `_located_in_city_condition` — the business's own city OR any of its
+  // LOCATION ROWS. A business registered in Tel Aviv with a market stall in
+  // Haifa is counted by the filter and invisible to /producers/cities, so
+  // pruning on it can hide a cell that genuinely passes the gate: a page that
+  // should exist would 404 and never reach the sitemap. Silent, and exactly
+  // the class MEH-2787 just fixed one file over.
+  //
+  // So the prune uses the SAME endpoint instead, which makes it exact rather
+  // than an approximation: one `limit=1` count per category (18) and per
+  // region (7). A cell cannot beat the threshold if either of its axes is
+  // under it globally, so only surviving pairs are counted individually —
+  // 25 calls plus the survivors, instead of 126.
+  let regionPages = [];
+  try {
+    const cellTotal = async (categoryId, regionKey) => {
+      const cities = regionCities(regionKey)
+        .map((city) => `cities=${encodeURIComponent(city)}`)
+        .join("&");
+      const query = [
+        categoryId ? `category=${encodeURIComponent(categoryId)}` : null,
+        cities || null,
+        "limit=1&offset=0",
+      ]
+        .filter(Boolean)
+        .join("&");
+      const res = await serverFetch(`${API_URL}/producers?${query}`);
+      if (!res.ok) return 0;
+      const raw = res.headers.get("x-total-count");
+      const total = Number(raw);
+      return raw !== null && Number.isFinite(total) ? total : 0;
+    };
+
+    const catRes = await serverFetch(`${API_URL}/categories`);
+    const categories = catRes.ok ? await catRes.json() : [];
+    if (Array.isArray(categories) && categories.length > 0) {
+      const [regionTotals, categoryTotals] = await Promise.all([
+        mapWithConcurrency(REGION_KEYS, {
+          limit: RECIPE_FAN_OUT_LIMIT,
+          task: (regionKey) => cellTotal(null, regionKey),
+        }),
+        mapWithConcurrency(categories, {
+          limit: RECIPE_FAN_OUT_LIMIT,
+          task: (category) => cellTotal(category.id, null),
+        }),
+      ]);
+      const liveRegions = REGION_KEYS.filter((_key, i) => regionTotals[i] >= REGION_PAGE_MIN);
+      const liveCategories = categories.filter(
+        (_cat, i) => categoryTotals[i] >= REGION_PAGE_MIN,
+      );
+
+      const cells = liveCategories.flatMap((category) =>
+        liveRegions.map((regionKey) => ({ category, regionKey })),
+      );
+      const totals = await mapWithConcurrency(cells, {
+        limit: RECIPE_FAN_OUT_LIMIT,
+        task: (cell) => cellTotal(cell.category.id, cell.regionKey),
+      });
+      regionPages = cells.flatMap((cell, i) =>
+        totals[i] >= REGION_PAGE_MIN
+          ? localizeEntry(regionPagePath(cell.category.slug, cell.regionKey), {
+              lastModified: now,
+              priority: 0.7,
+              changeFrequency: "weekly",
+            })
+          : [],
+      );
+    }
+  } catch {
+    // API unavailable during build — skip the region pages, like the diet block.
+  }
+
   // Event detail pages — only future events
   let eventPages = [];
   try {
@@ -342,6 +432,7 @@ export default async function sitemap() {
     ...staticPages,
     ...producerIndexPages,
     ...dietPages,
+    ...regionPages,
     ...producerPages,
     ...recipePages,
     ...eventPages,
