@@ -1187,9 +1187,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       </Section>
 
       <Section title={<>{t("producers.form.sections.availability")} <InfoTooltip content={t("producers.form.sections.availability_tooltip")} label={t("producers.form.sections.availability_tooltip_label")} position="bottom" /></>}>
-        {/* MEH-2759: pause-only — the server refuses a change into
-            available_today / full_this_week (MEH-2758). A legacy row shows
-            neither button lit and saves unchanged. */}
+        {/* MEH-2759 / MEH-2782: pause-only — these are the only two values. */}
         <div className="flex flex-wrap gap-2 mb-3">
           {[
             { value: "accepting_orders", labelKey: "producers.form.fields.avail_accepting" },

@@ -409,9 +409,9 @@ class Producer(Base):
     # Values: "available" (default) | "full" | "vacation". Rendered as a
     # colored-dot badge on ProducerCard + ProducerDetail.
     availability_status = Column(String(20), default="available")
-    # MEH-291: 4-value enum that consolidates is_available_today + availability_status.
-    # Old columns preserved during 7-day overlap; dual-write happens in producer_me.py.
-    # Phase 4 will drop is_available_today + availability_status; vacation_until stays.
+    # MEH-291 enum that replaced is_available_today + availability_status.
+    # Values: accepting_orders | on_vacation (MEH-2782 removed available_today /
+    # full_this_week). The two legacy columns above are dropped by MEH-2273.
     availability_state = Column(
         String(32),
         nullable=False,

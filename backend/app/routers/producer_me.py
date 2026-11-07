@@ -899,7 +899,7 @@ def update_my_producer(
 # MEH-2758 (MEH-2757 chunk 1): the two legacy availability write paths
 # (POST /availability, POST /availability-status — MEH-291, LEGACY MEH-1854)
 # are deleted. No frontend called either, and both could still write
-# `available_today` / `full_this_week`, which are no longer writable.
+# `available_today` / `full_this_week`, which MEH-2782 later removed.
 # POST /availability-state below is the only availability write endpoint.
 
 
