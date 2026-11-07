@@ -414,14 +414,15 @@ DEMO_REVIEWS = [
 # `backend/scripts/check_seed_coverage.py` lists every one of them under
 # EXEMPT_TABLES: that file's exemptions mean "it is OK for this table to be
 # EMPTY" — `_empty_surfaces()` only ever reads SEEDED_SURFACES, so a row here
-# cannot red the gate. Four of its exemption REASONS do go stale with this
-# change, `producer_analytics_daily`'s most sharply ("seeding it would
-# fabricate traffic" — which is now exactly what happens, for one demo
-# producer, on Sapir's instruction in MEH-2794). That file is outside this
-# card's declared scope, so it is NOT edited here: tracked as MEH-2800, which
-# names both files and the choice to be made (enforce them in
-# SEEDED_SURFACES, or just reword). workflow.md's Smell #2 asks for exactly
-# that — a ticket naming both surfaces, not a note promising a future edit.
+# cannot red the gate.
+#
+# RESOLVED under MEH-2800: those exemption reasons now say that these tables
+# are seeded for the demo business and may still be empty elsewhere, which is
+# why they stay exempt rather than moving to SEEDED_SURFACES — a local or CI
+# database with none of them is legitimate and must not fail the gate (Sapir's
+# ruling, 07/11). `producer_analytics_daily`'s reason also carries the cost
+# the old wording left out: a row above the roll-up watermark strands every
+# unrolled day beneath it, for every producer (MEH-2801).
 # ---------------------------------------------------------------------------
 
 # An active first-order discount. `starts_at=None` means "active now"
