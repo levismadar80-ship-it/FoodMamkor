@@ -6168,41 +6168,60 @@
     "groups": {
       "page": {
         "label": "Your page",
-        "lead": "An article-style page, and we help you build it."
+        "lead": "An article-style page, and we help you build it.",
+        "card_title": "A page of your own",
+        "card_line": "Photos, story, products and prices. And if you have no time, we will prepare a draft for you."
       },
       "found": {
         "label": "Getting found",
-        "lead": "Your page shows up where people look for local food, outside Mehamakor too."
+        "lead": "Your page shows up where people look for local food, outside Mehamakor too.",
+        "card_title": "Getting found",
+        "card_line": "On the map, in search by city and diet, and on Google."
       },
       "contact": {
         "label": "Getting in touch",
-        "lead": "The customer comes straight to you. We are not in the middle."
+        "lead": "The customer comes straight to you. We are not in the middle.",
+        "card_title": "Getting in touch",
+        "card_line": "One-tap contact, on the channel you chose. A delivery check for the customer's city."
       },
       "return": {
         "label": "Bring them back",
-        "lead": "Tools that bring customers back, without posting every day."
+        "lead": "Tools that bring customers back, without posting every day.",
+        "card_title": "Bring them back",
+        "card_line": "Group buys, workshops, recipes, offers and surprise bags.",
+        "card_line_no_rescue": "Group buys, workshops, recipes and offers."
       },
       "trust": {
         "label": "Being trusted",
-        "lead": "Signals a customer can rely on, and that cannot be bought."
+        "lead": "Signals a customer can rely on, and that cannot be bought.",
+        "card_title": "Being trusted",
+        "card_line": "A verified badge, reviews only from people who contacted you, and you reply."
       },
       "insights": {
         "label": "Knowing what works",
-        "lead": "See in numbers what your page does, over 7 days, 30 days or all time."
+        "lead": "See in numbers what your page does, over 7 days, 30 days or all time.",
+        "card_title": "Knowing what works",
+        "card_line": "Views, clicks on the contact button, and which cities people come from. All from your phone."
       }
     },
     "items": {
       "gallery_story": {
-        "label": "Photo gallery, About and Behind the business"
+        "label": "Photo gallery, About and Behind the business",
+        "tile_title": "Gallery and story",
+        "tile_line": "Photos, \"About\" and \"Behind the business\""
       },
       "product_details": {
-        "label": "Products with price, ingredients and allergens"
+        "label": "Products with price, ingredients and allergens",
+        "tile_title": "Products",
+        "tile_line": "With price, ingredients and allergens"
       },
       "top_product": {
         "label": "A featured product at the top of the list"
       },
       "hours": {
-        "label": "Opening hours, order hours and special hours for holidays"
+        "label": "Opening hours, order hours and special hours for holidays",
+        "tile_title": "Hours",
+        "tile_line": "Opening, ordering and holidays"
       },
       "vacation_mode": {
         "label": "Vacation mode, with a return date"
@@ -6215,7 +6234,9 @@
         "label": "Several locations: a branch, a pickup point or a market stall"
       },
       "draft_claim": {
-        "label": "We prepare a draft of your page, and you just approve it"
+        "label": "We prepare a draft of your page, and you just approve it",
+        "tile_title": "A ready draft",
+        "tile_line": "We write, you approve"
       },
       "ai_writer": {
         "label": "A tool that writes your business description with you"
@@ -6233,32 +6254,44 @@
         "label": "Emails that guide you through the first month"
       },
       "vanity_link": {
-        "label": "A short link to your page, for Instagram and WhatsApp"
+        "label": "A short link to your page, for Instagram and WhatsApp",
+        "tile_title": "Short link",
+        "tile_line": "For Instagram and WhatsApp"
       },
       "discovery": {
-        "label": "Appearing on the map, in diet search and on the home page"
+        "label": "Appearing on the map, in diet search and on the home page",
+        "tile_title": "On the map and in search",
+        "tile_line": "By city, diet and on the home page"
       },
       "similar_businesses": {
         "label": "Appearing on the pages of similar businesses nearby"
       },
       "share_cards": {
-        "label": "A story card and a reviews card to download"
+        "label": "A story card and a reviews card to download",
+        "tile_title": "Cards to share",
+        "tile_line": "For stories and reviews"
       },
       "qr_code": {
-        "label": "A QR code to print"
+        "label": "A QR code to print",
+        "tile_title": "QR code",
+        "tile_line": "To print, for the counter or the stall"
       },
       "structured_data": {
         "label": "Google and AI assistants like ChatGPT understand what is on your page",
         "tip": "Behind the scenes, your page holds your details (name, place, hours and products) in a structured form Google can read. It helps show you in search and in AI assistants' answers. You do not need to do anything, it happens on its own."
       },
       "primary_cta": {
-        "label": "A main button for the channel you choose: WhatsApp, phone or website"
+        "label": "A main button for the channel you choose: WhatsApp, phone or website",
+        "tile_title": "Contact button",
+        "tile_line": "WhatsApp, phone or website, as you choose"
       },
       "wa_prefill": {
-        "label": "A ready-made message: \"I came through Mehamakor\""
+        "label": "A ready-made message: \"I came through Mehamakor\"",
+        "tile_title": "Ready-made message",
+        "tile_line": "On WhatsApp: \"I came through Mehamakor\""
       },
       "product_wa": {
-        "label": "An \"Ask about this product on WhatsApp\" button on every product"
+        "label": "An \"Ask about this product\" button on every product, on the channel you chose"
       },
       "faq_answers": {
         "label": "Ready answers to common questions, plus up to 5 of your own",
@@ -6268,13 +6301,17 @@
         "label": "Delivery areas with a minimum, a cost and a day"
       },
       "delivery_checker": {
-        "label": "A \"Do you deliver to my city?\" check"
+        "label": "A \"Do you deliver to my city?\" check",
+        "tile_title": "Delivery check",
+        "tile_line": "\"Do you deliver to my city?\""
       },
       "wa_group": {
         "label": "A WhatsApp group for updates from your business"
       },
       "nav_buttons": {
-        "label": "Waze and Google Maps buttons for the pickup point"
+        "label": "Waze and Google Maps buttons for the pickup point",
+        "tile_title": "Directions to pickup",
+        "tile_line": "Waze and Google Maps"
       },
       "save_share": {
         "label": "Customers save your page and share it on WhatsApp"
@@ -6285,13 +6322,19 @@
       },
       "group_buys": {
         "label": "Group buys",
-        "tip": "Several customers order together and get a lower price. You set a minimum number of participants and a date, and the order goes ahead only if the minimum is reached."
+        "tip": "Several customers order together and get a lower price. You set a minimum number of participants and a date, and the order goes ahead only if the minimum is reached.",
+        "tile_title": "Group buys",
+        "tile_line": "Several customers order together, for a lower price"
       },
       "events": {
-        "label": "Events and workshops, with sign-up on the site"
+        "label": "Events and workshops, with sign-up on the site",
+        "tile_title": "Events and workshops",
+        "tile_line": "With sign-up on the site"
       },
       "recipes": {
-        "label": "Recipes using your products, each on its own page linking back to you"
+        "label": "Recipes using your products, each on its own page linking back to you",
+        "tile_title": "Recipes",
+        "tile_line": "Each recipe on its own page, linking to you"
       },
       "follower_updates": {
         "label": "An update to customers who saved you, about a new product or event"
@@ -6301,43 +6344,61 @@
       },
       "rescue_bags": {
         "label": "Surprise bags for what is left at the end of the day",
-        "tip": "A discounted bag with what is left at the end of the day. The customer orders on the site and collects from you with a pickup code."
+        "tip": "A discounted bag with what is left at the end of the day. The customer orders on the site and collects from you with a pickup code.",
+        "tile_title": "Surprise bags",
+        "tile_line": "For what is left at the end of the day, at a discount"
       },
       "verified_badge": {
-        "label": "A \"verified\" badge after a manual licence check"
+        "label": "A \"verified\" badge after a manual licence check",
+        "tile_title": "Verified badge",
+        "tile_line": "After a manual licence check"
       },
       "kashrut_verified": {
-        "label": "\"Kashrut verified\" after a certificate has been checked"
+        "label": "\"Kashrut verified\" after a certificate has been checked",
+        "tile_title": "Kashrut verified",
+        "tile_line": "After the certificate has been checked"
       },
       "editor_pick": {
-        "label": "\"Editor's pick\", which is not for sale"
+        "label": "\"Editor's pick\", which is not for sale",
+        "tile_title": "Editor's pick",
+        "tile_line": "Not for sale"
       },
       "reservist_diet_tags": {
         "label": "A \"reservists' business\" badge, and badges like vegan or gluten-free"
       },
       "reviews_contacted": {
-        "label": "Reviews only from people who contacted you, and you can reply"
+        "label": "Reviews only from people who contacted you, and you can reply",
+        "tile_title": "Real reviews",
+        "tile_line": "Only from people who contacted you, and you reply"
       },
       "review_request": {
         "label": "A link to ask a customer for a review on WhatsApp"
       },
       "views": {
-        "label": "Page views"
+        "label": "Page views",
+        "tile_title": "Views",
+        "tile_line": "Over 7 days, 30 days or all time"
       },
       "search_impressions": {
         "label": "Arrivals from search on the site"
       },
       "contact_clicks": {
-        "label": "Clicks on WhatsApp, phone and website"
+        "label": "Clicks on WhatsApp, phone and website",
+        "tile_title": "Clicks",
+        "tile_line": "WhatsApp, phone and website"
       },
       "favorites_rating": {
         "label": "Saves to favourites, and average rating"
       },
       "top_cities": {
-        "label": "Which cities your visitors come from"
+        "label": "Which cities your visitors come from",
+        "tile_title": "Cities",
+        "tile_line": "Where your visitors come from"
       },
       "demand_cities": {
-        "label": "Demand from cities you do not deliver to yet"
+        "label": "Demand from cities you do not deliver to yet",
+        "tile_title": "New demand",
+        "tile_line": "Cities you do not deliver to yet"
       },
       "drop_point_hosts": {
         "label": "Customers willing to receive a delivery for their neighbours",
@@ -6350,7 +6411,7 @@
         "label": "A list showing what is still missing on your page"
       }
     },
-    "total_line": "{count} tools in six categories. All of them free.",
+    "total_line": "{count} tools, all of them free. Tap a card to see all its tools.",
     "note_line": "Most of the tools do not need switching on. You fill in the details, and they work by themselves."
   }
 }
