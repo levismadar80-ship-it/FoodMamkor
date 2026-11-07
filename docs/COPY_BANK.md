@@ -1051,3 +1051,25 @@ precedes the code rather than documenting it after the fact.
 - **Not the complete fix, and recorded as such.** USWDS's guidance is that a full language
   selector over partially-translated content is the wrong component to begin with. This
   banner is the pragmatic correction; revisiting the selector itself is post-launch.
+
+---
+
+## Section 14 — Producer-page «שעות» section (MEH-2803)
+
+One hours section on the business page, each set under its own label (Google
+Business Profile «More hours» pattern). Replaces «מתי מקבלים הזמנות» + the
+unlabelled store-hours card under «הגעה ומיקום», which read as the same fact
+twice. Neutral Hebrew (BRAND.md §9) — no gendered verb.
+
+| Key | he | en | Where it appears |
+|---|---|---|---|
+| `producer.detail.hours.heading` | `שעות` | `Hours` | Section heading, where «מתי מקבלים הזמנות» was |
+| `producer.detail.hours.label_orders` | `מקבלים הזמנות` | `Taking orders` | Label over the order-window set |
+| `producer.detail.hours.label_visit` | `פתוח למבקרים` | `Open to visitors` | Label over the store-hours set |
+| `producer.detail.hours.label_both` | `הזמנות וביקור במקום` | `Orders and visits` | The ONE label when both sets parse and match day by day |
+
+**Status:** ⏳ PR open — watch MEH-2803.
+
+**Retired with it:** `producer.detail.order_window.schedule_subtitle`
+(«הימים והשעות שבהם בית העסק מקבל הזמנות») — it restated the heading directly
+above it.

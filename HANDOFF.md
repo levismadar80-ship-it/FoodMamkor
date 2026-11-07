@@ -4,6 +4,25 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-07 17:00 — כרטיסי האירועים בגובה אחד, והשעות בדף בית העסק פעם אחת (#4121, #4122)
+
+**‏שורה אחת:** ‏#4121 (MEH-2802) ו-#4122 (MEH-2803) מוזגו ל-staging (squash). ‏MEH-2802 Done. פירוט מלא ב-CHANGELOG.
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏**השעות בדף בית העסק נמצאות עכשיו ב-`ProducerHoursSection`** (`OrderWindowStrip.jsx`). ‏`OrderWindowScheduleBlock` הוא «סט» עם תווית ולא סקשן, וה-`data-testid="order-window-schedule"` עבר לכרטיס שבתוכו. סקריפטי ה-QA הישנים (`qa-meh1875-*`, `qa-meh2264-*`) מחפשים אותו ועדיין ימצאו.
+- ‏**`parseHours` מחמיר כשיש במחרוזת אות עברית:** קבוצה אחת שלא נקראת מחזירה `null`. מחרוזת מעורבת («Sun-Thu …, שישי בתיאום») שבעבר הציגה רק את ראשון–חמישי מוצגת עכשיו כפי שנכתבה. הדוגמה שבטופס המיקום («ימים א׳–ה׳, 9:00–17:00») **עדיין לא נקראת**, כי הפסיק מפריד בין הימים לשעות. לא תוקן, אין לזה AC.
+- ‏**שני סקריפטי QA ידניים התיישנו:** ‏`e2e/qa-meh1875-order-window-schedule.mjs` ו-`qa-meh2264-special-hours.mjs` עדיין מחפשים את הכותרת «מתי מקבלים הזמנות» ואת שורת המשנה. הם לא רצים ב-CI, אבל אם מריצים אותם ידנית הם ידווחו כישלון שגוי. היו מחוץ לתחום הקבצים של הכרטיס.
+- ‏**`lib/seo.js` משתמש ב-`parseHours`**, ולכן שעות שנכתבו בעברית מופיעות עכשיו גם ב-`openingHoursSpecification`.
+- ‏**`next dev` + עסק עם מיקום → error boundary** («Map container is already initialized», Leaflet). זה קורה גם על staging. לא נבדק מול build — ‏StrictMode בפיתוח הוא חשוד, לא מאומת.
+- ‏**ה-E2E על PR-ים נשאר בתור בלי runner** (07/11 אחה״צ, ~25 דקות, ובוטל בדחיפה הבאה). ‏`45-card-grid-equal-height.spec.ts` עוד לא רץ ב-CI אף פעם. ההרצה הראשונה שלו תהיה על staging push.
+- ‏**טריק ל-sandbox:** ‏Playwright המקובע בפרויקט לא מוצא את הדפדפן המותקן מראש. ‏config מקומי (לא לקומיט) שמצביע ל-`executablePath: "/opt/pw-browsers/chromium"`, ו-`globalSetup: undefined` כשמשתני `DEMO_*_PASSWORD` מוגדרים ואין backend.
+
+**‏לבדוק בנייד (ספיר):**
+- דף הבית בטאבלט לרוחב (≥1024px): שלושת כרטיסי «אירועים קרובים» באותו גובה, ותגית+מחיר באותו קו.
+- דף עסק הדוגמה ב-iPhone Safari: «שעות» ← «מקבלים הזמנות» + «פתוח למבקרים» (שישי שונה). פתיחה וסגירה של «כל השבוע» ושל שורת «היום».
+
+---
+
 ## 2026-11-07 15:00 — «איך נרשמים?» נסגר, ועיצוב /join v2 אושר (#4109–#4116)
 
 **‏שורה אחת:** ‏שבעה PR מוזגו ל-staging — ‏#4109, ‏#4110, ‏#4112, ‏#4113, ‏#4114, ‏#4115 ו-#4116. ‏ה-CI של ‏#4114 תפס ארבעה באגים אמיתיים ב-seed והסוקר האוטומטי עוד שניים, וזה בדיוק מה שהשערים האלה קיימים בשבילו. ספיר אישרה את עיצוב `/join` v2 — ה-spec למטה.
