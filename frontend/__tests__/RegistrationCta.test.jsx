@@ -103,6 +103,52 @@ describe("RegistrationCta — the on-site form", () => {
     expect(document.activeElement.id).toBe("signup-name");
   });
 
+  // MEH-2777 — the notice-at-collection half. The approved sentence was
+  // already here as a bare <p>; what it lacked is the link, which is the
+  // thing MEH-1981's component exists to add. The assertion below is what
+  // separates the two: the old <p> passed the "privacy line" case above and
+  // would fail every line of this one.
+  it("the privacy line is the notice-at-collection component, with a /privacy link", () => {
+    openForm();
+    const notice = screen.getByTestId("registration-collection-notice");
+    expect(notice).toHaveTextContent(S.privacy);
+
+    const link = screen.getByTestId("registration-collection-notice-link");
+    // No «/he» prefix, for two reasons that both hold: routing.js is
+    // localePrefix "as-needed" with he as the default, AND next-intl's Link
+    // needs a Next router context jsdom does not provide, so it emits the
+    // bare path in either locale here. So this does NOT prove the link is
+    // locale-aware — an /en case was written, measured, and deleted because it
+    // reads "/privacy" too. Same limit CollectionNoticeApprovedCopy.test.jsx:141
+    // records for the eight other notices; the locale prefix is an e2e claim.
+    // What this DOES prove, which is the point of the change, is that a link
+    // to the policy exists at all — the old bare <p> had none.
+    expect(link).toHaveAttribute("href", "/privacy");
+    expect(link).toHaveTextContent(he.auth.register.consumer.terms.privacy_link);
+    // MEH-1981 a11y: underlined at rest, not on hover — the link sits inside a
+    // block of body copy and does not carry 3:1 against it.
+    expect(link.className).toContain("underline");
+  });
+
+  it("the notice keeps a REAL colour token, not the component's inert default", () => {
+    // CollectionNotice's default tone is `text-muted-foreground`, which is not
+    // in tailwind.tokens.json and emits no CSS (measured: 0 occurrences in the
+    // built chunks vs 1 for `.text-fg-muted`). Without the explicit class this
+    // surface would lose the muted grey the <p> had, with nothing failing.
+    openForm();
+    const notice = screen.getByTestId("registration-collection-notice");
+    expect(notice.className).toContain("text-fg-muted");
+  });
+
+  it("the notice says nothing new — the message is the approved string, untouched", () => {
+    // Guards against the copy drifting during the swap. rule 22: new
+    // user-facing text needs Sapir's approval, and this change deliberately
+    // introduced none.
+    expect(S.privacy).toBe(
+      "הפרטים עוברים למארחת רק לצורך ההרשמה, ונמחקים 30 יום אחרי המועד.",
+    );
+  });
+
   it("empty submit → every field says so, nothing sent", () => {
     openForm();
     send();
