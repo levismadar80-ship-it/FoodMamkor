@@ -50,10 +50,18 @@ const TIME_INPUT_CLASS =
 // (resolveStoreHours); a pickup point / market stall is listed under
 // «איסוף עצמי» (DeliveryBlock PickupRow, any kind of those two); every other
 // point shows them only in its map popup (MiniMap.jsx:209). Primary wins.
+// One entry per kind in LocationInputSchema (lib/schemas.js) — pinned by
+// LocationHoursField.test.jsx, so a new kind fails a test instead of silently
+// inheriting the map-popup line.
+export const WHERE_KEY_BY_KIND = Object.freeze({
+  branch: "hours_where_map",
+  pickup: "hours_where_pickup",
+  market_stand: "hours_where_pickup",
+});
+
 function whereKey(isPrimary, kind) {
   if (isPrimary) return "hours_where_primary";
-  if (kind === "pickup" || kind === "market_stand") return "hours_where_pickup";
-  return "hours_where_map";
+  return WHERE_KEY_BY_KIND[kind] ?? "hours_where_map";
 }
 
 export default function LocationHoursField({

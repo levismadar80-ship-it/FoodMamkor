@@ -13,7 +13,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 import { parseHours } from "@/lib/hours";
-import LocationHoursField from "@/app/[locale]/producer/dashboard/edit/LocationHoursField";
+import LocationHoursField, { WHERE_KEY_BY_KIND } from "@/app/[locale]/producer/dashboard/edit/LocationHoursField";
+import { LocationInputSchema } from "@/lib/schemas";
+import he from "@/messages/he.json";
+import en from "@/messages/en.json";
 import LocationsEditor from "@/app/[locale]/producer/dashboard/edit/LocationsEditor";
 
 // Same harness as __tests__/LocationsEditor.test.jsx (URL-aware api, echoing
@@ -112,6 +115,19 @@ describe("LocationHoursField — where it appears (MEH-2819)", () => {
   ])("%s", (_name, props, key) => {
     render(<LocationHoursField value="" onChange={vi.fn()} {...props} />);
     expect(where()).toBe(`settings.locations.form.${key}`);
+  });
+
+  it("every location kind the schema accepts has its own deliberate entry", () => {
+    expect(Object.keys(WHERE_KEY_BY_KIND).sort()).toEqual([...LocationInputSchema.shape.kind.options].sort());
+  });
+
+  it("all three keys exist in he.json and en.json", () => {
+    for (const messages of [he, en]) {
+      const form = messages.settings.locations.form;
+      for (const key of ["hours_where_primary", "hours_where_pickup", "hours_where_map"]) {
+        expect(typeof form[key] === "string" && form[key].length > 0, key).toBe(true);
+      }
+    }
   });
 
   it("the form passes its live kind and primary flag (LocationsEditor)", async () => {
