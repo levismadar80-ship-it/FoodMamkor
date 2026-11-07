@@ -1058,16 +1058,18 @@ def _seed_insights(db, producer, watermark: date | None) -> int:
     row count.
 
     MEH-2801 — AN AGGREGATE ROW IS ONLY EVER WRITTEN FOR A DAY AT OR BELOW THE
-    WATERMARK, and `watermark` is read ONCE by the caller. `rollup_watermark()`
-    is `max(producer_analytics_daily.day)` GLOBALLY, across every producer
-    (analytics_rollup.py:105-110, which says so in its own docstring), the
-    nightly job starts at `watermark + 1` (`:176`, `:336`) and the watermark
-    only moves forward. So a row written for TODAY — which is what the first
-    version of this function did, `offset` starting at 0 — jumps the watermark
-    past every day the job has not rolled yet, the job never returns for them,
-    and `rollup_snapshot`'s reader (`:113-146`) finds them in neither half:
-    aggregate ≤ watermark, raw > watermark. Those days then vanish from the
-    `total` arm of every OTHER producer's dashboard, permanently.
+    WATERMARK, and `watermark` is read ONCE by the caller.
+    `analytics_rollup.rollup_watermark()` is `max(producer_analytics_daily.day)`
+    GLOBALLY, across every producer — it says so in its own docstring — the
+    nightly job starts at `watermark + 1` (`pending_days`, and the same floor
+    in `run_rollup`) and the watermark only moves forward. So a row written for
+    TODAY — which is what the first version of this function did, `offset`
+    starting at 0 — jumps the watermark past every day the job has not rolled
+    yet, the job never returns for them, and `rollup_snapshot`'s reader finds
+    them in neither half: aggregate ≤ watermark, raw > watermark. Those days
+    then vanish from the `total` arm of every OTHER producer's dashboard,
+    permanently. (Functions rather than line numbers on purpose — the reviewer
+    is right that the numbers drift, and these four names do not.)
 
     Days above the watermark are left raw-only on purpose. The nightly job
     picks them up like any other traffic, and until it does the dashboard's
@@ -1269,12 +1271,19 @@ def seed_marketing_fixtures(db) -> int:
         # aggregate row this run inserts would raise the watermark that the
         # next day's decision consults, which is the bug with extra steps.
         watermark = rollup_watermark(db)
+        # The nightly job could advance the watermark between this read and the
+        # commit below, and that is harmless: every row written stays at or
+        # below the value read, so the partition the reader relies on cannot be
+        # corrupted either way. The only effect is that a day the job rolled
+        # inside that window gets no demo row — a missing fixture, not a wrong
+        # number, and the next --refresh supplies it.
         rolled_rows = _seed_insights(db, producer, watermark)
         seeded += 1
         if watermark is None:
             skipped.append(
-                "all 30 aggregate rows (the roll-up table is empty, so it owns "
-                "no day yet — raw rows only; the nightly job will roll them)"
+                f"all {DEMO_INSIGHTS['days']} aggregate rows (the roll-up "
+                "table is empty, so it owns no day yet — raw rows only; the "
+                "nightly job will roll them)"
             )
         elif rolled_rows < DEMO_INSIGHTS["days"]:
             skipped.append(

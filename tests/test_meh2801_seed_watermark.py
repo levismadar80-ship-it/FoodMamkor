@@ -35,7 +35,12 @@ from datetime import timedelta
 import pytest
 
 from app.models.models import ProducerAnalyticsDaily, ProducerPageView
-from app.services.analytics_rollup import roll_up_day, rollup_watermark, run_rollup
+from app.services.analytics_rollup import (
+    pending_days,
+    roll_up_day,
+    rollup_watermark,
+    run_rollup,
+)
 from app.utils.clock import israel_today
 
 # Own block, matching tests/test_meh2794_marketing_fixtures.py:50 — see the
@@ -175,11 +180,23 @@ def test_another_producers_days_survive_the_seed_and_the_real_rollup(
     _run_the_seed(db, seed_mod)
     assert rollup_watermark(db) == anchor, "precondition for the roll-up below"
 
+    # DERIVED from the job itself, not hardcoded. `pending_days` is the range
+    # `run_rollup()` will actually walk, so if the job ever caps a batch or
+    # narrows its catch-up window this test says so by name instead of failing
+    # with a bare list of missing days (reviewer, rounds 1-3).
+    gap = pending_days(db)
+    assert gap == [anchor + timedelta(days=i) for i in range(1, 10)], (
+        "the job's pending range is not the nine days this test arranged: "
+        f"{[str(d) for d in gap]}"
+    )
+
     run_rollup(db)
 
-    # `run_rollup` refuses today (`:322-323`) and rolls watermark+1 .. today-1,
-    # so the gap days are anchor+1 .. today-1 — nine of them.
-    gap = [anchor + timedelta(days=i) for i in range(1, 10)]
+    assert rollup_watermark(db) == today - timedelta(days=1), (
+        "after a full roll-up the watermark should sit at yesterday "
+        f"({today - timedelta(days=1)}) — anything else means the job did not "
+        "walk the range it reported"
+    )
     rolled = {
         row.day: row.views_unique
         for row in db.query(ProducerAnalyticsDaily)
@@ -254,44 +271,58 @@ def test_seeded_aggregate_matches_what_the_real_job_computes(
         .one()
     )
 
-    # A day the seed wrote an aggregate row for: strictly below the watermark,
-    # so clearing and re-rolling it below cannot disturb the watermark itself.
-    day = anchor - timedelta(days=1)
-    seeded = (
-        db.query(ProducerAnalyticsDaily)
-        .filter(
+    # EVERY day the seed wrote a row for, strictly below the watermark so that
+    # clearing and re-rolling cannot disturb the watermark itself. One day was
+    # a thin sample for a "cannot drift" claim, because the per-day bucket
+    # values differ (reviewer, rounds 2 and 3).
+    seeded_rows = {
+        r.day: (r.views_unique, r.views_search_unique, r.whatsapp_clicks)
+        for r in db.query(ProducerAnalyticsDaily).filter(
             ProducerAnalyticsDaily.producer_id == demo.id,
-            ProducerAnalyticsDaily.day == day,
+            ProducerAnalyticsDaily.day < anchor,
         )
-        .one()
-    )
-    expected = (
-        seeded.views_unique,
-        seeded.views_search_unique,
-        seeded.whatsapp_clicks,
+    }
+    assert len(seeded_rows) > 1, (
+        f"only {len(seeded_rows)} day(s) below the anchor — the arrangement is "
+        "not exercising more than one bucket"
     )
 
-    # `roll_up_day` skips a day that any producer already has a row for, so the
-    # day is cleared first and then recomputed by the job from the raw rows the
-    # seed left behind.
-    db.query(ProducerAnalyticsDaily).filter(ProducerAnalyticsDaily.day == day).delete()
-    db.commit()
-    assert roll_up_day(db, day) is not None, "the job skipped the cleared day"
-
-    recomputed = (
-        db.query(ProducerAnalyticsDaily)
-        .filter(
-            ProducerAnalyticsDaily.producer_id == demo.id,
-            ProducerAnalyticsDaily.day == day,
+    for day, expected in sorted(seeded_rows.items()):
+        # `roll_up_day` skips a day ANY producer already has a row for, so the
+        # day is cleared first. Clearing unconditionally would erase the
+        # control producer's row if the arrangement ever placed one here, so
+        # the demo must be the only owner first (reviewer, round 2).
+        owners = {
+            r.producer_id
+            for r in db.query(ProducerAnalyticsDaily).filter(
+                ProducerAnalyticsDaily.day == day
+            )
+        }
+        assert owners == {demo.id}, (
+            f"{day} is owned by {len(owners)} producer(s), not the demo alone — "
+            "clearing it here would destroy another producer's data"
         )
-        .one()
-    )
-    assert (
-        recomputed.views_unique,
-        recomputed.views_search_unique,
-        recomputed.whatsapp_clicks,
-    ) == expected, (
-        "the seed's aggregate values disagree with what the roll-up job "
-        f"computes from the same raw rows: seeded {expected}, job "
-        f"{(recomputed.views_unique, recomputed.views_search_unique, recomputed.whatsapp_clicks)}"
-    )
+        db.query(ProducerAnalyticsDaily).filter(
+            ProducerAnalyticsDaily.day == day
+        ).delete()
+        db.commit()
+        assert roll_up_day(db, day) is not None, f"the job skipped {day}"
+
+        recomputed = (
+            db.query(ProducerAnalyticsDaily)
+            .filter(
+                ProducerAnalyticsDaily.producer_id == demo.id,
+                ProducerAnalyticsDaily.day == day,
+            )
+            .one()
+        )
+        actual = (
+            recomputed.views_unique,
+            recomputed.views_search_unique,
+            recomputed.whatsapp_clicks,
+        )
+        assert actual == expected, (
+            f"on {day} the seed's aggregate values disagree with what the "
+            f"roll-up job computes from the same raw rows: seeded {expected}, "
+            f"job {actual}"
+        )
