@@ -51,6 +51,18 @@ const HomepageMiniMap = dynamic(() => import("@/components/HomepageMiniMap"), {
  * JSON-LD block moved. page.js is now a Server Component that fetches the
  * first-paint feed and renders this with `initialData`.
  */
+// MEH-2804: the trust band's row + column classes, shared by the loaded row
+// and its skeleton so the two cannot drift apart in box structure.
+const TRUST_ROW = "mx-auto grid max-w-3xl px-4";
+const trustColClass = (i) =>
+  `flex flex-col items-center gap-2 px-2${i > 0 ? " border-s border-border" : ""}`;
+// The label box's reserved height, on the skeleton AND the loaded label. A
+// column is ~98px wide at 375, and "businesses, each chosen personally" needs
+// three lines there (Hebrew needs three at 320) — measured. So phones reserve
+// three lines (3 × text-sm's 20px = 3.75rem), sm+ two. A MIN height, never a
+// clamp: a longer label grows the band rather than being cut off.
+export const TRUST_LABEL_BOX = "min-h-[3.75rem] sm:min-h-10";
+
 export default function HomeClient({
   initialProducers = null,
   initialCategories = null,
@@ -93,6 +105,19 @@ export default function HomeClient({
   const [fridayVisible, setFridayVisible] = useState(false);
   const [holidayVisible, setHolidayVisible] = useState(false);
 
+  // MEH-2804: the trust band's fact row. The business count is a column only
+  // at/above TRUST_COUNT_THRESHOLD (showTrustCount); below it the count is
+  // withheld (MEH-521) and stated nowhere in the band (MEH-1692). «0₪» is
+  // count-independent on purpose — no commission is a LOCK, not a number that
+  // can look small.
+  const trustFacts = [
+    ...(showTrustCount
+      ? [{ key: "businesses", value: statsProducersCount, label: t("home.trust.col_businesses") }]
+      : []),
+    { key: "categories", value: statsCategoriesCount, label: t("home.trust.col_categories") },
+    { key: "fees", value: t("home.trust.col_fees_value"), label: t("home.trust.col_fees") },
+  ];
+
   return (
     <div>
       <HomeHero
@@ -118,7 +143,11 @@ export default function HomeClient({
       )}
 
       {/* =========================
-          TRUST STRIP — MEH-879 re-anchor (over MEH-524 lock / MEH-521
+          TRUST STRIP — HISTORY. The current band is the MEH-2804 / ADR-039
+          fact row in the next comment; the bullets below record the design
+          it replaced and why. Still in force: the MEH-1692 rule (the count
+          is never stated twice), the MEH-521 threshold, and MEH-1686 (last
+          paragraph). MEH-879 re-anchor (over MEH-524 lock / MEH-521
           threshold / MEH-607 F10 skeleton):
           - The LEAD reads at ANY catalog depth, not just >= 5.
           - MEH-1692 replaced the leading verification phrase. It was a
@@ -147,48 +176,58 @@ export default function HomeClient({
           the border-border token on the live page at 375 + 1440), so there
           was nothing to add and a second rule was NOT introduced.
           ========================= */}
+      {/* MEH-2804 / ADR-039: the band is a FACT ROW from 5 businesses — a
+          display numeral (Frank Ruhl black, primary, upright) over a short
+          label per column, hairline dividers between. 5–24: categories · 0₪;
+          25+: count · categories · 0₪; below 5: the locked sentence, no
+          numerals. The skeleton reserves the 3-column box by construction:
+          the numeral is leading-none (h-9 / md:h-12 = text-4xl / text-5xl)
+          and every label box reserves the same lines (TRUST_LABEL_BOX), so
+          loaded and busy differ in content, not in height (MEH-1686). Two
+          known exceptions, both by design: a label longer than the reserve
+          (English at 320) grows the band, and the 5–24 row has 2 columns where
+          the skeleton has 3 (same height, wider columns) — the count is not
+          known until /stats answers. */}
       {!statsLoaded && (
-        <section className="bg-background border-y border-border py-8 text-center" aria-busy="true" data-testid="home-trust-band">
-          <p className="font-body-md text-base opacity-60">
-            <span className="inline-block w-48 h-5 align-middle rounded-lg bg-text/10 animate-pulse" />
-          </p>
+        <section className="bg-background border-y border-border py-8" aria-busy="true" data-testid="home-trust-band">
+          <div className={`${TRUST_ROW} grid-cols-3`}>
+            {[0, 1, 2].map((i) => (
+              <div key={i} className={trustColClass(i)} data-testid="trust-fact-skeleton">
+                <span className="block h-9 w-14 rounded-lg bg-text/10 animate-pulse md:h-12" />
+                <span
+                  className={`block ${TRUST_LABEL_BOX} w-20 rounded-lg bg-text/10 animate-pulse`}
+                  data-testid="trust-fact-skeleton-label"
+                />
+              </div>
+            ))}
+          </div>
         </section>
       )}
       {statsLoaded && (
         <section className="bg-background border-y border-border py-8 text-center" data-testid="home-trust-band">
-          <p className="font-body-md text-base text-text" data-testid="trust-lead">
-            {showTrustCount
-              ? t.rich("home.trust.lead_count", {
-                  count: statsProducersCount,
-                  num: (chunks) => (
-                    <span dir="ltr" className="font-english italic font-semibold text-lg text-accent tabular-nums align-middle">
-                      {chunks}
-                    </span>
-                  ),
-                })
-              : t("home.trust.lead")}
-          </p>
-          {showStatsCounter && (
-            <p className="font-body-sm text-sm text-fg-muted mt-1" data-testid="trust-secondary">
-              {/* MEH-1692: the business count is suppressed here once the LEAD
-                  above carries it, so the number is stated once in the band and
-                  not twice. Below the trust threshold the lead is a sentence and
-                  this line remains the only place the count appears. */}
-              {!showTrustCount && (
-                <>
-                  <span dir="ltr" className="font-english italic font-semibold text-lg text-accent tabular-nums align-middle">
-                    {statsProducersCount}
-                  </span>{" "}
-                  {t("home.stats.businesses")}
-                  &nbsp;·&nbsp;
-                </>
-              )}
-              <span dir="ltr" className="font-english italic font-semibold text-lg text-accent tabular-nums align-middle">
-                {statsCategoriesCount}
-              </span>{" "}
-              {t("home.stats.categories")}
-              &nbsp;·&nbsp;
-              {t("home.stats.countrywide")}
+          {showStatsCounter ? (
+            <div
+              className={`${TRUST_ROW} ${trustFacts.length === 3 ? "grid-cols-3" : "grid-cols-2"}`}
+              data-testid="trust-facts"
+            >
+              {trustFacts.map((fact, i) => (
+                <div key={fact.key} className={trustColClass(i)} data-testid="trust-fact">
+                  <span
+                    dir="ltr"
+                    className="font-headline-display font-black text-primary text-4xl md:text-5xl leading-none"
+                    data-testid="trust-fact-value"
+                  >
+                    {fact.value}
+                  </span>
+                  <span className={`${TRUST_LABEL_BOX} text-sm text-text`} data-testid="trust-fact-label">
+                    {fact.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="px-4 font-headline-md text-lg text-text" data-testid="trust-lead">
+              {t("home.trust.lead")}
             </p>
           )}
         </section>

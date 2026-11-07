@@ -1098,6 +1098,28 @@ is NOT reused — it is about orders, not opening hours.
 («למשל: ימים א׳–ה׳, 9:00–17:00») — it invited exactly the free-text format the
 picker replaces, and is unused once the text field is gone. The admin
 ProducerForm's own `opening_hours_placeholder` is untouched.
+## Section 16 — Home trust band as a fact row + «כניסה חופשית» (MEH-2804)
+
+The trust band at or above `TRUST_COUNT_THRESHOLD` becomes three facts, each a
+display numeral (ADR-039) over a short label; between `STATS_DISPLAY_THRESHOLD`
+and the threshold it drops the business count (MEH-521) and keeps two. The
+third fact is count-independent on purpose: no commission is a LOCK, not a
+number that can look small.
+
+| Key | he | en | Where it appears |
+|---|---|---|---|
+| `home.trust.col_businesses` | `בתי עסק, כל אחד נבחר אישית` | `businesses, each chosen personally` | Home trust band, under the business count (≥ 25 only) |
+| `home.trust.col_categories` | `קטגוריות מזון` | `food categories` | Home trust band, under the category count (≥ 5) |
+| `home.trust.col_fees_value` | `0₪` | `0₪` | Home trust band, the third numeral |
+| `home.trust.col_fees` | `עמלה, אף פעם` | `commission, ever` | Home trust band, under «0₪» |
+
+**«חינם» → «כניסה חופשית»** (en `Free entry`) for the event/experience price only:
+`home.events.free`, `producer.detail.sections.events.free`, `events.list.free`,
+`events.detail.free`, `experiences.detail.free`. **Unchanged:**
+`group_buys.delivery.free`, `admin.experiences.free`, DeliveryBlock pickup — those
+say a delivery or a listing costs nothing, not that entry is free.
+
+**Status:** ⏳ PR open — watch MEH-2804.
 
 ---
 

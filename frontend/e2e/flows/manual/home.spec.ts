@@ -152,7 +152,7 @@ const CHAT_LAUNCHER_NAME = new RegExp(
  * Locators: `getByTestId` first (docs/E2E-LOCATORS.md). Existing ids used:
  *           `hero-search` · `hero-search-submit` · `hero-search-dropdown` ·
  *           `hero-search-history` · `hero-chips-row` · `hero-delivery-cta` ·
- *           `trust-lead` · `trust-secondary` · `home-filter-row` ·
+ *           `trust-lead` · `trust-facts` · `trust-fact-value` · `trust-fact-label` · `home-filter-row` ·
  *           `home-promoted-chip-<key>` · `home-filters-button` ·
  *           `home-active-filter-<key>` · `location-filter-chip` ·
  *           `geo-empty-notice` · `producers-counter` · `day-empty-suggestion` ·
@@ -221,7 +221,6 @@ const CATS_COPY = he.home.categories;
 const CTA = he.home.cta;
 const RECENT = he.home.recent;
 const TRUST = he.home.trust;
-const STATS = he.home.stats;
 const FILTERS_BTN = he.filters.button;
 const LOC_MODAL = he.modals.location;
 const FRIDAY_HE = he.group_buys.friday_delivery;
@@ -2333,64 +2332,81 @@ test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-6
   });
 
   // MT:607:1 replacement — the STALE «גליון מאי» copy is gone and the live lead
-  //   comes from he.json; below the count threshold the secondary counter line
-  //   is withheld. Written so the section is not left with zero live coverage.
-  test("the trust band renders the he.json lead and, below the count threshold, no counter line", async ({ page }) => {
+  //   comes from he.json; below the count threshold no numeral renders at all.
+  //   MEH-2804: the "counter line" is now the fact row (ADR-039).
+  test("the trust band renders the he.json lead and, below the count threshold, no fact row", async ({ page }) => {
     await consent(page);
     await stubTiles(page);
     await mockApi(page, PRODUCERS, { stats: { producers_count: 2, categories_count: 2 } });
     await gotoHome(page);
     await expect(scope(page).getByTestId("trust-lead")).toHaveText(TRUST.lead);
     await expect(
-      scope(page).getByTestId("trust-secondary"),
-      "below 5 businesses the secondary counter is withheld (use-home-page showStatsCounter)",
+      scope(page).getByTestId("trust-facts"),
+      "below 5 businesses the fact row is withheld (use-home-page showStatsCounter)",
     ).toHaveCount(0);
     const body = await page.locator("body").innerText();
     expect(body, "the MEH-879-removed month framing must not come back").not.toContain("גליון");
   });
 
-  // The discriminating twin of the test above: above the threshold the counter
-  // line DOES render (either test alone is green on a band that never renders a
-  // counter at all).
-  test("above the count threshold the secondary line carries the category count and the countrywide phrase", async ({ page }) => {
+  // The discriminating twin of the test above: above the threshold the fact row
+  // DOES render (either test alone is green on a band that never renders a
+  // numeral at all). MEH-2804: categories + «0₪», each over its he.json label;
+  // the business count joins only at TRUST_COUNT_THRESHOLD (unit-tested in
+  // HomeTrustBandCountGate.test.jsx).
+  test("above the count threshold the fact row carries the category count and «0₪», each over its label", async ({ page }) => {
     await consent(page);
     await stubTiles(page);
     await mockApi(page, PRODUCERS, { stats: STATS_ABOVE });
     await gotoHome(page);
-    const secondary = scope(page).getByTestId("trust-secondary");
-    await expect(secondary).toBeVisible(FIRST_PAINT);
-    await expect(secondary).toContainText(String(CATEGORIES.length));
-    await expect(secondary).toContainText(STATS.categories);
-    await expect(secondary).toContainText(STATS.countrywide);
+    const row = scope(page).getByTestId("trust-facts");
+    await expect(row).toBeVisible(FIRST_PAINT);
+    await expect(row).toContainText(String(CATEGORIES.length));
+    await expect(row).toContainText(TRUST.col_categories);
+    await expect(row).toContainText(TRUST.col_fees_value);
+    await expect(row).toContainText(TRUST.col_fees);
   });
 
   // MEH-2488: Hebrew is never letter-spaced (DESIGN.md) — tracking pulls the
   // letters of a word apart. The band carried `tracking-wide` (0.4px / 0.35px).
-  // Both lines are checked, above the threshold, so neither can pass by being absent.
-  test("the trust band's Hebrew lines are not letter-spaced", async ({ page }) => {
+  // MEH-2804: every Hebrew label of the fact row is checked, above the
+  // threshold, and the count of labels is asserted so none passes by being absent.
+  test("the trust band's Hebrew labels are not letter-spaced", async ({ page }) => {
     await consent(page);
     await stubTiles(page);
     await mockApi(page, PRODUCERS, { stats: STATS_ABOVE });
     await gotoHome(page);
-    for (const id of ["trust-lead", "trust-secondary"]) {
-      const line = scope(page).getByTestId(id);
-      await expect(line).toBeVisible(FIRST_PAINT);
-      expect(await line.textContent(), `${id} carries Hebrew`).toMatch(/[\u0590-\u05FF]/);
-      const spacing = await line.evaluate((el) => getComputedStyle(el).letterSpacing);
-      expect(spacing, `${id} letter-spacing`).toMatch(/^(normal|0px)$/);
+    const labels = scope(page).getByTestId("trust-fact-label");
+    await expect(labels.first()).toBeVisible(FIRST_PAINT);
+    const n = await labels.count();
+    expect(n, "the fact row has at least its categories and 0₪ labels").toBeGreaterThanOrEqual(2);
+    for (let i = 0; i < n; i += 1) {
+      const label = labels.nth(i);
+      expect(await label.textContent(), `label ${i} carries Hebrew`).toMatch(/[\u0590-\u05FF]/);
+      const spacing = await label.evaluate((el) => getComputedStyle(el).letterSpacing);
+      expect(spacing, `label ${i} letter-spacing`).toMatch(/^(normal|0px)$/);
     }
   });
 
-  // MEH-2487 control: the global "Hebrew is never slanted" rule must not reach
-  // the dir="ltr" Cormorant numerals, which have a real italic face.
-  test("the counter numerals keep their real Cormorant italic inside the Hebrew page", async ({ page }) => {
+  // MEH-2804 / ADR-039 — REVERSED, approved 07/11/2026. This test used to pin
+  // the counter numerals to Cormorant ITALIC (the MEH-2487 control). A display
+  // numeral is now Frank Ruhl, upright and black; Cormorant italic stays for
+  // times and inline Latin. The rendered style is read from the browser, so
+  // a class that compiles to nothing cannot pass it.
+  test("the trust band numerals are upright Frank Ruhl display numerals (ADR-039)", async ({ page }) => {
     await consent(page);
     await stubTiles(page);
     await mockApi(page, PRODUCERS, { stats: STATS_ABOVE });
     await gotoHome(page);
-    const num = scope(page).getByTestId("trust-secondary").locator('[dir="ltr"]').first();
+    const num = scope(page).getByTestId("trust-fact-value").first();
     await expect(num).toBeVisible(FIRST_PAINT);
-    expect(await num.evaluate((el) => getComputedStyle(el).fontStyle)).toBe("italic");
+    const style = await num.evaluate((el) => {
+      const cs = getComputedStyle(el);
+      return { fontStyle: cs.fontStyle, fontWeight: Number(cs.fontWeight), family: cs.fontFamily };
+    });
+    expect(style.fontStyle).toBe("normal");
+    expect(style.fontWeight).toBeGreaterThanOrEqual(800);
+    expect(style.family.toLowerCase()).toContain("frank");
+    expect(await num.getAttribute("dir")).toBe("ltr");
     expect(await page.locator("html").getAttribute("dir")).toBe("rtl");
   });
 });

@@ -478,14 +478,12 @@
         "q4": "Ma'afiyat HaMachmetzet"
       }
     },
-    "stats": {
-      "businesses": "businesses joined so far",
-      "categories": "categories",
-      "countrywide": "across Israel"
-    },
     "trust": {
       "lead": "No middleman in between · pickup or delivery, straight from the business",
-      "lead_count": "<num>{count}</num> businesses · each one chosen personally"
+      "col_businesses": "businesses, each chosen personally",
+      "col_categories": "food categories",
+      "col_fees_value": "0₪",
+      "col_fees": "commission, ever"
     },
     "featured": {
       "eyebrow": "Get to know",
@@ -550,7 +548,7 @@
     "events": {
       "heading": "Upcoming events",
       "all_events": "All events →",
-      "free": "Free"
+      "free": "Free entry"
     }
   },
   "common": {
@@ -804,7 +802,7 @@
         },
         "events": {
           "heading": "Upcoming events",
-          "free": "Free",
+          "free": "Free entry",
           "show_all_count": "Show all events"
         },
         "products": {
@@ -2614,7 +2612,7 @@
       "empty_browse_producers": "Meanwhile, explore the businesses",
       "no_results_title": "No results found",
       "no_results_cta": "Clear filters",
-      "free": "Free",
+      "free": "Free entry",
       "organizer_line": "Organizer: {name}"
     },
     "categories": {
@@ -2643,7 +2641,7 @@
       "all_events": "← All events",
       "organized_by": "Organized by",
       "participants_limit": "Up to {n} participants",
-      "free": "Free",
+      "free": "Free entry",
       "breadcrumb_home": "Home",
       "breadcrumb_events": "Events",
       "organizer_line": "Organizer: {name}",
@@ -2702,7 +2700,7 @@
       "whatsapp_cta": "Contact host on WhatsApp",
       "whatsapp_message": "Hi! I'd like to register for \"{title}\"",
       "host_label": "Host:",
-      "free": "Free",
+      "free": "Free entry",
       "sold_out": "This workshop is full",
       "spots_left_few": "{n, plural, one {Last spot left} other {# spots left}}",
       "min_to_open": "Goes ahead with at least {n} sign-ups",
