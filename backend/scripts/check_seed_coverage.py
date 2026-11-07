@@ -227,25 +227,57 @@ SEEDED_SURFACES = [
 ]
 
 # ---------------------------------------------------------------------------
-# Tables deliberately NOT seeded. Every mapped table must appear either here or
-# in SEEDED_SURFACES — that is what makes a NEW model turn the PR red rather
-# than silently joining an unchecked majority. Reasons are load-bearing: a bare
-# set would let anyone quiet the gate by adding a name.
+# Tables the gate does NOT require a row in. Every mapped table must appear
+# either here or in SEEDED_SURFACES — that is what makes a NEW model turn the
+# PR red rather than silently joining an unchecked majority. Reasons are
+# load-bearing: a bare set would let anyone quiet the gate by adding a name.
+# They name the constant that holds a count rather than repeating the number:
+# a figure written here is one more thing to keep in step, and prose drifting
+# out of step with the code is the whole subject of MEH-2800.
+#
+# "EXEMPT" MEANS "MAY BE EMPTY", NOT "MUST NOT BE SEEDED" (MEH-2800).
+# `_empty_surfaces()` reads only SEEDED_SURFACES, so a row in an exempt table
+# never reddens anything. Several entries below ARE seeded for the demo
+# business as of MEH-2794, and they stay here rather than moving to
+# SEEDED_SURFACES because a local or CI database that has none of them is
+# legitimate and must not fail the gate. Sapir's ruling, 07/11: reword the
+# reasons, move nothing.
+#
+# Worth one line rather than none: the old `producer_analytics_daily` wording
+# read as a prohibition, was overridden on that reading, and the override
+# shipped MEH-2801. A reason that says "may be empty" where it means "seeding
+# this is dangerous" is how. The rest of that story is on the ticket.
 # ---------------------------------------------------------------------------
+# The shared tail for a table the demo seed DOES fill. One constant rather than
+# the same sentence pasted per entry, so the next reword is one edit — the
+# argument this change is making, applied to itself (reviewer on #4134).
+_SEEDED_MAY_BE_EMPTY = (
+    "SEEDED for the demo business since MEH-2794, per DEMO_INSIGHTS in "
+    "seed_demo_business.py; may be empty in a local or CI database, so the "
+    "gate must not require it"
+)
+
 EXEMPT_TABLES = {
     # MEH-1706 §2 items 10-13 — the amber rows, explicitly out of chunk B scope.
-    "producer_page_views": "analytics — runtime telemetry, item 10 (out of scope)",
-    "producer_contact_clicks": "analytics — runtime telemetry, item 10 (out of scope)",
-    "producer_whatsapp_clicks": "analytics — runtime telemetry, item 10 (out of scope)",
-    # MEH-2079 chunk A — the daily roll-up of the two tables above. Exempt for
-    # the same reason they are, and for one more: chunk A creates it with NO
+    "producer_page_views": f"analytics — runtime telemetry, item 10; {_SEEDED_MAY_BE_EMPTY}",
+    "producer_contact_clicks": f"analytics — runtime telemetry, item 10; {_SEEDED_MAY_BE_EMPTY}",
+    "producer_whatsapp_clicks": f"analytics — runtime telemetry, item 10; {_SEEDED_MAY_BE_EMPTY}",
+    # MEH-2079 chunk A — the daily roll-up of the raw tables above.
+    #
+    # The comment that stood here said chunk A creates this table with NO
     # writer, so the only way a row could exist is if the demo seed fabricated
-    # one. That would assert traffic a demo business never received, on a
-    # surface no reader consumes yet. Chunk B's scheduled roll-up is what fills
-    # it, from rows the seed does not create either.
-    "producer_analytics_daily": "MEH-2079 analytics roll-up — derived from the two exempt raw tables above; seeding it would fabricate traffic",
+    # one. Both halves are now out of date: chunk B's scheduled roll-up writes
+    # it, and the demo seed writes it too, on Sapir's instruction in MEH-2794.
+    #
+    # WHAT SEEDING IT COSTS, which the old reason did not say and which is the
+    # part worth knowing (MEH-2801): `rollup_watermark()` is `max(day)` across
+    # EVERY producer, the nightly job starts at `watermark + 1`, and the reader
+    # partitions at it. A seeded row ABOVE the watermark therefore strands every
+    # unrolled day beneath it, for every producer, permanently. The seed writes
+    # only at or below the watermark for that reason.
+    "producer_analytics_daily": "MEH-2079 analytics roll-up — seeded only for the demo producer, staging only, never above the watermark; enforced by _seed_insights in seed_demo_business.py and pinned by tests/test_meh2801_seed_watermark.py, not by this gate (MEH-2801); may be empty elsewhere, so the gate must not require it",
     "search_queries": "analytics — runtime telemetry, item 10 (out of scope)",
-    "favorites": "consumer action — item 11 (out of scope)",
+    "favorites": f"consumer action — item 11; {_SEEDED_MAY_BE_EMPTY}",
     "favorite_alerts": "consumer action — item 11 (out of scope)",
     "reports": "admin queue — item 12 (out of scope)",
     "category_requests": "admin queue — item 12 (out of scope)",
@@ -260,7 +292,7 @@ EXEMPT_TABLES = {
     "home_products": "neighbour-products surface — item 13 (out of scope)",
     "home_product_ratings": "neighbour-products surface — item 13 (out of scope)",
     "home_product_whatsapp_clicks": "neighbour-products surface — item 13 (out of scope)",
-    "producer_offers": "MEH-1823 offers — no seed row yet (candidate for a follow-up)",
+    "producer_offers": f"MEH-1823 offers (the follow-up this line used to anticipate has shipped) — {_SEEDED_MAY_BE_EMPTY}",
     # Infrastructure / runtime-only tables: nothing to seed by design.
     "admin_settings": "runtime config, written by the admin panel",
     "alert_log": "runtime log",
