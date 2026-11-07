@@ -105,6 +105,19 @@ describe("visibility", () => {
     expect(isShown()).toBe(false);
   });
 
+  it("reads the LAST observer entry: a queued [passed, back-in-view] pair means hidden", () => {
+    renderPage();
+    closingFar();
+    const io = observerOf("[data-join-hero-cta]");
+    act(() =>
+      io.callback([
+        { isIntersecting: false, boundingClientRect: { top: -200 } },
+        { isIntersecting: true, boundingClientRect: { top: 300 } },
+      ]),
+    );
+    expect(isShown()).toBe(false);
+  });
+
   it("the band observer looks 90px ahead, so the bar is gone before the band is in view", () => {
     renderPage();
     expect(observerOf("[data-join-closing]").options.rootMargin).toBe("0px 0px 90px 0px");

@@ -47,7 +47,11 @@ export default function JoinStickyBar() {
     const observers = [];
     if (hero) {
       const io = new IntersectionObserver(
-        ([entry]) => setHeroPassed(!entry.isIntersecting && entry.boundingClientRect.top < 0),
+        (entries) => {
+          // The LAST entry is the current state; a fast scroll can queue several.
+          const entry = entries[entries.length - 1];
+          setHeroPassed(!entry.isIntersecting && entry.boundingClientRect.top < 0);
+        },
         { threshold: 0 },
       );
       io.observe(hero);
@@ -57,7 +61,10 @@ export default function JoinStickyBar() {
       const io = new IntersectionObserver(
         // Intersecting the viewport grown 90px downward = the band is close.
         // Above the viewport (top < 0) = we are past it, in the footer.
-        ([entry]) => setClosingNear(entry.isIntersecting || entry.boundingClientRect.top < 0),
+        (entries) => {
+          const entry = entries[entries.length - 1];
+          setClosingNear(entry.isIntersecting || entry.boundingClientRect.top < 0);
+        },
         { rootMargin: `0px 0px ${CLOSING_LEAD_PX}px 0px`, threshold: 0 },
       );
       io.observe(closing);

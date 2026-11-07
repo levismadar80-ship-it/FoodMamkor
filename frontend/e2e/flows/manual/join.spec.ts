@@ -305,15 +305,17 @@ test.describe("manual › /join (MEH-995)", () => {
         await page.evaluate((top) => window.scrollTo(0, top), y);
         // Gate on settled state, not a timer: the count must come down to <= 1.
         await expect.poll(() => visibleJoinCtas(page), { timeout: 2_000 }).toBeLessThanOrEqual(1);
-        if ((await scope(page).getByTestId("join-sticky-bar").getAttribute("data-visible")) === "true") {
-          sawBar = true;
-          // The chat launcher floats in the bottom-END corner over this bar
-          // (rtl.md, MEH-1135). Painted on top = the hit at the CTA's centre
-          // is the CTA: measured covered at both widths before the fix.
-          await expect
-            .poll(() => isOnTop(scope(page).getByTestId("join-sticky-cta")), { timeout: 2_000 })
-            .toBe(true);
-        }
+        // The chat launcher floats in the bottom-END corner over this bar
+        // (rtl.md, MEH-1135). Whenever the bar is SHOWN, the hit at its CTA's
+        // centre must be the CTA (measured covered at both widths before the
+        // fix). One polled condition, not "read visible, then check": near the
+        // closing band the bar can flip off between the two reads.
+        const bar = scope(page).getByTestId("join-sticky-bar");
+        const cta = scope(page).getByTestId("join-sticky-cta");
+        await expect
+          .poll(async () => (await bar.getAttribute("data-visible")) !== "true" || isOnTop(cta), { timeout: 2_000 })
+          .toBe(true);
+        if ((await bar.getAttribute("data-visible")) === "true") sawBar = true;
       }
       // Control: the walk really reached the middle of the page, where the bar
       // must have been the one CTA — otherwise "<= 1" could mean "never scrolled".
