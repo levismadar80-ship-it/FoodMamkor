@@ -227,7 +227,7 @@ export default async function JoinPage({ params }) {
         </section>
 
         {/* ── FAQ — the price answer lives here (Etsy pattern), not in the
-               hero. a_cost is LOCKED (ADR-030 §5 — the one sanctioned «לעולם»). ── */}
+               hero. a_cost dropped «— לעולם» on Sapir's call, 07/11 (ADR-030 §5 amended). ── */}
         <section className="pb-14 sm:pb-20" data-testid="join-faq">
           <p className="text-sm font-medium text-fg-muted text-center mb-2">{t("faq.eyebrow")}</p>
           <h2 className="font-headline-lg font-bold text-text text-center mb-8 text-[clamp(26px,3.5vw,38px)]">
