@@ -202,6 +202,12 @@ frontend/components/ChatWidget.jsx:hex:#2e6853
 frontend/components/ChatWidget.jsx:ring-white
 frontend/components/ChipScrollRow.jsx:hex:#2e6853
 frontend/components/ChipScrollRow.jsx:hex:#fff
+frontend/components/ContactCtaVariants.jsx:hex:#0866ff
+frontend/components/ContactCtaVariants.jsx:hex:#4f5bd5
+frontend/components/ContactCtaVariants.jsx:hex:#962fbf
+frontend/components/ContactCtaVariants.jsx:hex:#d62976
+frontend/components/ContactCtaVariants.jsx:hex:#fa7e1e
+frontend/components/ContactCtaVariants.jsx:hex:#feda75
 frontend/components/DeliveryDayRow.jsx:ring-white
 frontend/components/EventForm.jsx:hex:#2e6853
 frontend/components/EventForm.jsx:hex:#e5dfd3
