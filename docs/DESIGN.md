@@ -553,6 +553,15 @@ primary is the contact card's CTA; the sticky bar mirrors it (never co-visible);
 the delivery section's WhatsApp order button is tertiary; follow + share are
 tertiary. Verified per-viewport, not just per-section.
 
+**Contact CTA colour per channel (MEH-2813).** One map,
+`components/ContactCtaVariants.jsx`, read by both the contact-card CTA and the
+sticky bar, so the two cannot drift. WhatsApp = its own darkened green fill
+(`btn-whatsapp`); phone = `bg-primary`; email = `bg-primary-dark`; website,
+Instagram, Facebook, external order = white outlined button. Instagram and
+Facebook carry their brand colour **in the logo only** (multicolour Instagram
+glyph, Facebook blue) — never as a fill: white text on the Instagram gradient's
+orange end is 2.6:1.
+
 ### Chrome budget — at most one top + one bottom sticky layer (MEH-1202)
 
 On any mobile viewport, at most **one** sticky top layer and **one** fixed
