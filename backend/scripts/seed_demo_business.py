@@ -705,8 +705,9 @@ DIETARY_DEMO_IMAGE = "https://res.cloudinary.com/dfzpscjks/image/upload/mehamako
 DIETARY_DEMO_CITY = "זכרון יעקב"
 
 # MEH-1706 §2 item 9 — the availability state the demo never exercised.
-# Every seeded producer was `accepting_orders`, so the "on vacation" branches of the card, the header and the detail page had no row
-# to render anywhere on staging. `vacation_until` is relative (§2.3 idiom) —
+# Every seeded producer was `accepting_orders`, so the "on vacation" branches
+# of the card, the header and the detail page had no row to render anywhere on
+# staging. `vacation_until` is relative (§2.3 idiom) —
 # hardcoding it means the vacation silently ends and the surface goes dark again.
 AVAILABILITY_DEMOS = [
     {
@@ -718,6 +719,9 @@ AVAILABILITY_DEMOS = [
         "vacation_days_ahead": 18,
     },
 ]
+# MEH-2782: «עמוס השבוע» left the enum. Its demo row is no longer seeded but
+# still sits on staging, so --refresh keeps deleting the old slug.
+RETIRED_AVAILABILITY_DEMO_SLUGS = ["demo-availability-full"]
 
 
 def _assert_not_production() -> None:
@@ -785,7 +789,12 @@ def _delete_existing(db) -> None:
     # MEH-1706: the availability-state demos, same contract as the dietary ones.
     for avail in (
         db.query(Producer)
-        .filter(Producer.slug.in_([a["slug"] for a in AVAILABILITY_DEMOS]))
+        .filter(
+            Producer.slug.in_(
+                [a["slug"] for a in AVAILABILITY_DEMOS]
+                + RETIRED_AVAILABILITY_DEMO_SLUGS
+            )
+        )
         .all()
     ):
         db.delete(avail)
