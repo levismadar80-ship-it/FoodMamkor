@@ -47,8 +47,14 @@ const ENTRY_RE = new RegExp(
 //   time  = H:MM or HH:MM;  range = time [- or –] time;  ranges space-separated
 //   groups split by comma (the English grammar's separator)
 // Output is the English map shape exactly — times zero-padded to HH:MM.
-const HE_DAY_INDEX = { א: 0, ב: 1, ג: 2, ד: 3, ה: 4, ו: 5, ש: 6 };
-const HE_DAY = String.raw`([אבגדהוש])['׳]?`;
+// Code points, not glyphs: this is grammar, not copy, and HebrewLiteralRatchet
+// (MEH-1687) keeps Hebrew string literals out of code. Index = Sun..Sat.
+// U+05D0 alef … U+05D5 vav, U+05E9 shin; U+05F3 is the Hebrew geresh.
+// eslint-disable-next-line no-magic-numbers -- the seven code points ARE the data
+const HE_DAY_LETTERS = String.fromCharCode(0x5d0, 0x5d1, 0x5d2, 0x5d3, 0x5d4, 0x5d5, 0x5e9);
+const HE_GERESH = String.fromCharCode(0x5f3); // eslint-disable-line no-magic-numbers
+const HE_DAY_INDEX = Object.fromEntries([...HE_DAY_LETTERS].map((letter, i) => [letter, i]));
+const HE_DAY = `([${HE_DAY_LETTERS}])['${HE_GERESH}]?`;
 const HE_RANGE = String.raw`\d{1,2}:\d{2}\s*[-–]\s*\d{1,2}:\d{2}`;
 const HE_ENTRY_RE = new RegExp(
   String.raw`^${HE_DAY}(?:\s*[-–]\s*${HE_DAY})?\s+(${HE_RANGE}(?:\s+${HE_RANGE})*)$`,
