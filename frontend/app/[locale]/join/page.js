@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
-import { ArrowLeft, ListChecks, PencilSimple } from "@phosphor-icons/react/ssr";
+import { ArrowLeft, CaretDown, ListChecks, PencilSimple } from "@phosphor-icons/react/ssr";
 import BusinessCtaLink from "@/components/BusinessCtaLink";
 import EditorialPhoto from "@/components/EditorialPhoto";
 import JoinFeatures from "@/components/join/JoinFeatures";
@@ -103,6 +103,9 @@ const LINK_CLASS =
   "inline-flex items-center gap-2 text-primary font-semibold hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40";
 const CARD_CLASS = "bg-background border border-primary/20 rounded-md px-5 py-4";
 const FAQ_KEYS = ["cost", "google", "revenue", "customers"];
+// MEH-2799 (Sapir, 07/11): the site's FAQ pattern — a <details> accordion with
+// only the cost question open, as /about/for-businesses (page.js:66, :183).
+const FAQ_OPEN = new Set(["cost"]);
 
 export default async function JoinPage({ params }) {
   const { locale } = await params;
@@ -230,12 +233,26 @@ export default async function JoinPage({ params }) {
           <h2 className="font-headline-lg font-bold text-text text-center mb-8 text-[clamp(26px,3.5vw,38px)]">
             {t("faq.heading")}
           </h2>
-          <div className="space-y-6">
+          <div className="flex flex-col gap-3">
             {FAQ_KEYS.map((key) => (
-              <div key={key} data-testid="join-faq-item">
-                <h3 className="font-headline-md text-lg font-bold text-text mb-1.5">{t(`faq.q_${key}`)}</h3>
-                <p className="text-text/85 leading-relaxed">{t(`faq.a_${key}`)}</p>
-              </div>
+              // REUSES: app/[locale]/about/for-businesses/page.js:183 — native
+              // <details>: keyboard + screen reader + no-JS for free.
+              <details
+                key={key}
+                data-testid="join-faq-item"
+                open={FAQ_OPEN.has(key) || undefined}
+                className="group rounded-lg border border-border bg-surface-card"
+              >
+                <summary className="flex cursor-pointer list-none items-start justify-between gap-4 rounded-lg px-5 py-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
+                  <h3 className="font-headline-md text-lg font-bold text-text">{t(`faq.q_${key}`)}</h3>
+                  <CaretDown
+                    aria-hidden="true"
+                    size={20}
+                    className="mt-1 shrink-0 text-primary transition-transform motion-reduce:transition-none group-open:rotate-180"
+                  />
+                </summary>
+                <p className="px-5 pb-5 pt-0 leading-relaxed text-text/85">{t(`faq.a_${key}`)}</p>
+              </details>
             ))}
           </div>
           <p className="mt-8 text-center">
