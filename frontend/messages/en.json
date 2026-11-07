@@ -6139,5 +6139,194 @@
     "bread": "Bread & baking",
     "pantry": "Pantry",
     "care": "Care & home"
+  },
+  "business_features": {
+    "groups": {
+      "page": {
+        "label": "Your page",
+        "lead": "An article-style page, and we help you build it."
+      },
+      "found": {
+        "label": "Getting found",
+        "lead": "Your page shows up where people look for local food, outside Mehamakor too."
+      },
+      "contact": {
+        "label": "Getting in touch",
+        "lead": "The customer comes straight to you. We are not in the middle."
+      },
+      "return": {
+        "label": "Coming back",
+        "lead": "Tools that bring customers back, without posting every day."
+      },
+      "trust": {
+        "label": "Being trusted",
+        "lead": "Signals a customer can rely on, and that cannot be bought."
+      },
+      "insights": {
+        "label": "Knowing what works",
+        "lead": "See in numbers what your page does, over 7 days, 30 days or all time."
+      }
+    },
+    "items": {
+      "gallery_story": {
+        "label": "Photo gallery, About and Behind the business"
+      },
+      "product_details": {
+        "label": "Products with price, ingredients and allergens"
+      },
+      "top_product": {
+        "label": "A featured product at the top of the list"
+      },
+      "hours": {
+        "label": "Opening hours, order hours and special hours for holidays"
+      },
+      "vacation_mode": {
+        "label": "Vacation mode, with a return date"
+      },
+      "map_precision": {
+        "label": "Location and pickup points on the map, exact or just the area",
+        "tip": "If your place is not a shop, for example a farm or a production site, you can show only the area on the map. Customers know where you are from, and you decide where you meet."
+      },
+      "multi_locations": {
+        "label": "Several locations: a branch, a pickup point or a market stall"
+      },
+      "draft_claim": {
+        "label": "We prepare a draft of your page, and you just approve it"
+      },
+      "ai_writer": {
+        "label": "A tool that writes your business description with you"
+      },
+      "guides": {
+        "label": "Guides for product photography, your business story and messages to customers"
+      },
+      "social_signup": {
+        "label": "Quick sign-up with Google or Apple"
+      },
+      "wa_approval": {
+        "label": "A WhatsApp message when your page is approved"
+      },
+      "onboarding_emails": {
+        "label": "Emails that guide you through the first month"
+      },
+      "vanity_link": {
+        "label": "A short link to your page, for Instagram and WhatsApp"
+      },
+      "discovery": {
+        "label": "Appearing on the map, in diet search and on the home page"
+      },
+      "similar_businesses": {
+        "label": "Appearing on the pages of similar businesses nearby"
+      },
+      "share_cards": {
+        "label": "A story card and a reviews card to download"
+      },
+      "qr_code": {
+        "label": "A QR code to print"
+      },
+      "structured_data": {
+        "label": "Google and AI assistants like ChatGPT understand what is on your page",
+        "tip": "Behind the scenes, your page holds your details (name, place, hours and products) in a structured form Google can read. It helps show you in search and in AI assistants' answers. You do not need to do anything, it happens on its own."
+      },
+      "primary_cta": {
+        "label": "A main button for the channel you choose: WhatsApp, phone or website"
+      },
+      "wa_prefill": {
+        "label": "A ready-made message: \"I came through Mehamakor\""
+      },
+      "product_wa": {
+        "label": "An \"Ask about this product on WhatsApp\" button on every product"
+      },
+      "faq_answers": {
+        "label": "Ready answers to common questions, plus up to 5 of your own",
+        "tip": "Questions like \"Do you deliver?\" or \"Is it kosher?\" are answered on the page from the details you filled in. You can add up to 5 questions and answers of your own."
+      },
+      "delivery_areas": {
+        "label": "Delivery areas with a minimum, a cost and a day"
+      },
+      "delivery_checker": {
+        "label": "A \"Do you deliver to my city?\" check"
+      },
+      "wa_group": {
+        "label": "A WhatsApp group for updates from your business"
+      },
+      "nav_buttons": {
+        "label": "Waze and Google Maps buttons for the pickup point"
+      },
+      "save_share": {
+        "label": "Customers save your page and share it on WhatsApp"
+      },
+      "offer": {
+        "label": "An offer for customers, with an end date",
+        "tip": "A deal shown on your page, for example a discount on a first order. You choose how long it runs."
+      },
+      "group_buys": {
+        "label": "Group buys",
+        "tip": "Several customers order together and get a lower price. You set a minimum number of participants and a date, and the order goes ahead only if the minimum is reached."
+      },
+      "events": {
+        "label": "Events and workshops, with sign-up on the site"
+      },
+      "recipes": {
+        "label": "Recipes using your products, each on its own page linking back to you"
+      },
+      "follower_updates": {
+        "label": "An update to customers who saved you, about a new product or event"
+      },
+      "waitlist": {
+        "label": "A waiting list: whoever waited gets an email when you reach their city"
+      },
+      "rescue_bags": {
+        "label": "Surprise bags for what is left at the end of the day",
+        "tip": "A discounted bag with what is left at the end of the day. The customer orders on the site and collects from you with a pickup code."
+      },
+      "verified_badge": {
+        "label": "A \"verified\" badge after a manual licence check"
+      },
+      "kashrut_verified": {
+        "label": "\"Kashrut verified\" after a certificate has been checked"
+      },
+      "editor_pick": {
+        "label": "\"Editor's pick\", which is not for sale"
+      },
+      "reservist_diet_tags": {
+        "label": "A \"reservists' business\" badge, and badges like vegan or gluten-free"
+      },
+      "reviews_contacted": {
+        "label": "Reviews only from people who contacted you, and you can reply"
+      },
+      "review_request": {
+        "label": "A link to ask a customer for a review on WhatsApp"
+      },
+      "views": {
+        "label": "Page views"
+      },
+      "search_impressions": {
+        "label": "Arrivals from search on the site"
+      },
+      "contact_clicks": {
+        "label": "Clicks on WhatsApp, phone and website"
+      },
+      "favorites_rating": {
+        "label": "Saves to favourites, and average rating"
+      },
+      "top_cities": {
+        "label": "Which cities your visitors come from"
+      },
+      "demand_cities": {
+        "label": "Demand from cities you do not deliver to yet"
+      },
+      "drop_point_hosts": {
+        "label": "Customers willing to receive a delivery for their neighbours",
+        "tip": "A customer marks that they are willing to receive several orders, and the neighbours collect from them. That is how you reach a new neighbourhood or city in one trip."
+      },
+      "email_alerts": {
+        "label": "An email about a new review, an event sign-up or a group buy that filled up"
+      },
+      "completeness": {
+        "label": "A list showing what is still missing on your page"
+      }
+    },
+    "total_line": "{count} tools in six categories. All of them free.",
+    "note_line": "Most of the tools do not need switching on. You fill in the details, and they work by themselves."
   }
 }
