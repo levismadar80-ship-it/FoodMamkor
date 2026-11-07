@@ -398,7 +398,10 @@ DEMO_REVIEWS = [
 # change, `producer_analytics_daily`'s most sharply ("seeding it would
 # fabricate traffic" — which is now exactly what happens, for one demo
 # producer, on Sapir's instruction in MEH-2794). That file is outside this
-# card's declared scope, so it is reported in the PR rather than edited here.
+# card's declared scope, so it is NOT edited here: tracked as MEH-2800, which
+# names both files and the choice to be made (enforce them in
+# SEEDED_SURFACES, or just reword). workflow.md's Smell #2 asks for exactly
+# that — a ticket naming both surfaces, not a note promising a future edit.
 # ---------------------------------------------------------------------------
 
 # An active first-order discount. `starts_at=None` means "active now"
@@ -1173,6 +1176,7 @@ def seed_marketing_fixtures(db) -> int:
         return 0
 
     seeded = 0
+    skipped: list[str] = []
     if (
         not db.query(ProducerOffer)
         .filter(ProducerOffer.producer_id == producer.id)
@@ -1180,8 +1184,12 @@ def seed_marketing_fixtures(db) -> int:
     ):
         _seed_offer(db, producer)
         seeded += 1
+    else:
+        skipped.append("offer (one already exists)")
     if _seed_rescue_bag(db, producer):
         seeded += 1
+    else:
+        skipped.append("rescue bag (already there today, or the tables are absent)")
     # Probe the RAW table as well as the roll-up, and skip if EITHER holds a
     # row. The roll-up alone is not a safe probe on staging, for two reasons
     # that both really happen there:
@@ -1211,9 +1219,27 @@ def seed_marketing_fixtures(db) -> int:
     if not already:
         _seed_insights(db, producer)
         seeded += 1
+    else:
+        skipped.append(
+            "insights AND followers (analytics rows already exist for this "
+            "business — real traffic, or a previous run)"
+        )
 
     db.commit()
+    # Say what was SKIPPED, not only what was seeded. A bare "0 part(s)
+    # seeded" on staging is indistinguishable from a broken run, and the
+    # operator running this from Railway has no other window into why. The
+    # followers are called out explicitly because they ride inside the
+    # insights block: skipping that skips them too, and the follower count is
+    # the one number whose absence would otherwise look like a product state.
     print(f"MEH-2794 marketing fixtures: {seeded} part(s) seeded for /{DEMO_SLUG}.")
+    for note in skipped:
+        print(f"  skipped: {note}")
+    if skipped and not seeded:
+        print(
+            "  Nothing was seeded. Run with --refresh first if you want the "
+            "demo numbers replaced."
+        )
     return seeded
 
 
