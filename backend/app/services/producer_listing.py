@@ -296,9 +296,8 @@ def _build_base_queries(  # noqa: PLR0913 — keyword-only query axes; MEH-2602 
         # change in the same function, and leaving the least-ordered path out
         # while fixing four others would have been the odd choice. Flagged in
         # the PR rather than done quietly.
-        q = (
-            q.filter(distance_expr <= radius_km)
-            .order_by(distance_expr.asc(), Producer.id.asc())
+        q = q.filter(distance_expr <= radius_km).order_by(
+            distance_expr.asc(), Producer.id.asc()
         )
         count_q = count_q.filter(haversine_min_km(lat, lng) <= radius_km)
         return q, count_q
