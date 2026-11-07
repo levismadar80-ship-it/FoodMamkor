@@ -39,7 +39,8 @@ from app.models.models import (
     ProducerWhatsAppClick,
     User,
 )
-from app.utils.clock import ISRAEL_TZ, israel_today
+from app.routers.rescue import RESERVE_CLOSES_BEFORE_END
+from app.utils.clock import ISRAEL_TZ, israel_today, utc_now
 
 # Placed in its own block, matching tests/test_seed_demo_business.py:31. Ruff
 # 0.16.x sorts `tests.*` up with the third-party block instead, but the pinned
@@ -243,25 +244,37 @@ def test_rescue_bag_satisfies_its_db_checks(db, seeded, seed_mod):
     assert bag.price_agorot >= 0
     assert bag.pickup_end > bag.pickup_start
     assert bag.status == "active"
-    assert bag.date == israel_today(), "a bag for TODAY, so /rescue shows it"
+    # MEH-2808 — this used to read `bag.date == israel_today()`, justified as
+    # "a bag for TODAY, so /rescue shows it". That reasoning was the bug: today
+    # is not what makes a bag visible, beating the listing's margin is, and a
+    # bag for today seeded after ~18:45 is exactly what /rescue HIDES. The
+    # window is now derived from the clock and may legitimately land on
+    # tomorrow, so what gets asserted is the property the old line was reaching
+    # for — stated directly, against the router's own constant.
+    assert bag.pickup_end > utc_now() + RESERVE_CLOSES_BEFORE_END, (
+        f"the seeded bag closes {bag.pickup_end} UTC, which the public listing "
+        f"filter at rescue.py:463 hides"
+    )
+    assert bag.date in (israel_today(), israel_today() + timedelta(days=1)), (
+        f"the bag landed on {bag.date}, neither today nor tomorrow in Israel"
+    )
 
     # MEH-2679: these naive columns hold UTC INSTANTS. `datetime.combine` of an
     # Israel wall hour would store 18:00 as if it were UTC — 21:00 in Israel in
-    # summer — so a bag advertised for 18:00 would open three hours late. Read
-    # the stored instant back in Israel and check the wall hour is the one the
-    # constants asked for.
-    for stored, hour in (
-        (bag.pickup_start, seed_mod.DEMO_RESCUE_BAG["pickup_from_hour"]),
-        (bag.pickup_end, seed_mod.DEMO_RESCUE_BAG["pickup_to_hour"]),
-        (bag.cancel_until, seed_mod.DEMO_RESCUE_BAG["pickup_from_hour"]),
-    ):
+    # summer — so a bag advertised for 18:00 would open three hours late. The
+    # wall hours are no longer constants to compare against, so what is pinned
+    # is the invariant underneath: every stored instant is naive, and all three
+    # read back on the SAME Israel day as the offer's own `date`. A stripped
+    # tzinfo would shift one of them across midnight and break that.
+    for stored in (bag.pickup_start, bag.pickup_end, bag.cancel_until):
         assert stored.tzinfo is None, "the column convention is naive-UTC"
         in_israel = stored.replace(tzinfo=timezone.utc).astimezone(ISRAEL_TZ)
-        assert in_israel.hour == hour, (
-            f"stored {stored} reads as {in_israel:%H:%M %Z} in Israel, "
-            f"but the bag is advertised for {hour}:00"
+        assert in_israel.date() == bag.date, (
+            f"stored {stored} reads as {in_israel:%d/%m %H:%M %Z} in Israel, "
+            f"but the offer is dated {bag.date}"
         )
-        assert in_israel.date() == bag.date
+    # Collection opens before it closes, and cancellation runs to the opening.
+    assert bag.cancel_until == bag.pickup_start
 
 
 def test_insights_raw_rows_and_rollup_agree(db, seeded_with_watermark, seed_mod):
