@@ -25,7 +25,7 @@
  *   QA_BASE_URL=https://staging.mehamakor.online \
  *   VERCEL_AUTOMATION_BYPASS_SECRET=<secret> \
  *   DEMO_OWNER_PASSWORD=<the staging value> \
- *   PLAYWRIGHT_CHROMIUM_PATH=/opt/pw-browsers/chromium   # CC sandbox only \
+ *   PLAYWRIGHT_CHROMIUM_PATH=/opt/pw-browsers/chromium \
  *     node e2e/marketing/join-screenshots.mjs
  *
  * Add --stills-only to skip the clips (much faster while iterating).
@@ -86,10 +86,7 @@ const run = promisify(execFile);
 // (`PLAYWRIGHT_BASE_URL` and `TEST_URL` are the other two in use). NOTE the
 // ticket says `STAGING_URL`; no such variable exists anywhere in e2e/, so this
 // follows the code rather than the card.
-const BASE = (process.env.QA_BASE_URL || "http://127.0.0.1:3000").replace(
-  /\/$/,
-  "",
-);
+const BASE = (process.env.QA_BASE_URL || "http://127.0.0.1:3000").replace(/\/$/, "");
 const BYPASS = process.env.VERCEL_AUTOMATION_BYPASS_SECRET || "";
 const OWNER_EMAIL = "demo-owner@example.com";
 const OWNER_PASSWORD = process.env.DEMO_OWNER_PASSWORD || "";
@@ -139,16 +136,8 @@ const SHOTS = [
   {
     file: "page-hero.webp",
     route: `/${SLUG}`,
-    selector:
-      '[data-testid="producer-header"], header.producer-hero, main > section:first-of-type',
-    feature_ids: [
-      "gallery_story",
-      "hours",
-      "vacation_mode",
-      "verified_badge",
-      "kashrut_verified",
-      "editor_pick",
-    ],
+    selector: '[data-testid="producer-header"], header.producer-hero, main > section:first-of-type',
+    feature_ids: ["gallery_story", "hours", "vacation_mode", "verified_badge", "kashrut_verified", "editor_pick"],
     note: "cover + name + badges + open-for-orders + contact button",
   },
   {
@@ -161,20 +150,11 @@ const SHOTS = [
     file: "page-contact.webp",
     route: `/${SLUG}`,
     selector: '[data-testid="contact-card"], [data-testid="delivery-checker"]',
-    feature_ids: [
-      "primary_cta",
-      "wa_prefill",
-      "delivery_checker",
-      "delivery_areas",
-      "nav_buttons",
-      "save_share",
-    ],
+    feature_ids: ["primary_cta", "wa_prefill", "delivery_checker", "delivery_areas", "nav_buttons", "save_share"],
     // The checker is filled in before the shot — an empty input photographs as
     // a form, not as an answer.
     prepare: async (page) => {
-      const input = page
-        .locator('[data-testid="delivery-checker"] input')
-        .first();
+      const input = page.locator('[data-testid="delivery-checker"] input').first();
       if (await input.count()) {
         await input.fill("בנימינה");
         await page.waitForTimeout(900);
@@ -220,14 +200,19 @@ const SHOTS = [
   {
     file: "map.webp",
     route: "/map",
-    // The container mounts long before the tiles and cards do, and 20s was not
-    // enough on staging. Gate on a rendered card (measured testid) instead.
+    // The container mounts long before anything renders into it, and 20s was
+    // not enough on staging; the longer wait is deliberate.
     selector: '[data-testid="map-card"]',
     timeout: 45_000,
     feature_ids: ["map_precision", "multi_locations"],
     // Leaflet paints tiles asynchronously; without this the shot is grey.
     prepare: async (page) => {
-      await page.waitForSelector(".leaflet-tile-loaded", { timeout: 20_000 });
+      // A tile-less map is worse than no screenshot, so this stays a hard
+      // wait. Measured from the CC sandbox: tile.openstreetmap.org answers
+      // 000 (egress-blocked), so this shot CANNOT be taken here however long
+      // it waits — it needs a machine that can reach the tile server. The
+      // failure is environmental, not a selector to chase.
+      await page.waitForSelector(".leaflet-tile-loaded", { timeout: 45_000 });
       await page.waitForTimeout(1200);
     },
   },
@@ -244,12 +229,7 @@ const SHOTS = [
     route: "/producer/dashboard/insights",
     selector: "main",
     auth: true,
-    feature_ids: [
-      "views",
-      "search_impressions",
-      "contact_clicks",
-      "top_cities",
-    ],
+    feature_ids: ["views", "search_impressions", "contact_clicks", "top_cities"],
   },
   {
     file: "dash-availability.webp",
@@ -336,9 +316,7 @@ const CLIPS = [
     route: `/${SLUG}`,
     steps: async (page) => {
       await page.waitForTimeout(1000);
-      const input = page
-        .locator('[data-testid="delivery-checker"] input')
-        .first();
+      const input = page.locator('[data-testid="delivery-checker"] input').first();
       if (await input.count()) {
         await input.scrollIntoViewIfNeeded();
         await input.fill("בנימינה");
@@ -360,9 +338,7 @@ const CLIPS = [
     steps: async (page) => {
       await page.waitForTimeout(1500);
       await slowScroll(page, 700);
-      await page.goto(`${BASE}/he/experiences`, {
-        waitUntil: "domcontentloaded",
-      });
+      await page.goto(`${BASE}/he/experiences`, { waitUntil: "domcontentloaded" });
       await page.waitForTimeout(2000);
     },
   },
@@ -466,38 +442,34 @@ async function login(page) {
     );
   }
   await page.goto(`${BASE}/he/login`, { waitUntil: "domcontentloaded" });
-
-  // FILL, THEN VERIFY THE VALUE STUCK. Measured on staging: filling at
+  // Fill, then VERIFY the value stuck. Measured on staging: filling at
   // `domcontentloaded` races React's hydration, which re-renders the form and
   // blanks the EMAIL field while leaving the password — the click then submits
-  // a half-empty form, no navigation happens and the old code threw a bare
-  // `waitForURL` timeout 20s later. Gating on the field's own value is the
-  // same principle as the repo's networkidle ban: wait for the thing, not for
-  // a duration.
+  // a half-empty form and this threw a bare `waitForURL` timeout 20s later.
+  // Gate on the field's own value, not on a duration.
   const EMAIL_SEL = 'input[type="email"], #email';
   const PW_SEL = 'input[type="password"], #password';
-  let stuck = false;
-  for (let attempt = 0; attempt < 6 && !stuck; attempt += 1) {
+  const fillBoth = async () => {
     await page.fill(EMAIL_SEL, OWNER_EMAIL);
     await page.fill(PW_SEL, OWNER_PASSWORD);
-    stuck = (await page.inputValue(EMAIL_SEL)) === OWNER_EMAIL;
+    return (await page.inputValue(EMAIL_SEL)) === OWNER_EMAIL;
+  };
+  let stuck = false;
+  for (let attempt = 0; attempt < 6 && !stuck; attempt += 1) {
+    stuck = await fillBoth();
     if (!stuck) await page.waitForTimeout(500);
   }
-  if (!stuck) {
-    throw new Error(
-      "the login form kept discarding the email field — hydration never " +
-        "settled, so no dashboard shot can be taken",
-    );
+  // A late re-render can blank the field AFTER the loop passed, so re-read
+  // both immediately before clicking and refill once if either slipped.
+  if (stuck && ((await page.inputValue(EMAIL_SEL)) !== OWNER_EMAIL || !(await page.inputValue(PW_SEL)))) {
+    stuck = await fillBoth();
   }
-
-  await page
-    .getByRole("button", { name: /התחבר|כניסה/ })
-    .first()
-    .click();
+  if (!stuck) {
+    throw new Error("the login form kept discarding the email field — hydration never settled");
+  }
+  await page.getByRole("button", { name: /התחבר|כניסה/ }).first().click();
   // Gate on the thing that proves login, not on a timeout.
-  await page.waitForURL((url) => !url.pathname.includes("/login"), {
-    timeout: 20_000,
-  });
+  await page.waitForURL((url) => !url.pathname.includes("/login"), { timeout: 20_000 });
 }
 
 // ───────────────────────────── pre-flight control ─────────────────────────────
@@ -508,56 +480,71 @@ async function preflight(browser) {
   const { context, page } = await newPage(browser);
   const problems = [];
   try {
-    const res = await page.goto(`${BASE}/he/${SLUG}`, {
-      waitUntil: "domcontentloaded",
-    });
+    const res = await page.goto(`${BASE}/he/${SLUG}`, { waitUntil: "domcontentloaded" });
     const status = res?.status() ?? 0;
-    if (status !== 200)
-      problems.push(`GET /he/${SLUG} → ${status} (expected 200)`);
+    if (status !== 200) problems.push(`GET /he/${SLUG} → ${status} (expected 200)`);
 
-    // THE CLEANLINESS CHECK ASKS THE API, NOT THE DOM.
+    // THE CLEANLINESS CHECK ASKS THE API, NOT THE DOM — AND CHECKS THE
+    // RESPONSES.
     //
     // It used to read `page.textContent("body")` at `domcontentloaded`, before
-    // React had rendered the reviews — so "(בדיקה)" was not in the text yet,
-    // the check found nothing, and it SAID so. A null that reads exactly like
-    // a clean result, in the one control written to prevent this. It passed on
-    // staging while a «(בדיקה)» review was on screen, and that review then
-    // appeared in page-hero.webp.
+    // React had rendered the reviews, so "(בדיקה)" was not in the text yet, it
+    // found nothing, and it SAID so. It passed on staging while a «(בדיקה)»
+    // review was on screen, and that review then appeared in page-hero.webp.
+    // Gating on rendered markup is not enough either: #section-products
+    // becomes visible before the reviews mount.
     //
-    // Gating on rendered markup was tried and is not enough: #section-products
-    // becomes visible before the reviews mount, so the check still read an
-    // incomplete page. The reviews ENDPOINT has no such race — the rows either
-    // exist or they do not — so that is what is asked.
+    // Every response is status-checked and `id` is asserted, because a 404
+    // would otherwise give `undefined` here, request `/producers/undefined/
+    // reviews`, find no "(בדיקה)" in the error body, and pass — the same null
+    // reading as clean, one level down.
     let apiText = "";
     try {
-      const detail = await page.request.get(
-        `${BASE}/api/producers/by-slug/${SLUG}`,
-      );
-      const producer = await detail.json();
-      apiText += JSON.stringify(producer);
-      const reviews = await page.request.get(
-        `${BASE}/api/producers/${producer.id}/reviews`,
-      );
-      apiText += JSON.stringify(await reviews.json());
+      const detail = await page.request.get(`${BASE}/api/producers/by-slug/${SLUG}`);
+      if (!detail.ok()) {
+        problems.push(`GET /api/producers/by-slug/${SLUG} → ${detail.status()}`);
+      } else {
+        const producer = await detail.json();
+        if (!producer?.id) {
+          problems.push("the producer payload carried no id — cannot read its reviews");
+        } else {
+          apiText += JSON.stringify(producer);
+          const reviews = await page.request.get(`${BASE}/api/producers/${producer.id}/reviews`);
+          if (!reviews.ok()) {
+            problems.push(`GET /api/producers/<id>/reviews → ${reviews.status()}`);
+          } else {
+            const page1 = await reviews.json();
+            apiText += JSON.stringify(page1);
+            // The endpoint is a ReviewsPage: if it reports more rows than it
+            // returned, a "(בדיקה)" row could be sitting on a page this never
+            // read, so say so rather than pass on a partial look.
+            // `reviews` + `total` + `pages`, per ReviewsPage in
+            // backend/app/schemas/schemas.py:4982 — read from the schema after
+            // a guessed `items` key made this report "0 of 4 rows" on a page
+            // it had in fact read in full.
+            const items = Array.isArray(page1) ? page1 : (page1.reviews ?? []);
+            const total = Array.isArray(page1) ? items.length : (page1.total ?? items.length);
+            if (total > items.length) {
+              problems.push(
+                `the reviews endpoint returned ${items.length} of ${total} rows — ` +
+                  "the cleanliness check only saw the first page",
+              );
+            }
+          }
+        }
+      }
     } catch (err) {
-      problems.push(
-        `could not read the demo business through the API: ${err.message}`,
-      );
+      problems.push(`could not read the demo business through the API: ${err.message}`);
     }
 
     const body = (await page.textContent("body").catch(() => "")) + apiText;
-    if (!body || body.length < 500)
-      problems.push("the business page rendered almost no text");
+    if (!body || body.length < 500) problems.push("the business page rendered almost no text");
     // The ticket's own cleanliness requirement, asserted rather than assumed.
     if (body.includes("(בדיקה)")) {
-      problems.push(
-        'the demo business still shows "(בדיקה)" rows — re-run the seed with --refresh',
-      );
+      problems.push('the demo business still shows "(בדיקה)" rows — re-run the seed with --refresh');
     }
     if (/sso-api|Vercel Authentication/i.test(body)) {
-      problems.push(
-        "this is Vercel's SSO page, not the site — the bypass secret is wrong",
-      );
+      problems.push("this is Vercel's SSO page, not the site — the bypass secret is wrong");
     }
   } catch (err) {
     problems.push(`could not load the business page: ${err.message}`);
@@ -568,14 +555,10 @@ async function preflight(browser) {
   if (problems.length) {
     console.error("\nPRE-FLIGHT FAILED — nothing was captured:\n");
     for (const p of problems) console.error(`  - ${p}`);
-    console.error(
-      "\nEvery capture below would have been meaningless, so none was attempted.",
-    );
+    console.error("\nEvery capture below would have been meaningless, so none was attempted.");
     process.exit(1);
   }
-  console.log(
-    "[preflight] demo business reachable, 200, no «(בדיקה)» on the page.",
-  );
+  console.log("[preflight] demo business reachable, 200, no «(בדיקה)» on the page.");
 }
 
 // ───────────────────────────── stills ─────────────────────────────
@@ -585,8 +568,37 @@ async function captureStills(browser) {
   // One authenticated context reused across the dashboard shots — logging in
   // per shot is nine logins and nine chances to trip the rate limiter.
   let authed = null;
+  let authFailure = null;
 
   for (const shot of SHOTS) {
+    // A FAILED LOGIN RECORDS MISSES; IT DOES NOT ABORT THE RUN. Letting
+    // `login()` throw out of here destroyed the whole manifest, including the
+    // shots that had already succeeded — the opposite of what it is for. The
+    // failure is cached, so nine auth shots do not retry nine logins, and it
+    // is reported under `error`, which is the field the end-of-run printer
+    // reads.
+    let session;
+    if (shot.auth) {
+      if (!authed && !authFailure) {
+        try {
+          authed = await newPage(browser, { auth: true });
+        } catch (err) {
+          authFailure = `login failed: ${err.message}`;
+        }
+      }
+      if (authFailure) {
+        entry.status = "missing";
+        entry.error = authFailure;
+        results.push(entry);
+        console.log(`  ✗ ${shot.file}  — ${authFailure}`);
+        continue;
+      }
+      session = authed;
+    } else {
+      session = await newPage(browser);
+    }
+    const { page } = session;
+
     const entry = {
       file: shot.file,
       route: shot.route,
@@ -595,42 +607,13 @@ async function captureStills(browser) {
       ...(shot.note ? { note: shot.note } : {}),
     };
 
-    // A FAILED LOGIN RECORDS MISSES; IT DOES NOT ABORT THE RUN. The first
-    // version let `login()` throw straight out of here, so one bad login
-    // destroyed the whole manifest — including the shots that had already
-    // succeeded, which is the opposite of what the manifest is for. Each
-    // dashboard shot now records its own reason and the stills that need no
-    // session still finish.
-    let session;
     try {
-      if (shot.auth) {
-        if (!authed) authed = await newPage(browser, { auth: true });
-        session = authed;
-      } else {
-        session = await newPage(browser);
-      }
-    } catch (err) {
-      entry.status = "missing";
-      entry.reason = `login failed: ${err.message}`;
-      results.push(entry);
-      console.log(`  ✗ ${shot.file}  — login failed`);
-      continue;
-    }
-    const { page } = session;
-
-    try {
-      await page.goto(`${BASE}/he${shot.route}`, {
-        waitUntil: "domcontentloaded",
-      });
+      await page.goto(`${BASE}/he${shot.route}`, { waitUntil: "domcontentloaded" });
       if (shot.prepare) await shot.prepare(page);
       const el = page.locator(shot.selector).first();
       await el.waitFor({ state: "visible", timeout: shot.timeout ?? 20_000 });
       await page.waitForTimeout(400); // let fonts/images settle
-      await el.screenshot({
-        path: path.join(OUT, shot.file),
-        type: "webp",
-        quality: 80,
-      });
+      await el.screenshot({ path: path.join(OUT, shot.file), type: "webp", quality: 80 });
       entry.status = "ok";
       console.log(`  ✓ ${shot.file}`);
     } catch (err) {
@@ -662,18 +645,11 @@ async function captureClips(browser) {
     const entry = { file: `${clip.name}.mp4`, route: clip.route, kind: "clip" };
     const started = Date.now();
     try {
-      await page
-        .addStyleTag({ content: HIDE_CSS + MARKER_CSS })
-        .catch(() => {});
+      await page.addStyleTag({ content: HIDE_CSS + MARKER_CSS }).catch(() => {});
       if (clip.auth) await login(page);
-      await page.goto(`${BASE}/he${clip.route}`, {
-        waitUntil: "domcontentloaded",
-      });
+      await page.goto(`${BASE}/he${clip.route}`, { waitUntil: "domcontentloaded" });
       // Never start a clip on a loading state (ticket): wait for real content.
-      await page
-        .locator("main")
-        .first()
-        .waitFor({ state: "visible", timeout: 20_000 });
+      await page.locator("main").first().waitFor({ state: "visible", timeout: 20_000 });
       await clip.steps(page);
       entry.duration_s = Math.round((Date.now() - started) / 100) / 10;
       await context.close(); // flushes the .webm
@@ -681,9 +657,7 @@ async function captureClips(browser) {
       if (!webm) throw new Error("playwright wrote no video file");
       await toMp4(path.join(dir, webm), clip.name, entry);
       entry.status = "ok";
-      console.log(
-        `  ✓ ${clip.name}.mp4  (${entry.duration_s}s, ${entry.size_kb}KB)`,
-      );
+      console.log(`  ✓ ${clip.name}.mp4  (${entry.duration_s}s, ${entry.size_kb}KB)`);
     } catch (err) {
       entry.status = "missing";
       entry.error = err.message.split("\n")[0];
@@ -700,38 +674,16 @@ async function toMp4(webmPath, name, entry) {
   const mp4 = path.join(OUT, `${name}.mp4`);
   const poster = path.join(OUT, `${name}-poster.webp`);
   await run("ffmpeg", [
-    "-y",
-    "-i",
-    webmPath,
-    "-c:v",
-    "libx264",
-    "-crf",
-    "23",
-    "-preset",
-    "slow",
-    "-pix_fmt",
-    "yuv420p",
-    "-r",
-    "30",
-    "-an",
+    "-y", "-i", webmPath,
+    "-c:v", "libx264", "-crf", "23", "-preset", "slow",
+    "-pix_fmt", "yuv420p", "-r", "30", "-an",
     // H.264 needs even dimensions; 390x844 at 2x is 780x1688, already even,
     // but a device-pixel change would otherwise fail the encode cryptically.
-    "-vf",
-    "scale=trunc(iw/2)*2:trunc(ih/2)*2",
-    "-movflags",
-    "+faststart",
+    "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2",
+    "-movflags", "+faststart",
     mp4,
   ]);
-  await run("ffmpeg", [
-    "-y",
-    "-i",
-    webmPath,
-    "-frames:v",
-    "1",
-    "-q:v",
-    "80",
-    poster,
-  ]);
+  await run("ffmpeg", ["-y", "-i", webmPath, "-frames:v", "1", "-q:v", "80", poster]);
   const { size } = await readFile(mp4).then((b) => ({ size: b.length }));
   entry.size_kb = Math.round(size / 1024);
   entry.poster = `${name}-poster.webp`;
@@ -754,22 +706,15 @@ async function gitSha() {
 async function main() {
   if (!existsSync(OUT)) await mkdir(OUT, { recursive: true });
 
-  // PLAYWRIGHT_CHROMIUM_PATH is the repo's EXISTING knob for this — the same
-  // one frontend/scripts/qa-ci-screenshots.mjs reads, already on the env-drift
-  // gate's platform-var exclude list. A second name for one concept is the
-  // two-parallel-mechanisms smell, and it would also have needed its own
-  // exemption. It matters in the CC sandbox, where the preinstalled
-  // Chromium revision does not match the one this repo's Playwright pins:
-  // the default launch then dies on a missing chrome-headless-shell, and
-  // `chromium.executablePath()` is no help because it returns the path
-  // Playwright EXPECTS rather than one it has verified (measured: it named
-  // revision 1234 while 1243 is what is installed). `/opt/pw-browsers/chromium`
-  // is the stable symlink to the real binary. Unset everywhere else, so CI and
-  // a normal machine behave exactly as before.
   const browser = await chromium.launch({
-    ...(process.env.PLAYWRIGHT_CHROMIUM_PATH
-      ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH }
-      : {}),
+    // PLAYWRIGHT_CHROMIUM_PATH is the repo's existing knob for this, read by
+    // frontend/scripts/qa-ci-screenshots.mjs and already on the env-drift
+    // gate's platform-var list. It matters in the CC sandbox, where the
+    // preinstalled Chromium revision does not match the one this repo pins and
+    // the default launch dies on a missing chrome-headless-shell.
+    // `chromium.executablePath()` is no help: it returns the path Playwright
+    // EXPECTS, not one it has verified.
+    executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH || undefined,
     // MEH-2090: a remote target from the CC sandbox needs TLS capped at 1.2,
     // and --no-sandbox for the container. Harmless on a normal machine.
     args: ["--ssl-version-max=tls1.2", "--no-sandbox"],
@@ -794,8 +739,7 @@ async function main() {
       path.join(OUT, "manifest.json"),
       `${JSON.stringify(
         {
-          generated_by:
-            "frontend/e2e/marketing/join-screenshots.mjs (MEH-2794)",
+          generated_by: "frontend/e2e/marketing/join-screenshots.mjs (MEH-2794)",
           captured_at: new Date().toISOString(),
           git_sha: await gitSha(),
           target: BASE,
@@ -816,16 +760,11 @@ async function main() {
     );
 
     const missed = entries.filter((e) => e.status !== "ok");
-    console.log(
-      `\nmanifest.json written — ${entries.length - missed.length}/${entries.length} captured`,
-    );
+    console.log(`\nmanifest.json written — ${entries.length - missed.length}/${entries.length} captured`);
 
     if (missed.length) {
-      console.error(
-        `\n${missed.length} capture(s) FAILED — no file was written for these:\n`,
-      );
-      for (const m of missed)
-        console.error(`  - ${m.file}  (${m.route})  ${m.error ?? ""}`);
+      console.error(`\n${missed.length} capture(s) FAILED — no file was written for these:\n`);
+      for (const m of missed) console.error(`  - ${m.file}  (${m.route})  ${m.error ?? ""}`);
       console.error(
         "\nFix the selector in SHOTS/CLIPS and re-run. Nothing was substituted:\n" +
           "the missing images are absent, not wrong.",
