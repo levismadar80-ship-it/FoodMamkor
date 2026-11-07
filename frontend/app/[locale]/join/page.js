@@ -103,9 +103,10 @@ const LINK_CLASS =
   "inline-flex items-center gap-2 text-primary font-semibold hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40";
 const CARD_CLASS = "bg-background border border-primary/20 rounded-md px-5 py-4";
 const FAQ_KEYS = ["cost", "google", "revenue", "customers"];
-// MEH-2799 (Sapir, 07/11): the site's FAQ pattern — a <details> accordion with
-// only the cost question open, as /about/for-businesses (page.js:66, :183).
-const FAQ_OPEN = new Set(["cost"]);
+// MEH-2799 (Sapir, 07/11): the site's FAQ pattern — a <details> accordion
+// (/about/for-businesses/page.js:183) — with EVERY question closed on load.
+// That page opens its cost question (:66); Sapir chose all-closed for /join.
+const FAQ_OPEN = new Set();
 
 export default async function JoinPage({ params }) {
   const { locale } = await params;
@@ -227,7 +228,7 @@ export default async function JoinPage({ params }) {
         </section>
 
         {/* ── FAQ — the price answer lives here (Etsy pattern), not in the
-               hero. a_cost dropped «— לעולם» on Sapir's call, 07/11 (ADR-030 §5 amended). ── */}
+               hero. a_cost dropped «— לעולם» on Sapir's call, 07/11 (ADR-030 §5 rewritten). ── */}
         <section className="pb-14 sm:pb-20" data-testid="join-faq">
           <p className="text-sm font-medium text-fg-muted text-center mb-2">{t("faq.eyebrow")}</p>
           <h2 className="font-headline-lg font-bold text-text text-center mb-8 text-[clamp(26px,3.5vw,38px)]">
