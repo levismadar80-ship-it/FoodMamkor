@@ -53,6 +53,7 @@ const ENTRY_RE = new RegExp(
 // eslint-disable-next-line no-magic-numbers -- the seven code points ARE the data
 const HE_DAY_LETTERS = String.fromCharCode(0x5d0, 0x5d1, 0x5d2, 0x5d3, 0x5d4, 0x5d5, 0x5e9);
 // Geresh U+05F3, plus the typographic ’ U+2019 phone keyboards substitute for '.
+// Both sit inside a regex character class below — never add "]" or "\\" here.
 const HE_GERESH = String.fromCharCode(0x5f3, 0x2019); // eslint-disable-line no-magic-numbers
 const HE_DAY_INDEX = Object.fromEntries([...HE_DAY_LETTERS].map((letter, i) => [letter, i]));
 const HE_DAY = `([${HE_DAY_LETTERS}])['${HE_GERESH}]?`;
@@ -79,13 +80,16 @@ function parseHebrewEntry(entry) {
     // 24:00 is a valid close ("until midnight"); 24:30 is not a time.
     const outOfDay = (h, m) => Number(h) > MAX_HOUR || (Number(h) === MAX_HOUR && Number(m) > 0);
     const bad = outOfDay(oh, om) || outOfDay(ch, cm) || [om, cm].some((m) => Number(m) >= MINUTES_PER_HOUR);
-    if (bad) return null;
+    // Closing at or before opening (an overnight «22:00-02:00») is not a range
+    // this map can hold — shown as typed rather than as a wrong range.
+    const backwards = Number(ch) * MINUTES_PER_HOUR + Number(cm) <= Number(oh) * MINUTES_PER_HOUR + Number(om);
+    if (bad || backwards) return null;
     ranges.push({ open: `${pad2(oh)}:${om}`, close: `${pad2(ch)}:${cm}` });
   }
-  // Same week-wrap guard as the English branch: a reversed span is its start day.
-  const indices = endIdx >= startIdx
-    ? Array.from({ length: endIdx - startIdx + 1 }, (_, i) => startIdx + i)
-    : [startIdx];
+  // A reversed span («ו'-א'») wraps the week; reading it as its start day only
+  // (the English branch's guard) would show confident, wrong hours. Strict: raw.
+  if (endIdx < startIdx) return null;
+  const indices = Array.from({ length: endIdx - startIdx + 1 }, (_, i) => startIdx + i);
   return { indices, ranges };
 }
 

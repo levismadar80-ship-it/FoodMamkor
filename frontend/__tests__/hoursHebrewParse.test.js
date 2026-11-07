@@ -69,6 +69,8 @@ describe("parseHours — Hebrew day letters (MEH-2803)", () => {
     ["a malformed time", "א' 9-17"],
     ["past the end of the day", "א' 09:00-24:30"],
     ["minutes out of range", "א' 09:60-17:00"],
+    ["a reversed day span (wraps the week)", "ו'-א' 09:00-17:00"],
+    ["closing before opening (overnight)", "ו' 22:00-02:00"],
   ])("%s → null (the raw text stays on the page)", (_name, raw) => {
     expect(parseHours(raw)).toBeNull();
   });
