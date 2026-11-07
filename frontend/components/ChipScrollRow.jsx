@@ -235,7 +235,8 @@ export default function ChipScrollRow({
   // that layout right after mount: the hook detects overflow and the end
   // spacer below mounts. A mount-only pin lost to the late re-snap, so
   // /favorites opened with «הכל» scrolled out of view. rAF lets the re-snap
-  // land first. Never re-pin once the user has touched the row.
+  // land first. Never re-pin once the user has touched the row — the flag is
+  // never reset on purpose: after a touch, where the row rests is hers.
   const userMovedRowRef = useRef(false);
   useEffect(() => {
     const el = scrollRef.current;
@@ -254,9 +255,11 @@ export default function ChipScrollRow({
         ? categorySet.size > 0
         : Object.values(activeKeys).some(Boolean);
     if (hasActiveFilter || userMovedRowRef.current) return undefined;
-    const frame = requestAnimationFrame(() => {
-      scrollRef.current?.scrollTo({ left: 0, behavior: "instant" });
-    });
+    const pinStart = () => scrollRef.current?.scrollTo({ left: 0, behavior: "instant" });
+    // Synchronous pin keeps the pre-MEH-2823 mount behaviour (no one-frame
+    // flash); the rAF pin runs after WebKit's post-layout re-snap.
+    pinStart();
+    const frame = requestAnimationFrame(pinStart);
     return () => cancelAnimationFrame(frame);
     // Mount + the overflow flip only — selection changes belong to the
     // scrollIntoView effects below.

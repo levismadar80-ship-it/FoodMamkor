@@ -532,18 +532,29 @@ describe("ChipScrollRow — category multi-select + Direction A (MEH-1465 / MEH-
 describe("ChipScrollRow — re-pin to inline-start after overflow appears (MEH-2823)", () => {
   const PIN_START = { left: 0, behavior: "instant" };
 
+  let rafSpy;
+  let cafSpy;
+
   beforeEach(() => {
     // Run rAF callbacks synchronously so the assertion sees the re-pin.
-    vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb) => {
+    rafSpy = vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb) => {
       cb(0);
       return 1;
     });
-    vi.spyOn(window, "cancelAnimationFrame").mockImplementation(() => {});
+    cafSpy = vi.spyOn(window, "cancelAnimationFrame").mockImplementation(() => {});
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
+    // Scoped: restore only the two spies this suite created.
+    rafSpy.mockRestore();
+    cafSpy.mockRestore();
   });
+
+  // Control for the two "no pin" cases: overflow detection really fired (the
+  // end spacer only mounts on hasOverflow), so their silence is not vacuous.
+  function expectOverflowDetected(container) {
+    expect(container.querySelector("div.shrink-0.w-12")).not.toBeNull();
+  }
 
   it("untouched row, no active filter → pins to the start once overflow appears", () => {
     const { container } = renderRow({ activeKey: "all" });
@@ -558,6 +569,7 @@ describe("ChipScrollRow — re-pin to inline-start after overflow appears (MEH-2
     fireEvent.pointerDown(getScroller(container));
     Element.prototype.scrollTo.mockClear();
     setScrollGeometry(container, { scrollWidth: 1000, clientWidth: 500, scrollLeft: -500 });
+    expectOverflowDetected(container);
     expect(getScroller(container).scrollTo).not.toHaveBeenCalled();
   });
 
@@ -565,6 +577,7 @@ describe("ChipScrollRow — re-pin to inline-start after overflow appears (MEH-2
     const { container } = renderRow({ activeKey: "bread" });
     Element.prototype.scrollTo.mockClear();
     setScrollGeometry(container, { scrollWidth: 1000, clientWidth: 500, scrollLeft: -500 });
+    expectOverflowDetected(container);
     expect(getScroller(container).scrollTo).not.toHaveBeenCalled();
   });
 });
