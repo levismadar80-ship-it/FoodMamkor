@@ -78,20 +78,11 @@ const MEDIA_DIR = "/images/join";
 const CLIP_WIDTH = 600;
 const CLIP_HEIGHT = 480;
 const IN_VIEW_RATIO = 0.5;
-const STAGGER_MS = 30;
-// "Forward" (the next group) enters from the inline-END side, so the sign
-// flips with the document direction: /he is RTL, /en is LTR.
-const PANEL_SHIFT_CLASS = {
-  forward: "rtl:-translate-x-[14px] ltr:translate-x-[14px]",
-  back: "rtl:translate-x-[14px] ltr:-translate-x-[14px]",
-};
-// A shelf card counts as "where the swipe came to rest" once this much of it
-// is inside the shelf. At 390px the centred card is ~100% in, its neighbours
-// ~11%, so exactly one card qualifies at a time.
-const SWIPE_SELECT_RATIO = 0.6;
-// How long a TAP's own smooth centring may run. Cards it scrolls past inside
-// that window must not steal the selection back from the tapped card.
-const TAP_SETTLE_MS = 700;
+// A swipe is "done" when the shelf has had no scroll event for this long.
+// Safari has neither scroll-snap events nor (everywhere) `scrollend`, so this
+// quiet period is the portable signal; `scrollend` short-circuits it where it
+// exists. Long enough to outlast the gaps inside a momentum scroll.
+const SETTLE_QUIET_MS = 150;
 // The sticky site header is 96px at its tallest; the stage is never scrolled under it.
 const HEADER_CLEARANCE_PX = 96;
 
@@ -165,6 +156,9 @@ function SampleLabel({ text }) {
 function GroupClip({ group, alt, labels, paused, setPaused }) {
   const videoRef = useRef(null);
   const [inView, setInView] = useState(false);
+  // The poster image underneath stays the visible picture until the clip is
+  // really playing; blocked autoplay (iOS Low Power Mode) then shows no change.
+  const [playing, setPlaying] = useState(false);
 
   useEffect(() => {
     const el = videoRef.current;
@@ -200,7 +194,10 @@ function GroupClip({ group, alt, labels, paused, setPaused }) {
         ref={videoRef}
         data-testid="join-clip"
         data-group={group}
-        className="h-full w-full object-cover"
+        onPlaying={() => setPlaying(true)}
+        className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-150 ease-out motion-reduce:transition-none ${
+          playing ? "opacity-100" : "opacity-0"
+        }`}
         src={`${MEDIA_DIR}/clip-${group}.mp4`}
         poster={`${MEDIA_DIR}/clip-${group}-poster.webp`}
         aria-label={alt}
@@ -227,21 +224,27 @@ function GroupClip({ group, alt, labels, paused, setPaused }) {
 }
 
 /** One media slot (card or stage). The clip when this slot is the live one, else the poster. */
-function GroupMedia({ group, live, alt, labels, paused, setPaused, sizes }) {
+function GroupMedia({ group, live, alt, labels, paused, setPaused }) {
+  // The poster is ALWAYS rendered, from the very file the <video> names as its
+  // poster: one download, cached, and nothing to swap when the selection moves.
+  // Eager, because a lazy image inside a horizontal scroller is not fetched
+  // until it is swiped in — the mid-swipe pop-in measured before (MEH-2799).
+  // Six posters, 11–32 KB each.
+  const poster = `${MEDIA_DIR}/clip-${group}-poster.webp`;
   return (
-    <div className="relative aspect-[5/4] w-full overflow-hidden bg-border">
+    <div data-testid="join-media" className="relative aspect-[5/4] w-full overflow-hidden bg-border">
+      <NextImage
+        src={poster}
+        alt={live ? "" : alt}
+        width={CLIP_WIDTH}
+        height={CLIP_HEIGHT}
+        unoptimized
+        loading="eager"
+        className="h-full w-full object-cover"
+      />
       {live ? (
         <GroupClip key={group} group={group} alt={alt} labels={labels} paused={paused} setPaused={setPaused} />
-      ) : (
-        <NextImage
-          src={`${MEDIA_DIR}/clip-${group}-poster.webp`}
-          alt={alt}
-          width={CLIP_WIDTH}
-          height={CLIP_HEIGHT}
-          sizes={sizes}
-          className="h-full w-full object-cover"
-        />
-      )}
+      ) : null}
       <SampleLabel text={labels.sample} />
     </div>
   );
@@ -293,19 +296,9 @@ function GroupCard({ group, selected, index, onSelect, copy, media }) {
   );
 }
 
-function Panel({ group, features, entered, shiftClass, t, tw }) {
+function Panel({ group, features, t, tw }) {
   const tiles = features.filter((f) => f.tile);
   const rest = features.filter((f) => !f.tile);
-  // At rest a row carries NO transform class. `translate-x-0` still emits a
-  // `transform`, and any transform makes the row a stacking context — which
-  // traps an open toggletip's z-10 inside its own row and lets the NEXT row
-  // paint over it (seen at 390px before this fix).
-  const motion = (i) => ({
-    className: `transition-[opacity,transform] duration-[220ms] ease-out motion-reduce:transition-none motion-reduce:transform-none motion-reduce:opacity-100 ${
-      entered ? "opacity-100" : `${shiftClass} opacity-0`
-    }`,
-    style: { transitionDelay: entered ? `${i * STAGGER_MS}ms` : "0ms" },
-  });
   return (
     <div id="join-panel" data-testid="join-panel" data-group={group}>
       <h3 className="font-headline-md text-xl font-bold text-text">{t(`groups.${group}.label`)}</h3>
@@ -313,14 +306,12 @@ function Panel({ group, features, entered, shiftClass, t, tw }) {
       <ul className="mt-5 grid grid-cols-2 gap-3 min-[700px]:grid-cols-[repeat(auto-fill,minmax(180px,1fr))]">
         {tiles.map((feature, i) => {
           const Icon = TILE_ICONS[feature.tile.icon];
-          const m = motion(i);
           return (
             <li
               key={feature.id}
               data-testid="join-tile"
               data-feature={feature.id}
-              className={`min-w-0 rounded-md border border-border bg-surface-card p-3 ${m.className}`}
-              style={m.style}
+              className="min-w-0 rounded-md border border-border bg-surface-card p-3"
             >
               {Icon ? <Icon size={24} className="text-primary" aria-hidden="true" /> : null}
               <p className="mt-2 font-semibold leading-tight text-text">{t(`items.${feature.id}.tile_title`)}</p>
@@ -331,14 +322,12 @@ function Panel({ group, features, entered, shiftClass, t, tw }) {
       </ul>
       <ul className="mt-5 space-y-2.5">
         {rest.map((feature, i) => {
-          const m = motion(tiles.length + i);
           return (
             <li
               key={feature.id}
               data-testid="join-check-item"
               data-feature={feature.id}
-              className={`relative flex items-start gap-2 leading-relaxed text-text ${m.className}`}
-              style={m.style}
+              className="relative flex items-start gap-2 leading-relaxed text-text"
             >
               <Check size={18} className="mt-1 shrink-0 text-primary" aria-hidden="true" />
               <span className="min-w-0">
@@ -376,7 +365,6 @@ export default function JoinFeatures() {
   const reducedMotion = useMediaQuery(REDUCED_MOTION_QUERY) === true;
 
   const [selected, setSelected] = useState(BUSINESS_FEATURE_GROUPS[0]);
-  const [shiftClass, setShiftClass] = useState(PANEL_SHIFT_CLASS.forward);
   const [entered, setEntered] = useState(true);
   const [clipPaused, setClipPaused] = useState(false);
   // Reduced motion → clips start paused. The query resolves after mount
@@ -384,9 +372,7 @@ export default function JoinFeatures() {
   useEffect(() => {
     if (reducedMotion) setClipPaused(true);
   }, [reducedMotion]);
-  const indexRef = useRef(0);
   const selectedRef = useRef(BUSINESS_FEATURE_GROUPS[0]);
-  const tapSettlingUntilRef = useRef(0);
   const shelfRef = useRef(null);
   const stageRef = useRef(null);
   const panelRef = useRef(null);
@@ -403,10 +389,8 @@ export default function JoinFeatures() {
   const labels = { pause: tj("pause"), play: tj("play"), sample: tj("sample_label") };
 
   /** Change the selection (panel, clip, dots). No scrolling — that is the caller's call. */
-  const applySelection = useCallback((group, index) => {
+  const applySelection = useCallback((group) => {
     if (group === selectedRef.current) return false;
-    setShiftClass(index > indexRef.current ? PANEL_SHIFT_CLASS.forward : PANEL_SHIFT_CLASS.back);
-    indexRef.current = index;
     selectedRef.current = group;
     setEntered(false);
     setSelected(group);
@@ -417,7 +401,6 @@ export default function JoinFeatures() {
   const select = useCallback(
     (group, index) => {
       if (!applySelection(group, index)) return;
-      tapSettlingUntilRef.current = Date.now() + TAP_SETTLE_MS;
       const behavior = reducedMotion ? "auto" : "smooth";
       if (isDesktop) {
         const top = stageRef.current?.getBoundingClientRect().top ?? 0;
@@ -431,28 +414,49 @@ export default function JoinFeatures() {
     [applySelection, isDesktop, reducedMotion],
   );
 
-  // A SWIPE (MEH-2799, Sapir 07/11 on her phone): the card that comes to rest
-  // in the shelf becomes the selection, so the dots, the clip and the panel
-  // move with the finger. It never scrolls anything itself: the page staying
-  // put is the difference between a swipe and a tap. Phone only — from 700px
-  // the list is a column and does not scroll sideways.
+  // A SWIPE (MEH-2799, Sapir 07/11 on her phone): the card the shelf comes
+  // to REST on becomes the selection, so the dots, the clip and the panel
+  // follow the finger. Committed on settle, never mid-gesture — selecting at a
+  // visibility threshold flipped the card while it was still moving, which is
+  // what read as "it reloads". `scrollend` where the browser has it, else a
+  // quiet period with no scroll event (Safari). A swipe never scrolls anything
+  // itself; a tap's own centring also settles on the tapped card, so the cards
+  // it passes are never selected. Phone only — from 700px it is a column.
   useEffect(() => {
     const shelf = shelfRef.current;
-    if (isDesktop !== false || !shelf || typeof IntersectionObserver === "undefined") return undefined;
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (Date.now() < tapSettlingUntilRef.current) return;
-        const resting = entries.filter((e) => e.intersectionRatio >= SWIPE_SELECT_RATIO).pop();
-        const group = resting?.target?.dataset?.group;
-        if (group) applySelection(group, BUSINESS_FEATURE_GROUPS.indexOf(group));
-      },
-      { root: shelf, threshold: [SWIPE_SELECT_RATIO] },
-    );
-    for (const card of shelf.querySelectorAll('[data-testid="join-group-card"]')) io.observe(card);
-    return () => io.disconnect();
+    if (isDesktop !== false || !shelf) return undefined;
+    let quiet = null;
+    const settle = () => {
+      clearTimeout(quiet);
+      quiet = null;
+      const box = shelf.getBoundingClientRect();
+      const middle = box.left + box.width / 2;
+      let nearest = null;
+      let distance = Infinity;
+      for (const card of shelf.querySelectorAll('[data-testid="join-group-card"]')) {
+        const r = card.getBoundingClientRect();
+        const d = Math.abs(r.left + r.width / 2 - middle);
+        if (d < distance) {
+          distance = d;
+          nearest = card;
+        }
+      }
+      if (nearest?.dataset.group) applySelection(nearest.dataset.group);
+    };
+    const onScroll = () => {
+      clearTimeout(quiet);
+      quiet = setTimeout(settle, SETTLE_QUIET_MS);
+    };
+    shelf.addEventListener("scroll", onScroll, { passive: true });
+    shelf.addEventListener("scrollend", settle);
+    return () => {
+      clearTimeout(quiet);
+      shelf.removeEventListener("scroll", onScroll);
+      shelf.removeEventListener("scrollend", settle);
+    };
   }, [isDesktop, applySelection]);
 
-  // Two frames: paint the shifted/transparent start state, then transition in.
+  // Two frames: paint the dimmed start state, then fade the panel in once.
   useEffect(() => {
     if (entered) return undefined;
     const id = requestAnimationFrame(() => requestAnimationFrame(() => setEntered(true)));
@@ -467,7 +471,6 @@ export default function JoinFeatures() {
       labels={labels}
       paused={clipPaused}
       setPaused={setClipPaused}
-      sizes={slot === "stage" ? "480px" : "78vw"}
     />
   );
 
@@ -527,14 +530,18 @@ export default function JoinFeatures() {
             {/* scroll-mt: the sticky site header is ~96px; without it the panel
                 heading lands under the header when the panel scrolls into view. */}
             <div ref={panelRef} className="scroll-mt-24">
-              <Panel
-                group={selected}
-                features={byGroup[selected]}
-                entered={entered}
-                shiftClass={shiftClass}
-                t={t}
-                tw={tw}
-              />
+              {/* One short ease-out fade on the whole panel when the group
+                  changes — dims, never blanks, no slide, no per-row stagger
+                  (MEH-2799: the old 30ms-per-row cascade from opacity 0 read
+                  as a reload). None under reduced motion. */}
+              <div
+                data-testid="join-panel-fade"
+                className={`transition-opacity duration-150 ease-out motion-reduce:transition-none motion-reduce:opacity-100 ${
+                  entered ? "opacity-100" : "opacity-50"
+                }`}
+              >
+                <Panel group={selected} features={byGroup[selected]} t={t} tw={tw} />
+              </div>
             </div>
           </div>
         </div>

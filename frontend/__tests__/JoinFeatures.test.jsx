@@ -167,16 +167,32 @@ describe("panel", () => {
     );
   });
 
-  it("reduced motion: every animated row carries the motion-reduce opt-outs", () => {
+  // Sapir, 07/11: "the move between sections isn't smooth, it looks like it
+  // reloads every time". Measured on staging code: every row dropped to
+  // opacity 0 for ~215ms, then a 30ms-per-row stagger brought them back.
+  // Industry guidance: no stagger on a tab-content swap; one short ease-out.
+  it("a swap animates the PANEL once — no row carries a transition, delay or transform", () => {
     renderFeatures();
+    fireEvent.click(cardButton("found"));
     const rows = [
       ...within(panel()).getAllByTestId("join-tile"),
-      ...within(panel()).getAllByTestId("join-check-item"),
+      ...within(panel()).queryAllByTestId("join-check-item"),
     ];
+    expect(rows.length).toBeGreaterThan(4); // control: the walk found rows
     for (const row of rows) {
-      expect(row.className).toContain("motion-reduce:transition-none");
-      expect(row.className).toContain("motion-reduce:transform-none");
+      expect(row.className, row.dataset.feature).not.toMatch(/transition|translate|duration/);
+      expect(row.style.transitionDelay, row.dataset.feature).toBe("");
     }
+  });
+
+  it("the panel never goes fully transparent on a swap (dims, does not blank)", () => {
+    renderFeatures();
+    fireEvent.click(cardButton("found"));
+    const box = screen.getByTestId("join-panel-fade");
+    expect(box.className).not.toMatch(/(^|\s)opacity-0(\s|$)/);
+    expect(box.className).toMatch(/transition-opacity/);
+    expect(box.className).toContain("motion-reduce:transition-none");
+    expect(box.className).toContain("motion-reduce:opacity-100");
   });
 
   it("a row at rest carries no transform class (else an open tip is painted under the next row)", () => {
@@ -281,92 +297,138 @@ describe("review round 1 (adversarial, #4123)", () => {
     expect(playSpy).not.toHaveBeenCalled();
   });
 
-  it("the panel slide flips with the document direction (RTL /he, LTR /en)", () => {
+  it("no sideways slide in either direction (the swap is a fade only)", () => {
     renderFeatures();
-    fireEvent.click(cardButton("found")); // forward: rows start shifted until the next frames
-    const row = within(panel()).getAllByTestId("join-tile")[0];
-    expect(row.className).toContain("rtl:-translate-x-[14px]");
-    expect(row.className).toContain("ltr:translate-x-[14px]");
-    expect(row.className.split(/\s+/)).not.toContain("-translate-x-[14px]");
+    fireEvent.click(cardButton("found"));
+    expect(screen.getByTestId("join-panel-fade").className).not.toMatch(/translate/);
   });
 
   it("the panel wrapper reserves the sticky header's height when scrolled into view", () => {
     renderFeatures();
-    expect(panel().parentElement.className).toContain("scroll-mt-24");
+    // The scroll target (panelRef) carries it; a fade wrapper may sit between.
+    expect(panel().closest(".scroll-mt-24"), "no ancestor reserves the header height").not.toBeNull();
   });
 });
 
 /**
  * Sapir, 07/11 on her phone: swiping the shelf moved the cards but nothing
- * followed — the dots, the clip and the panel stayed on the previously tapped
- * card. The card that comes to rest in the shelf (≥60% of it inside the
- * shelf) is now the selection. Driven here through the shelf-rooted observer.
+ * followed (#4142 fixed that). Then: the switch felt like a reload — measured,
+ * the selection flipped while the shelf was still moving (at 154 of 252px).
+ * The selection is now committed when the shelf COMES TO REST: on `scrollend`,
+ * or after a short quiet period with no scroll event (Safari's fallback — it
+ * has no scroll-snap events). Scroll events alone never select.
  */
-describe("swipe follows (phone shelf)", () => {
-  const shelfObserver = () => observers.find((io) => io.options?.root === screen.getByTestId("join-shelf"));
-  const cardEl = (group) => cards().find((c) => c.dataset.group === group);
-  const swipeTo = (group, ratio = 0.9) =>
-    act(() => {
-      shelfObserver().callback([{ target: cardEl(group), intersectionRatio: ratio, isIntersecting: ratio > 0 }]);
+describe("swipe follows, on settle (phone shelf)", () => {
+  // jsdom lays nothing out: put the named card in the middle of the shelf.
+  function centre(group) {
+    vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function box() {
+      if (this.dataset?.testid === "join-shelf") return { left: 0, width: 390, top: 0, height: 400, right: 390 };
+      if (this.dataset?.testid === "join-group-card") {
+        const left = this.dataset.group === group ? 45 : 2000;
+        return { left, width: 300, top: 0, height: 400, right: left + 300 };
+      }
+      return { left: 0, width: 0, top: 0, height: 0, right: 0 };
     });
+  }
+  const shelf = () => screen.getByTestId("join-shelf");
 
-  it("phone: the shelf is observed with the shelf itself as the root", () => {
-    renderFeatures();
-    expect(shelfObserver(), "no IntersectionObserver rooted on the shelf").toBeTruthy();
-    expect(shelfObserver().targets).toHaveLength(BUSINESS_FEATURE_GROUPS.length);
-  });
-
-  it("a card that comes to rest in the shelf becomes the selection — dots, clip and panel follow", () => {
-    renderFeatures();
-    swipeTo("contact");
-    expect(cardButton("contact").getAttribute("aria-pressed")).toBe("true");
-    expect(panel().dataset.group).toBe("contact");
-    expect(screen.getByTestId("join-clip").dataset.group).toBe("contact");
-    const dots = screen.getAllByTestId("join-shelf-dot");
-    expect(dots.map((d) => d.dataset.active)).toEqual(
-      BUSINESS_FEATURE_GROUPS.map((g) => (g === "contact" ? "true" : "false")),
-    );
-  });
-
-  it("a swipe never scrolls the page or re-scrolls the shelf (only a tap does)", () => {
-    renderFeatures();
-    const shelf = screen.getByTestId("join-shelf");
-    shelf.scrollBy = vi.fn();
-    const pageScroll = vi.spyOn(Element.prototype, "scrollIntoView").mockImplementation(() => {});
-    pageScroll.mockClear();
-    swipeTo("found");
-    expect(cardButton("found").getAttribute("aria-pressed")).toBe("true");
-    expect(shelf.scrollBy).not.toHaveBeenCalled();
-    expect(pageScroll).not.toHaveBeenCalled();
-  });
-
-  it("a card only partly in the shelf (a neighbour peeking in) does not select", () => {
-    renderFeatures();
-    swipeTo("found", 0.2);
-    expect(cardButton("page").getAttribute("aria-pressed")).toBe("true");
-  });
-
-  it("while a TAP is centring its card, the cards it scrolls past do not steal the selection", () => {
+  it("scroll events while the shelf is still moving never change the selection", () => {
     vi.useFakeTimers();
     try {
       renderFeatures();
-      fireEvent.click(cardButton("return"));
-      swipeTo("contact"); // passed on the way
-      expect(cardButton("return").getAttribute("aria-pressed")).toBe("true");
-      act(() => {
-        vi.advanceTimersByTime(1000);
-      });
-      swipeTo("trust"); // a real swipe, after the tap has settled
-      expect(cardButton("trust").getAttribute("aria-pressed")).toBe("true");
+      centre("contact");
+      for (let i = 0; i < 5; i += 1) {
+        fireEvent.scroll(shelf());
+        act(() => {
+          vi.advanceTimersByTime(30);
+        });
+      }
+      expect(cardButton("page").getAttribute("aria-pressed")).toBe("true");
     } finally {
       vi.useRealTimers();
     }
   });
 
-  it("desktop: the list is a column there, so nothing observes it", () => {
+  it("once scrolling stops (quiet period), the centred card is the selection — dots, clip, panel follow", () => {
+    vi.useFakeTimers();
+    try {
+      renderFeatures();
+      centre("contact");
+      fireEvent.scroll(shelf());
+      act(() => {
+        vi.advanceTimersByTime(400);
+      });
+      expect(cardButton("contact").getAttribute("aria-pressed")).toBe("true");
+      expect(panel().dataset.group).toBe("contact");
+      expect(screen.getByTestId("join-clip").dataset.group).toBe("contact");
+      expect(screen.getAllByTestId("join-shelf-dot").map((d) => d.dataset.active)).toEqual(
+        BUSINESS_FEATURE_GROUPS.map((g) => (g === "contact" ? "true" : "false")),
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("`scrollend` commits at once, without waiting for the quiet period", () => {
+    renderFeatures();
+    centre("trust");
+    fireEvent(shelf(), new Event("scrollend"));
+    expect(cardButton("trust").getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("a swipe never scrolls the page or re-scrolls the shelf (only a tap does)", () => {
+    renderFeatures();
+    centre("found");
+    shelf().scrollBy = vi.fn();
+    const pageScroll = vi.spyOn(Element.prototype, "scrollIntoView").mockImplementation(() => {});
+    pageScroll.mockClear();
+    fireEvent(shelf(), new Event("scrollend"));
+    expect(cardButton("found").getAttribute("aria-pressed")).toBe("true");
+    expect(shelf().scrollBy).not.toHaveBeenCalled();
+    expect(pageScroll).not.toHaveBeenCalled();
+  });
+
+  it("desktop: the list is a column, so its scroll events select nothing", () => {
     mockMatchMedia({ [DESKTOP]: true });
     renderFeatures();
-    expect(shelfObserver()).toBeUndefined();
+    centre("contact");
+    fireEvent(shelf(), new Event("scrollend"));
+    expect(cardButton("page").getAttribute("aria-pressed")).toBe("true");
+  });
+});
+
+/**
+ * Stable media: every card shows its poster from the SAME file the <video>
+ * uses as its poster, and the clip sits ON TOP, invisible until it is really
+ * playing. Measured before: selecting swapped an optimised /_next/image poster
+ * for a <video> whose poster was a different URL — a second download and a
+ * blank flash; and blocked autoplay (iOS Low Power Mode) left a bare player.
+ */
+describe("stable media", () => {
+  it("the live slot keeps its poster image under the clip, from the same file", () => {
+    renderFeatures();
+    const video = screen.getByTestId("join-clip");
+    const slot = video.closest('[data-testid="join-media"]');
+    const img = slot.querySelector("img");
+    expect(img, "the poster disappeared when the clip mounted").not.toBeNull();
+    expect(img.getAttribute("src")).toBe("/images/join/clip-page-poster.webp");
+    expect(video.getAttribute("poster")).toBe(img.getAttribute("src"));
+  });
+
+  it("every card poster is the raw file (no /_next/image variant to download twice)", () => {
+    renderFeatures();
+    const posters = screen.getAllByTestId("join-media").map((s) => s.querySelector("img").getAttribute("src"));
+    expect(posters.length).toBeGreaterThanOrEqual(BUSINESS_FEATURE_GROUPS.length);
+    for (const src of posters) expect(src).toMatch(/^\/images\/join\/clip-[a-z]+-poster\.webp$/);
+  });
+
+  it("the clip is invisible until it is actually playing, then fades in", () => {
+    renderFeatures();
+    const video = screen.getByTestId("join-clip");
+    expect(video.className).toContain("opacity-0");
+    fireEvent(video, new Event("playing"));
+    expect(video.className).toContain("opacity-100");
+    expect(video.className).not.toMatch(/(^|\s)opacity-0(\s|$)/);
   });
 });
 
