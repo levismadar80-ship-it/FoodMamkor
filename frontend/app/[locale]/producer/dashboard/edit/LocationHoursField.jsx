@@ -45,7 +45,33 @@ import {
 const TIME_INPUT_CLASS =
   "numeric min-h-touch text-sm border border-border rounded-sm px-2 py-1 bg-surface";
 
-export default function LocationHoursField({ value, onChange, onValidityChange = () => {} }) {
+// MEH-2819: where these hours appear on the business page — by the location's
+// kind, because the place really differs: the primary location feeds «שעות»
+// (resolveStoreHours); a pickup point / market stall is listed under
+// «איסוף עצמי» (DeliveryBlock PickupRow, any kind of those two); every other
+// point shows them only in its map popup (MiniMap.jsx:209). Primary wins.
+// One entry per kind in LocationInputSchema (lib/schemas.js) — pinned by
+// LocationHoursField.test.jsx, so a new kind fails a test instead of silently
+// inheriting the map-popup line.
+export const WHERE_KEY_BY_KIND = Object.freeze({
+  branch: "hours_where_map",
+  pickup: "hours_where_pickup",
+  market_stand: "hours_where_pickup",
+});
+
+// An unknown kind gets NO line: a wrong «where it appears» is worse than none.
+function whereKey(isPrimary, kind) {
+  if (isPrimary) return "hours_where_primary";
+  return WHERE_KEY_BY_KIND[kind] ?? null;
+}
+
+export default function LocationHoursField({
+  value,
+  onChange,
+  onValidityChange = () => {},
+  isPrimary = false,
+  kind = "branch",
+}) {
   const t = useTranslations("dashboard.producer.order_window");
   const tForm = useTranslations("settings.locations.form");
   const tDays = useTranslations("opening_hours.weekdays");
@@ -62,6 +88,7 @@ export default function LocationHoursField({ value, onChange, onValidityChange =
     [stored],
   );
 
+  const where = whereKey(isPrimary, kind);
   const issueByDay = new Map(dayIssues(days).map((issue) => [issue.index, issue.reason]));
 
   // Every edit goes through here: the new model, its canonical string upward,
@@ -98,6 +125,11 @@ export default function LocationHoursField({ value, onChange, onValidityChange =
     // the first control.
     <fieldset className="text-xs" data-testid="location-hours">
       <legend className="mb-1 block font-medium text-fg-muted">{tForm("hours_label")}</legend>
+      {where && (
+        <p className="mb-2 text-2xs text-fg-muted" data-testid="location-hours-where">
+          {tForm(where)}
+        </p>
+      )}
 
       {unreadable && (
         <p className="mb-2 flex items-start gap-1.5 text-xs text-text" role="status" data-testid="location-hours-unreadable">

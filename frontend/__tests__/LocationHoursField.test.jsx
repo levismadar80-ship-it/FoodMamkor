@@ -13,7 +13,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 import { parseHours } from "@/lib/hours";
-import LocationHoursField from "@/app/[locale]/producer/dashboard/edit/LocationHoursField";
+import LocationHoursField, { WHERE_KEY_BY_KIND } from "@/app/[locale]/producer/dashboard/edit/LocationHoursField";
+import { LocationInputSchema } from "@/lib/schemas";
+import he from "@/messages/he.json";
+import en from "@/messages/en.json";
 import LocationsEditor from "@/app/[locale]/producer/dashboard/edit/LocationsEditor";
 
 // Same harness as __tests__/LocationsEditor.test.jsx (URL-aware api, echoing
@@ -96,6 +99,56 @@ describe("LocationHoursField — prefill (MEH-2805 AC 3)", () => {
     expect(openDays()).toEqual([]);
     expect(screen.queryByTestId("location-hours-unreadable")).toBeNull();
     expect(screen.getAllByText("opening_hours.closed_day")).toHaveLength(7);
+  });
+});
+
+// MEH-2819: the dashboard field standard's «where it appears» line, by kind —
+// the hours really appear in a different place for each.
+describe("LocationHoursField — where it appears (MEH-2819)", () => {
+  const where = () => screen.getByTestId("location-hours-where").textContent;
+  it.each([
+    ["the primary location → the «שעות» section", { isPrimary: true, kind: "branch" }, "hours_where_primary"],
+    ["a primary pickup point → still «שעות» (primary wins)", { isPrimary: true, kind: "pickup" }, "hours_where_primary"],
+    ["a pickup point → under «איסוף עצמי»", { isPrimary: false, kind: "pickup" }, "hours_where_pickup"],
+    ["a market stall → under «איסוף עצמי»", { isPrimary: false, kind: "market_stand" }, "hours_where_pickup"],
+    ["another branch → its map popup", { isPrimary: false, kind: "branch" }, "hours_where_map"],
+  ])("%s", (_name, props, key) => {
+    render(<LocationHoursField value="" onChange={vi.fn()} {...props} />);
+    expect(where()).toBe(`settings.locations.form.${key}`);
+  });
+
+  it("every location kind the schema accepts has its own deliberate entry", () => {
+    expect(Object.keys(WHERE_KEY_BY_KIND).sort()).toEqual([...LocationInputSchema.shape.kind.options].sort());
+  });
+
+  it("all three keys exist in he.json and en.json", () => {
+    for (const messages of [he, en]) {
+      const form = messages.settings.locations.form;
+      for (const key of ["hours_where_primary", "hours_where_pickup", "hours_where_map"]) {
+        expect(typeof form[key] === "string" && form[key].length > 0, key).toBe(true);
+      }
+    }
+  });
+
+  it("an unknown kind gets no line at all — never a guessed place", () => {
+    render(<LocationHoursField value="" onChange={vi.fn()} isPrimary={false} kind="farm_gate" />);
+    expect(screen.queryByTestId("location-hours-where")).toBeNull();
+  });
+
+  // The pickup line quotes a section heading; it must be the heading the page
+  // actually shows (DeliveryBlock reads group_buys.delivery.pickup), per locale.
+  it("the pickup line quotes the real «איסוף עצמי» / «Self pickup» heading", () => {
+    for (const messages of [he, en]) {
+      const heading = messages.group_buys.delivery.pickup;
+      expect(messages.settings.locations.form.hours_where_pickup).toContain(`«${heading}»`);
+    }
+  });
+
+  it("the form passes its live kind and primary flag (LocationsEditor)", async () => {
+    await openEditForm({ ...ROW, is_primary: true, opening_hours: "" });
+    expect(screen.getByTestId("location-hours-where").textContent).toBe(
+      "settings.locations.form.hours_where_primary",
+    );
   });
 });
 
