@@ -3428,7 +3428,7 @@ class TestVacationBadgeClear:
 # ---------- MEH-291: availability_state consolidation (Phase 2) ----------
 
 class TestAvailabilityState:
-    """4-value enum that consolidates is_available_today + availability_status.
+    """Pause-only enum (2 values since MEH-2782) that consolidates is_available_today + availability_status.
 
     Phase 2 shipped the endpoint, the dual-write mirror, the auto-clear and
     the ?availability_state= filter. MEH-2271 (MEH-1854 chunk 3a) removed the
