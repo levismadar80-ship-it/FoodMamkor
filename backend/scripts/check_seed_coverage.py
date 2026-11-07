@@ -243,21 +243,25 @@ SEEDED_SURFACES = [
 # legitimate and must not fail the gate. Sapir's ruling, 07/11: reword the
 # reasons, move nothing.
 #
-# This distinction is not pedantry. The old wording for
-# `producer_analytics_daily` read as a prohibition, it was overridden on that
-# reading, and the override shipped a real defect (MEH-2801 — a row for today
-# lifts the GLOBAL roll-up watermark and strands every unrolled day beneath it
-# for every producer). A reason that says "may be empty" when it means
-# "seeding this is dangerous" is how that happened.
+# Worth one line rather than none: the old `producer_analytics_daily` wording
+# read as a prohibition, was overridden on that reading, and the override
+# shipped MEH-2801. A reason that says "may be empty" where it means "seeding
+# this is dangerous" is how. The rest of that story is on the ticket.
 # ---------------------------------------------------------------------------
+# The shared tail for a table the demo seed DOES fill. One constant rather than
+# the same sentence pasted per entry, so the next reword is one edit — the
+# argument this change is making, applied to itself (reviewer on #4134).
+_SEEDED_MAY_BE_EMPTY = (
+    "SEEDED for the demo business since MEH-2794, per DEMO_INSIGHTS in "
+    "seed_demo_business.py; may be empty in a local or CI database, so the "
+    "gate must not require it"
+)
+
 EXEMPT_TABLES = {
     # MEH-1706 §2 items 10-13 — the amber rows, explicitly out of chunk B scope.
-    "producer_page_views": "analytics — runtime telemetry, item 10; SEEDED for the demo business since MEH-2794, per DEMO_INSIGHTS in seed_demo_business.py; may be empty "
-    "in a local or CI database, so the gate must not require it",
-    "producer_contact_clicks": "analytics — runtime telemetry, item 10; SEEDED for the demo business since MEH-2794, per DEMO_INSIGHTS in seed_demo_business.py; may be empty "
-    "in a local or CI database, so the gate must not require it",
-    "producer_whatsapp_clicks": "analytics — runtime telemetry, item 10; SEEDED for the demo business since MEH-2794, per DEMO_INSIGHTS in seed_demo_business.py; may be empty "
-    "in a local or CI database, so the gate must not require it",
+    "producer_page_views": f"analytics — runtime telemetry, item 10; {_SEEDED_MAY_BE_EMPTY}",
+    "producer_contact_clicks": f"analytics — runtime telemetry, item 10; {_SEEDED_MAY_BE_EMPTY}",
+    "producer_whatsapp_clicks": f"analytics — runtime telemetry, item 10; {_SEEDED_MAY_BE_EMPTY}",
     # MEH-2079 chunk A — the daily roll-up of the raw tables above.
     #
     # The comment that stood here said chunk A creates this table with NO
@@ -271,10 +275,9 @@ EXEMPT_TABLES = {
     # partitions at it. A seeded row ABOVE the watermark therefore strands every
     # unrolled day beneath it, for every producer, permanently. The seed writes
     # only at or below the watermark for that reason.
-    "producer_analytics_daily": "MEH-2079 analytics roll-up — seeded only for the demo producer, staging only, never above the watermark (MEH-2801); may be empty elsewhere, so the gate must not require it",
+    "producer_analytics_daily": "MEH-2079 analytics roll-up — seeded only for the demo producer, staging only, never above the watermark; enforced by _seed_insights in seed_demo_business.py and pinned by tests/test_meh2801_seed_watermark.py, not by this gate (MEH-2801); may be empty elsewhere, so the gate must not require it",
     "search_queries": "analytics — runtime telemetry, item 10 (out of scope)",
-    "favorites": "consumer action — item 11; SEEDED for the demo business since MEH-2794, per DEMO_INSIGHTS in seed_demo_business.py; may be empty "
-    "in a local or CI database, so the gate must not require it",
+    "favorites": f"consumer action — item 11; {_SEEDED_MAY_BE_EMPTY}",
     "favorite_alerts": "consumer action — item 11 (out of scope)",
     "reports": "admin queue — item 12 (out of scope)",
     "category_requests": "admin queue — item 12 (out of scope)",
@@ -289,8 +292,7 @@ EXEMPT_TABLES = {
     "home_products": "neighbour-products surface — item 13 (out of scope)",
     "home_product_ratings": "neighbour-products surface — item 13 (out of scope)",
     "home_product_whatsapp_clicks": "neighbour-products surface — item 13 (out of scope)",
-    "producer_offers": "MEH-1823 offers — SEEDED for the demo business since MEH-2794 via _seed_offer (the follow-up this line used to "
-    "anticipate has shipped), but may be empty in a local or CI database, so the gate must not require it",
+    "producer_offers": f"MEH-1823 offers (the follow-up this line used to anticipate has shipped) — {_SEEDED_MAY_BE_EMPTY}",
     # Infrastructure / runtime-only tables: nothing to seed by design.
     "admin_settings": "runtime config, written by the admin panel",
     "alert_log": "runtime log",

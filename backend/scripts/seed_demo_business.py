@@ -416,13 +416,13 @@ DEMO_REVIEWS = [
 # EMPTY" — `_empty_surfaces()` only ever reads SEEDED_SURFACES, so a row here
 # cannot red the gate.
 #
-# RESOLVED under MEH-2800: those exemption reasons now say that these tables
-# are seeded for the demo business and may still be empty elsewhere, which is
-# why they stay exempt rather than moving to SEEDED_SURFACES — a local or CI
-# database with none of them is legitimate and must not fail the gate (Sapir's
-# ruling, 07/11). `producer_analytics_daily`'s reason also carries the cost
-# the old wording left out: a row above the roll-up watermark strands every
-# unrolled day beneath it, for every producer (MEH-2801).
+# Those exemption reasons say that these tables are seeded for the demo
+# business and may still be empty elsewhere, which is why they stay exempt
+# rather than living in SEEDED_SURFACES: a local or CI database with none of
+# them is legitimate and must not fail the gate. `producer_analytics_daily`'s
+# reason also carries the cost of getting it wrong — a row above the roll-up
+# watermark strands every unrolled day beneath it, for every producer
+# (MEH-2801). History: MEH-2800.
 # ---------------------------------------------------------------------------
 
 # An active first-order discount. `starts_at=None` means "active now"
