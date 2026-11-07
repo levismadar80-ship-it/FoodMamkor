@@ -3665,7 +3665,7 @@
       },
       "reviews": {
         "q": "What happens if someone writes a hurtful review about me anonymously?",
-        "a": "They can't. On Mehamakor there are no anonymous ratings — every review appears with a real name and a real story. And if something still isn't right, write to us and we'll look into it."
+        "a": "Not anonymously: writing a review requires a signed-in account, and only people who contacted the business through Mehamakor, or got a review link from it, can write one. You can reply to any review, and if something isn't right, write to us and we'll look into it."
       },
       "license": {
         "q": "Why do you require a licence — and what if I'm still in the process?",
