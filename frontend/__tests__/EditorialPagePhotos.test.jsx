@@ -22,6 +22,11 @@ vi.mock("next/link", () => ({
   default: ({ children, href, ...props }) => <a href={href} {...props}>{children}</a>,
 }));
 vi.mock("@/components/BusinessCtaLink", () => ({ default: ({ children }) => <a>{children}</a> }));
+// MEH-2799: /join mounts two client islands with their own suites
+// (JoinFeatures.test.jsx, JoinStickyBar.test.jsx); stubbed so this file stays
+// about the editorial photo.
+vi.mock("@/components/join/JoinFeatures", () => ({ default: () => <section data-testid="join-features" /> }));
+vi.mock("@/components/join/JoinStickyBar", () => ({ default: () => <div data-testid="join-sticky-bar" /> }));
 vi.mock("next/image", () => ({
   // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
   default: ({ fill, priority, ...props }) => <img data-priority={String(!!priority)} {...props} />,
