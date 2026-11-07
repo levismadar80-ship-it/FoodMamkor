@@ -1,0 +1,45 @@
+[
+  {
+    "id": 9101,
+    "title": "סדנת אפייה של לחם מחמצת מקמח מלא שנטחן באבן, בוקר שלם במאפייה",
+    "description": "לשים, מתפיחים, אופים ולוקחים הביתה כיכר אחת. מתאים גם למתחילים, כל הציוד במקום.",
+    "event_date": "2026-07-21",
+    "event_time": "09:30:00",
+    "price": 60,
+    "producer_id": 1,
+    "producer_name": "רוח השדה",
+    "owner_kind": "producer",
+    "city": "זכרון יעקב",
+    "category": "סדנה",
+    "image_url": "https://res.cloudinary.com/dfzpscjks/image/upload/mehamakor/vrt/event-a"
+  },
+  {
+    "id": 9102,
+    "title": "שוק איכרים",
+    "description": null,
+    "event_date": "2026-07-24",
+    "event_time": "08:00:00",
+    "price": 0,
+    "producer_id": 2,
+    "producer_name": "שוק גלם",
+    "owner_kind": "organizer",
+    "city": "חיפה",
+    "category": "שוק",
+    "image_url": "https://res.cloudinary.com/dfzpscjks/image/upload/mehamakor/vrt/event-b"
+  },
+  {
+    "id": 9103,
+    "title": "קטיף זיתים במשק",
+    "description": "קוטפים יחד ומסיימים בטעימת שמן.",
+    "event_date": "2026-07-28",
+    "event_time": "07:00:00",
+    "price": 40,
+    "producer_id": 3,
+    "producer_name": "משק ברק",
+    "owner_kind": "producer",
+    "city": "קצרין",
+    "category": "קטיף",
+    "image_url": null,
+    "owner_image_url": null
+  }
+]
