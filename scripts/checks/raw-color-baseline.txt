@@ -132,6 +132,7 @@ frontend/app/[locale]/producer/dashboard/page.js:bg-yellow-50
 frontend/app/[locale]/producer/dashboard/page.js:border-yellow-200
 frontend/app/[locale]/producer/dashboard/page.js:text-yellow-700
 frontend/app/[locale]/producer/dashboard/page.js:text-yellow-800
+frontend/app/[locale]/producer/dashboard/qr-card/page.js:text-black
 frontend/app/[locale]/producer/dashboard/rescue/counter-card/page.js:text-black
 frontend/app/global-error.js:hex:#1f2a24
 frontend/app/global-error.js:hex:#234f3f
@@ -352,3 +353,5 @@ frontend/lib/producer-status.js:bg-yellow-100
 frontend/lib/producer-status.js:text-gray-700
 frontend/lib/producer-status.js:text-slate-700
 frontend/lib/producer-status.js:text-yellow-800
+frontend/lib/qr.js:hex:#2e6853
+frontend/lib/qr.js:hex:#ffffff

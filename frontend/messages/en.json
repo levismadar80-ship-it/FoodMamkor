@@ -731,7 +731,8 @@
       "description_category": "{name} — a local business. {category}",
       "description_name": "{name} — a local business",
       "not_found": "Business not found | {brand}",
-      "country": "Israel"
+      "country": "Israel",
+      "offer_catalog_name": "Products"
     }
   },
   "producer": {
@@ -3665,7 +3666,7 @@
       },
       "reviews": {
         "q": "What happens if someone writes a hurtful review about me anonymously?",
-        "a": "They can't. On Mehamakor there are no anonymous ratings — every review appears with a real name and a real story. And if something still isn't right, write to us and we'll look into it."
+        "a": "Not anonymously: writing a review requires a signed-in account, and only people who contacted the business through Mehamakor, or got a review link from it, can write one. You can reply to any review, and if something isn't right, write to us and we'll look into it."
       },
       "license": {
         "q": "Why do you require a licence — and what if I'm still in the process?",
@@ -4289,6 +4290,14 @@
         "copy_cta": "Copy link",
         "share_cta": "Share on WhatsApp",
         "wa_text_template": "My profile on Mehamakor: {url}"
+      },
+      "qr": {
+        "title": "QR code for your page",
+        "body": "Print it and put it by the till, on your stall or on your packaging. Anyone who scans it lands straight on your Mehamakor page.",
+        "download_svg": "Download for print (SVG)",
+        "download_png": "Download as image (PNG)",
+        "print_card": "Print card",
+        "hint": "Before you print a lot, scan it once with your phone and check the page opens."
       },
       "states": {
         "zero_activity_title": "Views and clicks",
@@ -5716,6 +5725,11 @@
       "whatsapp_group": "WhatsApp group",
       "external_order": "Order form"
     }
+  },
+  "qr_card": {
+    "cta": "Scan to see our page on Mehamakor",
+    "print_hint": "The card is A6. When printing, choose 100%, not fit to page.",
+    "back": "Back to dashboard"
   },
   "rescue": {
     "page": {
