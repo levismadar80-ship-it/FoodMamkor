@@ -556,17 +556,37 @@ async function preflight(browser) {
     // completely empty DOM. A guard that cannot fail, introduced while fixing
     // a guard that could not fail (MEH-2821). The length check reads the DOM
     // and only the DOM; the cleanliness check reads both.
-    // innerText, NOT textContent: textContent includes <script> and <style>,
-    // and Next inlines a large RSC flight payload there. Measured on staging
-    // at this exact moment (domcontentloaded): textContent("body") is 203,328
-    // characters, 200,836 of them script/style — so a 500-character floor
-    // over it passes on any page that merely loaded its bundle, rendered or
-    // not. innerText is 563 there, which is the visible text this is about.
+    // WAIT FOR A LANDMARK, THEN READ VISIBLE TEXT. Two separate reasons, both
+    // measured on staging:
     //
-    // 563 against a floor of 500 is thin, and that is worth knowing rather
-    // than tuning blind: the floor still separates a catastrophically empty
-    // page from a real one, which is its job, but it is not a margin to lean
-    // on. Raise it only against a measurement, not a hunch.
+    //   textContent("body") includes <script>/<style>, and Next inlines a
+    //   large RSC flight payload there — 203,328 characters at this point, of
+    //   which 200,836 are script. A 500-character floor over that passes on
+    //   any page that merely loaded its bundle. innerText is the visible text
+    //   the check is actually about.
+    //
+    //   At `domcontentloaded` innerText is only 563, a 63-character margin
+    //   over the floor: thin enough that a copy trim or slow hydration could
+    //   fail the pre-flight on a perfectly healthy page. After the products
+    //   section renders it is 2,537 — a 2,037-character margin. So the wait
+    //   is what makes the floor mean "nothing rendered" instead of "the page
+    //   was read too early".
+    //
+    // The landmark is NOT here to make the "(בדיקה)" check work — the API
+    // does that, and a render-timed DOM read is what made that check useless
+    // in the first place. It is here so the LENGTH check measures a rendered
+    // page. A page that never reaches this state is a real pre-flight
+    // failure, which is why the catch records a problem rather than passing.
+    await page
+      .locator("#section-products")
+      .first()
+      .waitFor({ state: "visible", timeout: 30_000 })
+      .catch(() => {
+        problems.push(
+          "the business page never rendered its products section — nothing " +
+            "below this point was measured against a rendered page",
+        );
+      });
     const domText = await page.innerText("body").catch(() => "");
     if (!domText || domText.length < 500)
       problems.push("the business page rendered almost no text");
