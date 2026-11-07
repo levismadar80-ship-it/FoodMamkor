@@ -4,6 +4,23 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-07 08:15 — ‏QR לעמוד העסק, בוטי חיפוש AI, מוצרים ב-JSON-LD (#4102–#4105)
+
+**‏שורה אחת:** ארבעה PRs פתוחים וממתינים למיזוג — ‏#4102 (נוסח ביקורות ב-FAQ), ‏#4103 ‏(robots.txt + llms.txt), ‏#4104 ‏(QR + כרטיס A6), ‏#4105 ‏(hasOfferCatalog). אף אחד לא מוזג. ‏MEH-2787 נעצר בלי PR.
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏**`lib/seo.js` לא מקבל מחרוזות עברית.** ‏`HebrewLiteralRatchet.test.js` נותן לו הקצבה 0, והוא האדים ניסיון ראשון להחזיק שם את שם הקטלוג. הקופי יושב ב-`messages/{he,en}.json` תחת `seo.producer.offer_catalog_name` ונקרא דרך `producerSeoT()` שכבר קיים בקובץ — אותו מנגנון כמו פירור המדינה של MEH-2774. טקסט חדש בקובץ הזה הולך לשם.
+- ‏**`scripts/checks/raw-color-tokens.sh` סופר גם הערות.** הסבר שמאיית `bg-white` או ערך hex בתוך `{/* */}` מייצר ממצא פנטום, בדיוק כמו מלכודת טוקני ה-z-index ב-`rtl.md`. לכתוב בלי התו המדויק.
+- ‏**לכל מסלול הדפסה: אסור `<a>` בתוך מה שמודפס.** ‏`globals.css:614` מוסיף ` (href)` אחרי כל קישור בהדפסה, כך שקישור בתוך הכרטיס מדפיס את הכתובת שלו כטקסט נראה. ב-#4104 ה-`BackLink` הוא ה-anchor היחיד והוא `print:hidden`, והדומיין מתחת לקוד הוא טקסט רגיל בכוונה.
+- ‏**בועת הצ'אט מודפסת בכל מסלול הדפסה** — נמדד תחת `emulateMedia({media:"print"})`. ‏`ChatWidgetLazy` ממוסך רק מ-`/map`, ‏`/producer/[id]` ו-`/favorites`, ואין עליו `no-print`, ולכן זה חל גם על כרטיס הקופה הקיים (MEH-2649). דווח ב-#4104, לא תוקן (מחוץ להיקף).
+- ‏**ל-`Product` אין עמודת נראות.** ‏`models.py:1050-1078` ו-`ProductOut` (`schemas.py:1784`) — אין `is_hidden`/`is_active`, והעמוד מרנדר כל שורה שה-API מחזיר. מי שמבקש «לא להציג מוצר מוסתר» מבקש משהו שלא קיים.
+- ‏**`GET /producers` ממוין לא-יציב.** ‏`ORDER BY created_at DESC` ויחידה (`producer_listing.py:329`), בלי שובר-שוויון, ו-`created_at` nullable (`models.py:497`). כל לולאת offset מעליו מדלגת על שורות. זה מה שעצר את MEH-2787.
+- ‏**לצילומי QA של מסכים מאחורי התחברות:** אין DB ב-sandbox, אז `frontend/qa-meh2785-shots.mjs` חוסם ארבע קריאות `/api` ומזריק token. הוא נופל ברעש אם האלמנט לא שם — מה שתפס fixture חסר `opening_hours` בפורמט ש-`resolveStoreHours` קורא. ה-Chromium של ה-sandbox הוא `/opt/pw-browsers/chromium-*/chrome-linux64/chrome`; ‏`qa-chrome-path.mjs` מחזיר `undefined` כאן.
+
+**‏לא עכשיו / מחכה לספיר:** מיזוג ארבעת ה-PRs (אף אחד לא מוזג, ואין auto-merge) · סריקת ה-QR משני טלפונים אמיתיים (#4104) · ‏`validator.schema.org` על עמוד עסק (#4105) — חסום מה-sandbox · הכרעה על בועת הצ'אט בהדפסה · ‏MEH-2787: להרחיב את ההיקף ל-`producer_listing.py` או לפתוח כרטיס-בן backend.
+
+**‏הבא:** ‏MEH-2782 (אחרי ההשקה).
+
 ## 2026-11-06 20:15 — מצב העסק: רק «פתוח» / «בהפסקה» (MEH-2757)
 
 **‏שורה אחת:** ‏#4062, #4066, #4074 ו-#4079 מוזגו (פירוט ב-CHANGELOG, ‏06/11). ‏MEH-2758 ו-MEH-2759 במצב Done.
