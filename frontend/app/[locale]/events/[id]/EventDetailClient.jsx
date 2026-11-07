@@ -28,7 +28,7 @@ import Breadcrumb from "@/components/Breadcrumb";
 import ShareButton from "@/components/ShareButton";
 import SaveButton from "@/components/SaveButton";
 import OwnerRow from "@/components/OwnerRow";
-import EventEntryRow, { CATEGORY_ICON } from "@/components/EventEntryRow";
+import EventEntryRow, { CATEGORY_ICON, PRICE_BASE } from "@/components/EventEntryRow";
 import { toEventEntry } from "@/lib/event-entry";
 import { eventWhen, addressNavLinks } from "@/lib/event-when";
 import { AddressNavLinks } from "@/components/NavAppGlyphs";
@@ -330,8 +330,11 @@ export default function EventDetailClient() {
             )}
             <div className={`${infoRow} border-t border-border`}>
               <span className={infoIcon}><Coins size={18} aria-hidden="true" /></span>
-              {/* MEH-1031: bidi-isolate the price (currency+number) so it can't flip in RTL */}
-              <p className="font-semibold text-accent">
+              {/* MEH-1031: bidi-isolate the price (currency+number) so it can't flip in RTL.
+                  MEH-2804 / ADR-039: the same display-numeral token as the event
+                  row (Frank Ruhl bold, primary) for free and paid alike — minus
+                  ms-auto, since here it sits beside its icon, not at the row end. */}
+              <p className={`${PRICE_BASE} text-primary`} data-testid="event-detail-price">
                 {event.price > 0 ? <span dir="ltr">{formatPrice(event.price)}</span> : t("free")}
               </p>
             </div>
