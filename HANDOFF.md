@@ -4,6 +4,33 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-07 18:46 — ‏/join v2 בשלושה PR: ספר המותג, הרישום והדף (#4118, #4119, #4123)
+
+**‏שורה אחת:** ‏#4118 (BRAND §6 + COPY_BANK) ו-#4119 (24 אריחים, 6 כרטיסים וקופי) מוזגו. ‏#4123 (הדף עצמו) פתוח ומחכה ל-«go merge» של ספיר אחרי בדיקה בנייד. ה-PR הזה (docs-only) ממוזג **אחריו**.
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏**אין preview לענף feature** (MEH-2062): ‏`list_deployments` על הענף של #4123 החזיר 0. צילומי ה-PR הם מ-`next start` מקומי. לבדיקה בנייד: `vercel deploy` מהענף.
+- ‏**ה-build ב-sandbox נופל בלי `NEXT_PUBLIC_API_URL`** (ולידציית env ב-`next.config.js`, ‏`lib/env.client.js:41`). זה לא באג בקוד, וה-CI מגדיר את המשתנה. מקומית: `NEXT_PUBLIC_API_URL=https://foodmamkor-staging.up.railway.app npm run build`. ה-Stop hook מדווח על זה כ-«Frontend build failed».
+- ‏**Playwright מקומי:** הגרסה ב-repo ‏(1.62.1) לא מוצאת דפדפן. צריך config עוטף עם `launchOptions.executablePath: "/opt/pw-browsers/chromium"`, ולהסיר את `DEMO_*_PASSWORD` מהסביבה כדי ש-global-setup ידלג על login.
+- ‏**`playwright.config.ts:97` מריץ `reducedMotion: "reduce"` לכל החבילה.** בדיקה של התנהגות smooth-scroll או אנימציה צריכה `test.use({ reducedMotion: "no-preference" })`, אחרת היא בודקת את המסלול המיידי.
+- ‏**`click()` של Playwright גולל את המטרה לתוך התצוגה לפני הלחיצה.** בבדיקה של רכיב גלילה (מדף, carousel) צריך `dispatchEvent("click")`, אחרת המדידה בודקת את ה-harness. זה כמעט הוביל ל"תיקון" של באג שלא קיים במדף של /join.
+- ‏**`transform` כלשהו, גם `translate-x-0`, יוצר stacking context.** ‏tip עם `z-10` בתוך שורה כזו נצבע **מתחת** לשורה הבאה. נמצא בקריאת הצילומים ב-#4123 ותוקן שם.
+- ‏**ה-FAB של הצ'אט מחזיק את הפינה התחתונה בצד ה-END** ‏(rtl.md, ‏MEH-1135). פס דביק ברוחב מלא צריך להשאיר את הצד הזה ריק: ב-#4123 התוכן מקובץ ב-start עם `pe-20` בנייד.
+- ‏**`setup.js` מתקין `scrollIntoView` כ-`vi.fn()` אחד משותף.** ‏`vi.spyOn` מחזיר את אותו mock עם קריאות מטסטים קודמים, ולכן צריך `mockClear()` אחרי ה-spy.
+- ‏**ה-commit של המדיה (`c4afb00`, ספיר) בלי `Builder-Model:`.** ה-guard קורא רק את ה-commit האחרון שנכתב, ולכן נכשל כשהוא היה HEAD ועבר אחרי ה-commit הבא. לא נדרש rewrite.
+
+**‏הוכרע ב-07/11 (ספיר):** ‏`join.faq.a_cost` נשאר עם «— לעולם» (ADR-030 §5 גובר על copy-in-order.txt) · «עסק לדוגמה» מאושר · ‏`card_line_no_rescue` מאושר · האנגלית נבדקת ב-#4123.
+
+**‏פתוח / לא עכשיו:**
+- ‏alt לתמונת ה-hero («ארגזים של פירות וירקות טריים») לא נוסף, כי `EditorialPhoto` במכוון בלי `alt` והקובץ מחוץ להיקף. שורה אחת אם ספיר רוצה.
+- אייקוני הכרטיסים של הקבוצות לא היו ב-SPEC ו-`reference.html` לא היה ב-Drive, אז בחרתי אותם (מפורטים ב-#4123).
+- כרטיס הסיום של `video-page.mp4` מציג `mehamakor.co.il`. ההחלטה של ספיר.
+- החלק של `/about/for-businesses` ב-MEH-2310 עדיין פתוח שם.
+
+**‏הצעד הבא:** «go merge» על #4123 → מיזוג ה-PR הזה → MEH-2799 נסגר.
+
+---
+
 ## 2026-11-07 15:00 — «איך נרשמים?» נסגר, ועיצוב /join v2 אושר (#4109–#4116)
 
 **‏שורה אחת:** ‏שבעה PR מוזגו ל-staging — ‏#4109, ‏#4110, ‏#4112, ‏#4113, ‏#4114, ‏#4115 ו-#4116. ‏ה-CI של ‏#4114 תפס ארבעה באגים אמיתיים ב-seed והסוקר האוטומטי עוד שניים, וזה בדיוק מה שהשערים האלה קיימים בשבילו. ספיר אישרה את עיצוב `/join` v2 — ה-spec למטה.
@@ -15,54 +42,6 @@
 - ‏**`check_seed_coverage.py`'s `EXEMPT_TABLES` אומר «מותר שתהיה ריקה», לא «אסור לזרוע».** ‏`_empty_surfaces()` קורא רק את `SEEDED_SURFACES`, ולכן שורה בטבלה פטורה לא מאדימה את השער. ארבע סיבות-פטור שם התיישנו עם #4114, והחדה שבהן היא של `producer_analytics_daily`: «seeding it would fabricate traffic», שזה בדיוק מה שקורה עכשיו לעסק הדוגמה, בהוראת ספיר ב-MEH-2794. **נפתח ככרטיס: MEH-2800**, שמונה את שני הקבצים ואת ההכרעה — להעביר ל-`SEEDED_SURFACES` כדי ש-CI יאכוף, או רק לנסח מחדש.
 - ‏**ה-flake של `CityProfileBridge.test.jsx` חזר (מופע רביעי).** ‏ה-`waitFor` של MEH-2265 נחת והכרטיס Done, אבל הוא מטפל בחצי הלא-נכון: ה-dispatch מגיע לפני שה-listener נרשם, ולכן האירוע **אבוד ולא מאוחר**, וקריאה חוזרת של ה-assert לא תמצא אותו לעולם. חתימת ה-runner האיטי זהה לשלוש הפעמים הקודמות. התיאור של MEH-2265 עודכן; הסטטוס לא שונה — ההכרעה של ספיר.
 - ‏**‏`uq_one_review_per_producer_per_user`:** ביקורת אחת לכל (עסק, משתמשת). שלוש כותבות ה-`DEMO_REVIEWS` כבר ניצלו את שלהן, ולכן טסט שצריך עוד ביקורת על עסק הדוגמה חייב להשתמש ב-`DEMO_CONSUMER_EMAIL`.
-
----
-
-## Pending: /join v2 — העיצוב שאושר 07/11
-
-> **מקור אמת:** Design canvas `Main.dc.html`, **גרסה 1794060872**. מה שלמטה הוא ה-spec, לא הצעות.
->
-> **‏ה-PR של הקוד מחכה לעדכון ה-brand book — לא להתחיל.**
-
-### ‏מאיפה הדף לוקח תוכן
-
-‏`frontend/lib/business-features.js` (MEH-2791, מוזג ב-#4109): ‏`BUSINESS_FEATURES` (50 כלים), `BUSINESS_FEATURE_GROUPS` (6, סדר הטאבים), `HIGHLIGHT_FEATURE_IDS`, ו-`visibleBusinessFeatures()` / `countVisibleBusinessFeatures()`. הקופי ב-`messages/{he,en}.json` תחת `business_features`. **לא לשכפל את הרשימה ל-JSX** — זה מה ש-`codeRef` בא למנוע.
-
-### 1. ‏CTA ראשי אחד נראה בכל רגע
-
-* **‏לעשות שימוש חוזר ב-`StickyContactBar.jsx`**, תווית «מצטרפים». ‏**לא לבנות סרגל שני.**
-* הסרגל מוסתר כל עוד ה-CTA של ה-hero בתוך ה-viewport, ו**מחליק למעלה** אחריו. ‏`IntersectionObserver` על כפתור ה-hero, `threshold: 0.5`.
-* ‏**לעולם לא שני CTA נראים יחד.**
-
-### 2. ‏סדר הסקשנים
-
-‏hero ← תמונת ארגז ← כרטיס «נכין לכם טיוטה» ← **סרטון click-to-play אחד** (סיור בעמוד) ← הכלים ← 4 שלבים (קליפ ההרשמה מתחתיהם) ← «מה כדאי להכין» ← שאלות נפוצות ← שורת סיום.
-
-‏**אין סקשן המלצות עד שיהיו בתי עסק אמיתיים.**
-
-### 3. ‏הכלים — 6 קבוצות
-
-לכל קבוצה: **4 אריחים** (אייקון + כותרת קצרה + שורה אחת) ‎+‎ **השאר כרשימת ✓**.
-
-‏**הרישום צריך שדה `tile` אופציונלי לכל רשומה** — `{icon, title, line}`. ה-canvas מחזיק את 24 האריחים המדויקים ואת נתיבי האייקונים.
-
-### 4. ‏נייד
-
-מדף גלילה אופקי עם snap · מדיה ביחס **5:4** · הכרטיס הנבחר **מנגן קליפ loop מושתק משלו, אחד בכל רגע** · נקודות מתחת לשורה · הפאנל נפתח **מתחת לשורה** עם slide/fade של **220ms** ופריטים ב-stagger · ‏`prefers-reduced-motion` מכובד.
-
-### 5. ‏דסקטופ ‎≥700px
-
-רשימה קומפקטית של ה-6 בצד · הקליפ הנבחר **והפאנל שלו לידה** · ‏**בחירה לעולם לא גוללת את הקליפ מחוץ למסך.**
-
-### 6. ‏פרטים
-
-* ‏**«?» = toggletip** בשכבה **בתוך העמודה של הפריט שלו** (בלי reflow). נסגר ב-×, בהקלקה בחוץ, או בהקלקה חוזרת על «?».
-* ‏**מספר הכלים מוצג פעם אחת** מתחת לכותרת — «{count} כלים, כולם בחינם.» ‏**לא בכל פאנל.**
-* שישה קליפים של הכלים ‎+‎ קליפ ההרשמה: ה-assets ב-canvas; הסקריפט של MEH-2794 מצלם אותם מחדש.
-
-### ‏לפני קוד
-
-‏workflow rule 37 (placement research) חל על הדף הזה.
 
 ---
 
