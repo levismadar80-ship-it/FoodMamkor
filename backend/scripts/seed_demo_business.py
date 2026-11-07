@@ -1110,29 +1110,48 @@ def _seed_rescue_bag(db, producer) -> bool:
     # Still scoped to bags that can no longer pass `rescue.py:463` — a LIVE bag
     # anywhere is left alone and short-circuits, so this does not reintroduce
     # the double-bag #4114 removed.
+    # The two filters are exact complements on `pickup_end`, so every bag at
+    # this location is in one set or the other and never in both.
+    still_open = RescueOffer.pickup_end > now + RESERVE_CLOSES_BEFORE_END
     live = (
         db.query(RescueOffer)
-        .filter(
-            RescueOffer.producer_location_id == location.id,
-            RescueOffer.pickup_end > now + RESERVE_CLOSES_BEFORE_END,
-        )
+        .filter(RescueOffer.producer_location_id == location.id, still_open)
         .first()
     )
     if live is not None:
         return False
 
-    closed = (
+    # MEH-2816 — THIS QUERY CARRIES ITS OWN `pickup_end` FILTER, and the name
+    # says what it holds. It previously selected every bag at the location and
+    # was correct only because the `live` short-circuit above returned first:
+    # an edit to that guard would have turned this into a delete of live bags,
+    # while the variable name told the reader a filter was already there. A
+    # query that is safe only in context is a trap for whoever edits the
+    # context. `test_the_sweep_spares_a_live_bag_without_the_short_circuit`
+    # removes the guard and proves the filter stands alone.
+    stale = (
         db.query(RescueOffer)
-        .filter(RescueOffer.producer_location_id == location.id)
+        .filter(
+            RescueOffer.producer_location_id == location.id,
+            ~still_open,
+        )
         .all()
     )
-    for dead in closed:
+    for dead in stale:
+        # Deleting one takes its rescue_orders with it, and their
+        # rescue_reviews after that — all three FKs are ondelete="CASCADE"
+        # (models.py: RescueOffer -> RescueOrder -> RescueReview). Deliberate:
+        # this is the demo fixture on staging, and the alternative is the dead
+        # rows MEH-2814 removed. Pinned by
+        # `test_the_sweep_takes_orders_and_reviews_with_a_closed_bag` so a
+        # narrowed cascade is noticed rather than discovered as an
+        # IntegrityError on someone's seed run.
         print(
             f"Removing the demo rescue bag for {dead.date}: its window closed "
             f"at {_israel_hhmm(dead.pickup_end)} Israel time."
         )
         db.delete(dead)
-    if closed:
+    if stale:
         db.flush()
 
     db.add(

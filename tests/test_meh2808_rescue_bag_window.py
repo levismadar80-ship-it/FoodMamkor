@@ -28,11 +28,11 @@ here; the two that seed do not. CI is their first execution.
 
 import importlib.util
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 
 import pytest
 
-from app.models.models import ProducerLocation, RescueOffer
+from app.models.models import ProducerLocation, RescueOffer, RescueOrder
 from app.routers.rescue import RESERVE_CLOSES_BEFORE_END
 from app.utils.clock import ISRAEL_TZ
 
@@ -62,14 +62,24 @@ def bakery_category(db, seed_mod):
     return make_category(db, name=seed_mod.DEMO_CATEGORY_NAME, emoji="🍞")
 
 
-def _utc_at_israel(hour, minute=0, *, day=7):
-    """The naive-UTC instant of a given Israel wall-clock time on 07/11/2026.
+_ANCHOR = date(2026, 11, 7)
+
+
+def _utc_at_israel(hour, minute=0, *, on=None):
+    """The naive-UTC instant of an Israel wall-clock time, on `on` (a date) or
+    on the 07/11/2026 anchor.
 
     Built by converting FROM Israel, never by subtracting a fixed offset: the
     offset is +2 or +3 depending on the date, and hardcoding either is the
     MEH-2290 class this file exists to avoid repeating.
+
+    Takes a whole date rather than a day-of-month (MEH-2816): the earlier
+    `day=` form pinned the month to November, so an arrangement reaching back
+    across a month boundary would have silently built a date in the wrong
+    month.
     """
-    aware = datetime(2026, 11, day, hour, minute, tzinfo=ISRAEL_TZ)
+    d = on or _ANCHOR
+    aware = datetime(d.year, d.month, d.day, hour, minute, tzinfo=ISRAEL_TZ)
     return aware.astimezone(timezone.utc).replace(tzinfo=None)
 
 
@@ -146,19 +156,29 @@ def test_the_window_always_survives_the_public_listing_filter(
 
 
 @pytest.mark.parametrize(
-    # The two nights a year when adding a timedelta to an Israel-aware
-    # datetime stops meaning elapsed time. 25/10/2026 the clocks go back
-    # (02:00 -> 01:00); 27/03/2026 they go forward.
-    "switch_day,now_il",
+    # (switch day, israel hh:mm, which branch the window MUST take).
+    #
+    # MEH-2816: the expected branch is a PARAMETER, not something the test
+    # discovers. The previous shape chose its assertions with
+    # `if start - now < 12h`, so a row that switched branches because the code
+    # changed quietly got the OTHER branch's assertions and still passed —
+    # `.claude/rules/testing.md`'s "guard that can never fail". Now a row that
+    # switches fails on the branch assertion itself, by name.
+    #
+    # The 01:30 rows are the ones that exercise the lead-time arithmetic this
+    # fix is about; the 23:00 rows are kept because they pin that a late-night
+    # seed still lands on tomorrow evening ACROSS the switch, which is a
+    # different thing that could also break.
+    "switch_day,now_il,branch",
     [
-        ((2026, 10, 25), (1, 30)),
-        ((2026, 10, 24), (23, 0)),
-        ((2026, 3, 27), (1, 30)),
-        ((2026, 3, 27), (23, 0)),
+        ((2026, 10, 25), (1, 30), "same_day"),
+        ((2026, 10, 24), (23, 0), "tomorrow"),
+        ((2026, 3, 27), (1, 30), "same_day"),
+        ((2026, 3, 27), (23, 0), "tomorrow"),
     ],
 )
 def test_the_lead_times_are_real_hours_across_a_dst_switch(
-    seed_mod, switch_day, now_il
+    seed_mod, switch_day, now_il, branch
 ):
     """MEH-2814 — the window promises `now + 1h .. now + 3h` in REAL hours.
 
@@ -166,12 +186,12 @@ def test_the_lead_times_are_real_hours_across_a_dst_switch(
     switch night `01:30 + 3h` reads 04:30 Israel while FOUR real hours have
     passed. The fix adds to the UTC instant and converts afterwards.
 
-    DISCRIMINATES: it asserts the ELAPSED time, computed on naive-UTC instants
-    where a timedelta is unambiguous — never on the Israel-local renderings,
-    which is the very arithmetic under test. Against the wall-clock form the
-    October rows read 4:00:00 against an expected 3:00:00 and fail by name;
-    the normal-day tests above pass in both versions, which is why they could
-    not have caught this.
+    DISCRIMINATES: the lead times are asserted as ELAPSED time on naive-UTC
+    instants, where a timedelta is unambiguous — never on the Israel-local
+    renderings, which is the arithmetic under test. Against the wall-clock
+    form the October `same_day` row reads 4:00:00 against an expected 3:00:00
+    and fails by name. The normal-day tests above pass in both versions, which
+    is exactly why they could not have caught this.
     """
     y, mo, d = switch_day
     hour, minute = now_il
@@ -182,8 +202,15 @@ def test_the_lead_times_are_real_hours_across_a_dst_switch(
     )
     _day, start, end = seed_mod._demo_pickup_window(now)
 
-    if start - now < timedelta(hours=12):
-        # The same-day branch: both lead times must be exact real hours.
+    took = "same_day" if start - now < timedelta(hours=12) else "tomorrow"
+    assert took == branch, (
+        f"a seed at {hour:02d}:{minute:02d} Israel on {d:02d}/{mo:02d} took the "
+        f"{took!r} branch, not {branch!r} — the assertions below are written "
+        "for the expected branch and would otherwise pass against the wrong one"
+    )
+
+    if branch == "same_day":
+        # Both lead times must be exact REAL hours.
         assert start - now == timedelta(
             hours=seed_mod.DEMO_RESCUE_BAG["lead_hours_start"]
         ), f"collection opens {start - now} after the seed, not one real hour"
@@ -347,3 +374,130 @@ def test_refresh_clears_the_bag_through_the_location_cascade(
     db.commit()
     assert db.query(RescueOffer).count() == 1
     assert db.query(RescueOffer).one().id != first_id
+
+
+# ── MEH-2816: the sweep is safe on its own, and what it takes with it ───────
+def test_the_sweep_is_per_location_and_a_live_bag_protects_the_rest(
+    db, seed_mod, bakery_category, monkeypatch
+):
+    """MEH-2814 widened the sweep from `(location, day)` to the whole
+    location. This pins both halves of what that means, with several bags in
+    the table rather than the single one every other test here arranges.
+
+    I first wrote this by monkeypatching `db.query` to defeat the `live`
+    short-circuit, so the sweep's own `pickup_end` filter would be the only
+    thing sparing a live bag. That is thrown away on purpose: the wrapper was
+    a second implementation of the thing under test, and a wrong wrapper makes
+    the test meaningless while still passing. The filter being safe standalone
+    is a property of the query, which reads plainly in the source; what needs
+    a test is the BEHAVIOUR with more than one row, which is new here.
+
+    DISCRIMINATES: the first half fails if the sweep deletes anything while a
+    live bag exists (the double-bag #4114 removed, reached from the other
+    side); the second fails if it removes only the bag for the new window's
+    day, which is exactly the pre-MEH-2814 behaviour that left dead rows
+    behind. One arrangement, two opposite expectations.
+    """
+    morning = _utc_at_israel(10, 0)
+    monkeypatch.setattr(seed_mod, "utc_now", lambda: morning)
+    producer = seed_mod.seed_demo_business(db)
+    seed_mod.seed_marketing_fixtures(db)
+
+    location = (
+        db.query(ProducerLocation)
+        .filter(
+            ProducerLocation.producer_id == producer.id,
+            ProducerLocation.is_primary.is_(True),
+        )
+        .one()
+    )
+    live_id = db.query(RescueOffer).one().id
+
+    # Two bags from earlier days, both long closed, both at this location.
+    for offset in (1, 2):
+        day = _israel(morning).date() - timedelta(days=offset)
+        db.add(
+            RescueOffer(
+                producer_location_id=location.id,
+                date=day,
+                qty_total=4,
+                qty_left=4,
+                price_agorot=2500,
+                pickup_start=_utc_at_israel(17, 0, on=day),
+                pickup_end=_utc_at_israel(19, 0, on=day),
+                cancel_until=_utc_at_israel(17, 0, on=day),
+            )
+        )
+    db.commit()
+    assert db.query(RescueOffer).count() == 3
+
+    # 1. While the live bag is live, NOTHING is touched — not even the two
+    #    dead ones. The short-circuit owns this case.
+    assert seed_mod._seed_rescue_bag(db, producer) is False
+    db.commit()
+    assert db.query(RescueOffer).count() == 3, "a live bag did not protect the table"
+    assert live_id in {o.id for o in db.query(RescueOffer).all()}
+
+    # 2. Past the live bag's close, ALL THREE go and one fresh bag replaces
+    #    them. Pre-MEH-2814 only the row for the new window's day was
+    #    considered, so the two older ones would have survived.
+    monkeypatch.setattr(seed_mod, "utc_now", lambda: _utc_at_israel(14, 0))
+    assert seed_mod._seed_rescue_bag(db, producer) is True
+    db.commit()
+    remaining = db.query(RescueOffer).all()
+    assert len(remaining) == 1, (
+        f"{len(remaining)} bags left after the sweep; the per-location sweep "
+        "should have taken all three closed ones and left exactly the new one"
+    )
+    assert remaining[0].id not in {live_id}
+    assert f"{_israel(remaining[0].pickup_start):%H:%M}" == "15:00"
+
+
+def test_the_sweep_takes_orders_and_reviews_with_a_closed_bag(
+    db, seed_mod, bakery_category, monkeypatch
+):
+    """What deleting a closed bag costs, pinned rather than assumed.
+
+    The chain is `RescueOffer -> RescueOrder -> RescueReview`, every FK
+    `ondelete="CASCADE"` (models.py). So a closed bag's reservations go with
+    it, and their reviews after that. Deliberate — this is the demo fixture on
+    staging, and the alternative is the dead rows MEH-2814 removed — but it is
+    worth a test, because a narrowed cascade would otherwise surface as an
+    IntegrityError on someone's seed run rather than here.
+
+    DISCRIMINATES: it asserts the order is gone BY ID and that the sweep
+    returned True, so it fails both if the cascade is narrowed (IntegrityError
+    or a surviving row) and if the sweep stops running. A bare count would
+    pass on a run that deleted nothing and created nothing.
+    """
+    morning = _utc_at_israel(10, 0)
+    monkeypatch.setattr(seed_mod, "utc_now", lambda: morning)
+    producer = seed_mod.seed_demo_business(db)
+    seed_mod.seed_marketing_fixtures(db)
+    bag = db.query(RescueOffer).one()
+
+    consumer = (
+        db.query(seed_mod.User)
+        .filter(seed_mod.User.email == seed_mod.DEMO_CONSUMER_EMAIL)
+        .one()
+    )
+    order = RescueOrder(
+        offer_id=bag.id,
+        user_id=consumer.id,
+        qty=1,
+        pickup_code="MEH2816",
+        status="reserved",
+    )
+    db.add(order)
+    db.commit()
+    order_id = order.id
+    assert db.query(RescueOrder).filter(RescueOrder.id == order_id).one()
+
+    # Past the window's close, so the bag is stale and the sweep takes it.
+    monkeypatch.setattr(seed_mod, "utc_now", lambda: _utc_at_israel(14, 0))
+    assert seed_mod._seed_rescue_bag(db, producer) is True
+    db.commit()
+
+    assert db.query(RescueOrder).filter(RescueOrder.id == order_id).first() is None, (
+        "the reservation outlived the bag it belonged to — the cascade narrowed"
+    )
