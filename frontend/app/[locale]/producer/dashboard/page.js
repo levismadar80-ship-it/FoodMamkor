@@ -15,6 +15,7 @@ import { getUpcomingHoliday } from "@/lib/holidays";
 import HolidayIcon from "@/components/HolidayIcon";
 import ProfileCompletenessCard from "@/components/ProfileCompletenessCard";
 import DraftSubmitBanner from "@/components/producer/DraftSubmitBanner";
+import BusinessQrCard from "@/components/producer/BusinessQrCard";
 import ReviewCardCanvas from "@/components/ReviewCardCanvas";
 import StoryCardCanvas from "@/components/StoryCardCanvas";
 import ChangesRequestedBanner from "./ChangesRequestedBanner";
@@ -639,6 +640,21 @@ export default function ProducerDashboardPage() {
           <p className="text-sm text-fg-muted">{t("states.share_locked")}</p>
         </div>
       ) : null}
+
+      {/* MEH-2785: the printable QR of the business's own page. Same share
+          gate as VanityLinkCard above — a code taped to a till must not point
+          at an unpublished or incomplete listing, and an organizer's public
+          page is /organizers/{slug}, not a business page. The code itself
+          targets /producer/{id}, never the slug: a printed card is permanent
+          and a slug can be changed by an admin. */}
+      {/* The gate is the component's own (BusinessQrCard.jsx) so it can be
+          unit-tested; the condition is the same one VanityLinkCard uses. */}
+      <BusinessQrCard
+        producer={producer}
+        isComplete={isComplete}
+        isApproved={isApproved}
+        isOrganizer={isOrganizer}
+      />
 
       {/* MEH-1428: "ערכת שיתוף" — sits with the other share surface (the vanity
           link above), approved-only, business-only. `profile` is the data
