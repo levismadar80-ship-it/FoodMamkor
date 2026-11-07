@@ -485,7 +485,11 @@ def test_the_sweep_takes_orders_and_reviews_with_a_closed_bag(
         offer_id=bag.id,
         user_id=consumer.id,
         qty=1,
-        pickup_code="MEH2816",
+        # FOUR DIGITS: the column is character(4) with a CHECK of
+        # `^[0-9]{4}$` (models.py). I first wrote "MEH2816" from imagination
+        # and CI answered with StringDataRightTruncation — the schema is right
+        # there and reading it was cheaper than the round trip.
+        pickup_code="2816",
         status="reserved",
     )
     db.add(order)
