@@ -3604,10 +3604,11 @@
       "step2_title": "A personal introduction",
       "step2_text": "Our team goes over the business and the story, and reaches out for a short intro if needed.",
       "step3_title": "Your page goes live",
-      "step3_text": "Within up to 3 business days of sending it for review, your business appears on the site.",
+      "step3_text": "In the dashboard you add a photo, one product and phone verification, then press «Submit for review». Within 3 business days your business is on the site.",
       "step4_title": "Customers reach you directly",
       "step4_text": "The contact button on the page opens a direct conversation with you — WhatsApp, phone, or another channel. Contact and payment stay strictly between you and your customers.",
-      "process_link": "The full acceptance process"
+      "process_link": "The full acceptance process",
+      "signup_video_aria": "Video: how to sign up"
     },
     "prepare": {
       "title": "Good to have ready",
@@ -3615,20 +3616,53 @@
       "item_photos": "2–3 photos of your business or products",
       "item_license": "Producer license number, if your category requires one. Don't have it yet? You can add it later"
     },
-    "card": {
-      "title": "Every business gets a personal introduction",
-      "body": "Every business on Mehamakor goes through a personal intro — identity, story, and sometimes a conversation. That keeps every page on the site trustworthy and personal."
-    },
-    "testimonial": {
-      "eyebrow": "Coming soon — our first testimonial",
-      "quote": "A real business owner's words will appear here — verbatim, with her approval."
-    },
     "faq": {
       "eyebrow": "Common questions",
       "q_cost": "How much does it cost?",
       "a_cost": "Free to join and be listed. No transaction fees — ever.",
-      "all_link": "All the questions"
-    }
+      "all_link": "All the questions",
+      "heading": "What businesses ask",
+      "q_google": "How is this different from Google and Instagram?",
+      "a_google": "Google is good for being found in search, and it's worth keeping. Here you get a page of your own in an article style, a contact button on the channel you chose (on WhatsApp, with a ready-made message too), and reviews only from people who contacted you. You can also put the link to your Mehamakor page on your Google profile. Keep your Instagram as usual and link to it from your page; here the customer also sees prices, delivery areas and hours without asking.",
+      "q_revenue": "If everything is free, how do you make money?",
+      "a_revenue": "Right now we don't. In the future, income will come from an upgraded subscription that businesses choose of their own accord. Not from fees, and not from selling a place at the top of the list.",
+      "q_customers": "Who gets the customers?",
+      "a_customers": "You do. Every enquiry reaches you directly, and the relationship stays yours even if you decide to leave."
+    },
+    "draft": {
+      "title": "No time for forms? We'll prepare a draft for you",
+      "body": "Send us a link to your Instagram or a few photos. We build a draft of your page with your products, and you get a personal link to review, fix and approve it. The page does not go live without your approval.",
+      "cta": "Write to us"
+    },
+    "video": {
+      "eyebrow": "A short video",
+      "heading": "A business page, on a phone",
+      "aria": "Video: what a business page on Mehamakor looks like"
+    },
+    "features": {
+      "eyebrow": "What you get",
+      "heading": "Fill in your details once. Your page works for you.",
+      "shelf_aria": "Sections",
+      "more": "All {n} tools",
+      "panel_hint": "This section's tools are shown below",
+      "pause": "Pause video",
+      "play": "Play video",
+      "sample_label": "Sample business",
+      "media_alt": {
+        "page": "The Ruach HaSadeh bakery's page on a phone",
+        "found": "The site map, centred on Zichron Ya'akov, with the business's pin",
+        "contact": "A delivery check for a city, and pickup points",
+        "return": "A group-buy page",
+        "trust": "Reviews on a business page",
+        "insights": "The dashboard: a views chart and top cities"
+      }
+    },
+    "closing": {
+      "heading": "Adding the first businesses now",
+      "line": "One page with every detail, and the customer contacts you directly.",
+      "question": "A question first?"
+    },
+    "meta_line": "Free · about 5 minutes · live within 3 business days"
   },
   "about_business": {
     "meta_title": "FAQ for businesses — Mehamakor",
