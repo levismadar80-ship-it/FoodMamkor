@@ -228,15 +228,40 @@ export default function ChipScrollRow({
   // the reset and let scrollIntoView place it — avoids the
   // instant-to-0 then smooth-scroll flicker on URL-seeded state.
   // "all" counts as no active filter (it's the reset sentinel).
+  //
+  // MEH-2823: pin again when overflow APPEARS, not only on mount. On iOS,
+  // WebKit re-snaps an RTL scroll-snap container to the wrong (far-left) end
+  // after a layout — bugs.webkit.org/207826, still open. Our row gets exactly
+  // that layout right after mount: the hook detects overflow and the end
+  // spacer below mounts. A mount-only pin lost to the late re-snap, so
+  // /favorites opened with «הכל» scrolled out of view. rAF lets the re-snap
+  // land first. Never re-pin once the user has touched the row.
+  const userMovedRowRef = useRef(false);
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return undefined;
+    const markMoved = () => {
+      userMovedRowRef.current = true;
+    };
+    const events = ["pointerdown", "touchstart", "wheel", "keydown"];
+    events.forEach((type) => el.addEventListener(type, markMoved, { passive: true }));
+    return () => events.forEach((type) => el.removeEventListener(type, markMoved));
+  }, [scrollRef]);
+
   useEffect(() => {
     const hasActiveFilter =
       variant === "category"
         ? categorySet.size > 0
         : Object.values(activeKeys).some(Boolean);
-    if (!hasActiveFilter) {
+    if (hasActiveFilter || userMovedRowRef.current) return undefined;
+    const frame = requestAnimationFrame(() => {
       scrollRef.current?.scrollTo({ left: 0, behavior: "instant" });
-    }
-  }, []);
+    });
+    return () => cancelAnimationFrame(frame);
+    // Mount + the overflow flip only — selection changes belong to the
+    // scrollIntoView effects below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasOverflow]);
 
   // Category: scroll the LAST-ACTIVATED chip into view (MEH-1465 — mirrors the
   // toggle-variant diff below now that categories are multi-select). On mount,
