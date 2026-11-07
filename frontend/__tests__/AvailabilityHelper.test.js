@@ -20,8 +20,6 @@ import { describe, it, expect } from "vitest";
 import {
   AVAILABILITY_STATES,
   deriveAvailability,
-  isAvailableToday,
-  isFullThisWeek,
   isOnVacation,
 } from "@/lib/availability";
 
@@ -39,8 +37,6 @@ describe("deriveAvailability — enum-only", () => {
 
   it.each([
     "accepting_orders",
-    "available_today",
-    "full_this_week",
     "on_vacation",
   ])("passes through the %s enum value unchanged", (state) => {
     expect(deriveAvailability({ availability_state: state })).toBe(state);
@@ -54,7 +50,7 @@ describe("deriveAvailability — the legacy columns are inert (MEH-2271)", () =>
   // implementation and all four fail.
   it.each([
     ["vacation", AVAILABILITY_STATES.ON_VACATION],
-    ["full", AVAILABILITY_STATES.FULL_THIS_WEEK],
+    ["full", "full_this_week"],
   ])(
     'availability_status "%s" alone no longer derives %s',
     (status) => {
@@ -95,19 +91,15 @@ describe("deriveAvailability — defensive", () => {
 });
 
 describe("predicates", () => {
-  it("isAvailableToday reads the enum, and only the enum", () => {
-    expect(isAvailableToday({ availability_state: "available_today" })).toBe(true);
-    // The Friday pill read ONLY this flag before chunk 1. It reads only the
-    // enum now, and the server sets the enum — so the pill still lights for
-    // every business it used to, via availability_state.
-    expect(isAvailableToday({ is_available_today: true })).toBe(false);
-    expect(isAvailableToday({ availability_state: "on_vacation" })).toBe(false);
-  });
-
-  it("isOnVacation and isFullThisWeek read the same derived state", () => {
+  it("isOnVacation reads the enum, and only the enum", () => {
     expect(isOnVacation({ availability_state: "on_vacation" })).toBe(true);
-    expect(isFullThisWeek({ availability_state: "full_this_week" })).toBe(true);
-    expect(isFullThisWeek({ availability_state: "accepting_orders" })).toBe(false);
+    expect(isOnVacation({ availability_state: "accepting_orders" })).toBe(false);
     expect(isOnVacation({ availability_status: "vacation" })).toBe(false);
+  });
+});
+
+describe("the enum is pause-only (MEH-2782)", () => {
+  it("has exactly accepting_orders and on_vacation", () => {
+    expect(Object.values(AVAILABILITY_STATES)).toEqual(["accepting_orders", "on_vacation"]);
   });
 });

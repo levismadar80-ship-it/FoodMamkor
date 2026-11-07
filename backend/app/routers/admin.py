@@ -870,9 +870,9 @@ def _guard_vacation_return_date(producer: Producer, payload: dict) -> None:
 def _guard_availability_change(producer: Producer, payload: dict) -> None:
     """MEH-2758: pause-only availability writes on the admin PUT.
 
-    Only a CHANGE is checked — ProducerForm sends availability_state on every
-    save, so a business still on a legacy value (available_today /
-    full_this_week) must stay editable; it just cannot be moved INTO one.
+    Only a CHANGE is checked, since ProducerForm sends availability_state on
+    every save. Since MEH-2782 the schema enum is the same two values, so this
+    is the second line of defence. Runs the MEH-2782 return-date check first.
     """
     _guard_vacation_return_date(producer, payload)
     new_state = payload.get("availability_state")

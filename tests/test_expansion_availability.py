@@ -167,7 +167,7 @@ def test_leaving_vacation_clears_return_date(client, db):
 def test_set_valid_state_happy_path(client, db):
     """on_vacation persists and round-trips (sanity anchor for the mutants
     above — proves the endpoint works on the original code). MEH-2758: was
-    available_today, which is no longer writable."""
+    available_today, removed from the enum in MEH-2782."""
     user, _ = _producer_user(db)
     back = (israel_today() + timedelta(days=3)).isoformat()
     resp = client.post(
