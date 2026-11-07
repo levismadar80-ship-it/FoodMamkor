@@ -480,10 +480,7 @@
     },
     "trust": {
       "lead": "No middleman in between · pickup or delivery, straight from the business",
-      "col_businesses": "businesses, each chosen personally",
-      "col_categories": "food categories",
-      "col_fees_value": "0₪",
-      "col_fees": "commission, ever"
+      "count_line": "<num>{count}</num> businesses joined so far"
     },
     "featured": {
       "eyebrow": "Get to know",

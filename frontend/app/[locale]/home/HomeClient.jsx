@@ -51,17 +51,9 @@ const HomepageMiniMap = dynamic(() => import("@/components/HomepageMiniMap"), {
  * JSON-LD block moved. page.js is now a Server Component that fetches the
  * first-paint feed and renders this with `initialData`.
  */
-// MEH-2804: the trust band's row + column classes, shared by the loaded row
-// and its skeleton so the two cannot drift apart in box structure.
-const TRUST_ROW = "mx-auto grid max-w-3xl px-4";
-const trustColClass = (i) =>
-  `flex flex-col items-center gap-2 px-2${i > 0 ? " border-s border-border" : ""}`;
-// The label box's reserved height, on the skeleton AND the loaded label. A
-// column is ~98px wide at 375, and "businesses, each chosen personally" needs
-// three lines there (Hebrew needs three at 320) — measured. So phones reserve
-// three lines (3 × text-sm's 20px = 3.75rem), sm+ two. A MIN height, never a
-// clamp: a longer label grows the band rather than being cut off.
-export const TRUST_LABEL_BOX = "min-h-[3.75rem] sm:min-h-10";
+// MEH-2804 follow-up: the count line and its loading placeholder share one
+// class string, min-height included, so the two cannot drift apart (MEH-1686).
+export const TRUST_COUNT_LINE = "mt-1 min-h-7 px-4 font-body-sm text-sm text-fg-muted";
 
 export default function HomeClient({
   initialProducers = null,
@@ -79,7 +71,7 @@ export default function HomeClient({
     recentlyViewed, showNewUserHint, locationModalOpen, setLocationModalOpen,
     fridayMode, userCity,
     visibleProducers, hasMore, categoryCards,
-    statsProducersCount, statsCategoriesCount, statsLoaded, showStatsCounter, showTrustCount,
+    statsProducersCount, statsLoaded, showTrustCount,
     featuredProducer, geoActive, cityActive, daysActive, geoEmptyNotice,
     handleNearMe, handleSurprise, handleDeliveryCta, handleDaySelected, handleClearDays, handleCitySelected, handleClearLocation,
     // MEH-1684: `scrollToProducers` is no longer destructured here — the hero's
@@ -104,19 +96,6 @@ export default function HomeClient({
   // precedence banner is `suppressed` (renders null) when a higher one shows.
   const [fridayVisible, setFridayVisible] = useState(false);
   const [holidayVisible, setHolidayVisible] = useState(false);
-
-  // MEH-2804: the trust band's fact row. The business count is a column only
-  // at/above TRUST_COUNT_THRESHOLD (showTrustCount); below it the count is
-  // withheld (MEH-521) and stated nowhere in the band (MEH-1692). «0₪» is
-  // count-independent on purpose — no commission is a LOCK, not a number that
-  // can look small.
-  const trustFacts = [
-    ...(showTrustCount
-      ? [{ key: "businesses", value: statsProducersCount, label: t("home.trust.col_businesses") }]
-      : []),
-    { key: "categories", value: statsCategoriesCount, label: t("home.trust.col_categories") },
-    { key: "fees", value: t("home.trust.col_fees_value"), label: t("home.trust.col_fees") },
-  ];
 
   return (
     <div>
@@ -143,9 +122,8 @@ export default function HomeClient({
       )}
 
       {/* =========================
-          TRUST STRIP — HISTORY. The current band is the MEH-2804 / ADR-039
-          fact row in the next comment; the bullets below record the design
-          it replaced and why. Still in force: the MEH-1692 rule (the count
+          TRUST STRIP — HISTORY. The current band is described in the next
+          comment; the bullets below record the designs it replaced and why. Still in force: the MEH-1692 rule (the count
           is never stated twice), the MEH-521 threshold, and MEH-1686 (last
           paragraph). MEH-879 re-anchor (over MEH-524 lock / MEH-521
           threshold / MEH-607 F10 skeleton):
@@ -176,62 +154,50 @@ export default function HomeClient({
           the border-border token on the live page at 375 + 1440), so there
           was nothing to add and a second rule was NOT introduced.
           ========================= */}
-      {/* MEH-2804 / ADR-039: the band is a FACT ROW from 5 businesses — a
-          display numeral (Frank Ruhl black, primary, upright) over a short
-          label per column, hairline dividers between. 5–24: categories · 0₪;
-          25+: count · categories · 0₪; below 5: the locked sentence, no
-          numerals. The skeleton reserves the 3-column box by construction:
-          the numeral is leading-none (h-9 / md:h-12 = text-4xl / text-5xl)
-          and every label box reserves the same lines (TRUST_LABEL_BOX), so
-          loaded and busy differ in content, not in height (MEH-1686). Two
-          known exceptions, both by design: a label longer than the reserve
-          (English at 320) grows the band, and the 5–24 row has 2 columns where
-          the skeleton has 3 (same height, wider columns) — the count is not
-          known until /stats answers. */}
-      {!statsLoaded && (
-        <section className="bg-background border-y border-border py-8" aria-busy="true" data-testid="home-trust-band">
-          <div className={`${TRUST_ROW} grid-cols-3`}>
-            {[0, 1, 2].map((i) => (
-              <div key={i} className={trustColClass(i)} data-testid="trust-fact-skeleton">
-                <span className="block h-9 w-14 rounded-lg bg-text/10 animate-pulse md:h-12" />
+      {/* MEH-2804 follow-up (07/11, Sapir): the band is the SENTENCE, always —
+          «בלי מתווך באמצע · איסוף עצמי או משלוח…» answers "who am I buying from
+          and how does it reach me", which holds at any catalog depth. The #4143
+          fact row (31 · 18 · 0₪) was rejected on the phone and is recorded in
+          ADR-039 as a considered alternative.
+          - The sentence needs no /stats, so it renders from the first paint.
+          - From TRUST_COUNT_THRESHOLD (25, showTrustCount) a quiet second line
+            adds the business count. Below it there is no number at all
+            (MEH-521: a small count is negative social proof), and the count is
+            stated once (MEH-1692).
+          - MEH-1686: while /stats is in flight the second line's slot is held by
+            a placeholder of the SAME min-height, so the common (25+) case loads
+            without a shift. Below 25 the slot collapses once — the known cost.
+          - Numerals keep the S4 voice: gold italic Cormorant, LTR-isolated. */}
+      <section
+        className="bg-background border-y border-border py-8 text-center"
+        aria-busy={statsLoaded ? undefined : "true"}
+        data-testid="home-trust-band"
+      >
+        <p className="px-4 font-body-md text-base text-text" data-testid="trust-lead">
+          {t("home.trust.lead")}
+        </p>
+        {!statsLoaded && (
+          <p className={TRUST_COUNT_LINE} data-testid="trust-count-skeleton">
+            <span className="inline-block w-40 h-5 align-middle rounded-lg bg-text/10 animate-pulse" />
+          </p>
+        )}
+        {statsLoaded && showTrustCount && (
+          <p className={TRUST_COUNT_LINE} data-testid="trust-count">
+            {t.rich("home.trust.count_line", {
+              count: statsProducersCount,
+              num: (chunks) => (
                 <span
-                  className={`block ${TRUST_LABEL_BOX} w-20 rounded-lg bg-text/10 animate-pulse`}
-                  data-testid="trust-fact-skeleton-label"
-                />
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-      {statsLoaded && (
-        <section className="bg-background border-y border-border py-8 text-center" data-testid="home-trust-band">
-          {showStatsCounter ? (
-            <div
-              className={`${TRUST_ROW} ${trustFacts.length === 3 ? "grid-cols-3" : "grid-cols-2"}`}
-              data-testid="trust-facts"
-            >
-              {trustFacts.map((fact, i) => (
-                <div key={fact.key} className={trustColClass(i)} data-testid="trust-fact">
-                  <span
-                    dir="ltr"
-                    className="font-headline-display font-black text-primary text-4xl md:text-5xl leading-none"
-                    data-testid="trust-fact-value"
-                  >
-                    {fact.value}
-                  </span>
-                  <span className={`${TRUST_LABEL_BOX} text-sm text-text`} data-testid="trust-fact-label">
-                    {fact.label}
-                  </span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="px-4 font-headline-md text-lg text-text" data-testid="trust-lead">
-              {t("home.trust.lead")}
-            </p>
-          )}
-        </section>
-      )}
+                  dir="ltr"
+                  className="font-english italic font-semibold text-lg text-accent tabular-nums align-middle"
+                  data-testid="trust-count-value"
+                >
+                  {chunks}
+                </span>
+              ),
+            })}
+          </p>
+        )}
+      </section>
 
       {/* MEH-41: location banner — appears after 3s if no city saved.
           MEH-879: lowest banner precedence — suppressed when Friday or Holiday

@@ -303,13 +303,14 @@ Latin and digits still get Cormorant. The change is global — it reaches every
 `.font-english` use (home, process, events, join, producer sign-up, account
 sheet) — but it only moves Hebrew glyphs, which had no brand face there before.
 
-**Display numerals (ADR-039, MEH-2804).** A number that is the point of its
-block — a stat counter (the home trust band) or a price token (event row and
-event page, free and paid alike) — is **Frank Ruhl (`font-headline-display`), upright,
-bold/black, `text-primary`**, digits `dir="ltr"`, never `align-middle`. Cormorant
-italic (`.font-english`) stays for **times of day** and **inline Latin** only.
-Free reads «כניסה חופשית» in the same token as a price. See
-[ADR-039](./decisions/ADR-039-display-numerals.md).
+**Price token (ADR-039, MEH-2804).** An event's price — on the event row and the
+event page, free and paid alike — is **Frank Ruhl (`font-headline-display`),
+upright, bold, in the row's accent**, digits `dir="ltr"`, never `align-middle`.
+Free reads «כניסה חופשית» in the same token. Cormorant italic (`.font-english`)
+stays for **times of day**, **inline Latin** and the **home trust band's count
+line**. The band itself is the locked sentence at every count, plus «N בתי עסק
+שהצטרפו עד היום» from 25; a three-column fact row was tried and rejected
+(07/11). See [ADR-039](./decisions/ADR-039-display-numerals.md).
 
 **Headings never strand one word on the last line** — `h1, h2, h3` carry
 `text-wrap: balance` in `globals.css` (MEH-2488). **Hebrew is never
