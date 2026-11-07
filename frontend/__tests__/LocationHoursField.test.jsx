@@ -99,6 +99,29 @@ describe("LocationHoursField — prefill (MEH-2805 AC 3)", () => {
   });
 });
 
+// MEH-2819: the dashboard field standard's «where it appears» line, by kind —
+// the hours really appear in a different place for each.
+describe("LocationHoursField — where it appears (MEH-2819)", () => {
+  const where = () => screen.getByTestId("location-hours-where").textContent;
+  it.each([
+    ["the primary location → the «שעות» section", { isPrimary: true, kind: "branch" }, "hours_where_primary"],
+    ["a primary pickup point → still «שעות» (primary wins)", { isPrimary: true, kind: "pickup" }, "hours_where_primary"],
+    ["a pickup point → under «איסוף עצמי»", { isPrimary: false, kind: "pickup" }, "hours_where_pickup"],
+    ["a market stall → under «איסוף עצמי»", { isPrimary: false, kind: "market_stand" }, "hours_where_pickup"],
+    ["another branch → its map popup", { isPrimary: false, kind: "branch" }, "hours_where_map"],
+  ])("%s", (_name, props, key) => {
+    render(<LocationHoursField value="" onChange={vi.fn()} {...props} />);
+    expect(where()).toBe(`settings.locations.form.${key}`);
+  });
+
+  it("the form passes its live kind and primary flag (LocationsEditor)", async () => {
+    await openEditForm({ ...ROW, is_primary: true, opening_hours: "" });
+    expect(screen.getByTestId("location-hours-where").textContent).toBe(
+      "settings.locations.form.hours_where_primary",
+    );
+  });
+});
+
 describe("LocationHoursField — what it saves (MEH-2805 AC 2)", () => {
   it("opening a day reports the canonical string, and it round-trips through parseHours", () => {
     const { onChange } = renderField("");

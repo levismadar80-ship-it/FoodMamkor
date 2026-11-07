@@ -45,7 +45,24 @@ import {
 const TIME_INPUT_CLASS =
   "numeric min-h-touch text-sm border border-border rounded-sm px-2 py-1 bg-surface";
 
-export default function LocationHoursField({ value, onChange, onValidityChange = () => {} }) {
+// MEH-2819: where these hours appear on the business page — by the location's
+// kind, because the place really differs: the primary location feeds «שעות»
+// (resolveStoreHours); a pickup point / market stall is listed under
+// «איסוף עצמי» (DeliveryBlock PickupRow, any kind of those two); every other
+// point shows them only in its map popup (MiniMap.jsx:209). Primary wins.
+function whereKey(isPrimary, kind) {
+  if (isPrimary) return "hours_where_primary";
+  if (kind === "pickup" || kind === "market_stand") return "hours_where_pickup";
+  return "hours_where_map";
+}
+
+export default function LocationHoursField({
+  value,
+  onChange,
+  onValidityChange = () => {},
+  isPrimary = false,
+  kind = "branch",
+}) {
   const t = useTranslations("dashboard.producer.order_window");
   const tForm = useTranslations("settings.locations.form");
   const tDays = useTranslations("opening_hours.weekdays");
@@ -98,6 +115,9 @@ export default function LocationHoursField({ value, onChange, onValidityChange =
     // the first control.
     <fieldset className="text-xs" data-testid="location-hours">
       <legend className="mb-1 block font-medium text-fg-muted">{tForm("hours_label")}</legend>
+      <p className="mb-2 text-2xs text-fg-muted" data-testid="location-hours-where">
+        {tForm(whereKey(isPrimary, kind))}
+      </p>
 
       {unreadable && (
         <p className="mb-2 flex items-start gap-1.5 text-xs text-text" role="status" data-testid="location-hours-unreadable">
