@@ -336,41 +336,13 @@ def _run_watchdog_job() -> None:
         db.close()
 
 
-def _run_full_week_expiry_job() -> None:
-    """MEH-1828: weekly APScheduler tick at the Israel-week rollover. Resets
-    every producer left on availability_state='full_this_week' back to
-    'accepting_orders' (three columns — the live legacy pair too, see the
-    service docstring), so "עמוסה השבוע" cannot outlive the week it names.
-
-    Same shape as _run_followup_job: fresh session (the scheduler worker
-    thread cannot share request-scoped sessions), rollback-before-report on
-    failure so the session stays usable (MEH-1824 invariant), own Sentry
-    task tag, and the exception swallowed so the scheduler thread never dies.
-    """
-    from app.database import SessionLocal
-    from app.services.availability_expiry import reset_expired_full_week
-
-    db = SessionLocal()
-    try:
-        changed = reset_expired_full_week(db)
-        log.info("[FULL-WEEK-EXPIRY] weekly run complete changed=%d", changed)
-    except Exception as exc:
-        # reset_expired_full_week already rolled back before re-raising, so
-        # the MEH-1824 session-usable invariant holds; this handler only
-        # reports. Weekly cadence — no Sentry flood risk.
-        capture_background_exception(exc, task="full_week_expiry")
-        log.error("[FULL-WEEK-EXPIRY] weekly run crashed", exc_info=True)
-    finally:
-        db.close()
-
-
 def _run_analytics_rollup_job() -> None:
     """MEH-2079 chunk B2 (MEH-2283): daily APScheduler tick that rolls every
     pending Israel day of raw producer analytics into `producer_analytics_daily`
     — `[watermark + 1 .. yesterday]`, never today, never a day that already
     has a row. `run_rollup` logs `days_rolled` / `days_skipped` itself.
 
-    Same shape as _run_full_week_expiry_job: fresh session (the scheduler
+    Same shape as _run_followup_job: fresh session (the scheduler
     worker thread cannot share request-scoped sessions), the service rolls
     back before re-raising so the session stays usable (MEH-1824 invariant),
     own Sentry task tag, and the exception swallowed so the scheduler thread
@@ -551,30 +523,8 @@ async def lifespan(app: FastAPI):
         log.info("[WATCHDOG] job registered — every 5 minutes")
     else:
         log.info("[WATCHDOG] disabled (WATCHDOG_ENABLED=false) — PR2c gate")
-    # MEH-1828: weekly full_this_week reset at the Israel-week rollover.
-    # The TRIGGER carries its own timezone (Asia/Jerusalem) even though the
-    # scheduler default is UTC — a fixed UTC hour would drift an hour across
-    # IST/IDT transitions, and "the week rolls over" is an Israel-calendar
-    # fact, not a UTC one. 00:10 rather than 00:00 so a producer setting the
-    # state ON Sunday is racing a 10-minute window, not the boundary itself.
-    # coalesce=True + a 6h grace: a brief pause spanning the fire time runs
-    # the reset once, late, instead of skipping the week. Known limitation,
-    # accepted under option A (no schema): a full process restart that SPANS
-    # Sunday 00:10 loses that week's fire — BackgroundScheduler holds no
-    # persistent state, so the banner then lives until manual change or the
-    # next rollover. Fixing that needs a set-at column (option B, RED).
-    followup_scheduler.add_job(
-        _run_full_week_expiry_job,
-        CronTrigger(day_of_week="sun", hour=0, minute=10, timezone="Asia/Jerusalem"),
-        id="meh_1828_full_week_expiry_weekly",
-        replace_existing=True,
-        # max_instances=1 is APScheduler's default — written out only so this
-        # job reads consistently next to the watchdog registration above,
-        # which sets it explicitly. Not a behaviour change.
-        max_instances=1,
-        coalesce=True,
-        misfire_grace_time=6 * 3600,
-    )
+    # MEH-1828's weekly full_this_week reset was removed with the state itself
+    # (MEH-2782): nothing can hold full_this_week any more.
     # MEH-2079 chunk B2 (MEH-2283): daily analytics roll-up. 01:30 UTC is
     # 03:30/04:30 Israel — safely past Israel midnight all year, so "yesterday"
     # (the last day the job may roll) is a complete Israel day by the time it

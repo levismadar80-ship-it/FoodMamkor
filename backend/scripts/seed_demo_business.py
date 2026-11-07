@@ -10,7 +10,14 @@ Touches:  DB tables producers / users / products / delivery_areas /
 Does NOT: touch production — a hard environment guard refuses any non-local
           DB host unless RAILWAY_ENVIRONMENT == "staging". Does NOT create
           categories (backend/seed_data.py owns that; this script looks the
-          category up by name and aborts if missing).
+          category up by name and aborts if missing). Does NOT regenerate the
+          MEH-2794 marketing numbers on a plain re-run: `seed_marketing_fixtures`
+          skips the insights-and-followers block as soon as ANY analytics or
+          page-view row exists for the demo business, and one real page view on
+          staging is enough. **`--refresh` is REQUIRED, not optional, when you
+          want those numbers rebuilt** (MEH-2808). The rescue bag is the one
+          exception: a bag whose pickup window has already closed is replaced on
+          any run, so /rescue is never left with a dead card.
 Related:  backend/seed_data.py (base seed patterns) · MEH-999 (producer
           dogfood) · MEH-997 (E2E seed) · MEH-409 (first-10 — the demo is
           swapped for the best real profile after first-10).
@@ -65,6 +72,9 @@ from app.models.models import (  # noqa: E402  # imports must follow sys.path.in
     RescueOffer,
     User,
 )
+from app.routers.rescue import RESERVE_CLOSES_BEFORE_END  # noqa: E402  # imports must follow sys.path.insert (script shim)
+from app.services.analytics_rollup import rollup_watermark  # noqa: E402  # imports must follow sys.path.insert (script shim)
+from app.services.rescue_emails import israel_hhmm  # noqa: E402  # imports must follow sys.path.insert (script shim)
 from app.utils.clock import ISRAEL_TZ, israel_today, utc_now  # noqa: E402  # imports must follow sys.path.insert (script shim)
 
 # ============================================================================
@@ -453,8 +463,21 @@ DEMO_RESCUE_BAG = {
     "price_agorot": 2500,
     "value_min_agorot": 5000,
     "value_max_agorot": 7000,
-    "pickup_from_hour": 18,
-    "pickup_to_hour": 19,
+    # MEH-2808 — the pickup window is DERIVED from the seed's own clock, never
+    # fixed. A fixed 18:00-19:00 produced a bag the public listing hides
+    # whenever the seed ran after ~18:45, because `/rescue` filters
+    # `pickup_end > utc_now() + RESERVE_CLOSES_BEFORE_END` (rescue.py:463, 15
+    # minutes at :106) — and the (location, date) idempotency key then stopped a
+    # re-run from replacing it, so there was no way back until the next day.
+    #
+    # Sapir's rule, 07/11: if now + LEAD_HOURS_END is still before
+    # EVENING_CUTOFF_HOUR, open the window now + LEAD_HOURS_START and close it
+    # now + LEAD_HOURS_END; otherwise put it on tomorrow evening.
+    "lead_hours_start": 1,
+    "lead_hours_end": 3,
+    "evening_cutoff_hour": 20,
+    "tomorrow_from_hour": 17,
+    "tomorrow_to_hour": 19,
 }
 
 # Modest, mutually consistent numbers — Sapir 07/11: «מספרים צנועים וסבירים»,
@@ -703,20 +726,12 @@ DIETARY_SCOPE_DEMOS = [
 DIETARY_DEMO_IMAGE = "https://res.cloudinary.com/dfzpscjks/image/upload/mehamakor/demo/ruach-hasadeh-hero"
 DIETARY_DEMO_CITY = "זכרון יעקב"
 
-# MEH-1706 §2 item 9 — the two availability states the demo never exercised.
-# Every seeded producer was `accepting_orders`, so the "full this week" and
-# "on vacation" branches of the card, the header and the detail page had no row
-# to render anywhere on staging. `vacation_until` is relative (§2.3 idiom) —
+# MEH-1706 §2 item 9 — the availability state the demo never exercised.
+# Every seeded producer was `accepting_orders`, so the "on vacation" branches
+# of the card, the header and the detail page had no row to render anywhere on
+# staging. `vacation_until` is relative (§2.3 idiom) —
 # hardcoding it means the vacation silently ends and the surface goes dark again.
 AVAILABILITY_DEMOS = [
-    {
-        "slug": "demo-availability-full",
-        "name": "מאפיית שבוע עמוס (דמו)",
-        "contact_name": "דנה עמוס",
-        "short_description": "בית עסק לדוגמה שסימן שהשבוע מלא — לבדיקת מצב הזמינות.",
-        "availability_state": "full_this_week",
-        "vacation_days_ahead": None,
-    },
     {
         "slug": "demo-availability-vacation",
         "name": "מאפיית חופשה (דמו)",
@@ -726,6 +741,9 @@ AVAILABILITY_DEMOS = [
         "vacation_days_ahead": 18,
     },
 ]
+# MEH-2782: «עמוס השבוע» left the enum. Its demo row is no longer seeded but
+# still sits on staging, so --refresh keeps deleting the old slug.
+RETIRED_AVAILABILITY_DEMO_SLUGS = ["demo-availability-full"]
 
 
 def _assert_not_production() -> None:
@@ -793,7 +811,12 @@ def _delete_existing(db) -> None:
     # MEH-1706: the availability-state demos, same contract as the dietary ones.
     for avail in (
         db.query(Producer)
-        .filter(Producer.slug.in_([a["slug"] for a in AVAILABILITY_DEMOS]))
+        .filter(
+            Producer.slug.in_(
+                [a["slug"] for a in AVAILABILITY_DEMOS]
+                + RETIRED_AVAILABILITY_DEMO_SLUGS
+            )
+        )
         .all()
     ):
         db.delete(avail)
@@ -911,6 +934,63 @@ def _israel_wall_to_utc(day: date, hour: int) -> datetime:
     return local.astimezone(timezone.utc).replace(tzinfo=None)
 
 
+def _to_naive_utc(aware: datetime) -> datetime:
+    """An aware datetime as the naive UTC instant the column stores.
+
+    `RescueOffer.pickup_start` / `pickup_end` / `cancel_until` are naive
+    `DateTime` columns holding UTC instants (the MEH-2679 class), so an Israel
+    wall-clock time has to be converted, not merely stripped of its tzinfo.
+    Stripping would store 18:00 as 18:00Z — 20:00 or 21:00 Israel — which is
+    the bug the #4114 reviewer caught in the first version of these times.
+    """
+    return aware.astimezone(timezone.utc).replace(tzinfo=None)
+
+
+def _demo_pickup_window(now_utc: datetime) -> tuple[date, datetime, datetime]:
+    """`(israel day, pickup_start, pickup_end)` for the demo bag, from `now`.
+
+    Pure arithmetic on an injected `now`, so the tests can pin both sides of
+    the cutoff with a frozen clock instead of passing only at the hour the
+    suite happens to run (`.claude/rules/testing.md`).
+
+    The cutoff is compared as a DATETIME, not as a time-of-day: `now + 3h` at
+    23:00 Israel is 02:00 the next day, whose *time* is before 20:00 while the
+    moment plainly is not, and a time-only comparison would open a window in
+    the small hours and call it this evening.
+
+    Known shape, flagged rather than changed: the rule is literal `now + 1h`
+    and `now + 3h`, so a seed at 10:17 produces 11:17-13:17 rather than a
+    rounded hour, and a seed at 00:30 produces 01:30-03:30 — odd for a bakery
+    but visible, which is what the window is for. Rounding or an early-morning
+    floor would be a change to Sapir's rule, not an implementation detail.
+    """
+    now_il = now_utc.replace(tzinfo=timezone.utc).astimezone(ISRAEL_TZ)
+    cutoff_il = datetime.combine(
+        now_il.date(),
+        time(hour=DEMO_RESCUE_BAG["evening_cutoff_hour"]),
+        tzinfo=ISRAEL_TZ,
+    )
+    end_il = now_il + timedelta(hours=DEMO_RESCUE_BAG["lead_hours_end"])
+    if end_il < cutoff_il:
+        start_il = now_il + timedelta(hours=DEMO_RESCUE_BAG["lead_hours_start"])
+    else:
+        tomorrow = now_il.date() + timedelta(days=1)
+        start_il = datetime.combine(
+            tomorrow,
+            time(hour=DEMO_RESCUE_BAG["tomorrow_from_hour"]),
+            tzinfo=ISRAEL_TZ,
+        )
+        end_il = datetime.combine(
+            tomorrow,
+            time(hour=DEMO_RESCUE_BAG["tomorrow_to_hour"]),
+            tzinfo=ISRAEL_TZ,
+        )
+    # The offer's `date` is the Israel day the collection happens on, which is
+    # the start's day — not `israel_today()`, which would mislabel a window
+    # that landed on tomorrow.
+    return start_il.date(), _to_naive_utc(start_il), _to_naive_utc(end_il)
+
+
 def _seed_offer(db, producer) -> None:
     """MEH-2794 — the active offer, for the offer badge on the business page.
 
@@ -967,7 +1047,9 @@ def _seed_rescue_bag(db, producer) -> bool:
         print("Demo producer has no primary location — skipping the rescue bag.")
         return False
 
-    today = israel_today()
+    now = utc_now()
+    day, pickup_start, pickup_end = _demo_pickup_window(now)
+
     # IDEMPOTENT, per the ticket's "add if missing". Keyed on (location, date)
     # because that is what a bag IS — one offer from one place on one day; the
     # table indexes exactly that pair (ix_rescue_offers_location_date).
@@ -977,38 +1059,55 @@ def _seed_rescue_bag(db, producer) -> bool:
     # which never had one, so a second run left the demo business with two
     # identical bags on /rescue — the "looks odd" the ticket exists to remove.
     # Caught by test_marketing_fixtures_are_idempotent on its first CI run.
+    #
+    # MEH-2808 — "add if missing" now has one exception: a bag whose window has
+    # ALREADY CLOSED is replaced rather than kept. Without it a plain re-run
+    # late in the day found today's dead 18:00-19:00 bag, skipped, and left
+    # /rescue empty with no way back until tomorrow. The replacement is scoped
+    # to a window that can no longer pass `rescue.py:463` — a LIVE bag is still
+    # left alone, so this does not reintroduce the double-bag it replaced.
+    #
+    # `--refresh` needs none of this: `_delete_existing` bulk-deletes the demo's
+    # ProducerLocation rows and `RescueOffer.producer_location_id` carries
+    # `ondelete="CASCADE"`, so the bag is already gone by the time this runs.
+    # Verified in the schema, and pinned by
+    # `test_refresh_clears_the_bag_through_the_location_cascade` rather than by
+    # deletion code here, which would be unreachable by construction.
     existing = (
         db.query(RescueOffer)
         .filter(
             RescueOffer.producer_location_id == location.id,
-            RescueOffer.date == today,
+            RescueOffer.date == day,
         )
         .first()
     )
     if existing is not None:
-        return False
+        if existing.pickup_end > now + RESERVE_CLOSES_BEFORE_END:
+            return False
+        print(
+            f"Replacing the demo rescue bag for {day}: its window closed at "
+            f"{israel_hhmm(existing.pickup_end)} Israel time."
+        )
+        db.delete(existing)
+        db.flush()
 
     db.add(
         RescueOffer(
             producer_location_id=location.id,
-            date=today,
+            date=day,
             qty_total=DEMO_RESCUE_BAG["qty_total"],
             qty_left=DEMO_RESCUE_BAG["qty_left"],
             price_agorot=DEMO_RESCUE_BAG["price_agorot"],
             value_min_agorot=DEMO_RESCUE_BAG["value_min_agorot"],
             value_max_agorot=DEMO_RESCUE_BAG["value_max_agorot"],
-            pickup_start=_israel_wall_to_utc(
-                today, DEMO_RESCUE_BAG["pickup_from_hour"]
-            ),
-            pickup_end=_israel_wall_to_utc(today, DEMO_RESCUE_BAG["pickup_to_hour"]),
+            pickup_start=pickup_start,
+            pickup_end=pickup_end,
             # REQUIRED and has no default — `cancel_until` is nullable=False
             # with no server_default (models.py:2928), and the API takes it
             # from the owner's own body (rescue.py:421). Set to the moment
             # collection opens: "cancel any time until pickup starts", which
             # is the only reading that needs no further policy decision.
-            cancel_until=_israel_wall_to_utc(
-                today, DEMO_RESCUE_BAG["pickup_from_hour"]
-            ),
+            cancel_until=pickup_start,
         )
     )
     return True
@@ -1033,7 +1132,7 @@ def _spread(total: int, days: int) -> list[int]:
     return counts
 
 
-def _seed_insights(db, producer) -> None:
+def _seed_insights(db, producer, watermark: date | None) -> int:
     """MEH-2794 — believable dashboard numbers for the demo producer.
 
     Sapir 07/11: a dashboard screenshot reading "0 WhatsApp clicks" on a page
@@ -1051,13 +1150,43 @@ def _seed_insights(db, producer) -> None:
     seeded view needs its OWN hash to count: reusing one hash would collapse a
     whole day to 1 and the chart would read flat at 1 regardless of the numbers
     above. The hashes are random hex of the real column width (64) — not real
-    IPs, hashed or otherwise.
+    IPs, hashed or otherwise. One hash per view is also what makes the
+    aggregate values below equal to what the real job computes: the job counts
+    DISTINCT (day, hash) pairs, and with a unique hash per row that equals the
+    row count.
+
+    MEH-2801 — AN AGGREGATE ROW IS ONLY EVER WRITTEN FOR A DAY AT OR BELOW THE
+    WATERMARK, and `watermark` is read ONCE by the caller.
+    `analytics_rollup.rollup_watermark()` is `max(producer_analytics_daily.day)`
+    GLOBALLY, across every producer — it says so in its own docstring — the
+    nightly job starts at `watermark + 1` (`pending_days`, and the same floor
+    in `run_rollup`) and the watermark only moves forward. So a row written for
+    TODAY — which is what the first version of this function did, `offset`
+    starting at 0 — jumps the watermark past every day the job has not rolled
+    yet, the job never returns for them, and `rollup_snapshot`'s reader finds
+    them in neither half: aggregate ≤ watermark, raw > watermark. Those days
+    then vanish from the `total` arm of every OTHER producer's dashboard,
+    permanently. (Functions rather than line numbers on purpose — the reviewer
+    is right that the numbers drift, and these four names do not.)
+
+    Days above the watermark are left raw-only on purpose. The nightly job
+    picks them up like any other traffic, and until it does the dashboard's
+    raw half already covers them, so nothing is missing in the meantime.
+
+    `watermark is None` means the aggregate table is empty and owns nothing;
+    writing the first row would hand it a watermark it never earned, so this
+    writes none.
+
+    Returns the number of aggregate rows written — days at or below the
+    watermark on which the producer was active — so the caller reports a
+    derived count rather than a sentence that may be false (MEH-1909).
     """
     view_buckets = _spread(DEMO_INSIGHTS["views_total"], DEMO_INSIGHTS["days"])
     search_buckets = _spread(DEMO_INSIGHTS["views_from_search"], DEMO_INSIGHTS["days"])
     wa_buckets = _spread(DEMO_INSIGHTS["whatsapp_clicks"], DEMO_INSIGHTS["days"])
     cities = DEMO_INSIGHTS["top_cities"]
     today = israel_today()
+    rolled_rows = 0
 
     for offset in range(DEMO_INSIGHTS["days"]):
         day_index = DEMO_INSIGHTS["days"] - 1 - offset  # 0 = oldest
@@ -1098,15 +1227,33 @@ def _seed_insights(db, producer) -> None:
                     city=cities[0],
                 )
             )
-        db.add(
-            ProducerAnalyticsDaily(
-                producer_id=producer.id,
-                day=day,
-                views_unique=views,
-                views_search_unique=searches,
-                whatsapp_clicks=wa_buckets[day_index],
+        # MEH-2801: at or below the watermark only — see the docstring. The
+        # values are the same numbers the rows above carry, because one hash
+        # per view makes the job's DISTINCT (day, hash) count equal the row
+        # count; `test_seeded_aggregate_matches_what_the_real_job_computes`
+        # pins that against `roll_up_day` so the two cannot drift apart
+        # quietly.
+        # ...and only for a day the producer was actually ACTIVE on, because
+        # that is the rule the real job follows: `_day_select` builds its row
+        # set from the UNION of producers with a page view OR a WhatsApp click
+        # that day, so a day with neither gets no row at all — not a row of
+        # zeros. `_spread` is a rising ramp, so the oldest days of the window
+        # genuinely have none (measured: 2 of 30 days have no view, 17 have no
+        # click), and writing zeros there made the seed emit rows the job never
+        # would. Found by test_seeded_aggregate_matches_what_the_real_job_
+        # computes once it looped over every day instead of sampling one.
+        active_that_day = views > 0 or wa_buckets[day_index] > 0
+        if watermark is not None and day <= watermark and active_that_day:
+            db.add(
+                ProducerAnalyticsDaily(
+                    producer_id=producer.id,
+                    day=day,
+                    views_unique=views,
+                    views_search_unique=searches,
+                    whatsapp_clicks=wa_buckets[day_index],
+                )
             )
-        )
+            rolled_rows += 1
 
     # Contact clicks — a phone/website breakdown beside the WhatsApp metric.
     for i in range(DEMO_INSIGHTS["contact_clicks"]):
@@ -1121,6 +1268,7 @@ def _seed_insights(db, producer) -> None:
         )
 
     _seed_followers(db, producer)
+    return rolled_rows
 
 
 def _seed_followers(db, producer) -> None:
@@ -1227,8 +1375,32 @@ def seed_marketing_fixtures(db) -> int:
         .first()
     )
     if not already:
-        _seed_insights(db, producer)
+        # MEH-2801: read ONCE, before any insert, and hand it down. Reading it
+        # per-day inside the loop would be read-after-write — the first
+        # aggregate row this run inserts would raise the watermark that the
+        # next day's decision consults, which is the bug with extra steps.
+        watermark = rollup_watermark(db)
+        # The nightly job could advance the watermark between this read and the
+        # commit below, and that is harmless: every row written stays at or
+        # below the value read, so the partition the reader relies on cannot be
+        # corrupted either way. The only effect is that a day the job rolled
+        # inside that window gets no demo row — a missing fixture, not a wrong
+        # number, and the next --refresh supplies it.
+        rolled_rows = _seed_insights(db, producer, watermark)
         seeded += 1
+        if watermark is None:
+            skipped.append(
+                f"all {DEMO_INSIGHTS['days']} aggregate rows (the roll-up "
+                "table is empty, so it owns no day yet — raw rows only; the "
+                "nightly job will roll them)"
+            )
+        elif rolled_rows < DEMO_INSIGHTS["days"]:
+            skipped.append(
+                f"{DEMO_INSIGHTS['days'] - rolled_rows} of "
+                f"{DEMO_INSIGHTS['days']} aggregate rows (above the roll-up "
+                f"watermark {watermark} — raw rows only, by design: the "
+                "nightly job rolls them)"
+            )
     else:
         skipped.append(
             "insights AND followers (analytics rows already exist for this "
@@ -1521,7 +1693,8 @@ def seed_demo_business(db, refresh: bool = False) -> Producer | None:
 
 
 def seed_availability_demos(db) -> int:
-    """MEH-1706 §2 item 9 — the `full_this_week` / `on_vacation` producers.
+    """MEH-1706 §2 item 9 — the `on_vacation` producer (`full_this_week` was
+    removed in MEH-2782).
 
     Per-slug skip-if-exists, mirroring seed_dietary_scope_demos, so a re-run
     without --refresh inserts nothing. --refresh clears them via
@@ -1723,7 +1896,14 @@ def main() -> None:
     parser.add_argument(
         "--refresh",
         action="store_true",
-        help="delete the existing demo business (+ seed users) and recreate",
+        help=(
+            "delete the existing demo business (+ seed users) and recreate. "
+            "REQUIRED, not optional, when you want the MEH-2794 marketing "
+            "numbers (insights, followers) regenerated: without it the "
+            "fixtures skip as soon as ANY analytics or page-view row exists "
+            "for the demo business, and one real page view on staging is "
+            "enough to trigger that"
+        ),
     )
     parser.add_argument(
         "--sync-users",

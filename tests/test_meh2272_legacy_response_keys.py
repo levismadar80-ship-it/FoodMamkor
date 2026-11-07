@@ -32,12 +32,12 @@ def _owner(db):
 
 def test_dashboard_producer_block_has_no_legacy_keys(client, db):
     user, producer = _owner(db)
-    producer.availability_state = "full_this_week"
+    producer.availability_state = "on_vacation"
     db.commit()
     resp = client.get("/producers/me/dashboard", headers=auth_header(user))
     assert resp.status_code == 200, resp.text
     block = resp.json()["producer"]
-    assert block["availability_state"] == "full_this_week"
+    assert block["availability_state"] == "on_vacation"
     for key in LEGACY:
         assert key not in block, key
 

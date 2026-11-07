@@ -23,7 +23,7 @@ its absence.
 
 import importlib.util
 import os
-from datetime import timezone
+from datetime import timedelta, timezone
 
 import pytest
 
@@ -39,7 +39,8 @@ from app.models.models import (
     ProducerWhatsAppClick,
     User,
 )
-from app.utils.clock import ISRAEL_TZ, israel_today
+from app.routers.rescue import RESERVE_CLOSES_BEFORE_END
+from app.utils.clock import ISRAEL_TZ, israel_today, utc_now
 
 # Placed in its own block, matching tests/test_seed_demo_business.py:31. Ruff
 # 0.16.x sorts `tests.*` up with the third-party block instead, but the pinned
@@ -47,7 +48,7 @@ from app.utils.clock import ISRAEL_TZ, israel_today
 # runs — and it accepts this layout today in the sibling file. Local ruff
 # flagging I001 here is the same version drift as its RUF100 complaints about
 # the `noqa: E402` lines the pinned version still needs.
-from tests.conftest import make_category
+from tests.conftest import make_category, make_producer
 
 _SCRIPT = os.path.join(
     os.path.dirname(__file__), "..", "backend", "scripts", "seed_demo_business.py"
@@ -77,6 +78,56 @@ def seeded(db, seed_mod, bakery_category):
     producer = seed_mod.seed_demo_business(db)
     seed_mod.seed_marketing_fixtures(db)
     return producer
+
+
+# How far back the arranged watermark sits. 5 puts it inside the seed's 30-day
+# window with days on both sides of it, which is what lets the partition below
+# be asserted in both directions from one arrangement.
+WATERMARK_OFFSET = 5
+
+
+def _arrange_watermark(db, category):
+    """Put a roll-up watermark `WATERMARK_OFFSET` days back, and return it.
+
+    MEH-2801: `_seed_insights` writes an aggregate row only for a day at or
+    below `rollup_watermark()`, and the `db` fixture truncates every table, so
+    without an arrangement the watermark is None and the seed writes NO
+    aggregate rows at all — correctly, since an empty table owns no day. The
+    three tests below are about the agreement between the raw rows and the
+    roll-up, so they need a watermark to exist before there is any agreement to
+    check.
+
+    The anchor row belongs to a DIFFERENT producer on purpose: the watermark is
+    global (`analytics_rollup.py:105-110`), so this also pins that the seed
+    reads a watermark it did not set itself.
+    """
+    other = make_producer(db, name="מחלבת הבקרה", category=category)
+    anchor = israel_today() - timedelta(days=WATERMARK_OFFSET)
+    db.add(
+        ProducerAnalyticsDaily(
+            producer_id=other.id,
+            day=anchor,
+            views_unique=0,
+            views_search_unique=0,
+            whatsapp_clicks=0,
+        )
+    )
+    db.commit()
+    return anchor
+
+
+@pytest.fixture()
+def seeded_with_watermark(db, seed_mod, bakery_category):
+    """`(producer, watermark)` — the fixtures seeded against a watermark that
+    already existed, which is the staging shape."""
+    anchor = _arrange_watermark(db, bakery_category)
+    producer = seed_mod.seed_demo_business(db)
+    seed_mod.seed_marketing_fixtures(db)
+    return producer, anchor
+
+
+def _israel_date(stamp):
+    return stamp.replace(tzinfo=timezone.utc).astimezone(ISRAEL_TZ).date()
 
 
 # ── the QA-leftover requirement ──────────────────────────────────────────────
@@ -193,35 +244,56 @@ def test_rescue_bag_satisfies_its_db_checks(db, seeded, seed_mod):
     assert bag.price_agorot >= 0
     assert bag.pickup_end > bag.pickup_start
     assert bag.status == "active"
-    assert bag.date == israel_today(), "a bag for TODAY, so /rescue shows it"
+    # MEH-2808 — this used to read `bag.date == israel_today()`, justified as
+    # "a bag for TODAY, so /rescue shows it". That reasoning was the bug: today
+    # is not what makes a bag visible, beating the listing's margin is, and a
+    # bag for today seeded after ~18:45 is exactly what /rescue HIDES. The
+    # window is now derived from the clock and may legitimately land on
+    # tomorrow, so what gets asserted is the property the old line was reaching
+    # for — stated directly, against the router's own constant.
+    assert bag.pickup_end > utc_now() + RESERVE_CLOSES_BEFORE_END, (
+        f"the seeded bag closes {bag.pickup_end} UTC, which the public listing "
+        f"filter at rescue.py:463 hides"
+    )
+    assert bag.date in (israel_today(), israel_today() + timedelta(days=1)), (
+        f"the bag landed on {bag.date}, neither today nor tomorrow in Israel"
+    )
 
     # MEH-2679: these naive columns hold UTC INSTANTS. `datetime.combine` of an
     # Israel wall hour would store 18:00 as if it were UTC — 21:00 in Israel in
-    # summer — so a bag advertised for 18:00 would open three hours late. Read
-    # the stored instant back in Israel and check the wall hour is the one the
-    # constants asked for.
-    for stored, hour in (
-        (bag.pickup_start, seed_mod.DEMO_RESCUE_BAG["pickup_from_hour"]),
-        (bag.pickup_end, seed_mod.DEMO_RESCUE_BAG["pickup_to_hour"]),
-        (bag.cancel_until, seed_mod.DEMO_RESCUE_BAG["pickup_from_hour"]),
-    ):
+    # summer — so a bag advertised for 18:00 would open three hours late. The
+    # wall hours are no longer constants to compare against, so what is pinned
+    # is the invariant underneath: every stored instant is naive, and all three
+    # read back on the SAME Israel day as the offer's own `date`. A stripped
+    # tzinfo would shift one of them across midnight and break that.
+    for stored in (bag.pickup_start, bag.pickup_end, bag.cancel_until):
         assert stored.tzinfo is None, "the column convention is naive-UTC"
         in_israel = stored.replace(tzinfo=timezone.utc).astimezone(ISRAEL_TZ)
-        assert in_israel.hour == hour, (
-            f"stored {stored} reads as {in_israel:%H:%M %Z} in Israel, "
-            f"but the bag is advertised for {hour}:00"
+        assert in_israel.date() == bag.date, (
+            f"stored {stored} reads as {in_israel:%d/%m %H:%M %Z} in Israel, "
+            f"but the offer is dated {bag.date}"
         )
-        assert in_israel.date() == bag.date
+    # Collection opens before it closes, and cancellation runs to the opening.
+    assert bag.cancel_until == bag.pickup_start
 
 
-def test_insights_raw_rows_and_rollup_agree(db, seeded, seed_mod):
+def test_insights_raw_rows_and_rollup_agree(db, seeded_with_watermark, seed_mod):
     """The property the dashboard depends on and a screenshot cannot show.
 
     producer_me.py reads the 7d/30d arms from the raw tables and the `total`
     arm through producer_analytics_daily. If the two disagree the owner sees a
     total that contradicts her own 30-day chart — MEH-160's inflation through a
     side door.
+
+    MEH-2801 — THE AGREEMENT IS PER DAY, OVER THE DAYS THE AGGREGATE OWNS, not
+    over all 30. `total` is `Σ aggregate + raw WHERE day > watermark`
+    (`rollup_snapshot`), so the halves must partition the days exactly: at or
+    below the watermark the aggregate carries the day, above it the raw rows
+    do. Summing all 30 raw rows against all aggregate rows — which is what this
+    test did before — demanded a row for every day and so asserted the very bug
+    MEH-2801 fixes.
     """
+    seeded, watermark = seeded_with_watermark
     pid = seeded.id
     raw_views = (
         db.query(ProducerPageView).filter(ProducerPageView.producer_id == pid).count()
@@ -245,43 +317,104 @@ def test_insights_raw_rows_and_rollup_agree(db, seeded, seed_mod):
         .filter(ProducerAnalyticsDaily.producer_id == pid)
         .all()
     )
-    assert len(rollup) == seed_mod.DEMO_INSIGHTS["days"]
-    assert sum(r.views_unique for r in rollup) == raw_views
-    assert sum(r.views_search_unique for r in rollup) == raw_search
-    assert sum(r.whatsapp_clicks for r in rollup) == raw_wa
+    # Every day the aggregate owns, derived from the rows themselves rather
+    # than stated — and every one must be at or below the watermark.
+    owned = sorted(r.day for r in rollup)
+    assert owned, "arrangement failed — the seed wrote no aggregate row at all"
+    assert owned[-1] <= watermark, (
+        f"the aggregate reaches {owned[-1]}, above the watermark {watermark} — "
+        "the MEH-2801 defect"
+    )
 
-    # And the totals are the numbers the constants asked for, so a drifting
-    # `_spread` cannot quietly halve the traffic.
+    # The sums agree OVER THOSE DAYS. Counted from the raw rows on exactly the
+    # same days, so this fails if either side moves.
+    owned_set = set(owned)
+    raw_views_owned = sum(
+        1
+        for v in db.query(ProducerPageView).filter(ProducerPageView.producer_id == pid)
+        if _israel_date(v.created_at) in owned_set
+    )
+    raw_search_owned = sum(
+        1
+        for v in db.query(ProducerPageView).filter(
+            ProducerPageView.producer_id == pid,
+            ProducerPageView.referrer == "search",
+        )
+        if _israel_date(v.created_at) in owned_set
+    )
+    raw_wa_owned = sum(
+        1
+        for c in db.query(ProducerWhatsAppClick).filter(
+            ProducerWhatsAppClick.producer_id == pid
+        )
+        if _israel_date(c.clicked_at) in owned_set
+    )
+    assert sum(r.views_unique for r in rollup) == raw_views_owned
+    assert sum(r.views_search_unique for r in rollup) == raw_search_owned
+    assert sum(r.whatsapp_clicks for r in rollup) == raw_wa_owned
+
+    # The days ABOVE the watermark are not missing — they are raw-only, which
+    # is where the reader counts them until the nightly job rolls them.
+    assert raw_views_owned < raw_views, (
+        "every raw view landed at or below the watermark, so this test is not "
+        "exercising the partition it claims to"
+    )
+
+    # And the RAW totals are still the numbers the constants asked for, so a
+    # drifting `_spread` cannot quietly halve the traffic. Unchanged by
+    # MEH-2801: the raw rows still cover all 30 days.
     assert raw_views == seed_mod.DEMO_INSIGHTS["views_total"]
     assert raw_wa == seed_mod.DEMO_INSIGHTS["whatsapp_clicks"]
     assert raw_search <= raw_views
 
 
-def test_each_raw_row_lands_on_its_own_rollup_day(db, seeded, seed_mod):
-    """The alignment the sums cannot see.
+def test_each_raw_row_lands_on_its_own_rollup_day(db, seeded_with_watermark, seed_mod):
+    """The alignment the sums cannot see, now asserted as a PARTITION.
 
     `test_insights_raw_rows_and_rollup_agree` compares TOTALS, so a raw row
     sitting on the Israel day either side of its roll-up row still sums
     correctly and the chart is still wrong. A UTC stamp N*24h back is the same
     Israel day only while the offset is unchanged at both ends; near midnight
     Israel it is not (MEH-2290). Hence the midday anchor, and hence this.
+
+    MEH-2801 — this asserts BOTH directions, which is strictly more than the
+    "no stray raw day" check it replaces:
+
+      * a raw day at or below the watermark MUST have a roll-up row — the
+        original alignment property, unchanged, and still the thing that
+        catches a midnight-boundary drift;
+      * a raw day above the watermark MUST NOT have one — the new half, and
+        the one the old assertion could not express, because "every raw day
+        has a roll-up row" is exactly what the defect produced.
     """
-    days_with_rollup = {
+    seeded, watermark = seeded_with_watermark
+    rollup_days = {
         r.day
         for r in db.query(ProducerAnalyticsDaily).filter(
             ProducerAnalyticsDaily.producer_id == seeded.id
         )
     }
-    stray = sorted(
-        {
-            v.created_at.replace(tzinfo=timezone.utc).astimezone(ISRAEL_TZ).date()
-            for v in db.query(ProducerPageView).filter(
-                ProducerPageView.producer_id == seeded.id
-            )
-        }
-        - days_with_rollup
+    raw_days = {
+        _israel_date(v.created_at)
+        for v in db.query(ProducerPageView).filter(
+            ProducerPageView.producer_id == seeded.id
+        )
+    }
+    at_or_below = {d for d in raw_days if d <= watermark}
+    above = {d for d in raw_days if d > watermark}
+    assert at_or_below and above, (
+        "the arrangement must straddle the watermark for this to discriminate; "
+        f"got {len(at_or_below)} at/below and {len(above)} above"
     )
-    assert stray == [], "page views on an Israel day with no roll-up row"
+
+    assert sorted(at_or_below - rollup_days) == [], (
+        "page views on an Israel day at or below the watermark with no "
+        "roll-up row — the alignment this test has always guarded"
+    )
+    assert sorted(rollup_days & above) == [], (
+        "a roll-up row above the watermark — this is the MEH-2801 defect: it "
+        "lifts the global watermark and strands every unrolled day beneath it"
+    )
 
 
 def test_every_view_counts_once_per_day(db, seeded, seed_mod):
@@ -359,6 +492,7 @@ def test_refresh_then_reseed_leaves_exactly_one_of_each(db, seed_mod, bakery_cat
     FRESH database where `_delete_existing` finds nothing to delete and would
     never exercise this path.
     """
+    watermark = _arrange_watermark(db, bakery_category)
     seed_mod.seed_demo_business(db)
     seed_mod.seed_marketing_fixtures(db)
     seed_mod.seed_demo_business(db, refresh=True)
@@ -366,20 +500,49 @@ def test_refresh_then_reseed_leaves_exactly_one_of_each(db, seed_mod, bakery_cat
 
     producer = db.query(Producer).filter(Producer.slug == seed_mod.DEMO_SLUG).one()
     assert db.query(ProducerOffer).count() == 1
-    assert (
+
+    # MEH-2801: the expected number of aggregate rows is DERIVED from the
+    # watermark, not stated as DEMO_INSIGHTS["days"]. Stating 30 is what made
+    # this test demand a row for today and so assert the defect. The window is
+    # `today-29 .. today`, so the rows are the days in it at or below the
+    # watermark.
+    # Derived from the RAW rows, not from arithmetic over the window: the
+    # roll-up covers a day the producer was active on, and `_spread` is a
+    # rising ramp whose oldest days carry no traffic at all. Counting
+    # "every day <= watermark" would over-count those by exactly the number of
+    # silent days, which is drift of the kind this derivation exists to avoid.
+    active_days = {
+        _israel_date(v.created_at)
+        for v in db.query(ProducerPageView).filter(
+            ProducerPageView.producer_id == producer.id
+        )
+    } | {
+        _israel_date(c.clicked_at)
+        for c in db.query(ProducerWhatsAppClick).filter(
+            ProducerWhatsAppClick.producer_id == producer.id
+        )
+    }
+    expected_days = sorted(d for d in active_days if d <= watermark)
+    assert expected_days, "arrangement failed — no day in the window is owned"
+    demo_rollup = (
         db.query(ProducerAnalyticsDaily)
         .filter(ProducerAnalyticsDaily.producer_id == producer.id)
         .count()
-        == seed_mod.DEMO_INSIGHTS["days"]
+    )
+    assert demo_rollup == len(expected_days), (
+        f"{demo_rollup} aggregate row(s) after a refresh + reseed; the "
+        f"watermark {watermark} owns {len(expected_days)} day(s) of the window"
     )
     assert (
         db.query(ProducerPageView)
         .filter(ProducerPageView.producer_id == producer.id)
         .count()
         == seed_mod.DEMO_INSIGHTS["views_total"]
-    )
-    # No orphans left pointing at the deleted producer.
-    assert db.query(ProducerAnalyticsDaily).count() == seed_mod.DEMO_INSIGHTS["days"]
+    ), "the raw rows still cover all 30 days — MEH-2801 changed only the roll-up"
+
+    # No orphans left pointing at the deleted producer: the demo's rows plus
+    # the single anchor row belonging to the control producer.
+    assert db.query(ProducerAnalyticsDaily).count() == len(expected_days) + 1
     assert db.query(ProducerOffer).count() == 1
 
 

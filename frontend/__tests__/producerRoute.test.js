@@ -27,4 +27,19 @@ describe("isProducerDetail", () => {
     expect(isProducerDetail(null)).toBe(false);
     expect(isProducerDetail(undefined)).toBe(false);
   });
+
+  // MEH-2811: usePathname hands a Hebrew slug over percent-encoded
+  // ("/%D7%9E…"), exactly as Next hands the route param (MEH-2534). Without
+  // decoding, the gate missed every self-registered business (Hebrew slugs,
+  // MEH-1817), so the chat FAB and BottomNav rendered over the page.
+  it("matches a percent-encoded Hebrew business slug (MEH-2811)", () => {
+    const slug = "משק-הכרמל-הירוק-בדיקה";
+    expect(isProducerDetail(`/${encodeURIComponent(slug)}`)).toBe(true);
+    expect(isProducerDetail(`/${slug}`)).toBe(true);
+  });
+
+  it("still rejects encoded reserved routes and malformed escapes (MEH-2811)", () => {
+    expect(isProducerDetail(`/${encodeURIComponent("map")}`)).toBe(false);
+    expect(isProducerDetail("/%E0%A4%A")).toBe(false);
+  });
 });
