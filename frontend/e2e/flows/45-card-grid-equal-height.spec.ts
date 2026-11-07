@@ -74,6 +74,8 @@ test.describe("Home card grids — every card fills its grid cell (MEH-2802)", (
 
     await page.goto("/");
     const cards = page.locator('[data-testid="event-row-compact"]');
+    // Exact count is safe: UpcomingEventsPreview.jsx:22 asks this same endpoint
+    // with the same limit and renders every row it gets.
     await expect(cards).toHaveCount(n, { timeout: 15_000 });
     await cards.first().scrollIntoViewIfNeeded();
 

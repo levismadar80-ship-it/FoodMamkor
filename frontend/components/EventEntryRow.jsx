@@ -92,6 +92,8 @@ export default function EventEntryRow({ entry, freeLabel, compact = false }) {
   // ProducerCard): wrapper + link h-full, band = row 1, rail+body = the 1fr
   // row 2, body a column with the chip row pushed to its bottom. lg-only and
   // compact-only, so the phone list and every full-width caller are untouched.
+  // The title clamps to 2 lines there on purpose (MEH-2802 AC): one very long
+  // title would otherwise set the height of all three cards.
   // Guard: e2e/flows/45-card-grid-equal-height.spec.ts.
   const fill = compact
     ? {

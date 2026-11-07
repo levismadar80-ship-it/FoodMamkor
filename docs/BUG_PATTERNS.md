@@ -161,7 +161,9 @@ and the footer row (chip + price) sits on a different line in each card. Home
 bottom — the MDN card cookbook pattern, already in `ProducerCard.jsx`
 (`flex flex-col h-full` + `mt-auto`). In `EventEntryRow` compact (lg only):
 wrapper + link `h-full`, link `grid-rows-[auto_1fr]` (band = row 1,
-rail + body = row 2), body `flex flex-col`, chip row `mt-auto`. Keep a minimum
+rail + body = row 2), body `flex flex-col`, chip row `mt-auto`, title
+`line-clamp-2` (one very long title must not set the height of the whole row).
+Keep a minimum
 gap above the footer with padding (`pt-*`), since `mt-auto` collapses to 0 in
 the tallest card.
 

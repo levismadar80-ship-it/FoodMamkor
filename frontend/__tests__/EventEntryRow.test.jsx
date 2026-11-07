@@ -145,14 +145,17 @@ describe("EventEntryRow", () => {
     title: ["lg:line-clamp-2"],
     footer: ["lg:mt-auto", "lg:pt-3"],
   };
+  // The chip row is found by its test id when compact; a full-width row has
+  // none, so there it is the body's last child (which is what it is today).
   const partsOf = (container) => {
     const link = container.querySelector("a");
+    const body = container.querySelector("h3").parentElement;
     return {
       wrapper: link.parentElement,
       link,
-      body: container.querySelector("h3").parentElement,
+      body,
       title: container.querySelector("h3"),
-      footer: container.querySelector("h3").parentElement.lastElementChild,
+      footer: container.querySelector("[data-testid='event-row-footer']") ?? body.lastElementChild,
     };
   };
 
