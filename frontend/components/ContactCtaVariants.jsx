@@ -35,7 +35,7 @@ const OUTLINE =
 // square, lens, flash dot) and NOT recoloured or reshaped beyond the official
 // multicolour treatment. The gradient id must be unique per mount (useId) — the
 // glyph renders twice on mobile (card + sticky bar).
-export function InstagramGlyph({ size = 20 }) {
+function InstagramGlyph({ size = 20 }) {
   const gid = useId();
   return (
     <svg
@@ -91,7 +91,7 @@ function phosphor(Icon) {
   };
 }
 
-export const CTA_VARIANTS = {
+const CTA_VARIANTS = {
   whatsapp: { Icon: phosphor(WhatsappLogo), className: "btn-whatsapp" },
   phone: {
     Icon: phosphor(Phone),
