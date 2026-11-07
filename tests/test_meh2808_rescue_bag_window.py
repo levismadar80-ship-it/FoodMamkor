@@ -393,9 +393,11 @@ def test_the_stale_filter_selects_only_closed_bags(
     exist. `_bag_still_open` is module-level for exactly this reason.
 
     DISCRIMINATES: one live bag and one closed bag at the same location, and
-    the filter must return exactly the closed one. Drop the predicate from the
-    query — select every bag at the location, which is what the code did
-    before MEH-2816 — and the live bag comes back too, failing by id.
+    the query must return exactly the closed one. It calls
+    `_stale_bags_query` — the function the sweep deletes through — so dropping
+    `~_bag_still_open(now)` from the real query reds this test. A version that
+    re-typed the filter here would have passed that edit, which is what round
+    3 of the review pointed out.
     """
     now = _utc_at_israel(10, 0)
     monkeypatch.setattr(seed_mod, "utc_now", lambda: now)
@@ -427,13 +429,11 @@ def test_the_stale_filter_selects_only_closed_bags(
     db.commit()
     closed_id = closed.id
 
-    selected = {
-        o.id
-        for o in db.query(RescueOffer).filter(
-            RescueOffer.producer_location_id == location.id,
-            ~seed_mod._bag_still_open(now),
-        )
-    }
+    # THE SEED'S OWN QUERY, called rather than re-typed. A test that rebuilt
+    # the same filter here would pass even if the real `stale` query dropped
+    # its condition, which is the whole thing this is supposed to catch
+    # (reviewer on #4136, round 3).
+    selected = {o.id for o in seed_mod._stale_bags_query(db, location.id, now)}
     assert closed_id in selected, "the closed bag was not selected for sweeping"
     assert live_id not in selected, (
         "the filter selected a LIVE bag — this is the query that deletes, so "

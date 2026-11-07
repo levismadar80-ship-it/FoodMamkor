@@ -963,11 +963,30 @@ def _bag_still_open(now: datetime):
     the router's own `RESERVE_CLOSES_BEFORE_END` rather than a copy of it, so
     the seed and the listing cannot disagree about what is visible.
 
-    Module-level so it can be exercised without `_seed_rescue_bag`: inside that
-    function the live-bag guard always returns before the sweep, so the
-    negation is never reachable on its own there.
+    `pickup_end` is nullable=False (models.py), so this predicate and its
+    negation are exact complements — no bag falls outside both.
     """
     return RescueOffer.pickup_end > now + RESERVE_CLOSES_BEFORE_END
+
+
+def _stale_bags_query(db, location_id, now: datetime):
+    """The bags at `location_id` that `/rescue` can no longer show.
+
+    THE QUERY THE SWEEP ACTUALLY DELETES THROUGH, shared with its test rather
+    than described to it. `test_the_stale_filter_selects_only_closed_bags`
+    calls this function, so dropping `~_bag_still_open(now)` from here turns
+    that test red — which a test re-typing the same filter could not do
+    (reviewer on #4136, round 3).
+
+    It carries its own `pickup_end` condition and is therefore safe to call in
+    any order. The caller's live-bag guard is an early exit, not what makes
+    this correct: a query that is safe only in context is a trap for whoever
+    edits the context, which is the defect MEH-2816 fixes.
+    """
+    return db.query(RescueOffer).filter(
+        RescueOffer.producer_location_id == location_id,
+        ~_bag_still_open(now),
+    )
 
 
 def _demo_pickup_window(now_utc: datetime) -> tuple[date, datetime, datetime]:
@@ -1124,40 +1143,22 @@ def _seed_rescue_bag(db, producer) -> bool:
     # Still scoped to bags that can no longer pass `rescue.py:463` — a LIVE bag
     # anywhere is left alone and short-circuits, so this does not reintroduce
     # the double-bag #4114 removed.
-    # `pickup_end` is nullable=False (models.py), so the predicate and its
-    # negation are exact complements: every bag at this location is in one set
-    # or the other and never in neither.
-    still_open = _bag_still_open(now)
     live = (
         db.query(RescueOffer)
-        .filter(RescueOffer.producer_location_id == location.id, still_open)
+        .filter(
+            RescueOffer.producer_location_id == location.id,
+            _bag_still_open(now),
+        )
         .first()
     )
     if live is not None:
         return False
 
-    # MEH-2816 — THIS QUERY CARRIES ITS OWN `pickup_end` FILTER, and the name
-    # says what it holds. It previously selected every bag at the location and
-    # was correct only because the `live` short-circuit above returned first:
-    # an edit to that guard would have turned this into a delete of live bags,
-    # while the variable name told the reader a filter was already there. A
-    # query that is safe only in context is a trap for whoever edits the
-    # context.
-    #
-    # The predicate lives in `_bag_still_open` so it can be tested WITHOUT
-    # this function: `test_the_stale_filter_selects_only_closed_bags` runs it
-    # against a live bag and a closed one and requires exactly the closed one
-    # back. Through this function the guard above always returns first, so the
-    # filter is not reachable alone here — which is why it is tested there
-    # instead of asserted about here.
-    stale = (
-        db.query(RescueOffer)
-        .filter(
-            RescueOffer.producer_location_id == location.id,
-            ~still_open,
-        )
-        .all()
-    )
+    # MEH-2816 — the sweep deletes through `_stale_bags_query`, which carries
+    # its own `pickup_end` condition and is shared with the test that proves
+    # it. This previously selected every bag at the location, under the name
+    # `closed`, and was correct only because the guard above returned first.
+    stale = _stale_bags_query(db, location.id, now).all()
     for dead in stale:
         # Deleting one takes its rescue_orders with it, and their
         # rescue_reviews after that — both FKs are ondelete="CASCADE"
