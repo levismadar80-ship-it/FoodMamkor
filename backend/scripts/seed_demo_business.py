@@ -1045,7 +1045,6 @@ def _seed_insights(db, producer) -> None:
     wa_buckets = _spread(DEMO_INSIGHTS["whatsapp_clicks"], DEMO_INSIGHTS["days"])
     cities = DEMO_INSIGHTS["top_cities"]
     today = israel_today()
-    now = utc_now()
 
     for offset in range(DEMO_INSIGHTS["days"]):
         day_index = DEMO_INSIGHTS["days"] - 1 - offset  # 0 = oldest
