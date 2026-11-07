@@ -784,7 +784,7 @@ Keys: `join.how.*`. Link out: `לתהליך הקבלה המלא` → `/about/pro
 | **Checklist** | mirrors the MEH-994 pre-flight items verbatim (`join.prepare.*`) — keep the two surfaces in sync on any copy change |
 | **Card title** | 🗑️ RETIRED in MEH-2799 (#4123) — the card duplicated step 2 and left the page with its keys. Was `כל בית עסק עובר היכרות אישית` (MEH-2305, was `…שיחה אישית`) — positive framing; definition-by-negation ("לא בירוקרטיה") is **forbidden** |
 | **Card body** | `כל בית עסק במהמקור עובר היכרות אישית — זהות, סיפור, ולפעמים גם שיחה. כך כל עמוד באתר נשאר אמין ואישי.` — extends the approved `success.tier_trust` |
-| **FAQ Q/A** | `כמה זה עולה?` → `חינם להצטרף ולהופיע. אין עמלות על עסקאות — לעולם.` — the no-fees LOCK lives HERE (Etsy pattern), never in the headline. Link: `לכל השאלות` → `/about/for-businesses` |
+| **FAQ Q/A** | `כמה זה עולה?` → `חינם להצטרף ולהופיע. אין עמלות על עסקאות.` (MEH-2799, 07/11: «— לעולם» removed here and on /about/for-businesses — ADR-030 §5) — the no-fees promise lives HERE (Etsy pattern), never in the headline. Link: `לכל השאלות` → `/about/for-businesses` |
 | **Status** | ⏳ MEH-995 |
 
 ### Testimonial slot — 🗑️ RETIRED in MEH-2799 (#4123): the slot and its keys left the page. Real social proof gets its own card when it exists (Section 8 guardrail applies)
