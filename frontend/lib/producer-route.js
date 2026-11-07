@@ -17,7 +17,7 @@
  *           MEH-2148 (the `/[slug]` arm — see below).
  */
 
-import { isSlugShaped } from "@/lib/slug";
+import { isSlugShaped, decodeSlugParam } from "@/lib/slug";
 
 /**
  * True for the public producer detail page, on either URL that renders it.
@@ -47,5 +47,10 @@ export function isProducerDetail(pathname) {
   const path = pathname || "";
   if (/^\/producer\/(?!dashboard(\/|$))[^/]+$/.test(path)) return true;
   const leaf = /^\/([^/]+)$/.exec(path);
-  return leaf ? isSlugShaped(leaf[1]) : false;
+  // MEH-2811: usePathname returns a Hebrew slug still percent-encoded
+  // ("/%D7%9E…"), and SLUG_SHAPE has no `%` — so before this decode the gate
+  // never fired for a self-registered business (Hebrew slugs, MEH-1817), and
+  // the chat FAB + BottomNav rendered over its page. Same decode the page and
+  // middleware already apply (MEH-2534).
+  return leaf ? isSlugShaped(decodeSlugParam(leaf[1])) : false;
 }
