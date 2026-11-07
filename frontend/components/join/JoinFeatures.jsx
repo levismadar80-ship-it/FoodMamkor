@@ -79,7 +79,12 @@ const CLIP_WIDTH = 600;
 const CLIP_HEIGHT = 480;
 const IN_VIEW_RATIO = 0.5;
 const STAGGER_MS = 30;
-const PANEL_SHIFT_CLASS = { forward: "-translate-x-[14px]", back: "translate-x-[14px]" };
+// "Forward" (the next group) enters from the inline-END side, so the sign
+// flips with the document direction: /he is RTL, /en is LTR.
+const PANEL_SHIFT_CLASS = {
+  forward: "rtl:-translate-x-[14px] ltr:translate-x-[14px]",
+  back: "rtl:translate-x-[14px] ltr:-translate-x-[14px]",
+};
 // The sticky site header is 96px at its tallest; the stage is never scrolled under it.
 const HEADER_CLEARANCE_PX = 96;
 
@@ -145,16 +150,21 @@ function SampleLabel({ text }) {
 }
 
 /** The selected group's clip: muted loop, plays only while on screen, with a pause control (WCAG 2.2.2). */
-function GroupClip({ group, alt, labels, startPaused }) {
+/**
+ * `paused` lives in JoinFeatures, not here: one pause choice covers every
+ * group's clip (a user who stopped the motion should not have to stop it again
+ * on each card — the WCAG 2.2.2 intent).
+ */
+function GroupClip({ group, alt, labels, paused, setPaused }) {
   const videoRef = useRef(null);
   const [inView, setInView] = useState(false);
-  const [paused, setPaused] = useState(startPaused);
 
   useEffect(() => {
     const el = videoRef.current;
     if (!el || typeof IntersectionObserver === "undefined") return undefined;
     const io = new IntersectionObserver(
-      ([entry]) => setInView(entry.intersectionRatio >= IN_VIEW_RATIO),
+      // The LAST entry is the current state; a busy main thread can deliver several.
+      (entries) => setInView(entries[entries.length - 1].intersectionRatio >= IN_VIEW_RATIO),
       { threshold: [0, IN_VIEW_RATIO] },
     );
     io.observe(el);
@@ -166,11 +176,16 @@ function GroupClip({ group, alt, labels, startPaused }) {
     if (!el) return;
     if (inView && !paused) {
       const started = el.play?.();
-      started?.catch?.(() => setPaused(true));
+      // Only a refused autoplay counts as "paused". An AbortError just means
+      // pause() interrupted a play() still waiting on preload="none" bytes —
+      // treating that as the user's choice froze the clip for good.
+      started?.catch?.((error) => {
+        if (error?.name === "NotAllowedError") setPaused(true);
+      });
     } else {
       el.pause?.();
     }
-  }, [inView, paused]);
+  }, [inView, paused, setPaused]);
 
   return (
     <>
@@ -205,11 +220,11 @@ function GroupClip({ group, alt, labels, startPaused }) {
 }
 
 /** One media slot (card or stage). The clip when this slot is the live one, else the poster. */
-function GroupMedia({ group, live, alt, labels, startPaused, sizes }) {
+function GroupMedia({ group, live, alt, labels, paused, setPaused, sizes }) {
   return (
     <div className="relative aspect-[5/4] w-full overflow-hidden bg-border">
       {live ? (
-        <GroupClip key={group} group={group} alt={alt} labels={labels} startPaused={startPaused} />
+        <GroupClip key={group} group={group} alt={alt} labels={labels} paused={paused} setPaused={setPaused} />
       ) : (
         <NextImage
           src={`${MEDIA_DIR}/clip-${group}-poster.webp`}
@@ -320,8 +335,14 @@ function Panel({ group, features, entered, shiftClass, t, tw }) {
             >
               <Check size={18} className="mt-1 shrink-0 text-primary" aria-hidden="true" />
               <span className="min-w-0">
-                {t(`items.${feature.id}.label`)}
-                {feature.tip ? <FeatureTip label={tw("trigger")} text={t(`items.${feature.id}.tip`)} /> : null}
+                <span id={`join-item-${feature.id}`}>{t(`items.${feature.id}.label`)}</span>
+                {feature.tip ? (
+                  <FeatureTip
+                    label={tw("trigger")}
+                    text={t(`items.${feature.id}.tip`)}
+                    describedBy={`join-item-${feature.id}`}
+                  />
+                ) : null}
               </span>
             </li>
           );
@@ -350,6 +371,12 @@ export default function JoinFeatures() {
   const [selected, setSelected] = useState(BUSINESS_FEATURE_GROUPS[0]);
   const [shiftClass, setShiftClass] = useState(PANEL_SHIFT_CLASS.forward);
   const [entered, setEntered] = useState(true);
+  const [clipPaused, setClipPaused] = useState(false);
+  // Reduced motion → clips start paused. The query resolves after mount
+  // (useMediaQuery is null on the server), so this follows it once.
+  useEffect(() => {
+    if (reducedMotion) setClipPaused(true);
+  }, [reducedMotion]);
   const indexRef = useRef(0);
   const shelfRef = useRef(null);
   const stageRef = useRef(null);
@@ -399,7 +426,8 @@ export default function JoinFeatures() {
       live={group === selected && isDesktop !== null && (slot === "stage") === isDesktop}
       alt={tj(`media_alt.${group}`)}
       labels={labels}
-      startPaused={reducedMotion}
+      paused={clipPaused}
+      setPaused={setClipPaused}
       sizes={slot === "stage" ? "480px" : "78vw"}
     />
   );
@@ -455,7 +483,9 @@ export default function JoinFeatures() {
             <div className="mb-6 hidden max-w-[480px] overflow-hidden rounded-md border border-border min-[700px]:block">
               {mediaFor(selected, "stage")}
             </div>
-            <div ref={panelRef}>
+            {/* scroll-mt: the sticky site header is ~96px; without it the panel
+                heading lands under the header when the panel scrolls into view. */}
+            <div ref={panelRef} className="scroll-mt-24">
               <Panel
                 group={selected}
                 features={byGroup[selected]}

@@ -21,23 +21,27 @@ import { useEffect, useId, useRef, useState } from "react";
  * appears (Heydon Pickering's toggletip pattern). No animation at all, so
  * there is nothing for prefers-reduced-motion to switch off.
  */
-export default function FeatureTip({ label, text }) {
+export default function FeatureTip({ label, text, describedBy }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
   const tipId = useId();
 
   useEffect(() => {
     if (!open) return undefined;
-    const onPointerDown = (event) => {
+    const closeIfOutside = (event) => {
       if (rootRef.current && !rootRef.current.contains(event.target)) setOpen(false);
     };
     const onKeyDown = (event) => {
       if (event.key === "Escape") setOpen(false);
     };
-    document.addEventListener("pointerdown", onPointerDown);
+    // pointerdown = a tap outside; focusin = keyboard focus moved elsewhere
+    // (e.g. Tab to the next «?»), so two tips are never open at once.
+    document.addEventListener("pointerdown", closeIfOutside);
+    document.addEventListener("focusin", closeIfOutside);
     document.addEventListener("keydown", onKeyDown);
     return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("pointerdown", closeIfOutside);
+      document.removeEventListener("focusin", closeIfOutside);
       document.removeEventListener("keydown", onKeyDown);
     };
   }, [open]);
@@ -47,6 +51,8 @@ export default function FeatureTip({ label, text }) {
       <button
         type="button"
         aria-label={label}
+        // Every «?» shares one name; the item it explains tells them apart.
+        aria-describedby={describedBy}
         aria-expanded={open}
         aria-controls={tipId}
         onClick={() => setOpen((v) => !v)}
@@ -55,16 +61,18 @@ export default function FeatureTip({ label, text }) {
       >
         ?
       </button>
-      {/* Always rendered so aria-controls resolves; `hidden` while closed.
+      {/* The live region is ALWAYS in the accessibility tree and only its text
+          changes — a region that appears together with its content is often
+          not announced. The visible bubble lives inside it.
           inset-x-0 is symmetric (left + right), so it needs no logical twin. */}
-      <span
-        id={tipId}
-        role="status"
-        hidden={!open}
-        data-testid="join-feature-tip"
-        className="absolute inset-x-0 top-full z-10 mt-1.5 rounded-md border border-border bg-surface-card px-3 py-2 text-sm leading-relaxed text-text"
-      >
-        {open ? text : null}
+      <span id={tipId} role="status" data-testid="join-feature-tip-region">
+        <span
+          hidden={!open}
+          data-testid="join-feature-tip"
+          className="absolute inset-x-0 top-full z-10 mt-1.5 rounded-md border border-border bg-surface-card px-3 py-2 text-sm leading-relaxed text-text"
+        >
+          {open ? text : null}
+        </span>
       </span>
     </span>
   );

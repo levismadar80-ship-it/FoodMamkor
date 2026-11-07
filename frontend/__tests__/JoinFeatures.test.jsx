@@ -233,6 +233,68 @@ describe("phone shelf scroll", () => {
   });
 });
 
+describe("review round 1 (adversarial, #4123)", () => {
+  it("an AbortError from play() (pause() interrupting a pending load) does NOT freeze the clip", async () => {
+    playSpy.mockImplementation(() => Promise.reject(Object.assign(new Error("aborted"), { name: "AbortError" })));
+    renderFeatures();
+    const video = screen.getByTestId("join-clip");
+    setRatio(video, 1);
+    await act(async () => {});
+    expect(screen.getByTestId("join-clip-toggle").getAttribute("aria-pressed")).toBe("false");
+  });
+
+  it("a refused autoplay (NotAllowedError) does show as paused", async () => {
+    playSpy.mockImplementation(() => Promise.reject(Object.assign(new Error("no"), { name: "NotAllowedError" })));
+    renderFeatures();
+    setRatio(screen.getByTestId("join-clip"), 1);
+    await act(async () => {});
+    expect(screen.getByTestId("join-clip-toggle").getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("one pause choice covers every group: pausing A, then selecting B, keeps B paused", () => {
+    renderFeatures();
+    setRatio(screen.getByTestId("join-clip"), 1);
+    fireEvent.click(screen.getByTestId("join-clip-toggle"));
+    fireEvent.click(cardButton("trust"));
+    const video = screen.getByTestId("join-clip");
+    expect(video.dataset.group).toBe("trust");
+    playSpy.mockClear();
+    setRatio(video, 1);
+    expect(playSpy).not.toHaveBeenCalled();
+    expect(screen.getByTestId("join-clip-toggle").getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("the clip reads the LAST observer entry (a queued [in, out] pair means out)", () => {
+    renderFeatures();
+    const video = screen.getByTestId("join-clip");
+    act(() => {
+      for (const io of observers) {
+        if (io.targets.includes(video)) {
+          io.callback([
+            { target: video, intersectionRatio: 0.9, isIntersecting: true },
+            { target: video, intersectionRatio: 0, isIntersecting: false },
+          ]);
+        }
+      }
+    });
+    expect(playSpy).not.toHaveBeenCalled();
+  });
+
+  it("the panel slide flips with the document direction (RTL /he, LTR /en)", () => {
+    renderFeatures();
+    fireEvent.click(cardButton("found")); // forward: rows start shifted until the next frames
+    const row = within(panel()).getAllByTestId("join-tile")[0];
+    expect(row.className).toContain("rtl:-translate-x-[14px]");
+    expect(row.className).toContain("ltr:translate-x-[14px]");
+    expect(row.className.split(/\s+/)).not.toContain("-translate-x-[14px]");
+  });
+
+  it("the panel wrapper reserves the sticky header's height when scrolled into view", () => {
+    renderFeatures();
+    expect(panel().parentElement.className).toContain("scroll-mt-24");
+  });
+});
+
 describe("toggletip", () => {
   const openTip = () => {
     renderFeatures(); // "page" has map_precision, a tipped item
@@ -269,6 +331,32 @@ describe("toggletip", () => {
     fireEvent.pointerDown(screen.getByTestId("join-features-count"));
     expect(tip.hidden).toBe(true);
     expect(button.getAttribute("aria-expanded")).toBe("false");
+  });
+
+  it("the live region stays in the a11y tree while closed; only its text changes", () => {
+    const { item, button } = openTip();
+    const region = within(item).getByTestId("join-feature-tip-region");
+    expect(region.getAttribute("role")).toBe("status");
+    expect(region.hidden).toBe(false);
+    expect(region.textContent).toBe("");
+    expect(button.getAttribute("aria-controls")).toBe(region.id);
+    fireEvent.click(button);
+    expect(region.textContent).toBe(BF.items.map_precision.tip);
+  });
+
+  it("keyboard focus moving elsewhere closes it (no two tips open at once)", () => {
+    const { button, tip } = openTip();
+    fireEvent.click(button);
+    expect(tip.hidden).toBe(false);
+    fireEvent.focusIn(screen.getByTestId("join-features-count"));
+    expect(tip.hidden).toBe(true);
+  });
+
+  it("each «?» is described by the item it explains", () => {
+    const { item, button } = openTip();
+    const id = button.getAttribute("aria-describedby");
+    expect(id).toBeTruthy();
+    expect(item.querySelector(`#${id}`).textContent).toBe(BF.items.map_precision.label);
   });
 
   it("a tap inside the tip does not close it", () => {
