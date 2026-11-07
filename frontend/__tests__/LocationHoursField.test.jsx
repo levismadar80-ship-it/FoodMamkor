@@ -130,6 +130,20 @@ describe("LocationHoursField — where it appears (MEH-2819)", () => {
     }
   });
 
+  it("an unknown kind gets no line at all — never a guessed place", () => {
+    render(<LocationHoursField value="" onChange={vi.fn()} isPrimary={false} kind="farm_gate" />);
+    expect(screen.queryByTestId("location-hours-where")).toBeNull();
+  });
+
+  // The pickup line quotes a section heading; it must be the heading the page
+  // actually shows (DeliveryBlock reads group_buys.delivery.pickup), per locale.
+  it("the pickup line quotes the real «איסוף עצמי» / «Self pickup» heading", () => {
+    for (const messages of [he, en]) {
+      const heading = messages.group_buys.delivery.pickup;
+      expect(messages.settings.locations.form.hours_where_pickup).toContain(`«${heading}»`);
+    }
+  });
+
   it("the form passes its live kind and primary flag (LocationsEditor)", async () => {
     await openEditForm({ ...ROW, is_primary: true, opening_hours: "" });
     expect(screen.getByTestId("location-hours-where").textContent).toBe(

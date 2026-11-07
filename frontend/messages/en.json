@@ -5346,7 +5346,7 @@
         "hours_label": "Hours",
         "hours_unreadable": "Saved hours: {value} — please pick them again below",
         "hours_where_primary": "Shown on your business page, in the «Hours» section",
-        "hours_where_pickup": "Shown on your business page next to this point, under «Pickup»",
+        "hours_where_pickup": "Shown on your business page next to this point, under «Self pickup»",
         "hours_where_map": "Shown on your business page, in this point's map popup",
         "phone_label": "Phone",
         "phone_placeholder": "e.g. 050-1234567",

@@ -1110,7 +1110,7 @@ because the hours really appear in a different place for each:
 | Key | he | en | When |
 |---|---|---|---|
 | `settings.locations.form.hours_where_primary` | `מופיעות בעמוד העסק, בסקשן «שעות»` | `Shown on your business page, in the «Hours» section` | The primary location (`resolveStoreHours`) |
-| `settings.locations.form.hours_where_pickup` | `מופיעות בעמוד העסק ליד הנקודה, תחת «איסוף עצמי»` | `Shown on your business page next to this point, under «Pickup»` | A pickup point or market stall that is not primary (DeliveryBlock `PickupRow`) |
+| `settings.locations.form.hours_where_pickup` | `מופיעות בעמוד העסק ליד הנקודה, תחת «איסוף עצמי»` | `Shown on your business page next to this point, under «Self pickup»` | A pickup point or market stall that is not primary (DeliveryBlock `PickupRow`) |
 | `settings.locations.form.hours_where_map` | `מופיעות בעמוד העסק, בחלון של הנקודה במפה` | `Shown on your business page, in this point's map popup` | Any other non-primary point (MiniMap popup) |
 
 Approved by Sapir 07/11 («תעשה מה שאתה חושב»). Neutral Hebrew — plural

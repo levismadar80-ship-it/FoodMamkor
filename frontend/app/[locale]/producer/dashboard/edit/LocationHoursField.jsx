@@ -59,9 +59,10 @@ export const WHERE_KEY_BY_KIND = Object.freeze({
   market_stand: "hours_where_pickup",
 });
 
+// An unknown kind gets NO line: a wrong «where it appears» is worse than none.
 function whereKey(isPrimary, kind) {
   if (isPrimary) return "hours_where_primary";
-  return WHERE_KEY_BY_KIND[kind] ?? "hours_where_map";
+  return WHERE_KEY_BY_KIND[kind] ?? null;
 }
 
 export default function LocationHoursField({
@@ -87,6 +88,7 @@ export default function LocationHoursField({
     [stored],
   );
 
+  const where = whereKey(isPrimary, kind);
   const issueByDay = new Map(dayIssues(days).map((issue) => [issue.index, issue.reason]));
 
   // Every edit goes through here: the new model, its canonical string upward,
@@ -123,9 +125,11 @@ export default function LocationHoursField({
     // the first control.
     <fieldset className="text-xs" data-testid="location-hours">
       <legend className="mb-1 block font-medium text-fg-muted">{tForm("hours_label")}</legend>
-      <p className="mb-2 text-2xs text-fg-muted" data-testid="location-hours-where">
-        {tForm(whereKey(isPrimary, kind))}
-      </p>
+      {where && (
+        <p className="mb-2 text-2xs text-fg-muted" data-testid="location-hours-where">
+          {tForm(where)}
+        </p>
+      )}
 
       {unreadable && (
         <p className="mb-2 flex items-start gap-1.5 text-xs text-text" role="status" data-testid="location-hours-unreadable">
