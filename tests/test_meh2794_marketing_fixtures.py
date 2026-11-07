@@ -114,8 +114,12 @@ def test_refresh_sweeps_qa_leftovers(db, seed_mod, bakery_category):
             status="open",
         )
     )
+    # The demo CONSUMER, not one of the DEMO_REVIEWS authors: there is a
+    # unique constraint of one review per (producer, user), and all three
+    # reviewers already used theirs in the seed. The consumer is a group-buy
+    # committer only, so it is the one seeded account still free to review.
     qa_reviewer = (
-        db.query(User).filter(User.email == seed_mod.DEMO_REVIEWS[0]["email"]).one()
+        db.query(User).filter(User.email == seed_mod.DEMO_CONSUMER_EMAIL).one()
     )
     db.add(
         ProducerReview(

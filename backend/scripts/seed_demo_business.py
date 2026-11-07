@@ -936,6 +936,26 @@ def _seed_rescue_bag(db, producer) -> bool:
         return False
 
     today = israel_today()
+    # IDEMPOTENT, per the ticket's "add if missing". Keyed on (location, date)
+    # because that is what a bag IS — one offer from one place on one day; the
+    # table indexes exactly that pair (ix_rescue_offers_location_date).
+    #
+    # This was missing in the first version: `seed_marketing_fixtures` guarded
+    # the offer and the insights but delegated the bag's check to this function,
+    # which never had one, so a second run left the demo business with two
+    # identical bags on /rescue — the "looks odd" the ticket exists to remove.
+    # Caught by test_marketing_fixtures_are_idempotent on its first CI run.
+    existing = (
+        db.query(RescueOffer)
+        .filter(
+            RescueOffer.producer_location_id == location.id,
+            RescueOffer.date == today,
+        )
+        .first()
+    )
+    if existing is not None:
+        return False
+
     db.add(
         RescueOffer(
             producer_location_id=location.id,
