@@ -37,7 +37,12 @@ import { Link } from "@/i18n/navigation";
 // inks Footer.jsx already carries on bg-primary-dark (MEH-867: green-50 /
 // green-100 measured AA there) — no new colour is introduced.
 const TONES = {
-  default: { text: "text-muted-foreground", link: "text-primary underline" },
+  // MEH-2798: `text-fg-muted`, not `text-muted-foreground`. The latter is not
+  // a key in tailwind.tokens.json, so Tailwind emitted NOTHING for it — no
+  // error, no warning — and all eight notices silently inherited their
+  // parent's colour instead of the brand's muted ink. `fg-muted` is the
+  // house token (171 files) and measures ~6.5:1 on cream (globals.css:420).
+  default: { text: "text-fg-muted", link: "text-primary underline" },
   "on-dark": { text: "text-green-100", link: "text-green-50 underline hover:text-white" },
 };
 
