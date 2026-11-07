@@ -325,6 +325,7 @@
           "phone_hint": "We'll send you a WhatsApp message to verify and complete the profile",
           "license_required_label": "Producer license number (required)",
           "license_required_hint": "Food production in this category requires a producer license from the Ministry of Health",
+          "license_what_is_it": "The licence number appears on your Ministry of Health production licence. You can skip it now and add it after approval.",
           "license_pending_optin_label": "I don't have a license number yet",
           "license_pending_optin_hint": "You can complete registration now. Your business will be approved and go live only after we receive your license number.",
           "license_optional_label": "Producer license number",
