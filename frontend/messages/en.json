@@ -4290,6 +4290,14 @@
         "share_cta": "Share on WhatsApp",
         "wa_text_template": "My profile on Mehamakor: {url}"
       },
+      "qr": {
+        "title": "QR code for your page",
+        "body": "Print it and put it by the till, on your stall or on your packaging. Anyone who scans it lands straight on your Mehamakor page.",
+        "download_svg": "Download for print (SVG)",
+        "download_png": "Download as image (PNG)",
+        "print_card": "Print card",
+        "hint": "Before you print a lot, scan it once with your phone and check the page opens."
+      },
       "states": {
         "zero_activity_title": "Views and clicks",
         "zero_activity": "No views or clicks yet — share your page to get started",
@@ -5716,6 +5724,11 @@
       "whatsapp_group": "WhatsApp group",
       "external_order": "Order form"
     }
+  },
+  "qr_card": {
+    "cta": "Scan to see our page on Mehamakor",
+    "print_hint": "The card is A6. When printing, choose 100%, not fit to page.",
+    "back": "Back to dashboard"
   },
   "rescue": {
     "page": {
