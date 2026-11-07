@@ -521,3 +521,50 @@ describe("ChipScrollRow — category multi-select + Direction A (MEH-1465 / MEH-
     expect(onChipClick).toHaveBeenCalledWith("dairy");
   });
 });
+
+// MEH-2823: on iOS, WebKit re-snaps an RTL scroll-snap row to the WRONG end
+// after a layout (bugs.webkit.org/207826, still open). Our row gets that layout
+// right after mount: the hook detects overflow and the w-12 end spacer mounts.
+// The old code pinned to the start ONCE, on mount, so the late re-snap won and
+// /favorites opened with «הכל» scrolled out of view. The row must re-pin when
+// overflow appears — but never against a user who already touched it, and never
+// when a chip is actively filtering (scrollIntoView owns that case).
+describe("ChipScrollRow — re-pin to inline-start after overflow appears (MEH-2823)", () => {
+  const PIN_START = { left: 0, behavior: "instant" };
+
+  beforeEach(() => {
+    // Run rAF callbacks synchronously so the assertion sees the re-pin.
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb) => {
+      cb(0);
+      return 1;
+    });
+    vi.spyOn(window, "cancelAnimationFrame").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("untouched row, no active filter → pins to the start once overflow appears", () => {
+    const { container } = renderRow({ activeKey: "all" });
+    Element.prototype.scrollTo.mockClear();
+    // WebKit's late re-snap left the row at the far END (negative in RTL).
+    setScrollGeometry(container, { scrollWidth: 1000, clientWidth: 500, scrollLeft: -500 });
+    expect(getScroller(container).scrollTo).toHaveBeenCalledWith(PIN_START);
+  });
+
+  it("user touched the row first → never yanked back to the start", () => {
+    const { container } = renderRow({ activeKey: "all" });
+    fireEvent.pointerDown(getScroller(container));
+    Element.prototype.scrollTo.mockClear();
+    setScrollGeometry(container, { scrollWidth: 1000, clientWidth: 500, scrollLeft: -500 });
+    expect(getScroller(container).scrollTo).not.toHaveBeenCalled();
+  });
+
+  it("a chip is actively filtering → no pin (scrollIntoView places the active chip)", () => {
+    const { container } = renderRow({ activeKey: "bread" });
+    Element.prototype.scrollTo.mockClear();
+    setScrollGeometry(container, { scrollWidth: 1000, clientWidth: 500, scrollLeft: -500 });
+    expect(getScroller(container).scrollTo).not.toHaveBeenCalled();
+  });
+});
