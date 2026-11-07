@@ -38,7 +38,8 @@ const OUTLINE =
 // under 3:1 on white; accepted, as in Instagram's own multicolour glyph — the
 // glyph is aria-hidden and the button label carries the meaning.
 function InstagramGlyph({ size = 20 }) {
-  const gid = useId();
+  // useId() returns ":r1:"-style ids; colons inside url(#…) trip some WebViews.
+  const gid = `ig-${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
   return (
     <svg
       viewBox="0 0 24 24"

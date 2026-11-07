@@ -60,7 +60,7 @@ describe("primary contact CTA — inline and sticky share one colour (MEH-2813)"
     expect(colourClasses(stickyBtn)).toEqual(colourClasses(inlineBtn));
   });
 
-  it.each(["instagram", "facebook", "external_order"])(
+  it.each(["website", "instagram", "facebook", "external_order"])(
     "%s: white outlined button on both surfaces, not a green fill",
     (method) => {
       const { inlineBtn, stickyBtn } = renderBoth(method);
@@ -80,6 +80,7 @@ describe("primary contact CTA — inline and sticky share one colour (MEH-2813)"
     const idB = b.querySelector("linearGradient").id;
     expect(idA).not.toBe("");
     expect(idA).not.toBe(idB);
+    expect(idA).toMatch(/^ig-[a-zA-Z0-9]+$/);
     expect(a.querySelector("g").getAttribute("stroke")).toBe(`url(#${idA})`);
   });
 
