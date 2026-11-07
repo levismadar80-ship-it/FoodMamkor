@@ -54,7 +54,7 @@ AI-agnostic project context (DNA, stack, brand, working model, environment) live
 | [docs/DATA.md](./docs/DATA.md) | DB schema, all API endpoints, request/response shapes |
 | [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) | Branch strategy, Railway/Vercel/GitHub setup, dev workflow |
 | [docs/SECURITY.md](./docs/SECURITY.md) + [SECURITY-CHECKLIST.md](./docs/SECURITY-CHECKLIST.md) | JWT, rate limits, CORS, IDOR, headers, CSP + 7 past-incident traps |
-| [docs/TESTING.md](./docs/TESTING.md) + [MANUAL_TESTING.md](./docs/MANUAL_TESTING.md) + [E2E-LOCATORS.md](./docs/E2E-LOCATORS.md) | pytest/playwright + per-feature manual QA checklist + `data-testid` locator rule for new E2E tests |
+| [docs/TESTING.md](./docs/TESTING.md) + [RELEASE_CHECKLIST.md](./docs/RELEASE_CHECKLIST.md) + [E2E-LOCATORS.md](./docs/E2E-LOCATORS.md) | pytest/playwright + the short pre-`staging→main` checklist (real-device-only items; MANUAL_TESTING archived, MEH-2796) + `data-testid` locator rule for new E2E tests |
 | [docs/MIGRATIONS.md](./docs/MIGRATIONS.md) | Alembic workflow: add column, local check, rollback, CI gate |
 | [docs/MODERATION.md](./docs/MODERATION.md) + [ADMIN.md](./docs/ADMIN.md) | Hybrid AI moderation + admin pages, seed, role enforcement |
 | [docs/ROADMAP.md](./docs/ROADMAP.md) + [FEATURES.md](./docs/FEATURES.md) + [CHANGELOG.md](./docs/CHANGELOG.md) | v1/v2/v3 priorities + status table + session log |

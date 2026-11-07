@@ -409,6 +409,11 @@ zero.
     [docs/MANUAL_TESTING.md](../../docs/MANUAL_TESTING.md)** with any
     new features. Format: `[ ] Test — איך לבדוק — תוצאה מצופה`. Add
     under the relevant page/feature section, or create a new section.
+    _Superseded 2026-11-07 (MEH-2796): by then the file held 4,906 lines,
+    405 sections and ~2,000 boxes, none ever ticked; MEH-2302 (22/10) had
+    removed the human QA pass it was written for. Rule 10 now asks for an
+    automated test, with real-device-only items in `docs/RELEASE_CHECKLIST.md`.
+    The file is at `docs/archive/MANUAL_TESTING-until-2026-11-07.md`._
 11. **After every PR — auto-update every doc your code touched.** If
     you edited a code area, update its doc in the same PR — don't wait
     to be asked. Rule: code change → doc update, same commit or same

@@ -265,8 +265,8 @@ only; the desktop chip stayed until MEH-2769.
 
 ## After UI changes
 
-- Update [docs/MANUAL_TESTING.md](../../docs/MANUAL_TESTING.md) with any
-  new features. Format:
-  `[ ] Test — איך לבדוק — תוצאה מצופה`.
+- Cover the new behaviour with an automated test; only a real-device-only
+  check goes to [docs/RELEASE_CHECKLIST.md](../../docs/RELEASE_CHECKLIST.md)
+  (workflow rule 10, MEH-2796).
 - Open the Vercel preview on **mobile** before approving any PR that
   changes visible UI (Regression rule 4).

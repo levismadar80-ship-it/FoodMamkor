@@ -147,4 +147,4 @@ Then `jq` or import into Grafana Cloud k6 (free tier) for percentile charts.
 
 - Linear: MEH-559 (parent), MEH-557 (verdict), MEH-583 (post-launch capacity-ceiling follow-up — disable slowapi + re-run after 50+ producers / 200+ MAU), MEH-360 (sandbox limitation precedent), MEH-549 (Wave 3 verification-limit precedent).
 - Script: `scripts/load-test.js`.
-- Runbook in repo: `docs/MANUAL_TESTING.md` -> "Load testing" section.
+- Runbook in repo: [`docs/runbooks/load-testing.md`](../runbooks/load-testing.md) (moved from `docs/MANUAL_TESTING.md`, MEH-2796).

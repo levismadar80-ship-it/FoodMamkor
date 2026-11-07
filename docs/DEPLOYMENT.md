@@ -620,28 +620,7 @@ python scripts/check_api_contract.py --probe "$BACKEND"
 
 ### Sanity checks before promoting `staging → main`
 
-- [ ] `npx playwright test --project=desktop` passes locally (6/6)
-- [ ] `pytest tests/test_api.py -q` passes locally (24/24)
-- [ ] Manual smoke test on `staging.mehamakor.online`:
-  - [ ] Homepage hero loads
-  - [ ] Map shows producers
-  - [ ] WhatsApp button on a producer page opens with the right text
-  - [ ] Chat widget bottom-left answers a test question
-  - [ ] No console errors in DevTools
-- [ ] No new entries in Sentry's "issues" tab from the staging deploy
-- [ ] **Prod is clean of demo/test data** — run the read-only scan against
-  production and confirm it exits 0:
-  ```
-  # local checkout, repo root (Railway CLI injects the env)
-  railway run python backend/scripts/check_no_demo_data.py
-  # Railway Console instead? /app already IS backend/ (Dockerfile:40) — drop the prefix:
-  #   python scripts/check_no_demo_data.py
-  ```
-  Exit 1 means a demo/test entity leaked to prod — review each flagged row
-  (the script never deletes) and clean it before promoting. Policy + the
-  `תסס`-fermentation false-positive caveat: [ADR-029](./decisions/ADR-029-demo-data-staging-only.md).
-- [ ] PR description lists every behavior change so the next reviewer knows
-  what they're approving for production
+Moved to [docs/RELEASE_CHECKLIST.md](./RELEASE_CHECKLIST.md) on 2026-11-07 (MEH-2796). There is one list, and it lives there.
 
 ---
 
@@ -1758,7 +1737,7 @@ python scripts/restore_from_backup.py mehamakor_production_20260507T230000Z.dump
 ```
 
 Full DR drill checklist (run end-to-end at least once before MEH-408 closes):
-[docs/MANUAL_TESTING.md → MEH-408 Phase 4 — DR drill](./MANUAL_TESTING.md).
+[docs/runbooks/dr-drill.md](./runbooks/dr-drill.md).
 
 ### E. Known limitations (v1, accepted)
 
