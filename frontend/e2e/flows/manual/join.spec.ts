@@ -204,15 +204,14 @@ test.describe("manual › /join (MEH-995)", () => {
     const questions = faq.getByRole("heading", { level: 3 });
     await expect(questions).toHaveCount(4);
     await expect(questions.first()).toHaveText(COPY.faq.q_cost);
-    await expect(faq).toContainText(COPY.faq.a_cost);
-    // Accordion (Sapir, 07/11 — the site's FAQ pattern): only the cost
-    // answer is open; a tap on a question opens its answer.
+    // Accordion (Sapir, 07/11): every answer closed on load; a tap on a
+    // question opens its answer.
     const items = faq.getByTestId("join-faq-item");
-    await expect(items.nth(0).getByText(COPY.faq.a_cost)).toBeVisible();
-    const second = items.nth(1);
-    await expect(second.getByText(COPY.faq.a_google)).toBeHidden();
-    await second.locator("summary").click();
-    await expect(second.getByText(COPY.faq.a_google)).toBeVisible();
+    const first = items.nth(0);
+    await expect(first.getByText(COPY.faq.a_cost)).toBeHidden();
+    await expect(items.nth(1).getByText(COPY.faq.a_google)).toBeHidden();
+    await first.locator("summary").click();
+    await expect(first.getByText(COPY.faq.a_cost)).toBeVisible();
     const allLink = faq.getByRole("link");
     await expect(allLink).toHaveCount(1);
     await expect(allLink).toHaveText(COPY.faq.all_link);
