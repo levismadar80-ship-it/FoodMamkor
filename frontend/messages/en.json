@@ -5344,7 +5344,7 @@
         "coords_summary": "Manual coordinates",
         "coords_hint": "Optional. Fill these in only if the map pin isn't sitting in the right place.",
         "hours_label": "Hours",
-        "hours_placeholder": "e.g. Sun–Thu, 9:00–17:00",
+        "hours_unreadable": "Saved hours: {value} — please pick them again below",
         "phone_label": "Phone",
         "phone_placeholder": "e.g. 050-1234567",
         "precision_label": "Precision",
