@@ -130,11 +130,13 @@ describe("RegistrationCta — the on-site form", () => {
     expect(link.className).toContain("underline");
   });
 
-  it("the notice keeps a REAL colour token, not the component's inert default", () => {
-    // CollectionNotice's default tone is `text-muted-foreground`, which is not
-    // in tailwind.tokens.json and emits no CSS (measured: 0 occurrences in the
-    // built chunks vs 1 for `.text-fg-muted`). Without the explicit class this
-    // surface would lose the muted grey the <p> had, with nothing failing.
+  it("the notice carries a REAL colour token", () => {
+    // MEH-2777 pinned `text-fg-muted` at this call site because
+    // CollectionNotice's default tone was `text-muted-foreground`, which is
+    // not in tailwind.tokens.json and emits no CSS. MEH-2798 fixed the
+    // component, so the class now arrives from its default and the explicit
+    // prop is gone — this assertion is unchanged and still passes, which is
+    // what makes it the check that the surface never lost its colour.
     openForm();
     const notice = screen.getByTestId("registration-collection-notice");
     expect(notice.className).toContain("text-fg-muted");
