@@ -85,6 +85,13 @@ const PANEL_SHIFT_CLASS = {
   forward: "rtl:-translate-x-[14px] ltr:translate-x-[14px]",
   back: "rtl:translate-x-[14px] ltr:-translate-x-[14px]",
 };
+// A shelf card counts as "where the swipe came to rest" once this much of it
+// is inside the shelf. At 390px the centred card is ~100% in, its neighbours
+// ~11%, so exactly one card qualifies at a time.
+const SWIPE_SELECT_RATIO = 0.6;
+// How long a TAP's own smooth centring may run. Cards it scrolls past inside
+// that window must not steal the selection back from the tapped card.
+const TAP_SETTLE_MS = 700;
 // The sticky site header is 96px at its tallest; the stage is never scrolled under it.
 const HEADER_CLEARANCE_PX = 96;
 
@@ -378,6 +385,8 @@ export default function JoinFeatures() {
     if (reducedMotion) setClipPaused(true);
   }, [reducedMotion]);
   const indexRef = useRef(0);
+  const selectedRef = useRef(BUSINESS_FEATURE_GROUPS[0]);
+  const tapSettlingUntilRef = useRef(0);
   const shelfRef = useRef(null);
   const stageRef = useRef(null);
   const panelRef = useRef(null);
@@ -393,13 +402,22 @@ export default function JoinFeatures() {
     g === "return" && !rescueBagsEnabled() ? t("groups.return.card_line_no_rescue") : t(`groups.${g}.card_line`);
   const labels = { pause: tj("pause"), play: tj("play"), sample: tj("sample_label") };
 
+  /** Change the selection (panel, clip, dots). No scrolling — that is the caller's call. */
+  const applySelection = useCallback((group, index) => {
+    if (group === selectedRef.current) return false;
+    setShiftClass(index > indexRef.current ? PANEL_SHIFT_CLASS.forward : PANEL_SHIFT_CLASS.back);
+    indexRef.current = index;
+    selectedRef.current = group;
+    setEntered(false);
+    setSelected(group);
+    return true;
+  }, []);
+
+  /** A TAP: select, then centre the card (phone) and bring the panel into view. */
   const select = useCallback(
     (group, index) => {
-      if (group === selected) return;
-      setShiftClass(index > indexRef.current ? PANEL_SHIFT_CLASS.forward : PANEL_SHIFT_CLASS.back);
-      indexRef.current = index;
-      setEntered(false);
-      setSelected(group);
+      if (!applySelection(group, index)) return;
+      tapSettlingUntilRef.current = Date.now() + TAP_SETTLE_MS;
       const behavior = reducedMotion ? "auto" : "smooth";
       if (isDesktop) {
         const top = stageRef.current?.getBoundingClientRect().top ?? 0;
@@ -410,8 +428,29 @@ export default function JoinFeatures() {
       scrollShelfTo(shelfRef.current, card, behavior);
       panelRef.current?.scrollIntoView?.({ block: "nearest", behavior });
     },
-    [selected, isDesktop, reducedMotion],
+    [applySelection, isDesktop, reducedMotion],
   );
+
+  // A SWIPE (MEH-2799, Sapir 07/11 on her phone): the card that comes to rest
+  // in the shelf becomes the selection, so the dots, the clip and the panel
+  // move with the finger. It never scrolls anything itself: the page staying
+  // put is the difference between a swipe and a tap. Phone only — from 700px
+  // the list is a column and does not scroll sideways.
+  useEffect(() => {
+    const shelf = shelfRef.current;
+    if (isDesktop !== false || !shelf || typeof IntersectionObserver === "undefined") return undefined;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (Date.now() < tapSettlingUntilRef.current) return;
+        const resting = entries.filter((e) => e.intersectionRatio >= SWIPE_SELECT_RATIO).pop();
+        const group = resting?.target?.dataset?.group;
+        if (group) applySelection(group, BUSINESS_FEATURE_GROUPS.indexOf(group));
+      },
+      { root: shelf, threshold: [SWIPE_SELECT_RATIO] },
+    );
+    for (const card of shelf.querySelectorAll('[data-testid="join-group-card"]')) io.observe(card);
+    return () => io.disconnect();
+  }, [isDesktop, applySelection]);
 
   // Two frames: paint the shifted/transparent start state, then transition in.
   useEffect(() => {
@@ -473,6 +512,8 @@ export default function JoinFeatures() {
               {BUSINESS_FEATURE_GROUPS.map((group) => (
                 <span
                   key={group}
+                  data-testid="join-shelf-dot"
+                  data-active={group === selected ? "true" : "false"}
                   className={`h-1.5 w-1.5 rounded-full ${group === selected ? "bg-primary" : "bg-primary/25"}`}
                 />
               ))}

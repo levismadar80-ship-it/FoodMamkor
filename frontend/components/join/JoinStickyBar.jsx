@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import BusinessCtaLink from "@/components/BusinessCtaLink";
+import { useAuth } from "@/lib/auth-context";
 import { INERT_PRESENT } from "@/lib/inert-attr";
 
 /**
@@ -35,8 +36,14 @@ import { INERT_PRESENT } from "@/lib/inert-attr";
 // The closing band's own CTA takes over ~90px before the band reaches the viewport.
 const CLOSING_LEAD_PX = 90;
 
+// Roles that already have what this bar offers: a producer has a page, an
+// admin registers businesses from elsewhere (BusinessCtaLink.jsx swaps or hides
+// the CTA for exactly these two).
+const NO_BAR_ROLES = new Set(["producer", "admin"]);
+
 export default function JoinStickyBar() {
   const t = useTranslations("join");
+  const { user, loading } = useAuth();
   const [heroPassed, setHeroPassed] = useState(false);
   const [closingNear, setClosingNear] = useState(false);
 
@@ -74,6 +81,12 @@ export default function JoinStickyBar() {
   }, []);
 
   const visible = heroPassed && !closingNear;
+
+  // MEH-2799 (Sapir, 07/11, logged in as a business): the bar showed
+  // «לוח הבקרה שלי» beside the signup meta line. A join prompt has nothing to
+  // say to an owner or an admin, so it is not rendered. After the hooks, so the
+  // hook order never changes between renders.
+  if (!loading && NO_BAR_ROLES.has(user?.role)) return null;
 
   return (
     <div
