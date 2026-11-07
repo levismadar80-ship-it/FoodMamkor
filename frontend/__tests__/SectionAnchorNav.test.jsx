@@ -146,6 +146,9 @@ describe("SectionAnchorNav — data gating", () => {
     ["full", FULL],
     ["bare", BARE],
     ["bare + reviews", BARE_WITH_REVIEWS],
+    // MEH-2803: store hours moved to «שעות», so hours alone no longer open the
+    // location section — and must not open its pill (a dead jump otherwise).
+    ["store hours, no location", { ...BARE, id: 4, opening_hours: "Sun-Thu 09:00-17:00" }],
   ])("every gate agrees with the real ProducerSections render (%s producer)", (_, producer) => {
     const items = getSectionNavItems(producer, t);
     const { container } = renderSections(producer);
