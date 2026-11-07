@@ -48,7 +48,7 @@
 - tags: `moderation_fail_open=true`, `moderation_surface` (`review` / `experience` / `recipe` / `producer_risk`), `fail_open_reason`
 - `fail_open_reason`: `no_client` (אין מפתח), `api_error_4xx` / `api_error_5xx` (תשובת HTTP מה-API, MEH-2390: 401 מפתח מת ו-429 מכסה הם 4xx, 529 עומס הוא 5xx), `api_error` (אין תשובה בכלל: חיבור, timeout), `truncated` (נחתך ב-`max_tokens`), `unparseable`, `bad_status` (גם JSON תקין שאינו אובייקט), `error`, ובסיכון בלבד גם `refusal` (במשטחי התוכן סירוב הוא FLAGGED ולא fail-open)
 - fingerprint: `["moderation-fail-open", surface, reason]`. ה-burst cap הקיים (`app/sentry.py`, 12 ליום לכל fingerprint) מגביל את צריכת המכסה, ולכן בתקלה מתמשכת המונה ב-Sentry הוא רצפה. הספירה המלאה נמצאת ב-Railway logs.
-- התראה: כלל ב-Sentry ברמת tag (סכום על כל ה-fingerprints) על `moderation_fail_open:true` עם `moderation_surface` ב-`review`/`experience`/`recipe`. `producer_risk` לא נכלל, כי שם לא מאושר כלום, רק ציון ריק. זה צעד ידני, ב-`MANUAL_TESTING.md` § MEH-2352.
+- התראה: כלל ב-Sentry ברמת tag (סכום על כל ה-fingerprints) על `moderation_fail_open:true` עם `moderation_surface` ב-`review`/`experience`/`recipe`. `producer_risk` לא נכלל, כי שם לא מאושר כלום, רק ציון ריק. זה צעד ידני, ב-`docs/archive/MANUAL_TESTING-until-2026-11-07.md` § MEH-2352.
 
 ---
 
