@@ -264,10 +264,15 @@ describe("MEH-2804 follow-up — the sentence always, a count line from 25", () 
     unmount2();
   });
 
-  it("the rejected #4143 fact row does not come back (no columns, no «0₪», no categories count)", () => {
-    for (const n of [5, 12, 30]) {
+  // Reviewer, #4148: asserting the absence of the deleted `trust-fact` testid
+  // could never fail. The band's STRUCTURE is what a returning fact row would
+  // change, so that is what is pinned: the sentence, plus the count line only
+  // from 25 — nothing else inside the section.
+  it("the rejected #4143 fact row does not come back: the band holds only the sentence and the count line", () => {
+    for (const [n, ids] of [[5, ["trust-lead"]], [12, ["trust-lead"]], [30, ["trust-lead", "trust-count"]]]) {
       const { unmount } = renderAt(n);
-      expect(screen.queryAllByTestId("trust-fact"), `count=${n}`).toHaveLength(0);
+      const kids = Array.from(screen.getByTestId("home-trust-band").children).map((el) => el.getAttribute("data-testid"));
+      expect(kids, `count=${n}`).toEqual(ids);
       expect(bandText(), `count=${n}`).not.toContain("0₪");
       expect(bandText(), `count=${n}`).not.toContain(String(CATEGORIES) + " קטגוריות");
       unmount();

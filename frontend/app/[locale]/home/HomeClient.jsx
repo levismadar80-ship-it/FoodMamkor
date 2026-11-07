@@ -123,7 +123,8 @@ export default function HomeClient({
 
       {/* =========================
           TRUST STRIP — HISTORY. The current band is described in the next
-          comment; the bullets below record the designs it replaced and why. Still in force: the MEH-1692 rule (the count
+          comment; the bullets below record the designs it replaced and why.
+          Still in force: the MEH-1692 rule (the count
           is never stated twice), the MEH-521 threshold, and MEH-1686 (last
           paragraph). MEH-879 re-anchor (over MEH-524 lock / MEH-521
           threshold / MEH-607 F10 skeleton):
