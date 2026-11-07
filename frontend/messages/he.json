@@ -478,14 +478,12 @@
         "q4": "מאפיית המחמצת"
       }
     },
-    "stats": {
-      "businesses": "בתי עסק שהצטרפו עד היום",
-      "categories": "קטגוריות",
-      "countrywide": "מכל רחבי הארץ"
-    },
     "trust": {
       "lead": "בלי מתווך באמצע · איסוף עצמי או משלוח, ישירות מבית העסק",
-      "lead_count": "<num>{count}</num> בתי עסק · כל אחד נבחר אישית"
+      "col_businesses": "בתי עסק, כל אחד נבחר אישית",
+      "col_categories": "קטגוריות מזון",
+      "col_fees_value": "0₪",
+      "col_fees": "עמלה, אף פעם"
     },
     "featured": {
       "eyebrow": "היכרות",
@@ -550,7 +548,7 @@
     "events": {
       "heading": "אירועים קרובים",
       "all_events": "לכל האירועים ←",
-      "free": "חינם"
+      "free": "כניסה חופשית"
     }
   },
   "common": {
@@ -804,7 +802,7 @@
         },
         "events": {
           "heading": "אירועים קרובים",
-          "free": "חינם",
+          "free": "כניסה חופשית",
           "show_all_count": "הצגת כל האירועים"
         },
         "products": {
@@ -2614,7 +2612,7 @@
       "empty_browse_producers": "בינתיים, גלו את בתי העסק",
       "no_results_title": "לא נמצאו תוצאות",
       "no_results_cta": "נקו סינון",
-      "free": "חינם",
+      "free": "כניסה חופשית",
       "organizer_line": "מארגן: {name}"
     },
     "categories": {
@@ -2643,7 +2641,7 @@
       "all_events": "→ כל האירועים",
       "organized_by": "מאורגן על ידי",
       "participants_limit": "עד {n} משתתפים",
-      "free": "חינם",
+      "free": "כניסה חופשית",
       "breadcrumb_home": "בית",
       "breadcrumb_events": "אירועים",
       "organizer_line": "מארגן: {name}",
@@ -2702,7 +2700,7 @@
       "whatsapp_cta": "שליחת הודעה ב-WhatsApp",
       "whatsapp_message": "היי! אני רוצה להירשם ל-\"{title}\"",
       "host_label": "אירוח:",
-      "free": "חינם",
+      "free": "כניסה חופשית",
       "sold_out": "הסדנה מלאה",
       "spots_left_few": "{n, plural, one {נשאר מקום אחרון} two {נשארו # מקומות} other {נשארו # מקומות}}",
       "min_to_open": "נפתחת ב-{n} נרשמים לפחות",
