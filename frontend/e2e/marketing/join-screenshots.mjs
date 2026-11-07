@@ -478,7 +478,7 @@ async function login(page) {
     stuck = await fillBoth();
   }
   if (!stuck) {
-    throw new Error("the login form kept discarding the email field — hydration never settled");
+    throw new Error("the login form kept discarding its field values — hydration never settled");
   }
   await page.getByRole("button", { name: /התחבר|כניסה/ }).first().click();
   // Gate on the thing that proves login, not on a timeout.
@@ -550,8 +550,16 @@ async function preflight(browser) {
       problems.push(`could not read the demo business through the API: ${err.message}`);
     }
 
-    const body = (await page.textContent("body").catch(() => "")) + apiText;
-    if (!body || body.length < 500) problems.push("the business page rendered almost no text");
+    // TWO CHECKS, TWO HAYSTACKS. `apiText` is the producer and reviews JSON —
+    // always far more than 500 characters — so folding it into the variable
+    // the length check reads made that check unable to fail, even against a
+    // completely empty DOM. A guard that cannot fail, introduced while fixing
+    // a guard that could not fail (MEH-2821). The length check reads the DOM
+    // and only the DOM; the cleanliness check reads both.
+    const domText = await page.textContent("body").catch(() => "");
+    if (!domText || domText.length < 500)
+      problems.push("the business page rendered almost no text");
+    const body = domText + apiText;
     // The ticket's own cleanliness requirement, asserted rather than assumed.
     if (body.includes("(בדיקה)")) {
       problems.push('the demo business still shows "(בדיקה)" rows — re-run the seed with --refresh');
