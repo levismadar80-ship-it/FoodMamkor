@@ -731,7 +731,8 @@
       "description_category": "{name} — a local business. {category}",
       "description_name": "{name} — a local business",
       "not_found": "Business not found | {brand}",
-      "country": "Israel"
+      "country": "Israel",
+      "offer_catalog_name": "Products"
     }
   },
   "producer": {

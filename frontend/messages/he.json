@@ -731,7 +731,8 @@
       "description_category": "{name} — בית עסק מקומי. {category}",
       "description_name": "{name} — בית עסק מקומי",
       "not_found": "בית עסק לא נמצא | {brand}",
-      "country": "ישראל"
+      "country": "ישראל",
+      "offer_catalog_name": "מוצרים"
     }
   },
   "producer": {
