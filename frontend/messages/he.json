@@ -480,10 +480,7 @@
     },
     "trust": {
       "lead": "בלי מתווך באמצע · איסוף עצמי או משלוח, ישירות מבית העסק",
-      "col_businesses": "בתי עסק, כל אחד נבחר אישית",
-      "col_categories": "קטגוריות מזון",
-      "col_fees_value": "0₪",
-      "col_fees": "עמלה, אף פעם"
+      "count_line": "<num>{count}</num> בתי עסק שהצטרפו עד היום"
     },
     "featured": {
       "eyebrow": "היכרות",
