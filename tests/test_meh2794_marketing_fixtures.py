@@ -346,6 +346,71 @@ def test_marketing_fixtures_are_idempotent(db, seeded, seed_mod):
         assert db.query(RescueOffer).count() == 1, "a second bag was seeded"
 
 
+def test_refresh_then_reseed_leaves_exactly_one_of_each(db, seed_mod, bakery_category):
+    """`--refresh` after the fixtures exist, then seed again — the staging flow.
+
+    The reviewer asked whether `--refresh` can even survive the new rows.
+    Checked at the schema: `producer_page_views`, `producer_whatsapp_clicks`,
+    `producer_contact_clicks`, `favorites` and `producer_analytics_daily` all
+    carry `ondelete="CASCADE"` on `producer_id`, `rescue_offers` carries it on
+    `producer_location_id`, and `ProducerOffer` is reached by
+    `Producer.offers`' `cascade="all, delete-orphan"`. So the delete is clean
+    in theory — this is the test that says so in practice, because CI seeds a
+    FRESH database where `_delete_existing` finds nothing to delete and would
+    never exercise this path.
+    """
+    seed_mod.seed_demo_business(db)
+    seed_mod.seed_marketing_fixtures(db)
+    seed_mod.seed_demo_business(db, refresh=True)
+    seed_mod.seed_marketing_fixtures(db)
+
+    producer = db.query(Producer).filter(Producer.slug == seed_mod.DEMO_SLUG).one()
+    assert db.query(ProducerOffer).count() == 1
+    assert (
+        db.query(ProducerAnalyticsDaily)
+        .filter(ProducerAnalyticsDaily.producer_id == producer.id)
+        .count()
+        == seed_mod.DEMO_INSIGHTS["days"]
+    )
+    assert (
+        db.query(ProducerPageView)
+        .filter(ProducerPageView.producer_id == producer.id)
+        .count()
+        == seed_mod.DEMO_INSIGHTS["views_total"]
+    )
+    # No orphans left pointing at the deleted producer.
+    assert db.query(ProducerAnalyticsDaily).count() == seed_mod.DEMO_INSIGHTS["days"]
+    assert db.query(ProducerOffer).count() == 1
+
+
+def test_insights_skip_when_raw_rows_already_exist(db, seeded, seed_mod):
+    """The probe covers the RAW table, not only the roll-up.
+
+    On staging the roll-up job writes `producer_analytics_daily` from real
+    traffic, and raw rows are pruned at 90 days while roll-ups are kept
+    (MEH-2079) — so a roll-up-only probe would read "already seeded" and the
+    fixtures would silently never land. This pins the raw half.
+    """
+    producer = db.query(Producer).filter(Producer.slug == seed_mod.DEMO_SLUG).one()
+    db.query(ProducerAnalyticsDaily).filter(
+        ProducerAnalyticsDaily.producer_id == producer.id
+    ).delete()
+    db.commit()
+    # Roll-up gone, raw rows still there — the post-purge shape inverted.
+    assert (
+        db.query(ProducerPageView)
+        .filter(ProducerPageView.producer_id == producer.id)
+        .count()
+        > 0
+    )
+
+    before = db.query(ProducerPageView).count()
+    seed_mod.seed_marketing_fixtures(db)
+    assert db.query(ProducerPageView).count() == before, (
+        "raw rows already present — the seed must not stack more on top"
+    )
+
+
 def test_fixtures_skip_silently_without_a_demo_producer(db, seed_mod):
     """No demo business → 0 parts and no exception.
 

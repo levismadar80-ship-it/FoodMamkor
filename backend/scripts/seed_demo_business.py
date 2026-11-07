@@ -1182,12 +1182,30 @@ def seed_marketing_fixtures(db) -> int:
         seeded += 1
     if _seed_rescue_bag(db, producer):
         seeded += 1
-    # One probe for the whole insights block: the three raw tables and the
-    # roll-up are written together or not at all, so any one of them already
-    # holding a row for this producer means the block has run.
+    # Probe the RAW table as well as the roll-up, and skip if EITHER holds a
+    # row. The roll-up alone is not a safe probe on staging, for two reasons
+    # that both really happen there:
+    #
+    #   * the roll-up job runs on staging, so real traffic to the demo page
+    #     writes `producer_analytics_daily` rows this seed did not create;
+    #   * raw rows are pruned after 90 days while the roll-up is kept forever
+    #     (MEH-2079), so an old database legitimately holds roll-up rows with
+    #     no raw rows behind them.
+    #
+    # In both cases a roll-up-only probe reads "already seeded" and the
+    # fixtures silently never land — the command in the PR body would appear
+    # to succeed and change nothing.
+    #
+    # Skipping on EITHER is the conservative direction: never stack fabricated
+    # traffic on top of numbers that are already there, whatever their origin.
+    # The staging flow runs `--refresh` first, which cascades all of these
+    # away with the producer, so the intended path still seeds.
     already = (
         db.query(ProducerAnalyticsDaily)
         .filter(ProducerAnalyticsDaily.producer_id == producer.id)
+        .first()
+        or db.query(ProducerPageView)
+        .filter(ProducerPageView.producer_id == producer.id)
         .first()
     )
     if not already:
