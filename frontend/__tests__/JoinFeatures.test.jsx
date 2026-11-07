@@ -20,8 +20,9 @@ const JF = he.join.features;
 
 let observers = [];
 class FakeIO {
-  constructor(callback) {
+  constructor(callback, options) {
     this.callback = callback;
+    this.options = options;
     this.targets = [];
     observers.push(this);
   }
@@ -292,6 +293,80 @@ describe("review round 1 (adversarial, #4123)", () => {
   it("the panel wrapper reserves the sticky header's height when scrolled into view", () => {
     renderFeatures();
     expect(panel().parentElement.className).toContain("scroll-mt-24");
+  });
+});
+
+/**
+ * Sapir, 07/11 on her phone: swiping the shelf moved the cards but nothing
+ * followed — the dots, the clip and the panel stayed on the previously tapped
+ * card. The card that comes to rest in the shelf (≥60% of it inside the
+ * shelf) is now the selection. Driven here through the shelf-rooted observer.
+ */
+describe("swipe follows (phone shelf)", () => {
+  const shelfObserver = () => observers.find((io) => io.options?.root === screen.getByTestId("join-shelf"));
+  const cardEl = (group) => cards().find((c) => c.dataset.group === group);
+  const swipeTo = (group, ratio = 0.9) =>
+    act(() => {
+      shelfObserver().callback([{ target: cardEl(group), intersectionRatio: ratio, isIntersecting: ratio > 0 }]);
+    });
+
+  it("phone: the shelf is observed with the shelf itself as the root", () => {
+    renderFeatures();
+    expect(shelfObserver(), "no IntersectionObserver rooted on the shelf").toBeTruthy();
+    expect(shelfObserver().targets).toHaveLength(BUSINESS_FEATURE_GROUPS.length);
+  });
+
+  it("a card that comes to rest in the shelf becomes the selection — dots, clip and panel follow", () => {
+    renderFeatures();
+    swipeTo("contact");
+    expect(cardButton("contact").getAttribute("aria-pressed")).toBe("true");
+    expect(panel().dataset.group).toBe("contact");
+    expect(screen.getByTestId("join-clip").dataset.group).toBe("contact");
+    const dots = screen.getAllByTestId("join-shelf-dot");
+    expect(dots.map((d) => d.dataset.active)).toEqual(
+      BUSINESS_FEATURE_GROUPS.map((g) => (g === "contact" ? "true" : "false")),
+    );
+  });
+
+  it("a swipe never scrolls the page or re-scrolls the shelf (only a tap does)", () => {
+    renderFeatures();
+    const shelf = screen.getByTestId("join-shelf");
+    shelf.scrollBy = vi.fn();
+    const pageScroll = vi.spyOn(Element.prototype, "scrollIntoView").mockImplementation(() => {});
+    pageScroll.mockClear();
+    swipeTo("found");
+    expect(cardButton("found").getAttribute("aria-pressed")).toBe("true");
+    expect(shelf.scrollBy).not.toHaveBeenCalled();
+    expect(pageScroll).not.toHaveBeenCalled();
+  });
+
+  it("a card only partly in the shelf (a neighbour peeking in) does not select", () => {
+    renderFeatures();
+    swipeTo("found", 0.2);
+    expect(cardButton("page").getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("while a TAP is centring its card, the cards it scrolls past do not steal the selection", () => {
+    vi.useFakeTimers();
+    try {
+      renderFeatures();
+      fireEvent.click(cardButton("return"));
+      swipeTo("contact"); // passed on the way
+      expect(cardButton("return").getAttribute("aria-pressed")).toBe("true");
+      act(() => {
+        vi.advanceTimersByTime(1000);
+      });
+      swipeTo("trust"); // a real swipe, after the tap has settled
+      expect(cardButton("trust").getAttribute("aria-pressed")).toBe("true");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("desktop: the list is a column there, so nothing observes it", () => {
+    mockMatchMedia({ [DESKTOP]: true });
+    renderFeatures();
+    expect(shelfObserver()).toBeUndefined();
   });
 });
 

@@ -205,6 +205,14 @@ test.describe("manual › /join (MEH-995)", () => {
     await expect(questions).toHaveCount(4);
     await expect(questions.first()).toHaveText(COPY.faq.q_cost);
     await expect(faq).toContainText(COPY.faq.a_cost);
+    // Accordion (Sapir, 07/11 — the site's FAQ pattern): only the cost
+    // answer is open; a tap on a question opens its answer.
+    const items = faq.getByTestId("join-faq-item");
+    await expect(items.nth(0).getByText(COPY.faq.a_cost)).toBeVisible();
+    const second = items.nth(1);
+    await expect(second.getByText(COPY.faq.a_google)).toBeHidden();
+    await second.locator("summary").click();
+    await expect(second.getByText(COPY.faq.a_google)).toBeVisible();
     const allLink = faq.getByRole("link");
     await expect(allLink).toHaveCount(1);
     await expect(allLink).toHaveText(COPY.faq.all_link);
@@ -390,6 +398,40 @@ test.describe("manual › /join (MEH-995)", () => {
         await expect(card).toHaveAttribute("data-selected", "true");
         await expect.poll(centred, { timeout: 3_000 }).toBe(group);
       }
+    });
+  });
+
+  // Sapir, 07/11 on her phone: swiping the shelf moved the cards and nothing
+  // followed. A SWIPE is a scroll of the shelf, not a tap, so this drives the
+  // shelf's own scroll (smooth, motion on) and checks that the selection, the
+  // dot and the playing clip move to the card that came to rest — and that the
+  // page itself did not move.
+  test.describe("swipe, with motion", () => {
+    test.use({ reducedMotion: "no-preference" });
+
+    test("phone shelf: a swipe selects the card it comes to rest on", async ({ page }) => {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await gotoJoin(page);
+      const shelf = scope(page).getByTestId("join-shelf");
+      await shelf.scrollIntoViewIfNeeded();
+      await expect(shelf.locator('[data-testid="join-group-card"][data-selected="true"]')).toHaveAttribute("data-group", "page");
+      const pageY = await page.evaluate(() => window.scrollY);
+      for (const group of ["found", "contact"]) {
+        // One card further along the reading direction (RTL: leftwards).
+        await shelf.evaluate((node: HTMLElement, g: string) => {
+          const card = node.querySelector<HTMLElement>(`[data-testid="join-group-card"][data-group="${g}"]`)!;
+          const s = node.getBoundingClientRect();
+          const c = card.getBoundingClientRect();
+          node.scrollBy({ left: c.left + c.width / 2 - (s.left + s.width / 2), behavior: "smooth" });
+        }, group);
+        const card = shelf.locator(`[data-testid="join-group-card"][data-group="${group}"]`);
+        await expect(card).toHaveAttribute("data-selected", "true", { timeout: 3_000 });
+        await expect(scope(page).getByTestId("join-panel")).toHaveAttribute("data-group", group);
+        await expect(scope(page).getByTestId("join-clip")).toHaveAttribute("data-group", group);
+      }
+      const dots = scope(page).getByTestId("join-shelf-dot");
+      await expect(dots.nth(2)).toHaveAttribute("data-active", "true");
+      expect(await page.evaluate(() => window.scrollY), "a swipe must not scroll the page").toBe(pageY);
     });
   });
 
