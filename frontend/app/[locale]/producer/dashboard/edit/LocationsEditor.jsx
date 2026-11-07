@@ -917,6 +917,8 @@ function LocationForm({
             value={form.opening_hours}
             onChange={(next) => setForm((f) => ({ ...f, opening_hours: next }))}
             onValidityChange={setHoursValid}
+            isPrimary={!!form.is_primary}
+            kind={form.kind}
           />
           <Field label={tForm("precision_label")} hint={tForm("precision_helper")}>
             <select
