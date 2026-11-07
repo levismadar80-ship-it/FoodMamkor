@@ -1076,13 +1076,6 @@ test.describe("Visual parity — MEH-991", () => {
     });
   });
 
-  // MEH-1112: /about polish (pull-quote column narrowed, testimonials section
-  // render-gated off, close-band CTA hierarchy, contact email fallback line)
-  // is an intentional visual change — this touch re-rides vrt-update.yml so the
-  // about-{desktop,mobile}-linux baselines regenerate on the runner (MEH-991 flow).
-  // MEH-1113: the contact form gains a "נושא הפנייה" topic select above the
-  // message field — another intentional /about visual change, so the baselines
-  // regenerate again on this branch via the same vrt-update re-ride.
   // MEH-2803 — ELEMENT shots of the «שעות» section, desktop + mobile, both
   // states (two labelled sets / one merged set), disclosures closed. Named
   // "producer-detail-hours-*" so vrt-regen:producer-detail (--grep
@@ -1124,6 +1117,13 @@ test.describe("Visual parity — MEH-991", () => {
     });
   }
 
+  // MEH-1112: /about polish (pull-quote column narrowed, testimonials section
+  // render-gated off, close-band CTA hierarchy, contact email fallback line)
+  // is an intentional visual change — this touch re-rides vrt-update.yml so the
+  // about-{desktop,mobile}-linux baselines regenerate on the runner (MEH-991 flow).
+  // MEH-1113: the contact form gains a "נושא הפנייה" topic select above the
+  // message field — another intentional /about visual change, so the baselines
+  // regenerate again on this branch via the same vrt-update re-ride.
   test("about", async ({ page }) => {
     await preparePage(page);
     await page.goto("/about");
