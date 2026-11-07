@@ -25,7 +25,7 @@
  *   QA_BASE_URL=https://staging.mehamakor.online \
  *   VERCEL_AUTOMATION_BYPASS_SECRET=<secret> \
  *   DEMO_OWNER_PASSWORD=<the staging value> \
- *   PW_EXECUTABLE_PATH=/opt/pw-browsers/chromium   # CC sandbox only \
+ *   PLAYWRIGHT_CHROMIUM_PATH=/opt/pw-browsers/chromium   # CC sandbox only \
  *     node e2e/marketing/join-screenshots.mjs
  *
  * Add --stills-only to skip the clips (much faster while iterating).
@@ -754,7 +754,11 @@ async function gitSha() {
 async function main() {
   if (!existsSync(OUT)) await mkdir(OUT, { recursive: true });
 
-  // PW_EXECUTABLE_PATH exists for the CC sandbox, where the preinstalled
+  // PLAYWRIGHT_CHROMIUM_PATH is the repo's EXISTING knob for this — the same
+  // one frontend/scripts/qa-ci-screenshots.mjs reads, already on the env-drift
+  // gate's platform-var exclude list. A second name for one concept is the
+  // two-parallel-mechanisms smell, and it would also have needed its own
+  // exemption. It matters in the CC sandbox, where the preinstalled
   // Chromium revision does not match the one this repo's Playwright pins:
   // the default launch then dies on a missing chrome-headless-shell, and
   // `chromium.executablePath()` is no help because it returns the path
@@ -763,8 +767,8 @@ async function main() {
   // is the stable symlink to the real binary. Unset everywhere else, so CI and
   // a normal machine behave exactly as before.
   const browser = await chromium.launch({
-    ...(process.env.PW_EXECUTABLE_PATH
-      ? { executablePath: process.env.PW_EXECUTABLE_PATH }
+    ...(process.env.PLAYWRIGHT_CHROMIUM_PATH
+      ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH }
       : {}),
     // MEH-2090: a remote target from the CC sandbox needs TLS capped at 1.2,
     // and --no-sandbox for the container. Harmless on a normal machine.
