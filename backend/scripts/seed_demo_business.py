@@ -956,6 +956,39 @@ def _to_naive_utc(aware: datetime) -> datetime:
     return aware.astimezone(timezone.utc).replace(tzinfo=None)
 
 
+def _bag_still_open(now: datetime):
+    """The SQL predicate for "this bag is one `/rescue` will still show".
+
+    The same expression the public listing filters on (`rescue.py`), built from
+    the router's own `RESERVE_CLOSES_BEFORE_END` rather than a copy of it, so
+    the seed and the listing cannot disagree about what is visible.
+
+    `pickup_end` is nullable=False (models.py), so this predicate and its
+    negation are exact complements — no bag falls outside both.
+    """
+    return RescueOffer.pickup_end > now + RESERVE_CLOSES_BEFORE_END
+
+
+def _stale_bags_query(db, location_id, now: datetime):
+    """The bags at `location_id` that `/rescue` can no longer show.
+
+    THE QUERY THE SWEEP ACTUALLY DELETES THROUGH, shared with its test rather
+    than described to it. `test_the_stale_filter_selects_only_closed_bags`
+    calls this function, so dropping `~_bag_still_open(now)` from here turns
+    that test red — which a test re-typing the same filter could not do
+    (reviewer on #4136, round 3).
+
+    It carries its own `pickup_end` condition and is therefore safe to call in
+    any order. The caller's live-bag guard is an early exit, not what makes
+    this correct: a query that is safe only in context is a trap for whoever
+    edits the context, which is the defect MEH-2816 fixes.
+    """
+    return db.query(RescueOffer).filter(
+        RescueOffer.producer_location_id == location_id,
+        ~_bag_still_open(now),
+    )
+
+
 def _demo_pickup_window(now_utc: datetime) -> tuple[date, datetime, datetime]:
     """`(israel day, pickup_start, pickup_end)` for the demo bag, from `now`.
 
@@ -1114,25 +1147,33 @@ def _seed_rescue_bag(db, producer) -> bool:
         db.query(RescueOffer)
         .filter(
             RescueOffer.producer_location_id == location.id,
-            RescueOffer.pickup_end > now + RESERVE_CLOSES_BEFORE_END,
+            _bag_still_open(now),
         )
         .first()
     )
     if live is not None:
         return False
 
-    closed = (
-        db.query(RescueOffer)
-        .filter(RescueOffer.producer_location_id == location.id)
-        .all()
-    )
-    for dead in closed:
+    # MEH-2816 — the sweep deletes through `_stale_bags_query`, which carries
+    # its own `pickup_end` condition and is shared with the test that proves
+    # it. This previously selected every bag at the location, under the name
+    # `closed`, and was correct only because the guard above returned first.
+    stale = _stale_bags_query(db, location.id, now).all()
+    for dead in stale:
+        # Deleting one takes its rescue_orders with it, and their
+        # rescue_reviews after that — both FKs are ondelete="CASCADE"
+        # (models.py: RescueOffer -> RescueOrder -> RescueReview). Deliberate:
+        # this is the demo fixture on staging, and the alternative is the dead
+        # rows MEH-2814 removed. Pinned by
+        # `test_the_sweep_takes_orders_and_reviews_with_a_closed_bag` so a
+        # narrowed cascade is noticed here rather than as an IntegrityError on
+        # a seed run.
         print(
             f"Removing the demo rescue bag for {dead.date}: its window closed "
             f"at {_israel_hhmm(dead.pickup_end)} Israel time."
         )
         db.delete(dead)
-    if closed:
+    if stale:
         db.flush()
 
     db.add(
