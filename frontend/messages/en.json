@@ -6155,7 +6155,7 @@
         "lead": "The customer comes straight to you. We are not in the middle."
       },
       "return": {
-        "label": "Coming back",
+        "label": "Bring them back",
         "lead": "Tools that bring customers back, without posting every day."
       },
       "trust": {
@@ -6200,7 +6200,7 @@
         "label": "Guides for product photography, your business story and messages to customers"
       },
       "social_signup": {
-        "label": "Quick sign-up with Google or Apple"
+        "label": "Quick sign-up with Google"
       },
       "wa_approval": {
         "label": "A WhatsApp message when your page is approved"
