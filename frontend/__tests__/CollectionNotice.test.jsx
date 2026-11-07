@@ -105,7 +105,7 @@ describe("CollectionNotice", () => {
     const line = screen.getByTestId("dark").className.split(/\s+/);
     const link = screen.getByTestId("dark-link").className.split(/\s+/);
     expect(line).toContain("text-green-100");
-    expect(line).not.toContain("text-muted-foreground");
+    expect(line).not.toContain("text-fg-muted");
     expect(link).toContain("text-green-50");
     expect(link).not.toContain("text-primary");
     expect(link).toContain("underline");
@@ -120,7 +120,11 @@ describe("CollectionNotice", () => {
   it("an unknown tone falls back to the default inks — including a prototype key", () => {
     render(<CollectionNotice message="X" linkLabel="Y" testId="proto" tone="constructor" />);
     const line = screen.getByTestId("proto").className;
-    expect(line.split(/\s+/)).toContain("text-muted-foreground");
+    // MEH-2798: was "text-muted-foreground", which emits no CSS. This
+    // assertion is why the bug survived: it pinned the broken spelling,
+    // so the class looked covered. TokenClassesEmitCss.test.js now checks
+    // that whatever this map holds actually compiles to a declaration.
+    expect(line.split(/\s+/)).toContain("text-fg-muted");
     expect(line).not.toMatch(/function|undefined|\[object/);
     expect(screen.getByTestId("proto-link").className.split(/\s+/)).toContain("text-primary");
   });
