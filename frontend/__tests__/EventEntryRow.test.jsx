@@ -134,6 +134,52 @@ describe("EventEntryRow", () => {
     expect(band.querySelector("svg")).toBeTruthy();
   });
 
+  // MEH-2802: in the home 3-up grid (lg+) a compact row fills its grid cell —
+  // wrapper and link h-full, band = row 1, rail+body = row 2, the chip+price
+  // row pinned to the bottom. jsdom cannot measure the heights; the geometric
+  // half lives in e2e/flows/45-card-grid-equal-height.spec.ts.
+  const FILL = {
+    wrapper: ["lg:h-full"],
+    link: ["lg:h-full", "lg:grid-rows-[auto_1fr]"],
+    body: ["lg:flex", "lg:flex-col"],
+    title: ["lg:line-clamp-2"],
+    footer: ["lg:mt-auto", "lg:pt-3"],
+  };
+  const partsOf = (container) => {
+    const link = container.querySelector("a");
+    return {
+      wrapper: link.parentElement,
+      link,
+      body: container.querySelector("h3").parentElement,
+      title: container.querySelector("h3"),
+      footer: container.querySelector("h3").parentElement.lastElementChild,
+    };
+  };
+
+  it("compact fills its grid cell from lg: wrapper, link, body column and a bottom-pinned chip row", () => {
+    const { container } = render(<EventEntryRow entry={toEventEntry(EVENT, "events", t)} freeLabel="חינם" compact />);
+    const parts = partsOf(container);
+    for (const [part, classes] of Object.entries(FILL)) {
+      for (const cls of classes) expect(parts[part].classList.contains(cls), `${part} has ${cls}`).toBe(true);
+    }
+    expect(parts.footer.getAttribute("data-testid")).toBe("event-row-footer");
+    expect(parts.wrapper.getAttribute("data-testid")).toBe("event-row-compact");
+    // The phone list keeps its spacing: mt-3 stays as the base class.
+    expect(parts.footer.classList.contains("mt-3")).toBe(true);
+  });
+
+  it("a full-width row (not compact) carries none of the fill classes or the compact test ids", () => {
+    const { container } = render(<EventEntryRow entry={toEventEntry(EVENT, "events", t)} freeLabel="חינם" />);
+    const parts = partsOf(container);
+    for (const [part, classes] of Object.entries(FILL)) {
+      for (const cls of classes) expect(parts[part].classList.contains(cls), `${part} lacks ${cls}`).toBe(false);
+    }
+    expect(parts.wrapper.className).toBe("relative");
+    expect(parts.title.className).toBe("font-headline-md text-lg md:text-2xl font-bold text-text leading-snug");
+    expect(container.querySelector("[data-testid='event-row-footer']")).toBeNull();
+    expect(container.querySelector("[data-testid='event-row-compact']")).toBeNull();
+  });
+
   // MEH-2559: the heart rides every row, typed by the row's species, and sits
   // OUTSIDE the row link — a button inside an <a> would follow the link.
   it("an event row carries an event heart beside the link, not inside it", () => {

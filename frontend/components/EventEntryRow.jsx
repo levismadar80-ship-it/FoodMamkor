@@ -85,6 +85,23 @@ export default function EventEntryRow({ entry, freeLabel, compact = false }) {
   const cols = compact
     ? "grid-cols-[64px_1fr_auto] md:grid-cols-[104px_1fr_auto] lg:grid-cols-[104px_1fr]"
     : "grid-cols-[64px_1fr_auto] md:grid-cols-[104px_1fr_auto]";
+  // MEH-2802: in the home 3-up grid (lg+) every row must FILL its grid cell, or
+  // the cell stretches while the row ends where its content ends — three cards
+  // of three heights, the tick and the bottom border stopping short, the
+  // chip+price rows on three different lines. Card pattern (MDN cookbook, as
+  // ProducerCard): wrapper + link h-full, band = row 1, rail+body = the 1fr
+  // row 2, body a column with the chip row pushed to its bottom. lg-only and
+  // compact-only, so the phone list and every full-width caller are untouched.
+  // Guard: e2e/flows/45-card-grid-equal-height.spec.ts.
+  const fill = compact
+    ? {
+        wrapper: " lg:h-full",
+        link: " lg:h-full lg:grid-rows-[auto_1fr]",
+        body: " lg:flex lg:flex-col",
+        title: " lg:line-clamp-2",
+        footer: " lg:mt-auto lg:pt-3",
+      }
+    : { wrapper: "", link: "", body: "", title: "", footer: "" };
   const thumbBg = picture
     ? { backgroundImage: cssUrl(optimizeCloudinary(picture, { aspectRatio: "1:1", width: 224 })) }
     : undefined;
@@ -105,10 +122,10 @@ export default function EventEntryRow({ entry, freeLabel, compact = false }) {
   // MEH-2559: the heart sits on the picture's corner as a SIBLING of the row
   // link — a button inside an <a> is invalid and would follow the link.
   return (
-    <div className="relative">
+    <div className={`relative${fill.wrapper}`} data-testid={compact ? "event-row-compact" : undefined}>
       <Link
         href={entry.href}
-        className={`relative grid ${cols} border-b border-border transition hover:bg-surface-card`}
+        className={`relative grid ${cols}${fill.link} border-b border-border transition hover:bg-surface-card`}
       >
         {/* species tick — start edge, full height */}
         <span aria-hidden="true" className={`absolute start-0 inset-y-0 w-[3px] ${tickBg}`} />
@@ -126,11 +143,11 @@ export default function EventEntryRow({ entry, freeLabel, compact = false }) {
           )}
         </div>
         {/* body */}
-        <div className="py-4 md:py-5 ps-3 pe-4 min-w-0">
+        <div className={`py-4 md:py-5 ps-3 pe-4 min-w-0${fill.body}`}>
           {/* MEH-858 F5: category eyebrow removed — it duplicated the pill chip
               below (and uppercase tracking was a no-op on Hebrew). The glyph now
               leads the chip, so the category shows once, still with its icon. */}
-          <h3 className="font-headline-md text-lg md:text-2xl font-bold text-text leading-snug">
+          <h3 className={`font-headline-md text-lg md:text-2xl font-bold text-text leading-snug${fill.title}`}>
             {entry.title}
           </h3>
           {/* MEH-2476: line-clamp — a long recurring schedule must not stack
@@ -139,7 +156,10 @@ export default function EventEntryRow({ entry, freeLabel, compact = false }) {
           {entry.description && (
             <p className="text-sm text-text/85 line-clamp-2 mt-2 leading-relaxed">{entry.description}</p>
           )}
-          <div className="flex items-center gap-2 mt-3 flex-wrap">
+          <div
+            className={`flex items-center gap-2 mt-3 flex-wrap${fill.footer}`}
+            data-testid={compact ? "event-row-footer" : undefined}
+          >
             {entry.category && (
               <span className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full ${catChip}`}>
                 <Icon size={12} weight="bold" aria-hidden="true" />

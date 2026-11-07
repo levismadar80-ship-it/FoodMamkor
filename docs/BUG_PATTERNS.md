@@ -148,6 +148,32 @@ silently disables AI features in production.
 
 ---
 
+## Grid card does not fill its cell (MEH-2802)
+
+**Pattern:** a card inside a CSS grid cell ends where its content ends. The
+grid stretches the CELL to the row's tallest item, but the card's wrapper and
+link are not `h-full`, so cards in one row come out at different heights, a
+full-height decoration (the start-edge tick, the bottom border) stops short,
+and the footer row (chip + price) sits on a different line in each card. Home
+«אירועים קרובים», lg+ 3-up: `EventEntryRow` compact had none of it.
+
+**Rule:** a card in a grid fills its cell, and its footer is pushed to the
+bottom — the MDN card cookbook pattern, already in `ProducerCard.jsx`
+(`flex flex-col h-full` + `mt-auto`). In `EventEntryRow` compact (lg only):
+wrapper + link `h-full`, link `grid-rows-[auto_1fr]` (band = row 1,
+rail + body = row 2), body `flex flex-col`, chip row `mt-auto`. Keep a minimum
+gap above the footer with padding (`pt-*`), since `mt-auto` collapses to 0 in
+the tallest card.
+
+**Guard:** `frontend/e2e/flows/45-card-grid-equal-height.spec.ts` — at 1280px on
+`/`, equal card height (±1px) per grid row and one chip+price bottom line, for
+«אירועים קרובים» and the seasonal `ProducerCard` grid. jsdom has no layout, so
+the class half (`__tests__/EventEntryRow.test.jsx`) cannot catch a height bug on
+its own. Fewer than 2 cards → the spec skips with the reason, decided from the
+API's answer and not from the rendered count.
+
+---
+
 ## Duplicate producer-detail CTAs
 
 **Pattern:** rendering both the sidebar WhatsApp CTA and the sticky bar
