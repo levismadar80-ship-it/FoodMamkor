@@ -15,7 +15,9 @@ import JoinStickyBar from "@/components/join/JoinStickyBar";
  * Inert handling mirrors StickyContactBarInert.test.jsx (MEH-1333).
  */
 
-vi.mock("@/lib/auth-context", () => ({ useAuth: () => ({ user: null, loading: false }) }));
+// Mutable per test: a guest by default; the role cases below set a user.
+let authState = { user: null, loading: false };
+vi.mock("@/lib/auth-context", () => ({ useAuth: () => authState }));
 
 let observers = [];
 class FakeIO {
@@ -44,6 +46,7 @@ const closingNear = () => fire("[data-join-closing]", { isIntersecting: true, to
 const closingPassed = () => fire("[data-join-closing]", { isIntersecting: false, top: -900 });
 
 beforeEach(() => {
+  authState = { user: null, loading: false };
   observers = [];
   vi.stubGlobal("IntersectionObserver", FakeIO);
 });
@@ -149,5 +152,34 @@ describe("content", () => {
     vi.stubGlobal("IntersectionObserver", undefined);
     renderPage();
     expect(isShown()).toBe(false);
+  });
+});
+
+/**
+ * Sapir, 07/11 on her phone (logged in as a business): the bar showed
+ * «לוח הבקרה שלי» beside «חינם · כ-5 דקות · …» — a signup pitch to someone who
+ * already has a page. The bar is a join prompt; for an owner or an admin it
+ * has nothing to say, so it does not render at all.
+ */
+describe("who sees it", () => {
+  it.each([
+    ["producer", { id: 1, role: "producer" }],
+    ["admin", { id: 2, role: "admin" }],
+  ])("a logged-in %s gets no bar", (_role, user) => {
+    authState = { user, loading: false };
+    renderPage();
+    expect(screen.queryByTestId("join-sticky-bar")).toBeNull();
+  });
+
+  it("a consumer still gets it (they may be a business owner too)", () => {
+    authState = { user: { id: 3, role: "consumer" }, loading: false };
+    renderPage();
+    expect(screen.getByTestId("join-sticky-bar")).toBeTruthy();
+  });
+
+  it("while auth is still resolving the bar exists (hidden until the hero scrolls away)", () => {
+    authState = { user: null, loading: true };
+    renderPage();
+    expect(screen.getByTestId("join-sticky-bar").dataset.visible).toBe("false");
   });
 });
