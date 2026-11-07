@@ -51,8 +51,11 @@ export default function LocationHoursField({ value, onChange, onValidityChange =
   const tDays = useTranslations("opening_hours.weekdays");
   const tHours = useTranslations("opening_hours");
 
-  // Seeded ONCE from the stored value; the form re-mounts this field per row.
-  const stored = typeof value === "string" ? value : "";
+  // Seeded ONCE from the value the field opened with; the form re-mounts this
+  // field per row. The note reads that same frozen value, not the live prop:
+  // the first edit makes `value` canonical, and the old text must stay on
+  // screen while the owner re-enters it below.
+  const [stored] = useState(() => (typeof value === "string" ? value : ""));
   const [days, setDays] = useState(() => daysFromString(stored));
   const unreadable = useMemo(
     () => stored.trim() !== "" && parseHours(stored) === null,

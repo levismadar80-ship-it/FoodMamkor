@@ -82,6 +82,15 @@ describe("LocationHoursField — prefill (MEH-2805 AC 3)", () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
+  it("the unreadable note stays on screen after the first edit — the owner is re-entering it", () => {
+    const onChange = vi.fn();
+    const { rerender } = render(<LocationHoursField value="בתיאום מראש" onChange={onChange} />);
+    fireEvent.click(openBox(0));
+    // The form feeds the new canonical value back in, as LocationsEditor does.
+    rerender(<LocationHoursField value={onChange.mock.calls.at(-1)[0]} onChange={onChange} />);
+    expect(screen.getByTestId("location-hours-unreadable").textContent).toContain("בתיאום מראש");
+  });
+
   it("an empty value: every day closed, no note", () => {
     renderField("");
     expect(openDays()).toEqual([]);
