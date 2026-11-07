@@ -231,6 +231,99 @@ function buildBreadcrumbList(crumbs, id) {
  *           the FoodEstablishment, plus WebSite + Organization graph nodes
  *           (closes the dangling WebPage.isPartOf → #website reference).
  */
+// Google asks that structured data reflect what is VISIBLE on the page, so
+// the cap exists to keep a very long catalogue from bloating the document,
+// not to hide anything: 30 is the ticket's number.
+const OFFER_CATALOG_MAX = 30;
+
+/**
+ * An absolute https URL, or null. Product images are Cloudinary URLs and are
+ * already absolute, but the column is free text (`image_url`, models.py:1077),
+ * so a relative path would emit a `Product.image` no consumer can resolve.
+ * Same http(s)-protocol test the `sameAs` block uses, for the same reason
+ * (HOT-017 / MEH-782): `startsWith("http")` also accepts "httpfoo.co.il".
+ */
+function absoluteUrl(raw) {
+  const value = typeof raw === "string" ? raw.trim() : "";
+  if (!value) return null;
+  if (/^https?:\/\//i.test(value)) return value;
+  if (value.startsWith("/")) return `${SITE_URL}${value}`;
+  return null;
+}
+
+/**
+ * MEH-2789: the business's products, in the same set and the same order the
+ * page renders them.
+ *
+ * ORDER, and why it is not simply `producer.products`: the detail page hoists
+ * the signature product to the front and dedupes it out of the grid
+ * (`ProducerSections.jsx:226-248` — `signatureProduct`, then `gridProducts`,
+ * combined as `sheetProducts`). This mirrors that derivation, including the
+ * `top_product_id != null` gate that MEH-2137 chunk 3 put in front of the
+ * name fallback — an `||` chain there features a surviving namesake when the
+ * referenced product has been deleted, which is the wrong-row bug that
+ * ordering exists to kill. Reproduced here so the catalogue cannot disagree
+ * with the page about which product comes first.
+ *
+ * SET: every row in `producer.products`. There is no per-product visibility
+ * flag to honour — see the note in the ticket; `Product` (models.py:1050) has
+ * no hidden/active column and `ProductOut` (schemas.py:1784) exposes none, so
+ * the page renders every row the API returns and so does this.
+ */
+function buildOfferCatalog(producer, locale = "he") {
+  const products = Array.isArray(producer?.products) ? producer.products : [];
+  if (products.length === 0) return null;
+
+  const signature =
+    producer.top_product_id != null
+      ? products.find((p) => p.id === producer.top_product_id) || null
+      : producer.top_product_name
+        ? products.find((p) => p.name?.trim() === producer.top_product_name.trim()) || null
+        : null;
+  const ordered = signature
+    ? [signature, ...products.filter((p) => p.id !== signature.id)]
+    : products;
+
+  const itemListElement = ordered
+    .filter((p) => p?.name?.trim())
+    .slice(0, OFFER_CATALOG_MAX)
+    .map((p) => {
+      const item = { "@type": "Product", name: p.name.trim() };
+      if (p.description?.trim()) item.description = p.description.trim();
+      const image = absoluteUrl(p.image_url);
+      if (image) item.image = image;
+
+      const offer = { "@type": "Offer", itemOffered: item };
+      // Only a NUMERIC price becomes a priceSpecification. `price_range` is a
+      // free-text DB label (models.py:1076, LEGACY) — "20-30 ₪", "משתנה" —
+      // and putting it in minPrice would emit a price that is not a number.
+      // maxPrice falls back to minPrice so a single-price product still
+      // yields a well-formed specification rather than a half-open range.
+      const minPrice = toPrice(p.price_min);
+      if (minPrice != null) {
+        offer.priceSpecification = {
+          "@type": "PriceSpecification",
+          minPrice,
+          maxPrice: toPrice(p.price_max) ?? minPrice,
+          priceCurrency: "ILS",
+        };
+      }
+      return offer;
+    });
+
+  if (itemListElement.length === 0) return null;
+  return {
+    // The catalogue's name is reader-facing copy, so it lives in
+    // messages/{he,en}.json under `seo.producer`, beside the country crumb
+    // (MEH-2774) — the same translator this file already uses. A literal here
+    // would be a new Hebrew string in code, which HebrewLiteralRatchet
+    // (MEH-1687 phase 7) reds for lib/seo.js at an allowance of 0.
+    "@type": "OfferCatalog",
+    name: producerSeoT(locale)("offer_catalog_name"),
+    itemListElement,
+  };
+}
+
 export function buildJsonLd(producer, locale = "he") {
   if (!producer) return null;
 
@@ -343,6 +436,14 @@ export function buildJsonLd(producer, locale = "he") {
     const cuisines = producer.categories.map((c) => c.name).filter(Boolean);
     if (cuisines.length > 0) business.servesCuisine = cuisines;
   }
+
+  // MEH-2789: hasOfferCatalog — the products the PAGE shows, so a search
+  // engine or an AI assistant reads what the business sells, not only where
+  // it is. `hasOfferCatalog` is a valid property of LocalBusiness, which
+  // FoodEstablishment is a subtype of, so this is purely additive: every
+  // field above stays byte-identical.
+  const offerCatalog = buildOfferCatalog(producer, locale);
+  if (offerCatalog) business.hasOfferCatalog = offerCatalog;
 
   // BreadcrumbList -------------------------------------------------------
   // Structure per MEH-172: ישראל → קטגוריה → עיר → שם העסק.
