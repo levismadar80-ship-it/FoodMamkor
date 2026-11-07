@@ -200,7 +200,7 @@ function StatusSupportModal({ onClose }) {
 // MEH-2199 arrow-key layer) became ONE «בהפסקה» switch. Owners set hours plus a
 // pause, like Google / Etsy / Wolt / Uber Eats; «פתוח להזמנות» as a status
 // clashed with the order-window line «פתוח להזמנות · עד …». Off = the server's
-// accepting_orders; legacy available_today / full_this_week rows read as off.
+// accepting_orders, the only other value since MEH-2782.
 
 export default function ProducerDashboardPage() {
   const t = useTranslations("dashboard.producer");

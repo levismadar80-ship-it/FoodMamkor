@@ -70,15 +70,14 @@ def test_utc_friday_can_be_israel_saturday():
 @pytest.mark.parametrize("from_state", list(av.ALLOWED_TRANSITIONS))
 @pytest.mark.parametrize("to_state", ["accepting_orders", "on_vacation"])
 def test_every_state_may_move_to_a_writable_state(from_state, to_state):
-    # MEH-2758: every state — including a legacy available_today /
-    # full_this_week row — may move to either writable state.
+    # MEH-2758 / MEH-2782: every state may move to either state.
     validate_transition(from_state, to_state)
 
 
 @pytest.mark.parametrize("from_state", list(av.ALLOWED_TRANSITIONS))
 @pytest.mark.parametrize("to_state", ["available_today", "full_this_week"])
 def test_no_state_may_move_into_a_removed_state(from_state, to_state):
-    # MEH-2758: the two removed states are read-only — never a write target.
+    # MEH-2782: the two removed states are no longer values at all.
     with pytest.raises(AvailabilityValidationError) as ei:
         validate_transition(from_state, to_state)
     assert ei.value.kind == "value"

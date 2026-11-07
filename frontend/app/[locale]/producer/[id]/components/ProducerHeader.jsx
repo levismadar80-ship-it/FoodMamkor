@@ -75,8 +75,9 @@ function CategoryGlyph({ category }) {
  * pull-quote. Removed per decision 4: premium chip, favorites count,
  * TrustBadge, secondary-category chips, grass_fed/delivery highlight chips,
  * contact_name line (relocated to OwnerCard). Kept: declared explainer
- * (ADR-022 gate 1) + the full_this_week banner. The vacation banner was
- * removed in chunk 3 — it repeated the return date the meta status owns.
+ * (ADR-022 gate 1); the full_this_week banner left in MEH-2759. The
+ * vacation banner was removed in chunk 3 — it repeated the return date the
+ * meta status owns.
  *
  * The 3-state order status lives HERE and only here (one green per page —
  * revision-2 #2): open = primary, closed = muted, vacation = gold-deep

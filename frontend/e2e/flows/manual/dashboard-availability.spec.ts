@@ -107,16 +107,6 @@ test("the card shows one enabled «בהפסקה» switch, off, and no radios", a
   await expect(page.getByTestId("availability-disabled-hint")).toHaveCount(0);
 });
 
-// MEH-2759 — the two removed states are read-only; a row still on one reads as not paused.
-for (const value of ["available_today", "full_this_week"] as const) {
-  test(`a row still on «${value}» shows the switch off and no date input`, async ({ page }) => {
-    await stubDashboard(page, { availability_state: value, vacation_until: null });
-    await openOverview(page);
-    await expectPaused(page, false);
-    await expect(dateInput(page)).toHaveCount(0);
-  });
-}
-
 // MT:MEH-291:5 — turning the switch on reveals the mini-form BEFORE any save; nothing leaves the browser.
 test("turning «בהפסקה» on reveals the return-date input and «שמרו» without posting", async ({ page }) => {
   const posts: Rec[] = [];
