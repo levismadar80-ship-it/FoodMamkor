@@ -22,6 +22,11 @@ import en from "../messages/en.json";
 import { OrderWindowScheduleBlock } from "@/app/[locale]/producer/[id]/components/OrderWindowStrip";
 
 const COPY = he.producer.detail.order_window;
+// MEH-2803: the block is now a labelled SET inside the «שעות» section; the
+// label replaces the old «מתי מקבלים הזמנות» heading, so it is what the
+// heading assertions below read.
+const LABEL = he.producer.detail.hours.label_orders;
+const EN_LABEL = en.producer.detail.hours.label_orders;
 
 // Sun–Thu 09:00–14:00 — the staging demo producer's window (מאפיית רוח השדה).
 const SUN_THU = {
@@ -34,9 +39,10 @@ const SUN_THU = {
 
 function renderBlock(orderWindow, messages = he, locale = "he") {
   const onError = vi.fn();
+  const label = messages.producer.detail.hours.label_orders;
   const utils = render(
     <NextIntlClientProvider locale={locale} messages={messages} onError={onError}>
-      <OrderWindowScheduleBlock orderWindow={orderWindow} />
+      <OrderWindowScheduleBlock orderWindow={orderWindow} label={label} />
     </NextIntlClientProvider>,
   );
   return { onError, ...utils };
@@ -50,7 +56,7 @@ describe("OrderWindowScheduleBlock (MEH-1875)", () => {
     const { onError } = renderBlock(SUN_THU);
 
     expect(block()).toBeTruthy();
-    expect(screen.getByRole("heading", { name: COPY.schedule_heading })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: LABEL })).toBeTruthy();
     // Consecutive identical days collapse into ONE row (getOrderWindowRanges).
     expect(rows()).toHaveLength(1);
     expect(rows()[0].textContent).toContain(`${COPY.days.sun}–${COPY.days.thu}`);
@@ -152,7 +158,7 @@ describe("OrderWindowScheduleBlock (MEH-1875)", () => {
     // future edit adds one, the server string goes empty and this fails.
     const html = renderToString(
       <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
-        <OrderWindowScheduleBlock orderWindow={SUN_THU} />
+        <OrderWindowScheduleBlock orderWindow={SUN_THU} label={LABEL} />
       </NextIntlClientProvider>,
     );
     // Each range is three adjacent text nodes ({open}–{close}), so React's
@@ -160,7 +166,7 @@ describe("OrderWindowScheduleBlock (MEH-1875)", () => {
     // matching — the browser concatenates them and the user sees one string.
     const text = html.replace(/<!-- -->/g, "");
 
-    expect(text).toContain(COPY.schedule_heading);
+    expect(text).toContain(LABEL);
     expect(text).toContain("9:00–14:00");
 
     // Discrimination control: the SAME render path with a null window produces
@@ -178,7 +184,7 @@ describe("OrderWindowScheduleBlock (MEH-1875)", () => {
     const { onError } = renderBlock(SUN_THU, en, "en");
 
     expect(onError).not.toHaveBeenCalled();
-    expect(screen.getByRole("heading", { name: en.producer.detail.order_window.schedule_heading }))
+    expect(screen.getByRole("heading", { name: EN_LABEL }))
       .toBeTruthy();
     expect(rows()[0].textContent).toContain(
       `${en.producer.detail.order_window.days.sun}–${en.producer.detail.order_window.days.thu}`,
@@ -392,13 +398,13 @@ describe("OrderWindowScheduleBlock — today marker (MEH-1917)", () => {
     pinTo("2026-08-05T12:00:00Z"); // Wednesday — a marker would appear if it could
     const html = renderToString(
       <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
-        <OrderWindowScheduleBlock orderWindow={SUN_THU} />
+        <OrderWindowScheduleBlock orderWindow={SUN_THU} label={LABEL} />
       </NextIntlClientProvider>,
     );
 
     // The block itself IS server-rendered — so this is not green by rendering
     // nothing at all.
-    expect(html).toContain(COPY.schedule_heading);
+    expect(html).toContain(LABEL);
     expect(html).toContain(COPY.show_week);
     // …and the panel holding the clock-derived row is absent.
     expect(html).toContain('aria-expanded="false"');
