@@ -23,7 +23,7 @@ its absence.
 
 import importlib.util
 import os
-from datetime import timedelta, timezone
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -40,7 +40,7 @@ from app.models.models import (
     User,
 )
 from app.routers.rescue import RESERVE_CLOSES_BEFORE_END
-from app.utils.clock import ISRAEL_TZ, israel_today, utc_now
+from app.utils.clock import ISRAEL_TZ, israel_today
 
 # Placed in its own block, matching tests/test_seed_demo_business.py:31. Ruff
 # 0.16.x sorts `tests.*` up with the third-party block instead, but the pinned
@@ -221,7 +221,7 @@ def test_offer_is_active_now_and_future_dated(db, seeded, seed_mod):
     assert (offer.threshold_value is None) == (offer.threshold_unit is None)
 
 
-def test_rescue_bag_satisfies_its_db_checks(db, seeded, seed_mod):
+def test_rescue_bag_satisfies_its_db_checks(db, seed_mod, bakery_category, monkeypatch):
     """Every NOT NULL column set, every CHECK respected.
 
     Written after CI caught an invalid `offer_type` on the sibling fixture: the
@@ -234,6 +234,21 @@ def test_rescue_bag_satisfies_its_db_checks(db, seeded, seed_mod):
 
     if not sa_inspect(db.get_bind()).has_table("rescue_offers"):
         pytest.skip("rescue tables absent — the seed skips the bag too")
+
+    # MEH-2814: the clock is frozen rather than read twice. The margin
+    # assertion below used to compare `utc_now()` with a bag the seed built
+    # from a DIFFERENT, earlier read of the same clock — a race that vanishes
+    # almost always and reds at the cutoff boundary. `.claude/rules/testing.md`
+    # names this: an exact comparison against the clock is pinned with the
+    # clock frozen, not left to the hour the suite happens to run.
+    frozen = (
+        datetime(2026, 11, 7, 10, 0, tzinfo=ISRAEL_TZ)
+        .astimezone(timezone.utc)
+        .replace(tzinfo=None)
+    )
+    monkeypatch.setattr(seed_mod, "utc_now", lambda: frozen)
+    seed_mod.seed_demo_business(db)
+    seed_mod.seed_marketing_fixtures(db)
 
     from app.models.models import RESCUE_MAX_QTY_PER_OFFER, RescueOffer
 
@@ -251,12 +266,13 @@ def test_rescue_bag_satisfies_its_db_checks(db, seeded, seed_mod):
     # window is now derived from the clock and may legitimately land on
     # tomorrow, so what gets asserted is the property the old line was reaching
     # for — stated directly, against the router's own constant.
-    assert bag.pickup_end > utc_now() + RESERVE_CLOSES_BEFORE_END, (
+    assert bag.pickup_end > frozen + RESERVE_CLOSES_BEFORE_END, (
         f"the seeded bag closes {bag.pickup_end} UTC, which the public listing "
         f"filter at rescue.py:463 hides"
     )
-    assert bag.date in (israel_today(), israel_today() + timedelta(days=1)), (
-        f"the bag landed on {bag.date}, neither today nor tomorrow in Israel"
+    frozen_israel_day = frozen.replace(tzinfo=timezone.utc).astimezone(ISRAEL_TZ).date()
+    assert bag.date in (frozen_israel_day, frozen_israel_day + timedelta(days=1)), (
+        f"the bag landed on {bag.date}, neither the frozen day nor the one after"
     )
 
     # MEH-2679: these naive columns hold UTC INSTANTS. `datetime.combine` of an

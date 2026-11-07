@@ -145,6 +145,60 @@ def test_the_window_always_survives_the_public_listing_filter(
     )
 
 
+@pytest.mark.parametrize(
+    # The two nights a year when adding a timedelta to an Israel-aware
+    # datetime stops meaning elapsed time. 25/10/2026 the clocks go back
+    # (02:00 -> 01:00); 27/03/2026 they go forward.
+    "switch_day,now_il",
+    [
+        ((2026, 10, 25), (1, 30)),
+        ((2026, 10, 24), (23, 0)),
+        ((2026, 3, 27), (1, 30)),
+        ((2026, 3, 27), (23, 0)),
+    ],
+)
+def test_the_lead_times_are_real_hours_across_a_dst_switch(
+    seed_mod, switch_day, now_il
+):
+    """MEH-2814 — the window promises `now + 1h .. now + 3h` in REAL hours.
+
+    `now_il + timedelta(hours=3)` is wall-clock arithmetic: on the October
+    switch night `01:30 + 3h` reads 04:30 Israel while FOUR real hours have
+    passed. The fix adds to the UTC instant and converts afterwards.
+
+    DISCRIMINATES: it asserts the ELAPSED time, computed on naive-UTC instants
+    where a timedelta is unambiguous — never on the Israel-local renderings,
+    which is the very arithmetic under test. Against the wall-clock form the
+    October rows read 4:00:00 against an expected 3:00:00 and fail by name;
+    the normal-day tests above pass in both versions, which is why they could
+    not have caught this.
+    """
+    y, mo, d = switch_day
+    hour, minute = now_il
+    now = (
+        datetime(y, mo, d, hour, minute, tzinfo=ISRAEL_TZ)
+        .astimezone(timezone.utc)
+        .replace(tzinfo=None)
+    )
+    _day, start, end = seed_mod._demo_pickup_window(now)
+
+    if start - now < timedelta(hours=12):
+        # The same-day branch: both lead times must be exact real hours.
+        assert start - now == timedelta(
+            hours=seed_mod.DEMO_RESCUE_BAG["lead_hours_start"]
+        ), f"collection opens {start - now} after the seed, not one real hour"
+        assert end - now == timedelta(
+            hours=seed_mod.DEMO_RESCUE_BAG["lead_hours_end"]
+        ), f"collection closes {end - now} after the seed, not three real hours"
+    else:
+        # The tomorrow-evening branch is a wall-clock window by design
+        # (17:00-19:00 Israel), so what matters is that it reads back as those
+        # hours on the far side of the switch.
+        assert f"{_israel(start):%H:%M}" == "17:00"
+        assert f"{_israel(end):%H:%M}" == "19:00"
+    assert end > start, "the rescue_offers_pickup_window_check CHECK"
+
+
 def test_the_margin_is_the_routers_own_constant(seed_mod):
     """A guard against the drift the import exists to prevent.
 
