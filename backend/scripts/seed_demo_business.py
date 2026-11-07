@@ -178,9 +178,19 @@ DEMO_PRODUCTS = [
     },
 ]
 
+# MEH-2797: CANONICAL city names only. Two reasons, and the second is the one
+# that actually changed behaviour:
+#
+#  1. `DeliveryArea.@validates("city")` (models.py:1179) already rewrote
+#     «בנימינה» to «בנימינה-גבעת עדה» on insert, so the short form here was
+#     never what got stored — a reader of this constant was being told
+#     something untrue about the fixture.
+#  2. `delivery_cities` on Producer below is derived from this same list and
+#     has NO such validator (it is the MEH-903 dual-write column), so the
+#     short name DID land there verbatim.
 DEMO_DELIVERY_AREAS = [
     {"city": "זכרון יעקב", "min_order": 60, "delivery_day": "שלישי"},
-    {"city": "בנימינה", "min_order": 80, "delivery_day": "שלישי"},
+    {"city": "בנימינה-גבעת עדה", "min_order": 80, "delivery_day": "שלישי"},
     {"city": "חדרה", "min_order": 100, "delivery_day": "חמישי"},
 ]
 

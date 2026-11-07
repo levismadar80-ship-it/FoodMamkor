@@ -155,6 +155,62 @@ describe("DeliveryChecker — answer states (MEH-1536)", () => {
   });
 });
 
+describe("matchDeliveryCity — city aliases (MEH-2797)", () => {
+  // THE BUG, as observed on staging 07/11: מאפיית רוח השדה held a
+  // pre-MEH-2602 delivery row spelled «בנימינה», the autocomplete offers only
+  // the official «בנימינה-גבעת עדה», and the checker answered «עדיין לא
+  // מגיעים» to a customer it does deliver to.
+  const STALE = [{ city: "בנימינה", min_order: 80, delivery_day: "שלישי" }];
+  const CANON = [{ city: "בנימינה-גבעת עדה", min_order: 80, delivery_day: "שלישי" }];
+
+  it("the official name matches a row stored under the short one", () => {
+    const r = matchDeliveryCity({ city: "בנימינה-גבעת עדה", areas: STALE });
+    expect(r.status).toBe("yes");
+    expect(r.minOrder).toBe(80);
+    // The verdict echoes the PRODUCER's spelling, not the visitor's — the
+    // function's own contract, and worth pinning on the aliased path too.
+    expect(r.city).toBe("בנימינה");
+  });
+
+  it("the short name matches a row stored under the official one", () => {
+    // The other direction: a visitor who types the everyday name against a
+    // business that saved the official one. Folding only one way would pass
+    // the case above and still fail real users.
+    const r = matchDeliveryCity({ city: "בנימינה", areas: CANON });
+    expect(r.status).toBe("yes");
+    expect(r.city).toBe("בנימינה-גבעת עדה");
+  });
+
+  it("a city with no alias is unaffected — «זכרון יעקב» still matches exactly", () => {
+    // The control. «זכרון יעקב» worked before this change and must still, so
+    // a green above cannot be a canonicaliser that matches everything.
+    const r = matchDeliveryCity({
+      city: "זכרון יעקב",
+      areas: [{ city: "זכרון יעקב", min_order: 60 }],
+    });
+    expect(r.status).toBe("yes");
+  });
+
+  it("still answers NO for a town the business does not serve", () => {
+    // The regression that would matter most: an over-eager fold answering
+    // "yes" everywhere is worse than the bug it replaces.
+    expect(matchDeliveryCity({ city: "אילת", areas: STALE }).status).toBe("no");
+    expect(matchDeliveryCity({ city: "חיפה", areas: CANON }).status).toBe("no");
+  });
+
+  it("folds aliases on the nationwide EXCLUSION list too", () => {
+    // MEH-1255's model is "everywhere except these", so a stale spelling in
+    // the exclusion list would wrongly answer "yes" — the inverse failure,
+    // and the one that promises delivery the business cannot make.
+    const r = matchDeliveryCity({
+      city: "בנימינה-גבעת עדה",
+      nationwide: true,
+      excluded: ["בנימינה"],
+    });
+    expect(r.status).toBe("no");
+  });
+});
+
 describe("matchDeliveryCity — pure logic (MEH-1536)", () => {
   it("returns null for empty / whitespace input", () => {
     expect(matchDeliveryCity({ city: "", areas: AREAS })).toBeNull();

@@ -5,6 +5,7 @@ import { CheckCircle, XCircle } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { formatPrice } from "@/lib/utils";
 import { isDeliveryCheckerUsable } from "@/lib/delivery-coverage";
+import { canonicalCity } from "@/data/cities";
 import CitySearch from "@/components/CitySearch";
 import CoverageRequestCta from "@/components/CoverageRequestCta";
 import DeliveryWaitlistForm from "@/components/DeliveryWaitlistForm";
@@ -33,7 +34,21 @@ import WhatsAppUpdatesPill, { whatsappUpdatesHref } from "@/components/WhatsAppU
 
 // MEH-1536: exact-city matching only — trimmed + case-insensitive. NO fuzzy
 // matching, no geolocation, no region fallback (over-engineering guard).
-const norm = (s) => (s || "").trim().toLowerCase();
+//
+// MEH-2797 folds ONE more thing in, and only one: a known alias of a city
+// («בנימינה» → «בנימינה-גבעת עדה») now compares equal to its official name.
+// That is still exact matching — the comparison is on a canonical key, not a
+// similarity score — so the MEH-1536 guard stands. The alias table is the
+// backend's, mirrored under test (data/cities.js, CityAliasParity.test.js).
+//
+// WHY IT IS NEEDED even though every write path canonicalises since MEH-2602:
+// rows written BEFORE that validator keep their old spelling. `city_variants`
+// in backend/app/data/cities.py says so in its own docstring, and the
+// backend's city filter already folds aliases for the same reason
+// (producer_listing.py:436). The checker was the one surface that did not, so
+// a business holding a pre-MEH-2602 «בנימינה» told a visitor who picked the
+// only spelling the autocomplete offers that it does not deliver there.
+const norm = (s) => canonicalCity(s).toLowerCase();
 
 /**
  * Pure match logic, exported for unit coverage. Returns null while the field is
