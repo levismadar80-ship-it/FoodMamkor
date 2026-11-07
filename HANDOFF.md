@@ -4,6 +4,22 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-07 23:20 — פס האמון חזר למשפט, ושורת ספירה מ-25 (#4148)
+
+**‏שורה אחת:** ‏#4148 (MEH-2804 follow-up, squash `ea8ef829`) מוזג ל-staging. **שורת העובדות של #4143 בוטלה.** הסקשן של 22:40 מתאר את פס האמון כפי שהיה לפני התיקון הזה, ולכן חלקו כבר לא נכון.
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏**פס האמון = המשפט, תמיד.** מ-`TRUST_COUNT_THRESHOLD` (25) נוספת השורה «N בתי עסק שהצטרפו עד היום». ‏`TRUST_LABEL_BOX`, ‏`TRUST_ROW` ומפתחות `home.trust.col_*` כבר לא קיימים. ‏`TRUST_COUNT_LINE` משותף לשורה ול-placeholder שלה (`min-h-7`).
+- ‏**לא להחזיר את שורת העובדות** בלי החלטה חדשה. ספיר דחתה אותה בטלפון, והיא רשומה ב-ADR-039 כחלופה שנדחתה.
+- ‏**מספר בתוך שורה עברית לא נכתב ב-Cormorant.** ספרות «בסגנון ישן» נטויות נראות כמו «ɜı». המספר נכתב בגופן של השורה, `font-semibold text-primary` (DESIGN.md).
+- ‏**הזזה ידועה:** מתחת ל-25 בתי עסק, המקום של שורת הספירה נסגר פעם אחת כש-`/stats` חוזר. זה מחיר מכוון: המצב הנפוץ (25 ומעלה) נטען בלי הזזה.
+- ‏`showStatsCounter` עדיין מחושב ב-`use-home-page.js` אבל כבר לא נקרא בדף הבית. ‏Knip עבר. הסוקר הציע להסיר אותו, וזה נשאר מחוץ ל-scope.
+
+**‏לבדוק בנייד (ספיר):**
+- דף הבית ב-iPhone: המשפט בשתי שורות מאוזנות, ומתחתיו «31 בתי עסק שהצטרפו עד היום», כשה-31 ישר, מודגש ובירוק.
+
+---
+
 ## 2026-11-07 22:54 — ‏/join: מעבר חלק בין החלקים, «לעולם» הוסר, וכל השאלות הנפוצות סגורות (#4147, #4150)
 
 **‏שורה אחת:** ‏#4147 ו-#4150 מוזגו ל-staging (squash). ‏MEH-2799 נשאר Done.

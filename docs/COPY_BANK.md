@@ -1098,20 +1098,17 @@ is NOT reused — it is about orders, not opening hours.
 («למשל: ימים א׳–ה׳, 9:00–17:00») — it invited exactly the free-text format the
 picker replaces, and is unused once the text field is gone. The admin
 ProducerForm's own `opening_hours_placeholder` is untouched.
-## Section 16 — Home trust band as a fact row + «כניסה חופשית» (MEH-2804)
+## Section 16 — Home trust band: the sentence + a count line from 25; «כניסה חופשית» (MEH-2804)
 
-The trust band at or above `TRUST_COUNT_THRESHOLD` becomes three facts, each a
-display numeral (ADR-039) over a short label; between `STATS_DISPLAY_THRESHOLD`
-and the threshold it drops the business count (MEH-521) and keeps two. The
-third fact is count-independent on purpose: no commission is a LOCK, not a
-number that can look small.
+The three-column fact row (`home.trust.col_*`, #4143) was rejected 07/11 and its
+four keys are removed. The band is `home.trust.lead` at every count; from
+`TRUST_COUNT_THRESHOLD` (25) one quiet line is added under it. Below 25 there is
+no number (MEH-521). The count line reuses the MEH-524-approved wording.
 
 | Key | he | en | Where it appears |
 |---|---|---|---|
-| `home.trust.col_businesses` | `בתי עסק, כל אחד נבחר אישית` | `businesses, each chosen personally` | Home trust band, under the business count (≥ 25 only) |
-| `home.trust.col_categories` | `קטגוריות מזון` | `food categories` | Home trust band, under the category count (≥ 5) |
-| `home.trust.col_fees_value` | `0₪` | `0₪` | Home trust band, the third numeral |
-| `home.trust.col_fees` | `עמלה, אף פעם` | `commission, ever` | Home trust band, under «0₪» |
+| `home.trust.lead` | `בלי מתווך באמצע · איסוף עצמי או משלוח, ישירות מבית העסק` | `No middleman in between · pickup or delivery, straight from the business` | Home trust band, always (unchanged) |
+| `home.trust.count_line` | `<num>{count}</num> בתי עסק שהצטרפו עד היום` | `<num>{count}</num> businesses joined so far` | Home trust band, under the sentence, ≥ 25 only |
 
 **«חינם» → «כניסה חופשית»** (en `Free entry`) for the event/experience price only:
 `home.events.free`, `producer.detail.sections.events.free`, `events.list.free`,
@@ -1119,7 +1116,7 @@ number that can look small.
 `group_buys.delivery.free`, `admin.experiences.free`, DeliveryBlock pickup — those
 say a delivery or a listing costs nothing, not that entry is free.
 
-**Status:** ✅ Merged to staging — PR #4143 (`1a9464fd`).
+**Status:** price token + «כניסה חופשית» ✅ merged in #4143 (`1a9464fd`); the band as above in the MEH-2804 follow-up PR #4148.
 
 ---
 

@@ -478,7 +478,7 @@ async function login(page) {
     stuck = await fillBoth();
   }
   if (!stuck) {
-    throw new Error("the login form kept discarding the email field — hydration never settled");
+    throw new Error("the login form kept discarding its field values — hydration never settled");
   }
   await page.getByRole("button", { name: /התחבר|כניסה/ }).first().click();
   // Gate on the thing that proves login, not on a timeout.
@@ -550,8 +550,47 @@ async function preflight(browser) {
       problems.push(`could not read the demo business through the API: ${err.message}`);
     }
 
-    const body = (await page.textContent("body").catch(() => "")) + apiText;
-    if (!body || body.length < 500) problems.push("the business page rendered almost no text");
+    // TWO CHECKS, TWO HAYSTACKS. `apiText` is the producer and reviews JSON —
+    // always far more than 500 characters — so folding it into the variable
+    // the length check reads made that check unable to fail, even against a
+    // completely empty DOM. A guard that cannot fail, introduced while fixing
+    // a guard that could not fail (MEH-2821). The length check reads the DOM
+    // and only the DOM; the cleanliness check reads both.
+    // WAIT FOR A LANDMARK, THEN READ VISIBLE TEXT. Two separate reasons, both
+    // measured on staging:
+    //
+    //   textContent("body") includes <script>/<style>, and Next inlines a
+    //   large RSC flight payload there — 203,328 characters at this point, of
+    //   which 200,836 are script. A 500-character floor over that passes on
+    //   any page that merely loaded its bundle. innerText is the visible text
+    //   the check is actually about.
+    //
+    //   At `domcontentloaded` innerText is only 563, a 63-character margin
+    //   over the floor: thin enough that a copy trim or slow hydration could
+    //   fail the pre-flight on a perfectly healthy page. After the products
+    //   section renders it is 2,537 — a 2,037-character margin. So the wait
+    //   is what makes the floor mean "nothing rendered" instead of "the page
+    //   was read too early".
+    //
+    // The landmark is NOT here to make the "(בדיקה)" check work — the API
+    // does that, and a render-timed DOM read is what made that check useless
+    // in the first place. It is here so the LENGTH check measures a rendered
+    // page. A page that never reaches this state is a real pre-flight
+    // failure, which is why the catch records a problem rather than passing.
+    await page
+      .locator("#section-products")
+      .first()
+      .waitFor({ state: "visible", timeout: 30_000 })
+      .catch(() => {
+        problems.push(
+          "the business page never rendered its products section — nothing " +
+            "below this point was measured against a rendered page",
+        );
+      });
+    const domText = await page.innerText("body").catch(() => "");
+    if (!domText || domText.length < 500)
+      problems.push("the business page rendered almost no text");
+    const body = domText + apiText;
     // The ticket's own cleanliness requirement, asserted rather than assumed.
     if (body.includes("(בדיקה)")) {
       problems.push('the demo business still shows "(בדיקה)" rows — re-run the seed with --refresh');
