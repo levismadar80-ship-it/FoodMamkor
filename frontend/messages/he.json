@@ -6135,5 +6135,24 @@
     "bread": "לחמים ואפייה",
     "pantry": "מזווה",
     "care": "טיפוח ובית"
+  },
+  "region_pages": {
+    "meta_title": "{category} {region_in} — בתי עסק מקומיים | מהמקור",
+    "meta_description": "{count} בתי עסק מקומיים של {category} {region_in}. כל בית עסק עבר היכרות אישית, והפנייה ישירה אליו.",
+    "h1": "{category} {region_in}",
+    "count_line": "{count} בתי עסק מקומיים",
+    "breadcrumb_producers": "בתי עסק",
+    "chips_same_category": "{category} באזורים נוספים",
+    "chips_same_region": "עוד {region_in}",
+    "back_to_hub": "לכל בתי העסק",
+    "regions": {
+      "north": "בצפון",
+      "haifa": "בחיפה והקריות",
+      "sharon": "בשרון",
+      "gush_dan": "בגוש דן",
+      "shfela": "בשפלה",
+      "jerusalem": "בירושלים והסביבה",
+      "south": "בדרום"
+    }
   }
 }

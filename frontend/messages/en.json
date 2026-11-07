@@ -6139,5 +6139,24 @@
     "bread": "Bread & baking",
     "pantry": "Pantry",
     "care": "Care & home"
+  },
+  "region_pages": {
+    "meta_title": "{category} in {region_in} — local businesses | Mehamakor",
+    "meta_description": "{count} local {category} businesses in {region_in}. Every business is personally reviewed, and you contact it directly.",
+    "h1": "{category} in {region_in}",
+    "count_line": "{count} local businesses",
+    "breadcrumb_producers": "Businesses",
+    "chips_same_category": "{category} in other regions",
+    "chips_same_region": "More in {region_in}",
+    "back_to_hub": "All businesses",
+    "regions": {
+      "north": "the North",
+      "haifa": "Haifa & the Krayot",
+      "sharon": "the Sharon",
+      "gush_dan": "Gush Dan",
+      "shfela": "the Shfela",
+      "jerusalem": "the Jerusalem area",
+      "south": "the South"
+    }
   }
 }
