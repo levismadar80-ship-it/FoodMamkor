@@ -65,7 +65,7 @@ from app.models.models import (  # noqa: E402  # imports must follow sys.path.in
     RescueOffer,
     User,
 )
-from app.utils.clock import israel_today, utc_now  # noqa: E402  # imports must follow sys.path.insert (script shim)
+from app.utils.clock import ISRAEL_TZ, israel_today, utc_now  # noqa: E402  # imports must follow sys.path.insert (script shim)
 
 # ============================================================================
 # DEMO IDENTITY — APPROVED (Sapir, MEH-1074 closeout). The identity values
@@ -879,6 +879,25 @@ def _seed_group_buy(db, producer) -> None:
         )
 
 
+def _israel_wall_to_utc(day: date, hour: int) -> datetime:
+    """An Israel wall-clock hour on `day`, as the NAIVE UTC instant the column holds.
+
+    MEH-2679 is the incident this exists to avoid repeating: `rescue_offers`'
+    `pickup_start` / `pickup_end` / `cancel_until` are naive `DateTime`
+    columns, and the convention across this codebase is that naive means UTC
+    (`utc_now()` writes naive UTC everywhere else in this file). Writing
+    `datetime.combine(israel_today(), time(18))` would store 18:00 as if it
+    were UTC — i.e. 20:00 or 21:00 in Israel, depending on the season — so a
+    bag advertised for 18:00 would open two hours late on the page.
+
+    Converting first and dropping the tzinfo keeps the stored value a real
+    instant, and keeps the Israel wall time the one a reader of the constants
+    expects.
+    """
+    local = datetime.combine(day, time(hour=hour), tzinfo=ISRAEL_TZ)
+    return local.astimezone(timezone.utc).replace(tzinfo=None)
+
+
 def _seed_offer(db, producer) -> None:
     """MEH-2794 — the active offer, for the offer badge on the business page.
 
@@ -965,19 +984,17 @@ def _seed_rescue_bag(db, producer) -> bool:
             price_agorot=DEMO_RESCUE_BAG["price_agorot"],
             value_min_agorot=DEMO_RESCUE_BAG["value_min_agorot"],
             value_max_agorot=DEMO_RESCUE_BAG["value_max_agorot"],
-            pickup_start=datetime.combine(
-                today, time(hour=DEMO_RESCUE_BAG["pickup_from_hour"])
+            pickup_start=_israel_wall_to_utc(
+                today, DEMO_RESCUE_BAG["pickup_from_hour"]
             ),
-            pickup_end=datetime.combine(
-                today, time(hour=DEMO_RESCUE_BAG["pickup_to_hour"])
-            ),
+            pickup_end=_israel_wall_to_utc(today, DEMO_RESCUE_BAG["pickup_to_hour"]),
             # REQUIRED and has no default — `cancel_until` is nullable=False
             # with no server_default (models.py:2928), and the API takes it
             # from the owner's own body (rescue.py:421). Set to the moment
             # collection opens: "cancel any time until pickup starts", which
             # is the only reading that needs no further policy decision.
-            cancel_until=datetime.combine(
-                today, time(hour=DEMO_RESCUE_BAG["pickup_from_hour"])
+            cancel_until=_israel_wall_to_utc(
+                today, DEMO_RESCUE_BAG["pickup_from_hour"]
             ),
         )
     )
@@ -1033,7 +1050,15 @@ def _seed_insights(db, producer) -> None:
     for offset in range(DEMO_INSIGHTS["days"]):
         day_index = DEMO_INSIGHTS["days"] - 1 - offset  # 0 = oldest
         day = today - timedelta(days=offset)
-        stamp = now - timedelta(days=offset)
+        # ANCHORED AT MIDDAY ISRAEL, not at `now - N days`. The roll-up's `day`
+        # is an Israel calendar day; a UTC stamp N*24h back is the same Israel
+        # day only while the offset is unchanged at both ends, and near
+        # midnight Israel it lands on the day before or after (the MEH-2290
+        # class, and `.claude/rules/testing.md` names it). Midday has ~12 hours
+        # of margin on either side, so the raw row and its roll-up row always
+        # agree. The sums-only assertion in the test would NOT have caught the
+        # drift, which is why this is fixed rather than asserted around.
+        stamp = _israel_wall_to_utc(day, 12)
         views = view_buckets[day_index]
         searches = min(search_buckets[day_index], views)
 
@@ -1042,7 +1067,12 @@ def _seed_insights(db, producer) -> None:
                 ProducerPageView(
                     producer_id=producer.id,
                     viewer_ip_hash=secrets.token_hex(32),
-                    # Weighted by position so the first city leads the panel.
+                    # The first few views of a day round-robin the cities and
+                    # every view after that goes to the first one, so the top
+                    # city leads the panel by a wide margin while the others
+                    # still appear. (An earlier comment here said "weighted by
+                    # position", which described a different scheme than the
+                    # code: the fall-through is a hard default, not a weight.)
                     city=cities[n % len(cities)] if n < len(cities) * 3 else cities[0],
                     referrer="search" if n < searches else "home",
                     created_at=stamp,
@@ -1072,7 +1102,9 @@ def _seed_insights(db, producer) -> None:
             ContactClick(
                 producer_id=producer.id,
                 method="phone" if i % 2 == 0 else "website",
-                clicked_at=now - timedelta(days=i * 3),
+                # Same midday anchor as the views above: these are read in
+                # windows counted in Israel days.
+                clicked_at=_israel_wall_to_utc(today - timedelta(days=i * 3), 12),
             )
         )
 

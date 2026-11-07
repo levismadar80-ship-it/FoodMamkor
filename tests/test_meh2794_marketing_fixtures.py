@@ -23,6 +23,7 @@ its absence.
 
 import importlib.util
 import os
+from datetime import timezone
 
 import pytest
 
@@ -38,7 +39,7 @@ from app.models.models import (
     ProducerWhatsAppClick,
     User,
 )
-from app.utils.clock import israel_today
+from app.utils.clock import ISRAEL_TZ, israel_today
 
 # Placed in its own block, matching tests/test_seed_demo_business.py:31. Ruff
 # 0.16.x sorts `tests.*` up with the third-party block instead, but the pinned
@@ -194,6 +195,24 @@ def test_rescue_bag_satisfies_its_db_checks(db, seeded, seed_mod):
     assert bag.status == "active"
     assert bag.date == israel_today(), "a bag for TODAY, so /rescue shows it"
 
+    # MEH-2679: these naive columns hold UTC INSTANTS. `datetime.combine` of an
+    # Israel wall hour would store 18:00 as if it were UTC — 21:00 in Israel in
+    # summer — so a bag advertised for 18:00 would open three hours late. Read
+    # the stored instant back in Israel and check the wall hour is the one the
+    # constants asked for.
+    for stored, hour in (
+        (bag.pickup_start, seed_mod.DEMO_RESCUE_BAG["pickup_from_hour"]),
+        (bag.pickup_end, seed_mod.DEMO_RESCUE_BAG["pickup_to_hour"]),
+        (bag.cancel_until, seed_mod.DEMO_RESCUE_BAG["pickup_from_hour"]),
+    ):
+        assert stored.tzinfo is None, "the column convention is naive-UTC"
+        in_israel = stored.replace(tzinfo=timezone.utc).astimezone(ISRAEL_TZ)
+        assert in_israel.hour == hour, (
+            f"stored {stored} reads as {in_israel:%H:%M %Z} in Israel, "
+            f"but the bag is advertised for {hour}:00"
+        )
+        assert in_israel.date() == bag.date
+
 
 def test_insights_raw_rows_and_rollup_agree(db, seeded, seed_mod):
     """The property the dashboard depends on and a screenshot cannot show.
@@ -236,6 +255,33 @@ def test_insights_raw_rows_and_rollup_agree(db, seeded, seed_mod):
     assert raw_views == seed_mod.DEMO_INSIGHTS["views_total"]
     assert raw_wa == seed_mod.DEMO_INSIGHTS["whatsapp_clicks"]
     assert raw_search <= raw_views
+
+
+def test_each_raw_row_lands_on_its_own_rollup_day(db, seeded, seed_mod):
+    """The alignment the sums cannot see.
+
+    `test_insights_raw_rows_and_rollup_agree` compares TOTALS, so a raw row
+    sitting on the Israel day either side of its roll-up row still sums
+    correctly and the chart is still wrong. A UTC stamp N*24h back is the same
+    Israel day only while the offset is unchanged at both ends; near midnight
+    Israel it is not (MEH-2290). Hence the midday anchor, and hence this.
+    """
+    days_with_rollup = {
+        r.day
+        for r in db.query(ProducerAnalyticsDaily).filter(
+            ProducerAnalyticsDaily.producer_id == seeded.id
+        )
+    }
+    stray = sorted(
+        {
+            v.created_at.replace(tzinfo=timezone.utc).astimezone(ISRAEL_TZ).date()
+            for v in db.query(ProducerPageView).filter(
+                ProducerPageView.producer_id == seeded.id
+            )
+        }
+        - days_with_rollup
+    )
+    assert stray == [], "page views on an Israel day with no roll-up row"
 
 
 def test_every_view_counts_once_per_day(db, seeded, seed_mod):
@@ -285,6 +331,19 @@ def test_marketing_fixtures_are_idempotent(db, seeded, seed_mod):
     )
     assert added == 0, "a second run reported seeding something"
     assert before == after
+
+    # Named explicitly, not just covered by the tuple above: `rescue_offers`
+    # has only a NON-unique index on (producer_location_id, date), so nothing
+    # in the database rejects a duplicate bag — the seed's own probe is the
+    # only thing standing between a re-run and two cards on /rescue. The first
+    # version of this PR had no probe, and this is the assertion that catches
+    # its absence.
+    from sqlalchemy import inspect as sa_inspect
+
+    if sa_inspect(db.get_bind()).has_table("rescue_offers"):
+        from app.models.models import RescueOffer
+
+        assert db.query(RescueOffer).count() == 1, "a second bag was seeded"
 
 
 def test_fixtures_skip_silently_without_a_demo_producer(db, seed_mod):
