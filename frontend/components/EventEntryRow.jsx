@@ -47,6 +47,10 @@ export const CATEGORY_ICON = {
   "חקלאות": Plant,
 };
 
+// MEH-2804 / ADR-039: the price token, shared by free and paid (and mirrored on
+// the event page, EventDetailClient). Exported so both read one string.
+export const PRICE_TOKEN = "ms-auto font-headline-display font-bold text-base md:text-lg numeric";
+
 // MEH-2547: toEventEntry lives in lib/event-entry.js (no "use client") so the
 // server-rendered organizer page can build rows too; re-exported for the
 // existing client callers.
@@ -168,10 +172,14 @@ export default function EventEntryRow({ entry, freeLabel, compact = false }) {
                 {entry.category}
               </span>
             )}
+            {/* MEH-2804 / ADR-039: ONE price token for free and paid — a
+                display numeral (Frank Ruhl bold, upright), so «כניסה חופשית»
+                reads as an offer and not as the weakest thing on the card.
+                The date-rail TIME above stays Cormorant italic (it is metadata). */}
             {isFree ? (
-              <span className={`ms-auto text-sm font-semibold ${accentText}`}>{freeLabel}</span>
+              <span className={`${PRICE_TOKEN} ${accentText}`} data-testid="event-row-price">{freeLabel}</span>
             ) : (
-              <span dir="ltr" className={`ms-auto font-english italic font-semibold numeric ${accentText}`}>
+              <span dir="ltr" className={`${PRICE_TOKEN} ${accentText}`} data-testid="event-row-price">
                 {formatPrice(entry.price)}
               </span>
             )}

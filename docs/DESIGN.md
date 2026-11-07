@@ -305,7 +305,7 @@ sheet) — but it only moves Hebrew glyphs, which had no brand face there before
 
 **Display numerals (ADR-039, MEH-2804).** A number that is the point of its
 block — a stat counter (the home trust band) or a price token (event row and
-event page, free and paid alike) — is **Frank Ruhl (`font-headline`), upright,
+event page, free and paid alike) — is **Frank Ruhl (`font-headline-display`), upright,
 bold/black, `text-primary`**, digits `dir="ltr"`, never `align-middle`. Cormorant
 italic (`.font-english`) stays for **times of day** and **inline Latin** only.
 Free reads «כניסה חופשית» in the same token as a price. See

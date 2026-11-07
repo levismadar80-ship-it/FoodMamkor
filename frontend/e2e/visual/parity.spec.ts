@@ -106,6 +106,13 @@ const EXPERIENCES_COUNT_RE = /\/api\/experiences\/count(?:\?[^#]*)?$/;
 // through the vrt-regen labels on the tip that already carried #3654's
 // collapsed mobile footer; each PNG was opened and diffed before merge.
 const EVENTS_UPCOMING_RE = /\/api\/events\/upcoming(?:\?[^#]*)?$/;
+// MEH-2804: the home trust band reads GET /stats — LIVE staging counts
+// («31 בתי עסק», «18 קטגוריות» on 07/11), so every home frame moved whenever the
+// data did, and a regen baked today's numbers into the baseline. Pinned for
+// every frame, ABOVE TRUST_COUNT_THRESHOLD (25) so the full three-column fact
+// row is what the shots hold; the numbers are noise, the layout is the subject.
+const STATS_RE = /\/api\/stats(?:\?[^#]*)?$/;
+const PINNED_STATS = JSON.stringify({ producers_count: 31, categories_count: 18 });
 
 // MEH-2802: the home «אירועים קרובים» preview, which the pin above keeps out of
 // every other frame. Three rows chosen to stress the equal-height card: a long
@@ -273,6 +280,9 @@ async function preparePage(page: Page): Promise<void> {
   });
   await page.route(EVENTS_UPCOMING_RE, async (route) => {
     await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+  });
+  await page.route(STATS_RE, async (route) => {
+    await route.fulfill({ status: 200, contentType: "application/json", body: PINNED_STATS });
   });
 
   await page.clock.setFixedTime(VRT_FIXED_TIME);
@@ -593,6 +603,27 @@ test.describe("Visual parity — MEH-991", () => {
         page.locator('[data-testid="producer-card"]'),
       ],
     });
+  });
+
+  // MEH-2804 / ADR-039 — the home trust band as an ELEMENT shot, desktop +
+  // mobile: three display-numeral columns (31 · 18 · 0₪, /stats pinned in
+  // preparePage) over their labels, hairline dividers. Named "home …" so
+  // vrt-regen:home reaches it. Same fixed/sticky hiding as the events shot.
+  test("home trust band", async ({ page }) => {
+    await preparePage(page);
+    await page.goto("/");
+    const band = page.locator('[data-testid="home-trust-band"]');
+    await expect(band.locator('[data-testid="trust-fact"]')).toHaveCount(3, { timeout: 20_000 });
+    await band.scrollIntoViewIfNeeded();
+    await settle(page);
+    await page.evaluate(() => {
+      for (const el of Array.from(document.querySelectorAll("body *"))) {
+        const pos = getComputedStyle(el).position;
+        if (pos === "fixed" || pos === "sticky") el.setAttribute("data-vrt-hide", "");
+      }
+    });
+    await page.addStyleTag({ content: "[data-vrt-hide]{opacity:0 !important}" });
+    await expect(band).toHaveScreenshot("home-trust-band.png", SHOT);
   });
 
   // MEH-2802 — the «אירועים קרובים» preview as an ELEMENT shot, desktop + mobile.

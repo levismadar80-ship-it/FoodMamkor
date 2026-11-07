@@ -19,7 +19,8 @@ a time of day.
 ## Decision
 A **display numeral** — a stat counter (the trust band) or a price token (event
 row, event page; free and paid alike) — is set in **Frank Ruhl Libre**
-(`font-headline`), **upright**, **bold/black**, in **`text-primary`**
+(`font-headline-display` — there is no bare `font-headline` token; an
+unknown class emits no CSS, MEH-2798), **upright**, **bold/black**, in **`text-primary`**
 (the row's own accent where the surface has one, e.g. experiences' gold), sized
 as a display step (band `text-4xl` → `md:text-5xl`; price `text-base` →
 `md:text-lg`), `dir="ltr"` for the digits, never `align-middle`.

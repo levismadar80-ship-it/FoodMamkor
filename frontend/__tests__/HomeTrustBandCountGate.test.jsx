@@ -14,7 +14,10 @@
  *      page-wide zero is unreachable without breaking that lock. See the
  *      comment above the first test.
  *   2. Below TRUST_COUNT_THRESHOLD (25) the lead is the locked sentence.
- *   3. At/above 25 the lead is the locked count string, number substituted.
+ *   3. MEH-2804 (ADR-039): from 5 the band is a FACT ROW — a display numeral
+ *      over a short label per column. 5–24: two columns (categories · 0₪), the
+ *      business count withheld (MEH-521). 25+: three (count · categories · 0₪).
+ *      Below 5: the locked sentence, no numerals.
  *   4. THE BUSINESS COUNT IS NEVER STATED TWICE IN THE BAND. This is the
  *      assertion the ticket did not originally carry: applying the count to the
  *      lead alone would have restated the number that the MEH-521 secondary line
@@ -132,12 +135,15 @@ function countBusinessCount(text, n) {
   return (text.match(new RegExp(`(?<!\\d)${n}(?!\\d)\\s*בתי עסק`, "g")) || []).length;
 }
 
-/** The rendered text of the whole trust band (lead + secondary). */
+/** The rendered text of the whole trust band (MEH-2804: lead OR fact row). */
 function bandText() {
-  const lead = screen.getByTestId("trust-lead");
-  const secondary = screen.queryByTestId("trust-secondary");
-  return `${lead.textContent} ${secondary ? secondary.textContent : ""}`;
+  return screen.getByTestId("home-trust-band").textContent;
 }
+
+const TRUST = he.home.trust;
+const facts = () => screen.queryAllByTestId("trust-fact");
+const factValues = () => facts().map((f) => f.querySelector('[data-testid="trust-fact-value"]').textContent);
+const factLabels = () => facts().map((f) => f.querySelector('[data-testid="trust-fact-label"]').textContent);
 
 beforeEach(() => {
   useHomePage.mockReset();
@@ -169,32 +175,86 @@ describe("MEH-1692 — trust band lead", () => {
     }
   });
 
-  it("leads with the locked sentence below 25", () => {
-    for (const n of [0, 3, 12, 24]) {
+  it("below 5 the band is the locked sentence and nothing else — no numerals", () => {
+    for (const n of [0, 3, 4]) {
       const { unmount } = renderAt(n);
-      expect(screen.getByTestId("trust-lead").textContent.trim(), `count=${n}`)
-        .toBe(LOCKED_LEAD);
+      expect(screen.getByTestId("trust-lead").textContent.trim(), `count=${n}`).toBe(LOCKED_LEAD);
+      expect(facts(), `count=${n}`).toHaveLength(0);
+      unmount();
+    }
+  });
+});
+
+// MEH-2804 / ADR-039: the fact row, per gate state. The flags are use-home-page's
+// (logic unchanged): showStatsCounter at 5, showTrustCount at 25.
+describe("MEH-2804 — the trust band fact row", () => {
+  it("5–24: two columns, categories then 0₪ — the business count is withheld (MEH-521)", () => {
+    for (const n of [5, 12, 24]) {
+      const { unmount } = renderAt(n);
+      expect(screen.queryByTestId("trust-lead"), `count=${n}`).toBeNull();
+      expect(factValues(), `count=${n}`).toEqual([String(CATEGORIES), TRUST.col_fees_value]);
+      expect(factLabels(), `count=${n}`).toEqual([TRUST.col_categories, TRUST.col_fees]);
       unmount();
     }
   });
 
-  it("leads with the locked count string at 25 and above", () => {
+  it("25+: three columns — count, categories, 0₪ — each over its label", () => {
     for (const n of [25, 30, 500]) {
       const { unmount } = renderAt(n);
-      expect(screen.getByTestId("trust-lead").textContent.trim(), `count=${n}`)
-        .toBe(`${n} בתי עסק · כל אחד נבחר אישית`);
+      expect(factValues(), `count=${n}`).toEqual([String(n), String(CATEGORIES), TRUST.col_fees_value]);
+      expect(factLabels(), `count=${n}`).toEqual([TRUST.col_businesses, TRUST.col_categories, TRUST.col_fees]);
       unmount();
     }
   });
 
-  it("switches exactly at 25, not at 24 or 26", () => {
-    const { unmount } = renderAt(24);
-    expect(screen.getByTestId("trust-lead").textContent.trim()).toBe(LOCKED_LEAD);
+  it("switches exactly at 5 and at 25", () => {
+    const at = (n) => {
+      const r = renderAt(n);
+      const out = facts().length;
+      r.unmount();
+      return out;
+    };
+    expect([at(4), at(5), at(24), at(25)]).toEqual([0, 2, 2, 3]);
+  });
+
+  it("every numeral is a display numeral: Frank Ruhl black, primary, upright, LTR digits (ADR-039)", () => {
+    const { unmount } = renderAt(30);
+    for (const value of screen.getAllByTestId("trust-fact-value")) {
+      const cls = value.className.split(/\s+/);
+      for (const want of ["font-headline-display", "font-black", "text-primary", "text-4xl", "md:text-5xl"]) {
+        expect(cls, `${value.textContent} has ${want}`).toContain(want);
+      }
+      for (const banned of ["italic", "font-english", "align-middle"]) {
+        expect(cls, `${value.textContent} lacks ${banned}`).not.toContain(banned);
+      }
+      expect(value.getAttribute("dir")).toBe("ltr");
+    }
     unmount();
-    const second = renderAt(25);
-    expect(screen.getByTestId("trust-lead").textContent.trim())
-      .toBe("25 בתי עסק · כל אחד נבחר אישית");
-    second.unmount();
+  });
+
+  it("columns after the first carry the logical hairline divider", () => {
+    const { unmount } = renderAt(30);
+    const [first, ...rest] = facts();
+    expect(first.className).not.toContain("border-s");
+    for (const col of rest) expect(col.className.split(/\s+/)).toEqual(expect.arrayContaining(["border-s", "border-border"]));
+    unmount();
+  });
+
+  it("the skeleton reserves the SAME box structure as the loaded row (MEH-1686)", () => {
+    useHomePage.mockReturnValue({ ...hookState(30), statsLoaded: false, showStatsCounter: false, showTrustCount: false });
+    const { unmount } = render(
+      <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
+        <HomePage />
+      </NextIntlClientProvider>,
+    );
+    const band = screen.getByTestId("home-trust-band");
+    expect(band.getAttribute("aria-busy")).toBe("true");
+    // Three placeholder columns, each a numeral-height block over a two-line
+    // label box — the loaded column's exact heights (leading-none numeral,
+    // h-10 label). The pixel equality is measured in the browser (PR body).
+    const cols = band.querySelectorAll('[data-testid="trust-fact-skeleton"]');
+    expect(cols).toHaveLength(3);
+    unmount();
   });
 });
 
@@ -205,7 +265,7 @@ describe("MEH-1692 — the count is never stated twice", () => {
   // pre-existing "never show a low number" behaviour, deliberately preserved.
   it.each([
     ["N < 5           ", 3, 0],
-    ["5 <= N < 25     ", 12, 1],
+    ["5 <= N < 25     ", 12, 0], // MEH-2804: withheld below 25 (MEH-521)
     ["N >= 25         ", 30, 1],
   ])("%s → business count rendered %i time(s)", (_label, n, expected) => {
     const { unmount } = renderAt(n);

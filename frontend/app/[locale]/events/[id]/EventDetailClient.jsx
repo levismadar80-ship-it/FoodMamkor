@@ -330,8 +330,11 @@ export default function EventDetailClient() {
             )}
             <div className={`${infoRow} border-t border-border`}>
               <span className={infoIcon}><Coins size={18} aria-hidden="true" /></span>
-              {/* MEH-1031: bidi-isolate the price (currency+number) so it can't flip in RTL */}
-              <p className="font-semibold text-accent">
+              {/* MEH-1031: bidi-isolate the price (currency+number) so it can't flip in RTL.
+                  MEH-2804 / ADR-039: the same display-numeral token as the event
+                  row (Frank Ruhl bold, primary) for free and paid alike — minus
+                  ms-auto, since here it sits beside its icon, not at the row end. */}
+              <p className="font-headline-display font-bold text-base md:text-lg text-primary numeric" data-testid="event-detail-price">
                 {event.price > 0 ? <span dir="ltr">{formatPrice(event.price)}</span> : t("free")}
               </p>
             </div>
