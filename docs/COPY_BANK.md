@@ -1119,7 +1119,7 @@ number that can look small.
 `group_buys.delivery.free`, `admin.experiences.free`, DeliveryBlock pickup — those
 say a delivery or a listing costs nothing, not that entry is free.
 
-**Status:** ⏳ PR open — watch MEH-2804.
+**Status:** ✅ Merged to staging — PR #4143 (`1a9464fd`).
 
 ---
 
@@ -1138,4 +1138,4 @@ because the hours really appear in a different place for each:
 Approved by Sapir 07/11 («תעשה מה שאתה חושב»). Neutral Hebrew — plural
 passive («מופיעות»), no addressed verb.
 
-**Status:** ⏳ PR open — watch MEH-2819.
+**Status:** ✅ Merged to staging — PR #4144 (`85cfe44f`).
