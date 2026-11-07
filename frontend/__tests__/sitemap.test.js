@@ -245,3 +245,99 @@ describe("MEH-2787 — the sitemap lists every approved business", () => {
     expect(urls).toContain(`${BASE}/biz-99`);
   });
 });
+
+// ---------------------------------------------------------------------------
+// MEH-2790 — category x region landing pages in the sitemap.
+//
+// DISCRIMINATION:
+//   - list a sub-threshold cell  → "only passing cells" reds
+//   - drop the pruning           → "prunes before counting cells" reds
+//   - throw instead of fail-open → "API error" reds
+// ---------------------------------------------------------------------------
+describe("MEH-2790 — region landing pages in the sitemap", () => {
+  const CATS = [
+    { id: 7, slug: "bread", name: "לחמים" },
+    { id: 9, slug: "dairy", name: "גבינות" },
+  ];
+
+  /** `totalFor(url)` decides each X-Total-Count; categories are served too. */
+  function mockCells(totalFor) {
+    global.fetch = vi.fn((url) => {
+      const href = String(url);
+      if (href.includes("/categories")) {
+        return Promise.resolve({ ok: true, status: 200, json: async () => CATS });
+      }
+      if (href.includes("/producers?") && href.includes("cities=")) {
+        const total = totalFor(href);
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          headers: new Headers({ "x-total-count": String(total) }),
+          json: async () => [],
+        });
+      }
+      if (href.includes("/producers?") && href.includes("category=")) {
+        // the category prune call (no cities)
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          headers: new Headers({ "x-total-count": "50" }),
+          json: async () => [],
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        headers: new Headers({ "x-total-count": "0" }),
+        json: async () => [],
+      });
+    });
+  }
+
+  it("lists only cells that pass the threshold, in both locales", async () => {
+    // Three call shapes reach this mock, and they are NOT the same question:
+    //   cities only              → the region prune ("anything in Haifa?")
+    //   category only            → the category prune (handled in mockCells)
+    //   category + cities        → the cell itself
+    // The region prune must pass for haifa, or no haifa cell is ever counted.
+    mockCells((href) => {
+      const isHaifa = href.includes(encodeURIComponent("חיפה"));
+      if (!href.includes("category=")) return isHaifa ? 40 : 1; // region prune
+      return href.includes("category=7") && isHaifa ? 9 : 1; // the cell
+    });
+    const urls = (await sitemap()).map((e) => e.url);
+    expect(urls).toContain(`${BASE}/producers/bread/haifa`);
+    expect(urls).toContain(`${BASE}/en/producers/bread/haifa`);
+    // a sub-threshold cell must never be listed — it 404s
+    expect(urls).not.toContain(`${BASE}/producers/dairy/haifa`);
+    expect(urls).not.toContain(`${BASE}/producers/bread/north`);
+  });
+
+  it("prunes on the same endpoint, never on /producers/cities", async () => {
+    mockCells(() => 0);
+    await sitemap();
+    const calls = global.fetch.mock.calls.map((c) => String(c[0]));
+    // the ticket's prescribed prune is NOT an upper bound of this filter —
+    // /producers/cities groups by Producer.city and misses location rows.
+    expect(calls.some((u) => u.includes("/producers/cities"))).toBe(false);
+  });
+
+  it("API error → no region entries, rest of the sitemap intact", async () => {
+    global.fetch = vi.fn((url) => {
+      const href = String(url);
+      if (href.includes("/categories")) {
+        return Promise.resolve({ ok: false, status: 500, json: async () => ({}) });
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        headers: new Headers({ "x-total-count": "0" }),
+        json: async () => [],
+      });
+    });
+    const urls = (await sitemap()).map((e) => e.url);
+    expect(urls.some((u) => /\/producers\/[a-z]+\/[a-z_]+$/.test(u))).toBe(false);
+    expect(urls).toContain(BASE);
+    expect(urls).toContain(`${BASE}/map`);
+  });
+});
