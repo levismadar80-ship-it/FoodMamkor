@@ -946,7 +946,7 @@ POST   /producers/me/submit-for-review           producer  — MEH-2100 draft→
 POST   /producers/me/availability-state            producer  — MEH-291 enum write. MEH-2758: WRITES are pause-only
                                                               body: { state: "accepting_orders"|"on_vacation", vacation_until?: ISO date }
                                                               any other value → 400 (available_today / full_this_week removed, MEH-2782)
-                                                              {code:"invalid_availability_state", params:{allowed:[...]}}. Reads still return all 4 values.
+                                                              {code:"invalid_availability_state", params:{allowed:[...]}}. Both are the only values (MEH-2782).
                                                               vacation_until REQUIRED when state="on_vacation" (422 with "תאריך חזרה לחופשה נדרש")
                                                               the ONLY availability write endpoint — the legacy POST /availability and
                                                               /availability-status are deleted (MEH-2758). PUT /admin/producers/{id} refuses
