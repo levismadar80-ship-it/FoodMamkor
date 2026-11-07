@@ -263,8 +263,17 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
         onClick={open ? () => setOpen(false) : handleOpen}
         style={launcherStyle}
         data-testid="chat-launcher"
+        // MEH-2793: `print:hidden` — a floating chat button has no business on
+        // paper, and it printed over the A6 QR card (MEH-2785) and the A5
+        // rescue counter card (MEH-2649). The class goes on the component's
+        // own elements, matching CookieBanner.jsx:70, NOT on `.vv-pin`: that
+        // class is shared with BackToTop, AccountSheet, InstallPrompt and
+        // BottomNav, so a rule on it would hide four unrelated components too.
+        // It beats the inline style because that style sets position/zIndex
+        // and never `display` — verified with a computed-style probe, not
+        // assumed (frontend.md).
         className={[
-          "vv-pin flex items-center justify-center bg-primary text-white rounded-full shadow-[0_4px_24px_rgba(46,104,83,0.25)] hover:bg-primary-dark transition focus-visible:ring-2 focus-visible:ring-primary/40",
+          "vv-pin print:hidden flex items-center justify-center bg-primary text-white rounded-full shadow-[0_4px_24px_rgba(46,104,83,0.25)] hover:bg-primary-dark transition focus-visible:ring-2 focus-visible:ring-primary/40",
           showPillText ? "gap-2 px-4 py-3" : "w-12 h-12",
         ].join(" ")}
         // MEH-2308: when the pill text is showing it IS the accessible name. An
@@ -284,7 +293,7 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
       {open && (
         <div
           style={panelStyle}
-          className="vv-pin flex flex-col bg-background border border-border shadow-[0_8px_32px_rgba(46,104,83,0.18)] overflow-hidden"
+          className="vv-pin print:hidden flex flex-col bg-background border border-border shadow-[0_8px_32px_rgba(46,104,83,0.18)] overflow-hidden"
           role="dialog"
           aria-modal="false"
           aria-label={t("panel_label")}
