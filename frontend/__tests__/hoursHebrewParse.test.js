@@ -34,6 +34,7 @@ describe("parseHours — Hebrew day letters (MEH-2803)", () => {
     ["en-dash span and range", "א׳–ה׳ 09:00–17:00"],
     ["H:MM times", "א׳-ה׳ 9:00-17:00"],
     ["spaces around the dashes", "א׳ - ה׳ 9:00 - 17:00"],
+    ["typographic ’ from a phone keyboard", "א’-ה’ 09:00-17:00"],
   ])("%s → the same map as the English «Sun-Thu 09:00-17:00»", (_name, raw) => {
     expect(parseHours(raw)).toEqual(parseHours("Sun-Thu 09:00-17:00"));
   });
@@ -41,6 +42,10 @@ describe("parseHours — Hebrew day letters (MEH-2803)", () => {
   it("every letter maps to its day: א=Sun … ש=Sat", () => {
     const map = parseHours("א' 01:00-02:00, ב' 01:00-02:00, ג' 01:00-02:00, ד' 01:00-02:00, ה' 01:00-02:00, ו' 01:00-02:00, ש' 01:00-02:00");
     expect(Object.keys(map).map(Number)).toEqual([0, 1, 2, 3, 4, 5, 6]);
+  });
+
+  it("24:00 is a valid close («until midnight»)", () => {
+    expect(parseHours("ו' 20:00-24:00")).toEqual({ 5: r("20:00", "24:00") });
   });
 
   it("H:MM is zero-padded so the map is byte-identical to the English shape", () => {
@@ -62,6 +67,8 @@ describe("parseHours — Hebrew day letters (MEH-2803)", () => {
     ["no time", "א'-ה'"],
     ["one readable group + one unreadable → the WHOLE string is unreadable", "א'-ה' 09:00-17:00, ו' בתיאום"],
     ["a malformed time", "א' 9-17"],
+    ["past the end of the day", "א' 09:00-24:30"],
+    ["minutes out of range", "א' 09:60-17:00"],
   ])("%s → null (the raw text stays on the page)", (_name, raw) => {
     expect(parseHours(raw)).toBeNull();
   });

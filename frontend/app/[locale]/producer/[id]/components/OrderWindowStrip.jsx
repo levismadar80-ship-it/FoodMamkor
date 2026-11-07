@@ -386,6 +386,8 @@ function orderWindowAsHoursMap(orderWindow) {
  * by day they are one fact, said once, under «הזמנות וביקור במקום» with the
  * order-window card. Either side unreadable → both sets, labelled — an
  * unreadable string is never merged (sameWeeklyHours returns false on null).
+ * Upcoming special dates also block the merge: they are ORDER overrides, and
+ * under «הזמנות וביקור במקום» they would claim the shop keeps them too.
  *
  * Gate: order rows or upcoming specials, OR store hours. Neither → null, no
  * heading. Upcoming specials are clock-derived and arrive after mount (same
@@ -407,7 +409,10 @@ export function ProducerHoursSection({ producer }) {
   const storeHours = resolveStoreHours(producer);
   const hasOrders = getOrderWindowRanges(orderWindow).length > 0 || upcoming.length > 0;
   if (!hasOrders && !storeHours) return null;
-  const merged = hasOrders && sameWeeklyHours(orderWindowAsHoursMap(orderWindow), parseHours(storeHours));
+  const merged =
+    hasOrders &&
+    upcoming.length === 0 &&
+    sameWeeklyHours(orderWindowAsHoursMap(orderWindow), parseHours(storeHours));
 
   return (
     <section className="mt-12" data-testid="producer-hours">

@@ -52,7 +52,8 @@ const ENTRY_RE = new RegExp(
 // U+05D0 alef … U+05D5 vav, U+05E9 shin; U+05F3 is the Hebrew geresh.
 // eslint-disable-next-line no-magic-numbers -- the seven code points ARE the data
 const HE_DAY_LETTERS = String.fromCharCode(0x5d0, 0x5d1, 0x5d2, 0x5d3, 0x5d4, 0x5d5, 0x5e9);
-const HE_GERESH = String.fromCharCode(0x5f3); // eslint-disable-line no-magic-numbers
+// Geresh U+05F3, plus the typographic ’ U+2019 phone keyboards substitute for '.
+const HE_GERESH = String.fromCharCode(0x5f3, 0x2019); // eslint-disable-line no-magic-numbers
 const HE_DAY_INDEX = Object.fromEntries([...HE_DAY_LETTERS].map((letter, i) => [letter, i]));
 const HE_DAY = `([${HE_DAY_LETTERS}])['${HE_GERESH}]?`;
 const HE_RANGE = String.raw`\d{1,2}:\d{2}\s*[-–]\s*\d{1,2}:\d{2}`;
@@ -75,7 +76,9 @@ function parseHebrewEntry(entry) {
   const endIdx = endLetter ? HE_DAY_INDEX[endLetter] : startIdx;
   const ranges = [];
   for (const [, oh, om, ch, cm] of rangesPart.matchAll(HE_RANGE_RE)) {
-    const bad = [oh, ch].some((h) => Number(h) > MAX_HOUR) || [om, cm].some((m) => Number(m) >= MINUTES_PER_HOUR);
+    // 24:00 is a valid close ("until midnight"); 24:30 is not a time.
+    const outOfDay = (h, m) => Number(h) > MAX_HOUR || (Number(h) === MAX_HOUR && Number(m) > 0);
+    const bad = outOfDay(oh, om) || outOfDay(ch, cm) || [om, cm].some((m) => Number(m) >= MINUTES_PER_HOUR);
     if (bad) return null;
     ranges.push({ open: `${pad2(oh)}:${om}`, close: `${pad2(ch)}:${cm}` });
   }

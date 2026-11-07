@@ -209,6 +209,22 @@ describe("«שעות» states × disclosure (MEH-2803)", () => {
     expect(screen.queryByTestId("hours-toggle")).toBeNull();
   });
 
+  it("identical weeks but an upcoming special date → NOT merged (an order override is not a visit fact)", () => {
+    // Clock pinned so «upcoming» is deterministic: Sunday 01/11/2026 10:00 Israel.
+    vi.useFakeTimers({ shouldAdvanceTime: true, now: new Date("2026-11-01T08:00:00Z") });
+    try {
+      renderPage({
+        order_window: everyDay("07:00", "14:00"),
+        opening_hours: EVERY_DAY_STORE,
+        special_hours: { "2026-11-20": { ranges: [], note: "סגור להזמנות" } },
+      });
+      expect(sets().map(labelOf)).toEqual([HOURS.label_orders, HOURS.label_visit]);
+      expect(within(sets()[0]).getByTestId("order-window-special")).toBeTruthy();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("both-identical with merged days, open: the disclosure still works in the merged set", () => {
     const weekdays = Object.fromEntries(DAYS.slice(0, 5).map((d) => [d, range("09:00", "14:00")]));
     renderPage({ order_window: weekdays, opening_hours: "א׳–ה׳ 9:00–14:00" });
