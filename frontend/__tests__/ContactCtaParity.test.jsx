@@ -39,9 +39,9 @@ const base = {
 
 // Colour-bearing classes only; layout classes differ on purpose (rounded-xl vs
 // rounded-md, padding) and are not part of the contract.
-const COLOUR = /^(bg-|text-|border|hover:|btn-)/;
+const COLOUR = /^(bg-|text-|border|hover:|btn-|focus-visible:)/;
 const colourClasses = (el) =>
-  el.className.split(/\s+/).filter((c) => COLOUR.test(c) && !/^text-(xs|sm|base|lg|xl)$/.test(c)).sort();
+  el.className.split(/\s+/).filter((c) => COLOUR.test(c) && !/^text-(xs|sm|base|lg|xl)$/.test(c) && c !== "focus-visible:ring-2").sort();
 
 function renderBoth(method) {
   const producer = { ...base, primary_contact_method: method };
@@ -80,7 +80,7 @@ describe("primary contact CTA — inline and sticky share one colour (MEH-2813)"
     const idB = b.querySelector("linearGradient").id;
     expect(idA).not.toBe("");
     expect(idA).not.toBe(idB);
-    expect(a.querySelector("rect").getAttribute("stroke") || a.querySelector("g").getAttribute("stroke")).toBe(`url(#${idA})`);
+    expect(a.querySelector("g").getAttribute("stroke")).toBe(`url(#${idA})`);
   });
 
   it("facebook: logo in Facebook blue in both", () => {

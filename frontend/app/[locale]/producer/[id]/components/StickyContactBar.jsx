@@ -36,7 +36,6 @@ export default function StickyContactBar({
   isBarVisible,
 }) {
   const t = useTranslations();
-  // MEH-1411: per-method icon for the sticky CTA (matches the inline button).
   const variant = getCtaVariant(getPrimaryMethod(producer));
   const CtaIcon = variant.Icon;
   // MEH-1525: mirror PrimaryContactButton — a business-website sticky CTA

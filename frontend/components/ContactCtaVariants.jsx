@@ -34,7 +34,9 @@ const OUTLINE =
 // Instagram glyph, multicolour. Drawn to the glyph's own geometry (rounded
 // square, lens, flash dot) and NOT recoloured or reshaped beyond the official
 // multicolour treatment. The gradient id must be unique per mount (useId) — the
-// glyph renders twice on mobile (card + sticky bar).
+// glyph renders twice on mobile (card + sticky bar). The yellow start stop is
+// under 3:1 on white; accepted, as in Instagram's own multicolour glyph — the
+// glyph is aria-hidden and the button label carries the meaning.
 function InstagramGlyph({ size = 20 }) {
   const gid = useId();
   return (
@@ -85,6 +87,7 @@ function ExternalOrderGlyph({ size = 20 }) {
   );
 }
 
+// Module scope only: each call makes a new component type, so never call it in render.
 function phosphor(Icon) {
   return function PhosphorGlyph({ size = 20 }) {
     return <Icon size={size} weight="fill" aria-hidden="true" />;
