@@ -147,7 +147,12 @@ describe("«שעות» states × disclosure (MEH-2803)", () => {
       locations: [PIN],
     });
     expect(sets().map(labelOf)).toEqual([HOURS.label_visit]);
-    expect(within(sets()[0]).getByTestId("hours-toggle").getAttribute("aria-expanded")).toBe("false");
+    // Option ב׳ (07/11): the visit set shows its week at once, like the orders
+    // set — not a collapsed «היום · …» row that on a closed day says only «סגור».
+    const visitRows = within(sets()[0]).getAllByTestId("visit-hours-schedule-row");
+    expect(visitRows).toHaveLength(1);
+    expect(visitRows[0].textContent).toContain("7:00–14:00");
+    expect(screen.queryByTestId("hours-toggle")).toBeNull();
     const location = document.querySelector("#section-location");
     expect(location).toBeTruthy();
     expect(within(location).getByTestId("minimap")).toBeTruthy();
@@ -158,8 +163,10 @@ describe("«שעות» states × disclosure (MEH-2803)", () => {
 
   it("store-only, open: the weekly table opens inside the set", () => {
     renderPage({ opening_hours: EVERY_DAY_STORE });
-    fireEvent.click(screen.getByTestId("hours-toggle"));
-    expect(within(sets()[0]).getByTestId("hours-week")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("visit-hours-week-toggle"));
+    const set = sets()[0];
+    expect(within(set).getAllByTestId("visit-hours-week-row")).toHaveLength(7);
+    expect(within(set).queryAllByTestId("visit-hours-schedule-row")).toHaveLength(0);
   });
 
   it("store hours with no location: the «שעות» section renders and the location section does not", () => {
@@ -176,9 +183,18 @@ describe("«שעות» states × disclosure (MEH-2803)", () => {
       locations: [PIN],
     });
     expect(sets().map(labelOf)).toEqual([HOURS.label_orders, HOURS.label_visit]);
-    // The Hebrew store string now parses (AC 7): the collapsed disclosure, not the raw text.
-    expect(within(sets()[1]).getByTestId("hours-toggle")).toBeTruthy();
+    // The Hebrew store string now parses (AC 7) and, option ב׳, both sets share
+    // one structure: summary rows shown at once, the label as the card's header.
+    const visitRows = within(sets()[1]).getAllByTestId("visit-hours-schedule-row");
+    expect(visitRows.map((r) => r.textContent)).toEqual([
+      expect.stringContaining("7:00–14:00"),
+      expect.stringContaining("6:30–13:00"),
+    ]);
+    expect(within(sets()[0]).getAllByTestId("order-window-schedule-row")).toHaveLength(2);
+    expect(within(within(sets()[0]).getByTestId("order-window-schedule")).getByTestId("hours-set-label").textContent).toBe(HOURS.label_orders);
+    expect(within(within(sets()[1]).getByTestId("visit-hours-schedule")).getByTestId("hours-set-label").textContent).toBe(HOURS.label_visit);
     expect(screen.queryByTestId("hours-raw")).toBeNull();
+    expect(screen.queryByTestId("hours-toggle")).toBeNull();
     expect(screen.getAllByRole("heading", { name: HOURS.heading })).toHaveLength(1);
     expect(onError).not.toHaveBeenCalled();
   });
@@ -186,13 +202,31 @@ describe("«שעות» states × disclosure (MEH-2803)", () => {
   it("both-different, open: each disclosure opens inside its own set", () => {
     renderPage({ order_window: SEED_ORDER_WINDOW, opening_hours: SEED_STORE });
     fireEvent.click(screen.getByTestId("order-window-week-toggle"));
-    fireEvent.click(screen.getByTestId("hours-toggle"));
+    fireEvent.click(screen.getByTestId("visit-hours-week-toggle"));
     const [orders, visit] = sets();
     expect(within(orders).getByTestId("order-window-week")).toBeTruthy();
-    expect(within(visit).getByTestId("hours-week")).toBeTruthy();
+    expect(within(visit).getByTestId("visit-hours-week")).toBeTruthy();
     // Friday's split order window vs the store's single Friday range, side by side.
     expect(within(orders).getByTestId("order-window-week").textContent).toContain("6:30–10:00");
-    expect(within(visit).getByTestId("hours-week").textContent).toContain("6:30–13:00");
+    expect(within(visit).getByTestId("visit-hours-week").textContent).toContain("6:30–13:00");
+  });
+
+  it("a store string that parses to no well-formed range keeps its card, shown as typed", () => {
+    // English grammar does not check close > open; the shared card drops such
+    // ranges (normalizeDayEntries), so without the fallback the whole
+    // «פתוח למבקרים» card would vanish (review on #4128).
+    renderPage({ opening_hours: "Sun-Sat 22:00-02:00" });
+    expect(sets().map(labelOf)).toEqual([HOURS.label_visit]);
+    expect(within(sets()[0]).getByTestId("hours-raw").textContent).toContain("22:00-02:00");
+  });
+
+  it("a closed day is simply absent from the visit card — never a lone «סגור» row (option ב׳)", () => {
+    renderPage({ opening_hours: SEED_STORE });
+    const set = sets()[0];
+    const text = set.textContent;
+    expect(within(set).getAllByTestId("visit-hours-schedule-row")).toHaveLength(2);
+    expect(text).not.toContain("שבת");
+    expect(text).not.toContain("סגור");
   });
 
   it("an unparseable store string is never merged: both sets, the store set shows the text as typed", () => {
