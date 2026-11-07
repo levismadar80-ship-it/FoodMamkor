@@ -28,6 +28,8 @@
 import { forwardRef, useCallback, useEffect, useId, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
+// MEH-2805: opening hours are picked from day rows, not typed.
+import LocationHoursField from "./LocationHoursField";
 import {
   CaretDown,
   CheckCircle,
@@ -534,6 +536,9 @@ function LocationForm({
   );
   const set = (field) => (e) =>
     setForm((f) => ({ ...f, [field]: e.target.value }));
+  // MEH-2805: false while any day row has a close-before-open or overlapping
+  // range — the row shows its own error and the form will not save.
+  const [hoursValid, setHoursValid] = useState(true);
 
   // MEH-1940: the message must not vanish on a timer — it stays until she acts
   // on it. `form` covers every input here (all of them write through
@@ -723,6 +728,7 @@ function LocationForm({
     <form
       onSubmit={(e) => {
         e.preventDefault();
+        if (!hoursValid) return;
         onSubmit(form);
       }}
       className="space-y-3 rounded-lg border border-primary/30 bg-primary/5 p-3"
@@ -904,13 +910,14 @@ function LocationForm({
               placeholder={tForm("phone_placeholder")}
             />
           </Field>
-          <Field label={tForm("hours_label")}>
-            <TextInput
-              value={form.opening_hours}
-              onChange={set("opening_hours")}
-              placeholder={tForm("hours_placeholder")}
-            />
-          </Field>
+          {/* MEH-2805: day-row picker instead of free text — the stored string
+              is canonical from the first save, and an unreadable legacy value
+              is shown verbatim and left untouched until the owner edits it. */}
+          <LocationHoursField
+            value={form.opening_hours}
+            onChange={(next) => setForm((f) => ({ ...f, opening_hours: next }))}
+            onValidityChange={setHoursValid}
+          />
           <Field label={tForm("precision_label")} hint={tForm("precision_helper")}>
             <select
               value={form.location_precision}
@@ -1000,7 +1007,7 @@ function LocationForm({
       <div className="flex items-center gap-2">
         <Button
           type="submit"
-          disabled={saving}
+          disabled={saving || !hoursValid}
           variant="primary" size="sm"
           data-testid="location-save"
         >
