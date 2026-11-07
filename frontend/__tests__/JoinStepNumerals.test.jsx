@@ -88,10 +88,10 @@ describe("MEH-2799 · /join v2 structure", () => {
     expect(items[0].textContent).toContain("faq.a_cost");
   });
 
-  // Sapir, 07/11: on /join every answer was open. The site's FAQ
-  // (/about/for-businesses/page.js:183) is a <details> accordion with only
-  // the cost question open (:66) — /join now matches it.
-  it("the FAQ is an accordion: native <details>, only «כמה זה עולה?» open", async () => {
+  // Sapir, 07/11: on /join every answer was open; then, on the accordion, she
+  // asked why the first was open — all closed. The site's FAQ pattern
+  // (/about/for-businesses/page.js:183) without its open cost question (:66).
+  it("the FAQ is an accordion: native <details>, every question closed on load", async () => {
     render(await JoinPage({ params: Promise.resolve({ locale: "he" }) }));
     const items = screen.getAllByTestId("join-faq-item");
     for (const item of items) {
@@ -100,7 +100,7 @@ describe("MEH-2799 · /join v2 structure", () => {
       expect(summary, "each question is the <summary>").not.toBeNull();
       expect(summary.querySelector("h3")).not.toBeNull(); // the heading outline stays
     }
-    expect(items.map((d) => d.open)).toEqual([true, false, false, false]);
+    expect(items.map((d) => d.open)).toEqual([false, false, false, false]);
     expect(items[0].querySelector("summary").textContent).toContain("faq.q_cost");
   });
 

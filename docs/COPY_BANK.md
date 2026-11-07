@@ -811,7 +811,7 @@ The slot renders a self-describing placeholder (`join.testimonial.*`): `כאן �
 | `business_features.items.product_wa.label` | `כפתור "שאלו על המוצר בוואטסאפ" בכל מוצר` | `כפתור "שאלו על המוצר" בכל מוצר, בערוץ שבחרתם` |
 | `business_features.total_line` | `{count} כלים בשש קטגוריות. כולם בחינם.` | `{count} כלים, כולם בחינם. לחצו על כרטיס לכל הכלים שלו.` — `{count}` from `countVisibleBusinessFeatures()`, shown **once** under the features heading, never per panel. `note_line` keeps its key (registry test) and is not rendered. |
 | `join.how.step3_text` | `תוך עד 3 ימי עסקים מהשליחה לבדיקה, העסק שלכם מופיע באתר.` | `בלוח הבקרה מוסיפים תמונה, מוצר אחד ואימות טלפון, ולוחצים «שליחה לבדיקה». תוך עד 3 ימי עסקים העסק שלכם באתר.` |
-| `join.faq.a_cost` | `חינם להצטרף ולהופיע. אין עמלות על עסקאות — לעולם.` | **unchanged — keeps «— לעולם».** Sapir, 07/11: ADR-030 §5 wins; copy-in-order.txt's shorter line was wrong there. |
+| `join.faq.a_cost` | `חינם להצטרף ולהופיע. אין עמלות על עסקאות — לעולם.` | `חינם להצטרף ולהופיע. אין עמלות על עסקאות.` — **Sapir, 07/11 (later the same day):** «— לעולם» removed. This reverses her earlier keep-it call; ADR-030 §5 was rewritten the same evening: «לעולם» is allowed only in the zero-fee promise and no surface is required to use it. |
 
 #### New page strings (in page order)
 
@@ -1119,7 +1119,7 @@ number that can look small.
 `group_buys.delivery.free`, `admin.experiences.free`, DeliveryBlock pickup — those
 say a delivery or a listing costs nothing, not that entry is free.
 
-**Status:** ⏳ PR open — watch MEH-2804.
+**Status:** ✅ Merged to staging — PR #4143 (`1a9464fd`).
 
 ---
 
@@ -1138,4 +1138,4 @@ because the hours really appear in a different place for each:
 Approved by Sapir 07/11 («תעשה מה שאתה חושב»). Neutral Hebrew — plural
 passive («מופיעות»), no addressed verb.
 
-**Status:** ⏳ PR open — watch MEH-2819.
+**Status:** ✅ Merged to staging — PR #4144 (`85cfe44f`).
