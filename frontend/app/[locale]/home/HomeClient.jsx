@@ -167,13 +167,15 @@ export default function HomeClient({
           - MEH-1686: while /stats is in flight the second line's slot is held by
             a placeholder of the SAME min-height, so the common (25+) case loads
             without a shift. Below 25 the slot collapses once — the known cost.
-          - Numerals keep the S4 voice: gold italic Cormorant, LTR-isolated. */}
+          - Numerals keep the S4 voice: gold italic Cormorant, LTR-isolated.
+          - `text-balance` on the sentence: at 375 it wrapped with «העסק» alone
+            on the last line (VRT, 07/11) — same rule DESIGN.md sets for h1–h3. */}
       <section
         className="bg-background border-y border-border py-8 text-center"
         aria-busy={statsLoaded ? undefined : "true"}
         data-testid="home-trust-band"
       >
-        <p className="px-4 font-body-md text-base text-text" data-testid="trust-lead">
+        <p className="px-4 font-body-md text-base text-text text-balance" data-testid="trust-lead">
           {t("home.trust.lead")}
         </p>
         {!statsLoaded && (
