@@ -26,6 +26,7 @@ import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { getWhatsAppHref, normalizePhone } from "@/lib/utils";
 import Input from "@/components/ui/Input";
+import CollectionNotice from "@/components/CollectionNotice";
 
 const BTN =
   "flex items-center justify-center min-h-[48px] w-full bg-primary text-white px-6 rounded-full font-semibold hover:bg-primary-dark transition focus-ring disabled:opacity-60";
@@ -48,6 +49,8 @@ function fieldsFrom(detail) {
 
 function SignupForm({ kind, itemId, onDone }) {
   const t = useTranslations("registration.signup");
+  // Same namespace EventForm.jsx:165 reads it from — one owner for the label.
+  const tPrivacyLink = useTranslations("auth.register.consumer.terms");
   const [form, setForm] = useState({ name: "", phone: "", email: "" });
   const [errors, setErrors] = useState({});
   const [banner, setBanner] = useState("");
@@ -134,7 +137,29 @@ function SignupForm({ kind, itemId, onDone }) {
         onChange={set("email")}
         error={errors.email}
       />
-      <p className="text-xs text-fg-muted">{t("privacy")}</p>
+      {/* MEH-2777: the SAME approved sentence, now through the
+          notice-at-collection component (MEH-1981) so it carries the
+          /privacy link the other eight collection points already have.
+          The message string is unchanged — `registration.signup.privacy`,
+          approved 6/11 — so this adds the link, not new copy.
+
+          `className` keeps this surface looking exactly as it did. The <p>
+          this replaces carried `text-fg-muted`; CollectionNotice's default
+          tone is `text-muted-foreground`, which is NOT a token in
+          tailwind.tokens.json and so emits no CSS at all — measured in the
+          built chunks: `.text-fg-muted` 1 occurrence, `.text-muted-foreground`
+          0, against a `.text-primary` control that found 1. The default tone
+          therefore inherits the parent colour silently. That is a pre-existing
+          MEH-1981 defect across all eight existing notices, reported
+          separately and deliberately NOT fixed here: changing the component
+          repaints eight other surfaces, which is a UI change this card does
+          not cover. */}
+      <CollectionNotice
+        message={t("privacy")}
+        linkLabel={tPrivacyLink("privacy_link")}
+        testId="registration-collection-notice"
+        className="text-fg-muted"
+      />
       <button type="submit" disabled={sending} className={BTN} data-testid="registration-submit">
         {sending ? t("submitting") : t("submit")}
       </button>
