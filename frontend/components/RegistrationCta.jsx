@@ -143,22 +143,15 @@ function SignupForm({ kind, itemId, onDone }) {
           The message string is unchanged — `registration.signup.privacy`,
           approved 6/11 — so this adds the link, not new copy.
 
-          `className` keeps this surface looking exactly as it did. The <p>
-          this replaces carried `text-fg-muted`; CollectionNotice's default
-          tone is `text-muted-foreground`, which is NOT a token in
-          tailwind.tokens.json and so emits no CSS at all — measured in the
-          built chunks: `.text-fg-muted` 1 occurrence, `.text-muted-foreground`
-          0, against a `.text-primary` control that found 1. The default tone
-          therefore inherits the parent colour silently. That is a pre-existing
-          MEH-1981 defect across all eight existing notices, reported
-          separately and deliberately NOT fixed here: changing the component
-          repaints eight other surfaces, which is a UI change this card does
-          not cover. */}
+          MEH-2798 removed the `className="text-fg-muted"` that used to sit
+          here: it existed only because CollectionNotice's default tone was
+          `text-muted-foreground`, which is not a token and emitted no CSS.
+          The component's default is now that same token, so pinning it at
+          this one call site would be a second owner for the fact. */}
       <CollectionNotice
         message={t("privacy")}
         linkLabel={tPrivacyLink("privacy_link")}
         testId="registration-collection-notice"
-        className="text-fg-muted"
       />
       <button type="submit" disabled={sending} className={BTN} data-testid="registration-submit">
         {sending ? t("submitting") : t("submit")}
