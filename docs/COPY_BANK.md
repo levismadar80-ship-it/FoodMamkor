@@ -1,6 +1,6 @@
 # מהמקור — COPY BANK
 > Single source of truth for all copy decisions.
-> Last updated: 2026-07-26
+> Last updated: 2026-11-07
 > **Status key:** ✅ Merged to staging · ⏳ PR open · 🕐 Pending
 >
 > Rule: document only **merged** copy. Pending entries show the MEH ticket to watch.
@@ -789,6 +789,114 @@ Keys: `join.how.*`. Link out: `לתהליך הקבלה המלא` → `/about/pro
 
 ### Testimonial slot — placeholder ONLY (Section 8 guardrail applies)
 The slot renders a self-describing placeholder (`join.testimonial.*`): `כאן תופיע עדות אמיתית של בעלת עסק — מילה במילה, באישורה.` + eyebrow `בקרוב — עדות ראשונה`. **Do NOT replace with invented business copy** — the real quote arrives via Template 10 verbatim intake (MEH-931) pre-launch and gets its own Section-8 row.
+
+### /join v2 — the approved 07/11 design (MEH-2799) — 🕐 pending PR 3
+
+> **Source:** the MEH-2799 handoff package, `SPEC.md` §4–§5 + `design/copy-in-order.txt` (Sapir approved the design 07/11: «מאשרת את העיצוב מהמם»). Hebrew is verbatim from those two files. The rows above in this section stay the record of what is **live** until PR 3 merges; they are then updated to the strings below and this block's status flips to ✅. Keys marked *(new)* are proposed names; PR 3's body carries the final key | old | new table. Pattern pointer: BRAND.md §6 row "Join page: feature groups …".
+>
+> **Channel-neutral rule (SPEC §5):** the contact button is never described as WhatsApp-only. WhatsApp is named only where it is literally WhatsApp (the prefill message, the WhatsApp group).
+
+#### Needs Sapir's word-for-word OK before PR 3 merges
+
+| # | String | Where |
+|---|---|---|
+| 1 | `עסק לדוגמה` | HTML corner label on every group clip and on the page video (not burned into the media) |
+| 2 | `קניות קבוצתיות, סדנאות, מתכונים והטבות.` | `business_features.groups.return.card_line_no_rescue` — the «שיחזרו לקנות» card line while the rescue-bags flag is off (it is off in production as of 07/11: `/rescue` → 404) |
+| 3 | The English twins | `en.json` — plain translations, flagged in each PR body |
+
+#### Changed strings (existing keys)
+
+| Key | Old | New |
+|---|---|---|
+| `business_features.items.product_wa.label` | `כפתור "שאלו על המוצר בוואטסאפ" בכל מוצר` | `כפתור "שאלו על המוצר" בכל מוצר, בערוץ שבחרתם` |
+| `business_features.total_line` | `{count} כלים בשש קטגוריות. כולם בחינם.` | `{count} כלים, כולם בחינם. לחצו על כרטיס לכל הכלים שלו.` — `{count}` from `countVisibleBusinessFeatures()`, shown **once** under the features heading, never per panel. `note_line` keeps its key (registry test) and is not rendered. |
+| `join.how.step3_text` | `תוך עד 3 ימי עסקים מהשליחה לבדיקה, העסק שלכם מופיע באתר.` | `בלוח הבקרה מוסיפים תמונה, מוצר אחד ואימות טלפון, ולוחצים «שליחה לבדיקה». תוך עד 3 ימי עסקים העסק שלכם באתר.` |
+| `join.faq.a_cost` | `חינם להצטרף ולהופיע. אין עמלות על עסקאות — לעולם.` | `חינם להצטרף ולהופיע. אין עמלות על עסקאות.` — **as written in copy-in-order.txt; flagged, not decided here.** ADR-030 §5 keeps `לעולם` as the one sanctioned use (the zero-transaction-fee promise) and says this string stays as it is. Dropping it narrows a LOCK's wording, so PR 3 keeps the current value unless Sapir confirms the shorter one. |
+
+#### New page strings (in page order)
+
+| Proposed key | he |
+|---|---|
+| `join.hero_photo_alt` *(new)* | `ארגזים של פירות וירקות טריים` |
+| `join.draft.title` *(new)* | `אין זמן למלא טפסים? נכין לכם טיוטה` |
+| `join.draft.body` *(new)* | `שלחו לנו קישור לאינסטגרם או כמה תמונות. אנחנו בונים טיוטה של העמוד עם המוצרים, ואתם מקבלים קישור אישי לבדוק, לתקן ולאשר. העמוד לא עולה בלי האישור שלכם.` |
+| `join.draft.cta` *(new)* | `כתבו לנו` |
+| `join.video.eyebrow` *(new)* | `סרטון קצר` |
+| `join.video.heading` *(new)* | `עמוד של בית עסק, בטלפון` |
+| `join.video.aria` *(new)* | `סרטון: ככה נראה עמוד של בית עסק במהמקור` |
+| `join.features.eyebrow` *(new)* | `מה מקבלים` |
+| `join.features.heading` *(new)* | `ממלאים פרטים פעם אחת. העמוד עובד בשבילכם.` |
+| `join.features.shelf_aria` *(new)* | `החלקים` |
+| `join.features.more` *(new)* | `כל {n} הכלים` — phone only; `{n}` = visible items in that group |
+| `join.features.panel_hint` *(new)* | `הכלים בחלק הזה מוצגים למטה` |
+| `join.features.pause` *(new)* | `עצירת הסרטון` |
+| `join.features.play` *(new)* | `הפעלת הסרטון` |
+| `join.features.sample_label` *(new)* | `עסק לדוגמה` — see approval item 1 |
+| toggletip trigger | `מה זה?` — reuses `whats_this.trigger` (identical text) |
+| `join.features.media_alt.page` *(new)* | `העמוד של מאפיית רוח השדה בטלפון` |
+| `join.features.media_alt.found` *(new)* | `המפה באתר, ממוקדת על זכרון יעקב, עם הסיכה של בית העסק` |
+| `join.features.media_alt.contact` *(new)* | `בדיקת משלוח לעיר ונקודות איסוף` |
+| `join.features.media_alt.return` *(new)* | `עמוד קנייה קבוצתית` |
+| `join.features.media_alt.trust` *(new)* | `ביקורות בעמוד בית העסק` |
+| `join.features.media_alt.insights` *(new)* | `לוח הבקרה: גרף צפיות וערים מובילות` |
+| `join.how.signup_video_aria` *(new)* | `סרטון: ככה נרשמים` |
+| `join.faq.heading` *(new)* | `מה שבתי עסק שואלים` |
+| `join.faq.q_google` *(new)* | `במה זה שונה מגוגל ומאינסטגרם?` |
+| `join.faq.a_google` *(new)* | `גוגל טוב כדי שימצאו אתכם בחיפוש, ושווה להמשיך להשתמש בו. כאן יש לכם עמוד משלכם בסגנון כתבה, כפתור פנייה בערוץ שבחרתם (בוואטסאפ גם עם הודעה מוכנה), וביקורות רק ממי שפנה אליכם. ואפשר לשים את הקישור לעמוד במהמקור גם בפרופיל שלכם בגוגל. את האינסטגרם ממשיכים כרגיל ומקשרים אליו מהעמוד, וכאן הלקוח רואה גם מחירים, אזורי משלוח ושעות בלי לשאול.` |
+| `join.faq.q_revenue` *(new)* | `אם הכול חינם, איך אתם מרוויחים?` |
+| `join.faq.a_revenue` *(new)* | `כרגע לא מרוויחים. בעתיד ההכנסה תגיע ממנוי משודרג שבתי עסק יבחרו בו מרצון. לא מעמלות ולא ממכירת מקום בראש הרשימה.` — first premium mention on /join; consistent with ADR-027/ADR-030 (premium = tools only, never ranking). The older "zero premium mention anywhere on the page" note in the Hero row above predates ADR-027. |
+| `join.faq.q_customers` *(new)* | `מי מקבל את הלקוחות?` |
+| `join.faq.a_customers` *(new)* | `אתם. כל פנייה מגיעה ישירות אליכם, והקשר נשאר שלכם גם אם תחליטו לעזוב.` |
+| `join.closing.heading` *(new)* | `מוסיפים עכשיו את בתי העסק הראשונים` |
+| `join.closing.line` *(new)* | `עמוד אחד עם כל הפרטים, והלקוח פונה ישירות אליכם.` |
+| closing button | `מצטרפים` — reuses `join.cta` |
+| `join.meta_line` *(new)* | `חינם · כ-5 דקות · עולה תוך עד 3 ימי עסקים` — closing band and sticky bar (one key, two surfaces) |
+| `join.closing.question` *(new)* | `שאלה לפני?` + link `כתבו לנו` (reuses `join.draft.cta`) |
+| sticky bar button | `מצטרפים` — reuses `join.cta` |
+
+Unchanged and reused as-is: `join.eyebrow` · `join.h1` · `join.subhead` · `join.cta` · `join.trust_hint` · `join.how.*` (except step 3) · `join.prepare.*` · `join.faq.eyebrow` · `join.faq.q_cost` · `join.faq.all_link` · `business_features.groups.{g}.label` / `.lead`.
+
+**Removed from the page** (keys kept until PR 3 decides, per regression rule 1 grep-before-delete): `join.card.*` (the duplicate «כל בית עסק עובר היכרות אישית» card) · `join.testimonial.*` (already render-gated off, MEH-2419) · the per-panel total line.
+
+#### Group cards — `business_features.groups.{g}.card_title` / `.card_line` *(new)*
+
+| g | card_title | card_line |
+|---|---|---|
+| page | `עמוד משלכם` | `תמונות, סיפור, מוצרים ומחירים. ואם אין זמן, נכין לכם טיוטה.` |
+| found | `שימצאו אתכם` | `במפה, בחיפוש לפי עיר ותזונה, ובגוגל.` |
+| contact | `שיפנו אליכם` | `פנייה בלחיצה, בערוץ שבחרתם. בדיקת משלוח לעיר של הלקוח.` |
+| return | `שיחזרו לקנות` | `קניות קבוצתיות, סדנאות, מתכונים, הטבות וסלי הפתעה.` · flag off → `card_line_no_rescue` (approval item 2) |
+| trust | `שיסמכו עליכם` | `תג מאומת, ביקורות רק ממי שפנה אליכם, ואתם מגיבים.` |
+| insights | `תדעו מה עובד` | `צפיות, לחיצות על כפתור הפנייה, ומאילו ערים מגיעים. הכול מהטלפון.` |
+
+#### Tiles — `business_features.items.{id}.tile_title` / `.tile_line` *(new)*, 4 per group, in this order
+
+| group | id | Phosphor icon | tile_title | tile_line |
+|---|---|---|---|---|
+| page | gallery_story | Image | `גלריה וסיפור` | `תמונות, "אודות" ו"מאחורי העסק"` |
+| page | product_details | Tag | `מוצרים` | `עם מחיר, רכיבים ואלרגנים` |
+| page | hours | Clock | `שעות` | `פתיחה, הזמנה וחגים` |
+| page | draft_claim | PencilSimple | `טיוטה מוכנה` | `אנחנו כותבים, אתם מאשרים` |
+| found | vanity_link | LinkSimple | `קישור קצר` | `לאינסטגרם ולוואטסאפ` |
+| found | discovery | MapPin | `במפה ובחיפוש` | `לפי עיר, תזונה ובדף הבית` |
+| found | share_cards | ShareNetwork | `כרטיסים לשיתוף` | `לסטורי ולביקורות` |
+| found | qr_code | QrCode | `קוד QR` | `להדפסה, לדלפק או לדוכן` |
+| contact | primary_cta | ChatCircleText | `כפתור פנייה` | `וואטסאפ, טלפון או אתר, לפי הבחירה שלכם` |
+| contact | wa_prefill | PaperPlaneTilt | `הודעה מוכנה` | `בוואטסאפ: "הגעתי דרך מהמקור"` |
+| contact | delivery_checker | Truck | `בדיקת משלוח` | `"יש משלוח לעיר שלך?"` |
+| contact | nav_buttons | NavigationArrow | `ניווט לאיסוף` | `Waze ו-Google Maps` |
+| return | group_buys | UsersThree | `קניות קבוצתיות` | `כמה לקוחות מזמינים יחד, במחיר נמוך יותר` |
+| return | events | CalendarBlank | `אירועים וסדנאות` | `עם הרשמה באתר` |
+| return | recipes | CookingPot | `מתכונים` | `כל מתכון בעמוד משלו, שמקשר אליכם` |
+| return | rescue_bags | ShoppingBag | `סלי הפתעה` | `למה שנשאר בסוף היום, במחיר מוזל` — flag-gated: off → «שיחזרו לקנות» shows 3 tiles |
+| trust | verified_badge | ShieldCheck | `תג מאומת` | `אחרי בדיקה ידנית של הרישיון` |
+| trust | kashrut_verified | Certificate | `כשרות מאומתת` | `אחרי שהתעודה נבדקה` |
+| trust | editor_pick | Medal | `בחירת העורכת` | `לא עומדת למכירה` |
+| trust | reviews_contacted | Star | `ביקורות אמיתיות` | `רק ממי שפנה, ואתם מגיבים` |
+| insights | views | Eye | `צפיות` | `ל-7 ימים, 30 יום או מההתחלה` |
+| insights | contact_clicks | CursorClick | `לחיצות` | `וואטסאפ, טלפון ואתר` |
+| insights | top_cities | MapPin | `ערים` | `מאיפה מגיעים המבקרים` |
+| insights | demand_cities | TrendUp | `ביקוש חדש` | `ערים שעוד אין אליהן משלוח` |
 
 ## Section 10 — /share "ספרו עלינו" (MEH-1160)
 
