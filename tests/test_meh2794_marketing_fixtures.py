@@ -150,6 +150,45 @@ def test_offer_is_active_now_and_future_dated(db, seeded, seed_mod):
     assert offer.starts_at is None
     assert offer.is_active is True
     assert offer.expires_at > israel_today()
+    # The type must be one the CHECK allows. This assertion exists because the
+    # first version of the seed used "discount_first_order", which is not —
+    # CI's seed job caught it with a raw IntegrityError, and a test naming the
+    # allowed set fails in a way that says what to do instead.
+    assert offer.offer_type in {
+        "free_delivery_above",
+        "gift_above",
+        "first_order",
+        "pickup_discount",
+        "custom",
+    }
+    # Both threshold columns NULL together — producer_offer_threshold_pair.
+    assert (offer.threshold_value is None) == (offer.threshold_unit is None)
+
+
+def test_rescue_bag_satisfies_its_db_checks(db, seeded, seed_mod):
+    """Every NOT NULL column set, every CHECK respected.
+
+    Written after CI caught an invalid `offer_type` on the sibling fixture: the
+    sandbox has no database, so a missing NOT NULL (`cancel_until`) or an
+    out-of-range qty surfaces only as a raw IntegrityError in a CI log. This
+    turns that into a named failure. Skipped where the rescue tables are
+    absent, the same condition the seed itself checks.
+    """
+    from sqlalchemy import inspect as sa_inspect
+
+    if not sa_inspect(db.get_bind()).has_table("rescue_offers"):
+        pytest.skip("rescue tables absent — the seed skips the bag too")
+
+    from app.models.models import RESCUE_MAX_QTY_PER_OFFER, RescueOffer
+
+    bag = db.query(RescueOffer).one()
+    assert bag.cancel_until is not None, "nullable=False with no default"
+    assert 1 <= bag.qty_total <= RESCUE_MAX_QTY_PER_OFFER
+    assert 0 <= bag.qty_left <= bag.qty_total
+    assert bag.price_agorot >= 0
+    assert bag.pickup_end > bag.pickup_start
+    assert bag.status == "active"
+    assert bag.date == israel_today(), "a bag for TODAY, so /rescue shows it"
 
 
 def test_insights_raw_rows_and_rollup_agree(db, seeded, seed_mod):

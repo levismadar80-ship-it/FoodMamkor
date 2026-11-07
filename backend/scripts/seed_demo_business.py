@@ -404,17 +404,36 @@ DEMO_REVIEWS = [
 # An active first-order discount. `starts_at=None` means "active now"
 # (models.py:1281); `expires_at` is required and must stay in the future, so it
 # is relative to the run date like every other demo date.
+# `offer_type` MUST be one of the five the CHECK allows — 'free_delivery_above',
+# 'gift_above', 'first_order', 'pickup_discount', 'custom' (models.py:1378).
+# The ticket asks for "a first-order discount", which is 'first_order'.
+#
+# `headline` stays None deliberately. Only 'custom' renders its headline as the
+# offer text; every other type renders a TYPED SENTENCE and ignores it
+# (schemas.py:1512-1516, OfferBadge.jsx). A headline here would be dead data
+# that reads, to the next person, as the string on screen.
+#
+# Both threshold fields are None together, which is what
+# `producer_offer_threshold_pair` requires — an unconditional offer.
 DEMO_OFFER = {
-    "offer_type": "discount_first_order",
+    "offer_type": "first_order",
     "threshold_value": None,
     "threshold_unit": None,
-    "headline": "הנחה של 10% על ההזמנה הראשונה",
+    "headline": None,
     "days_ahead": 30,
 }
 
 # One rescue bag for TODAY, so /rescue has a card to photograph. NOTE it hangs
 # off producer_location_id, NOT producer_id (models.py:2871) — a bag belongs to
 # the place it is collected from.
+# Every value here sits inside a DB CHECK, and none of it can be exercised from
+# the CC sandbox, so the envelope is written down rather than assumed:
+#   qty_total   1..20   (RESCUE_MAX_QTY_PER_OFFER, models.py:2859)
+#   qty_left    0..qty_total
+#   price_agorot >= 0
+#   pickup_end  > pickup_start
+#   qty_donated 0..qty_total  (defaults to 0, not set here)
+#   status      'active' | 'cancelled'  (defaults to 'active', not set here)
 DEMO_RESCUE_BAG = {
     "qty_total": 6,
     "qty_left": 4,
@@ -931,6 +950,14 @@ def _seed_rescue_bag(db, producer) -> bool:
             ),
             pickup_end=datetime.combine(
                 today, time(hour=DEMO_RESCUE_BAG["pickup_to_hour"])
+            ),
+            # REQUIRED and has no default — `cancel_until` is nullable=False
+            # with no server_default (models.py:2928), and the API takes it
+            # from the owner's own body (rescue.py:421). Set to the moment
+            # collection opens: "cancel any time until pickup starts", which
+            # is the only reading that needs no further policy decision.
+            cancel_until=datetime.combine(
+                today, time(hour=DEMO_RESCUE_BAG["pickup_from_hour"])
             ),
         )
     )
