@@ -186,6 +186,32 @@ Never render both at the same breakpoint.
 
 ---
 
+## Same fact in two sections (MEH-2803)
+
+**Pattern:** one fact rendered in two places on one page, each correct on its
+own. The business page showed its hours under «מתי מקבלים הזמנות» (the order
+window) and again, unlabelled, under «הגעה ומיקום» (store hours) — nearly the
+same values in two formats («7:00» beside «07:00», «ראשון–חמישי» beside
+«א'-ה'»), so a visitor reads a duplicate and wonders which one is right. Same
+family as «Duplicate producer-detail CTAs» above: two renderers, no single
+owner of the fact.
+
+**Rule:** one fact, one place. A second set of the same KIND of fact is shown
+only under its own label, saying what it is the hours OF — Google Business
+Profile's «More hours» (pickup, delivery, online ordering beside the regular
+hours). When the two sets are equal, they are one fact: one set, one label
+(«הזמנות וביקור במקום»). Unreadable data is never merged — it is shown as
+typed, labelled.
+
+**Guard:** `frontend/__tests__/ProducerHoursSection.test.jsx` («one fact, one
+place») — renders ProducerSections with identical order window and store
+hours and asserts exactly one `[data-testid="hours-set"]` and that each time
+range appears ONCE in the page text. Red on the pre-MEH-2803 page («7:00–14:00»
+×2). Companion: `__tests__/hoursHebrewParse.test.js` reads the demo seed's
+`opening_hours` and fails if it drifts into a format `parseHours` cannot read.
+
+---
+
 ## The MEH-1398 hard-404 is backend-conditional — verifying it needs a live backend (MEH-1521)
 
 **Pattern:** `frontend/middleware.js`'s `producerExists()` existence-checks

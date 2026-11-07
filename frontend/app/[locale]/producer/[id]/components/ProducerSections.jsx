@@ -14,7 +14,6 @@ import DeliveryBlock from "@/components/DeliveryBlock";
 // MEH-788: scroll-reveal on the description + similar sections (not LCP/gallery).
 import FadeInSection, { REVEAL_PRESET } from "@/components/FadeInSection";
 import DirectoryDisclaimer from "@/components/DirectoryDisclaimer";
-import OpeningHours from "@/components/OpeningHours";
 import { resolveStoreHours } from "@/lib/hours";
 import { primaryPoint } from "@/lib/producerPoints";
 // MEH-1306: owner-only per-section pencil → deep-links into the edit
@@ -26,7 +25,7 @@ import ReservistBadgeLine from "./ReservistBadgeLine";
 import ProducerActivities from "./ProducerActivities";
 // MEH-1875: the weekly order-window schedule as a headed Info block. Lives in
 // OrderWindowStrip.jsx beside OrderWindowCtaNote (ContactCard's consumer).
-import { OrderWindowScheduleBlock } from "./OrderWindowStrip";
+import { ProducerHoursSection } from "./OrderWindowStrip";
 import RecipeCard from "@/components/public/RecipeCard";
 // MEH-1901: the full product detail (long description, per-product diet flags)
 // as an overlay — no route, no marketplace.
@@ -129,7 +128,7 @@ function ProductDietPills({ product, t }) {
  * The middle of the main column. MEH-2592 reorders the sections so everything
  * about this business comes first: about → owner → products → recipes →
  * events + experiences → group buys (ProducerActivities) → reviews →
- * delivery → order window → location (OpeningHours + MiniMap) → fine print (disclaimer, report, last-updated). The similar /
+ * delivery → «שעות» (MEH-2803) → location (city + MiniMap) → fine print (disclaimer, report, last-updated). The similar /
  * nearby rows moved out to <OtherBusinesses>, which ProducerDetail renders
  * full width below both columns. The signature product (top_product_name / price_range)
  * moved OUT of ProducerHeader to the top of the products section here.
@@ -658,8 +657,9 @@ export default function ProducerSections({
         </div>
       )}
 
-      {/* MEH-1875: the weekly order schedule, immediately BEFORE the location
-          section that holds the store-hours card — the two "when" blocks read
+      {/* MEH-1875 (history — MEH-2803 below supersedes the placement): the
+          weekly order schedule, immediately BEFORE the location
+          section that held the store-hours card — the two "when" blocks read
           together, and the page IA keeps location as the last content section.
           It is its OWN section rather than a card inside "הגעה ומיקום" for two
           reasons: an order window is not a location fact (a delivery-only
@@ -669,10 +669,12 @@ export default function ProducerSections({
           that says "arrival and location". Schedule only — the open/closed
           verdict stays in ProducerHeader alone (MEH-1305 A). Self-gating:
           renders nothing at all when order_window is null. */}
-      <OrderWindowScheduleBlock
-        orderWindow={producer.order_window}
-        specialHours={producer.special_hours}
-      />
+      {/* MEH-2803: the ONE «שעות» section — order window («מקבלים הזמנות») and
+          store hours («פתוח למבקרים») each under its own label, or one set
+          («הזמנות וביקור במקום») when they match day by day. Store hours left
+          the location section below: the same fact in two sections read as a
+          duplicate. Self-gating: nothing at all when there are no hours. */}
+      <ProducerHoursSection producer={producer} />
 
       {/* MEH-1146 chunk B: location is the LAST content section. MEH-1334
           chunk 3: merged into ONE "הגעה ומיקום" section (mockup Z3) — heading
@@ -686,7 +688,12 @@ export default function ProducerSections({
           while rendering the resolved value would hide the whole section from a
           business whose hours live only on her primary location row, which is
           exactly the business this change is for. */}
-      {(hasLocation || storeHours) && (
+      {/* MEH-2803: gate → hasLocation, SUPERSEDING the two notes above (the
+          collapsed OpeningHours here and the hours-OR-location gate). Store
+          hours moved up into «שעות»; a business with hours but no place to
+          arrive at has no location section (section-nav.js mirrors this gate).
+          storeHours is still read here, only for the no-hours line. */}
+      {hasLocation && (
         <section
           id="section-location"
           className="mt-12 scroll-mt-[calc(var(--chrome-top,82px)_+_var(--section-nav-h,68px))] md:scroll-mt-24"
@@ -704,14 +711,10 @@ export default function ProducerSections({
               {producer.city}
             </p>
           )}
-          {/* MEH-2142: primary location's hours, falling back to the legacy
-              business-level column. One resolver so the gate above and this
-              render can never disagree. */}
-          <OpeningHours opening_hours={storeHours} />
           {/* MEH-2438 follow-up: a place to visit with no hours would otherwise
               show only the map and the Waze/Google buttons — an invitation to
               turn up unannounced at a home producer. */}
-          {!storeHours && hasLocation && (
+          {!storeHours && (
             <p data-testid="location-no-hours" className="text-sm text-fg-muted mb-3">
               {t("producer.detail.sections.location_no_hours")}
             </p>

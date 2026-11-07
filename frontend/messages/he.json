@@ -903,9 +903,13 @@
       "sticky_bar": {
         "vacation_msg": "שליחת הודעה"
       },
+      "hours": {
+        "heading": "שעות",
+        "label_orders": "מקבלים הזמנות",
+        "label_visit": "פתוח למבקרים",
+        "label_both": "הזמנות וביקור במקום"
+      },
       "order_window": {
-        "schedule_heading": "מתי מקבלים הזמנות",
-        "schedule_subtitle": "הימים והשעות שבהם בית העסק מקבל הזמנות",
         "show_week": "כל השבוע",
         "hide_week": "הסתרת השבוע",
         "today": "היום",

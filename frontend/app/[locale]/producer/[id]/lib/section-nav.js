@@ -1,4 +1,3 @@
-import { resolveStoreHours } from "@/lib/hours";
 import { primaryPoint } from "@/lib/producerPoints";
 import { isPriceLabel } from "@/lib/utils";
 import { parseHasLocation } from "../components/ProducerSections";
@@ -64,7 +63,9 @@ export function getSectionNavItems(producer, t) {
     {
       id: "section-location",
       label: t("producer.detail.sections.location"),
-      show: !!(parseHasLocation(producer, primaryPoint(producer)) || resolveStoreHours(producer)),
+      // MEH-2803: mirrors ProducerSections' location gate, now hasLocation only
+      // — store hours live in the «שעות» section, which has no pill.
+      show: !!parseHasLocation(producer, primaryPoint(producer)),
     },
   ];
 }

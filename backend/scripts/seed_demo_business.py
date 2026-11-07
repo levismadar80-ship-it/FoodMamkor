@@ -65,6 +65,7 @@ from app.models.models import (  # noqa: E402  # imports must follow sys.path.in
     RescueOffer,
     User,
 )
+from app.services.analytics_rollup import rollup_watermark  # noqa: E402  # imports must follow sys.path.insert (script shim)
 from app.utils.clock import ISRAEL_TZ, israel_today, utc_now  # noqa: E402  # imports must follow sys.path.insert (script shim)
 
 # ============================================================================
@@ -1033,7 +1034,7 @@ def _spread(total: int, days: int) -> list[int]:
     return counts
 
 
-def _seed_insights(db, producer) -> None:
+def _seed_insights(db, producer, watermark: date | None) -> int:
     """MEH-2794 — believable dashboard numbers for the demo producer.
 
     Sapir 07/11: a dashboard screenshot reading "0 WhatsApp clicks" on a page
@@ -1051,13 +1052,43 @@ def _seed_insights(db, producer) -> None:
     seeded view needs its OWN hash to count: reusing one hash would collapse a
     whole day to 1 and the chart would read flat at 1 regardless of the numbers
     above. The hashes are random hex of the real column width (64) — not real
-    IPs, hashed or otherwise.
+    IPs, hashed or otherwise. One hash per view is also what makes the
+    aggregate values below equal to what the real job computes: the job counts
+    DISTINCT (day, hash) pairs, and with a unique hash per row that equals the
+    row count.
+
+    MEH-2801 — AN AGGREGATE ROW IS ONLY EVER WRITTEN FOR A DAY AT OR BELOW THE
+    WATERMARK, and `watermark` is read ONCE by the caller.
+    `analytics_rollup.rollup_watermark()` is `max(producer_analytics_daily.day)`
+    GLOBALLY, across every producer — it says so in its own docstring — the
+    nightly job starts at `watermark + 1` (`pending_days`, and the same floor
+    in `run_rollup`) and the watermark only moves forward. So a row written for
+    TODAY — which is what the first version of this function did, `offset`
+    starting at 0 — jumps the watermark past every day the job has not rolled
+    yet, the job never returns for them, and `rollup_snapshot`'s reader finds
+    them in neither half: aggregate ≤ watermark, raw > watermark. Those days
+    then vanish from the `total` arm of every OTHER producer's dashboard,
+    permanently. (Functions rather than line numbers on purpose — the reviewer
+    is right that the numbers drift, and these four names do not.)
+
+    Days above the watermark are left raw-only on purpose. The nightly job
+    picks them up like any other traffic, and until it does the dashboard's
+    raw half already covers them, so nothing is missing in the meantime.
+
+    `watermark is None` means the aggregate table is empty and owns nothing;
+    writing the first row would hand it a watermark it never earned, so this
+    writes none.
+
+    Returns the number of aggregate rows written — days at or below the
+    watermark on which the producer was active — so the caller reports a
+    derived count rather than a sentence that may be false (MEH-1909).
     """
     view_buckets = _spread(DEMO_INSIGHTS["views_total"], DEMO_INSIGHTS["days"])
     search_buckets = _spread(DEMO_INSIGHTS["views_from_search"], DEMO_INSIGHTS["days"])
     wa_buckets = _spread(DEMO_INSIGHTS["whatsapp_clicks"], DEMO_INSIGHTS["days"])
     cities = DEMO_INSIGHTS["top_cities"]
     today = israel_today()
+    rolled_rows = 0
 
     for offset in range(DEMO_INSIGHTS["days"]):
         day_index = DEMO_INSIGHTS["days"] - 1 - offset  # 0 = oldest
@@ -1098,15 +1129,33 @@ def _seed_insights(db, producer) -> None:
                     city=cities[0],
                 )
             )
-        db.add(
-            ProducerAnalyticsDaily(
-                producer_id=producer.id,
-                day=day,
-                views_unique=views,
-                views_search_unique=searches,
-                whatsapp_clicks=wa_buckets[day_index],
+        # MEH-2801: at or below the watermark only — see the docstring. The
+        # values are the same numbers the rows above carry, because one hash
+        # per view makes the job's DISTINCT (day, hash) count equal the row
+        # count; `test_seeded_aggregate_matches_what_the_real_job_computes`
+        # pins that against `roll_up_day` so the two cannot drift apart
+        # quietly.
+        # ...and only for a day the producer was actually ACTIVE on, because
+        # that is the rule the real job follows: `_day_select` builds its row
+        # set from the UNION of producers with a page view OR a WhatsApp click
+        # that day, so a day with neither gets no row at all — not a row of
+        # zeros. `_spread` is a rising ramp, so the oldest days of the window
+        # genuinely have none (measured: 2 of 30 days have no view, 17 have no
+        # click), and writing zeros there made the seed emit rows the job never
+        # would. Found by test_seeded_aggregate_matches_what_the_real_job_
+        # computes once it looped over every day instead of sampling one.
+        active_that_day = views > 0 or wa_buckets[day_index] > 0
+        if watermark is not None and day <= watermark and active_that_day:
+            db.add(
+                ProducerAnalyticsDaily(
+                    producer_id=producer.id,
+                    day=day,
+                    views_unique=views,
+                    views_search_unique=searches,
+                    whatsapp_clicks=wa_buckets[day_index],
+                )
             )
-        )
+            rolled_rows += 1
 
     # Contact clicks — a phone/website breakdown beside the WhatsApp metric.
     for i in range(DEMO_INSIGHTS["contact_clicks"]):
@@ -1121,6 +1170,7 @@ def _seed_insights(db, producer) -> None:
         )
 
     _seed_followers(db, producer)
+    return rolled_rows
 
 
 def _seed_followers(db, producer) -> None:
@@ -1227,8 +1277,32 @@ def seed_marketing_fixtures(db) -> int:
         .first()
     )
     if not already:
-        _seed_insights(db, producer)
+        # MEH-2801: read ONCE, before any insert, and hand it down. Reading it
+        # per-day inside the loop would be read-after-write — the first
+        # aggregate row this run inserts would raise the watermark that the
+        # next day's decision consults, which is the bug with extra steps.
+        watermark = rollup_watermark(db)
+        # The nightly job could advance the watermark between this read and the
+        # commit below, and that is harmless: every row written stays at or
+        # below the value read, so the partition the reader relies on cannot be
+        # corrupted either way. The only effect is that a day the job rolled
+        # inside that window gets no demo row — a missing fixture, not a wrong
+        # number, and the next --refresh supplies it.
+        rolled_rows = _seed_insights(db, producer, watermark)
         seeded += 1
+        if watermark is None:
+            skipped.append(
+                f"all {DEMO_INSIGHTS['days']} aggregate rows (the roll-up "
+                "table is empty, so it owns no day yet — raw rows only; the "
+                "nightly job will roll them)"
+            )
+        elif rolled_rows < DEMO_INSIGHTS["days"]:
+            skipped.append(
+                f"{DEMO_INSIGHTS['days'] - rolled_rows} of "
+                f"{DEMO_INSIGHTS['days']} aggregate rows (above the roll-up "
+                f"watermark {watermark} — raw rows only, by design: the "
+                "nightly job rolls them)"
+            )
     else:
         skipped.append(
             "insights AND followers (analytics rows already exist for this "

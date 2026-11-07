@@ -903,9 +903,13 @@
       "sticky_bar": {
         "vacation_msg": "Send a message"
       },
+      "hours": {
+        "heading": "Hours",
+        "label_orders": "Taking orders",
+        "label_visit": "Open to visitors",
+        "label_both": "Orders and visits"
+      },
       "order_window": {
-        "schedule_heading": "When orders are accepted",
-        "schedule_subtitle": "The days and hours this business accepts orders",
         "show_week": "Full week",
         "hide_week": "Hide full week",
         "today": "Today",

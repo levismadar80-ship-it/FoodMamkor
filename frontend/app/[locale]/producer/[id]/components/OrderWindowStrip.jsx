@@ -63,11 +63,22 @@
  *           the header's status already reads today's override. Clock-derived
  *           (which dates are still ahead), so it arrives after mount like the
  *           today-chip, and an override-only producer's block appears then.
+ *           MEH-2803 — the page said its hours twice: this block under «מתי
+ *           מקבלים הזמנות», then an unlabelled store-hours card under «הגעה
+ *           ומיקום», nearly the same values in two formats. Now ONE «שעות»
+ *           section (ProducerHoursSection below, Google Business Profile «More
+ *           hours» pattern): the schedule block is the «מקבלים הזמנות» SET, the
+ *           store hours the «פתוח למבקרים» set, and when both parse and match
+ *           day by day there is ONE set, «הזמנות וביקור במקום». The subtitle row
+ *           («הימים והשעות שבהם בית העסק מקבל הזמנות») restated the heading
+ *           above it and is gone. Rendering inside each set is unchanged.
  */
 
 import { Fragment, useEffect, useState } from "react";
-import { CalendarCheck, CaretDown } from "@phosphor-icons/react";
+import { CaretDown } from "@phosphor-icons/react";
 import { useLocale, useTranslations } from "next-intl";
+import OpeningHours from "@/components/OpeningHours";
+import { parseHours, resolveStoreHours, sameWeeklyHours } from "@/lib/hours";
 import { humanTime } from "@/lib/time-format";
 
 import {
@@ -172,7 +183,7 @@ function openDaysOf(orderWindow) {
  * this returns null, so the block is absent from the DOM entirely — no empty
  * container, no heading, zero layout shift.
  */
-export function OrderWindowScheduleBlock({ orderWindow, specialHours = null }) {
+export function OrderWindowScheduleBlock({ orderWindow, specialHours = null, label = null }) {
   const t = useTranslations("producer.detail.order_window");
   const tDays = useTranslations("producer.detail.order_window.days");
   const locale = useLocale();
@@ -200,17 +211,16 @@ export function OrderWindowScheduleBlock({ orderWindow, specialHours = null }) {
   if (rows.length === 0 && upcoming.length === 0) return null;
 
   return (
-    <section className="mt-12" data-testid="order-window-schedule">
-      <h2 className="font-headline-md text-2xl font-bold text-text mb-3">
-        {t("schedule_heading")}
-      </h2>
+    // MEH-2803: one labelled SET inside ProducerHoursSection's «שעות» section —
+    // the section owns the heading; this owns its label and its card.
+    <div data-testid="hours-set" data-set="orders">
+      {label && <h3 className={SET_LABEL_CLASS}>{label}</h3>}
       {/* Container copied from components/OpeningHours.jsx:52 so the order
           schedule and the store hours read as one family of Info cards. */}
-      <div className="border border-border rounded-md bg-surface overflow-hidden">
-        <div className="flex items-center gap-2 px-3.5 py-2.5 border-b border-border text-sm text-text">
-          <CalendarCheck size={16} className="text-primary-dark shrink-0" aria-hidden="true" />
-          <span>{t("schedule_subtitle")}</span>
-        </div>
+      <div
+        className="border border-border rounded-md bg-surface overflow-hidden"
+        data-testid="order-window-schedule"
+      >
         {/* MEH-1917: the summary is REPLACED by the full week, not stacked above
             it. Caught by eye, not by a pin: the first build rendered both, so a
             Sun–Thu producer showed "ראשון–שלישי" and then ראשון, שני, שלישי
@@ -352,6 +362,73 @@ export function OrderWindowScheduleBlock({ orderWindow, specialHours = null }) {
                 )}
               </div>
             ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const SET_LABEL_CLASS = "text-base font-semibold text-text mb-2";
+
+/** order_window → the parsed-hours map shape (dayIndex → ranges), or null. */
+function orderWindowAsHoursMap(orderWindow) {
+  const days = openDaysOf(orderWindow);
+  return days.length ? Object.fromEntries(days.map((d) => [d.dayIndex, d.ranges])) : null;
+}
+
+/**
+ * MEH-2803 — the business page's ONE hours section, «שעות».
+ *
+ * Two facts can live here, each under its own label: when the business takes
+ * orders (`order_window`, + upcoming special dates) and when the place is open
+ * to visitors (store hours, `resolveStoreHours`). When both parse AND match day
+ * by day they are one fact, said once, under «הזמנות וביקור במקום» with the
+ * order-window card. Either side unreadable → both sets, labelled — an
+ * unreadable string is never merged (sameWeeklyHours returns false on null).
+ * Upcoming special dates also block the merge: they are ORDER overrides, and
+ * under «הזמנות וביקור במקום» they would claim the shop keeps them too.
+ *
+ * Gate: order rows or upcoming specials, OR store hours. Neither → null, no
+ * heading. Upcoming specials are clock-derived and arrive after mount (same
+ * rule as OrderWindowScheduleBlock), so an override-only business's section
+ * appears then.
+ *
+ * Does NOT: show a status (ProducerHeader owns it, MEH-1305 A), touch pickup
+ * points' own hours (DeliveryBlock / MiniMap, MEH-1509), or add a section-nav
+ * pill (no new nav entry, section-nav.js).
+ * Guard: __tests__/ProducerHoursSection.test.jsx («one fact, one place»).
+ */
+export function ProducerHoursSection({ producer }) {
+  const t = useTranslations("producer.detail.hours");
+  const orderWindow = producer?.order_window;
+  const specialHours = producer?.special_hours ?? null;
+  const [upcoming, setUpcoming] = useState([]);
+  useEffect(() => setUpcoming(getUpcomingSpecialDates(specialHours)), [specialHours]);
+
+  const storeHours = resolveStoreHours(producer);
+  const hasOrders = getOrderWindowRanges(orderWindow).length > 0 || upcoming.length > 0;
+  if (!hasOrders && !storeHours) return null;
+  const merged =
+    hasOrders &&
+    upcoming.length === 0 &&
+    sameWeeklyHours(orderWindowAsHoursMap(orderWindow), parseHours(storeHours));
+
+  return (
+    <section className="mt-12" data-testid="producer-hours">
+      <h2 className="font-headline-md text-2xl font-bold text-text mb-3">{t("heading")}</h2>
+      <div className="space-y-5">
+        {hasOrders && (
+          <OrderWindowScheduleBlock
+            orderWindow={orderWindow}
+            specialHours={specialHours}
+            label={merged ? t("label_both") : t("label_orders")}
+          />
+        )}
+        {storeHours && !merged && (
+          <div data-testid="hours-set" data-set="visit">
+            <h3 className={SET_LABEL_CLASS}>{t("label_visit")}</h3>
+            <OpeningHours opening_hours={storeHours} />
           </div>
         )}
       </div>
