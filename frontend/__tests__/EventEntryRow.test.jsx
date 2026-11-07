@@ -183,6 +183,26 @@ describe("EventEntryRow", () => {
     expect(container.querySelector("[data-testid='event-row-compact']")).toBeNull();
   });
 
+  // MEH-2804 / ADR-039: one price token for both states — free reads as an
+  // offer, not as a footnote. Same class set, Frank Ruhl bold, no italic.
+  it("free and paid render the SAME price token (ADR-039)", () => {
+    const priceCls = (container) =>
+      container.querySelector('[data-testid="event-row-price"]').className.split(/\s+/).sort();
+    const free = render(<EventEntryRow entry={toEventEntry(EVENT, "events", t)} freeLabel="כניסה חופשית" />);
+    const freeCls = priceCls(free.container);
+    expect(free.container.querySelector('[data-testid="event-row-price"]').textContent).toBe("כניסה חופשית");
+    free.unmount();
+    const paid = render(<EventEntryRow entry={toEventEntry({ ...EVENT, price: 60 }, "events", t)} freeLabel="כניסה חופשית" />);
+    const paidEl = paid.container.querySelector('[data-testid="event-row-price"]');
+    expect(paidEl.getAttribute("dir")).toBe("ltr");
+    expect(paidEl.className.split(/\s+/).sort()).toEqual(freeCls);
+    for (const want of ["font-headline-display", "font-bold", "text-base", "md:text-lg", "ms-auto", "text-primary"]) {
+      expect(freeCls, want).toContain(want);
+    }
+    for (const banned of ["italic", "font-english", "text-sm"]) expect(freeCls, banned).not.toContain(banned);
+    paid.unmount();
+  });
+
   // MEH-2559: the heart rides every row, typed by the row's species, and sits
   // OUTSIDE the row link — a button inside an <a> would follow the link.
   it("an event row carries an event heart beside the link, not inside it", () => {
