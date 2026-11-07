@@ -152,7 +152,7 @@ const CHAT_LAUNCHER_NAME = new RegExp(
  * Locators: `getByTestId` first (docs/E2E-LOCATORS.md). Existing ids used:
  *           `hero-search` · `hero-search-submit` · `hero-search-dropdown` ·
  *           `hero-search-history` · `hero-chips-row` · `hero-delivery-cta` ·
- *           `trust-lead` · `trust-facts` · `trust-fact-value` · `trust-fact-label` · `home-filter-row` ·
+ *           `trust-lead` · `trust-count` · `trust-count-value` · `trust-count-skeleton` · `home-filter-row` ·
  *           `home-promoted-chip-<key>` · `home-filters-button` ·
  *           `home-active-filter-<key>` · `location-filter-chip` ·
  *           `geo-empty-notice` · `producers-counter` · `day-empty-suggestion` ·
@@ -424,6 +424,10 @@ const feedForCategory =
   };
 
 const STATS_ABOVE = { producers_count: PRODUCERS.length, categories_count: CATEGORIES.length };
+// MEH-2804 follow-up: at/above TRUST_COUNT_THRESHOLD (25, use-home-page.js) so the
+// band's count line renders. /stats is mocked on its own — it does not have to
+// match the length of the producers fixture.
+const STATS_COUNTED = { producers_count: 31, categories_count: CATEGORIES.length };
 
 test.beforeAll(() => {
   // A schema change reds the spec HERE, loudly, instead of letting the fixture
@@ -2307,6 +2311,10 @@ test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-6
     const band = scope(page).getByTestId("home-trust-band");
     await expect(band).toHaveCount(1, FIRST_PAINT);
     await expect(band).toHaveAttribute("aria-busy", "true");
+    // MEH-2804 follow-up: the sentence needs no /stats, so it is already up; only
+    // the count line's slot is a placeholder while /stats is in flight.
+    await expect(scope(page).getByTestId("trust-lead")).toHaveText(TRUST.lead);
+    await expect(scope(page).getByTestId("trust-count-skeleton")).toBeVisible();
     const skeleton = await page.evaluate(() => {
       const el = document.querySelector('[data-testid="home-trust-band"]')!;
       const r = el.getBoundingClientRect();
@@ -2332,80 +2340,75 @@ test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-6
   });
 
   // MT:607:1 replacement — the STALE «גליון מאי» copy is gone and the live lead
-  //   comes from he.json; below the count threshold no numeral renders at all.
-  //   MEH-2804: the "counter line" is now the fact row (ADR-039).
-  test("the trust band renders the he.json lead and, below the count threshold, no fact row", async ({ page }) => {
+  //   comes from he.json. MEH-2804 follow-up (07/11): the sentence renders at
+  //   EVERY count; below TRUST_COUNT_THRESHOLD (25) there is no number at all.
+  test("the trust band renders the he.json sentence and, below the count threshold, no count line", async ({ page }) => {
     await consent(page);
     await stubTiles(page);
-    await mockApi(page, PRODUCERS, { stats: { producers_count: 2, categories_count: 2 } });
+    await mockApi(page, PRODUCERS, { stats: STATS_ABOVE }); // 10: above 5, below 25
     await gotoHome(page);
     await expect(scope(page).getByTestId("trust-lead")).toHaveText(TRUST.lead);
+    await expect(scope(page).getByTestId("home-trust-band")).not.toHaveAttribute("aria-busy", "true", FIRST_PAINT);
     await expect(
-      scope(page).getByTestId("trust-facts"),
-      "below 5 businesses the fact row is withheld (use-home-page showStatsCounter)",
+      scope(page).getByTestId("trust-count"),
+      "below 25 businesses no count is shown (MEH-521: a small count is negative social proof)",
     ).toHaveCount(0);
     const body = await page.locator("body").innerText();
     expect(body, "the MEH-879-removed month framing must not come back").not.toContain("גליון");
   });
 
-  // The discriminating twin of the test above: above the threshold the fact row
-  // DOES render (either test alone is green on a band that never renders a
-  // numeral at all). MEH-2804: categories + «0₪», each over its he.json label;
-  // the business count joins only at TRUST_COUNT_THRESHOLD (unit-tested in
-  // HomeTrustBandCountGate.test.jsx).
-  test("above the count threshold the fact row carries the category count and «0₪», each over its label", async ({ page }) => {
+  // The discriminating twin of the test above: from 25 the count line DOES
+  // render, under the same sentence (either test alone is green on a band that
+  // never renders a count at all).
+  test("from the count threshold a second line states the business count, under the same sentence", async ({ page }) => {
     await consent(page);
     await stubTiles(page);
-    await mockApi(page, PRODUCERS, { stats: STATS_ABOVE });
+    await mockApi(page, PRODUCERS, { stats: STATS_COUNTED });
     await gotoHome(page);
-    const row = scope(page).getByTestId("trust-facts");
-    await expect(row).toBeVisible(FIRST_PAINT);
-    await expect(row).toContainText(String(CATEGORIES.length));
-    await expect(row).toContainText(TRUST.col_categories);
-    await expect(row).toContainText(TRUST.col_fees_value);
-    await expect(row).toContainText(TRUST.col_fees);
+    await expect(scope(page).getByTestId("trust-lead")).toHaveText(TRUST.lead);
+    const line = scope(page).getByTestId("trust-count");
+    await expect(line).toBeVisible(FIRST_PAINT);
+    await expect(line.getByTestId("trust-count-value")).toHaveText(String(STATS_COUNTED.producers_count));
+    await expect(line).toContainText(TRUST.count_line.replace(/<num>\{count\}<\/num>\s*/, ""));
   });
 
   // MEH-2488: Hebrew is never letter-spaced (DESIGN.md) — tracking pulls the
   // letters of a word apart. The band carried `tracking-wide` (0.4px / 0.35px).
-  // MEH-2804: every Hebrew label of the fact row is checked, above the
-  // threshold, and the count of labels is asserted so none passes by being absent.
-  test("the trust band's Hebrew labels are not letter-spaced", async ({ page }) => {
+  // Both lines are checked, from the threshold, so neither can pass by being absent.
+  test("the trust band's Hebrew lines are not letter-spaced", async ({ page }) => {
     await consent(page);
     await stubTiles(page);
-    await mockApi(page, PRODUCERS, { stats: STATS_ABOVE });
+    await mockApi(page, PRODUCERS, { stats: STATS_COUNTED });
     await gotoHome(page);
-    const labels = scope(page).getByTestId("trust-fact-label");
-    await expect(labels.first()).toBeVisible(FIRST_PAINT);
-    const n = await labels.count();
-    expect(n, "the fact row has at least its categories and 0₪ labels").toBeGreaterThanOrEqual(2);
-    for (let i = 0; i < n; i += 1) {
-      const label = labels.nth(i);
-      expect(await label.textContent(), `label ${i} carries Hebrew`).toMatch(/[\u0590-\u05FF]/);
-      const spacing = await label.evaluate((el) => getComputedStyle(el).letterSpacing);
-      expect(spacing, `label ${i} letter-spacing`).toMatch(/^(normal|0px)$/);
+    for (const id of ["trust-lead", "trust-count"]) {
+      const line = scope(page).getByTestId(id);
+      await expect(line).toBeVisible(FIRST_PAINT);
+      expect(await line.textContent(), `${id} carries Hebrew`).toMatch(/[\u0590-\u05FF]/);
+      const spacing = await line.evaluate((el) => getComputedStyle(el).letterSpacing);
+      expect(spacing, `${id} letter-spacing`).toMatch(/^(normal|0px)$/);
     }
   });
 
-  // MEH-2804 / ADR-039 — REVERSED, approved 07/11/2026. This test used to pin
-  // the counter numerals to Cormorant ITALIC (the MEH-2487 control). A display
-  // numeral is now Frank Ruhl, upright and black; Cormorant italic stays for
-  // times and inline Latin. The rendered style is read from the browser, so
-  // a class that compiles to nothing cannot pass it.
-  test("the trust band numerals are upright Frank Ruhl display numerals (ADR-039)", async ({ page }) => {
+  // MEH-2804 follow-up (Sapir 07/11): the count numeral is the line's own face,
+  // upright and semibold — Cormorant's old-style italic figures read as «ɜı»
+  // beside Hebrew. Read from the browser, so a class that compiles to nothing
+  // (or a font-english that sneaks back) fails here.
+  test("the count numeral is upright, semibold, in the line's own face — not Cormorant", async ({ page }) => {
     await consent(page);
     await stubTiles(page);
-    await mockApi(page, PRODUCERS, { stats: STATS_ABOVE });
+    await mockApi(page, PRODUCERS, { stats: STATS_COUNTED });
     await gotoHome(page);
-    const num = scope(page).getByTestId("trust-fact-value").first();
+    const num = scope(page).getByTestId("trust-count-value");
     await expect(num).toBeVisible(FIRST_PAINT);
     const style = await num.evaluate((el) => {
       const cs = getComputedStyle(el);
-      return { fontStyle: cs.fontStyle, fontWeight: Number(cs.fontWeight), family: cs.fontFamily };
+      const line = getComputedStyle(el.parentElement!);
+      return { fontStyle: cs.fontStyle, weight: Number(cs.fontWeight), family: cs.fontFamily, lineFamily: line.fontFamily };
     });
     expect(style.fontStyle).toBe("normal");
-    expect(style.fontWeight).toBeGreaterThanOrEqual(800);
-    expect(style.family.toLowerCase()).toContain("frank");
+    expect(style.weight).toBeGreaterThanOrEqual(600);
+    expect(style.family.toLowerCase()).not.toContain("cormorant");
+    expect(style.family, "same face as the line it sits in").toBe(style.lineFamily);
     expect(await num.getAttribute("dir")).toBe("ltr");
     expect(await page.locator("html").getAttribute("dir")).toBe("rtl");
   });

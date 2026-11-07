@@ -213,6 +213,7 @@
       "Bash(jq:*)",
       "Bash(railway logs:*)",
       "Bash(railway status:*)",
+      "Bash(pg_ctl:*)",
       "Bash(railway variables:*)",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:anthropic.com)",
