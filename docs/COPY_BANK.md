@@ -1073,3 +1073,28 @@ twice. Neutral Hebrew (BRAND.md §9) — no gendered verb.
 **Retired with it:** `producer.detail.order_window.schedule_subtitle`
 («הימים והשעות שבהם בית העסק מקבל הזמנות») — it restated the heading directly
 above it.
+
+---
+
+## Section 15 — Location opening hours: picker note (MEH-2805)
+
+The location's «שעות» field is a day-row picker (MEH-2805), not free text. A
+value saved before the switch that the parser cannot read is shown verbatim
+above the rows, and is not overwritten until the owner saves her own choice.
+
+| Key | he | en | Where it appears |
+|---|---|---|---|
+| `settings.locations.form.hours_unreadable` | `השעות שנשמרו: {value} — כדאי לבחור אותן מחדש למטה` | `Saved hours: {value} — please pick them again below` | Owner dashboard → מיקומים → edit a location, above the day rows, only when the stored hours are unreadable |
+
+Day names, «סגור» and the range controls reuse existing keys
+(`opening_hours.weekdays.*`, `opening_hours.closed_day`,
+`dashboard.producer.order_window.{from_label,to_label,add_range,remove_range,invalid_range,invalid_overlap}`).
+The order-window day toggle copy («מקבלים הזמנות ביום זה» / «לא מקבלים הזמנות»)
+is NOT reused — it is about orders, not opening hours.
+
+**Status:** ⏳ PR open — watch MEH-2805.
+
+**Retired with it:** `settings.locations.form.hours_placeholder`
+(«למשל: ימים א׳–ה׳, 9:00–17:00») — it invited exactly the free-text format the
+picker replaces, and is unused once the text field is gone. The admin
+ProducerForm's own `opening_hours_placeholder` is untouched.
