@@ -10,7 +10,14 @@ Touches:  DB tables producers / users / products / delivery_areas /
 Does NOT: touch production — a hard environment guard refuses any non-local
           DB host unless RAILWAY_ENVIRONMENT == "staging". Does NOT create
           categories (backend/seed_data.py owns that; this script looks the
-          category up by name and aborts if missing).
+          category up by name and aborts if missing). Does NOT regenerate the
+          MEH-2794 marketing numbers on a plain re-run: `seed_marketing_fixtures`
+          skips the insights-and-followers block as soon as ANY analytics or
+          page-view row exists for the demo business, and one real page view on
+          staging is enough. **`--refresh` is REQUIRED, not optional, when you
+          want those numbers rebuilt** (MEH-2808). The rescue bag is the one
+          exception: a bag whose pickup window has already closed is replaced on
+          any run, so /rescue is never left with a dead card.
 Related:  backend/seed_data.py (base seed patterns) · MEH-999 (producer
           dogfood) · MEH-997 (E2E seed) · MEH-409 (first-10 — the demo is
           swapped for the best real profile after first-10).
@@ -65,7 +72,9 @@ from app.models.models import (  # noqa: E402  # imports must follow sys.path.in
     RescueOffer,
     User,
 )
+from app.routers.rescue import RESERVE_CLOSES_BEFORE_END  # noqa: E402  # imports must follow sys.path.insert (script shim)
 from app.services.analytics_rollup import rollup_watermark  # noqa: E402  # imports must follow sys.path.insert (script shim)
+from app.services.rescue_emails import israel_hhmm  # noqa: E402  # imports must follow sys.path.insert (script shim)
 from app.utils.clock import ISRAEL_TZ, israel_today, utc_now  # noqa: E402  # imports must follow sys.path.insert (script shim)
 
 # ============================================================================
@@ -454,8 +463,21 @@ DEMO_RESCUE_BAG = {
     "price_agorot": 2500,
     "value_min_agorot": 5000,
     "value_max_agorot": 7000,
-    "pickup_from_hour": 18,
-    "pickup_to_hour": 19,
+    # MEH-2808 — the pickup window is DERIVED from the seed's own clock, never
+    # fixed. A fixed 18:00-19:00 produced a bag the public listing hides
+    # whenever the seed ran after ~18:45, because `/rescue` filters
+    # `pickup_end > utc_now() + RESERVE_CLOSES_BEFORE_END` (rescue.py:463, 15
+    # minutes at :106) — and the (location, date) idempotency key then stopped a
+    # re-run from replacing it, so there was no way back until the next day.
+    #
+    # Sapir's rule, 07/11: if now + LEAD_HOURS_END is still before
+    # EVENING_CUTOFF_HOUR, open the window now + LEAD_HOURS_START and close it
+    # now + LEAD_HOURS_END; otherwise put it on tomorrow evening.
+    "lead_hours_start": 1,
+    "lead_hours_end": 3,
+    "evening_cutoff_hour": 20,
+    "tomorrow_from_hour": 17,
+    "tomorrow_to_hour": 19,
 }
 
 # Modest, mutually consistent numbers — Sapir 07/11: «מספרים צנועים וסבירים»,
@@ -912,6 +934,63 @@ def _israel_wall_to_utc(day: date, hour: int) -> datetime:
     return local.astimezone(timezone.utc).replace(tzinfo=None)
 
 
+def _to_naive_utc(aware: datetime) -> datetime:
+    """An aware datetime as the naive UTC instant the column stores.
+
+    `RescueOffer.pickup_start` / `pickup_end` / `cancel_until` are naive
+    `DateTime` columns holding UTC instants (the MEH-2679 class), so an Israel
+    wall-clock time has to be converted, not merely stripped of its tzinfo.
+    Stripping would store 18:00 as 18:00Z — 20:00 or 21:00 Israel — which is
+    the bug the #4114 reviewer caught in the first version of these times.
+    """
+    return aware.astimezone(timezone.utc).replace(tzinfo=None)
+
+
+def _demo_pickup_window(now_utc: datetime) -> tuple[date, datetime, datetime]:
+    """`(israel day, pickup_start, pickup_end)` for the demo bag, from `now`.
+
+    Pure arithmetic on an injected `now`, so the tests can pin both sides of
+    the cutoff with a frozen clock instead of passing only at the hour the
+    suite happens to run (`.claude/rules/testing.md`).
+
+    The cutoff is compared as a DATETIME, not as a time-of-day: `now + 3h` at
+    23:00 Israel is 02:00 the next day, whose *time* is before 20:00 while the
+    moment plainly is not, and a time-only comparison would open a window in
+    the small hours and call it this evening.
+
+    Known shape, flagged rather than changed: the rule is literal `now + 1h`
+    and `now + 3h`, so a seed at 10:17 produces 11:17-13:17 rather than a
+    rounded hour, and a seed at 00:30 produces 01:30-03:30 — odd for a bakery
+    but visible, which is what the window is for. Rounding or an early-morning
+    floor would be a change to Sapir's rule, not an implementation detail.
+    """
+    now_il = now_utc.replace(tzinfo=timezone.utc).astimezone(ISRAEL_TZ)
+    cutoff_il = datetime.combine(
+        now_il.date(),
+        time(hour=DEMO_RESCUE_BAG["evening_cutoff_hour"]),
+        tzinfo=ISRAEL_TZ,
+    )
+    end_il = now_il + timedelta(hours=DEMO_RESCUE_BAG["lead_hours_end"])
+    if end_il < cutoff_il:
+        start_il = now_il + timedelta(hours=DEMO_RESCUE_BAG["lead_hours_start"])
+    else:
+        tomorrow = now_il.date() + timedelta(days=1)
+        start_il = datetime.combine(
+            tomorrow,
+            time(hour=DEMO_RESCUE_BAG["tomorrow_from_hour"]),
+            tzinfo=ISRAEL_TZ,
+        )
+        end_il = datetime.combine(
+            tomorrow,
+            time(hour=DEMO_RESCUE_BAG["tomorrow_to_hour"]),
+            tzinfo=ISRAEL_TZ,
+        )
+    # The offer's `date` is the Israel day the collection happens on, which is
+    # the start's day — not `israel_today()`, which would mislabel a window
+    # that landed on tomorrow.
+    return start_il.date(), _to_naive_utc(start_il), _to_naive_utc(end_il)
+
+
 def _seed_offer(db, producer) -> None:
     """MEH-2794 — the active offer, for the offer badge on the business page.
 
@@ -968,7 +1047,9 @@ def _seed_rescue_bag(db, producer) -> bool:
         print("Demo producer has no primary location — skipping the rescue bag.")
         return False
 
-    today = israel_today()
+    now = utc_now()
+    day, pickup_start, pickup_end = _demo_pickup_window(now)
+
     # IDEMPOTENT, per the ticket's "add if missing". Keyed on (location, date)
     # because that is what a bag IS — one offer from one place on one day; the
     # table indexes exactly that pair (ix_rescue_offers_location_date).
@@ -978,38 +1059,55 @@ def _seed_rescue_bag(db, producer) -> bool:
     # which never had one, so a second run left the demo business with two
     # identical bags on /rescue — the "looks odd" the ticket exists to remove.
     # Caught by test_marketing_fixtures_are_idempotent on its first CI run.
+    #
+    # MEH-2808 — "add if missing" now has one exception: a bag whose window has
+    # ALREADY CLOSED is replaced rather than kept. Without it a plain re-run
+    # late in the day found today's dead 18:00-19:00 bag, skipped, and left
+    # /rescue empty with no way back until tomorrow. The replacement is scoped
+    # to a window that can no longer pass `rescue.py:463` — a LIVE bag is still
+    # left alone, so this does not reintroduce the double-bag it replaced.
+    #
+    # `--refresh` needs none of this: `_delete_existing` bulk-deletes the demo's
+    # ProducerLocation rows and `RescueOffer.producer_location_id` carries
+    # `ondelete="CASCADE"`, so the bag is already gone by the time this runs.
+    # Verified in the schema, and pinned by
+    # `test_refresh_clears_the_bag_through_the_location_cascade` rather than by
+    # deletion code here, which would be unreachable by construction.
     existing = (
         db.query(RescueOffer)
         .filter(
             RescueOffer.producer_location_id == location.id,
-            RescueOffer.date == today,
+            RescueOffer.date == day,
         )
         .first()
     )
     if existing is not None:
-        return False
+        if existing.pickup_end > now + RESERVE_CLOSES_BEFORE_END:
+            return False
+        print(
+            f"Replacing the demo rescue bag for {day}: its window closed at "
+            f"{israel_hhmm(existing.pickup_end)} Israel time."
+        )
+        db.delete(existing)
+        db.flush()
 
     db.add(
         RescueOffer(
             producer_location_id=location.id,
-            date=today,
+            date=day,
             qty_total=DEMO_RESCUE_BAG["qty_total"],
             qty_left=DEMO_RESCUE_BAG["qty_left"],
             price_agorot=DEMO_RESCUE_BAG["price_agorot"],
             value_min_agorot=DEMO_RESCUE_BAG["value_min_agorot"],
             value_max_agorot=DEMO_RESCUE_BAG["value_max_agorot"],
-            pickup_start=_israel_wall_to_utc(
-                today, DEMO_RESCUE_BAG["pickup_from_hour"]
-            ),
-            pickup_end=_israel_wall_to_utc(today, DEMO_RESCUE_BAG["pickup_to_hour"]),
+            pickup_start=pickup_start,
+            pickup_end=pickup_end,
             # REQUIRED and has no default — `cancel_until` is nullable=False
             # with no server_default (models.py:2928), and the API takes it
             # from the owner's own body (rescue.py:421). Set to the moment
             # collection opens: "cancel any time until pickup starts", which
             # is the only reading that needs no further policy decision.
-            cancel_until=_israel_wall_to_utc(
-                today, DEMO_RESCUE_BAG["pickup_from_hour"]
-            ),
+            cancel_until=pickup_start,
         )
     )
     return True
@@ -1797,7 +1895,14 @@ def main() -> None:
     parser.add_argument(
         "--refresh",
         action="store_true",
-        help="delete the existing demo business (+ seed users) and recreate",
+        help=(
+            "delete the existing demo business (+ seed users) and recreate. "
+            "REQUIRED, not optional, when you want the MEH-2794 marketing "
+            "numbers (insights, followers) regenerated: without it the "
+            "fixtures skip as soon as ANY analytics or page-view row exists "
+            "for the demo business, and one real page view on staging is "
+            "enough to trigger that"
+        ),
     )
     parser.add_argument(
         "--sync-users",
