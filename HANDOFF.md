@@ -4,6 +4,40 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-07 10:40 — שש מוזגו, שלוש נעצרו (#4102–#4108)
+
+**‏שורה אחת:** ‏#4102, ‏#4103, ‏#4104, ‏#4105, ‏#4107 ו-#4108 מוזגו ל-staging, כולם squash נקי. ‏#4109 ו-#4110 פתוחים עם `do-not-merge`. ‏MEH-2794 נעצר בלי PR.
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏**`GET /producers` ממוין עכשיו טוטאלית.** ‏`Producer.id.asc()` הוא שובר-שוויון אחרון בכל ארבעת צירי המיון **וגם** במסלול הרדיוס (`producer_listing.py:289`, שלא היה לו שום שובר-שוויון). לולאת offset מעליו בטוחה; לפני זה היא הייתה מדלגת על שורות בשקט. מי שמוסיפה ענף מיון חדש — `test_producer_listing_stable_order.py` קורא את ה-SQL ויאדים אם השובר-שוויון לא שם.
+- ‏**ה-ORDER BY המהודר לא נגמר ב-`producers.id`** — ה-`joinedload` של הקטגוריות מוסיף אחריו `producer_categories_1.position`, שממיין את האוסף של כל עסק ולא את שורות העסקים. טענה על «המפתח האחרון במחרוזת» תיכשל; הנכונה היא «המפתח האחרון שממיין שורות עסק».
+- ‏**`scripts/checks/raw-color-tokens.sh` סופר גם הערות**, ו-**`CopyHonestyLexicon.test.js` אין בו רשימת חריגים בכוונה.** האחרון חוסם את #4109 על מחרוזת אחת שמופנית לבעלת העסק («שיחזרו אליכם») — לדעתי false positive, ההכרעה של ספיר, פירוט ב-PR.
+- ‏**`/producers/cities` אינו חסם עליון של `?cities=`** — הוא מקבץ לפי `Producer.city` בלבד, והפילטר החדש מתאים גם שורות מיקום. לכן גיזום לפי `/producers/cities` יכול להסתיר תא שעובר את הסף (#4110 גוזם על אותו endpoint במקום).
+- ‏**`alembic upgrade` חסום ל-CC** (workflow.md §B3), ולכן אי אפשר להרים stack מקומי ב-sandbox. יחד עם חסימת ה-egress ל-staging (MEH-2090) זה מה שעצר את MEH-2794.
+- ‏**בפרודקשן אין עסקים מאושרים** — `/api/producers/count` מחזיר 0. כל תא קטגוריה×אזור הוא 0, ולכן #4110 לא יציג שום עמוד עד שיהיה מלאי. זה המצב הצפוי.
+- ‏**squash merge מוחק trailers מגוף הקומיט.** ‏`shown-failing-guard` האדים את `47a8715d` כי ה-`Shown-failing:` נשאר ב-PR ולא בקומיט. מאז מעבירים אותם ב-`commit_message` של המיזוג.
+
+**‏לא עכשיו / מחכה לספיר:** ‏#4109 — מחרוזת אחת (שתי דרכים בכרטיס) · ‏#4110 — כותרת באנגלית עם שם קטגוריה בעברית, ועוד שתי הכרעות · ‏MEH-2794 — להריץ seed וצילום מהמכונה שלך, או לפתוח `alembic upgrade` מקומי ל-CC · סריקת QR משני טלפונים (#4104) · ‏`validator.schema.org` (#4105).
+
+**‏הבא:** ‏MEH-2782 (אחרי ההשקה).
+
+## 2026-11-07 08:15 — ‏QR לעמוד העסק, בוטי חיפוש AI, מוצרים ב-JSON-LD (#4102–#4105)
+
+**‏שורה אחת:** ארבעה PRs פתוחים וממתינים למיזוג — ‏#4102 (נוסח ביקורות ב-FAQ), ‏#4103 ‏(robots.txt + llms.txt), ‏#4104 ‏(QR + כרטיס A6), ‏#4105 ‏(hasOfferCatalog). אף אחד לא מוזג. ‏MEH-2787 נעצר בלי PR.
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏**`lib/seo.js` לא מקבל מחרוזות עברית.** ‏`HebrewLiteralRatchet.test.js` נותן לו הקצבה 0, והוא האדים ניסיון ראשון להחזיק שם את שם הקטלוג. הקופי יושב ב-`messages/{he,en}.json` תחת `seo.producer.offer_catalog_name` ונקרא דרך `producerSeoT()` שכבר קיים בקובץ — אותו מנגנון כמו פירור המדינה של MEH-2774. טקסט חדש בקובץ הזה הולך לשם.
+- ‏**`scripts/checks/raw-color-tokens.sh` סופר גם הערות.** הסבר שמאיית `bg-white` או ערך hex בתוך `{/* */}` מייצר ממצא פנטום, בדיוק כמו מלכודת טוקני ה-z-index ב-`rtl.md`. לכתוב בלי התו המדויק.
+- ‏**לכל מסלול הדפסה: אסור `<a>` בתוך מה שמודפס.** ‏`globals.css:614` מוסיף ` (href)` אחרי כל קישור בהדפסה, כך שקישור בתוך הכרטיס מדפיס את הכתובת שלו כטקסט נראה. ב-#4104 ה-`BackLink` הוא ה-anchor היחיד והוא `print:hidden`, והדומיין מתחת לקוד הוא טקסט רגיל בכוונה.
+- ‏**בועת הצ'אט מודפסת בכל מסלול הדפסה** — נמדד תחת `emulateMedia({media:"print"})`. ‏`ChatWidgetLazy` ממוסך רק מ-`/map`, ‏`/producer/[id]` ו-`/favorites`, ואין עליו `no-print`, ולכן זה חל גם על כרטיס הקופה הקיים (MEH-2649). דווח ב-#4104, לא תוקן (מחוץ להיקף).
+- ‏**ל-`Product` אין עמודת נראות.** ‏`models.py:1050-1078` ו-`ProductOut` (`schemas.py:1784`) — אין `is_hidden`/`is_active`, והעמוד מרנדר כל שורה שה-API מחזיר. מי שמבקש «לא להציג מוצר מוסתר» מבקש משהו שלא קיים.
+- ‏**`GET /producers` ממוין לא-יציב.** ‏`ORDER BY created_at DESC` ויחידה (`producer_listing.py:329`), בלי שובר-שוויון, ו-`created_at` nullable (`models.py:497`). כל לולאת offset מעליו מדלגת על שורות. זה מה שעצר את MEH-2787.
+- ‏**לצילומי QA של מסכים מאחורי התחברות:** אין DB ב-sandbox, אז `frontend/qa-meh2785-shots.mjs` חוסם ארבע קריאות `/api` ומזריק token. הוא נופל ברעש אם האלמנט לא שם — מה שתפס fixture חסר `opening_hours` בפורמט ש-`resolveStoreHours` קורא. ה-Chromium של ה-sandbox הוא `/opt/pw-browsers/chromium-*/chrome-linux64/chrome`; ‏`qa-chrome-path.mjs` מחזיר `undefined` כאן.
+
+**‏לא עכשיו / מחכה לספיר:** מיזוג ארבעת ה-PRs (אף אחד לא מוזג, ואין auto-merge) · סריקת ה-QR משני טלפונים אמיתיים (#4104) · ‏`validator.schema.org` על עמוד עסק (#4105) — חסום מה-sandbox · הכרעה על בועת הצ'אט בהדפסה · ‏MEH-2787: להרחיב את ההיקף ל-`producer_listing.py` או לפתוח כרטיס-בן backend.
+
+**‏הבא:** ‏MEH-2782 (אחרי ההשקה).
+
 ## 2026-11-06 20:15 — מצב העסק: רק «פתוח» / «בהפסקה» (MEH-2757)
 
 **‏שורה אחת:** ‏#4062, #4066, #4074 ו-#4079 מוזגו (פירוט ב-CHANGELOG, ‏06/11). ‏MEH-2758 ו-MEH-2759 במצב Done.
