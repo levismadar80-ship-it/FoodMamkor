@@ -6,8 +6,8 @@ Sapir, 6/11: the owner's status picker had four options — «פתוח להזמ�
 order-window line «פתוח להזמנות · עד …». Google / Etsy / Wolt / Uber Eats give
 owners hours plus one pause switch, nothing else, so only `accepting_orders`
 and `on_vacation` may be WRITTEN now, on every write path. Rows that already
-hold `available_today` / `full_this_week` still read (no migration; the enum
-contraction is a post-launch card).
+held `available_today` / `full_this_week` were moved to `accepting_orders`
+and both values left the enum in MEH-2782 (alembic f2b8d4c61a07).
 """
 
 from datetime import timedelta
@@ -70,19 +70,6 @@ def test_state_endpoint_still_pauses_and_resumes(client, db):
     assert resume.json()["availability_state"] == "accepting_orders"
 
 
-def test_leaving_a_legacy_state_is_allowed(client, db):
-    """A row still on a removed state can move to an allowed one."""
-    user, producer = _owner(db, state="full_this_week")
-    resp = client.post(
-        "/producers/me/availability-state",
-        json={"state": "accepting_orders"},
-        headers=auth_header(user),
-    )
-    assert resp.status_code == 200, resp.text
-    db.refresh(producer)
-    assert producer.availability_state == "accepting_orders"
-
-
 # ---------- PUT /producers/me and admin PUT ----------
 
 
@@ -113,41 +100,8 @@ def _admin_put(client, db, producer, state):
 def test_admin_put_refuses_moving_into_a_removed_state(client, db, state):
     _, producer = _owner(db)
     resp = _admin_put(client, db, producer, state)
+    # MEH-2782: refused by ProducerUpdate's enum check before the router guard.
     assert resp.status_code == 422, resp.text
-    assert resp.json()["detail"]["code"] == "invalid_availability_state"
-    assert resp.json()["detail"]["params"]["allowed"] == [
-        "accepting_orders",
-        "on_vacation",
-    ]
-    db.refresh(producer)
-    assert producer.availability_state == "accepting_orders"
-
-
-@pytest.mark.parametrize("state", REMOVED)
-def test_admin_put_resubmitting_an_unchanged_legacy_state_still_saves(
-    client, db, state
-):
-    """ProducerForm sends availability_state on every save. A business still on
-    a legacy value must stay editable — the other half of the test above, so an
-    implementation that refused the value outright fails here."""
-    _, producer = _owner(db, state=state)
-    admin = make_user(db, role="admin")
-    resp = client.put(
-        f"/admin/producers/{producer.id}",
-        json={"availability_state": state, "description": "תיאור חדש לבדיקה"},
-        headers=auth_header(admin),
-    )
-    assert resp.status_code == 200, resp.text
-    db.refresh(producer)
-    assert producer.availability_state == state
-    assert producer.description == "תיאור חדש לבדיקה"
-
-
-@pytest.mark.parametrize("state", REMOVED)
-def test_admin_put_can_move_a_legacy_row_to_accepting_orders(client, db, state):
-    _, producer = _owner(db, state=state)
-    resp = _admin_put(client, db, producer, "accepting_orders")
-    assert resp.status_code == 200, resp.text
     db.refresh(producer)
     assert producer.availability_state == "accepting_orders"
 
@@ -164,19 +118,6 @@ def test_legacy_availability_endpoints_are_removed(client, db, path):
     assert resp.status_code in (404, 405), resp.text
     db.refresh(producer)
     assert producer.availability_state == "accepting_orders"
-
-
-# ---------- reads of an old value keep working ----------
-
-
-@pytest.mark.parametrize("state", REMOVED)
-def test_a_row_on_a_removed_state_still_lists(client, db, state):
-    _, producer = _owner(db, state=state)
-    resp = client.get("/producers")
-    assert resp.status_code == 200
-    mine = [p for p in resp.json() if p["id"] == str(producer.id)]
-    assert len(mine) == 1
-    assert mine[0]["availability_state"] == state
 
 
 def test_admin_put_refuses_an_explicit_null_state(client, db):
@@ -277,3 +218,29 @@ def test_admin_form_payload_on_a_dateless_pause_asks_for_a_date(client, db):
     )
     assert resp.status_code == 422, resp.text
     assert resp.json()["detail"]["code"] == "vacation_return_date_required"
+
+
+# ---------- MEH-2782: the two values are gone from the enum ----------
+
+
+def test_the_enum_is_pause_only():
+    from app.schemas.schemas import AVAILABILITY_STATES, WRITABLE_AVAILABILITY_STATES
+
+    assert AVAILABILITY_STATES == ("accepting_orders", "on_vacation")
+    assert WRITABLE_AVAILABILITY_STATES == AVAILABILITY_STATES
+
+
+@pytest.mark.parametrize("state", REMOVED)
+def test_admin_put_refuses_a_removed_value_even_when_unchanged(client, db, state):
+    """Before MEH-2782 an unchanged legacy value still saved (rows held it).
+    No row can hold one now, so the schema refuses it outright."""
+    _, producer = _owner(db)
+    producer.availability_state = state  # simulate a row the migration missed
+    db.commit()
+    admin = make_user(db, role="admin")
+    resp = client.put(
+        f"/admin/producers/{producer.id}",
+        json={"availability_state": state},
+        headers=auth_header(admin),
+    )
+    assert resp.status_code == 422, resp.text

@@ -703,20 +703,11 @@ DIETARY_SCOPE_DEMOS = [
 DIETARY_DEMO_IMAGE = "https://res.cloudinary.com/dfzpscjks/image/upload/mehamakor/demo/ruach-hasadeh-hero"
 DIETARY_DEMO_CITY = "זכרון יעקב"
 
-# MEH-1706 §2 item 9 — the two availability states the demo never exercised.
-# Every seeded producer was `accepting_orders`, so the "full this week" and
-# "on vacation" branches of the card, the header and the detail page had no row
+# MEH-1706 §2 item 9 — the availability state the demo never exercised.
+# Every seeded producer was `accepting_orders`, so the "on vacation" branches of the card, the header and the detail page had no row
 # to render anywhere on staging. `vacation_until` is relative (§2.3 idiom) —
 # hardcoding it means the vacation silently ends and the surface goes dark again.
 AVAILABILITY_DEMOS = [
-    {
-        "slug": "demo-availability-full",
-        "name": "מאפיית שבוע עמוס (דמו)",
-        "contact_name": "דנה עמוס",
-        "short_description": "בית עסק לדוגמה שסימן שהשבוע מלא — לבדיקת מצב הזמינות.",
-        "availability_state": "full_this_week",
-        "vacation_days_ahead": None,
-    },
     {
         "slug": "demo-availability-vacation",
         "name": "מאפיית חופשה (דמו)",
@@ -1521,7 +1512,8 @@ def seed_demo_business(db, refresh: bool = False) -> Producer | None:
 
 
 def seed_availability_demos(db) -> int:
-    """MEH-1706 §2 item 9 — the `full_this_week` / `on_vacation` producers.
+    """MEH-1706 §2 item 9 — the `on_vacation` producer (`full_this_week` was
+    removed in MEH-2782).
 
     Per-slug skip-if-exists, mirroring seed_dietary_scope_demos, so a re-run
     without --refresh inserts nothing. --refresh clears them via

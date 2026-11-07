@@ -66,7 +66,7 @@ erDiagram
         int reviews_count "cached aggregate"
         boolean is_available_today "legacy — unread, unwritten, in no response (MEH-2272); MEH-2273 drops it"
         string availability_status "legacy — unread, unwritten, in no response (MEH-2272); MEH-2273 drops it"
-        string availability_state "MEH-291 — accepting_orders|available_today|full_this_week|on_vacation; writable: accepting_orders|on_vacation (MEH-2758)"
+        string availability_state "accepting_orders|on_vacation (MEH-2758 pause-only writes; MEH-2782 removed available_today|full_this_week)"
         date vacation_until "nullable — required when availability_state=on_vacation"
         timestamp recommended_at "nullable — MEH-1494 chunk A, revision e2a7c9d4b6f1; when the current editorial pick was made. No backfill: NULL = picked before the clock existed, due for review"
         text recommended_note "nullable — MEH-1494 chunk A; the editor's reason. ADMIN-ONLY, never on a public serializer (guard test asserts absence by name)"

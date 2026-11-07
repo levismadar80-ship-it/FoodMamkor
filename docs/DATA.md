@@ -945,7 +945,7 @@ POST   /producers/me/request-review              producer  — MEH-1236 resubmit
 POST   /producers/me/submit-for-review           producer  — MEH-2100 draft→pending: DRAFT ONLY (else 409), 5/hr. Server-side completeness gate via services/submission_gate.submission_missing_items — image>=1 · product>=1 · category>=1 · location · phone_verified. On failure 422 with detail={code:"submit_gate_incomplete", message, params:{missing:[codes]}} (MEH-1943 shape, so detailToMessage renders `message` unchanged). On success: status="pending", submitted_for_review_at=now(tz-aware), admin ping via notify_admin_new_producer (post-commit BackgroundTask, fail-open). License is deliberately NOT gated (MEH-971 license_pending must still reach the queue); opening hours are recommended, not required.
 POST   /producers/me/availability-state            producer  — MEH-291 enum write. MEH-2758: WRITES are pause-only
                                                               body: { state: "accepting_orders"|"on_vacation", vacation_until?: ISO date }
-                                                              any other value (incl. available_today / full_this_week) → 400
+                                                              any other value → 400 (available_today / full_this_week removed, MEH-2782)
                                                               {code:"invalid_availability_state", params:{allowed:[...]}}. Reads still return all 4 values.
                                                               vacation_until REQUIRED when state="on_vacation" (422 with "תאריך חזרה לחופשה נדרש")
                                                               the ONLY availability write endpoint — the legacy POST /availability and

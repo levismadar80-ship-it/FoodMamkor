@@ -29,9 +29,7 @@ ON_VACATION = "on_vacation"
 # silently pass, and (b) any future restriction is a one-line edit here, not a
 # scattered router change.
 #
-# MEH-2758: the targets are WRITABLE_AVAILABILITY_STATES (pause-only). The keys
-# stay the full read-side enum, so a row still on `available_today` /
-# `full_this_week` can always LEAVE it, never ENTER it.
+# MEH-2758 / MEH-2782: both sets are the same two values (pause-only).
 ALLOWED_TRANSITIONS: dict[str, frozenset[str]] = {
     state: frozenset(WRITABLE_AVAILABILITY_STATES) for state in AVAILABILITY_STATES
 }

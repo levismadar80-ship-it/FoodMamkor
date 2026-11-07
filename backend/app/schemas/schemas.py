@@ -2000,26 +2000,16 @@ class ProducerAdminCreate(BaseModel):
         return self
 
 
-# MEH-291: 4-value enum that consolidates is_available_today + availability_status.
-# Tuple form is the runtime allowlist used by the field validator below and by
-# routers/producer_me.py for dual-write mirroring during the 7-day overlap.
+# MEH-291 → MEH-2758 → MEH-2782: the availability enum is pause-only, like
+# Google / Etsy / Wolt / Uber Eats — hours (the order window) plus one pause
+# switch. `available_today` / `full_this_week` were removed: MEH-2758 stopped
+# every write, and alembic f2b8d4c61a07 moved the rows still holding them to
+# accepting_orders, so the read and write sets are the same two values again.
 AVAILABILITY_STATES = (
-    "accepting_orders",  # default — "פתוח להזמנות"
-    "available_today",  # superset — available today + open for orders
-    "full_this_week",  # "עמוסה השבוע"
-    "on_vacation",  # "בהפסקה" (requires vacation_until)
+    "accepting_orders",  # default — «פתוח להזמנות»
+    "on_vacation",  # «בהפסקה» (requires vacation_until)
 )
-
-# MEH-2758 (MEH-2757 chunk 1): what an owner or admin may WRITE. The status
-# picker is pause-only, like Google / Etsy / Wolt / Uber Eats: hours (the
-# order window) plus one pause switch. `available_today` / `full_this_week`
-# stay in AVAILABILITY_STATES above because rows still hold them and every
-# READ must keep accepting them — no migration. Dropping them from the enum is
-# a post-launch card (Expand-Contract, ADR-007).
-WRITABLE_AVAILABILITY_STATES = (
-    "accepting_orders",
-    "on_vacation",
-)
+WRITABLE_AVAILABILITY_STATES = AVAILABILITY_STATES
 
 
 # MEH-2272 chunk 2: `state_to_legacy` (enum -> legacy pair) is gone. Its last

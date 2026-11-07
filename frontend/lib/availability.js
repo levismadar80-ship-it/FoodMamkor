@@ -1,7 +1,7 @@
 /**
  * Module:   availability
  * Purpose:  One enum-first read of a business's availability, so every surface
- *           answers "is she available today / on vacation / full this week"
+ *           answers "is this business on vacation"
  *           from the same rule instead of four hand-rolled fallback chains.
  * Does NOT: write availability. The owner-facing writes live in
  *           backend/app/routers/producer_me.py; this is read-side only.
@@ -10,14 +10,16 @@
  * History:  MEH-1854 (creation — MEH-291 Phase 4, readers to enum-first) ·
  *           MEH-2271 (chunk 3a — legacy fallback removed; the enum is the
  *           only thing written and the only thing read) · MEH-2272 (the
- *           legacy pair and the server's state_to_legacy removed).
+ *           legacy pair and the server's state_to_legacy removed) ·
+ *           MEH-2782 (available_today / full_this_week removed).
  */
 
-/** The canonical 4-state enum. `availability_state` on the API. */
+/**
+ * The canonical enum, `availability_state` on the API. Pause-only since
+ * MEH-2782: «זמין היום» and «עמוס השבוע» were removed end to end.
+ */
 export const AVAILABILITY_STATES = Object.freeze({
   ACCEPTING_ORDERS: "accepting_orders",
-  AVAILABLE_TODAY: "available_today",
-  FULL_THIS_WEEK: "full_this_week",
   ON_VACATION: "on_vacation",
 });
 
@@ -47,17 +49,7 @@ export function deriveAvailability(producer) {
   return producer?.availability_state || AVAILABILITY_STATES.ACCEPTING_ORDERS;
 }
 
-/** True when the business is taking orders for today specifically. */
-export function isAvailableToday(producer) {
-  return deriveAvailability(producer) === AVAILABILITY_STATES.AVAILABLE_TODAY;
-}
-
 /** True when the business is on vacation. */
 export function isOnVacation(producer) {
   return deriveAvailability(producer) === AVAILABILITY_STATES.ON_VACATION;
-}
-
-/** True when the business is full for this week. */
-export function isFullThisWeek(producer) {
-  return deriveAvailability(producer) === AVAILABILITY_STATES.FULL_THIS_WEEK;
 }

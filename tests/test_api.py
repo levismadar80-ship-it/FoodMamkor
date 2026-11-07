@@ -3540,14 +3540,14 @@ class TestAvailabilityState:
         assert producer.vacation_until is None
 
     def test_filter_by_availability_state(self, client, db):
-        # Two approved producers: one available_today, one accepting_orders.
+        # Two approved producers: one on_vacation, one accepting_orders.
         p1 = make_producer(db, name="Alpha", status="approved")
-        p1.availability_state = "available_today"
+        p1.availability_state = "on_vacation"
         p2 = make_producer(db, name="Beta", status="approved")
         p2.availability_state = "accepting_orders"
         db.commit()
 
-        resp = client.get("/producers?availability_state=available_today")
+        resp = client.get("/producers?availability_state=on_vacation")
         assert resp.status_code == 200
         names = [p["name"] for p in resp.json()]
         assert "Alpha" in names
@@ -3558,18 +3558,17 @@ class TestAvailabilityState:
     def test_the_removed_alias_no_longer_filters_and_the_legacy_pair_is_gone(
         self, client, db
     ):
-        """MEH-2272 (MEH-1854 chunk 3b): the ?is_available_today= alias is
+        """MEH-2272 (MEH-1854 chunk 3b): the ?is_on_vacation= alias is
         REMOVED, and so are the two derived fields on ProducerListOut.
 
         FastAPI ignores an undeclared query parameter, so a stale caller gets
         a 200 and the UNFILTERED default listing — not a 422. Both halves of
         the old alias are asserted against the no-parameter baseline. The rows
-        are built so the old alias would have split them (Gamma is
-        available_today, Delta is not): under the MEH-2271 alias `true` drops
-        Delta and `false` drops Gamma, so this test is red against it.
+        MEH-2782: with available_today gone both rows are accepting_orders;
+        the split this test once relied on can no longer be built.
         """
         p1 = make_producer(db, name="Gamma", status="approved")
-        p1.availability_state = "available_today"
+        p1.availability_state = "accepting_orders"
         p2 = make_producer(db, name="Delta", status="approved")
         p2.availability_state = "accepting_orders"
         db.commit()
@@ -3584,18 +3583,14 @@ class TestAvailabilityState:
         # be satisfied by two empty listings.
         assert {"Gamma", "Delta"} <= baseline
 
-        assert names("/producers?is_available_today=true") == baseline
-        assert names("/producers?is_available_today=false") == baseline
-
-        # The enum filter is the one that still selects.
-        assert names("/producers?availability_state=available_today") >= {"Gamma"}
-        assert "Delta" not in names("/producers?availability_state=available_today")
+        assert names("/producers?is_on_vacation=true") == baseline
+        assert names("/producers?is_on_vacation=false") == baseline
 
         items = client.get("/producers").json()
         mine = [p for p in items if p["name"] in {"Gamma", "Delta"}]
         assert len(mine) == 2
         for item in mine:
-            assert "is_available_today" not in item, item["name"]
+            assert "is_on_vacation" not in item, item["name"]
             assert "availability_status" not in item, item["name"]
             assert "availability_state" in item, item["name"]
 
@@ -3605,11 +3600,11 @@ class TestAvailabilityState:
         exactly the state filter's answer.
         """
         p1 = make_producer(db, name="Epsilon", status="approved")
-        p1.availability_state = "full_this_week"
+        p1.availability_state = "on_vacation"
         db.commit()
 
         resp = client.get(
-            "/producers?availability_state=full_this_week&is_available_today=true"
+            "/producers?availability_state=on_vacation&is_on_vacation=true"
         )
         assert resp.status_code == 200
         assert "Epsilon" in {p["name"] for p in resp.json()}

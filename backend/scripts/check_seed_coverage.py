@@ -190,11 +190,6 @@ SEEDED_SURFACES = [
     },
     # --- MEH-1706 §2 item 9: availability states ---
     {
-        "surface": "availability/full_this_week",
-        "table": "producers",
-        "where": "availability_state = 'full_this_week'",
-    },
-    {
         "surface": "availability/on_vacation",
         "table": "producers",
         "where": "availability_state = 'on_vacation'",
