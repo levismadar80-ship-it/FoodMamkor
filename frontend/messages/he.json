@@ -5340,7 +5340,7 @@
         "coords_summary": "קואורדינטות ידניות",
         "coords_hint": "לא חובה. למלא רק אם הסיכה במפה לא יושבת במקום הנכון.",
         "hours_label": "שעות",
-        "hours_placeholder": "למשל: ימים א׳–ה׳, 9:00–17:00",
+        "hours_unreadable": "השעות שנשמרו: {value} — כדאי לבחור אותן מחדש למטה",
         "phone_label": "טלפון",
         "phone_placeholder": "למשל: 050-1234567",
         "precision_label": "דיוק",
