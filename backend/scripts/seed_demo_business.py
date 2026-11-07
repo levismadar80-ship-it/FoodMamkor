@@ -74,7 +74,6 @@ from app.models.models import (  # noqa: E402  # imports must follow sys.path.in
 )
 from app.routers.rescue import RESERVE_CLOSES_BEFORE_END  # noqa: E402  # imports must follow sys.path.insert (script shim)
 from app.services.analytics_rollup import rollup_watermark  # noqa: E402  # imports must follow sys.path.insert (script shim)
-from app.services.rescue_emails import israel_hhmm  # noqa: E402  # imports must follow sys.path.insert (script shim)
 from app.utils.clock import ISRAEL_TZ, israel_today, utc_now  # noqa: E402  # imports must follow sys.path.insert (script shim)
 
 # ============================================================================
@@ -934,6 +933,16 @@ def _israel_wall_to_utc(day: date, hour: int) -> datetime:
     return local.astimezone(timezone.utc).replace(tzinfo=None)
 
 
+def _israel_hhmm(naive_utc: datetime) -> str:
+    """A naive-UTC instant as an Israel wall-clock HH:MM, for a log line.
+
+    Local rather than imported from `app.services.rescue_emails` (MEH-2814):
+    pulling the email service into a seed script to format one string drags its
+    whole import graph along for no benefit.
+    """
+    return f"{naive_utc.replace(tzinfo=timezone.utc).astimezone(ISRAEL_TZ):%H:%M}"
+
+
 def _to_naive_utc(aware: datetime) -> datetime:
     """An aware datetime as the naive UTC instant the column stores.
 
@@ -958,21 +967,39 @@ def _demo_pickup_window(now_utc: datetime) -> tuple[date, datetime, datetime]:
     moment plainly is not, and a time-only comparison would open a window in
     the small hours and call it this evening.
 
+    The lead times are added to the UTC INSTANT and only then read in Israel
+    (MEH-2814) — see the comment in the body for why the wall-clock form was
+    an hour out on the two switch nights.
+
     Known shape, flagged rather than changed: the rule is literal `now + 1h`
     and `now + 3h`, so a seed at 10:17 produces 11:17-13:17 rather than a
     rounded hour, and a seed at 00:30 produces 01:30-03:30 — odd for a bakery
     but visible, which is what the window is for. Rounding or an early-morning
     floor would be a change to Sapir's rule, not an implementation detail.
     """
-    now_il = now_utc.replace(tzinfo=timezone.utc).astimezone(ISRAEL_TZ)
+    # MEH-2814 — THE LEAD TIMES ARE ADDED TO THE UTC INSTANT, not to the
+    # Israel wall clock. Adding a timedelta to a zoneinfo-aware datetime is
+    # wall-clock arithmetic: on the night the clocks go back,
+    # `01:30 Israel + 3h` reads 04:30 Israel but FOUR real hours have passed
+    # (measured; the March switch is the mirror case). The window would then
+    # promise three hours and store four. The cutoff below stays a wall-clock
+    # comparison on purpose — "before 20:00 Israel" is a wall-clock idea — and
+    # comparing two aware datetimes compares instants, so it is still correct
+    # across the switch.
+    now_aware = now_utc.replace(tzinfo=timezone.utc)
+    now_il = now_aware.astimezone(ISRAEL_TZ)
     cutoff_il = datetime.combine(
         now_il.date(),
         time(hour=DEMO_RESCUE_BAG["evening_cutoff_hour"]),
         tzinfo=ISRAEL_TZ,
     )
-    end_il = now_il + timedelta(hours=DEMO_RESCUE_BAG["lead_hours_end"])
+    end_il = (
+        now_aware + timedelta(hours=DEMO_RESCUE_BAG["lead_hours_end"])
+    ).astimezone(ISRAEL_TZ)
     if end_il < cutoff_il:
-        start_il = now_il + timedelta(hours=DEMO_RESCUE_BAG["lead_hours_start"])
+        start_il = (
+            now_aware + timedelta(hours=DEMO_RESCUE_BAG["lead_hours_start"])
+        ).astimezone(ISRAEL_TZ)
     else:
         tomorrow = now_il.date() + timedelta(days=1)
         start_il = datetime.combine(
@@ -1073,22 +1100,38 @@ def _seed_rescue_bag(db, producer) -> bool:
     # Verified in the schema, and pinned by
     # `test_refresh_clears_the_bag_through_the_location_cascade` rather than by
     # deletion code here, which would be unreachable by construction.
-    existing = (
+    # MEH-2814 — the sweep is per LOCATION, not per (location, day). Keying it
+    # on the new window's day left a dead row behind on every evening run: a
+    # seed at 18:50 targets tomorrow, so today's already-closed bag was neither
+    # replaced nor removed. Hidden from /rescue by the filter, so never
+    # user-visible, but it accumulated.
+    #
+    # Still scoped to bags that can no longer pass `rescue.py:463` — a LIVE bag
+    # anywhere is left alone and short-circuits, so this does not reintroduce
+    # the double-bag #4114 removed.
+    live = (
         db.query(RescueOffer)
         .filter(
             RescueOffer.producer_location_id == location.id,
-            RescueOffer.date == day,
+            RescueOffer.pickup_end > now + RESERVE_CLOSES_BEFORE_END,
         )
         .first()
     )
-    if existing is not None:
-        if existing.pickup_end > now + RESERVE_CLOSES_BEFORE_END:
-            return False
+    if live is not None:
+        return False
+
+    closed = (
+        db.query(RescueOffer)
+        .filter(RescueOffer.producer_location_id == location.id)
+        .all()
+    )
+    for dead in closed:
         print(
-            f"Replacing the demo rescue bag for {day}: its window closed at "
-            f"{israel_hhmm(existing.pickup_end)} Israel time."
+            f"Removing the demo rescue bag for {dead.date}: its window closed "
+            f"at {_israel_hhmm(dead.pickup_end)} Israel time."
         )
-        db.delete(existing)
+        db.delete(dead)
+    if closed:
         db.flush()
 
     db.add(
