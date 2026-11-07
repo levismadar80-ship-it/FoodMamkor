@@ -237,11 +237,14 @@ describe("MEH-2804 follow-up — the sentence always, a count line from 25", () 
     expect([at(24), at(25)]).toEqual([false, true]);
   });
 
-  it("the numeral keeps the band's voice: Cormorant italic, gold, LTR-isolated", () => {
+  // Sapir 07/11: Cormorant's old-style italic «31» read as «ɜı» beside Hebrew.
+  // The numeral is the line's own face — semibold, brand green, upright.
+  it("the numeral is the line's own face: semibold, brand green, upright, LTR-isolated", () => {
     const { unmount } = renderAt(30);
     const num = screen.getByTestId("trust-count-value");
     const cls = num.className.split(/\s+/);
-    for (const want of ["font-english", "italic", "text-accent", "tabular-nums"]) expect(cls, want).toContain(want);
+    for (const want of ["font-semibold", "text-primary"]) expect(cls, want).toContain(want);
+    for (const banned of ["font-english", "italic", "align-middle", "text-lg"]) expect(cls, banned).not.toContain(banned);
     expect(num.getAttribute("dir")).toBe("ltr");
     unmount();
   });

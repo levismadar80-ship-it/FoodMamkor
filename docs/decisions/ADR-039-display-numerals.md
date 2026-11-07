@@ -1,4 +1,4 @@
-# ADR-039: The event price token is Frank Ruhl, upright, bold — Cormorant italic is for times, inline Latin and the trust band count
+# ADR-039: The event price token is Frank Ruhl, upright, bold — Cormorant italic is for times and inline Latin
 
 **Status:** Accepted
 **Date:** 2026-11-07
@@ -25,8 +25,8 @@ unknown class emits no CSS, MEH-2798), **upright**, **bold/black**, in **`text-p
 as a display step (`text-base` → `md:text-lg`), `dir="ltr"` for the digits,
 never `align-middle`.
 **Cormorant Garamond italic stays** for times of day (the event row's date-rail
-time), for inline Latin text, and for the home trust band's count (see the
-amendment).
+time) and for inline Latin text. It is not used for a number that sits in a
+Hebrew line (see the amendment).
 
 ## Consequences
 **Positive:**
@@ -60,7 +60,8 @@ amendment).
 The band is the locked sentence «בלי מתווך באמצע · איסוף עצמי או משלוח, ישירות
 מבית העסק» at **every** count — it says who you buy from and how the food
 reaches you, which holds at any catalog depth. From `TRUST_COUNT_THRESHOLD` (25)
-a quiet second line adds «N בתי עסק שהצטרפו עד היום», its numeral in the band's
-S4 voice (Cormorant italic, gold, LTR-isolated); below 25 there is no number at
-all (MEH-521). Pinned by `HomeTrustBandCountGate.test.jsx`,
+a quiet second line adds «N בתי עסק שהצטרפו עד היום»; below 25 there is no
+number at all (MEH-521). The numeral is set in the line's own face, semibold,
+`text-primary`, LTR-isolated — Cormorant's default old-style italic figures read
+as «ɜı» beside Hebrew (no lowercase for them to match), Sapir 07/11. Pinned by `HomeTrustBandCountGate.test.jsx`,
 `e2e/flows/manual/home.spec.ts` and the "home trust band" VRT element shot.

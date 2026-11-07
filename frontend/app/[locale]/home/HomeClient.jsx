@@ -167,7 +167,9 @@ export default function HomeClient({
           - MEH-1686: while /stats is in flight the second line's slot is held by
             a placeholder of the SAME min-height, so the common (25+) case loads
             without a shift. Below 25 the slot collapses once — the known cost.
-          - Numerals keep the S4 voice: gold italic Cormorant, LTR-isolated.
+          - The numeral is set in the line's own face, semibold, brand green,
+            LTR-isolated (Sapir 07/11): Cormorant's old-style italic figures read
+            as «ɜı» next to Hebrew, which has no lowercase for them to match.
           - `text-balance` on the sentence: at 375 it wrapped with «העסק» alone
             on the last line (VRT, 07/11) — same rule DESIGN.md sets for h1–h3. */}
       <section
@@ -190,7 +192,7 @@ export default function HomeClient({
               num: (chunks) => (
                 <span
                   dir="ltr"
-                  className="font-english italic font-semibold text-lg text-accent tabular-nums align-middle"
+                  className="font-semibold text-primary"
                   data-testid="trust-count-value"
                 >
                   {chunks}

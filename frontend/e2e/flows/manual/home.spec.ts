@@ -2389,17 +2389,26 @@ test.describe("manual › above-the-fold mini-map + trust band (MEH-604 · MEH-6
     }
   });
 
-  // MEH-2487 control, restored by the MEH-2804 follow-up: the global "Hebrew is
-  // never slanted" rule must not reach the dir="ltr" Cormorant numeral, which
-  // has a real italic face. (#4143 had reversed this for the rejected fact row.)
-  test("the count numeral keeps its real Cormorant italic inside the Hebrew page", async ({ page }) => {
+  // MEH-2804 follow-up (Sapir 07/11): the count numeral is the line's own face,
+  // upright and semibold — Cormorant's old-style italic figures read as «ɜı»
+  // beside Hebrew. Read from the browser, so a class that compiles to nothing
+  // (or a font-english that sneaks back) fails here.
+  test("the count numeral is upright, semibold, in the line's own face — not Cormorant", async ({ page }) => {
     await consent(page);
     await stubTiles(page);
     await mockApi(page, PRODUCERS, { stats: STATS_COUNTED });
     await gotoHome(page);
     const num = scope(page).getByTestId("trust-count-value");
     await expect(num).toBeVisible(FIRST_PAINT);
-    expect(await num.evaluate((el) => getComputedStyle(el).fontStyle)).toBe("italic");
+    const style = await num.evaluate((el) => {
+      const cs = getComputedStyle(el);
+      const line = getComputedStyle(el.parentElement!);
+      return { fontStyle: cs.fontStyle, weight: Number(cs.fontWeight), family: cs.fontFamily, lineFamily: line.fontFamily };
+    });
+    expect(style.fontStyle).toBe("normal");
+    expect(style.weight).toBeGreaterThanOrEqual(600);
+    expect(style.family.toLowerCase()).not.toContain("cormorant");
+    expect(style.family, "same face as the line it sits in").toBe(style.lineFamily);
     expect(await num.getAttribute("dir")).toBe("ltr");
     expect(await page.locator("html").getAttribute("dir")).toBe("rtl");
   });

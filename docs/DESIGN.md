@@ -307,10 +307,11 @@ sheet) — but it only moves Hebrew glyphs, which had no brand face there before
 event page, free and paid alike — is **Frank Ruhl (`font-headline-display`),
 upright, bold, in the row's accent**, digits `dir="ltr"`, never `align-middle`.
 Free reads «כניסה חופשית» in the same token. Cormorant italic (`.font-english`)
-stays for **times of day**, **inline Latin** and the **home trust band's count
-line**. The band itself is the locked sentence at every count, plus «N בתי עסק
-שהצטרפו עד היום» from 25; a three-column fact row was tried and rejected
-(07/11). See [ADR-039](./decisions/ADR-039-display-numerals.md).
+stays for **times of day** and **inline Latin** — never for a number inside a
+Hebrew line (its old-style italic figures read as «ɜı»). The home trust band is
+the locked sentence at every count, plus «N בתי עסק שהצטרפו עד היום» from 25,
+the numeral in the line's own face, semibold, `text-primary`; a three-column
+fact row was tried and rejected (07/11). See [ADR-039](./decisions/ADR-039-display-numerals.md).
 
 **Headings never strand one word on the last line** — `h1, h2, h3` carry
 `text-wrap: balance` in `globals.css` (MEH-2488). **Hebrew is never
