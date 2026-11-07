@@ -143,7 +143,11 @@ export default function HomeClient({
       )}
 
       {/* =========================
-          TRUST STRIP — MEH-879 re-anchor (over MEH-524 lock / MEH-521
+          TRUST STRIP — HISTORY. The current band is the MEH-2804 / ADR-039
+          fact row in the next comment; the bullets below record the design
+          it replaced and why. Still in force: the MEH-1692 rule (the count
+          is never stated twice), the MEH-521 threshold, and MEH-1686 (last
+          paragraph). MEH-879 re-anchor (over MEH-524 lock / MEH-521
           threshold / MEH-607 F10 skeleton):
           - The LEAD reads at ANY catalog depth, not just >= 5.
           - MEH-1692 replaced the leading verification phrase. It was a
@@ -163,8 +167,6 @@ export default function HomeClient({
           - S4 quiet-strip voice preserved: cream + hairline borders; numerals
             gold italic, LTR-isolated (bidi). Numbers from /stats, never
             hardcoded. Stats logic (use-home-page.js flags) unchanged.
-            (History — MEH-2804 / ADR-039 replaced the lead + secondary lines
-            and the gold italic numerals with the fact row below.)
           MEH-1686: py-4 → py-8 on BOTH branches (skeleton + loaded) so the
           strip reads as a deliberate band rather than a squeezed rule. Both,
           not just the loaded one — a py-4 skeleton swapping to a py-8 section
