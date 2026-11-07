@@ -286,7 +286,20 @@ def _build_base_queries(  # noqa: PLR0913 — keyword-only query axes; MEH-2602 
         # so those drop out without an explicit coord-IS-NOT-NULL guard. Before
         # chunk 5a this also required the producer to have no own lat/lng; the
         # rule is now the single one, because the rows are the single source.
-        q = q.filter(distance_expr <= radius_km).order_by(distance_expr.asc())
+        # MEH-2787: `Producer.id` closes this ordering. Two businesses at the
+        # same distance (co-located pickup points, or identical seeded coords)
+        # left the radius path with NO tiebreaker at all — not even the
+        # created_at the other branches carry — so their relative order was
+        # whatever the plan happened to produce. That is unobservable in a
+        # single page and silently drops rows under offset paging. This path is
+        # beyond the four branches MEH-2787 enumerates; it is the same one-line
+        # change in the same function, and leaving the least-ordered path out
+        # while fixing four others would have been the odd choice. Flagged in
+        # the PR rather than done quietly.
+        q = (
+            q.filter(distance_expr <= radius_km)
+            .order_by(distance_expr.asc(), Producer.id.asc())
+        )
         count_q = count_q.filter(haversine_min_km(lat, lng) <= radius_km)
         return q, count_q
 
@@ -334,6 +347,21 @@ def _build_base_queries(  # noqa: PLR0913 — keyword-only query axes; MEH-2602 
         # and Postgres sorts NULL last — which split the deliverers' group.
         located = func.coalesce(_located_in_city_condition(near_city), False)
         order = (~located, *order)
+    # MEH-2787: a unique, always-LAST tiebreaker, appended once rather than
+    # written into each branch above — that is what makes it reach all four
+    # (default created_at, rating, distance, near_city) AND stay last, which a
+    # tiebreaker has to be to be one. Every key above it is non-unique and
+    # `created_at` is nullable (models.py:497) with no server_default, so in
+    # Postgres `DESC` puts the NULL rows FIRST as an unordered clump — exactly
+    # where the first offset boundary falls. Two pages of the same query are
+    # two statements and may be planned differently, so a row sitting on that
+    # boundary could appear twice while another vanished, with no error. That
+    # is the bug the sitemap loop in this PR would otherwise have shipped.
+    #
+    # It cannot move the visible catalog order: it only orders rows that every
+    # preceding key has already tied on. `Producer.id` is a random UUID4
+    # (models.py:57), so this buys determinism, not a meaningful sequence.
+    order = (*order, Producer.id.asc())
     # MEH-1829: the distance sort selects the distance alongside the row (the
     # same two-entity shape as the geo path) so `_finalize_results` can attach
     # `distance_km` to each producer. Every other sort keeps the single-entity
