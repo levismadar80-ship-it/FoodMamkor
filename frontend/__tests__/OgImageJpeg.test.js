@@ -50,7 +50,9 @@ describe("share preview image (MEH-2827 PR 6)", () => {
       // Walk the JPEG markers to the first SOF frame header for the size.
       let i = 2;
       let size = null;
-      while (i < buf.length) {
+      // Bounds-guarded: a truncated file ends the walk (size stays null → a
+      // clear toEqual failure) instead of a RangeError from readUInt16BE.
+      while (i + 8 < buf.length && buf[i] === 0xff) {
         const marker = buf[i + 1];
         const len = buf.readUInt16BE(i + 2);
         if (marker >= 0xc0 && marker <= 0xc3) {
