@@ -77,6 +77,8 @@ describe("/about/why-local — FinalWhyLocal", () => {
     expect(cta.textContent).toContain(W.cta);
     expect(cta.getAttribute("href")).toBe("/map");
     expect(classes(cta)).toEqual(expect.arrayContaining(["bg-background", "text-primary"]));
+    // The arrow points forward in both directions: left in Hebrew, flipped in English.
+    expect(cta.querySelector("svg")?.getAttribute("class") ?? "").toContain("ltr:rotate-180");
     const sources = container.querySelector('[data-testid="why-local-sources"]');
     expect(sources.compareDocumentPosition(band) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     // Nothing renders after the band: it runs into the site footer.

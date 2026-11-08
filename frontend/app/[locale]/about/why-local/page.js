@@ -72,8 +72,9 @@ const CHANGES_LINES = ["changes_1", "changes_2", "changes_3"];
 
 // MEH-2827 (FinalWhyLocal, Sapir 08/11): the five REASONS get a numeral mark
 // in the /about Chapter style; «איפה מתחילים» (the last SECTIONS entry) is
-// the turn to the answer, not a sixth reason, so it gets none.
-const NUMBERED_REASONS = 5;
+// the turn to the answer, not a sixth reason, so it gets none. Derived, so a
+// reason added above it is numbered without touching this line.
+const NUMBERED_REASONS = SECTIONS.length - 1;
 
 // MEH-476 PR 3b2: async + setRequestLocale + getTranslations enables ● SSG.
 export default async function WhyLocalPage({ params }) {
