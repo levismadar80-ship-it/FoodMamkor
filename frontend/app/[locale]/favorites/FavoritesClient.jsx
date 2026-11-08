@@ -88,7 +88,11 @@ function FavoriteCardWrapper({ fav, open, onToggle, onClose }) {
         // card — 34px on mobile, 44px sm: up, top-end corner opposite the heart.
         // MEH-2526: circle → pill so the label sits beside the bell; same
         // heights, same corner.
-        className="absolute top-2 end-2 sm:top-3 sm:end-3 h-[34px] sm:h-11 px-2.5 sm:px-3 gap-1 flex items-center justify-center rounded-full bg-background/90 hover:bg-background text-primary transition z-10"
+        // MEH-2849: #4000 (MEH-2671) moved the card heart to the top-END
+        // corner, which is where this bell sat — it covered the heart, so a tap
+        // on the heart hit «עדכונים» and nothing was removed. The bell takes the
+        // corner opposite the heart again: top-START.
+        className="absolute top-2 start-2 sm:top-3 sm:start-3 h-[34px] sm:h-11 px-2.5 sm:px-3 gap-1 flex items-center justify-center rounded-full bg-background/90 hover:bg-background text-primary transition z-10"
       >
         <Bell size={18} weight={open ? "fill" : "regular"} aria-hidden="true" />
         <span className="text-xs font-medium">{t("bell_label")}</span>
@@ -110,7 +114,7 @@ function FavoriteCardWrapper({ fav, open, onToggle, onClose }) {
         // below, and Tailwind arbitrary values take no spaces.
         <div
           ref={panelRef}
-          className="fixed inset-x-3 bottom-[calc(var(--bottom-nav-clearance,calc(4.5rem+env(safe-area-inset-bottom,0px)))+8px)] z-[1150] sm:absolute sm:inset-x-auto sm:bottom-auto sm:top-14 sm:end-0 sm:w-72"
+          className="fixed inset-x-3 bottom-[calc(var(--bottom-nav-clearance,calc(4.5rem+env(safe-area-inset-bottom,0px)))+8px)] z-[1150] sm:absolute sm:inset-x-auto sm:bottom-auto sm:top-14 sm:start-0 sm:w-72"
         >
           <AlertPrefsPanel
             producerId={fav.producer_id}

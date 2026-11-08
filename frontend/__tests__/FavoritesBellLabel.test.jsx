@@ -131,3 +131,30 @@ describe("MEH-2526 · favorites bell label", () => {
     expect(screen.getAllByText(LABEL)).toHaveLength(n);
   });
 });
+
+// MEH-2849: #4000 moved the card heart to the top-END corner — where this bell
+// sat — so the bell covered the heart and a tap meant to remove a favourite hit
+// «עדכונים» (E2E 31-favorites-journey-d D2, 08/11). The bell must sit in the
+// corner OPPOSITE the heart. ProducerCard is mocked above, so the heart's
+// corner is read from its source: if either of them moves into the other's
+// corner, this goes red.
+describe("MEH-2849 · the bell sits opposite the card heart", () => {
+  it("bell at top-start, heart at top-end — never the same corner", async () => {
+    const fs = await import("node:fs");
+    const path = await import("node:path");
+    const src = fs.readFileSync(path.resolve(__dirname, "../components/ProducerCard.jsx"), "utf8");
+    const at = src.indexOf('data-testid="card-heart"');
+    expect(at, "control: ProducerCard still renders the card-heart").toBeGreaterThan(0);
+    // The heart's className is the attribute right after its testid.
+    const heartClass = /className="([^"]*)"/.exec(src.slice(at, at + 400))?.[1] ?? "";
+    const heartSide = /(?:^|\s)(start|end)-2(?:\s|$)/.exec(heartClass)?.[1];
+    expect(heartSide, "control: the heart sits in a logical top corner").toMatch(/^(start|end)$/);
+    await renderWith(1);
+    const bellCls = bells()[0].className.split(/\s+/);
+    const bellSide = bellCls.includes("start-2") ? "start" : bellCls.includes("end-2") ? "end" : null;
+    expect(bellSide, "control: the bell sits in a logical top corner").not.toBeNull();
+    expect(bellSide).not.toBe(heartSide);
+    expect(bellSide).toBe("start");
+  });
+});
+

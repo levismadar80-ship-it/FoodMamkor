@@ -370,7 +370,11 @@ function Badge({ badge, surface = "hero", avoidRef = null }) {
   // the toggle, Esc/outside-click dismissal, and the ProducerCard-Link tap
   // guard that used to live inline here.
   return (
-    <span role="listitem" className="inline-block">
+    // MEH-2849: max-w-full down the chain so a long label (e.g. «עסק של
+    // מילואימניקים» at 200% text on a 375 card) wraps inside the card instead
+    // of running past it — measured 35px off-screen before. Labels that fit
+    // render exactly as before.
+    <span role="listitem" className="inline-block max-w-full">
       <Popover
         contentTestId={`badge-tooltip-${badge.key}`}
         contentClassName="w-52"
@@ -386,13 +390,13 @@ function Badge({ badge, surface = "hero", avoidRef = null }) {
             type="button"
             aria-label={`${badge.label} — ${badge.tooltip}`}
             data-badge={badge.key}
-            className="group inline-flex items-center justify-center min-h-[24px] min-w-[24px] focus:outline-none"
+            className="group inline-flex items-center justify-center min-h-[24px] min-w-[24px] max-w-full focus:outline-none"
           >
-            <span className={`inline-flex items-center ${compact ? "gap-0.5 px-2" : "gap-1 px-2.5"} text-xs py-0.5 rounded-full font-medium group-focus-visible:ring-2 group-focus-visible:ring-primary/40 transition ${colorClass}`}>
+            <span className={`inline-flex items-center max-w-full ${compact ? "gap-0.5 px-2" : "gap-1 px-2.5"} text-xs py-0.5 rounded-full font-medium group-focus-visible:ring-2 group-focus-visible:ring-primary/40 transition ${colorClass}`}>
               {/* MEH-2584: same glyph as the filter chip (lib/chip-icons.js),
                   aria-hidden — the label stays the accessible name. */}
-              {icon && <span aria-hidden="true" className="inline-flex">{icon}</span>}
-              {badge.label}
+              {icon && <span aria-hidden="true" className="inline-flex shrink-0">{icon}</span>}
+              <span className="min-w-0 [overflow-wrap:anywhere]">{badge.label}</span>
             </span>
           </button>
         }
