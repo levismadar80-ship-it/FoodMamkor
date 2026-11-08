@@ -61,6 +61,7 @@ const OFF = {
   notify_new_product: false,
   notify_delivery_area: false,
   notify_new_recipe: false,
+  notify_new_group_buy: false,
   whatsapp_opt_in: false,
   has_push: false,
 };
@@ -142,6 +143,7 @@ describe("MEH-2526 · ProducerUpdatesButton", () => {
       notify_new_product: true,
       notify_delivery_area: true,
       notify_new_recipe: true,
+      notify_new_group_buy: true,
       whatsapp_opt_in: false,
       push_subscription: null,
     });
@@ -200,6 +202,7 @@ describe("MEH-2526 · ProducerUpdatesButton", () => {
       notify_new_product: true,
       notify_delivery_area: true,
       notify_new_recipe: true,
+      notify_new_group_buy: true,
     });
     await waitFor(() => expect(button()).toHaveAttribute("aria-pressed", "true"));
   });
@@ -237,6 +240,7 @@ describe("MEH-2526 · ProducerUpdatesButton", () => {
       notify_new_product: false,
       notify_delivery_area: false,
       notify_new_recipe: false,
+      notify_new_group_buy: false,
       // The chosen channel survives an off/on cycle.
       whatsapp_opt_in: true,
       push_subscription: null,

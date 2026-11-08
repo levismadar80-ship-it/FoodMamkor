@@ -32,7 +32,7 @@ vi.mock("@/lib/validators", () => ({ validateIsraeliPhone: () => true }));
 vi.mock("@phosphor-icons/react", () => {
   const Stub = (props) => <span {...props} />;
   return Object.fromEntries(
-    ["Bell", "BellSlash", "Check", "Confetti", "CookingPot", "Handbag", "Truck", "ChatCircle"]
+    ["Bell", "BellSlash", "Check", "Confetti", "CookingPot", "Handbag", "Truck", "ChatCircle", "ShoppingCart"]
       .map((n) => [n, Stub]),
   );
 });
