@@ -4,6 +4,38 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-08 — טופס פנייה אחד (MEH-2832)
+
+**‏שורה אחת:** ‏#4184 ו-#4186 מוזגו ל-staging. ‏/contact הוא הטופס היחיד באתר.
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏**קישור חדש ל«צרו קשר»** מוביל ל-`/contact`, ואם צריך עם `?topic=` מתוך `lib/contact-topics.js` (‏general / business / correction / other). לא מקשרים ל-`/about#contact`. ‏`ContactLinksTarget.test.js` נכשל על קישור כזה.
+- אינסטגרם מופיע רק בשורת הרשתות בפוטר, לא כדרך פנייה.
+
+---
+
+## 2026-11-08 — קישורים לחיצים בטלפון (MEH-2831)
+
+**‏שורה אחת:** ‏#4183, #4185, #4188 ו-#4189 מוזגו ל-staging. ב-DESIGN.md נוסף «Text links look tappable without hover».
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏**קישור טקסט חדש** (וגם כפתור טקסט בלי מסגרת) מקבל קו תחתון קבוע: `underline decoration-[1.5px] underline-offset-[5px] decoration-<ink>/35 hover:decoration-current`. ‏`hover:underline` לבד לא מספיק. קישור עם חץ או סמל בתוכו פטור.
+- ‏**אין guard מכני.** הכלל נשמר דרך DESIGN.md והסקירה.
+
+---
+
+## 2026-11-08 — דפי התוכן (MEH-2827): ‏8 מתוך 9 ב-staging
+
+**‏שורה אחת:** ‏PR-ים 1–7 ו-9 מוזגו ל-staging (#4169, #4172, #4173, #4174, #4175, #4180, #4177, #4179). ‏PR 8 (#4178) מוחזק עד החלטה של ספיר.
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏**שיתוף:** ‏`components/ShareSiteActions.jsx` הוא המקום היחיד לכפתור «שתפו» באתר. השיתוף מהטלפון שולח `{ title, url }` בלבד. אין כפתור שיתוף לוואטסאפ בלבד. כפתורי «שליחת הודעה בוואטסאפ» לבית העסק הם יצירת קשר, לא שיתוף, והם נשארים.
+- ‏**/share** הוא `route.js` עם הפניה קבועה (308) ל-`/recommend#share`. ‏`redirect()` מתוך page.js החזיר 200, כי ה-layout עושה streaming.
+- ‏**התקדמות בקבוצת רכישה:** ‏`GroupBuyProgressMark` נמצא ב-`ProducerActivities.jsx`, ודף הקבוצה מייבא אותו משם. הרכיב יעבור לקובץ משותף ב-follow-up, כי הוא מחוץ לרשימת הקבצים.
+- ‏**השם:** «קבוצת רכישה / קבוצות רכישה» בלבד (BRAND.md §7).
+
+---
+
 ## 2026-11-08 — ‏/map: חזרה משחזרת מצלמה ועסק שנבחר (#4181)
 
 **‏שורה אחת:** ‏MEH-2049 PR 1 מוזג ל-staging. ‏PR 2 (קטגוריות ועיר ב-URL) עצר ומחכה להחלטה של ספיר.

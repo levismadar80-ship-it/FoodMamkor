@@ -54,6 +54,7 @@ The **tagline** is specced for: footer brand line, meta description, OpenGraph c
 ### Visual LOCKs (full token set in `docs/DESIGN.md`)
 
 - Primary green `#2e6853` · cream background `#F5F0E8` (warm cream — NEVER pure white) · text `#1C1A17`
+- Seed layer (MEH-2833, 08/11): the logo's five seed colours appear only as decoration in the seed shape — never text/buttons/links/status; green stays the only action colour. Rules: `docs/DESIGN.md` → *Seed layer*
 - Frank Ruhl Libre 900 for Hebrew headlines · DM Sans for body
 - No pure white `#ffffff` anywhere
 - No gradient orbs, blurred backgrounds, glassmorphism (signals "app", opposite of "magazine")

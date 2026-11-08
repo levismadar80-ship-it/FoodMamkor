@@ -314,7 +314,7 @@ export default function MapBottomSheet({
               type="button"
               onClick={onResetFilters}
               data-testid="sheet-reset-filters"
-              className="inline-flex items-center min-h-touch -my-2.5 shrink-0 text-sm font-medium text-primary hover:underline"
+              className="inline-flex items-center min-h-touch -my-2.5 shrink-0 text-sm font-medium text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current"
             >
               {t("reset_filters")}
             </button>

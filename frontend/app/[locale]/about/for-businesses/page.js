@@ -298,7 +298,7 @@ export default async function FaqForBusinessesPage({ params }) {
           <p className="text-base mb-4 text-text/90">
             {t("footer_questions_prefix")}{" "}
             <Link
-              href="/about?topic=business#contact"
+              href="/contact?topic=business"
               className="underline text-primary"
             >
               {t("footer_form_link")}

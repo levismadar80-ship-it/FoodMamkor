@@ -185,14 +185,14 @@ export default function ProducerRecipesPage() {
                 <span>·</span>
                 <Link
                   href={`/producer/dashboard/recipes/${r.id}/edit`}
-                  className="text-primary hover:underline"
+                  className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current"
                 >
                   {t("edit")}
                 </Link>
                 <span>·</span>
                 <button
                   onClick={() => handleDelete(r.id)}
-                  className="text-danger-600 hover:underline"
+                  className="text-danger-600 underline decoration-[1.5px] underline-offset-[5px] decoration-danger-600/35 hover:decoration-current"
                 >
                   {t("delete")}
                 </button>

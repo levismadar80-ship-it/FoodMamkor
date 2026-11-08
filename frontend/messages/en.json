@@ -2957,14 +2957,7 @@
         "submit": "Send",
         "submit_loading": "Sending...",
         "success_toast": "Thanks! We'll get back to you soon",
-        "email_direct": "Or reach us directly by email:",
-        "topic_label": "Inquiry topic",
-        "topic_options": {
-          "general": "General question",
-          "business": "Business inquiry",
-          "correction": "Correcting site info",
-          "other": "Other"
-        }
+        "email_direct": "Or reach us directly by email:"
       }
     }
   },
@@ -3307,6 +3300,13 @@
     "success_send_another": "Send another message",
     "field_name_label": "Full name",
     "field_email_label": "Email",
+    "topic_label": "Inquiry topic",
+    "topic_options": {
+      "general": "General question",
+      "business": "Business inquiry",
+      "correction": "Correcting site info",
+      "other": "Other"
+    },
     "field_message_label": "How can we help?",
     "submit": "Send",
     "submit_loading": "Sending...",
@@ -3993,8 +3993,7 @@
       "intro": "Joined recently? These are the three guides I send to every new business owner on Mehamakor. Short, direct, no big promises — just what works.",
       "minutes_label": "About {minutes} min read",
       "cta": "Read the guide →",
-      "footer_prefix": "Is there a question a guide didn't answer? Write to me on Instagram",
-      "footer_suffix": ".",
+      "footer_prefix": "Have a question the guides didn't answer? <link>Write to us</link>",
       "card_previews": {
         "business_story": "The one field that changes everything on your profile — how to write it once, right, without it reading like an ad.",
         "product_photography": "No professional camera, no studio. 5 principles + a 30-minute workflow enough for a full page.",

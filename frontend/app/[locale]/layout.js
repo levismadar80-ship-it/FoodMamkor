@@ -69,6 +69,9 @@ const BASE_METADATA = {
   manifest: "/manifest.json",
   icons: {
     icon: [
+      // MEH-2834: SVG first — crisp at every size; ICO + PNGs stay for
+      // browsers that don't take an SVG favicon.
+      { url: "/favicon.svg", type: "image/svg+xml" },
       { url: "/favicon.ico", sizes: "any" },
       { url: "/icon-192.png", type: "image/png", sizes: "192x192" },
       { url: "/icon-512.png", type: "image/png", sizes: "512x512" },

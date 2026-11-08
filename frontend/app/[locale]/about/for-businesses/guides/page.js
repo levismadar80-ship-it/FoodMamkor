@@ -95,17 +95,16 @@ export default async function GuidesIndexPage({ params }) {
         </ul>
 
         <footer className="mt-8 rounded-xl bg-background-alt p-5">
-          <p className="text-base text-text/90">
-            {ti("footer_prefix")}{" "}
-            <a
-              href="https://www.instagram.com/meha_makor"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline text-primary"
-            >
-              @meha_makor
-            </a>
-            {ti("footer_suffix")}
+          {/* MEH-2832: questions go to the one contact form, not Instagram
+              (Instagram stays in the site footer as social). */}
+          <p className="text-base text-text/90" data-testid="guides-footer-question">
+            {ti.rich("footer_prefix", {
+              link: (chunks) => (
+                <Link href="/contact?topic=business" className="underline text-primary">
+                  {chunks}
+                </Link>
+              ),
+            })}
           </p>
         </footer>
       </div>

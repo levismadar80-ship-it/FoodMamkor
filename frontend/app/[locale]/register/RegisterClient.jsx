@@ -439,11 +439,11 @@ function RegisterPageBody() {
             />
             <span className="leading-relaxed">
               {t("auth.register.consumer.terms.intro")}{" "}
-              <Link href="/terms" target="_blank" className="text-primary hover:underline">
+              <Link href="/terms" target="_blank" className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current">
                 {t("auth.register.consumer.terms.tos_link")}
               </Link>{" "}
               {t("auth.register.consumer.terms.and")}
-              <Link href="/privacy" target="_blank" className="text-primary hover:underline">
+              <Link href="/privacy" target="_blank" className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current">
                 {t("auth.register.consumer.terms.privacy_link")}
               </Link>
             </span>

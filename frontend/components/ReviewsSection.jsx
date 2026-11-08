@@ -206,7 +206,7 @@ function ReviewReply({ review, isOwner, onSaved }) {
         <button
           type="button"
           onClick={() => { setDraft(reply || ""); setEditing(true); }}
-          className="mt-2 min-h-touch inline-flex items-center text-sm text-primary hover:underline"
+          className="mt-2 min-h-touch inline-flex items-center text-sm text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current"
         >
           {reply ? t("reply_edit") : t("reply_add")}
         </button>
