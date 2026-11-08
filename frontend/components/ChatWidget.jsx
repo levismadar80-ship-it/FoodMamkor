@@ -298,9 +298,10 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
         // assumed (frontend.md).
         className={[
           // MEH-2835: a 2px cream ring (ring-background) so the green circle
-          // reads on green surfaces (footer, closing bands); focus swaps it
-          // for the usual focus ring.
-          "vv-pin print:hidden flex items-center justify-center bg-primary text-white rounded-full ring-2 ring-background shadow-[0_4px_24px_rgba(46,104,83,0.25)] hover:bg-primary-dark transition focus-visible:ring-2 focus-visible:ring-primary/40",
+          // reads on green surfaces (footer, closing bands). Focus keeps the
+          // cream ring and adds a dark outline outside it — the old
+          // ring-primary/40 vanished on green and replaced the cream ring.
+          "vv-pin print:hidden flex items-center justify-center bg-primary text-white rounded-full ring-2 ring-background shadow-[0_4px_24px_rgba(46,104,83,0.25)] hover:bg-primary-dark transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-text",
           showPillText ? "gap-2 px-4 py-3" : "w-12 h-12",
         ].join(" ")}
         // MEH-2308: when the pill text is showing it IS the accessible name. An
