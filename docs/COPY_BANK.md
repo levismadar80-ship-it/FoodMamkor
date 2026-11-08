@@ -430,7 +430,7 @@
 ### Footer CTA pitch (business owner)
 | Field | Value |
 |---|---|
-| **Current** | `יש לך עסק מזון מקומי?` |
+| **Current** | `יש לכם עסק מזון מקומי?` (neutral plural, Sapir verbatim 08/11, MEH-2827 row 5; was `יש לך…`) |
 | **Subpitch** | `הצטרפו לקהילה הראשונה של בתי עסק אמיתיים בישראל` |
 | **i18n keys** | `nav.footer.cta_pitch` / `nav.footer.cta_subpitch` |
 | **Status** | ✅ |
@@ -1139,3 +1139,15 @@ Approved by Sapir 07/11 («תעשה מה שאתה חושב»). Neutral Hebrew �
 passive («מופיעות»), no addressed verb.
 
 **Status:** ✅ Merged to staging — PR #4144 (`85cfe44f`).
+
+### MEH-2827 — content pages, neutral plural (approved by Sapir verbatim 08/11)
+| # | Key | Before | After | Status |
+|---|---|---|---|---|
+| 1 | `about.biz_strip_lead` | `בעלת עסק?` | `יש לכם עסק?` | ✅ |
+| 2 | `about.consumer.cta.heading` | `בנית עסק שמגיע לו בית? אנחנו רוצות להכיר.` | `בניתם עסק שמגיע לו בית? אנחנו רוצות להכיר.` | ✅ |
+| 3 | `about_why_local.changes_1` | `מבית העסק, ישר אליך.` | `מבית העסק, ישר אליכם.` | ✅ |
+| 4 | `nav.footer.brand_tagline` + 4 `seo.*` descriptions + `SITE_DESCRIPTION` | `…של העסק שלך…` | `…של העסק שלכם…` | ⏳ **not applied** — the line is LOCKED by ADR-011 (also BRAND.md, CONTEXT.md, `lib/constants.js`, guarded by `adr011-tagline.test.js`). Changing it amends the ADR; waiting for Sapir's call |
+| 5 | `nav.footer.cta_pitch` | `יש לך עסק מזון מקומי?` | `יש לכם עסק מזון מקומי?` | ✅ |
+| 6 | `about.consumer.badges_link.label` (new) | — | `לכל התגים באתר` (en `All badges on the site`) | ✅ |
+| 7 | `account.sheet.biz_cta` | `יש לך בית עסק?` | `יש לכם בית עסק?` | ✅ |
+
