@@ -95,8 +95,10 @@ describe("section tab bar + single recipe (source)", () => {
   it("the tab row carries the ChipScrollRow edge-fade mask, fed by the overflow signal", () => {
     const s = src("components/SectionAnchorNav.jsx");
     expect(s).toMatch(/chip-scroll-fade-mask/);
-    expect(s).toMatch(/"--chip-fade-start": `\$\{canScrollStart \? START_FADE_PX : 0\}px`/);
-    expect(s).toMatch(/"--chip-fade-end": `\$\{canScrollEnd \? END_FADE_PX : 0\}px`/);
+    // The gradient's "start" stop is the physical right edge: RTL maps start→start,
+    // LTR (/en) swaps the two depths.
+    expect(s).toMatch(/"--chip-fade-start": `\$\{isRtl \? startPx : endPx\}px`/);
+    expect(s).toMatch(/"--chip-fade-end": `\$\{isRtl \? endPx : startPx\}px`/);
     expect(s).toMatch(/useScrollAffordance\(\)/);
   });
   it("exactly one recipe → full row on a phone, half from md; 2+ unchanged", () => {

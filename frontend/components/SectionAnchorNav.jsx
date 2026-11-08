@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 // MEH-2836: the same overflow signal ChipScrollRow uses for its edge fades.
 import useScrollAffordance from "@/hooks/useScrollAffordance";
+import { useLocale } from "next-intl";
 
 // MEH-2836: ChipScrollRow's mask depths (MEH-1572), same approach — a CSS
 // mask (.chip-scroll-fade-mask in globals.css) whose edge is transparent only
@@ -38,9 +39,16 @@ export default function SectionAnchorNav({ items, ariaLabel, className = "" }) {
   // MEH-2836: the hook owns the row ref (rowRef is the same object) and
   // reports whether tabs are hidden past either edge.
   const { scrollRef: rowRef, canScrollStart, canScrollEnd } = useScrollAffordance();
+  // .chip-scroll-fade-mask's gradient runs `to left`: its --chip-fade-start
+  // stop is the physical RIGHT edge. ChipScrollRow pins dir="rtl", so right is
+  // always its start; this row follows the page's direction instead (/en is
+  // LTR, where the start is the LEFT edge), so the two depths swap sides there.
+  const isRtl = useLocale() !== "en";
+  const startPx = canScrollStart ? START_FADE_PX : 0;
+  const endPx = canScrollEnd ? END_FADE_PX : 0;
   const fadeVars = {
-    "--chip-fade-start": `${canScrollStart ? START_FADE_PX : 0}px`,
-    "--chip-fade-end": `${canScrollEnd ? END_FADE_PX : 0}px`,
+    "--chip-fade-start": `${isRtl ? startPx : endPx}px`,
+    "--chip-fade-end": `${isRtl ? endPx : startPx}px`,
   };
   const pillRefs = useRef(new Map());
 
