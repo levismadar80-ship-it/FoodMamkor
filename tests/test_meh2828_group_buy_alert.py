@@ -18,12 +18,12 @@ from datetime import timedelta
 from decimal import Decimal
 from uuid import uuid4
 
-from conftest import auth_header, make_producer, make_user
-
 from app.models import Favorite, FavoriteAlert
 from app.models.models import GroupBuy
 from app.routers.group_buys import format_price
 from app.utils.clock import utc_now
+from conftest import auth_header, make_producer, make_user
+from sqlalchemy import update
 
 _SUB = {"endpoint": "https://push.example/gb", "keys": {"p256dh": "x", "auth": "y"}}
 
@@ -68,6 +68,33 @@ def _follower(db, producer, *, pref=True, push=_SUB, recipe=True):
         )
     )
     db.commit()
+    # A NULL cannot be written through the constructor: both columns carry a
+    # Python-side default=True, and SQLAlchemy applies it to an explicit None,
+    # so the row would hold TRUE and every "NULL" test would pass for the
+    # wrong reason (caught 08/11 — the older-column guard went red because
+    # the recipe row was TRUE, not NULL). Write the NULLs with an UPDATE.
+    nulls = {
+        col: None
+        for col, value in (
+            ("notify_new_group_buy", pref),
+            ("notify_new_recipe", recipe),
+        )
+        if value is None
+    }
+    if nulls:
+        db.execute(
+            update(FavoriteAlert)
+            .where(
+                FavoriteAlert.user_id == user.id,
+                FavoriteAlert.producer_id == producer.id,
+            )
+            .values(**nulls)
+        )
+        db.commit()
+        row = db.query(FavoriteAlert).filter(FavoriteAlert.user_id == user.id).one()
+        db.refresh(row)
+        for col in nulls:
+            assert getattr(row, col) is None, f"control: {col} must really be NULL"
     return user
 
 
@@ -131,7 +158,7 @@ class TestTrigger:
         assert calls == []
 
     def test_cancel_and_fulfil_fire_nothing(self, client, db, monkeypatch):
-        producer, owner = _owner(db)
+        _, owner = _owner(db)
         created = client.post(
             "/group-buys", json=_payload(), headers=auth_header(owner)
         )
@@ -147,19 +174,21 @@ class TestTrigger:
         assert calls == []
 
     def test_reaching_the_goal_fires_nothing(self, client, db, monkeypatch):
-        producer, owner = _owner(db)
+        _, owner = _owner(db)
+        # min_participants has ge=2 (GroupBuyCreate) — two joins fund it.
         created = client.post(
-            "/group-buys", json=_payload(min_participants=1), headers=auth_header(owner)
+            "/group-buys", json=_payload(min_participants=2), headers=auth_header(owner)
         )
-        assert created.status_code == 201
+        assert created.status_code == 201, created.text
         calls = _capture_fire_alerts(monkeypatch)
-        buyer = make_user(db, email=f"buyer-{uuid4().hex[:6]}@example.com")
-        r = client.post(
-            f"/group-buys/{created.json()['id']}/commit",
-            json={"quantity": 1},
-            headers=auth_header(buyer),
-        )
-        assert r.status_code in (200, 201), r.text
+        for _ in range(2):
+            buyer = make_user(db, email=f"buyer-{uuid4().hex[:6]}@example.com")
+            r = client.post(
+                f"/group-buys/{created.json()['id']}/commit",
+                json={"quantity": 1},
+                headers=auth_header(buyer),
+            )
+            assert r.status_code in (200, 201), r.text
         db.expire_all()
         assert (
             db.query(GroupBuy).filter(GroupBuy.id == created.json()["id"]).one().status
