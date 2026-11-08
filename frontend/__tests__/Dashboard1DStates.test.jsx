@@ -117,6 +117,10 @@ describe("Dashboard 1D — share-gate (MEH-964)", () => {
     // VanityLinkCard renders the /p/{slug} vanity URL on the canonical
     // domain (MEH-1267: mehamakor.online staging alias → SITE_URL mehamakor.co.il).
     expect(screen.getByText(/mehamakor\.co\.il\/p\/demo-farm/)).toBeInTheDocument();
+    // MEH-2827 PR 8: «שתפו» is a button that opens the share sheet — no
+    // WhatsApp-only link on the card.
+    expect(screen.getByTestId("vanity-share").tagName).toBe("BUTTON");
+    expect(document.querySelector('a[href^="https://wa.me/?text="]')).toBeNull();
   });
 
   it("hides the share card + shows the locked hint when INCOMPLETE", async () => {

@@ -451,24 +451,27 @@ describe("what was not collected", () => {
     expect(screen.queryByTestId("rescue-leftover")).toBeNull();
   });
 
-  it("offers WhatsApp, the rescue group and «נמסרו בחינם» once bags were left", async () => {
+  it("offers «שתפו», the rescue group and «נמסרו בחינם» once bags were left", async () => {
     mockDay({ offers: [bag({ leftover: 3 })], points: ZICHRON });
+    const shareSpy = vi.fn(() => Promise.resolve());
+    Object.defineProperty(navigator, "share", { configurable: true, value: shareSpy });
     render(<RescueTab />);
     expect(await screen.findByTestId("rescue-leftover")).toBeTruthy();
     expect(screen.getByTestId("rescue-leftover").textContent).toContain(
       lookup("rescue.dashboard.leftover_hint"),
     );
-    // No recipient: the business picks the contact or group in WhatsApp.
-    const share = (await screen.findByTestId("rescue-leftover-share")).getAttribute("href");
-    expect(share.startsWith("https://wa.me/?text=")).toBe(true);
-    const text = decodeURIComponent(share.slice("https://wa.me/?text=".length));
-    await waitFor(() =>
-      expect(
-        decodeURIComponent(
-          screen.getByTestId("rescue-leftover-share").getAttribute("href").slice("https://wa.me/?text=".length),
-        ),
-      ).toContain("מאפיית הכרמל"),
-    );
+    // MEH-2827 PR 8: the phone's own share sheet, not a wa.me link. Still no
+    // recipient — the business picks the group or story there.
+    const share = await screen.findByTestId("rescue-leftover-share");
+    expect(share.tagName).toBe("BUTTON");
+    expect(share.getAttribute("href")).toBeNull();
+    expect(share.textContent).toBe(lookup("share.trigger"));
+    await waitFor(() => {
+      fireEvent.click(screen.getByTestId("rescue-leftover-share"));
+      expect(shareSpy.mock.calls.at(-1)?.[0]?.text ?? "").toContain("מאפיית הכרמל");
+    });
+    const text = shareSpy.mock.calls.at(-1)[0].text;
+    Object.defineProperty(navigator, "share", { configurable: true, value: undefined });
     expect(text).toContain("זכרון יעקב");
     const group = screen.getByTestId("rescue-leftover-link");
     expect(group.getAttribute("href")).toBe("https://www.facebook.com/groups/freefood/");

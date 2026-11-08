@@ -38,9 +38,22 @@ function VanityLinkCard({ slug }) {
     });
   };
 
-  const waText = encodeURIComponent(
-    t("wa_text_template", { url })
-  );
+  // MEH-2827 PR 8: «שתפו» opens the phone's own share sheet — Instagram
+  // stories matter most to food businesses and are reachable only there. The
+  // existing message rides as text, the link only as `url`. No sheet (most
+  // desktops) → the same copy as the button beside it.
+  const tShare = useTranslations("share");
+  const share = async () => {
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({ text: t("wa_text_template", { url: "" }).trim(), url });
+      } catch {
+        // cancelled — the owner's answer
+      }
+      return;
+    }
+    copy();
+  };
 
   return (
     <div className="bg-surface border border-border rounded-lg p-5 mb-6">
@@ -55,14 +68,14 @@ function VanityLinkCard({ slug }) {
         >
           {copied ? t("copied") : t("copy_cta")}
         </button>
-        <a
-          href={`https://wa.me/?text=${waText}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="btn-whatsapp-outline flex-1 text-sm text-center rounded-sm px-3 py-1.5"
+        <button
+          type="button"
+          onClick={share}
+          data-testid="vanity-share"
+          className="flex-1 text-sm text-center rounded-sm px-3 py-1.5 bg-primary text-background hover:bg-primary-dark transition"
         >
-          {t("share_cta")}
-        </a>
+          {tShare("trigger")}
+        </button>
       </div>
     </div>
   );

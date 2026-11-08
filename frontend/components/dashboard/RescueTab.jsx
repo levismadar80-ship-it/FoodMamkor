@@ -9,6 +9,7 @@ import { ALLERGEN_CODES, toggleAllergen } from "@/lib/allergens";
 import { detailToMessage, errorMessage } from "@/lib/errors";
 import { israelTime, leftoverGroupUrl, shekels } from "@/lib/rescue";
 import Button from "@/components/ui/Button";
+import { showToast } from "@/lib/toast";
 
 /**
  * Module:   RescueTab
@@ -40,6 +41,8 @@ const AT = { code: "code", orders: "orders", cancel: "cancel", publish: "publish
 
 export default function RescueTab() {
   const t = useTranslations("rescue.dashboard");
+  const tShare = useTranslations("share");
+  const tCopied = useTranslations("dashboard.producer.vanity_link");
   // The allergen LABELS are the product sheet's, not a second copy: one
   // vocabulary for the whole site (MEH-2662).
   const tProducts = useTranslations("settings.products.form");
@@ -282,13 +285,30 @@ export default function RescueTab() {
   const chosenQty = donateQty === null ? leftoverTotal : Math.min(donateQty, leftoverTotal);
   // No recipient in the link: the business picks the contact or group in
   // WhatsApp itself, so nothing about who receives it is stored here.
-  const shareHref = `https://wa.me/?text=${encodeURIComponent(
-    t("leftover_share_text", {
-      count: leftoverTotal,
-      name: businessName,
-      city: exactLocation?.city || "",
-    }),
-  )}`;
+  // MEH-2827 PR 8: «שתפו» opens the phone's own share sheet (a WhatsApp
+  // group, an Instagram story, a neighbourhood Facebook group…) with the same
+  // message. No sheet → the message is copied. Still no recipient stored.
+  const leftoverText = t("leftover_share_text", {
+    count: leftoverTotal,
+    name: businessName,
+    city: exactLocation?.city || "",
+  });
+  async function shareLeftover() {
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({ text: leftoverText });
+      } catch {
+        // cancelled
+      }
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(leftoverText);
+      showToast.success(tCopied("copied"));
+    } catch {
+      // no clipboard either
+    }
+  }
 
   // `total` bags spread over today's offers in order, each capped at its own
   // leftover. A set, not an increment, so 0 undoes the report.
@@ -688,15 +708,14 @@ export default function RescueTab() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {/* Without the business name the text would carry an empty slot. */}
             {businessName && (
-              <a
-                href={shareHref}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                type="button"
+                onClick={shareLeftover}
                 data-testid="rescue-leftover-share"
-                className="block text-center bg-primary text-white py-2 rounded-md font-medium"
+                className="block w-full text-center bg-primary text-background py-2 rounded-md font-medium"
               >
-                {t("leftover_share")}
-              </a>
+                {tShare("trigger")}
+              </button>
             )}
             <a
               href={leftoverHref}
