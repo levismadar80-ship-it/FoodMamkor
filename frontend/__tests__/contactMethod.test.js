@@ -70,10 +70,17 @@ describe("getPrimaryContactHref", () => {
     expect(href).toContain(`text=${encodeURIComponent("שלום — בדיקה")}`);
   });
 
-  it("whatsapp: null when no phone", () => {
+  // MEH-2836: «null» now means NO contact detail at all — a declared method
+  // missing its field falls back to the next method that has data.
+  it("whatsapp: null when no phone and no other contact detail", () => {
     expect(
-      getPrimaryContactHref({ ...base, phone: null, primary_contact_method: "whatsapp" }),
+      getPrimaryContactHref({ ...base, phone: null, website: "", contact_email: null, instagram: null, facebook: null, external_order_form: null, primary_contact_method: "whatsapp" }),
     ).toBe(null);
+  });
+  it("whatsapp declared, no phone, a website → falls back to the website (MEH-2836)", () => {
+    expect(
+      getPrimaryContactHref({ ...base, phone: null, contact_email: null, primary_contact_method: "whatsapp" }),
+    ).toBe("https://havat-hashikma.co.il");
   });
 
   it("phone: builds tel:", () => {
@@ -82,9 +89,9 @@ describe("getPrimaryContactHref", () => {
     ).toBe("tel:0501234567");
   });
 
-  it("phone: null when no phone", () => {
+  it("phone: null when no contact detail at all", () => {
     expect(
-      getPrimaryContactHref({ ...base, phone: "", primary_contact_method: "phone" }),
+      getPrimaryContactHref({ ...base, phone: "", website: "", contact_email: null, instagram: null, facebook: null, external_order_form: null, primary_contact_method: "phone" }),
     ).toBe(null);
   });
 
@@ -104,9 +111,9 @@ describe("getPrimaryContactHref", () => {
     ).toBe("https://havat-hashikma.co.il");
   });
 
-  it("website: null when no website", () => {
+  it("website: null when no contact detail at all", () => {
     expect(
-      getPrimaryContactHref({ ...base, website: "", primary_contact_method: "website" }),
+      getPrimaryContactHref({ ...base, phone: null, website: "", contact_email: null, instagram: null, facebook: null, external_order_form: null, primary_contact_method: "website" }),
     ).toBe(null);
   });
 
@@ -116,9 +123,9 @@ describe("getPrimaryContactHref", () => {
     ).toBe("mailto:hello@havat-hashikma.co.il");
   });
 
-  it("email: null when no contact_email", () => {
+  it("email: null when no contact detail at all", () => {
     expect(
-      getPrimaryContactHref({ ...base, contact_email: null, primary_contact_method: "email" }),
+      getPrimaryContactHref({ ...base, phone: null, website: "", contact_email: null, instagram: null, facebook: null, external_order_form: null, primary_contact_method: "email" }),
     ).toBe(null);
   });
 });

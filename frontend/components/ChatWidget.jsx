@@ -5,6 +5,7 @@ import { ChatCircleDots, X, PaperPlaneTilt } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import CollectionNotice from "@/components/CollectionNotice";
+import { INERT_PRESENT } from "@/lib/inert-attr";
 
 /**
  * ChatWidget — floating Q&A bot, all screen sizes.
@@ -153,7 +154,67 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
   // newsletter arrow) ends above the launcher; BackToTop reads it to know
   // whether the launcher slot is taken. Desktop, an open panel, or a launcher
   // kept off this page → the var is removed (0).
-  const launcherOnMobile = viewportKnown && !isDesktop && !hideOnMobile && !open;
+  // MEH-2835 PR 2: one mechanism for "step aside" — any element carrying
+  // data-chat-hide hides the MOBILE launcher while it intersects the viewport
+  // (the map, a form, the business page's sticky contact bar while shown).
+  // The set is re-scanned on DOM changes (route changes, a bar toggling its
+  // attribute), throttled to one scan per frame. Desktop never steps aside.
+  const [hiddenByPage, setHiddenByPage] = useState(false);
+  useEffect(() => {
+    if (!viewportKnown || isDesktop || typeof window === "undefined" || typeof window.IntersectionObserver === "undefined") {
+      setHiddenByPage(false);
+      return undefined;
+    }
+    const observed = new Set();
+    const inView = new Set();
+    const io = new window.IntersectionObserver((entries) => {
+      for (const e of entries) {
+        if (e.isIntersecting) inView.add(e.target);
+        else inView.delete(e.target);
+      }
+      setHiddenByPage(inView.size > 0);
+    });
+    const scan = () => {
+      const now = new Set(document.querySelectorAll("[data-chat-hide]"));
+      for (const el of observed) {
+        if (!now.has(el)) {
+          io.unobserve(el);
+          observed.delete(el);
+          inView.delete(el);
+        }
+      }
+      for (const el of now) {
+        if (!observed.has(el)) {
+          io.observe(el);
+          observed.add(el);
+        }
+      }
+      setHiddenByPage(inView.size > 0);
+    };
+    scan();
+    // `pending` (not the rAF id) gates the throttle: an id assigned after a
+    // synchronously-run callback would leave the gate shut for good.
+    let pending = false;
+    let frame = 0;
+    const mo = new MutationObserver(() => {
+      if (pending) return;
+      pending = true;
+      frame = window.requestAnimationFrame(() => {
+        pending = false;
+        scan();
+      });
+    });
+    mo.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["data-chat-hide"] });
+    return () => {
+      io.disconnect();
+      mo.disconnect();
+      if (frame) window.cancelAnimationFrame(frame);
+    };
+  }, [viewportKnown, isDesktop]);
+  // An open panel stays open: stepping aside only applies to the closed launcher.
+  const steppedAside = hiddenByPage && !isDesktop && !open;
+
+  const launcherOnMobile = viewportKnown && !isDesktop && !hideOnMobile && !open && !steppedAside;
   useEffect(() => {
     if (typeof document === "undefined") return;
     const root = document.documentElement;
@@ -259,6 +320,14 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
   // 9997. At 9999 it painted over the open filter sheet's end corner. The
   // panel keeps 9999 (it is the sheet here).
   if (!isDesktop) Object.assign(launcherStyle, { zIndex: 1050 });
+  // MEH-2835 PR 2: stepping aside = a 150ms fade, no pointer events, inert.
+  if (!isDesktop) {
+    Object.assign(launcherStyle, {
+      transition: "opacity 150ms ease",
+      opacity: steppedAside ? 0 : 1,
+      pointerEvents: steppedAside ? "none" : undefined,
+    });
+  }
   // MEH-1135: desktop 360px box anchors to the same bottom-END corner as the
   // launcher (insetInlineEnd:24, insetInlineStart:auto); mobile stays full-width
   // (both inline insets 0 → spans edge-to-edge in either direction).
@@ -287,6 +356,8 @@ export default function ChatWidget({ hideOnMobile = false } = {}) {
         onClick={open ? () => setOpen(false) : handleOpen}
         style={launcherStyle}
         data-testid="chat-launcher"
+        data-stepped-aside={steppedAside ? "true" : undefined}
+        inert={steppedAside ? INERT_PRESENT : undefined}
         // MEH-2793: `print:hidden` — a floating chat button has no business on
         // paper, and it printed over the A6 QR card (MEH-2785) and the A5
         // rescue counter card (MEH-2649). The class goes on the component's

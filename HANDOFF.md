@@ -4,6 +4,25 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-08 — אייקונים (MEH-2834)
+
+**‏שורה אחת:** ‏#4187 מוזג ל-staging. ‏PR 2 (הלוגו במיילים) עצר עד החלטה של ספיר.
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏`BrandIcons.test.js` קורא PNG עם `node:zlib`. לא מוסיפים `pngjs` (Knip).
+
+---
+
+## 2026-11-08 — כפתור הצ׳אט בטלפון (MEH-2835)
+
+**‏שורה אחת:** ‏#4192 ו-#4195 מוזגו ל-staging.
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏**אלמנט שהכפתור לא צריך לכסות** (טופס, פס פעולה) מקבל `data-chat-hide=""`. הכפתור בטלפון זז הצידה כל עוד האלמנט על המסך. אלמנט שמקבל את התכונה מאוחר יותר (כמו פס יצירת הקשר) גם עובד.
+- ‏**`--chat-fab-clearance`** הוא 64px כשהכפתור מוצג בטלפון, ו-0 כשהוא זז הצידה. רכיב צף בתחתית (כמו «חזרה למעלה») משתמש בו.
+
+---
+
 ## 2026-11-08 — טופס פנייה אחד (MEH-2832)
 
 **‏שורה אחת:** ‏#4184 ו-#4186 מוזגו ל-staging. ‏/contact הוא הטופס היחיד באתר.

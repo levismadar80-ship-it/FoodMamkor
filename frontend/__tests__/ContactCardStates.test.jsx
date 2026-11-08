@@ -61,13 +61,20 @@ vi.mock("@phosphor-icons/react", () => {
 import ContactCard from "@/app/[locale]/producer/[id]/components/ContactCard";
 import { trackContactClick } from "@/lib/contact-tracking";
 
-// primary_contact_method = whatsapp has no matching row icon, so every field
-// set below survives the filter — the channel count is exactly the field count.
+// The primary CTA's channel never repeats as a row. MEH-2836: the CTA now uses
+// the RESOLVED method (a declared WhatsApp with no number falls back to the
+// first channel with data), so a bare "whatsapp" base would turn the first
+// field each case adds into the CTA. The base therefore declares a primary
+// that HAS its data and adds no row of its own to the cases below —
+// external_order — so every field a case sets survives the filter and the
+// channel count is exactly the field count, as these MEH-1551/MEH-2775 cases
+// intend.
 const base = {
   id: 7,
   name: "מאפיית רוח השדה",
   city: "זכרון יעקב",
-  primary_contact_method: "whatsapp",
+  primary_contact_method: "external_order",
+  external_order_form: "forms.gle/order",
 };
 
 const renderCard = (extra = {}) =>
@@ -259,7 +266,9 @@ describe("ContactCard degenerate states (MEH-1551)", () => {
     ["instagram (legacy URL row)", { instagram: "https://instagram.com/shikma" }, "אינסטגרם", false],
     ["whatsapp_group", { whatsapp_group: "https://chat.whatsapp.com/AbC123" }, "producer.detail.contact_card.single.whatsapp_group", false],
     ["facebook", { facebook: "facebook.com/shikma" }, "producer.detail.contact_card.single.facebook", false],
-    ["external_order", { external_order_form: "forms.gle/x" }, "producer.detail.contact_card.single.external_order", false],
+    // The base's CTA is external_order; to see external_order as a sole ROW,
+    // this case declares facebook (with its data) as the CTA instead.
+    ["external_order", { primary_contact_method: "facebook", facebook: "facebook.com/cta", external_order_form: "forms.gle/x" }, "producer.detail.contact_card.single.external_order", false],
   ])("sole %s row shows %s", (_name, extra, text, ltr) => {
     renderCard(extra);
     const row = screen.getByTestId("contact-single-row");

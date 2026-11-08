@@ -729,7 +729,7 @@ export default function AboutPage() {
       {/* ======== 08 — Contact (signpost to /contact, MEH-2832) ======== */}
       {/* MEH-1113: id="contact" — kept as the anchor old /about#contact links
           land on. scroll-mt-24 offsets the sticky header. */}
-      <FadeInSection id="contact" as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
+      <FadeInSection id="contact" data-chat-hide="" as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
         <div className="max-w-2xl mx-auto px-4 md:px-12">
           <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight">
             {t("contact.heading")}
