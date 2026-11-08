@@ -28,17 +28,16 @@
  * server component render it.
  */
 
-const SEEDS = [
-  // [rotate, fill, highlight, highlightOpacity] — verbatim from public/logo.svg
-  [36, "#2E6853", "#7BAA90", 0.5],
-  [108, "#C8632E", "#EAA378", 0.5],
-  [180, "#C99846", "#E8C788", 0.5],
-  [252, "#D9C8B0", "#1F4A3A", 0.2],
-  [324, "#5A8F73", "#A3C7B3", 0.5],
-];
+import { SEED_PATH, SEED_ROTATIONS, SEEDS_LIGHT } from "@/lib/brand-seeds";
 
-const SEED_PATH =
-  "M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z";
+// MEH-2833: the seeds come from the seed layer's one source. Same values as
+// before (verbatim from public/logo.svg), same tuple shape — no visual change.
+const SEEDS = SEED_ROTATIONS.map((deg, i) => [
+  deg,
+  SEEDS_LIGHT[i].fill,
+  SEEDS_LIGHT[i].highlight,
+  SEEDS_LIGHT[i].highlightOpacity,
+]);
 
 function BrandMark({ size = 56, className = "" }) {
   return (
