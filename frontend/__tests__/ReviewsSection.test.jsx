@@ -602,11 +602,29 @@ describe("ReviewsSection — the initial on a seed tint (MEH-2833 board 4)", () 
     expect(initial.className).not.toContain("bg-green-50");
   });
 
-  it("every seed tint keeps the letter ≥ 4.5:1 (text ink #1C1A17)", async () => {
-    const { SEEDS_LIGHT } = await import("@/lib/brand-seeds");
-    const pickable = SEEDS_LIGHT.filter((s) => s.name !== "sand");
+  it("every seed's RENDERED tint keeps the letter ≥ 4.5:1 (text ink #1C1A17)", async () => {
+    // Reads the background the component actually painted — not a copy of
+    // its recipe — for one reviewer per pickable seed.
+    const { SEEDS_LIGHT, seedColorFor } = await import("@/lib/brand-seeds");
+    const pickable = SEEDS_LIGHT.filter((s) => s.name !== "sand").map((s) => s.name);
     expect(pickable).toHaveLength(4);
-    for (const s of pickable) expect(ratio(hexRgb("#1C1A17"), mix(s.fill, 0.24))).toBeGreaterThanOrEqual(4.5);
+    const idFor = {};
+    for (let i = 0; Object.keys(idFor).length < pickable.length && i < 500; i += 1) {
+      const name = seedColorFor(`u-${i}`).name;
+      if (!(name in idFor)) idFor[name] = `u-${i}`;
+    }
+    expect(Object.keys(idFor).sort()).toEqual([...pickable].sort());
+    // One render per seed: the list shows 3 reviews before «more».
+    for (const name of pickable) {
+      mockReviews([{ id: `rev-${name}`, user_id: idFor[name], user_name: "רונית כ.", stars: 5, body: "טעים", created_at: "2026-07-01T11:00:00", reply: null, reply_at: null }]);
+      const { unmount } = render(<ReviewsSection producerId="p-1" isOwner={false} />);
+      const el = await screen.findByTestId("review-initial");
+      expect(el.getAttribute("data-seed")).toBe(name);
+      const bg = el.style.background.match(/\d+/g).map(Number);
+      expect(bg).toHaveLength(3);
+      expect(ratio(hexRgb("#1C1A17"), bg), name).toBeGreaterThanOrEqual(4.5);
+      unmount();
+    }
   });
 
   it("the same reviewer always gets the same seed; two different ones can differ", async () => {
