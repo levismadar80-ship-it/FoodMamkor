@@ -54,8 +54,10 @@ export default async function GuidesIndexPage({ params }) {
   const t = await getTranslations({ locale, namespace: "guides" });
   const ti = await getTranslations({ locale, namespace: "guides.index" });
   return (
-    <section className="min-h-screen bg-background text-text">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
+    // MEH-2827 (FinalGuides): no min-h-screen and a short bottom pad, so no
+    // empty band is left between the last card and the site footer.
+    <section className="bg-background text-text">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-12 sm:pt-16 pb-2">
         <header className="mb-10 sm:mb-14">
           <p className="text-xs sm:text-sm mb-3 text-accent">
             {ti("eyebrow")}
@@ -73,7 +75,7 @@ export default async function GuidesIndexPage({ params }) {
             <li key={g.slug}>
               <Link
                 href={`/about/for-businesses/guides/${g.slug}`}
-                className="block rounded-lg border border-border bg-surface p-5 sm:p-6 transition focus-visible:outline-none focus-visible:ring-2"
+                className="block rounded-lg border border-border bg-surface-card p-5 sm:p-6 transition focus-visible:outline-none focus-visible:ring-2"
               >
                 <p className="text-2xs sm:text-xs mb-2 text-accent">
                   {ti("minutes_label", { minutes: g.readMinutes })}
@@ -92,7 +94,7 @@ export default async function GuidesIndexPage({ params }) {
           ))}
         </ul>
 
-        <footer className="mt-14 sm:mt-16 border-t border-border pt-8">
+        <footer className="mt-8 rounded-xl bg-background-alt p-5">
           <p className="text-base text-text/90">
             {ti("footer_prefix")}{" "}
             <a
