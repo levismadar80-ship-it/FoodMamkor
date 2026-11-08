@@ -64,7 +64,9 @@ describe("/about/process steps on seeds (MEH-2833)", () => {
   it("number ink: cream on the dark seeds, text on gold — each ≥ 3:1 at 20px bold (large text)", () => {
     const { container } = render(<AboutProcessClient />);
     const INK = { "text-background": "#F5F0E8", "text-text": "#1C1A17" };
-    for (const m of container.querySelectorAll('[data-testid="process-step-seed"]')) {
+    const marks = container.querySelectorAll('[data-testid="process-step-seed"]');
+    expect(marks).toHaveLength(4); // a loop over none would pass vacuously
+    for (const m of marks) {
       const name = m.getAttribute("data-seed");
       const num = m.querySelector("span");
       const cls = num.className.split(/\s+/);
