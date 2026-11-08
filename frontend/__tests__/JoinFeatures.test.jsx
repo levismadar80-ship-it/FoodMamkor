@@ -320,11 +320,12 @@ describe("review round 1 (adversarial, #4123)", () => {
  */
 describe("swipe follows, on settle (phone shelf)", () => {
   // jsdom lays nothing out: put the named card in the middle of the shelf.
-  function centre(group) {
+  // `offset` = how far (px) the card's centre sits from the shelf's centre.
+  function centre(group, offset = 0) {
     vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function box() {
       if (this.dataset?.testid === "join-shelf") return { left: 0, width: 390, top: 0, height: 400, right: 390 };
       if (this.dataset?.testid === "join-group-card") {
-        const left = this.dataset.group === group ? 45 : 2000;
+        const left = this.dataset.group === group ? 45 + offset : 2000;
         return { left, width: 300, top: 0, height: 400, right: left + 300 };
       }
       return { left: 0, width: 0, top: 0, height: 0, right: 0 };
@@ -364,6 +365,55 @@ describe("swipe follows, on settle (phone shelf)", () => {
       expect(screen.getAllByTestId("join-shelf-dot").map((d) => d.dataset.active)).toEqual(
         BUSINESS_FEATURE_GROUPS.map((g) => (g === "contact" ? "true" : "false")),
       );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // Sapir, 07/11: "smooth, but a bit slow". Measured (Safari-like, 4G): the
+  // card turned green 167ms after the shelf stopped, the clip played ~360ms
+  // after. The light cues now follow the finger; only the panel waits.
+  it("while the shelf moves, the card nearest the centre lights up at once (header + dot) — the panel waits", () => {
+    renderFeatures();
+    centre("contact");
+    fireEvent.scroll(shelf());
+    const card = cards().find((c) => c.dataset.group === "contact");
+    expect(within(card).getAllByRole("button")[0].className, "the header did not follow the finger").toContain(
+      "bg-state-selected",
+    );
+    expect(screen.getAllByTestId("join-shelf-dot").map((d) => d.dataset.active)).toEqual(
+      BUSINESS_FEATURE_GROUPS.map((g) => (g === "contact" ? "true" : "false")),
+    );
+    // Committed state is unchanged until the shelf rests.
+    expect(panel().dataset.group).toBe("page");
+    expect(cardButton("page").getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("the clip of the card coming to rest starts loading before the shelf stops", () => {
+    renderFeatures();
+    centre("contact", 20); // nearly centred, still moving
+    fireEvent.scroll(shelf());
+    expect(screen.getByTestId("join-clip").dataset.group).toBe("contact");
+    expect(panel().dataset.group).toBe("page");
+  });
+
+  it("a card flying past far from the centre does not start a clip download", () => {
+    renderFeatures();
+    centre("contact", 140); // nearest, but ~half a card off-centre: a flick in progress
+    fireEvent.scroll(shelf());
+    expect(screen.getByTestId("join-clip").dataset.group).toBe("page");
+  });
+
+  it("Safari path: the panel follows within ~100ms of the last scroll event (was 150)", () => {
+    vi.useFakeTimers();
+    try {
+      renderFeatures();
+      centre("trust");
+      fireEvent.scroll(shelf());
+      act(() => {
+        vi.advanceTimersByTime(100);
+      });
+      expect(panel().dataset.group).toBe("trust");
     } finally {
       vi.useRealTimers();
     }

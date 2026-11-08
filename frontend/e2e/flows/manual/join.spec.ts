@@ -519,6 +519,59 @@ test.describe("manual › /join (MEH-995)", () => {
     });
   });
 
+  // Sapir, 07/11: "smooth, but a bit slow". Measured Safari-like: the card lit
+  // up 167ms AFTER the shelf stopped. Run Safari-like here too (no
+  // `scrollend`): the header must light up while the shelf is still moving,
+  // and the panel must follow within ~130ms of it stopping.
+  test.describe("swipe responsiveness, Safari-like, with motion", () => {
+    test.use({ reducedMotion: "no-preference" });
+
+    test("the header lights up mid-swipe; the panel follows soon after the shelf stops", async ({ page }) => {
+      await page.addInitScript(() => {
+        const orig = EventTarget.prototype.addEventListener;
+        EventTarget.prototype.addEventListener = function (type: string, ...rest: unknown[]) {
+          if (type === "scrollend") return;
+          // @ts-expect-error -- forwarding the original signature
+          return orig.call(this, type, ...rest);
+        };
+      });
+      await page.setViewportSize({ width: 390, height: 844 });
+      await gotoJoin(page);
+      const shelf = scope(page).getByTestId("join-shelf");
+      await shelf.scrollIntoViewIfNeeded();
+      const t = await shelf.evaluate(async (node: HTMLElement) => {
+        const root = node.closest("#main-content")!;
+        const panel = root.querySelector<HTMLElement>('[data-testid="join-panel"]')!;
+        const card = node.querySelector<HTMLElement>('[data-testid="join-group-card"][data-group="found"]')!;
+        const s = node.getBoundingClientRect();
+        const c = card.getBoundingClientRect();
+        const t0 = performance.now();
+        node.scrollBy({ left: c.left + c.width / 2 - (s.left + s.width / 2), behavior: "smooth" });
+        const ev: { lit?: number; panel?: number; stop?: number } = {};
+        let last = node.scrollLeft;
+        await new Promise<void>((done) => {
+          const tick = () => {
+            const now = performance.now() - t0;
+            if (node.scrollLeft !== last) {
+              last = node.scrollLeft;
+              ev.stop = now;
+            }
+            // "Lit" = the header's green fill, the cue the eye actually sees.
+            if (ev.lit === undefined && card.querySelector("button")!.className.includes("bg-state-selected")) ev.lit = now;
+            if (ev.panel === undefined && panel.dataset.group === "found") ev.panel = now;
+            if (now < 2000) requestAnimationFrame(tick);
+            else done();
+          };
+          requestAnimationFrame(tick);
+        });
+        return ev;
+      });
+      expect(t.lit, "the header never lit up").toBeDefined();
+      expect(t.lit!, "the header waited for the shelf to stop").toBeLessThan(t.stop!);
+      expect(t.panel! - t.stop!, "the panel lagged the stop").toBeLessThanOrEqual(130);
+    });
+  });
+
   // The toggletip overlays: opening it moves nothing below it.
   test("toggletip opens over the list without moving it, and closes on Esc", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
