@@ -8,38 +8,6 @@
  * Harness: MapManualOrigin.test.jsx's MapClient mocks, with a fake Leaflet map
  * on mapRef and the bottom sheet rendered as a measurable element.
  */
-/**
- * MEH-2014 PR 2 — a city the user picked is a sort origin.
- *
- * PR 1 made "מרחק" ask for GPS instead of sitting grey. That leaves the denial
- * path still dead: the copy it shows ("אפשר לבחור עיר כדי למיין לפי מרחק")
- * promised a manual alternative that did not exist. PR 2 builds it, and with
- * two possible origins the surface now has to SAY which one is active — a card
- * distance label is a bare magnitude since MEH-1307 dropped the "ממך" suffix,
- * so "3 ק"מ" is unreadable unless something on screen names what it is 3 km
- * from.
- *
- * DISCRIMINATION (.claude/rules/testing.md, MEH-1619). Measured against the
- * pre-PR-2 tree — `MapClient.jsx`, `lib/user-location.js` and `lib/places.js`
- * all reverted to the merged PR 1 state: **8 of 10 red**. The 2 that stay
- * green are named in the test bodies and are don't-regress guards, not
- * evidence for this change:
- *
- *   - "does not geocode on page load" — must hold before and after. It exists
- *     so a future edit cannot turn a city pick into a load-time lookup, the
- *     same class as PR 1's Lighthouse geolocation-on-start guard.
- *   - "no origin label with nothing stored" — the affordance must be absent
- *     when there is no origin, in both states.
- *
- * Neither is load-bearing alone; each is paired with a sibling that IS red
- * against the old code ("picking a city stores it" / "names the city origin").
- *
- * MapClient is the /map shell over four hooks and six heavy children. Those
- * are stubbed on the same pattern as MapNearestSortTrigger.test.jsx; the
- * SUBJECT — handleMapCitySelected, the origin control, and the storage record
- * — is the real component. Leaflet is never mounted under jsdom in this repo
- * (MapSsrFallback.test.jsx carries the standing reason).
- */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, act, within } from "@testing-library/react";
 import he from "../messages/he.json";
@@ -199,14 +167,18 @@ const harness = vi.hoisted(() => ({
   selectedLocation: null,
 }));
 
-function setup({ desktop = false, reduce = false, markerY, sheetTop = 500, mapTop = 0 }) {
+function setup({ desktop = false, reduce = false, markerY, sheetTop = 500, mapTop = 0, mapLeft = 0 }) {
   window.matchMedia = vi.fn().mockImplementation((q) => ({
     matches: q.includes("min-width: 1024px") ? desktop : q.includes("prefers-reduced-motion") ? reduce : false,
     media: q, addEventListener: vi.fn(), removeEventListener: vi.fn(), addListener: vi.fn(), removeListener: vi.fn(),
   }));
   const container = document.createElement("div");
-  container.getBoundingClientRect = () => ({ top: mapTop, left: 0 });
+  container.getBoundingClientRect = () => ({ top: mapTop, left: mapLeft });
+  const handlers = {};
   const map = {
+    on: vi.fn((ev, fn) => { (handlers[ev] ||= new Set()).add(fn); }),
+    off: vi.fn((ev, fn) => { handlers[ev]?.delete(fn); }),
+    fire: (ev) => { for (const fn of [...(handlers[ev] ?? [])]) fn(); },
     panBy: vi.fn(),
     getContainer: () => container,
     latLngToContainerPoint: () => ({ x: 100, y: markerY }),
@@ -223,11 +195,16 @@ function setup({ desktop = false, reduce = false, markerY, sheetTop = 500, mapTo
   return { map, api, sheetTop };
 }
 
-async function renderAndSettle(sheetTop) {
+async function renderOnly(sheetTop) {
   const { default: MapPage } = await import("@/app/[locale]/map/MapClient");
   const utils = render(<MapPage />);
   const sheet = utils.getByTestId("map-bottom-sheet");
   sheet.getBoundingClientRect = () => ({ top: sheetTop });
+  return utils;
+}
+
+async function renderAndSettle(sheetTop) {
+  const utils = await renderOnly(sheetTop);
   await act(async () => { vi.advanceTimersByTime(400); });
   return utils;
 }
@@ -297,6 +274,58 @@ describe("mobile pick pan (MEH-2843)", () => {
     map.getContainer().appendChild(other);
     await renderAndSettle(sheetTop);
     expect(api.panBy).not.toHaveBeenCalled();
+  });
+
+  // The icon rects are page coordinates; the point is map-container
+  // coordinates. A map that does not start at the page's top-left corner
+  // must still find the icon and use its bottom in map space.
+  it("matches the icon in map space when the map is offset on both axes", async () => {
+    // Offsets larger than the 36px match radius, so dropping either term
+    // would miss the icon (and fall back to the centre point: no pan).
+    const { map, api } = setup({ markerY: 470, mapTop: 60, mapLeft: 60 });
+    const icon = document.createElement("div");
+    icon.className = "leaflet-marker-icon";
+    // point (100, 470) in map space → centre (160, 530) on the page
+    icon.getBoundingClientRect = () => ({ left: 142, right: 178, top: 512, bottom: 548, height: 36 });
+    map.getContainer().appendChild(icon);
+    await renderAndSettle(560); // edge = 560 - 60 = 500 in map space
+    expect(api.panBy).toHaveBeenCalledWith([0, (548 - 60) - (500 - 24)], { animate: true });
+  });
+
+  // A card tap flies the map (focusProducer, 250ms + a 1.2s flyTo). Measured
+  // mid-flight the offset is arbitrary, and our pan's moveend would consume
+  // the fly's programmatic flag. So the pan waits for the move to end.
+  it("waits for a move in progress (a card tap's fly) and pans once it ends", async () => {
+    const { map, api, sheetTop } = setup({ markerY: 600, sheetTop: 500 });
+    await renderOnly(sheetTop);
+    map.fire("movestart");
+    await act(async () => { vi.advanceTimersByTime(400); });
+    expect(api.panBy).not.toHaveBeenCalled();
+    await act(async () => { map.fire("moveend"); });
+    expect(api.panBy).toHaveBeenCalledTimes(1);
+    expect(api.panBy).toHaveBeenCalledWith([0, 124], { animate: true });
+    // control: our own pan's moveend does not trigger a second pan
+    await act(async () => { map.fire("moveend"); });
+    expect(api.panBy).toHaveBeenCalledTimes(1);
+  });
+
+  it("a move that already ended before the sheet settled does not delay the pan", async () => {
+    const { map, api, sheetTop } = setup({ markerY: 600, sheetTop: 500 });
+    await renderOnly(sheetTop);
+    map.fire("movestart");
+    map.fire("moveend");
+    await act(async () => { vi.advanceTimersByTime(400); });
+    expect(api.panBy).toHaveBeenCalledTimes(1);
+  });
+
+  it("unmounting before the sheet settles cancels the pan and its listeners", async () => {
+    const { map, api, sheetTop } = setup({ markerY: 600, sheetTop: 500 });
+    const utils = await renderOnly(sheetTop);
+    utils.unmount();
+    await act(async () => { vi.advanceTimersByTime(400); });
+    map.fire("moveend");
+    expect(api.panBy).not.toHaveBeenCalled();
+    expect(map.off).toHaveBeenCalledWith("movestart", expect.any(Function));
   });
 
   it("desktop never pans", async () => {

@@ -1,7 +1,8 @@
 /**
- * MEH-2843 — on a phone the «?» map key rides the sheet edge in the top-start
- * corner and sat on Leaflet's zoom «−». The zoom moves to the top-right corner
- * on a phone (one control per corner, MEH-2776); desktop keeps the default.
+ * MEH-2843 — on a phone the «?» map key rides the sheet edge at `end-4` and,
+ * in rtl, sat on Leaflet's zoom «−». The mobile-shell map in rtl moves the
+ * zoom to the top-right corner (one control per corner, MEH-2776); ltr and the
+ * desktop shell keep the default. The map API's panBy is a programmatic move.
  * Leaflet is stubbed (repo convention — MapMarkerFanOut.test.jsx).
  */
 import { describe, it, expect, beforeEach, vi } from "vitest";
@@ -61,17 +62,44 @@ beforeEach(() => {
   leafletMap.handlers = {};
 });
 
+/** MapComponent mounted the way MapClient mounts it: inside a shell, under a dir. */
+const mountIn = ({ shell, dir }, props = {}) => {
+  const host = document.createElement("div");
+  host.setAttribute("dir", dir);
+  const shellEl = document.createElement("div");
+  shellEl.setAttribute("data-map-shell", shell);
+  host.appendChild(shellEl);
+  document.body.appendChild(host);
+  return render(<MapComponent producers={[]} {...props} />, { container: shellEl });
+};
+
 describe("map zoom control corner (MEH-2843)", () => {
-  it("phone: the zoom moves to the top-right corner, away from the «?» key", () => {
+  // The «?» key + layers toggle sit at `end-4` in the MOBILE shell: physical
+  // left in rtl (on the zoom's «−»), physical right in ltr (clear of it).
+  it("mobile shell, rtl: the zoom moves to the top-right corner, away from the «?» key", () => {
     viewport(false);
-    render(<MapComponent producers={[]} />);
+    mountIn({ shell: "mobile", dir: "rtl" });
     expect(zoom.setPosition).toHaveBeenCalledWith("topright");
   });
 
-  it("desktop (lg+): the zoom keeps Leaflet's default corner", () => {
-    viewport(true);
-    render(<MapComponent producers={[]} />);
+  it("mobile shell, ltr (/en): the key is already on the right, so the zoom keeps the top-left", () => {
+    viewport(false);
+    mountIn({ shell: "mobile", dir: "ltr" });
     expect(zoom.setPosition).not.toHaveBeenCalled();
+  });
+
+  // Decided per instance, not from the viewport: both shells mount at once,
+  // and a rotation across 1024px shows the other one with its own corner.
+  it("desktop shell keeps Leaflet's default corner even when mounted on a narrow viewport", () => {
+    viewport(false);
+    mountIn({ shell: "desktop", dir: "rtl" });
+    expect(zoom.setPosition).not.toHaveBeenCalled();
+  });
+
+  it("mobile shell moves the zoom even when mounted on a wide viewport", () => {
+    viewport(true);
+    mountIn({ shell: "mobile", dir: "rtl" });
+    expect(zoom.setPosition).toHaveBeenCalledWith("topright");
   });
 });
 
@@ -83,7 +111,7 @@ describe("map API panBy is a programmatic move (MEH-2843)", () => {
     viewport(false);
     let api = null;
     const onMapMove = vi.fn();
-    render(<MapComponent producers={[]} registerApi={(a) => { api = a; }} onMapMove={onMapMove} />);
+    mountIn({ shell: "mobile", dir: "rtl" }, { registerApi: (a) => { api = a; }, onMapMove });
     expect(api?.panBy, "control: the API is registered").toBeTypeOf("function");
     expect(leafletMap.handlers.moveend, "control: moveend is listened to").toBeTypeOf("function");
     return { api, onMapMove };
@@ -99,7 +127,7 @@ describe("map API panBy is a programmatic move (MEH-2843)", () => {
     expect(onMapMove).toHaveBeenCalledTimes(1);
   });
 
-  it("a zero offset is skipped, so it cannot swallow the visitor's next move", () => {
+  it("a zero offset is skipped (nothing to move) and the next user move still raises the banner", () => {
     const { api, onMapMove } = mount();
     api.panBy([0, 0], { animate: true });
     expect(leafletMap.panBy).not.toHaveBeenCalled();
