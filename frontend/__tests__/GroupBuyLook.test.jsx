@@ -107,13 +107,16 @@ describe("group-buy card", () => {
 });
 
 describe("group-buy page", () => {
-  it("renders the join card once — one quantity field, one share link", async () => {
+  it("renders the join card once — one quantity field, one «שתפו», no WhatsApp link, no -% pill", async () => {
     api.get.mockResolvedValue({ data: GB });
-    render(<GroupBuyDetailClient id="gb-1" />);
+    const { container } = render(<GroupBuyDetailClient id="gb-1" />);
     await screen.findByText("שק קמח כוסמין");
     expect(screen.getAllByRole("spinbutton")).toHaveLength(1);
-    expect(screen.getAllByText("group_buys.detail.share_wa")).toHaveLength(1);
-    expect(screen.getByTestId("group-buy-discount").textContent).toBe("-28%");
+    // MEH-2827 PR 7: the generic share replaces the WhatsApp-only link, and
+    // the saving lives in the price tiles, not in a pill on the photo.
+    expect(screen.getAllByTestId("group-buy-share")).toHaveLength(1);
+    expect(container.querySelector('a[href*="wa.me"]')).toBeNull();
+    expect(screen.queryByTestId("group-buy-discount")).toBeNull();
   });
 
   it("open → «איך זה עובד» with the group's minimum; funded → no box", async () => {
