@@ -58,3 +58,20 @@ Full text: <https://openfontlicense.org/open-font-license-official-text/>
    the fallback-bearing half of a split family still sorts last in the stacks.
 4. Expect VRT to move if the typeface actually changed, and review the PNGs by
    eye before accepting any baseline.
+
+## Which faces are preloaded (MEH-2850)
+
+`localFont` preloads every face by default, on **every** page. Two calls opt out
+with `preload: false`, because the home page renders neither and the preloads
+cost 109KB against the Lighthouse page-weight budget (measured 08/11: fonts on
+`/` went from 223KB to 118KB):
+
+| Call | Why it is not preloaded |
+|---|---|
+| `cormorantGaramond` (regular + italic) | No text on `/` uses it. Pages that do load it on first use (`display: swap`, adjusted Times fallback, no layout shift). |
+| `heeboLatin` | DM Sans comes first in every body stack and covers the Latin glyphs, so this face is rarely reached. |
+
+`__tests__/HomeWeightMEH2850.test.jsx` pins the split: these two say
+`preload: false`, every other face does not. Before turning a preload off, check
+the face is not rendered above the fold on `/` (count computed `font-family` per
+text element).
