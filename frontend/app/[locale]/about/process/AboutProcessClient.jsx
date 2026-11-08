@@ -149,9 +149,12 @@ export default function AboutProcessClient() {
           </p>
           <ol data-testid="process-steps" className="grid grid-cols-1 md:grid-cols-4 gap-8">
             {STEPS.map(({ Icon }, i) => (
+              // content-start (MEH-2833): the 4-up row stretches every <li> to the
+              // tallest step; without it the stretch pads the seed row, and the
+              // step titles land at different heights.
               <li
                 key={i}
-                className="grid grid-cols-[44px_1fr] md:grid-cols-1 gap-4 items-start"
+                className="grid grid-cols-[44px_1fr] md:grid-cols-1 gap-4 items-start content-start"
               >
                 {/* MEH-2833 (seed layer, board 3): each step is a seed in logo
                     order — green, terracotta, gold, sage (sand would vanish on

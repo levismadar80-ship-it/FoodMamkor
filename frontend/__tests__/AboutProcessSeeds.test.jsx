@@ -61,6 +61,9 @@ describe("/about/process steps on seeds (MEH-2833)", () => {
       // no inner highlight under the number (it would drop cream below 3:1)
       expect(svg.querySelector("ellipse")).toBeNull();
     }
+    // md+ 4-up row: the stretched <li> must not pad the seed row, or the
+    // step titles land at different heights.
+    for (const li of container.querySelectorAll('[data-testid="process-steps"] > li')) expect(li.className).toMatch(/\bcontent-start\b/);
     // The old numeral circle is gone from the steps.
     expect(container.querySelector('[data-testid="process-steps"] .rounded-full.border-accent')).toBeNull();
   });
