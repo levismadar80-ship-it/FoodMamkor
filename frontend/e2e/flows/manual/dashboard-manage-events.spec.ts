@@ -88,6 +88,13 @@ async function stubManage(page: Page, events: Row[], experiences: Row[], writes:
   // expires the session, and the next page renders for nobody.
   await page.route("**/producers/me/review-link", (r) =>
     json(r, 200, { url: "https://mehamakor.co.il/p/shaked?rt=e2e-review-invite" }));
+  // The event/experience forms' «איך נרשמים?» field (RegistrationMethodField,
+  // MEH-2766) reads the business's phone once, to know whether WhatsApp/phone
+  // are offered. Unstubbed it hits the real backend with the fake token → 401
+  // → failed refresh → the session expires mid-test and the form page turns
+  // into /login (seen on the edit-experience test, 08/11).
+  await page.route("**/producers/me", (r) =>
+    json(r, 200, { id: 7, name: "מאפיית שקד", slug: "shaked", status: "approved", phone: "0501234567" }));
   // The address providers — never reached from a test.
   await page.route("https://nominatim.openstreetmap.org/**", (r) => json(r, 200, []));
   await page.route("https://places.googleapis.com/**", (r) => json(r, 200, {}));
