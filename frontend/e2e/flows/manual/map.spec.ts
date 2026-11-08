@@ -157,6 +157,9 @@ const mobileOnly = (info: TestInfo, why: string) => test.skip(isDesktop(info), w
 const MC = he.map.client;
 const MP = he.map.pane;
 const MF = he.map.filter;
+// `NM.empty` is not rendered anywhere since #3959: the empty near-me result is
+// the bottom sheet's `he.map.bottom_sheet.near_me_empty` line. Only `NM.aria`
+// is read here — a check against `NM.empty` would pass on any page.
 const NM = he.map.near_me_pill;
 const CP = he.map.city_picker;
 const CARD_EMPTY = he.map.card_list.empty;
