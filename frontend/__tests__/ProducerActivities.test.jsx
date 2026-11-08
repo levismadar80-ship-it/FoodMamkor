@@ -63,7 +63,9 @@ describe("ProducerActivities", () => {
     expect(card.textContent).not.toContain("מכוורת השדה");
     expect(card.textContent).toContain("דבש");
     expect(card.textContent).toContain("remaining_to_open");
-    expect(screen.getByTestId("group-buy-discount").textContent).toBe("-20%");
+    // MEH-2827 PR 7: the saving is a line under the price, not a -% pill.
+    expect(screen.queryByTestId("group-buy-discount")).toBeNull();
+    expect(screen.getByTestId("group-buy-saving").textContent).toBe('discount_hint:{"discount":20}');
     expect(screen.queryByTestId("producer-events")).toBeNull();
   });
 
