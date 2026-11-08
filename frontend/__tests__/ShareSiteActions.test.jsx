@@ -86,7 +86,8 @@ describe("ShareSiteActions", () => {
     render(<ShareSiteActions layout="compact" />);
     fireEvent.click(screen.getByTestId("share-native"));
     await waitFor(() => expect(shareSpy).toHaveBeenCalledTimes(1));
-    expect(shareSpy.mock.calls[0][0].url).toBe(SITE);
+    // MEH-2827 PR 6: title + the URL ONLY as url — no text carrying the URL.
+    expect(shareSpy.mock.calls[0][0]).toEqual({ title: expect.any(String), url: SITE });
   });
 
   it("no native sheet → copies the link with the existing toast", async () => {
