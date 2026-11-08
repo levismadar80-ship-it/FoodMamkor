@@ -89,10 +89,14 @@ export default function ShareSiteActions({
 
   // Native sheet first; a cancelled sheet is the reader's answer, so it never
   // falls through to a copy. No sheet (most desktops) → copy the link.
+  // MEH-2827 PR 6: the sheet gets the title and the URL ONLY as `url`. With
+  // the URL also inside `text` (share_page.message ends with it), iOS can
+  // share it as plain text with a generic compass icon instead of a link
+  // card with the preview image. The message stays for copy/email.
   const share = async () => {
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
-        await navigator.share({ title, ...(text ? { text } : {}), url });
+        await navigator.share({ title, url });
       } catch {
         // cancelled or refused — nothing else to do
       }
