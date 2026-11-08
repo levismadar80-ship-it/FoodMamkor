@@ -209,7 +209,11 @@ run_all() {
     if skipped_step build; then echo "build: skipped (STOP_HOOK_SKIP)"
     else
       echo "build: npm run build"
-      if ! (cd "$root/frontend" && npm run build 2>&1 | tail -20); then
+      # MEH-2845: next.config.js refuses to load without NEXT_PUBLIC_API_URL
+      # (lib/env.client.js), so the hook failed on the environment, not on the
+      # code. A local default for THIS build only — not an app env var; nothing
+      # is added to Vercel or Railway, and a value already set wins.
+      if ! (cd "$root/frontend" && NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL:-http://localhost:8000}" npm run build 2>&1 | tail -20); then
         reasons+=("Frontend build failed — fix errors before completing this task")
       fi
     fi

@@ -13,7 +13,7 @@ headings and numbers; read it before re-opening a rule.
 each item, run **both** lanes. Lane A first, then Lane B, each Urgent → High →
 Normal → Low. The card description is the full spec (§4 = the XML prompt);
 authority is ADR-032: **§3.5** RED items stop before merge until the
-adversarial reviewer runs; **§3.6** exploit-proving tests assert **behaviour**,
+adversarial reviewer (the fresh reviewer subagent, rule 5a) runs; **§3.6** exploit-proving tests assert **behaviour**,
 never that the prescribed change was applied.
 
 ### Lane A — `In Progress`: opt-in only
@@ -101,10 +101,13 @@ archived).
 
 ---
 
-## ✅ RESOLVED 2026-08-13 (MEH-1844) — CI reviewer confirmed working; temporary section removed
+## The reviewer is a fresh subagent — the CI reviewer is off (Sapir 08/11, until MEH-569)
 
-The CI reviewer works (`continue-on-error` stays; out of `ci-gate`). Check the
-PR for its comment; never infer reviewer status from this file.
+The `claude[bot]` CI review (`claude-review.yml`, «Adversarial review») was red
+on every PR for a reason it never printed (MEH-2845), so Sapir disabled it from
+the Actions page until the MEH-569 audit. Its job goes to a **fresh reviewer
+subagent** (rule 5a): a missing `claude[bot]` comment blocks nothing and is
+never waited for. (MEH-1844's "the CI reviewer works" — 13/08 — is history.)
 
 ---
 
@@ -128,8 +131,10 @@ PR for its comment; never infer reviewer status from this file.
    spec-vs-plan gap ("Spec says X, plan proposes Y"); never drop a requirement
    silently.
 5a. **Adversarial review before every merge to staging.** See
-   [testing.md](./testing.md). Check the PR for a `claude[bot]` comment; never
-   infer reviewer status from this file.
+   [testing.md](./testing.md). The reviewer is a **fresh subagent** CC starts
+   with the diff and the card's acceptance_criteria (not the `claude[bot]` CI
+   comment — off since 08/11, until MEH-569); every finding is fixed or answered
+   in the PR before the merge.
 5. **Tests before implementation.** See [testing.md](./testing.md).
 6. **Commit per task with a clear message.** One logical change = one commit;
    the message states *why*.
@@ -139,10 +144,11 @@ PR for its comment; never infer reviewer status from this file.
 8. **Use "ultrathink" for complex problems** — schema, security, multi-file
    refactors, anything costing >10 min to undo.
 9. **After every PR — send the Vercel preview URL when one exists.**
-   (`"בדיקי על: https://food-mamkor-[hash].vercel.app"`). Feature branches get
-   no Vercel deployment (MEH-2062) unless Sapir runs `vercel deploy`; else cite
-   the 375/1440 bundle + staging and never report an absent preview as
-   rendered. Wait for approval before merging to staging.
+   (`"בדיקי על: https://food-mamkor-[hash].vercel.app"`). A feature branch
+   gets a preview only for a commit whose message contains `[preview]`
+   (MEH-2845; `frontend/vercel.json` `ignoreCommand`) — every other push is
+   skipped, so previews stay off by default (MEH-1044 cost). Never report an
+   absent preview as rendered. Wait for approval before merging to staging.
 10. **After every PR — a test, not a checklist line (MEH-2796).** New
     behaviour gets an automated test (pytest / vitest / Playwright). Only what
     automation cannot see (real iPhone Safari, a third-party console, a flag
@@ -426,7 +432,10 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     self-clear it.** Sapir clears it, even after merge is authorized and even on
     CC's own marker, even when it looks stale. Never edit metadata or push a
     no-op to get past a gate; only fix a real cause CC owns. "Auto-merge
-    unarmed" is not a substitute for the marker.
+    unarmed" is not a substitute for the marker. A gate whose reviewer half is
+    the adversarial review (rule 5a, ADR-032 §3.5) is cleared by the **fresh
+    reviewer subagent's** pass with its findings fixed — never by waiting for
+    a `claude[bot]` comment, which is off since 08/11 (Sapir, until MEH-569).
 
     ### 30b — the marker is a LABEL, not a sentence (MEH-1523)
 
@@ -481,9 +490,10 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     (MEH-2825).** Open the PR, send Sapir a preview + 390 and 1280 screenshots,
     and stop until she writes «go merge». Docs-only / tests-only / CI PRs: CC
     merges when green. "Changes what users see" = any rendered pixel or copy on
-    any surface, `/admin` included; unsure → treat it as UI. Until Vercel
-    previews for feature branches are on (Sapir's switch), the screenshots come
-    from CC's own local production build, and the message says so. This adds to
+    any surface, `/admin` included; unsure → treat it as UI. Self-check step
+    (2), MEH-2845: push a `[preview]` commit, wait for the Vercel preview,
+    screenshot it (390×844 WebKit + 1280 Chromium), then merge — on the
+    preview, before the merge, not on staging after it. This adds to
     rule 23 (375/1440 in `qa-artifacts/`) and replaces none of it; a per-batch
     instruction to merge UI does not carry over to the next PR.
 
