@@ -27,6 +27,7 @@ import api from "@/lib/api";
 import { getWhatsAppHref, normalizePhone } from "@/lib/utils";
 import Input from "@/components/ui/Input";
 import CollectionNotice from "@/components/CollectionNotice";
+import ShareSiteActions from "@/components/ShareSiteActions";
 
 const BTN =
   "flex items-center justify-center min-h-[48px] w-full bg-primary text-white px-6 rounded-full font-semibold hover:bg-primary-dark transition focus-ring disabled:opacity-60";
@@ -235,10 +236,21 @@ export default function RegistrationCta({ kind, itemId, title, method, phone, ur
       : null;
 
   if (done) {
+    // MEH-2827 PR 5: just signed up is when a friend gets invited — one «שתפו»
+    // that shares THIS event page (title + its own URL, no site message).
+    // Events only; experiences keep the plain confirmation.
+    const eventUrl = kind === "events" && typeof window !== "undefined"
+      ? `${window.location.origin}${window.location.pathname}`
+      : "";
     return (
-      <p role="status" className="text-sm bg-green-50 border border-primary/30 text-text rounded-md p-3" data-testid="registration-success">
-        {tSignup("success")}
-      </p>
+      <div className="space-y-3">
+        <p role="status" className="text-sm bg-green-50 border border-primary/30 text-text rounded-md p-3" data-testid="registration-success">
+          {tSignup("success")}
+        </p>
+        {eventUrl && (
+          <ShareSiteActions layout="compact" url={eventUrl} title={title} message="" />
+        )}
+      </div>
     );
   }
 
