@@ -4,6 +4,14 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-08 — כלל «דרגת השקה» (#4170)
+
+**‏שורה אחת:** ‏#4170 מוזג ל-staging. ב-`workflow.md` נוסף סעיף «Launch tier (/join tool list)».
+
+**‏מה צריך לדעת לפני עבודה:** ב-PR שנוגע במשהו שבית עסק משתמש בו, כותבים בגוף ה-PR את הדרגה: א׳, ב׳ או ג׳. בדרגה א׳ ו-ב׳ מעדכנים את `business-features.js`, ורק בנוסח שאושר מילה במילה בכרטיס.
+
+---
+
 ## 2026-11-08 — פס סיום ירוק אחד, footer עד קצה המסך, כלל 38 (#4164–#4167)
 
 **‏שורה אחת:** ‏#4166 ו-#4167 מוזגו ל-staging אחרי «go merge» של ספיר. ‏#4164 (כלל 38) ו-#4165 (docs) מוזגו כשה-CI היה ירוק. הבא בתור: שישה PR-ים בדפי התוכן, ואחריהם PR שחרור staging → main.
