@@ -98,7 +98,7 @@ test.describe("manual › /share → /recommend#share (MEH-1160 · MEH-2827)", (
   });
 
   // MT:MEH-1160:4 — «שתפו» with a native share sheet: the payload handed to navigator.share.
-  test("«שתפו» hands title/text/url to navigator.share when it exists", async ({ page }) => {
+  test("«שתפו» hands title + url (no text) to navigator.share when it exists", async ({ page }) => {
     await page.addInitScript(() => {
       const calls: unknown[] = [];
       (window as unknown as { __shareCalls: unknown[] }).__shareCalls = calls;
@@ -119,7 +119,8 @@ test.describe("manual › /share → /recommend#share (MEH-1160 · MEH-2827)", (
     await expect.poll(async () => (await calls()).length).toBe(1);
     const [payload] = (await calls()) as Array<{ title?: string; text?: string; url?: string }>;
     expect(payload.url).toBe(siteUrl);
-    expect(payload.text).toBe(expectedMessage(siteUrl));
+    // MEH-2827 PR 6: the URL travels only as `url` (iOS link card, not text).
+    expect(payload.text).toBeUndefined();
     expect(typeof payload.title).toBe("string");
     expect(payload.title?.length ?? 0).toBeGreaterThan(0);
   });
