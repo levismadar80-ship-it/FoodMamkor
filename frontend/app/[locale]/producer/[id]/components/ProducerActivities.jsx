@@ -35,10 +35,15 @@ const SEED_COLORS = ["#2E6853", "#C8632E", "#C99846", "#D9C8B0", "#5A8F73"];
 const SEEDS_MAX = 10;
 const BAR_SEGMENTS = 5;
 const SEED_PATH = "M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z";
+// lg seeds shrink to fit (max 30×46): ten of them at 30px would need 336px,
+// and the progress box is ~280px wide at 375.
 const MARK_SIZE = {
   sm: { seed: [13, 20], seeds: "gap-0.5", bar: "gap-[3px]", segment: "h-1.5 w-3.5" },
-  lg: { seed: [30, 46], seeds: "gap-1", bar: "gap-1 w-full", segment: "h-3 flex-1" },
+  lg: { seed: null, seeds: "gap-1 w-full", bar: "gap-1 w-full", segment: "h-3 flex-1" },
 };
+// On the group page, up to this many seeds sit beside the count; more go
+// under it, full width, like the bar.
+export const SEEDS_BESIDE_TEXT = 5;
 
 /**
  * @param {object} props
@@ -55,11 +60,19 @@ export function GroupBuyProgressMark({ commits, min, funded = false, label, size
   if (target === 0) return null;
 
   if (target <= SEEDS_MAX) {
-    const [w, h] = s.seed;
+    const [w, h] = s.seed ?? ["100%", undefined];
     return (
       <span role="img" aria-label={label} data-testid="gb-progress-seeds" className={`flex items-end ${s.seeds}`}>
         {Array.from({ length: target }, (_, i) => (
-          <svg key={i} width={w} height={h} viewBox="-14 -46 28 42" aria-hidden="true" data-filled={i < got ? "true" : "false"}>
+          <svg
+            key={i}
+            width={w}
+            height={h}
+            viewBox="-14 -46 28 42"
+            aria-hidden="true"
+            data-filled={i < got ? "true" : "false"}
+            className={s.seed ? undefined : "min-w-0 flex-1 max-w-[30px]"}
+          >
             {i < got ? (
               <>
                 <path d={SEED_PATH} fill={SEED_COLORS[i % SEED_COLORS.length]} />
@@ -136,7 +149,9 @@ function GroupBuyRow({ gb }) {
             {td("discount_hint", { discount })}
           </p>
         )}
-        <div className="mt-3 flex items-center justify-between gap-2 rounded-lg bg-background-alt px-2.5 py-2">
+        {/* flex-wrap: ten seeds + a long count can exceed a 375 card; the days
+            then drop under the count instead of overflowing. */}
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 rounded-lg bg-background-alt px-2.5 py-2">
           <span className="flex items-center gap-2 min-w-0">
             <GroupBuyProgressMark commits={gb.commits_count} min={gb.min_participants} funded={funded} label={progress} />
             <span

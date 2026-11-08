@@ -16,7 +16,7 @@ import { showToast } from "@/lib/toast";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
 import { formatPrice } from "@/lib/utils";
 import { groupBuyDiscountPct } from "@/lib/group-buy-progress"; // MEH-2544
-import { GroupBuyProgressMark } from "@/app/[locale]/producer/[id]/components/ProducerActivities"; // MEH-2827 PR 7: one mark, card + page
+import { GroupBuyProgressMark, SEEDS_BESIDE_TEXT } from "@/app/[locale]/producer/[id]/components/ProducerActivities"; // MEH-2827 PR 7: one mark, card + page
 import Input from "@/components/ui/Input";
 import DeliveryChecker from "@/components/DeliveryChecker";
 import api from "@/lib/api";
@@ -360,7 +360,10 @@ export default function GroupBuyDetailClient({ id }) {
   };
   const progressLabel = t("progress_label", { commits: gb.commits_count, min: gb.min_participants });
   const remaining = Math.max(0, gb.min_participants - gb.commits_count);
-  const manySeats = gb.min_participants > 10;
+  // Stacked (count above, mark full width) for the bar and for 6–10 seeds;
+  // side by side only while the seeds fit beside the count at 375.
+  const stacked = gb.min_participants > SEEDS_BESIDE_TEXT;
+  const showRemaining = !expired && open && remaining > 0;
 
   const joinCard = (
     <div className="rounded-2xl border border-border bg-surface-card p-5 md:p-6" data-testid="group-buy-join-card">
@@ -388,19 +391,21 @@ export default function GroupBuyDetailClient({ id }) {
       {discount > 0 && <p className="mt-2 text-sm font-semibold text-gold-deep">{t("discount_hint", { discount })}</p>}
 
       <div className="mt-4 rounded-xl bg-background-alt px-3 py-3" data-testid="group-buy-progress">
-        {manySeats ? (
+        {stacked ? (
           <>
             <div className="text-end mb-2">
-              {!expired && open && <p className="text-sm font-bold text-text">{t("remaining_to_open", { n: remaining })}</p>}
+              {showRemaining && <p className="text-sm font-bold text-text">{t("remaining_to_open", { n: remaining })}</p>}
               <p className="text-xs text-fg-muted">{progressLabel}</p>
             </div>
             <GroupBuyProgressMark size="lg" commits={gb.commits_count} min={gb.min_participants} funded={funded || fulfilled} label={progressLabel} />
           </>
         ) : (
           <div className="flex items-end justify-between gap-3">
-            <GroupBuyProgressMark size="lg" commits={gb.commits_count} min={gb.min_participants} funded={funded || fulfilled} label={progressLabel} />
-            <div className="text-end">
-              {!expired && open && <p className="text-sm font-bold text-text">{t("remaining_to_open", { n: remaining })}</p>}
+            <span className="min-w-0 flex-1">
+              <GroupBuyProgressMark size="lg" commits={gb.commits_count} min={gb.min_participants} funded={funded || fulfilled} label={progressLabel} />
+            </span>
+            <div className="text-end shrink-0">
+              {showRemaining && <p className="text-sm font-bold text-text">{t("remaining_to_open", { n: remaining })}</p>}
               <p className="text-xs text-fg-muted">{progressLabel}</p>
             </div>
           </div>

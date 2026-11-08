@@ -111,6 +111,15 @@ describe("business page — the small card", () => {
     expect(screen.queryByTestId("gb-progress-seeds")).toBeNull();
   });
 
+  it("boundary: 10 seats are seeds, 11 are the bar", async () => {
+    answerList([{ ...GB, min_participants: 10, commits_count: 4 }, { ...GB, id: "gb-2", min_participants: 11, commits_count: 4 }]);
+    render(<ProducerActivities producerId="p-1" />);
+    await waitFor(() => expect(screen.getAllByTestId("producer-group-buy-row")).toHaveLength(2));
+    const [ten, eleven] = screen.getAllByTestId("producer-group-buy-row");
+    expect(ten.querySelectorAll('[data-testid="gb-progress-seeds"] svg')).toHaveLength(10);
+    expect(eleven.querySelector('[data-testid="gb-progress-bar"]')).not.toBeNull();
+  });
+
   it("funded: every seed filled and the strip says the price opened", async () => {
     answerList([{ ...GB, status: "funded", commits_count: 3 }]);
     render(<ProducerActivities producerId="p-1" />);
@@ -177,6 +186,25 @@ describe("group-buy page — the join card", () => {
     expect(payload.url).toBe(`${window.location.origin}${window.location.pathname}`);
     expect(payload.text).not.toMatch(/https?:\/\//);
     expect(payload.text).toContain("מארז לחמי מחמצת");
+  });
+
+  it("up to 5 seats sit beside the count; 6–10 stack under it, shrinking to fit", async () => {
+    const { unmount } = await renderPage();
+    const box = screen.getByTestId("group-buy-progress");
+    expect(box.firstElementChild.className).toContain("justify-between");
+    unmount();
+    await renderPage({ ...GB, min_participants: 10, commits_count: 4 });
+    const seeds = screen.getByTestId("group-buy-progress").querySelector('[data-testid="gb-progress-seeds"]');
+    expect(seeds.className).toContain("w-full");
+    expect(seeds.querySelectorAll("svg")).toHaveLength(10);
+    expect(seeds.querySelector("svg").getAttribute("class")).toContain("max-w-[30px]");
+  });
+
+  it("target reached but not yet funded: no «עוד 0», the count stays", async () => {
+    await renderPage({ ...GB, commits_count: 3 });
+    const box = screen.getByTestId("group-buy-progress");
+    expect(box.textContent).not.toContain("עוד 0");
+    expect(box.textContent).toContain("3 מתוך 3 הצטרפו");
   });
 
   it("no -% pill on the photo", async () => {
