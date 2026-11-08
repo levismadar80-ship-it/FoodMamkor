@@ -13,6 +13,20 @@ import { showToast } from "@/lib/toast";
 import { formatEventDate } from "@/lib/format-date";
 import EmptyState from "@/components/ui/EmptyState";
 import { SkeletonList } from "@/components/Skeleton";
+import { seedColorFor } from "@/lib/brand-seeds";
+
+// MEH-2833 (seed layer, board 4): a reviewer's initial sits on a soft tint of
+// "their" seed — the seed colour mixed ~24% into the cream page, with an inset
+// ring at ~55% — fixed per reviewer (seedColorFor). The letter stays text-ink.
+const PAGE_CREAM = [0xf5, 0xf0, 0xe8];
+const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+/** `amount` of the seed colour over cream, as an rgb() string. */
+function seedTint(hex, amount) {
+  const c = rgb(hex).map((v, i) => Math.round(v * amount + PAGE_CREAM[i] * (1 - amount)));
+  return `rgb(${c.join(", ")})`;
+}
+const INITIAL_TINT = 0.24;
+const INITIAL_RING = 0.55;
 
 // HOT-018 (MEH-782): numeric short date (e.g. 7.6.2026) — preserves the prior
 // `toLocaleDateString` default while routing through the Invalid-Date-guarded,
@@ -559,7 +573,12 @@ export default function ReviewsSection({
                   <span
                     aria-hidden="true"
                     data-testid="review-initial"
-                    className="w-10 h-10 shrink-0 rounded-full bg-green-50 text-primary flex items-center justify-center font-bold"
+                    data-seed={seedColorFor(review.user_id ?? review.user_name).name}
+                    className="w-10 h-10 shrink-0 rounded-full text-text flex items-center justify-center font-bold"
+                    style={{
+                      background: seedTint(seedColorFor(review.user_id ?? review.user_name).fill, INITIAL_TINT),
+                      boxShadow: `inset 0 0 0 1.5px ${seedTint(seedColorFor(review.user_id ?? review.user_name).fill, INITIAL_RING)}`,
+                    }}
                   >
                     {Array.from(formatName(review.user_name, anonymousFallback))[0]}
                   </span>
