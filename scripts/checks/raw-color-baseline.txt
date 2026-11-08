@@ -120,6 +120,11 @@ frontend/app/[locale]/map/components/MapKey.jsx:arb:#c9b48a
 frontend/app/[locale]/map/components/MapKey.jsx:arb:#c9b48a
 frontend/app/[locale]/map/components/MapKey.jsx:border-white
 frontend/app/[locale]/map/components/MapKey.jsx:border-white
+frontend/app/[locale]/producer/[id]/components/ProducerActivities.jsx:hex:#2e6853
+frontend/app/[locale]/producer/[id]/components/ProducerActivities.jsx:hex:#5a8f73
+frontend/app/[locale]/producer/[id]/components/ProducerActivities.jsx:hex:#c8632e
+frontend/app/[locale]/producer/[id]/components/ProducerActivities.jsx:hex:#c99846
+frontend/app/[locale]/producer/[id]/components/ProducerActivities.jsx:hex:#d9c8b0
 frontend/app/[locale]/producer/dashboard/edit/cards.jsx:bg-yellow-50
 frontend/app/[locale]/producer/dashboard/edit/cards.jsx:border-yellow-300
 frontend/app/[locale]/producer/dashboard/events/page.js:bg-yellow-50
