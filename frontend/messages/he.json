@@ -2957,14 +2957,7 @@
         "submit": "שליחה",
         "submit_loading": "בשליחה...",
         "success_toast": "תודה! נחזור אליכם בקרוב",
-        "email_direct": "אפשר גם ישירות במייל:",
-        "topic_label": "נושא הפנייה",
-        "topic_options": {
-          "general": "שאלה כללית",
-          "business": "פנייה של בית עסק",
-          "correction": "תיקון מידע באתר",
-          "other": "אחר"
-        }
+        "email_direct": "אפשר גם ישירות במייל:"
       }
     }
   },
@@ -3307,6 +3300,13 @@
     "success_send_another": "שליחת פנייה נוספת",
     "field_name_label": "שם מלא",
     "field_email_label": "אימייל",
+    "topic_label": "נושא הפנייה",
+    "topic_options": {
+      "general": "שאלה כללית",
+      "business": "פנייה של בית עסק",
+      "correction": "תיקון מידע באתר",
+      "other": "אחר"
+    },
     "field_message_label": "איך נוכל לעזור?",
     "submit": "שליחה",
     "submit_loading": "בשליחה...",
