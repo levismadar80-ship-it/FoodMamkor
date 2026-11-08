@@ -330,7 +330,7 @@ export default function Footer() {
                 likely to pass the site on. One «שתפו» (the phone's own share
                 sheet), on-dark colours; shares the site URL. */}
             {status === "success" && (
-              <div className="mt-4 rounded-xl border border-white/15 bg-white/5 p-4" data-testid="newsletter-share">
+              <div className="mt-4 rounded-xl border border-background/15 bg-background/5 p-4" data-testid="newsletter-share">
                 <p className="text-sm font-semibold text-background">{t("share_page.h1")}</p>
                 <ShareSiteActions layout="compact" tone="dark" className="mt-3" />
               </div>
