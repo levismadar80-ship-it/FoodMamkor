@@ -355,7 +355,7 @@ export function ProfileTab() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} data-chat-hide="" className="space-y-4">
         {/* MEH-1145 Wave E3: plain labeled field → ui/Input (canon; text-align
             via className, dir via ...rest — both pass through unchanged). */}
         <Input

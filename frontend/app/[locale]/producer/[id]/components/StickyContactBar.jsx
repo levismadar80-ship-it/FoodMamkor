@@ -90,6 +90,9 @@ export default function StickyContactBar({
       // true); the old `""` idiom was a silent no-op in the browser. The choice
       // lives in lib/inert-attr.js and is tested against both renderers.
       inert={!isBarVisible ? INERT_PRESENT : undefined}
+      // MEH-2835: while the bar is shown, the mobile chat launcher steps aside
+      // (ChatWidget watches [data-chat-hide]); hidden bar → attribute gone.
+      data-chat-hide={isBarVisible ? "" : undefined}
     >
       <div className="flex items-center gap-3 px-4 py-3">
         {/* Social proof — hidden if < 3 reviews. MEH-76 chunk 1: the vacation

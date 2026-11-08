@@ -976,7 +976,7 @@ export default function MapPage() {
       </div>
 
       {/* =================== MOBILE (below lg) — full map + sheet =================== */}
-      <div ref={mobileShellRef} data-testid="map-mobile-shell" className="lg:hidden" style={{ height: `calc(100dvh - ${mobileTopOffset}px)`, position: "relative" }}>
+      <div ref={mobileShellRef} data-testid="map-mobile-shell" data-chat-hide="" className="lg:hidden" style={{ height: `calc(100dvh - ${mobileTopOffset}px)`, position: "relative" }}>
         {/* Sticky filter bar — MEH-933 R2: sits at top-0 of the mobile shell.
             The shell is in normal flow AFTER the sticky <Header> (layout.js:221),
             so it already begins below the header band — the bar needs NO header
