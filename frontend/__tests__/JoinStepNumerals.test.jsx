@@ -10,6 +10,10 @@ vi.mock("next-intl/server", () => ({
   setRequestLocale: () => {},
   getTranslations: async () => (key) => key,
 }));
+// MEH-2824: the closing band is now the shared ClosingCtaBand, which reads its
+// «שאלה לפני? כתבו לנו» pair with useTranslations (it renders from server and
+// client parents alike). Same key-echo stub as getTranslations above.
+vi.mock("next-intl", () => ({ useTranslations: () => (key) => key }));
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ children, href, ...props }) => <a href={href} {...props}>{children}</a>,
 }));
