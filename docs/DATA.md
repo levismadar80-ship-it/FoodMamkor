@@ -1585,6 +1585,32 @@ break the underlying flow.
 Email is sent via `app/services/email.py` → Resend HTTP API (HTTPS/443).
 Railway blocks SMTP ports (25/465/587); `smtplib` was removed in full.
 
+### IndexNow — search-engine pings (MEH-2852)
+
+`app/services/indexnow.py` POSTs changed public URLs (he + `/en`, the shapes
+`frontend/app/sitemap.js` emits) to `https://api.indexnow.org/indexnow`, as a
+BackgroundTask after the commit. **Production only** (`RAILWAY_ENVIRONMENT ==
+"production"`); anywhere else it logs and returns. Timeout 5 s, never raises
+(log + Sentry breadcrumb), ≤ 10,000 URLs per call, deduped. Key: the
+`INDEXNOW_KEY` constant, served at `frontend/public/<key>.txt` (public by
+design). No env var, no retry, no Google.
+
+| Endpoint | Pings when |
+|---|---|
+| `POST /admin/producers` | created approved (not `as_draft`) |
+| `PUT /admin/producers/{id}` | business is approved — old + new URL on a slug change |
+| `POST /admin/producers/{id}/approve` | always (the page appeared) |
+| `POST /admin/producers/{id}/toggle-status` | always (hidden / back on the site) |
+| `POST /admin/producers/{id}/reject` | the business was approved |
+| `DELETE /admin/producers/{id}` | the business was approved |
+| `PUT /producers/me` | the business is approved |
+| `POST /events` · `PUT /events/{id}` · `DELETE /events/{id}` | the business is approved |
+| `POST /admin/experiences/{id}/approve` | the host's business is approved |
+| `POST /admin/experiences/{id}/reject` · `/request-changes` | the experience was approved |
+| `POST /group-buys` · `PATCH /group-buys/{id}/status` · `PATCH /admin/group-buys/{id}/status` | the business is approved |
+| `POST /admin/recipes/{id}/approve` | the business is approved and has a slug |
+| `POST /admin/recipes/{id}/reject` · `/request-changes` | the recipe was published |
+
 ---
 
 ## Env vars

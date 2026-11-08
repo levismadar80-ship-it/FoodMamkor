@@ -29,6 +29,7 @@ from app.services.group_buy_notifications import (
     send_cancelled_notifications,
     send_funded_notifications,
 )
+from app.services import indexnow  # MEH-2852
 from app.services.producer_listing import is_business
 from app.utils.clock import utc_now
 
@@ -418,6 +419,8 @@ def create_group_buy(
             url=f"/group-buys/{gb.id}",
         ),
     )
+    # MEH-2852: a new public page — create already requires an approved business.
+    indexnow.schedule(background_tasks, indexnow.group_buy_urls(gb.id))
     return {"id": str(gb.id), "detail": "קבוצת הרכישה נוצרה בהצלחה"}
 
 
@@ -507,9 +510,13 @@ def update_group_buy_status(  # noqa: PLR0913 — all 6 args are FastAPI-injecte
 
     title = gb.title
     producer_name = gb.producer.name if gb.producer else ""
+    is_public = indexnow.is_public_owner(gb.producer)  # MEH-2852
 
     gb.status = data.status
     db.commit()
+    # MEH-2852: cancelled / fulfilled — the public page changed.
+    if is_public:
+        indexnow.schedule(background_tasks, indexnow.group_buy_urls(group_buy_id))
 
     if participant_emails:
         background_tasks.add_task(
@@ -539,6 +546,7 @@ def admin_list_group_buys(
 def admin_update_status(
     group_buy_id: UUID,
     status: str,
+    background_tasks: BackgroundTasks,
     _admin: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
@@ -552,4 +560,6 @@ def admin_update_status(
         raise HTTPException(status_code=404, detail="קבוצת הרכישה לא נמצאה")
     gb.status = status
     db.commit()
+    if indexnow.is_public_owner(gb.producer):  # MEH-2852
+        indexnow.schedule(background_tasks, indexnow.group_buy_urls(gb.id))
     return {"detail": "סטטוס עודכן", "status": gb.status}

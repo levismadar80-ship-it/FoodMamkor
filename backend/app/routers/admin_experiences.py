@@ -14,13 +14,14 @@ always returns 200 so the admin UI can move on.
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from sqlalchemy.orm import Session, joinedload
 
 from app.auth import require_admin
 from app.database import get_db
 from app.models import Experience, User
 from app.routers.experiences import _serialize_detail
+from app.services import indexnow  # MEH-2852
 from app.services.registrations import registered_counts
 from app.schemas.schemas import ExperienceDetailOut, ExperienceModerationAction
 from app.services.experience_notifications import (
@@ -30,6 +31,17 @@ from app.services.experience_notifications import (
 )
 
 router = APIRouter(prefix="/admin/experiences", tags=["admin-experiences"])
+
+
+def _host_business(ex: Experience):
+    """MEH-2852: the business behind the host — public only when approved
+    (experiences._publicly_visible_query)."""
+    return ex.host.producer if ex.host else None
+
+
+def _ping_if_public(background_tasks: BackgroundTasks, ex: Experience) -> None:
+    if indexnow.is_public_owner(_host_business(ex)):
+        indexnow.schedule(background_tasks, indexnow.experience_urls(ex.id))
 
 
 # ---------- List ----------
@@ -60,6 +72,7 @@ def admin_list_experiences(
 @router.post("/{experience_id}/approve", response_model=ExperienceDetailOut)
 def approve_experience(
     experience_id: UUID,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
@@ -77,6 +90,7 @@ def approve_experience(
     ex.rejection_reason = None
     db.commit()
     db.refresh(ex)
+    _ping_if_public(background_tasks, ex)  # MEH-2852: the page appeared
 
     if ex.host and ex.host.email:
         notify_host_approved(ex.host.email, ex.title, str(ex.id))
@@ -94,6 +108,7 @@ def approve_experience(
 def request_changes(
     experience_id: UUID,
     action: ExperienceModerationAction,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
@@ -109,10 +124,13 @@ def request_changes(
     if not ex:
         raise HTTPException(status_code=404, detail="Experience not found")
 
+    was_live = ex.status == "approved"  # MEH-2852
     ex.status = "changes_requested"
     ex.admin_feedback = action.feedback
     db.commit()
     db.refresh(ex)
+    if was_live:  # MEH-2852: the live page just went away
+        _ping_if_public(background_tasks, ex)
 
     if ex.host and ex.host.email:
         notify_host_changes_requested(
@@ -129,6 +147,7 @@ def request_changes(
 def reject_experience(
     experience_id: UUID,
     action: ExperienceModerationAction,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
@@ -141,10 +160,13 @@ def reject_experience(
     if not ex:
         raise HTTPException(status_code=404, detail="Experience not found")
 
+    was_live = ex.status == "approved"  # MEH-2852
     ex.status = "rejected"
     ex.rejection_reason = action.feedback or ""
     db.commit()
     db.refresh(ex)
+    if was_live:  # MEH-2852: the live page just went away
+        _ping_if_public(background_tasks, ex)
 
     if ex.host and ex.host.email:
         notify_host_rejected(ex.host.email, ex.title, action.feedback or "")

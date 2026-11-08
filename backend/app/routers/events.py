@@ -32,6 +32,7 @@ from app.schemas.schemas import (
     EventUpdate,
     event_end_time_problem,
 )
+from app.services import indexnow  # MEH-2852
 from app.services.registrations import method_problem, registered_counts
 from app.utils.clock import israel_today, utc_now
 
@@ -319,6 +320,9 @@ def create_event(
             url=f"/events/{event.id}",
         ),
     )
+    # MEH-2852: a new public page (an approved business's events only).
+    if indexnow.is_public_owner(event.producer):
+        indexnow.schedule(background_tasks, indexnow.event_urls(event.id))
 
     return _serialize(event)
 
@@ -327,6 +331,7 @@ def create_event(
 def update_event(
     event_id: UUID,
     data: EventUpdate,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
 ):
@@ -385,12 +390,16 @@ def update_event(
         .filter(Event.id == event.id)
         .first()
     )
+    # MEH-2852: edited or cancelled (is_active) — the page changed either way.
+    if indexnow.is_public_owner(event.producer):
+        indexnow.schedule(background_tasks, indexnow.event_urls(event.id))
     return _serialize(event)
 
 
 @router.delete("/events/{event_id}")
 def delete_event(
     event_id: UUID,
+    background_tasks: BackgroundTasks,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -403,6 +412,10 @@ def delete_event(
     # event's existence isn't leaked. Admin-override preserved (admin → 200).
     if not (is_owner or is_admin):
         raise HTTPException(status_code=404, detail="Event not found")
+    # MEH-2852: read before the delete — the page goes with the row.
+    was_public = indexnow.is_public_owner(event.producer)
     db.delete(event)
     db.commit()
+    if was_public:
+        indexnow.schedule(background_tasks, indexnow.event_urls(event_id))
     return {"detail": "Event deleted"}
