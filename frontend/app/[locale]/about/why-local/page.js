@@ -148,7 +148,9 @@ export default async function WhyLocalPage({ params }) {
               <h2 className="font-headline-md mb-3 text-primary text-2xl font-bold">
                 {t("changes_h")}
               </h2>
-              <ul className="grid gap-2.5">
+              {/* role="list": Tailwind's list-style:none makes Safari/VoiceOver
+                  drop the list semantics; this restores "list, 3 items". */}
+              <ul role="list" className="grid gap-2.5">
                 {CHANGES_LINES.map((line) => (
                   <li key={line} className="flex gap-2.5 text-base sm:text-lg leading-[1.8] text-text/90">
                     <span aria-hidden="true" className="mt-[0.75em] h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
@@ -192,14 +194,19 @@ export default async function WhyLocalPage({ params }) {
         and this one is a consumer link to /map with no title. MEH-2634: /map,
         not /producers — the copy says «באזור שלכם». */}
     <section data-meets-footer className="bg-primary text-background py-12 text-center">
+      {/* Padded container (as the /about close): without it the button sat
+          flush to both screen edges once a longer label (en) wrapped at 375. */}
+      <div className="max-w-2xl mx-auto px-4">
       <Link
         href="/map"
         data-testid="why-local-cta"
         className="inline-flex items-center gap-2 min-h-[56px] px-9 py-4 bg-background text-primary rounded-lg font-semibold text-lg hover:bg-background-alt transition-colors duration-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-on-dark focus-visible:ring-offset-2 focus-visible:ring-offset-primary"
       >
         {t("cta")}
-        <ArrowLeft size={20} aria-hidden="true" />
+        {/* Forward arrow: points left in Hebrew, flips to point right in English. */}
+        <ArrowLeft size={20} aria-hidden="true" className="ltr:rotate-180" />
       </Link>
+      </div>
     </section>
     </>
   );
