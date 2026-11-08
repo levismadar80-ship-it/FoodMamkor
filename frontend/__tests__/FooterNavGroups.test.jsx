@@ -80,7 +80,7 @@ describe("Footer nav split into two audience groups (MEH-1177)", () => {
     // MEH-2369: /events is data-gated (no upcoming event → no link); the
     // never-settling api mock above keeps it hidden here. Its own behaviour is
     // asserted in EventsNavGate.test.jsx.
-    expect(discover).toEqual(["/", "/producers", "/map", "/about", "/about/why-local", "/share"]);
+    expect(discover).toEqual(["/", "/producers", "/map", "/about", "/about/why-local", "/recommend#share"]);
     expect(business).toEqual(["/join", "/about/process", "/about/for-businesses"]);
   });
 
@@ -90,7 +90,7 @@ describe("Footer nav split into two audience groups (MEH-1177)", () => {
       screen.getByRole("navigation", { name: "nav.footer.nav_aria" }).querySelectorAll("a[href]"),
     ).map((a) => a.getAttribute("href"));
     expect(navLinks.sort()).toEqual(
-      ["/", "/about", "/about/for-businesses", "/about/why-local", "/about/process", "/join", "/map", "/producers", "/share"].sort(),
+      ["/", "/about", "/about/for-businesses", "/about/why-local", "/about/process", "/join", "/map", "/producers", "/recommend#share"].sort(),
     );
   });
 });
