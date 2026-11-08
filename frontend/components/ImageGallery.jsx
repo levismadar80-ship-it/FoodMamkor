@@ -102,8 +102,10 @@ export default function ImageGallery({ images = [], producerId = null, producerN
         {/* MEH-2833 (seed layer, board 1): the masthead is sand
             (background-alt) and carries the logo as a supergraphic — a 280px
             bloom at the END side, half of it past the edge and cropped by the
-            card's overflow-hidden. Never rotated or mirrored; the visible half
-            always shows three seeds (green/terracotta/gold in RTL). Replaces
+            card's overflow-hidden (it is also cropped top and bottom). Never
+            rotated or mirrored; the visible half shows green, terracotta and
+            half the gold seed in RTL — as on the board — and sand, sage and half
+            the gold in LTR. Replaces
             the 6% green tint and the מ·ה corner monogram. */}
         <div
           className="relative bg-background-alt px-6 pb-6 pt-16 md:pt-20 flex items-end min-h-[120px] md:min-h-[150px]"
@@ -126,7 +128,9 @@ export default function ImageGallery({ images = [], producerId = null, producerN
             data-testid="masthead-name-block"
             className="relative flex items-center flex-wrap gap-x-3 gap-y-2 max-w-[calc(100%-9.5rem)]"
           >
-            <h1 className="font-headline-lg text-5xl md:text-6xl font-black text-text leading-tight">
+            {/* MEH-2833: a long single word wraps inside the capped block
+                instead of running into the bloom. */}
+            <h1 className="font-headline-lg text-5xl md:text-6xl font-black text-text leading-tight [overflow-wrap:anywhere]">
               {producerName}
             </h1>
             {/* MEH-1358: the masthead seal opens the SAME verification popover

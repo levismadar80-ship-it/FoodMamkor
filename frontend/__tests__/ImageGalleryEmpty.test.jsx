@@ -110,7 +110,10 @@ describe("ImageGallery empty state — Tinted Masthead (MEH-815)", () => {
     render(<ImageGallery images={[]} producerName="מאפיית רוח השדה של משפחת כהן בזכרון יעקב" />);
     const block = screen.getByTestId("masthead-name-block");
     expect(block.className).toMatch(/max-w-\[calc\(100%-9\.5rem\)\]/);
-    expect(block).toContainElement(screen.getByRole("heading", { level: 1 }));
+    const h1 = screen.getByRole("heading", { level: 1 });
+    expect(block).toContainElement(h1);
+    // a long unbreakable word wraps inside the cap instead of overflowing it
+    expect(h1.className).toContain("[overflow-wrap:anywhere]");
   });
 
   it("uses the cream background TOKEN + the sand (background-alt) layer, not inline hex", () => {
