@@ -145,7 +145,13 @@ test.describe("manual › /join (MEH-995)", () => {
     await expect(hero.getByTestId("join-cta")).toHaveText(COPY.cta);
     await expect(cta).toHaveAttribute("href", /\/register\/producer(?:[/?#]|$)/);
     await expect(hero).toContainText(COPY.trust_hint);
-    const heroText = (await hero.textContent()) ?? "";
+    // #4216 (approved by Sapir 08/11): the trust hint under the button is
+    // «חינם, בלי עמלות» — a promise of NO fees, the opposite of the fee/premium
+    // pitch this deny-list keeps out of the hero. The approved hint is taken
+    // out first (read from he.json, never retyped); any OTHER fee word in the
+    // hero still fails.
+    expect(COPY.trust_hint, "control: the approved hint is the one carrying «עמלות»").toContain("עמלות");
+    const heroText = ((await hero.textContent()) ?? "").replace(COPY.trust_hint, "");
     for (const word of HERO_FEES_VOCAB) {
       expect(heroText, `hero must not mention "${word}"`).not.toContain(word);
     }

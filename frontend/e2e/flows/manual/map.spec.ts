@@ -157,6 +157,9 @@ const mobileOnly = (info: TestInfo, why: string) => test.skip(isDesktop(info), w
 const MC = he.map.client;
 const MP = he.map.pane;
 const MF = he.map.filter;
+// `NM.empty` is not rendered anywhere since #3959: the empty near-me result is
+// the bottom sheet's `he.map.bottom_sheet.near_me_empty` line. Only `NM.aria`
+// is read here — a check against `NM.empty` would pass on any page.
 const NM = he.map.near_me_pill;
 const CP = he.map.city_picker;
 const CARD_EMPTY = he.map.card_list.empty;
@@ -173,7 +176,22 @@ const CHAT_OPEN_EN = eitherName(en.chat.launcher_open_label, en.chat.launcher_pi
 const MC_EN = en.map.client;
 
 type Axis = { key: string; label: string };
-const AXES = FILTER_AXES as Record<string, Axis>;
+/**
+ * MEH-2748 moved every axis's consumer label (and subtext) out of
+ * filter-taxonomy.js into messages/he.json `filter_axes.<key>`. Reading
+ * `FILTER_AXES[k].label` now yields undefined, and `getByRole("button",
+ * { name: undefined })` matches EVERY button — the 08/11 strict-mode reds. So
+ * the label is joined in from he.json here, and a missing one throws at load
+ * instead of silently widening a locator.
+ */
+const HE_AXES = (he as unknown as { filter_axes: Record<string, { label?: string; subtext?: string | null }> }).filter_axes;
+const AXES = Object.fromEntries(
+  Object.entries(FILTER_AXES as Record<string, object>).map(([k, a]) => {
+    const copy = HE_AXES[k];
+    if (!copy?.label) throw new Error(`he.json filter_axes.${k}.label is missing — the spec cannot name the chip`);
+    return [k, { ...a, label: copy.label, subtext: copy.subtext ?? null }];
+  }),
+) as Record<string, Axis>;
 
 /** Minimal ICU plural resolver for the `{count, plural, …}` strings in he/en.json. */
 function icu(msg: string, count: number): string {
@@ -947,7 +965,7 @@ test.describe("manual › near-me pill + empty-near-me guard, mobile (MEH-970)",
     await shell.getByTestId("map-near-me-pill").click();
     await expect.poll(() => tiles.some((t) => t.z === GPS_FLY_ZOOM), "the camera must fetch tiles at the fly-to zoom").toBe(true);
     await expect(shell.locator("path.leaflet-interactive")).toHaveCount(1);
-    await expect(page.getByText(NM.empty, { exact: true })).toHaveCount(0);
+    await expect(page.getByText(he.map.bottom_sheet.near_me_empty, { exact: true })).toHaveCount(0);
     await expect(cards(shell)).toHaveCount(PRODUCERS.length);
   });
 
@@ -990,7 +1008,7 @@ test.describe("manual › near-me pill + empty-near-me guard, mobile (MEH-970)",
 
   // MT:MEH-970:3 — nothing within 25 km: the toast, the camera back on the
   //   default view (zoom 8), and ALL businesses still listed — never a blank map.
-  test("mobile: near me with nothing within 25 km toasts, returns to the default view and keeps every business", async ({ page, context }, info) => {
+  test("mobile: near me with nothing within 25 km says so in the sheet, returns to the default view and keeps every business", async ({ page, context }, info) => {
     mobileOnly(info, "the pill is mounted inside the mobile shell only");
     await grantGps(context, GPS_FAR);
     await fitFixtureSpread(page, info);
@@ -1012,7 +1030,10 @@ test.describe("manual › near-me pill + empty-near-me guard, mobile (MEH-970)",
       })
       .toBeGreaterThan(0);
     await shell.getByTestId("map-near-me-pill").click();
-    await expect(page.getByText(NM.empty, { exact: true })).toBeVisible();
+    // #3959: the empty near-me result is said IN the bottom sheet
+    // (MapBottomSheet.jsx `near_me_empty`), no longer as a toast — the old
+    // `near_me_pill.empty` string is rendered nowhere since.
+    await expect(page.getByText(he.map.bottom_sheet.near_me_empty, { exact: true })).toBeVisible();
     await expect(shell.locator("path.leaflet-interactive")).toHaveCount(1);
     // The fallback flyTo cancels the zoom-13 flight mid-air, so the camera
     // settles back on the default zoom: every tile the visible map holds is a

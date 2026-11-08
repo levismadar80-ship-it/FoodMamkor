@@ -146,7 +146,22 @@ const MOBILE_NAV_LABEL = he.nav.mobile_label;
 const RECENT_HEADING = he.home.recent.heading;
 
 type Axis = { key: string; label: string; group: string; surfaces: string[]; scope: string; subtext?: string | null };
-const AXES = FILTER_AXES as Record<string, Axis>;
+/**
+ * MEH-2748 moved every axis's consumer label (and subtext) out of
+ * filter-taxonomy.js into messages/he.json `filter_axes.<key>`. Reading
+ * `FILTER_AXES[k].label` now yields undefined, and `getByRole("button",
+ * { name: undefined })` matches EVERY button — the 08/11 strict-mode reds. So
+ * the label is joined in from he.json here, and a missing one throws at load
+ * instead of silently widening a locator.
+ */
+const HE_AXES = (he as unknown as { filter_axes: Record<string, { label?: string; subtext?: string | null }> }).filter_axes;
+const AXES = Object.fromEntries(
+  Object.entries(FILTER_AXES as Record<string, object>).map(([k, a]) => {
+    const copy = HE_AXES[k];
+    if (!copy?.label) throw new Error(`he.json filter_axes.${k}.label is missing — the spec cannot name the chip`);
+    return [k, { ...a, label: copy.label, subtext: copy.subtext ?? null }];
+  }),
+) as Record<string, Axis>;
 /** The diet axes offered on /producers, in declaration order (filter-taxonomy.js). */
 const DIET_KEYS_ON_PRODUCERS = Object.keys(AXES).filter(
   (k) => AXES[k].group === "diet" && AXES[k].surfaces.includes("producers"),
@@ -531,7 +546,10 @@ test.describe("manual › multi-category OR (MEH-1465)", () => {
     await expect(categoryChip(page, G_HE.meat)).toHaveAttribute("aria-pressed", "true");
     await expect(categoryChip(page, G_HE.dairy)).toHaveAttribute("aria-pressed", "true");
     await expect(allChip(page)).toHaveAttribute("aria-pressed", "false");
-    await expect(allChip(page)).toHaveClass(/bg-white/);
+    // The ghost state (ChipScrollRow.jsx «כל» ghost): white surface + muted ink.
+    // #4043 renamed bg-white → the bg-surface token (same #fff).
+    await expect(allChip(page)).toHaveClass(/\bbg-surface\b/);
+    await expect(allChip(page)).toHaveClass(/\btext-muted\b/);
     const union = seen.filter((u) => u.searchParams.getAll("category").join() === "1,2");
     expect(union.length, "the mount fetch must carry both ids as repeated ?category=").toBeGreaterThanOrEqual(1);
     expect(query(page).getAll("category")).toEqual(["1", "2"]);
