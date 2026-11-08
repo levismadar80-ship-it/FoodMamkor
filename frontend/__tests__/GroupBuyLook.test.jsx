@@ -133,6 +133,18 @@ describe("group-buy page", () => {
     expect(screen.queryByTestId("group-buy-how")).toBeNull();
   });
 
+  it("funded → the on-dark seed burst opens inside the funded banner (MEH-2833); no canvas", async () => {
+    api.get.mockResolvedValue({ data: { ...GB, status: "funded" } });
+    const { container } = render(<GroupBuyDetailClient id="gb-1" />);
+    const banner = await screen.findByTestId("group-buy-funded");
+    const burst = banner.querySelector('[data-testid="seed-burst"]');
+    expect(burst).not.toBeNull();
+    expect(burst.getAttribute("data-variant")).toBe("dark");
+    // the headline follows the burst, never under it
+    expect(burst.nextElementSibling.textContent).toBe("group_buys.detail.funded_title");
+    expect(container.querySelector("canvas")).toBeNull();
+  });
+
   it("no business photo → the cart tile", async () => {
     api.get.mockResolvedValue({ data: { ...GB, producer_image_url: null } });
     render(<GroupBuyDetailClient id="gb-1" />);

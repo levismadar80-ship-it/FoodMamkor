@@ -1,5 +1,6 @@
 "use client";
 
+import SeedBurst from "@/components/brand/SeedBurst";
 import { useEffect, useRef, useState } from "react";
 import * as Sentry from "@sentry/nextjs";
 import { useRouter } from "next/navigation";
@@ -38,64 +39,6 @@ function clampQuantity(value) {
   return Math.min(QTY_MAX, Math.max(QTY_MIN, n));
 }
 
-function Confetti() {
-  const canvasRef = useRef(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-
-    const particles = Array.from({ length: 120 }, () => ({
-      x: Math.random() * canvas.width,
-      y: -20,
-      r: Math.random() * 6 + 3,
-      color: ["#2e6853", "#2e6853", "#F5F0E8", "#a3c9a8", "#c9a227"][Math.floor(Math.random() * 5)],
-      vx: (Math.random() - 0.5) * 3,
-      vy: Math.random() * 3 + 2,
-      angle: Math.random() * Math.PI * 2,
-      spin: (Math.random() - 0.5) * 0.1,
-    }));
-
-    let frame;
-    const draw = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      particles.forEach((p) => {
-        ctx.save();
-        ctx.translate(p.x, p.y);
-        ctx.rotate(p.angle);
-        ctx.fillStyle = p.color;
-        ctx.fillRect(-p.r, -p.r / 2, p.r * 2, p.r);
-        ctx.restore();
-        p.x += p.vx;
-        p.y += p.vy;
-        p.angle += p.spin;
-        if (p.y > canvas.height) {
-          p.y = -20;
-          p.x = Math.random() * canvas.width;
-        }
-      });
-      frame = requestAnimationFrame(draw);
-    };
-    draw();
-    const timer = setTimeout(() => cancelAnimationFrame(frame), 4000);
-    return () => {
-      cancelAnimationFrame(frame);
-      clearTimeout(timer);
-    };
-  }, []);
-
-  return (
-    <canvas
-      ref={canvasRef}
-      className="fixed inset-0 pointer-events-none"
-      style={{ zIndex: 9990 }}
-    />
-  );
-}
-
 export default function GroupBuyDetailClient({ id }) {
   const t = useTranslations("group_buys.detail");
   // MEH-848: shared generic error copy (collapsed from group_buys.detail.errors.generic).
@@ -129,8 +72,6 @@ export default function GroupBuyDetailClient({ id }) {
   // what focus-trap-react and react-aria do, and it costs one line.
   const cancelTriggerRef = useRef(null);
   const [error, setError] = useState("");
-  const [showConfetti, setShowConfetti] = useState(false);
-  const prevStatusRef = useRef(null);
   // MEH-2453: the business's delivery data, for «מגיעים אלייך?». Null until
   // fetched and valid; on any failure the checker simply stays away. (The
   // «מאת {name}» link to its page is MEH-2472's and needs no fetch.)
@@ -142,12 +83,6 @@ export default function GroupBuyDetailClient({ id }) {
     try {
       const r = await api.get(`/group-buys/${id}`);
       const data = r.data;
-      // Trigger confetti when status transitions to funded
-      if (prevStatusRef.current && prevStatusRef.current !== "funded" && data.status === "funded") {
-        setShowConfetti(true);
-        setTimeout(() => setShowConfetti(false), 4500);
-      }
-      prevStatusRef.current = data.status;
       setGb(data);
     } catch {
       setGb(null);
@@ -209,10 +144,6 @@ export default function GroupBuyDetailClient({ id }) {
         quantity: clampQuantity(quantity),
       });
       await load();
-      if (gb?.status === "funded" || prevStatusRef.current === "funded") {
-        setShowConfetti(true);
-        setTimeout(() => setShowConfetti(false), 4500);
-      }
     } catch (err) {
       // MEH-975: route through detailToMessage so a 422 `detail` ARRAY never
       // renders as a React child (React #31). Falls back to generic Hebrew copy.
@@ -504,8 +435,6 @@ export default function GroupBuyDetailClient({ id }) {
 
   return (
     <>
-      {showConfetti && <Confetti />}
-
       {/* MEH-2544 — Groupon / Kickstarter shape: photo up top, story +
           pickup + business on the start side, the join card (price, progress,
           deadline, action, share) on the end side from lg, sticky. It renders
@@ -517,7 +446,11 @@ export default function GroupBuyDetailClient({ id }) {
         </Link>
 
         {funded && (
-          <div className="mb-5 rounded-md bg-primary text-white px-5 py-4 text-center">
+          <div className="mb-5 rounded-md bg-primary text-white px-5 py-4 text-center" data-testid="group-buy-funded">
+            {/* MEH-2833 (seed layer, board 5 v2): the funded moment is the logo
+                opening into seeds (on-dark set), above the headline — replacing
+                the full-screen canvas confetti, whose colours were not ours. */}
+            <SeedBurst variant="dark" />
             <p className="text-xl font-bold">{t("funded_title")}</p>
             <p className="text-sm mt-1 opacity-90">{t("funded_subtitle", { name: gb.producer_name })}</p>
           </div>
