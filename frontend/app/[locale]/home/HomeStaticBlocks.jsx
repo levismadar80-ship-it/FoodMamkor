@@ -6,7 +6,7 @@ import Image from "next/image";
 import { Leaf } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import FadeInSection from "@/components/FadeInSection";
-import BusinessCtaLink from "@/components/BusinessCtaLink";
+import ClosingCtaBand from "@/components/ClosingCtaBand";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import useScrollAffordance, { ScrollArrows } from "@/hooks/useScrollAffordance";
 
@@ -310,36 +310,22 @@ export function HomeFeaturedProducer({ featured }) {
 }
 
 /**
- * CTA — "הוסיפי את העסק שלך". Static, prop-free.
+ * CTA — the closing business band. Static, prop-free.
+ * MEH-2824: the shared full-green ClosingCtaBand (was MEH-1041's cream surface
+ * + green pill). It is the last section before the footer (HomeClient.jsx), so
+ * it ends the page on the brand green like /join. Copy unchanged except the
+ * heading, now neutral plural, and the button, now «מצטרפים» like /join — one
+ * band, one button site-wide (Sapir 08/11; home.cta.button retired).
  */
 export function HomeCTA() {
   const t = useTranslations();
-  // MEH-1041: HOME-28 light-warm treatment — cream surface, gold rule + green-pill CTA (was dark band + white button).
   return (
-    <section className="bg-background text-text py-20" data-testid="home-cta">
-      <div className="max-w-3xl mx-auto px-4 text-center">
-        <h2 className="font-headline-display text-headline-display mb-4">
-          {t("home.cta.heading")}
-        </h2>
-        {/* MEH-788 copy-Δ: P5-v2 lock carries 3 body lines (recognition-first,
-            then curation, then the closing nudge) — body prose keeps periods. */}
-        <p className="text-fg-muted text-lg mb-2 max-w-xl mx-auto">
-          {t("home.cta.body_l1")}
-        </p>
-        <p className="text-fg-muted text-lg mb-2 max-w-xl mx-auto">
-          {t("home.cta.body_l2")}
-        </p>
-        <p className="text-fg-muted text-lg mb-8 max-w-xl mx-auto">
-          {t("home.cta.body_l3")}
-        </p>
-        {/* MEH-1489: auth-state-aware CTA (producer -> dashboard, admin -> hidden). */}
-        <BusinessCtaLink
-          href="/register/producer"
-          className="inline-block bg-primary text-white px-8 py-3 rounded-sm hover:bg-primary-dark transition font-medium"
-        >
-          {t("home.cta.button")}
-        </BusinessCtaLink>
-      </div>
-    </section>
+    <ClosingCtaBand
+      data-testid="home-cta"
+      title={t("home.cta.heading")}
+      body={[t("home.cta.body_l1"), t("home.cta.body_l2"), t("home.cta.body_l3")]}
+      ctaHref="/register/producer"
+      ctaLabel={t("join.cta")}
+    />
   );
 }
