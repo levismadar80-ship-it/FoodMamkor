@@ -32,7 +32,12 @@ export const SEEDS_LIGHT = [
   { name: "sage", fill: "#5A8F73", highlight: "#A3C7B3", highlightOpacity: 0.5 },
 ];
 
-/** On dark (bg-primary, the footer) — the approved on-dark set (DESIGN.md, 08/11). */
+/**
+ * On dark (bg-primary, the footer) — the approved on-dark set (DESIGN.md, 08/11).
+ * NOT public/logo-on-warm-dark.svg: that file is a different artifact (cream-only
+ * petals at stepped opacity, for WhatsApp/generic dark UI on #1A1614). The seed
+ * layer's on-dark set is coloured — don't "fix" this to match the SVG.
+ */
 export const SEEDS_DARK = [
   { name: "green", fill: "#F5F0E8" },
   { name: "terracotta", fill: "#E8823A" },

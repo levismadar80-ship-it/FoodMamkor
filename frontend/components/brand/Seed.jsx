@@ -28,7 +28,10 @@ export default function Seed({ color = SEEDS_LIGHT[0].fill, size = 20, rotate = 
       aria-hidden="true"
       focusable="false"
       className={className}
-      style={style}
+      // A rotated seed reaches past its own 2:3 box (−36° needs ≈ ±22 of the
+      // 28-wide viewBox); overflow is the caller's to crop (e.g. a card corner
+      // with overflow-hidden), never the seed's own box.
+      style={{ overflow: "visible", ...style }}
       data-seed-color={color}
     >
       <g transform={rotate ? `rotate(${rotate} ${CENTER})` : undefined}>

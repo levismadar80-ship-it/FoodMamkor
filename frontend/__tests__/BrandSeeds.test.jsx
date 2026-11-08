@@ -75,6 +75,11 @@ describe("SeedMark (the bloom)", () => {
     expect(seeds.map((p) => p.getAttribute("data-seed"))).toEqual(SEED_ORDER);
     expect(seeds.map((p) => p.getAttribute("fill"))).toEqual(SEED_FILLS);
     expect([...svg.querySelectorAll("g")].map((g) => g.getAttribute("transform"))).toEqual(SEED_ROTATIONS.map((d) => `rotate(${d})`));
+    // Pinned to logo.svg: the 0.94 group opacity and the inner highlights.
+    expect(LOGO.match(/<g transform="rotate\(\d+\)" opacity="0.94">/g)).toHaveLength(5);
+    expect([...svg.querySelectorAll("g")].map((g) => g.getAttribute("opacity"))).toEqual(Array(5).fill("0.94"));
+    const hl = [...svg.querySelectorAll("ellipse")].map((e) => [e.getAttribute("fill"), Number(e.getAttribute("opacity"))]);
+    expect(hl).toEqual(LOGO_SEEDS.map((s) => [s[2], s[3]]));
   });
 
   it("dark: the on-dark fills, same order and rotations (the logo is never rearranged)", () => {
@@ -93,6 +98,8 @@ describe("Seed (one seed)", () => {
     expect(svg.querySelector("g").getAttribute("transform")).toBe("rotate(-36 0 -25)");
     expect(svg.querySelector("path").getAttribute("fill")).toBe("#C8632E");
     expect(svg.querySelector("ellipse")).toBeNull();
+    // Rotated, the seed reaches past its 2:3 box — it must not be clipped there.
+    expect(svg.style.overflow).toBe("visible");
   });
 
   it("highlight draws the logo's inner highlight for a light seed", () => {
