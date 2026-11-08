@@ -153,8 +153,8 @@ never waited for. (MEH-1844's "the CI reviewer works" — 13/08 — is history.)
    cancelled. **Every** feature push, built or cancelled, spends one of Vercel
    Hobby's 100 deployments a day (MEH-2062, deployment.md), and a spent quota
    blocks staging and main too: keep pushes few (batch commits; rule 25's
-   staging merge is a push). Never report an absent preview as rendered. Wait
-   for approval before merging to staging.
+   staging merge is a push). Never report an absent preview as rendered.
+   Merging to staging follows rule 38.
 10. **After every PR — a test, not a checklist line (MEH-2796).** New
     behaviour gets an automated test (pytest / vitest / Playwright). Only what
     automation cannot see (real iPhone Safari, a third-party console, a flag
@@ -494,19 +494,25 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     decisions on the same screen (e.g. MEH-912); (7) a recommendation. Sapir
     picks, then code. Post-launch, add a PostHog click event on the feature.
     Precedent: MEH-2724 built under the hero before the study was asked for.
-38. **A PR that changes what users see is never merged by CC — even a small fix
-    (MEH-2825).** Open the PR, send Sapir a preview + 390 and 1280 screenshots,
-    and stop until she writes «go merge». Docs-only / tests-only / CI PRs: CC
-    merges when green. "Changes what users see" = any rendered pixel or copy on
-    any surface, `/admin` included; unsure → treat it as UI. The screenshots
-    come from the Vercel preview (MEH-2845): push a `[preview]` commit, wait
-    for it, screenshot it (390×844 WebKit + 1280 Chromium, with the
-    protection-bypass headers of testing.md), send them to Sapir and stop for
-    «go merge». If no preview arrives (quota, cancelled, unreachable), they
-    come from CC's own local production build, and the message says so. This
-    adds to
-    rule 23 (375/1440 in `qa-artifacts/`) and replaces none of it; a per-batch
-    instruction to merge UI does not carry over to the next PR.
+38. **A PR that changes what users see: CC self-merges it to staging after the
+    full self-check (Sapir 09/11, MEH-2860 — replaces MEH-2825's wait for
+    «go merge» on staging merges).** The self-check, all five before the merge:
+    (1) `CI gate` + `Deploy gate` green on the head; (2) one `[preview]` commit,
+    then screenshots of the Vercel preview (390×844 WebKit + 1280 Chromium, with
+    the protection-bypass headers of testing.md) — if no preview arrives
+    (quota, cancelled, unreachable), from CC's own local production build, and
+    the PR says so; (3) every reviewer / CI-bot comment newer than the last push
+    answered; (4) a fresh reviewer subagent (rule 5a), every finding fixed or
+    answered; (5) every Hebrew string diffed against the card's approved table.
+    Then squash-merge, confirm the staging deploy is green, and report (card ·
+    PR · what changed · screenshots · next item). "Changes what users see" = any
+    rendered pixel or copy on any surface, `/admin` included; unsure → treat it
+    as UI. **Still gated:** staging → main only on Sapir's «go merge» via
+    [RELEASE_CHECKLIST](../../docs/RELEASE_CHECKLIST.md); an Alembic revision
+    waits for her OK; a `do-not-merge` label, a card or batch that says Sapir
+    merges, or new copy not in an approved table still stops CC (rules 22, 30;
+    ADR-016 amendment). This adds to rule 23 (375/1440 in `qa-artifacts/`) and
+    replaces none of it.
 
 ---
 
