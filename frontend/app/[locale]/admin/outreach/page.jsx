@@ -292,7 +292,7 @@ export default function AdminOutreachPage() {
                             <a
                               dir="ltr"
                               href={`mailto:${lead.suggested_by_email}`}
-                              className="ms-2 text-primary hover:underline"
+                              className="ms-2 text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current"
                             >
                               {lead.suggested_by_email}
                             </a>
@@ -306,7 +306,7 @@ export default function AdminOutreachPage() {
                         the stacked-card label keeps the RTL start side. */}
                     <td className="px-3 py-3 text-muted" data-label={t("outreach.columns.phone")}>
                       {lead.phone ? (
-                        <a href={`tel:${lead.phone}`} dir="ltr" className="text-primary hover:underline">
+                        <a href={`tel:${lead.phone}`} dir="ltr" className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current">
                           {lead.phone}
                         </a>
                       ) : (
@@ -320,7 +320,7 @@ export default function AdminOutreachPage() {
                           href={instagramUrl(lead.instagram)}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-primary hover:underline"
+                          className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current"
                         >
                           @{instagramHandle(lead.instagram)}
                         </a>

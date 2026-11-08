@@ -326,17 +326,17 @@ export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onAppro
           MEH-1011 Chunk 2: pass the full producer so the approve-422 handler
           can open request-changes prefilled with the gate-matched chip. */}
       {isPending && (
-        <button onClick={() => onQuickApprove(p)} disabled={busy(`approve:${p.id}`)} className="text-primary hover:underline text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline">
+        <button onClick={() => onQuickApprove(p)} disabled={busy(`approve:${p.id}`)} className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline">
           {t("producers.table.actions.approve_short")}
         </button>
       )}
       {/* MEH-1011 Chunk 2: non-terminal "please complete" request — pending only. */}
       {isPending && (
-        <button onClick={() => onRequestChanges(p)} disabled={busy(`request-changes:${p.id}`)} className="text-accent hover:underline text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline">
+        <button onClick={() => onRequestChanges(p)} disabled={busy(`request-changes:${p.id}`)} className="text-accent underline decoration-[1.5px] underline-offset-[5px] decoration-accent/35 hover:decoration-current text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline">
           {t("producers.table.actions.request_changes")}
         </button>
       )}
-      <Link href={`/admin/producers/${p.id}/edit`} className="text-primary hover:underline text-xs">
+      <Link href={`/admin/producers/${p.id}/edit`} className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current text-xs">
         {t("common.edit")}
       </Link>
       {p.slug && (
