@@ -521,3 +521,109 @@ describe("ChipScrollRow — category multi-select + Direction A (MEH-1465 / MEH-
     expect(onChipClick).toHaveBeenCalledWith("dairy");
   });
 });
+
+// MEH-2823: on iOS, WebKit re-snaps an RTL scroll-snap row to the WRONG end
+// after a layout (bugs.webkit.org/207826, still open). Our row gets that layout
+// right after mount: the hook detects overflow and the w-12 end spacer mounts.
+// The old code pinned to the start ONCE, on mount, so the late re-snap won and
+// /favorites opened with «הכל» scrolled out of view. The row must re-pin when
+// overflow appears — but never against a user who already touched it, and never
+// when a chip is actively filtering (scrollIntoView owns that case).
+describe("ChipScrollRow — re-pin to inline-start after overflow appears (MEH-2823)", () => {
+  const PIN_START = { left: 0, behavior: "instant" };
+
+  let rafSpy;
+  let cafSpy;
+
+  beforeEach(() => {
+    // Run rAF callbacks synchronously so the assertion sees the re-pin.
+    rafSpy = vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb) => {
+      cb(0);
+      return 1;
+    });
+    cafSpy = vi.spyOn(window, "cancelAnimationFrame").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    // Scoped: restore only the two spies this suite created.
+    rafSpy.mockRestore();
+    cafSpy.mockRestore();
+  });
+
+  // Control for the two "no pin" cases: overflow detection really fired (the
+  // end spacer only mounts on hasOverflow), so their silence is not vacuous.
+  function expectOverflowDetected(container) {
+    expect(container.querySelector("div.shrink-0.w-12")).not.toBeNull();
+  }
+
+  it("untouched row, no active filter → pins to the start once overflow appears", () => {
+    const { container } = renderRow({ activeKey: "all" });
+    Element.prototype.scrollTo.mockClear();
+    // WebKit's late re-snap left the row at the far END (negative in RTL).
+    setScrollGeometry(container, { scrollWidth: 1000, clientWidth: 500, scrollLeft: -500 });
+    expect(getScroller(container).scrollTo).toHaveBeenCalledWith(PIN_START);
+  });
+
+  // The deferred (rAF) pin is the one that lands AFTER WebKit's post-layout
+  // re-snap — the synchronous pin alone loses to it on iOS. Capture the frame
+  // instead of running it, so deleting the rAF pin turns this red even though
+  // the synchronous pin still fires.
+  it("the deferred pin runs in the next animation frame, after the synchronous one", () => {
+    const frames = [];
+    rafSpy.mockImplementation((cb) => {
+      frames.push(cb);
+      return frames.length;
+    });
+    const { container } = renderRow({ activeKey: "all" });
+    const scroller = getScroller(container);
+    frames.length = 0;
+    Element.prototype.scrollTo.mockClear();
+
+    setScrollGeometry(container, { scrollWidth: 1000, clientWidth: 500, scrollLeft: -500 });
+    expect(scroller.scrollTo).toHaveBeenCalledTimes(1); // synchronous pin
+    expect(frames).toHaveLength(1); // deferred pin scheduled, not yet run
+
+    frames[0](0);
+    expect(scroller.scrollTo).toHaveBeenCalledTimes(2);
+    expect(scroller.scrollTo).toHaveBeenLastCalledWith(PIN_START);
+  });
+
+  // A touch can land inside that one frame (slow iOS device). The deferred
+  // pin must re-check the touch flag, or it yanks the row from under the finger.
+  it("a touch between the synchronous pin and the frame cancels the deferred pin", () => {
+    const frames = [];
+    rafSpy.mockImplementation((cb) => {
+      frames.push(cb);
+      return frames.length;
+    });
+    const { container } = renderRow({ activeKey: "all" });
+    const scroller = getScroller(container);
+    frames.length = 0;
+    Element.prototype.scrollTo.mockClear();
+
+    setScrollGeometry(container, { scrollWidth: 1000, clientWidth: 500, scrollLeft: -500 });
+    expect(scroller.scrollTo).toHaveBeenCalledTimes(1); // synchronous pin
+    expect(frames).toHaveLength(1);
+
+    fireEvent.pointerDown(scroller);
+    frames[0](0);
+    expect(scroller.scrollTo).toHaveBeenCalledTimes(1); // no second pin
+  });
+
+  it("user touched the row first → never yanked back to the start", () => {
+    const { container } = renderRow({ activeKey: "all" });
+    fireEvent.pointerDown(getScroller(container));
+    Element.prototype.scrollTo.mockClear();
+    setScrollGeometry(container, { scrollWidth: 1000, clientWidth: 500, scrollLeft: -500 });
+    expectOverflowDetected(container);
+    expect(getScroller(container).scrollTo).not.toHaveBeenCalled();
+  });
+
+  it("a chip is actively filtering → no pin (scrollIntoView places the active chip)", () => {
+    const { container } = renderRow({ activeKey: "bread" });
+    Element.prototype.scrollTo.mockClear();
+    setScrollGeometry(container, { scrollWidth: 1000, clientWidth: 500, scrollLeft: -500 });
+    expectOverflowDetected(container);
+    expect(getScroller(container).scrollTo).not.toHaveBeenCalled();
+  });
+});
