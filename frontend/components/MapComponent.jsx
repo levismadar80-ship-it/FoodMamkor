@@ -609,6 +609,15 @@ export default function MapComponent({
       initialCenter,
       initialZoom,
     );
+    // MEH-2843 (MEH-2776: one control per corner): on a phone the «?» map key
+    // rides the sheet edge in the top-start corner and sat on the zoom's «−»,
+    // so the zoom moves to the top-right corner, which is empty on the phone
+    // map. Desktop keeps Leaflet's default top-left. Physical corners on
+    // purpose — map controls are the documented geographic exception
+    // (rtl-ok). Read once at mount, like every other one-time map option.
+    if (!(typeof window !== "undefined" && window.matchMedia?.("(min-width: 1024px)")?.matches)) {
+      mapInstanceRef.current.zoomControl?.setPosition?.("topright");
+    }
     // Expose the initial center for E2E tests (05-map-navigation.spec.ts) —
     // the DEFAULT on a fresh visit, the RESTORED camera when one was saved.
     if (typeof window !== "undefined") window.__MAP_CENTER__ = initialCenter;

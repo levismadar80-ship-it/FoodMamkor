@@ -44,6 +44,9 @@ import { useProducersFeed } from "./state/useProducersFeed";
 const NEAR_ME_RADIUS_KM = 25;
 const NEAR_ME_DEFAULT_CENTER = [32.4, 34.95];
 const NEAR_ME_DEFAULT_ZOOM = 8;
+// MEH-2843: wait for the bottom sheet to settle at HALF (--map-sheet-anim is
+// 300ms) before measuring whether the tapped marker sits under it.
+const MOBILE_PICK_PAN_DELAY_MS = 350;
 // MEH-2639: the zoom a city flyTo lands on. Same value handleGpsClick already
 // uses for a GPS fix (:~470), so "the map moved to where I said I am" looks
 // the same whether the visitor typed a town or allowed location.
@@ -755,6 +758,31 @@ export default function MapPage() {
     const c = map?.getCenter?.();
     const camera = c ? { lat: c.lat, lng: c.lng, zoom: map.getZoom() } : null;
     writeMapSelection(selectedProducer?.id ?? null, selectedLocation?.id ?? null, { camera });
+  }, [selectedProducer, selectedLocation, mapRef]);
+
+  // MEH-2843: after a pick on a phone, the tapped marker must not sit under
+  // the sheet that just opened over it. Once the sheet has settled (its
+  // --map-sheet-anim, 300ms), if the marker's point is below — or within 16px
+  // of — the sheet's top edge (the card lives inside the sheet, whose header
+  // above the card is opaque too), pan up so it sits 24px above that edge.
+  // Already visible → no pan. Reduced motion → the same move, unanimated.
+  useEffect(() => {
+    if (!selectedProducer || typeof window === "undefined") return undefined;
+    if (window.matchMedia?.("(min-width: 1024px)")?.matches) return undefined;
+    const target = selectedLocation ?? producerPoints(selectedProducer)[0] ?? null;
+    if (!target) return undefined;
+    const timer = window.setTimeout(() => {
+      const map = mapRef?.current;
+      const sheet = document.querySelector('[data-testid="map-bottom-sheet"]');
+      if (!map?.latLngToContainerPoint || !sheet) return;
+      const mapTop = map.getContainer().getBoundingClientRect().top;
+      const edge = sheet.getBoundingClientRect().top - mapTop;
+      const { y } = map.latLngToContainerPoint([target.lat, target.lng]);
+      if (y < edge - 16) return;
+      const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+      map.panBy([0, y - (edge - 24)], { animate: !reduce });
+    }, MOBILE_PICK_PAN_DELAY_MS);
+    return () => window.clearTimeout(timer);
   }, [selectedProducer, selectedLocation, mapRef]);
 
   // MEH-2046: is the layer toggle currently costing the user businesses? Read
