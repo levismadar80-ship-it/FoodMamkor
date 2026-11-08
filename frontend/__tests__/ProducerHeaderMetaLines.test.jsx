@@ -111,6 +111,27 @@ describe("ProducerHeader facts line (MEH-2592)", () => {
     expect(glyph).toHaveAttribute("aria-hidden", "true");
   });
 
+  it("MEH-2831: the category name is underlined WITHOUT hover (phones have none); the glyph is not; the rating keeps its own", () => {
+    render(
+      <ProducerHeader
+        producer={{ ...baseProducer, avg_rating: 4.8, reviews_count: 12 }}
+        primaryCategory={{ id: 3, name: "לחמים ואפייה" }}
+        hasImages
+      />,
+    );
+    const link = screen.getByTestId("producer-header-category-link");
+    const name = within(link).getByTestId("producer-header-category-name");
+    const cls = (el) => (el.getAttribute("class") || "").split(/\s+/);
+    // The permanent cue is the bare `underline`, not a hover:/group-hover: variant.
+    expect(cls(name)).toContain("underline");
+    expect(cls(name)).toEqual(expect.arrayContaining(["decoration-text/35", "underline-offset-[5px]", "group-hover:decoration-primary"]));
+    expect(name).toHaveTextContent("לחמים ואפייה");
+    expect(cls(link)).not.toContain("hover:underline");
+    expect(cls(within(link).getByTestId("producer-header-category-glyph"))).not.toContain("underline");
+    const ratingCount = within(screen.getByTestId("trust-strip-rating")).getByText(/ביקורות|review_count/);
+    expect(cls(ratingCount)).toEqual(expect.arrayContaining(["underline", "underline-offset-4"]));
+  });
+
   it("an unknown category gets a link but no glyph (no fallback Leaf)", () => {
     render(<ProducerHeader producer={baseProducer} primaryCategory={{ id: 99, name: "קטגוריה חדשה" }} hasImages />);
     const link = screen.getByTestId("producer-header-category-link");
