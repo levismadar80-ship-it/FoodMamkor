@@ -23,6 +23,7 @@ from datetime import timedelta
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import or_
 from sqlalchemy.orm import Session, joinedload
 
 from app.auth import get_current_user
@@ -71,6 +72,7 @@ def get_alert_prefs(
             notify_new_event=False,
             notify_delivery_area=False,
             notify_new_recipe=False,
+            notify_new_group_buy=False,
             whatsapp_opt_in=False,
             has_push=False,
         )
@@ -80,6 +82,7 @@ def get_alert_prefs(
         notify_new_event=bool(alert.notify_new_event),
         notify_delivery_area=bool(alert.notify_delivery_area),
         notify_new_recipe=bool(alert.notify_new_recipe),
+        notify_new_group_buy=_pref_on(alert.notify_new_group_buy),
         whatsapp_opt_in=bool(alert.whatsapp_opt_in),
         has_push=bool(alert.push_subscription),
     )
@@ -129,6 +132,7 @@ def upsert_alert_prefs(
         alert.notify_new_event = data.notify_new_event
         alert.notify_delivery_area = data.notify_delivery_area
         alert.notify_new_recipe = data.notify_new_recipe
+        alert.notify_new_group_buy = data.notify_new_group_buy
         alert.whatsapp_opt_in = data.whatsapp_opt_in
         if data.push_subscription is not None:
             alert.push_subscription = data.push_subscription
@@ -140,6 +144,7 @@ def upsert_alert_prefs(
             notify_new_event=data.notify_new_event,
             notify_delivery_area=data.notify_delivery_area,
             notify_new_recipe=data.notify_new_recipe,
+            notify_new_group_buy=data.notify_new_group_buy,
             whatsapp_opt_in=data.whatsapp_opt_in,
             push_subscription=data.push_subscription,
         )
@@ -153,6 +158,7 @@ def upsert_alert_prefs(
         notify_new_event=bool(alert.notify_new_event),
         notify_delivery_area=bool(alert.notify_delivery_area),
         notify_new_recipe=bool(alert.notify_new_recipe),
+        notify_new_group_buy=_pref_on(alert.notify_new_group_buy),
         whatsapp_opt_in=bool(alert.whatsapp_opt_in),
         has_push=bool(alert.push_subscription),
     )
@@ -169,7 +175,22 @@ _ALERT_COL = {
     # MEH-1361: fired from admin_recipes.approve_recipe at the moment a
     # recipe first becomes publicly visible (published AND approved).
     "new_recipe": "notify_new_recipe",
+    # MEH-2828: fired from group_buys.create_group_buy once the group buy is
+    # committed (status open) — not on edit, funded or cancel.
+    "new_group_buy": "notify_new_group_buy",
 }
+
+# MEH-2828 (Sapir 08/11): for this column a NULL row reads as ON — the
+# migration's server_default opts existing rows in, and a row that somehow
+# carries NULL must not silently drop out of the alert. The four older
+# columns keep their existing behaviour (only TRUE fires; NULL reads as off).
+_NULL_IS_ON = frozenset({"notify_new_group_buy"})
+
+
+def _pref_on(value: bool | None) -> bool:
+    """A NULL-is-ON preference read: only an explicit False is off."""
+    return value is not False
+
 
 # MEH-1338: frequency cap — at most one message per (user, producer, channel)
 # in a rolling 24h window (a producer adding 5 products in a row sends ONE
@@ -307,7 +328,14 @@ def fire_alerts(
             .join(Producer, Producer.id == FavoriteAlert.producer_id)
             .filter(
                 FavoriteAlert.producer_id == producer_id,
-                getattr(FavoriteAlert, col_name).is_(True),
+                (
+                    or_(
+                        getattr(FavoriteAlert, col_name).is_(True),
+                        getattr(FavoriteAlert, col_name).is_(None),
+                    )
+                    if col_name in _NULL_IS_ON
+                    else getattr(FavoriteAlert, col_name).is_(True)
+                ),
                 is_business(),
             )
             .all()
