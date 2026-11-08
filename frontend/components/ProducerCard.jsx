@@ -395,16 +395,21 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
               >
                 {/* MEH-2833 (seed layer, board 7): one seed in the business's own
                     colour (seedColorFor(producer.id) — fixed per business),
-                    ≈70×105, rotated −36°, cropped in the end-top corner by the
-                    image box. The name plate is unchanged and its top padding
-                    keeps the name below the seed. Mirrored in LTR so the round
-                    end always sits in the corner. */}
+                    ≈70×105, rotated −36°, cropped in a top corner by the image
+                    box. MEH-2844 (Sapir 08/11): it sits in the START-top corner,
+                    opposite the heart (CardHeart, top-2 end-2), so it never
+                    sits under it; same size. Mirrored in RTL here (the end-
+                    corner placement mirrored in LTR) so the round end always
+                    sits in the corner. Below sm it is cropped 14px higher
+                    (−60px): the start corner is where every line of a
+                    3-line name begins, and at −46px the first line touched it
+                    (measured 0px at 375/390; 13px at −60px). */}
                 <Seed
                   color={seedColorFor(producer.id).fill}
                   size={70}
                   rotate={-36}
                   highlight
-                  className="absolute -top-[46px] -end-[30px] pointer-events-none ltr:-scale-x-100"
+                  className="absolute -top-[60px] sm:-top-[46px] -start-[30px] pointer-events-none rtl:-scale-x-100"
                 />
                 <span
                   className="relative font-headline-lg font-black text-2xl sm:text-3xl leading-[1.05] text-text line-clamp-3 [word-break:keep-all] [overflow-wrap:anywhere]"

@@ -232,8 +232,8 @@ describe("ProducerCard — Phase B anatomy", () => {
   });
 
   // MEH-2833 (seed layer, board 7): the plate gains one seed in the business's
-  // own colour, 70 wide, rotated −36°, in the end-top corner; the name stays
-  // above it in paint order.
+  // own colour, 70 wide, rotated −36°; the name stays above it in paint order.
+  // MEH-2844: the seed sits in the START-top corner, opposite the heart.
   it("the name plate carries one seed in the business's fixed colour", async () => {
     const { seedColorFor } = await import("@/lib/brand-seeds");
     render(<ProducerCard producer={minimalProducer} />);
@@ -242,8 +242,27 @@ describe("ProducerCard — Phase B anatomy", () => {
     expect(seed.getAttribute("data-seed-color")).toBe(seedColorFor(minimalProducer.id).fill);
     expect(seed.getAttribute("width")).toBe("70");
     expect(seed.querySelector("g").getAttribute("transform")).toMatch(/^rotate\(-36 /);
-    expect(seed.getAttribute("class")).toMatch(/-end-\[30px\]/);
     expect(plate.className).toMatch(/^relative /);
+  });
+
+  // MEH-2844 (Sapir 08/11): the heart stays at top-end; the seed moves to the
+  // opposite top corner, same size, so it is never under the heart. Below sm
+  // it is cropped higher (−60px) so a 3-line name — which starts in that
+  // corner — keeps clear of it.
+  it("the seed sits in the top-START corner, opposite the heart (same size)", () => {
+    render(<ProducerCard producer={minimalProducer} />);
+    const plate = screen.getByTestId("card-name-plate");
+    const seed = plate.parentElement.querySelector(":scope > svg[data-seed-color]");
+    const seedCls = seed.getAttribute("class").split(/\s+/);
+    expect(seedCls).toEqual(expect.arrayContaining(["-start-[30px]", "-top-[60px]", "sm:-top-[46px]"]));
+    expect(seedCls.filter((c) => /(^|:)-?end-/.test(c))).toEqual([]);
+    // mirrored in RTL so the round end stays in the corner
+    expect(seedCls).toContain("rtl:-scale-x-100");
+    expect(seed.getAttribute("width")).toBe("70");
+    // the heart is where it was: the opposite (end) corner
+    const heart = screen.getAllByRole("button").find((b) => /top-2/.test(b.className) && /end-2/.test(b.className));
+    expect(heart).toBeTruthy();
+    expect(heart.className.split(/\s+/).filter((c) => /(^|:)start-/.test(c))).toEqual([]);
   });
 
   // MEH-1211: a present-but-dead image URL must fall back to the canonical
