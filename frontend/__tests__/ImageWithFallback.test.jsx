@@ -31,6 +31,18 @@ describe("ImageWithFallback", () => {
     expect(fallback.querySelectorAll("svg[data-seed-color]")).toHaveLength(1);
   });
 
+  it("the seed's colour follows seedKey, else the URL — not a shared alt text (MEH-2833)", async () => {
+    const { seedColorFor } = await import("@/lib/brand-seeds");
+    optimize.mockReturnValue(undefined);
+    const colour = () => document.querySelector("svg[data-seed-color]").getAttribute("data-seed-color");
+    const { unmount } = render(<ImageWithFallback src={null} alt="תמונה 1" seedKey={42} />);
+    expect(colour()).toBe(seedColorFor(42).fill);
+    unmount();
+    // two images with the same (translated) alt but different URLs need not match
+    render(<ImageWithFallback src="https://res.cloudinary.com/x/a.jpg" alt="תמונה 1" />);
+    expect(colour()).toBe(seedColorFor("https://res.cloudinary.com/x/a.jpg").fill);
+  });
+
   it("renders a real image when the source optimizes to a usable URL", () => {
     optimize.mockReturnValue("https://res.cloudinary.com/x/upload/f_auto/a.jpg");
     render(<ImageWithFallback src="a.jpg" alt="עוגה" />);

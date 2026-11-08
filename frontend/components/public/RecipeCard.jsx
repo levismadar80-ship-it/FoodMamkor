@@ -9,7 +9,7 @@
  * MEH-911: aligned to the Assembly v2 design system (mirrors ProducerCard,
  * MEH-643). Flat bg-surface-card, 1px border, rounded-none, hover =
  * border-color shift + image scale 1.02. No-image = the name plate + one seed
- * + "מהמקור" (replaces the 🍞 emoji, Emoji LOCK MEH-657). "מתכון" eyebrow
+ * (MEH-2833; was the leaf + wordmark, which replaced the 🍞 emoji). "מתכון" eyebrow
  * in gold accent. Frank Ruhl title (font-headline-md). Meta strip uses
  * Phosphor Clock + Users (ADR-013 — Phosphor only, Lucide forbidden).
  *

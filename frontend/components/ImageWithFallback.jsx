@@ -25,6 +25,7 @@ export default function ImageWithFallback({
   priority,
   aspectRatio, // MEH-1229: optional per-surface crop ratio (from IMAGE_RATIOS)
   optimizeWidth, // MEH-1229: optional Cloudinary width cap (distinct from layout `width`)
+  seedKey, // MEH-2833: what the fallback seed's colour is fixed to (e.g. producer.id)
   ...rest
 }) {
   const optimized = optimizeCloudinary(src, { aspectRatio, width: optimizeWidth });
@@ -52,7 +53,10 @@ export default function ImageWithFallback({
         }}
       >
         <Seed
-          color={seedColorFor(alt || src).fill}
+          // The colour follows seedKey when the caller gives one (a business
+          // keeps "its" colour); else the image URL, else the alt text — never
+          // the alt first, which is often a shared translated string.
+          color={seedColorFor(seedKey ?? (src || alt)).fill}
           size={40}
           rotate={-36}
           highlight
