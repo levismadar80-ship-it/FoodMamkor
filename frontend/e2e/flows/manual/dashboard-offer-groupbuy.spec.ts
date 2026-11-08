@@ -47,7 +47,7 @@ import { test, expect, type Page, type Route } from "../_cloudinary-stub";
  *      same card (MEH-2262). One test asserts the correct behaviour under
  *      test.fail(); the rest open the card through `?group=products`
  *      (`?group=location` until MEH-2433 moved the offer).
- * D4 · MT:MEH-992 opens the form via «+ קבוצת רכש חדשה». That toggle renders
+ * D4 · MT:MEH-992 opens the form via «+ קבוצת רכישה חדשה». That toggle renders
  *      only when at least one group buy exists (page.js:340); with none, the
  *      empty state's «+ צרו קבוצה ראשונה» is the way in. The 0-items path is
  *      what this spec exercises.
@@ -203,7 +203,7 @@ test.describe("group-buy form — clarity", () => {
     const open = page.getByRole("button", { name: "+ צרו קבוצה ראשונה" });
     await expect(open, "control: the empty-state CTA never rendered — the page or its reads are broken").toBeVisible({ timeout: 15_000 });
     await open.click();
-    await expect(page.getByRole("heading", { name: "קבוצת רכש חדשה" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "קבוצת רכישה חדשה" })).toBeVisible();
   }
   const regular = (page: Page) => page.getByRole("spinbutton", { name: "מחיר רגיל" });
   const group = (page: Page) => page.getByRole("spinbutton", { name: "מחיר קבוצתי" });
@@ -249,6 +249,6 @@ test.describe("group-buy form — clarity", () => {
   // MT:MEH-992:4 — one line under the heading says what a group buy is.
   test("the form opens with a one-line concept intro under its heading", async ({ page }) => {
     await openForm(page);
-    await expect(page.getByText("קבוצת רכש: כשמספיק לקוחות מצטרפים, כולם מקבלים מחיר סיטונאי.")).toBeVisible();
+    await expect(page.getByText("קבוצת רכישה: כשמספיק לקוחות מצטרפים, כולם מקבלים מחיר סיטונאי.")).toBeVisible();
   });
 });

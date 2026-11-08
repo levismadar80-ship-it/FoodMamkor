@@ -229,7 +229,11 @@ html {
      term outside would double-count it exactly where it matters (notched
      phones). Fallback total 72 + 8 = 5rem, so the no-var render is unchanged.
      The md override below is untouched: no pill there, so no clearance. */
-  --bottom-inset: calc(var(--bottom-nav-clearance, calc(4.5rem + env(safe-area-inset-bottom, 0px))) + 8px + var(--cookie-banner-h, 0px));
+  /* MEH-2835: + the mobile chat launcher's room while it is on screen
+     (ChatWidget publishes --chat-fab-clearance; absent → 0). The footer owns
+     this reserve (MEH-2824 rule below), so on pages that end in the green
+     footer the extra space is inside the green, not a cream strip. */
+  --bottom-inset: calc(var(--bottom-nav-clearance, calc(4.5rem + env(safe-area-inset-bottom, 0px))) + 8px + var(--cookie-banner-h, 0px) + var(--chat-fab-clearance, 0px));
 
   scroll-padding-bottom: var(--bottom-inset);
 }

@@ -95,7 +95,7 @@ describe("AdminHome — «מה מחכה לטיפול» (MEH-2359)", () => {
   it("renders no stat cards, charts or server health — those moved to analytics", async () => {
     render(<AdminHome />);
     await screen.findByText("חוות האגס");
-    expect(screen.queryByText("קבוצות רכש")).not.toBeInTheDocument();
+    expect(screen.queryByText("קבוצות רכישה")).not.toBeInTheDocument();
     expect(screen.queryByText(/dashboard\.(stats|health|dau|top_cities|chart|weekly|activity)\./)).not.toBeInTheDocument();
     expect(document.querySelector("svg polyline")).toBeNull();
     expect(screen.getByText("admin.dashboard.analytics_link").getAttribute("href")).toBe("/admin/analytics");

@@ -1,7 +1,9 @@
 import RescueSection from "@/components/rescue/RescueSection";
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
-import { CaretLeft, Leaf, MapPin } from "@phosphor-icons/react";
+import { CaretLeft, MapPin } from "@phosphor-icons/react";
+import Seed from "@/components/brand/Seed";
+import { seedColorFor } from "@/lib/brand-seeds";
 import dynamic from "next/dynamic";
 import { useTranslations, useLocale } from "next-intl";
 import api from "@/lib/api";
@@ -394,8 +396,14 @@ export default function ProducerSections({
                     sizes="(min-width: 768px) 144px, 112px"
                   />
                 ) : (
-                  <div className="w-full h-full bg-background flex items-center justify-center" aria-hidden="true">
-                    <Leaf size={40} weight="light" className="text-primary/[0.32]" />
+                  // MEH-2833 (seed layer): sand + one seed in the business's own
+                  // colour, no text (the product name sits beside it).
+                  <div
+                    className="w-full h-full bg-background-alt flex items-center justify-center"
+                    aria-hidden="true"
+                    data-testid="signature-image-missing"
+                  >
+                    <Seed color={seedColorFor(producer.id).fill} size={40} rotate={-36} highlight />
                   </div>
                 )}
               </div>
@@ -573,7 +581,13 @@ export default function ProducerSections({
           <h2 className="font-headline-md text-2xl font-bold text-text mb-4">
             {t("producer.detail.sections.recipes.cta")}
           </h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {/* MEH-2836: exactly one recipe fills its row on a phone (it sat in
+              half the row beside an empty half) and takes at most half the
+              row from md up. Two or more: the grid as before. */}
+          <div
+            data-testid="producer-recipes-grid"
+            className={recipes.length === 1 ? "grid grid-cols-1 md:grid-cols-2 gap-4" : "grid grid-cols-2 md:grid-cols-3 gap-4"}
+          >
             {recipes.map((r) => (
               <RecipeCard key={r.id} slug={producer.slug} recipe={r} />
             ))}

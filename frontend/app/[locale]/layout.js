@@ -44,10 +44,13 @@ import {
 // MEH-2192: SITE_DESCRIPTION moved to lib/constants.js so the Organization
 // JSON-LD node and this <meta name="description"> cannot drift apart. Same
 // string, one owner.
-const OG_IMAGE = `${SITE_URL}/og-image.png`;
-// MEH-1060 (SEO-11): og-image-en.png exists but was unreferenced — /en/* pages
-// shared the Hebrew-text og-image.png. Select the EN artwork for the en locale.
-const OG_IMAGE_EN = `${SITE_URL}/og-image-en.png`;
+// MEH-2827 PR 6: JPEG, not the 1.26 MB PNG — WhatsApp often drops a preview
+// image that heavy. Same artwork (the PNG is fully opaque), ~50 KB. The PNGs
+// stay in public/ so links already shared keep their image.
+const OG_IMAGE = `${SITE_URL}/og-image.jpg`;
+// MEH-1060 (SEO-11): og-image-en exists but was unreferenced — /en/* pages
+// shared the Hebrew-text og-image. Select the EN artwork for the en locale.
+const OG_IMAGE_EN = `${SITE_URL}/og-image-en.jpg`;
 
 // MEH-476 PR 3b1: ACTIVE for all locale-stable routes (no headers() reads).
 // PR 3b2: every public route has per-page generateMetadata; this layout-level
@@ -66,6 +69,9 @@ const BASE_METADATA = {
   manifest: "/manifest.json",
   icons: {
     icon: [
+      // MEH-2834: SVG first — crisp at every size; ICO + PNGs stay for
+      // browsers that don't take an SVG favicon.
+      { url: "/favicon.svg", type: "image/svg+xml" },
       { url: "/favicon.ico", sizes: "any" },
       { url: "/icon-192.png", type: "image/png", sizes: "192x192" },
       { url: "/icon-512.png", type: "image/png", sizes: "512x512" },
@@ -85,6 +91,8 @@ const BASE_METADATA = {
         url: OG_IMAGE,
         width: 1200,
         height: 630,
+        // og:image:type — lets a crawler accept the image without sniffing it.
+        type: "image/jpeg",
       },
     ],
   },

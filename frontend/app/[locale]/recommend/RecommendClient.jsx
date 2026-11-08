@@ -31,6 +31,7 @@
  * enforces the same rule (422), so disabling JS does not bypass it.
  */
 
+import SeedBurst from "@/components/brand/SeedBurst";
 import { useEffect, useState } from "react";
 import { ArrowLeft, CheckCircle } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
@@ -141,6 +142,9 @@ export default function RecommendClient() {
       // thank-you panel, so a full-screen floor would only add an empty band.
       <section>
         <div className="max-w-2xl mx-auto px-4 py-16">
+          {/* MEH-2833 (seed layer, board 5 v2): the thank-you moment opens
+              with the seeds, light set on cream, above the success panel. */}
+          <SeedBurst variant="light" className="mb-2" />
           <div className="text-center" data-testid="recommend-success">
             <div className="mb-4 flex justify-center">
               <CheckCircle size={56} weight="fill" className="text-primary" aria-hidden="true" />
@@ -193,7 +197,7 @@ export default function RecommendClient() {
               still falls through to the server's 422 — the same behaviour
               every other CitySearch form in the repo has. Not changed here;
               it would mean editing the canonical component. */}
-          <form onSubmit={handleSubmit} data-testid="recommend-form">
+          <form onSubmit={handleSubmit} data-testid="recommend-form" data-chat-hide="">
             <Input
               id="recommend-name"
               label={t("field_name_label")}

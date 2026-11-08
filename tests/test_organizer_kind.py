@@ -347,7 +347,7 @@ class TestOrganizerNeverVerified:
         )
         assert resp.status_code == 403
         # pin the 403 to the kind gate, not to auth or the status gate
-        assert resp.json()["detail"] == "מארגן שווקים ואירועים לא יכול לפתוח קבוצת רכש"
+        assert resp.json()["detail"] == "מארגן שווקים ואירועים לא יכול לפתוח קבוצת רכישה"
 
     def test_admin_queue_still_lists_organizer_with_kind(self, client, db):
         organizer = _organizer(db)

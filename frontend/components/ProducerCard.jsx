@@ -39,6 +39,8 @@ import {
   subscribeFavorites,
 } from "@/lib/favorites-cache";
 import api from "@/lib/api";
+import Seed from "@/components/brand/Seed";
+import { seedColorFor } from "@/lib/brand-seeds";
 import { humanTime } from "@/lib/time-format";
 
 // MEH-1678: bidi-safe amount interpolation, mirroring the pattern
@@ -180,7 +182,7 @@ function CardHeart({ producer, onCountChange }) {
       aria-pressed={filled}
       title={t("producer.card.favorites.aria")}
       data-testid="card-heart"
-      className="absolute top-2 end-2 sm:top-3 sm:end-3 z-10 w-[34px] h-[34px] sm:w-11 sm:h-11 bg-background/90 hover:bg-background rounded-full flex items-center justify-center transition-colors duration-base ease-quart focus-ring"
+      className="absolute top-2 end-2 sm:top-3 sm:end-3 z-10 w-[34px] h-[34px] sm:w-11 sm:h-11 bg-background/90 hover:bg-background border border-border shadow-sm rounded-full flex items-center justify-center transition-colors duration-base ease-quart focus-ring"
     >
       {/* Green ink, never red (MEH-636): outline default, green fill when saved. */}
       <HeartStraight
@@ -384,13 +386,28 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
               // Hebrew break at 22px; overflow-wrap:anywhere is the fallback for
               // a single token wider than the tile, which keep-all can't break.
               <div
-                className="absolute inset-0 flex flex-col justify-end bg-background-alt p-4 pb-12 sm:p-5 sm:pb-14"
+                // MEH-2837: pt clears the heart (34px at top-2 → 42px; 44px
+                // at sm:top-3 → 56px), so a 3-line name never reaches it.
+                className="absolute inset-0 flex flex-col justify-end bg-background-alt p-4 pt-12 pb-12 sm:p-5 sm:pt-16 sm:pb-14"
                 style={stripLift ? { paddingBottom: stripLift } : undefined}
                 role="img"
                 aria-label={t("producer.card.aria.image_missing", { name: producer.name })}
               >
+                {/* MEH-2833 (seed layer, board 7): one seed in the business's own
+                    colour (seedColorFor(producer.id) — fixed per business),
+                    ≈70×105, rotated −36°, cropped in the end-top corner by the
+                    image box. The name plate is unchanged and its top padding
+                    keeps the name below the seed. Mirrored in LTR so the round
+                    end always sits in the corner. */}
+                <Seed
+                  color={seedColorFor(producer.id).fill}
+                  size={70}
+                  rotate={-36}
+                  highlight
+                  className="absolute -top-[46px] -end-[30px] pointer-events-none ltr:-scale-x-100"
+                />
                 <span
-                  className="font-headline-lg font-black text-2xl sm:text-3xl leading-[1.05] text-text line-clamp-3 [word-break:keep-all] [overflow-wrap:anywhere]"
+                  className="relative font-headline-lg font-black text-2xl sm:text-3xl leading-[1.05] text-text line-clamp-3 [word-break:keep-all] [overflow-wrap:anywhere]"
                   data-testid="card-name-plate"
                   aria-hidden="true"
                 >
@@ -589,7 +606,10 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
           </p>
         )}
 
-        <div className="grid grid-cols-[1fr_auto] gap-3 items-baseline">
+        {/* MEH-2837: below sm the rating sits UNDER the name (stacked) — side
+            by side in a 2-column grid at 390 it cut names early («חוות ערוגו…»).
+            sm and up unchanged. */}
+        <div className="grid grid-cols-1 gap-y-0.5 sm:grid-cols-[1fr_auto] sm:gap-3 items-baseline">
           <Link href={producerHref} className="block min-w-0 focus-ring">
             {/* MEH-1028 (CARD-27): mobile density — 16px name on <640px, 20px sm: up. */}
             <h3 className="font-headline-md font-bold text-base sm:text-xl text-text group-hover:text-primary transition-colors duration-base ease-quart leading-snug line-clamp-2">
@@ -600,7 +620,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
           </Link>
           {hasRating && (
             <span
-              className="text-sm text-fg-muted shrink-0 whitespace-nowrap"
+              className="text-sm text-fg-muted shrink-0 whitespace-nowrap justify-self-start sm:justify-self-auto"
               dir="ltr"
               data-testid="card-rating"
             >

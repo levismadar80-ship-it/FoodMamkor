@@ -251,7 +251,7 @@ export default function DraftSubmitBanner({ producer, onSubmitted, onPhoneVerifi
               onClick={() => setConfirming(false)}
               disabled={submitting}
               data-testid="draft-submit-confirm-no"
-              className="min-h-touch px-4 text-primary hover:underline focus-ring rounded-full"
+              className="min-h-touch px-4 text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current focus-ring rounded-full"
             >
               {t("confirm_no")}
             </button>

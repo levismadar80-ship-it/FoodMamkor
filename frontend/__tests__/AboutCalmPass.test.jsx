@@ -105,13 +105,16 @@ describe("MEH-2439 — /about", () => {
 });
 
 describe("MEH-2439 — /about/process", () => {
-  it("keeps exactly the four step numerals, all inside process-steps, and nothing else", () => {
+  // MEH-2833 (seed layer): the four step numbers now sit on seeds as «1»–«4»
+  // (board 3), so no «0N» numeral is left anywhere on the page — and the only
+  // step numbers are the four inside process-steps.
+  it("keeps exactly the four step numbers, all inside process-steps, and nothing else", () => {
     const { container } = render(<AboutProcessClient />);
     const steps = screen.getByTestId("process-steps");
-    const all = numeralLeaves(container);
-    const outside = all.filter((el) => !steps.contains(el));
-    expect(outside.map((el) => el.textContent)).toEqual([]);
-    expect(all.map((el) => el.textContent.trim())).toEqual(["01", "02", "03", "04"]);
+    expect(numeralLeaves(container).map((el) => el.textContent)).toEqual([]);
+    const marks = [...container.querySelectorAll('[data-testid="process-step-seed"]')];
+    expect(marks.every((m) => steps.contains(m))).toBe(true);
+    expect(marks.map((m) => m.textContent.trim())).toEqual(["1", "2", "3", "4"]);
   });
 
   it("the founder quote is upright", () => {

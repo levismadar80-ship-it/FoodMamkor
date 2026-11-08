@@ -16,6 +16,8 @@ import { useExperiencesNavGate } from "@/lib/use-experiences-nav-gate";
 import { useEventsNavGate } from "@/lib/use-events-nav-gate";
 import { useAuth } from "@/lib/auth-context";
 import ShareSiteActions from "@/components/ShareSiteActions";
+import Seed from "@/components/brand/Seed";
+import { SEEDS_DARK } from "@/lib/brand-seeds";
 
 /**
  * Footer (MEH-37 redesign) — brings the implementation in line with the
@@ -338,14 +340,20 @@ export default function Footer() {
           </div>
         </div>
 
+        {/* MEH-2833 (seed layer, board 6): the divider above the © line is a
+            row of the five seeds in the on-dark set, logo order, then a hairline
+            filling the rest. Decoration only. Replaces the plain top border. */}
+        <div aria-hidden="true" data-testid="footer-seed-row" className="flex items-center gap-1.5 mt-8">
+          {SEEDS_DARK.map((seed) => (
+            <Seed key={seed.name} color={seed.fill} size={10} />
+          ))}
+          <span className="h-px flex-1 bg-background/25 ms-1.5" />
+        </div>
+
         {/* ================= Copyright bar ================= */}
         <div
           className="flex flex-col sm:flex-row items-center justify-between gap-3"
-          style={{
-            borderTop: "1px solid rgba(255,255,255,0.1)",
-            paddingTop: "12px",
-            marginTop: "32px",
-          }}
+          style={{ paddingTop: "12px" }}
         >
           {/* MEH-788 copy-Δ: P5-v2 bottom-row lock — wordmark only; the leaf
               emoji dropped per the UI-surface emoji LOCK (MEH-657). */}
@@ -362,10 +370,10 @@ export default function Footer() {
               // MEH-867: IL IS 5568 — accessibility statement must be reachable
               // from the global footer.
               { href: "/accessibility", label: t("nav.footer.accessibility") },
-              // MEH-1312: "צרו קשר" → contact-form anchor on /about (id="contact",
-              // AboutClient.jsx:388). Sapir-approved ADR-024 exception (18/07) —
-              // contact is a top-3 expected footer utility link.
-              { href: "/about#contact", label: t("nav.footer.contact") },
+              // MEH-1312: "צרו קשר" — Sapir-approved ADR-024 exception (18/07),
+              // contact is a top-3 expected footer utility link. MEH-2832: the
+              // target is /contact, the site's one contact form (was /about#contact).
+              { href: "/contact", label: t("nav.footer.contact") },
               // MEH-2633: next to "צרו קשר", per the card. Sixth utility link —
               // the row already wraps and centres at 375 (MEH-2417 above), so
               // this does not re-open the edge-to-edge overflow that fixed.

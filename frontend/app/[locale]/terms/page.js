@@ -64,7 +64,7 @@ function MailLink({ email }) {
   return (
     <a
       href={`mailto:${email}`}
-      className="text-primary hover:underline break-all"
+      className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current break-all"
       dir="ltr"
     >
       {email}
@@ -150,7 +150,7 @@ function renderBody(id, t) {
             <li>
               {t.rich("sections.report.item_form", {
                 contactlink: (chunks) => (
-                  <Link href="/contact" className="text-primary hover:underline">
+                  <Link href="/contact" className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current">
                     {chunks}
                   </Link>
                 ),

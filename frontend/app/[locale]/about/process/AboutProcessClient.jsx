@@ -32,6 +32,11 @@ import {
 } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import ClosingCtaBand from "@/components/ClosingCtaBand";
+import Seed from "@/components/brand/Seed";
+import { SEEDS_LIGHT } from "@/lib/brand-seeds";
+
+// MEH-2833: the four steps' seeds — logo order without sand.
+const STEP_SEEDS = SEEDS_LIGHT.filter((seed) => seed.name !== "sand");
 
 // Illustrative tooltip date — this page has NO producer object, so the badge
 // is editorial chrome (refchip in the S11 design). Reuses the live tier-1
@@ -144,16 +149,36 @@ export default function AboutProcessClient() {
           </p>
           <ol data-testid="process-steps" className="grid grid-cols-1 md:grid-cols-4 gap-8">
             {STEPS.map(({ Icon }, i) => (
+              // content-start (MEH-2833): the 4-up row stretches every <li> to the
+              // tallest step; without it the stretch pads the seed row, and the
+              // step titles land at different heights.
               <li
                 key={i}
-                className="grid grid-cols-[44px_1fr] md:grid-cols-1 gap-4 items-start"
+                className="grid grid-cols-[44px_1fr] md:grid-cols-1 gap-4 items-start content-start"
               >
+                {/* MEH-2833 (seed layer, board 3): each step is a seed in logo
+                    order — green, terracotta, gold, sage (sand would vanish on
+                    cream) — with its number on it: cream on the three dark
+                    seeds, text-ink on gold. 40px wide → 60 tall (Seed keeps the
+                    logo seed's 2:3; the card's «40×56» is the board's rounding),
+                    and the box is the seed's own size. No inner highlight: the
+                    number sits where the highlight would be, and on it cream
+                    drops below 3:1. 20px bold = WCAG large text, so cream passes
+                    at 3.3–3.5:1 on terracotta/sage. The seed is aria-hidden; the
+                    number is real text. Phone: centred in its 44px column; md+:
+                    start-aligned with the step's text, as the circle was. */}
                 <span
-                  aria-hidden
+                  data-testid="process-step-seed"
+                  data-seed={STEP_SEEDS[i].name}
                   dir="ltr"
-                  className="numeric w-11 h-11 rounded-full border border-accent bg-background grid place-items-center font-english italic font-semibold text-xl text-accent"
+                  className="relative grid place-items-center w-10 h-[60px] justify-self-center md:justify-self-start"
                 >
-                  {`0${i + 1}`}
+                  <Seed color={STEP_SEEDS[i].fill} size={40} className="absolute inset-0" />
+                  <span
+                    className={`relative numeric font-english font-bold text-xl pt-1 ${STEP_SEEDS[i].name === "gold" ? "text-text" : "text-background"}`}
+                  >
+                    {i + 1}
+                  </span>
                 </span>
                 <div>
                   <div className="flex items-center gap-2.5 mb-2">

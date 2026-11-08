@@ -41,7 +41,7 @@ export default function UnverifiedEmailNotice({ className = "" }) {
             type="button"
             onClick={handleResend}
             disabled={resendSending}
-            className="text-primary hover:underline text-xs font-medium self-start disabled:opacity-50"
+            className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current text-xs font-medium self-start disabled:opacity-50"
           >
             {t("auth.verify.resend")}
           </button>

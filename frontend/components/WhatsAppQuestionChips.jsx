@@ -195,7 +195,7 @@ function OrderingContent({ answer, t }) {
     return (
       <p>
         {t("ordering_phone_prefix")}{" "}
-        <a href={answer.href} dir="ltr" className="text-primary hover:underline">
+        <a href={answer.href} dir="ltr" className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current">
           {answer.phone}
         </a>
       </p>
@@ -215,7 +215,7 @@ function OrderingContent({ answer, t }) {
         href={answer.href}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-primary hover:underline"
+        className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current"
       >
         {t("ordering_link_label")}
       </a>

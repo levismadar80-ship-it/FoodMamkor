@@ -11,6 +11,7 @@ import { haversineKm } from "@/lib/distance";
 import { defaultsForKeys } from "@/lib/filter-taxonomy";
 import { TOGGLE_CHIPS, chipStateToParams } from "@/lib/map-chips";
 import { chipsFromQuery } from "@/lib/filter-url";
+import { readMapSelection, writeMapSelection } from "@/lib/map-view-state";
 import { geocodeCity } from "@/lib/places";
 import { producerPoints, hiddenWhenSecondaryOff } from "@/lib/producerPoints";
 import { isRatingSortEnabled, mapRatingGateSource } from "@/lib/rating-gate";
@@ -716,6 +717,46 @@ export default function MapPage() {
   // (useMapSync handleCardClick + handleMarkerClick set it together).
   const focusedProducerId = filters.selectedProducer?.id ?? null;
 
+  // MEH-2049: back from a producer page reopens the business that was
+  // selected. One attempt, once the first feed has answered, against the
+  // list the map actually draws — a business no longer there (closed,
+  // filtered out) is dropped silently. Read only inside effects (MEH-517).
+  // Until that attempt has run, nothing is persisted, so the empty initial
+  // selection cannot erase the stored one before it is read.
+  const selectionRestoredRef = useRef(false);
+  const { loading: feedLoading } = feed;
+  const { filteredByCategory, selectedProducer } = filters;
+  const { restoreSelection, selectedLocation } = sync;
+  useEffect(() => {
+    if (selectionRestoredRef.current || feedLoading) return;
+    selectionRestoredRef.current = true;
+    const saved = readMapSelection();
+    if (!saved) return;
+    const producer = filteredByCategory.find((p) => String(p.id) === String(saved.producerId));
+    if (!producer) {
+      // Not in a list that loaded → gone or filtered out: drop it. An EMPTY
+      // list (a failed or malformed first fetch) proves nothing — keep it.
+      if (filteredByCategory.length > 0) writeMapSelection(null);
+      return;
+    }
+    const location = saved.locationId == null
+      ? null
+      : (producer.locations || []).find((l) => String(l.id) === String(saved.locationId)) ?? null;
+    restoreSelection(producer, location);
+  }, [feedLoading, filteredByCategory, restoreSelection]);
+
+  // Persist every later change; closing the card clears it. A pick that does
+  // not move the map (no pin to fly to, or a marker already on screen) saves
+  // no camera of its own, so the visible map's current one goes with it.
+  const { mapRef } = sync;
+  useEffect(() => {
+    if (!selectionRestoredRef.current) return;
+    const map = mapRef?.current;
+    const c = map?.getCenter?.();
+    const camera = c ? { lat: c.lat, lng: c.lng, zoom: map.getZoom() } : null;
+    writeMapSelection(selectedProducer?.id ?? null, selectedLocation?.id ?? null, { camera });
+  }, [selectedProducer, selectedLocation, mapRef]);
+
   // MEH-2046: is the layer toggle currently costing the user businesses? Read
   // off the SAME list the pane draws (`filteredByCategory`), so the notice can
   // never claim something the visible map contradicts. Short-circuits while the
@@ -935,7 +976,7 @@ export default function MapPage() {
       </div>
 
       {/* =================== MOBILE (below lg) — full map + sheet =================== */}
-      <div ref={mobileShellRef} data-testid="map-mobile-shell" className="lg:hidden" style={{ height: `calc(100dvh - ${mobileTopOffset}px)`, position: "relative" }}>
+      <div ref={mobileShellRef} data-testid="map-mobile-shell" data-chat-hide="" className="lg:hidden" style={{ height: `calc(100dvh - ${mobileTopOffset}px)`, position: "relative" }}>
         {/* Sticky filter bar — MEH-933 R2: sits at top-0 of the mobile shell.
             The shell is in normal flow AFTER the sticky <Header> (layout.js:221),
             so it already begins below the header band — the bar needs NO header

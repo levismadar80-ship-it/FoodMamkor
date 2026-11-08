@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { LinkBreak, Leaf } from "@phosphor-icons/react";
+import { LinkBreak } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import StatusPage from "@/components/StatusPage";
 import api from "@/lib/api";
@@ -39,7 +39,7 @@ export default function UnsubscribeClient({ token }) {
   const ok = status === "success";
   return (
     <StatusPage
-      icon={ok ? Leaf : LinkBreak}
+      icon={ok ? "seed" : LinkBreak}
       title={ok ? t("success_title") : t("error_title")}
       body={ok ? t("success_body") : t("error_body")}
       primary={{ href: "/", label: t("cta_home") }}

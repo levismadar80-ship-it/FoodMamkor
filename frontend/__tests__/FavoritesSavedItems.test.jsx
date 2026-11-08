@@ -181,7 +181,7 @@ describe("/favorites — one saved item (1)", () => {
   it("one recipe: chips with counts, only the recipes section, heart on the card", async () => {
     serve({ recipes: [recipe(1)] });
     await renderPage();
-    await screen.findByText("מתכון 1");
+    await screen.findByRole("heading", { name: "מתכון 1" });
     expect(screen.getByTestId("favorites-count-all").textContent).toBe("1");
     expect(screen.getByTestId("favorites-count-recipes").textContent).toBe("1");
     expect(screen.getByTestId("favorites-count-businesses").textContent).toBe("0");
@@ -194,7 +194,7 @@ describe("/favorites — one saved item (1)", () => {
   it("seeds the shared cache with every row, so a heart here always unsaves", async () => {
     serve({ recipes: [recipe(1)], events: [event(1, 3)], experiences: [experience(1, 3)] });
     await renderPage();
-    await screen.findByText("מתכון 1");
+    await screen.findByRole("heading", { name: "מתכון 1" });
     expect(cache.seeded.sort()).toEqual(
       [`recipe:${uid(101)}:true`, `event:${uid(201)}:true`, `experience:${uid(301)}:true`].sort(),
     );
@@ -203,16 +203,16 @@ describe("/favorites — one saved item (1)", () => {
   it("one recipe, «בתי עסק» chip: the businesses empty state as before", async () => {
     serve({ recipes: [recipe(1)] });
     await renderPage();
-    await screen.findByText("מתכון 1");
+    await screen.findByRole("heading", { name: "מתכון 1" });
     fireEvent.click(chip(F.filter_businesses));
     expect(screen.getByText(F.empty_title)).toBeTruthy();
-    expect(screen.queryByText("מתכון 1")).toBeNull();
+    expect(screen.queryByRole("heading", { name: "מתכון 1" })).toBeNull();
   });
 
   it("one recipe, «אירועים» chip: «עדיין לא שמרת אירועים»", async () => {
     serve({ recipes: [recipe(1)] });
     await renderPage();
-    await screen.findByText("מתכון 1");
+    await screen.findByRole("heading", { name: "מתכון 1" });
     fireEvent.click(chip(F.filter_events));
     expect(screen.getByTestId("favorites-type-empty").textContent).toBe(F.empty_events);
   });
@@ -248,7 +248,7 @@ describe("/favorites — many, mixed", () => {
     expect(past.getByText("אירוע 2")).toBeTruthy();
     expect(past.queryByText("חוויה 2")).toBeNull();
     expect(screen.queryByText("חוויה 1")).toBeNull();
-    expect(screen.queryByText("מתכון 1")).toBeNull();
+    expect(screen.queryByRole("heading", { name: "מתכון 1" })).toBeNull();
     expect(screen.queryAllByTestId("card")).toHaveLength(0);
   });
 
@@ -264,11 +264,11 @@ describe("/favorites — many, mixed", () => {
   it("a heart tapped on the page hides its row at once", async () => {
     serve(data);
     await renderPage();
-    await screen.findByText("מתכון 1");
+    await screen.findByRole("heading", { name: "מתכון 1" });
     cache.unsaved.add(`recipe:${uid(101)}`);
     cache.listeners.forEach((l) => l());
-    await waitFor(() => expect(screen.queryByText("מתכון 1")).toBeNull());
-    expect(screen.getByText("מתכון 2")).toBeTruthy();
+    await waitFor(() => expect(screen.queryByRole("heading", { name: "מתכון 1" })).toBeNull());
+    expect(screen.getByRole("heading", { name: "מתכון 2" })).toBeTruthy();
     expect(screen.getByTestId("favorites-count-recipes").textContent).toBe("1");
   });
 });
@@ -285,7 +285,7 @@ describe("/favorites — the saved half fails", () => {
     expect(screen.queryByTestId("favorites-count-all")).toBeNull();
     expect(screen.getByTestId("favorites-count-businesses").textContent).toBe("1");
     fireEvent.click(screen.getByTestId("favorites-saved-retry"));
-    expect(await screen.findByText("מתכון 1")).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "מתכון 1" })).toBeTruthy();
     expect(screen.queryByTestId("favorites-saved-error")).toBeNull();
     expect(screen.getByTestId("favorites-count-recipes").textContent).toBe("1");
   });

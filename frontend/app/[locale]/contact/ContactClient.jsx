@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CheckCircle, Leaf, Envelope, Timer } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
@@ -10,6 +10,7 @@ import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { CONTACT_EMAIL } from "@/lib/env.client";
 import Button from "@/components/ui/Button";
+import { CONTACT_TOPICS, DEFAULT_CONTACT_TOPIC, contactTopicFrom } from "@/lib/contact-topics";
 
 // MEH-653: CONTACT_EMAIL now read from NEXT_PUBLIC_CONTACT_EMAIL (lib/env.client)
 // with a "contact@mehamakor.co.il" fallback. Must still match the backend
@@ -17,13 +18,24 @@ import Button from "@/components/ui/Button";
 // Settings.contact_email) so the visible address matches where POST /contact
 // actually delivers.
 
+const EMPTY_FORM = { name: "", email: "", message: "", topic: DEFAULT_CONTACT_TOPIC };
+
 export default function ContactClient() {
   const t = useTranslations("contact");
   // MEH-1981: same namespace pair CategoryRequestModal.jsx:17-18 uses — one
   // privacy-link label site-wide, not a new string.
   const tNotice = useTranslations("privacy.collection_notice");
   const tPrivacyLink = useTranslations("auth.register.consumer.terms");
-  const [form, setForm] = useState({ name: "", email: "", message: "" });
+  const [form, setForm] = useState(EMPTY_FORM);
+  // MEH-2832 (moved from /about, MEH-1113): every «כתבו לנו» on the site links
+  // here with ?topic=. A whitelisted value preselects the topic; anything else
+  // falls back to "general" silently. Read once on mount, client-side only
+  // (MEH-517) — useSearchParams would need a Suspense boundary in page.js
+  // (the RecommendClient prefill pattern).
+  useEffect(() => {
+    const topic = new URLSearchParams(window.location.search).get("topic");
+    if (topic) setForm((prev) => ({ ...prev, topic: contactTopicFrom(topic) }));
+  }, []);
   const [status, setStatus] = useState("idle"); // idle | loading | success | error
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -36,7 +48,7 @@ export default function ContactClient() {
     try {
       await api.post("/contact", form);
       setStatus("success");
-      setForm({ name: "", email: "", message: "" });
+      setForm(EMPTY_FORM);
     } catch (err) {
       setStatus("error");
       setErrorMsg(detailToMessage(err.response?.data?.detail) || t("error_default"));
@@ -70,7 +82,7 @@ export default function ContactClient() {
               <span>{t("email_label")}</span>
               <a
                 href={`mailto:${CONTACT_EMAIL}`}
-                className="text-primary hover:underline font-medium break-all"
+                className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current font-medium break-all"
                 dir="ltr"
               >
                 {CONTACT_EMAIL}
@@ -97,13 +109,13 @@ export default function ContactClient() {
               <button
                 type="button"
                 onClick={() => setStatus("idle")}
-                className="mt-6 text-primary hover:underline text-sm"
+                className="mt-6 text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current text-sm"
               >
                 {t("success_send_another")}
               </button>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} data-chat-hide="" className="space-y-4">
               {/* MEH-1145 Wave E2: plain labeled fields → ui/Input (canon 44px
                   boxed recipe; value/onChange/required pass through unchanged). */}
               <Input
@@ -123,6 +135,26 @@ export default function ContactClient() {
                 required
                 dir="ltr"
               />
+              {/* MEH-2832: topic select (moved from the /about form, MEH-1113).
+                  Sent in the POST body; the backend prepends «נושא: <label>». */}
+              <div>
+                <label htmlFor="contact-topic" className="block text-sm font-medium mb-1 text-text">
+                  {t("topic_label")}
+                </label>
+                <select
+                  id="contact-topic"
+                  data-testid="contact-topic"
+                  value={form.topic}
+                  onChange={set("topic")}
+                  className="w-full min-h-touch bg-surface-card border border-border rounded-md px-3 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                >
+                  {CONTACT_TOPICS.map((key) => (
+                    <option key={key} value={key}>
+                      {t(`topic_options.${key}`)}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <div>
                 <label htmlFor="contact-message" className="block text-sm font-medium mb-1 text-text">
                   {t("field_message_label")}{" "}
