@@ -98,7 +98,7 @@ test.describe("manual › /share → /recommend#share (MEH-1160 · MEH-2827)", (
   });
 
   // MT:MEH-1160:4 — «שתפו» with a native share sheet: the payload handed to navigator.share.
-  test("«שתפו» hands title/text/url to navigator.share when it exists", async ({ page }) => {
+  test("«שתפו» hands title + url (no text) to navigator.share when it exists", async ({ page }) => {
     await page.addInitScript(() => {
       const calls: unknown[] = [];
       (window as unknown as { __shareCalls: unknown[] }).__shareCalls = calls;

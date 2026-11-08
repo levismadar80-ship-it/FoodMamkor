@@ -65,7 +65,7 @@ const CARD_CLASSES =
  * @param {"light"|"dark"} [props.tone] dark = on a bg-primary-dark surface (the footer).
  * @param {string} [props.url] what is shared; the site root by default.
  * @param {string} [props.title] share-sheet title; the brand by default.
- * @param {string} [props.message] share text; the site message by default. Pass "" for none.
+ * @param {string} [props.message] text for the copy/email paths (the native sheet gets title + url only); the site message by default. Pass "" for none.
  */
 export default function ShareSiteActions({
   layout = "full",
