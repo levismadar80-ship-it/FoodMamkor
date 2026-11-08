@@ -147,8 +147,10 @@ never waited for. (MEH-1844's "the CI reviewer works" — 13/08 — is history.)
    (`"בדיקי על: https://food-mamkor-[hash].vercel.app"`). A feature branch
    gets a preview only for a commit whose message contains `[preview]`
    (MEH-2845; `frontend/vercel.json` `ignoreCommand`) — every other push is
-   skipped, so previews stay off by default (MEH-1044 cost). Never report an
-   absent preview as rendered. Wait for approval before merging to staging.
+   skipped, so previews stay off by default (MEH-1044 cost). A skipped push
+   still counts against Vercel Hobby's 100 deployments a day (MEH-2062) — so
+   push `[preview]` once per PR, when it is ready for screenshots, not on
+   every commit. Never report an absent preview as rendered. Wait for approval before merging to staging.
 10. **After every PR — a test, not a checklist line (MEH-2796).** New
     behaviour gets an automated test (pytest / vitest / Playwright). Only what
     automation cannot see (real iPhone Safari, a third-party console, a flag
