@@ -770,6 +770,9 @@ export default function MapPage() {
   // 36px marker 6px from the card. The rendered icon nearest the point gives
   // the real bottom; no icon found → the point itself.
   // Already visible → no pan. Reduced motion → the same move, unanimated.
+  // The move goes through the map API's panBy, which flags it as ours, so it
+  // never raises «חפשו באזור זה» (a raw map.panBy did, at 375×667).
+  const { mapApiRef } = sync;
   useEffect(() => {
     if (!selectedProducer || typeof window === "undefined") return undefined;
     if (window.matchMedia?.("(min-width: 1024px)")?.matches) return undefined;
@@ -777,8 +780,9 @@ export default function MapPage() {
     if (!target) return undefined;
     const timer = window.setTimeout(() => {
       const map = mapRef?.current;
+      const api = mapApiRef?.current;
       const sheet = document.querySelector('[data-testid="map-bottom-sheet"]');
-      if (!map?.latLngToContainerPoint || !sheet) return;
+      if (!map?.latLngToContainerPoint || !api?.panBy || !sheet) return;
       const mapTop = map.getContainer().getBoundingClientRect().top;
       const edge = sheet.getBoundingClientRect().top - mapTop;
       const { x, y } = map.latLngToContainerPoint([target.lat, target.lng]);
@@ -795,10 +799,10 @@ export default function MapPage() {
       }
       if (bottom < edge - 16) return;
       const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
-      map.panBy([0, bottom - (edge - 24)], { animate: !reduce });
+      api.panBy([0, bottom - (edge - 24)], { animate: !reduce });
     }, MOBILE_PICK_PAN_DELAY_MS);
     return () => window.clearTimeout(timer);
-  }, [selectedProducer, selectedLocation, mapRef]);
+  }, [selectedProducer, selectedLocation, mapRef, mapApiRef]);
 
   // MEH-2046: is the layer toggle currently costing the user businesses? Read
   // off the SAME list the pane draws (`filteredByCategory`), so the notice can

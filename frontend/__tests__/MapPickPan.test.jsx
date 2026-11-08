@@ -142,7 +142,7 @@ vi.mock("@/app/[locale]/map/state/useMapSync", () => ({
     handleMarkerClick: vi.fn(),
     handleMarkerHover: vi.fn(),
     handleSearchThisArea: vi.fn(),
-    mapApiRef: { current: null },
+    mapApiRef: harness.mapApiRef,
     mapRef: harness.mapRef,
     registerMapApi: vi.fn(),
     selectedLocation: harness.selectedLocation,
@@ -194,6 +194,7 @@ vi.mock("@/app/[locale]/map/state/useMapFilters", async () => {
 
 const harness = vi.hoisted(() => ({
   mapRef: { current: null },
+  mapApiRef: { current: null },
   selectedProducer: null,
   selectedLocation: null,
 }));
@@ -213,9 +214,13 @@ function setup({ desktop = false, reduce = false, markerY, sheetTop = 500, mapTo
     getZoom: () => 12,
   };
   harness.mapRef.current = map;
+  // The move must go through the map API (MapComponent flags it as ours, so
+  // «חפשו באזור זה» stays down); a raw map.panBy is the bug this replaced.
+  const api = { panBy: vi.fn() };
+  harness.mapApiRef.current = api;
   harness.selectedProducer = { id: "p1", name: "עסק", locations: [{ lat: 32.1, lng: 34.9, is_primary: true }] };
   harness.selectedLocation = { lat: 32.1, lng: 34.9 };
-  return { map, sheetTop };
+  return { map, api, sheetTop };
 }
 
 async function renderAndSettle(sheetTop) {
@@ -236,42 +241,44 @@ afterEach(() => {
 
 describe("mobile pick pan (MEH-2843)", () => {
   it("a marker under the sheet is panned up to 24px above its top edge", async () => {
-    const { map, sheetTop } = setup({ markerY: 600, sheetTop: 500 });
+    const { map, api, sheetTop } = setup({ markerY: 600, sheetTop: 500 });
     await renderAndSettle(sheetTop);
-    expect(map.panBy).toHaveBeenCalledTimes(1);
-    expect(map.panBy).toHaveBeenCalledWith([0, 600 - (500 - 24)], { animate: true });
+    expect(api.panBy).toHaveBeenCalledTimes(1);
+    expect(api.panBy).toHaveBeenCalledWith([0, 600 - (500 - 24)], { animate: true });
+    // Never the raw Leaflet call: its moveend would raise «חפשו באזור זה».
+    expect(map.panBy).not.toHaveBeenCalled();
   });
 
   it("a marker within 16px of the edge is moved too", async () => {
-    const { map, sheetTop } = setup({ markerY: 490, sheetTop: 500 });
+    const { api, sheetTop } = setup({ markerY: 490, sheetTop: 500 });
     await renderAndSettle(sheetTop);
-    expect(map.panBy).toHaveBeenCalledWith([0, 490 - 476], { animate: true });
+    expect(api.panBy).toHaveBeenCalledWith([0, 490 - 476], { animate: true });
   });
 
   it("a marker already clear of the sheet is left alone", async () => {
-    const { map, sheetTop } = setup({ markerY: 300, sheetTop: 500 });
+    const { api, sheetTop } = setup({ markerY: 300, sheetTop: 500 });
     await renderAndSettle(sheetTop);
-    expect(map.panBy).not.toHaveBeenCalled();
+    expect(api.panBy).not.toHaveBeenCalled();
   });
 
   it("measures the edge in the map's own coordinates (map offset from the page top)", async () => {
     // sheet at 560 on the page, map starting at 60 → the edge is 500 in map space
-    const { map } = setup({ markerY: 600, mapTop: 60 });
+    const { api } = setup({ markerY: 600, mapTop: 60 });
     await renderAndSettle(560);
-    expect(map.panBy).toHaveBeenCalledWith([0, 600 - 476], { animate: true });
+    expect(api.panBy).toHaveBeenCalledWith([0, 600 - 476], { animate: true });
   });
 
   it("reduced motion: the same move, unanimated", async () => {
-    const { map, sheetTop } = setup({ markerY: 600, sheetTop: 500, reduce: true });
+    const { api, sheetTop } = setup({ markerY: 600, sheetTop: 500, reduce: true });
     await renderAndSettle(sheetTop);
-    expect(map.panBy).toHaveBeenCalledWith([0, 124], { animate: false });
+    expect(api.panBy).toHaveBeenCalledWith([0, 124], { animate: false });
   });
 
   // Measured at 390×844 on a real build: the icons are centre-anchored, so
   // panning the latlng point left a 36px marker's lower half 6px from the
   // card. The rendered icon nearest the point supplies the real bottom edge.
   it("pans by the marker icon's bottom edge, not its centre point", async () => {
-    const { map, sheetTop } = setup({ markerY: 470, sheetTop: 500 });
+    const { map, api, sheetTop } = setup({ markerY: 470, sheetTop: 500 });
     const icon = document.createElement("div");
     icon.className = "leaflet-marker-icon";
     icon.getBoundingClientRect = () => ({ left: 82, right: 118, top: 452, bottom: 488, height: 36 });
@@ -279,22 +286,22 @@ describe("mobile pick pan (MEH-2843)", () => {
     await renderAndSettle(sheetTop);
     // centre 470 is 30px above the edge (would be left alone); the bottom 488
     // is within 16px → pan the bottom to 24px above the edge.
-    expect(map.panBy).toHaveBeenCalledWith([0, 488 - (500 - 24)], { animate: true });
+    expect(api.panBy).toHaveBeenCalledWith([0, 488 - (500 - 24)], { animate: true });
   });
 
   it("an icon far from the point is not taken as the marker", async () => {
-    const { map, sheetTop } = setup({ markerY: 300, sheetTop: 500 });
+    const { map, api, sheetTop } = setup({ markerY: 300, sheetTop: 500 });
     const other = document.createElement("div");
     other.className = "leaflet-marker-icon";
     other.getBoundingClientRect = () => ({ left: 300, right: 336, top: 600, bottom: 636, height: 36 });
     map.getContainer().appendChild(other);
     await renderAndSettle(sheetTop);
-    expect(map.panBy).not.toHaveBeenCalled();
+    expect(api.panBy).not.toHaveBeenCalled();
   });
 
   it("desktop never pans", async () => {
-    const { map, sheetTop } = setup({ markerY: 600, sheetTop: 500, desktop: true });
+    const { api, sheetTop } = setup({ markerY: 600, sheetTop: 500, desktop: true });
     await renderAndSettle(sheetTop);
-    expect(map.panBy).not.toHaveBeenCalled();
+    expect(api.panBy).not.toHaveBeenCalled();
   });
 });

@@ -567,6 +567,15 @@ export default function MapComponent({
         );
       },
       getMap: () => mapInstanceRef.current,
+      // MEH-2843: MapClient's pan that lifts a tapped marker clear of the
+      // phone sheet is our move too — flag it so its moveend never raises
+      // «חפשו באזור זה». A zero offset fires no moveend, so it is skipped
+      // rather than left to swallow the visitor's next real move.
+      panBy: (offset, options) => {
+        if (!mapInstanceRef.current || (!offset[0] && !offset[1])) return;
+        programmaticMoveRef.current = true;
+        mapInstanceRef.current.panBy(offset, options);
+      },
       // Used by MapClient.registerMapApi to skip hidden (0×0) containers
       // so the mobile map (display:none on desktop) never overwrites the
       // visible desktop map's API reference, and vice-versa on mobile.
