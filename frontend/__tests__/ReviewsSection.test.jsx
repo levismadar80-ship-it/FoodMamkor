@@ -577,3 +577,60 @@ describe("ReviewsSection — live total reported upward (MEH-2705)", () => {
     try { localStorage.removeItem("wa_clicked_p-1"); } catch {}
   });
 });
+
+describe("ReviewsSection — the initial on a seed tint (MEH-2833 board 4)", () => {
+  // Same recipe as the component: seed colour mixed into the page cream.
+  const CREAM = [0xf5, 0xf0, 0xe8];
+  const hexRgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const mix = (h, a) => hexRgb(h).map((v, i) => Math.round(v * a + CREAM[i] * (1 - a)));
+  const lum = (c) => {
+    const [r, g, b] = c.map((v) => { const s = v / 255; return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4; });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
+
+  it("tint = the reviewer's seed at ~24% over cream, ring at ~55%, letter in text ink", async () => {
+    const { seedColorFor } = await import("@/lib/brand-seeds");
+    mockReviews([{ id: "rev-s", user_id: "u-77", user_name: "רונית כ.", stars: 5, body: "טעים", created_at: "2026-07-01T11:00:00", reply: null, reply_at: null }]);
+    render(<ReviewsSection producerId="p-1" isOwner={false} />);
+    const initial = await screen.findByTestId("review-initial");
+    const seed = seedColorFor("u-77");
+    expect(initial.getAttribute("data-seed")).toBe(seed.name);
+    expect(initial.style.background).toBe(`rgb(${mix(seed.fill, 0.24).join(", ")})`);
+    expect(initial.style.boxShadow).toContain(`rgb(${mix(seed.fill, 0.55).join(", ")})`);
+    expect(initial.className).toContain("text-text");
+    expect(initial.className).not.toContain("bg-green-50");
+  });
+
+  it("every seed's RENDERED tint keeps the letter ≥ 4.5:1 (text ink #1C1A17)", async () => {
+    // Reads the background the component actually painted — not a copy of
+    // its recipe — for one reviewer per pickable seed.
+    const { SEEDS_LIGHT, seedColorFor } = await import("@/lib/brand-seeds");
+    const pickable = SEEDS_LIGHT.filter((s) => s.name !== "sand").map((s) => s.name);
+    expect(pickable).toHaveLength(4);
+    const idFor = {};
+    for (let i = 0; Object.keys(idFor).length < pickable.length && i < 500; i += 1) {
+      const name = seedColorFor(`u-${i}`).name;
+      if (!(name in idFor)) idFor[name] = `u-${i}`;
+    }
+    expect(Object.keys(idFor).sort()).toEqual([...pickable].sort());
+    // One render per seed: the list shows 3 reviews before «more».
+    for (const name of pickable) {
+      mockReviews([{ id: `rev-${name}`, user_id: idFor[name], user_name: "רונית כ.", stars: 5, body: "טעים", created_at: "2026-07-01T11:00:00", reply: null, reply_at: null }]);
+      const { unmount } = render(<ReviewsSection producerId="p-1" isOwner={false} />);
+      const el = await screen.findByTestId("review-initial");
+      expect(el.getAttribute("data-seed")).toBe(name);
+      const bg = el.style.background.match(/\d+/g).map(Number);
+      expect(bg).toHaveLength(3);
+      expect(ratio(hexRgb("#1C1A17"), bg), name).toBeGreaterThanOrEqual(4.5);
+      unmount();
+    }
+  });
+
+  it("the same reviewer always gets the same seed; two different ones can differ", async () => {
+    const { seedColorFor } = await import("@/lib/brand-seeds");
+    expect(seedColorFor("u-77")).toBe(seedColorFor("u-77"));
+    const names = new Set(["u-1", "u-2", "u-3", "u-4", "u-5", "u-6", "u-7", "u-8"].map((id) => seedColorFor(id).name));
+    expect(names.size).toBeGreaterThan(1);
+  });
+});
