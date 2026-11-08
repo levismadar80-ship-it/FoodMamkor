@@ -1,5 +1,6 @@
 "use client";
 
+import SeedMark from "@/components/brand/SeedMark";
 import { useState, useRef, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { CaretLeft, Images, SealCheck } from "@phosphor-icons/react";
@@ -82,53 +83,42 @@ export default function ImageGallery({ images = [], producerId = null, producerN
     setLightboxOpen(true);
   }, []);
 
+  // MEH-2833: the supergraphic bloom on the imageless masthead — 280px from md;
+  // 200px on a phone (CSS below), where board 1's bloom is about half the card.
+  const SUPERGRAPHIC_PX = 280;
+
   // MEH-815: imageless state renders the "Tinted Masthead" editorial hero
   // (Sapir-approved, Claude Design) instead of the old emoji+initials box.
   // Text-led, shorter than the imaged carousel. The producer name is the
   // page's sole <h1> here (ProducerHeader omits its own h1 when imageless,
   // so the name appears exactly once). Surface = green #2e6853 tint over
   // cream at 6% (ADR-019 opacity-on-cream — token + opacity, no hex token).
-  // Recessive מ·ה brand monogram sits at the corner, gold, never dominant.
+  // MEH-2833 replaced the tint + מ·ה monogram with sand + the seed supergraphic.
   if (!images.length) {
     return (
       <div
         className="relative w-full rounded-md bg-background border border-border overflow-hidden"
         data-testid="gallery-empty-state"
       >
-        {/* 6% green tint over the cream surface beneath (ADR-019) */}
+        {/* MEH-2833 (seed layer, board 1): the masthead is sand
+            (background-alt) and carries the logo as a supergraphic at the END
+            side, half of it past the edge and cropped by the card's
+            overflow-hidden. Phone: 200px, sitting low (40px below the bottom
+            edge) so the share/heart cluster at the top-end corner stays on
+            sand and the name keeps ~200px, as on the board. md+: 280px,
+            vertically centred (the 150px-tall masthead also crops it top and
+            bottom). Never rotated or mirrored; the visible half shows green,
+            terracotta and half the gold seed in RTL — as on the board — and
+            sand, sage and half the gold in LTR. Replaces the 6% green tint and
+            the מ·ה corner monogram. */}
         <div
-          className="relative bg-primary/[0.06] px-6 pb-6 pt-16 md:pt-20 flex items-end min-h-[120px] md:min-h-[150px]"
+          className="relative bg-background-alt px-6 pb-6 pt-16 md:pt-20 flex items-end min-h-[120px] md:min-h-[150px]"
           data-testid="gallery-tint-layer"
         >
-          {/* Recessive brand monogram — corner mark (start side, opposite the
-              actions cluster — MEH-2671), gold, ~24px. Decorative, never dominant.
-              MEH-2025: SVG text, not an HTML text node. axe audits every
-              visible HTML text node for color-contrast (aria-hidden included)
-              and the recessive 40% fill measures 1.66:1; WCAG 1.4.3 exempts
-              purely decorative text, but an HTML text node has no way to say
-              so — an SVG mark is the standard encoding of that exemption.
-              The passing alternative (opacity >= /80, measured 3.04:1) would
-              make the mark dominant, which the recessive LOCK above forbids.
-              Same glyphs/font/fill; box 34x24 at the same corner (span box
-              measured 33x24 before the swap). */}
-          <svg
-            className="absolute top-3 start-3 select-none pointer-events-none overflow-visible"
-            width="34"
-            height="24"
-            viewBox="0 0 34 24"
-            aria-hidden="true"
-            focusable="false"
-          >
-            <text
-              x="17"
-              y="19"
-              textAnchor="middle"
-              fontSize="24"
-              className="font-headline-lg fill-accent/40"
-            >
-              מ·ה
-            </text>
-          </svg>
+          <SeedMark
+            size={SUPERGRAPHIC_PX}
+            className="absolute w-[200px] h-[200px] -bottom-10 -end-[100px] md:w-[280px] md:h-[280px] md:bottom-auto md:top-1/2 md:-translate-y-1/2 md:-end-[140px] pointer-events-none select-none"
+          />
           {/* MEH-815: h1 rendered unconditionally — ProducerHeader always omits
               its own name h1 when imageless, so the masthead must always supply
               the page's single h1 (guarantees exactly-one-h1 even for the
@@ -136,8 +126,16 @@ export default function ImageGallery({ images = [], producerId = null, producerN
               MEH-1168 P2: the verified seal sits inline after the name (anchored
               to it, not floating in the header badge row). Masthead is otherwise
               unchanged (MEH-815 LOCK). */}
-          <div className="flex items-center flex-wrap gap-x-3 gap-y-2">
-            <h1 className="font-headline-lg text-5xl md:text-6xl font-black text-text leading-tight">
+          {/* MEH-2833: the name block stops short of the bloom (100px visible
+              on a phone, 140px from md, + a 12px gap), so the h1 never sits on
+              a seed at any width. */}
+          <div
+            data-testid="masthead-name-block"
+            className="relative flex items-center flex-wrap gap-x-3 gap-y-2 max-w-[calc(100%-7rem)] md:max-w-[calc(100%-9.5rem)]"
+          >
+            {/* MEH-2833: a long single word wraps inside the capped block
+                instead of running into the bloom. */}
+            <h1 className="font-headline-lg text-5xl md:text-6xl font-black text-text leading-tight [overflow-wrap:anywhere]">
               {producerName}
             </h1>
             {/* MEH-1358: the masthead seal opens the SAME verification popover
