@@ -2956,14 +2956,7 @@
         "submit": "Send",
         "submit_loading": "Sending...",
         "success_toast": "Thanks! We'll get back to you soon",
-        "email_direct": "Or reach us directly by email:",
-        "topic_label": "Inquiry topic",
-        "topic_options": {
-          "general": "General question",
-          "business": "Business inquiry",
-          "correction": "Correcting site info",
-          "other": "Other"
-        }
+        "email_direct": "Or reach us directly by email:"
       }
     }
   },
@@ -3306,6 +3299,13 @@
     "success_send_another": "Send another message",
     "field_name_label": "Full name",
     "field_email_label": "Email",
+    "topic_label": "Inquiry topic",
+    "topic_options": {
+      "general": "General question",
+      "business": "Business inquiry",
+      "correction": "Correcting site info",
+      "other": "Other"
+    },
     "field_message_label": "How can we help?",
     "submit": "Send",
     "submit_loading": "Sending...",
