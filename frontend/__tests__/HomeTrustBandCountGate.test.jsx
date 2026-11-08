@@ -8,11 +8,11 @@
  * is broken.
  *
  * What it pins:
- *   1. The old lead string renders ZERO times IN THE BAND, and exactly once
- *      page-wide — in the hero. Not "zero on the homepage": it is a byte-exact
- *      substring of home.hero.subtitle, which decision 1 locks unchanged, so a
- *      page-wide zero is unreachable without breaking that lock. See the
- *      comment above the first test.
+ *   1. The old lead string renders ZERO times IN THE BAND, and — since MEH-2842
+ *      (08/11) reworded home.hero.subtitle — zero times page-wide too. It used
+ *      to be a byte-exact substring of that subtitle, which is why this
+ *      originally pinned "exactly once, in the hero". See the comment above the
+ *      first test.
  *   2. Below TRUST_COUNT_THRESHOLD (25) the lead is the locked sentence.
  *   3. MEH-2804 follow-up (07/11, Sapir): the locked sentence renders at EVERY
  *      count, and while /stats loads. From TRUST_COUNT_THRESHOLD (25) a quiet
@@ -159,14 +159,23 @@ beforeEach(() => {
 });
 
 describe("MEH-1692 — trust band lead", () => {
-  // The ticket's acceptance criterion reads "renders 0 times on the homepage".
-  // That is UNSATISFIABLE as written, and the conflict is with the ticket's own
-  // decision 1: OLD_LEAD is a verbatim substring of home.hero.subtitle, which is
-  // locked unchanged. Driving the page-wide count to 0 would require editing the
-  // hero — the one thing decision 1 forbids. The satisfiable, and intended,
-  // form is asserted here: gone from the BAND, still present exactly once on the
-  // page, in the hero that owns it. That is what "the duplication is closed"
-  // means when only one side moves.
+  // MEH-2842 (08/11) RESOLVED THIS, AND THE COUNT MOVED FROM 1 TO 0.
+  //
+  // What stood here: the ticket's acceptance criterion reads "renders 0 times on
+  // the homepage", and that was UNSATISFIABLE, because decision 1 locked
+  // home.hero.subtitle unchanged while OLD_LEAD was a verbatim substring of it.
+  // The satisfiable form — gone from the BAND, present exactly once in the hero
+  // that owns it — was asserted instead.
+  //
+  // MEH-2842 changed the subtitle to «ישר מהמקור אליכם. בתי עסק שכבר בדקנו
+  // בשבילכם.» for reasons of its own (Sapir rejected MEH-2661's «הביתה»). The
+  // final kaf moved: «בשבילך» (U+05DA) became «בשבילכם» (U+05DB U+05DD), so
+  // OLD_LEAD is no longer a substring of anything the homepage renders —
+  // measured, not assumed. The duplication is now closed from BOTH sides and
+  // the original criterion is reachable, so this pins 0 rather than 1.
+  //
+  // This is a stronger assertion, not a relaxed one: it still pins an exact
+  // count, and it is the count the ticket asked for.
   it("never renders the retired lead string in the trust band", () => {
     for (const n of [0, 3, 5, 12, 24, 25, 30, 500]) {
       const { unmount } = renderAt(n);
@@ -175,11 +184,11 @@ describe("MEH-1692 — trust band lead", () => {
     }
   });
 
-  it("renders the retired string exactly once page-wide — in the hero, not twice", () => {
+  it("renders the retired string zero times page-wide — both sides now closed", () => {
     for (const n of [3, 12, 30]) {
       const { unmount, container } = renderAt(n);
       const hits = (container.textContent.match(new RegExp(OLD_LEAD, "g")) || []).length;
-      expect(hits, `count=${n}`).toBe(1);
+      expect(hits, `count=${n}`).toBe(0);
       unmount();
     }
   });
@@ -327,7 +336,7 @@ describe("MEH-1692 — positive guards (surfaces that must NOT change)", () => {
   });
 
   it("the hero subtitle value itself is untouched in he.json", () => {
-    expect(he.home.hero.subtitle).toBe("ישר מהמקור הביתה. בתי עסק שכבר בדקנו בשבילך.");
+    expect(he.home.hero.subtitle).toBe("ישר מהמקור אליכם. בתי עסק שכבר בדקנו בשבילכם.");
   });
 
   it("nav.trust_strip value is untouched in he.json", () => {
