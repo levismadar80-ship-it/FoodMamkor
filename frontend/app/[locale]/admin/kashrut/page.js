@@ -279,7 +279,7 @@ export default function AdminKashrutPage() {
                         href={row.cert_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-primary hover:underline text-xs"
+                        className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current text-xs"
                       >
                         {t("kashrut.cert_view")}
                       </a>
