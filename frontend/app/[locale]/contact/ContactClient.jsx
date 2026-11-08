@@ -146,7 +146,7 @@ export default function ContactClient() {
                   data-testid="contact-topic"
                   value={form.topic}
                   onChange={set("topic")}
-                  className="w-full min-h-[44px] bg-surface-card border border-border rounded-md px-3 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                  className="w-full min-h-touch bg-surface-card border border-border rounded-md px-3 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                 >
                   {CONTACT_TOPICS.map((key) => (
                     <option key={key} value={key}>
