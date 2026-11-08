@@ -3596,9 +3596,9 @@
   "join": {
     "eyebrow": "For local businesses",
     "h1": "Your business. A page of its own.",
-    "subhead": "A page with your photos and story, every business hand-picked, and customers contact you directly, on WhatsApp or the channel you choose — local customers meet your story.",
+    "subhead": "A page with your photos and story, and local customers contact you directly, on the channel you choose.",
     "cta": "Join",
-    "trust_hint": "Free to join",
+    "trust_hint": "Free, no commissions",
     "how": {
       "eyebrow": "How it works",
       "heading": "Four steps",
@@ -3622,11 +3622,15 @@
     "faq": {
       "eyebrow": "Common questions",
       "q_cost": "How much does it cost?",
+      "q_price": "Who sets the price?",
       "a_cost": "Free to join and be listed. No transaction fees.",
+      "a_price": "You do. The price on your page is yours, and we take no cut of any sale.",
       "all_link": "All the questions",
       "heading": "What businesses ask",
       "q_google": "How is this different from Google and Instagram?",
+      "q_updates": "Is this one more place I need to keep updated?",
       "a_google": "Google is good for being found in search, and it's worth keeping. Here you get a page of your own in an article style, a contact button on the channel you chose (on WhatsApp, with a ready-made message too), and reviews only from people who contacted you. You can also put the link to your Mehamakor page on your Google profile. Keep your Instagram as usual and link to it from your page; here the customer also sees prices, delivery areas and hours without asking.",
+      "a_updates": "Hardly. There are no orders or stock on the site, so when something runs out, customers just ask you. You only update when something permanent changes.",
       "q_revenue": "If everything is free, how do you make money?",
       "a_revenue": "Right now we don't. In the future, income will come from an upgraded subscription that businesses choose of their own accord. Not from fees, and not from selling a place at the top of the list.",
       "q_customers": "Who gets the customers?",
@@ -3662,10 +3666,10 @@
     },
     "closing": {
       "heading": "Adding the first businesses now",
-      "line": "One page with every detail, and the customer contacts you directly.",
+      "line": "One link with everything people need to know about you: for your Instagram bio, your WhatsApp status, and anyone who asks.",
       "question": "A question first?"
     },
-    "meta_line": "Free · about 5 minutes · live within 3 business days"
+    "meta_line": "Free · no commissions · about 5 minutes · live within 3 business days"
   },
   "about_business": {
     "meta_title": "FAQ for businesses — Mehamakor",

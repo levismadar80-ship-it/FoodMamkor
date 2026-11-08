@@ -356,8 +356,11 @@ test.describe("manual › /about/process (MEH-534)", () => {
     await expect(hero).toContainText(PROCESS_HE.hero.sub);
   });
 
-  // MT:MEH-534:3 — 4 steps: mobile vertical list with numerals 01–04, desktop 4 columns; one icon per step; the "מאומת is a separate step" aside below.
-  test("four steps: numerals 01–04, titles from copy, an icon each, stacked on mobile / 4 columns on desktop, badge aside below", async ({
+  // MT:MEH-534:3 — 4 steps: mobile vertical list, desktop 4 columns; one icon per step; the "מאומת is a separate step" aside below.
+  // MEH-2833 (#4199): each step's number 1–4 sits on a seed (data-testid
+  // process-step-seed) instead of the old 01–04 numeral; the seed is an svg too,
+  // so the icon count excludes it (svg[data-seed-color]).
+  test("four steps: a numbered seed each (1–4), titles from copy, an icon each, stacked on mobile / 4 columns on desktop, badge aside below", async ({
     page,
   }, testInfo) => {
     await gotoProcess(page);
@@ -365,13 +368,14 @@ test.describe("manual › /about/process (MEH-534)", () => {
     await steps.scrollIntoViewIfNeeded();
     const items = steps.locator("li");
     await expect(items).toHaveCount(STEP_TITLES_HE.length);
-    await expect(steps.locator("li svg")).toHaveCount(STEP_TITLES_HE.length);
+    await expect(steps.locator("li svg:not([data-seed-color])")).toHaveCount(STEP_TITLES_HE.length);
+    await expect(steps.locator("li svg[data-seed-color]")).toHaveCount(STEP_TITLES_HE.length);
     const boxes: { x: number; y: number; width: number; height: number }[] = [];
     for (let i = 0; i < STEP_TITLES_HE.length; i += 1) {
       const item = items.nth(i);
-      await expect(item.locator("span[aria-hidden]").first()).toHaveText(`0${i + 1}`);
+      await expect(item.getByTestId("process-step-seed")).toHaveText(`${i + 1}`);
       await expect(item.getByRole("heading", { level: 3 })).toHaveText(STEP_TITLES_HE[i]);
-      await expect(item.locator("svg")).toHaveCount(1);
+      await expect(item.locator("svg:not([data-seed-color])")).toHaveCount(1);
       boxes.push(await box(item));
     }
     if (testInfo.project.name === "mobile") {
@@ -761,14 +765,26 @@ test.describe("manual › design leftovers (MEH-2487)", () => {
     });
   }
 
-  // Control: the upright rule is for Hebrew only. The step numerals 01–04 are
-  // Cormorant digits with a real italic face, so they are a dir="ltr" island and
-  // stay italic — without `dir="ltr"` the rtl rule straightened them too.
-  test("/about/process: the step numerals keep their real Cormorant italic", async ({ page }) => {
+  // Control: the upright rule is for Hebrew only — Latin text in a dir="ltr"
+  // island keeps its real Cormorant italic. Until MEH-2833 the step numerals
+  // were that island; since #4199 they sit upright and bold on seeds, and the
+  // page has no italic Latin left (measured 08/11: zero italic text elements on
+  // /about/process and /about). So the control brings its own island — the
+  // same classes the numerals used — instead of borrowing one the page can
+  // drop again. It fails if the rtl rule ever straightens dir="ltr" text.
+  test("/about/process: a dir=\"ltr\" island keeps its real Cormorant italic", async ({ page }) => {
     await gotoProcess(page);
-    const numeral = page.locator('[data-testid="process-steps"] span.numeric').first();
-    await expect(numeral).toHaveText(/^\d+$/);
-    expect(await numeral.evaluate((el) => getComputedStyle(el).fontStyle)).toBe("italic");
+    const style = await page.evaluate(() => {
+      const probe = document.createElement("span");
+      probe.dir = "ltr";
+      probe.className = "numeric font-english italic";
+      probe.textContent = "01";
+      document.querySelector('[data-testid="process-steps"]')!.appendChild(probe);
+      const s = getComputedStyle(probe).fontStyle;
+      probe.remove();
+      return s;
+    });
+    expect(style).toBe("italic");
   });
 
   // /about/process and (MEH-2827) /about/why-local end on a green band. (/about
