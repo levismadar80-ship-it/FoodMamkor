@@ -283,12 +283,12 @@ describe("confirming", () => {
   });
 
   it("a 409 keeps the dialog open with the server's message, locks confirm and reloads the list", async () => {
-    patch.mockRejectedValue({ response: { status: 409, data: { detail: "אי אפשר לשנות את קבוצת הרכש למצב הזה" } } });
+    patch.mockRejectedValue({ response: { status: 409, data: { detail: "אי אפשר לשנות את קבוצת הרכישה למצב הזה" } } });
     await renderWith([groupBuy()]);
     const before = get.mock.calls.filter(([u]) => u === "/producers/me/group-buys").length;
     fireEvent.click(screen.getByTestId("group-buy-action-cancel"));
     fireEvent.click(screen.getByTestId("group-buy-action-confirm"));
-    expect(await screen.findByRole("alert")).toHaveTextContent("אי אפשר לשנות את קבוצת הרכש למצב הזה");
+    expect(await screen.findByRole("alert")).toHaveTextContent("אי אפשר לשנות את קבוצת הרכישה למצב הזה");
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     // Confirming again would only repeat the 409; «חזרה» stays usable.
     expect(screen.getByTestId("group-buy-action-confirm")).toBeDisabled();
