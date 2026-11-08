@@ -5,8 +5,8 @@
  *     least the pixels it displays (1x w_828 · 2x w_1600 · 3x w_1920); 640px
  *     and up, and /en everywhere (taller band), keep the w_1920 url. Same
  *     Cloudinary transform (c_fill,g_auto,ar_16:9).
- *  B) Cormorant (both styles) and Heebo-latin are no longer preloaded; every
- *     other face keeps next/font's default preload.
+ *  B) Heebo-latin is no longer preloaded; every other face, Cormorant
+ *     included, keeps next/font's default preload.
  */
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
@@ -44,11 +44,8 @@ describe("MEH-2850 A — hero photo sized to the phone, unchanged from 640px", (
     expect(width).toEqual({ 1: 828, 2: 1600, 3: 1920 });
     for (const [, u] of pairs) expect(u).toContain(`/upload/${TRANSFORM},w_`);
     for (const [, u] of pairs) expect(u).toMatch(/\/home\/hero-produce\.jpg$/);
-    // Never below what a phone displays: ≤746 CSS px (704 cover width × 1.06
-    // Ken Burns), measured on production 08/11 at 360–639px.
-    const NEED_CSS = 746;
-    expect(width[1]).toBeGreaterThanOrEqual(NEED_CSS);
-    expect(width[2]).toBeGreaterThanOrEqual(NEED_CSS * 2);
+    // Why these widths: on /he below 640px the photo is shown ≤746 CSS px
+    // (704 cover width × 1.06 Ken Burns), measured 08/11 at 320–639px.
   });
 
   it("the layer reads both through CSS variables; the class picks the phone set below 640px, /he only", () => {
@@ -70,7 +67,7 @@ describe("MEH-2850 A — hero photo sized to the phone, unchanged from 640px", (
   });
 });
 
-describe("MEH-2850 B — only the faces the home page never renders lose their preload", () => {
+describe("MEH-2850 B — only Heebo-latin, never requested on the home page, loses its preload", () => {
   const src = fs.readFileSync(path.resolve(__dirname, "../app/fonts.js"), "utf8");
   /** The `{...}` argument of `export const <name> = localFont(`. */
   const callOf = (name) => {
@@ -85,10 +82,13 @@ describe("MEH-2850 B — only the faces the home page never renders lose their p
     }
     return src.slice(start, i + 1);
   };
-  it.each(["cormorantGaramond", "heeboLatin"])("%s: preload false", (name) => {
+  it.each(["heeboLatin"])("%s: preload false", (name) => {
     expect(callOf(name)).toMatch(/\bpreload:\s*false\b/);
   });
-  it.each(["frankRuhlLibre", "frankRuhlLibreLatin", "dmSans", "heebo"])("%s: still preloaded (no preload: false)", (name) => {
+  // cormorantGaramond is drawn on `/` (event times, rescue prices, the account
+  // sheet's language toggle): without its preload that text flashed in the
+  // fallback face — a visible change, so it stays preloaded.
+  it.each(["frankRuhlLibre", "frankRuhlLibreLatin", "dmSans", "heebo", "cormorantGaramond"])("%s: still preloaded (no preload: false)", (name) => {
     expect(callOf(name)).not.toMatch(/\bpreload:\s*false\b/);
   });
 });

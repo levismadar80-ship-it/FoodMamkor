@@ -61,17 +61,22 @@ Full text: <https://openfontlicense.org/open-font-license-official-text/>
 
 ## Which faces are preloaded (MEH-2850)
 
-`localFont` preloads every face by default, on **every** page. Two calls opt out
-with `preload: false`, because the home page never renders them above the fold
-and the preloads cost 109KB against the Lighthouse page-weight budget (measured
-08/11: fonts on `/` went from 223KB to 118KB):
+`localFont` preloads every face by default, on **every** page. One call opts out
+with `preload: false`:
 
 | Call | Why it is not preloaded |
 |---|---|
-| `cormorantGaramond` (regular + italic) | Nothing above the fold on `/` uses it. The one use on `/` is the event times in «אירועים קרובים» (`EventEntryRow`, `.font-english italic`), a section far below the fold that renders only after `/events/upcoming` answers and only when there are events; the face is fetched when that text first renders. Every page that uses it loads it on first use (`display: swap`, adjusted Times fallback, no layout shift). |
-| `heeboLatin` | DM Sans comes first in every body stack and covers the Latin glyphs, so this face is rarely reached. |
+| `heeboLatin` | DM Sans comes first in every body stack and covers the Latin glyphs, so this face is rarely reached: on `/` it is never requested (measured on the PR preview 08/11). Dropping the preload saves 31KB on every page. |
 
-`__tests__/HomeWeightMEH2850.test.jsx` pins the split: these two say
+**`cormorantGaramond` stays preloaded, on purpose.** Taking it off saves 78KB on
+`/`, but Cormorant text is drawn there: the event times in «אירועים קרובים»
+(`EventEntryRow`), the rescue-bag prices (`BagRow`), and the language toggle in
+the account sheet (`AccountSheet`). Without the preload that text shows in the
+Times fallback until the face arrives (measured: the italic face at ~3.8s on a
+phone; the regular face only when the sheet first opens). That is a visible
+change, so it is Sapir's call, not a default.
+
+`__tests__/HomeWeightMEH2850.test.jsx` pins the split: `heeboLatin` says
 `preload: false`, every other face does not. Before turning a preload off, check
-the face is not rendered above the fold on `/` (count computed `font-family` per
-text element).
+whether the face is drawn on `/` at all — above or below the fold, and inside
+anything that opens on a tap (count computed `font-family` per text element).
