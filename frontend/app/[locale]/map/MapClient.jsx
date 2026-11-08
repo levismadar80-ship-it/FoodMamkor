@@ -44,6 +44,9 @@ import { useProducersFeed } from "./state/useProducersFeed";
 const NEAR_ME_RADIUS_KM = 25;
 const NEAR_ME_DEFAULT_CENTER = [32.4, 34.95];
 const NEAR_ME_DEFAULT_ZOOM = 8;
+// MEH-2843: wait for the bottom sheet to settle at HALF (--map-sheet-anim is
+// 300ms) before measuring whether the tapped marker sits under it.
+const MOBILE_PICK_PAN_DELAY_MS = 350;
 // MEH-2639: the zoom a city flyTo lands on. Same value handleGpsClick already
 // uses for a GPS fix (:~470), so "the map moved to where I said I am" looks
 // the same whether the visitor typed a town or allowed location.
@@ -757,6 +760,71 @@ export default function MapPage() {
     writeMapSelection(selectedProducer?.id ?? null, selectedLocation?.id ?? null, { camera });
   }, [selectedProducer, selectedLocation, mapRef]);
 
+  // MEH-2843: after a pick on a phone, the tapped marker must not sit under
+  // the sheet that just opened over it. Once the sheet has settled (its
+  // --map-sheet-anim, 300ms), if the marker's BOTTOM edge is below — or within
+  // 16px of — the sheet's top edge (the card lives inside the sheet, whose
+  // header above the card is opaque too), pan up so that edge sits 24px above
+  // it. The icons are centre-anchored, so the latlng point is the marker's
+  // middle: measured at 390×844, panning the point left the lower half of a
+  // 36px marker 6px from the card. The rendered icon nearest the point gives
+  // the real bottom; no icon found → the point itself.
+  // Already visible → no pan. Reduced motion → the same move, unanimated.
+  // The move goes through the map API's panBy, which flags it as ours, so it
+  // never raises «חפשו באזור זה» (a raw map.panBy would).
+  // A card tap flies the map to the business (focusProducer, 250ms + a 1.2s
+  // flyTo / fitBounds). Measured mid-flight the offset is arbitrary, and our
+  // pan's moveend would consume the fly's programmatic flag so the fly's own
+  // moveend raised the banner. So: if the map is moving when the sheet has
+  // settled, measure and pan once that move has ended.
+  const { mapApiRef } = sync;
+  useEffect(() => {
+    if (!selectedProducer || typeof window === "undefined") return undefined;
+    if (window.matchMedia?.("(min-width: 1024px)")?.matches) return undefined;
+    const target = selectedLocation ?? producerPoints(selectedProducer)[0] ?? null;
+    if (!target) return undefined;
+    const live = mapRef?.current;
+    let moving = false;
+    const onMoveStart = () => { moving = true; };
+    const onMoveEnd = () => { moving = false; };
+    const afterMove = () => { live?.off?.("moveend", afterMove); liftClear(); };
+    live?.on?.("movestart", onMoveStart);
+    live?.on?.("moveend", onMoveEnd);
+    function liftClear() {
+      const map = mapRef?.current;
+      const api = mapApiRef?.current;
+      const sheet = document.querySelector('[data-testid="map-bottom-sheet"]');
+      if (!map?.latLngToContainerPoint || !api?.panBy || !sheet) return;
+      const mapTop = map.getContainer().getBoundingClientRect().top;
+      const edge = sheet.getBoundingClientRect().top - mapTop;
+      const { x, y } = map.latLngToContainerPoint([target.lat, target.lng]);
+      const box = map.getContainer().getBoundingClientRect();
+      let bottom = y;
+      let nearest = Infinity;
+      for (const icon of map.getContainer().querySelectorAll(".leaflet-marker-icon")) {
+        const r = icon.getBoundingClientRect();
+        const d = Math.hypot((r.left + r.right) / 2 - box.left - x, (r.top + r.bottom) / 2 - mapTop - y);
+        if (r.height && d < nearest && d <= r.height) {
+          nearest = d;
+          bottom = r.bottom - mapTop;
+        }
+      }
+      if (bottom < edge - 16) return;
+      const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+      api.panBy([0, bottom - (edge - 24)], { animate: !reduce });
+    }
+    const timer = window.setTimeout(() => {
+      if (moving && live?.on) live.on("moveend", afterMove);
+      else liftClear();
+    }, MOBILE_PICK_PAN_DELAY_MS);
+    return () => {
+      window.clearTimeout(timer);
+      live?.off?.("movestart", onMoveStart);
+      live?.off?.("moveend", onMoveEnd);
+      live?.off?.("moveend", afterMove);
+    };
+  }, [selectedProducer, selectedLocation, mapRef, mapApiRef]);
+
   // MEH-2046: is the layer toggle currently costing the user businesses? Read
   // off the SAME list the pane draws (`filteredByCategory`), so the notice can
   // never claim something the visible map contradicts. Short-circuits while the
@@ -862,7 +930,7 @@ export default function MapPage() {
       {/* =================== DESKTOP (lg+) — split view =================== */}
       {/* MEH-1009: height subtracts the MEASURED top offset (header + in-flow
           top banners), not a hardcoded 64 — see the measurement effect above. */}
-      <div ref={desktopShellRef} data-testid="map-desktop-shell" className="hidden lg:grid" style={{ height: `calc(100vh - ${desktopTopOffset}px)`, gridTemplateColumns: hints.splitRatio }}>
+      <div ref={desktopShellRef} data-testid="map-desktop-shell" data-map-shell="desktop" className="hidden lg:grid" style={{ height: `calc(100vh - ${desktopTopOffset}px)`, gridTemplateColumns: hints.splitRatio }}>
         {/* List pane (RTL → first child = right) */}
         <div className="overflow-y-auto border-l border-border flex flex-col">
           <div className="p-4 pb-2 flex items-center justify-between shrink-0">
@@ -976,7 +1044,7 @@ export default function MapPage() {
       </div>
 
       {/* =================== MOBILE (below lg) — full map + sheet =================== */}
-      <div ref={mobileShellRef} data-testid="map-mobile-shell" data-chat-hide="" className="lg:hidden" style={{ height: `calc(100dvh - ${mobileTopOffset}px)`, position: "relative" }}>
+      <div ref={mobileShellRef} data-testid="map-mobile-shell" data-chat-hide="" data-map-shell="mobile" className="lg:hidden" style={{ height: `calc(100dvh - ${mobileTopOffset}px)`, position: "relative" }}>
         {/* Sticky filter bar — MEH-933 R2: sits at top-0 of the mobile shell.
             The shell is in normal flow AFTER the sticky <Header> (layout.js:221),
             so it already begins below the header band — the bar needs NO header

@@ -567,6 +567,15 @@ export default function MapComponent({
         );
       },
       getMap: () => mapInstanceRef.current,
+      // MEH-2843: MapClient's pan that lifts a tapped marker clear of the
+      // phone sheet is our move too — flag it so its moveend never raises
+      // «חפשו באזור זה». A zero offset has nothing to move (Leaflet would
+      // still fire a bare moveend), so it is skipped.
+      panBy: (offset, options) => {
+        if (!mapInstanceRef.current || (!offset[0] && !offset[1])) return;
+        programmaticMoveRef.current = true;
+        mapInstanceRef.current.panBy(offset, options);
+      },
       // Used by MapClient.registerMapApi to skip hidden (0×0) containers
       // so the mobile map (display:none on desktop) never overwrites the
       // visible desktop map's API reference, and vice-versa on mobile.
@@ -609,6 +618,19 @@ export default function MapComponent({
       initialCenter,
       initialZoom,
     );
+    // MEH-2843 (MEH-2776: one control per corner): the phone map's «?» key and
+    // layers toggle sit at `end-4` in the mobile shell (MapPane) — physical
+    // LEFT in rtl, where they sat on the zoom's «−». So the zoom moves to the
+    // top-right corner, empty on the phone map, only for the instance inside
+    // the mobile shell and only in rtl (in ltr the key is already on the right,
+    // away from Leaflet's top-left default). Decided per instance from its own
+    // shell, not from the viewport: both shells mount at once and a rotation
+    // across 1024px shows the other one. Physical corners on purpose — map
+    // controls are the documented geographic exception (rtl-ok).
+    const host = containerRef.current;
+    if (host?.closest?.('[data-map-shell="mobile"]') && host.closest("[dir]")?.getAttribute("dir") === "rtl") {
+      mapInstanceRef.current.zoomControl?.setPosition?.("topright");
+    }
     // Expose the initial center for E2E tests (05-map-navigation.spec.ts) —
     // the DEFAULT on a fresh visit, the RESTORED camera when one was saved.
     if (typeof window !== "undefined") window.__MAP_CENTER__ = initialCenter;
