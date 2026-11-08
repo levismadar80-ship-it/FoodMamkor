@@ -54,12 +54,13 @@ export default function ContactClient() {
       <div className="max-w-2xl mx-auto px-4 py-16">
         {/* MEH-2565: card from md up only — on a phone the form uses the full width. */}
         <div className="md:bg-surface md:rounded-lg md:p-8 md:border md:border-border md:shadow-[0_2px_12px_rgba(46,104,83,0.04)]">
-          <h1 className="font-headline-display text-5xl font-bold text-text mb-2 text-center">
+          {/* MEH-2827 (FinalContact): the standard page title, start-aligned. */}
+          <h1 className="font-headline-lg mb-3 text-primary-dark text-[clamp(28px,6vw,44px)] leading-[1.15] font-black text-start">
             {t("title")}
           </h1>
           {/* MEH-2571: the "3 business days" line that sat here repeated the
               response_sla row in the box below — said once now, in the box. */}
-          <p className="text-fg-muted text-center mb-8">
+          <p className="text-fg-muted text-start mb-8">
             {t("subtitle")}
           </p>
 
