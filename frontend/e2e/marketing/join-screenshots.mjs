@@ -72,6 +72,13 @@
  * on a schedule or per-PR trigger without taking that budget decision first.
  */
 import { chromium } from "playwright";
+// `sharp` IS NOT DECLARED IN package.json — it resolves transitively.
+// Measured 2026-11-08: `node_modules/sharp` is 0.35.3, pulled in by Next.js
+// (package-lock.json), and `frontend/scripts/compress-qa-screenshots.mjs`
+// already imports it the same way. A lockfile or Next change that drops it
+// breaks this script at import time, before the pre-flight can report
+// anything. The proper fix is an explicit devDependency, which needs Sapir's
+// sign-off per regression rule 8 — until then this line is the warning.
 import sharp from "sharp";
 import { execFile } from "node:child_process";
 import { mkdir, writeFile, readFile, rm, readdir, rename } from "node:fs/promises";
@@ -140,6 +147,45 @@ const TEST_ROW = "(בדיקה)";
 // named there rather than left for the next person to rediscover by tripping
 // it.
 const FLAT_FRAME_STDEV = 2;
+
+// A NOT-FLAT FRAME IS NOT A RENDERED FRAME.
+//
+// FLAT_FRAME_STDEV catches a frame of one colour. It does not catch a frame
+// whose only content is chrome: measured 2026-11-08, dash-qr (empty page
+// under the tab bar), dash-insights («טעינת סטטיסטיקות…») and dash-recipes
+// (four grey skeleton rows) all cleared the floor at 8.38, 13.10 and 21.80
+// and were written and counted as captured. The tab bar and the skeleton
+// shapes supply the variance; the subject supplies none.
+//
+// Both shots gate on `main`, which is visible the instant the route mounts
+// while its data is still in flight, so `waitFor({state:"visible"})` is
+// satisfied by an empty page. This asks the frame directly whether it is
+// still loading.
+const LOADING_TEXT = /בטעינה|טעינת|טוען/;
+const SKELETON_SELECTOR = '[class*="skeleton"], [class*="animate-pulse"]';
+
+// Throws when the framed element is still a loading state. Runs BEFORE the
+// write, for the same reason as assertNotFlat: a loading screen on disk is a
+// picture that passes review.
+async function assertNotLoading(locator, label) {
+  const { skeletons, text } = await locator.evaluate(
+    (el, sel) => ({
+      skeletons: el.querySelectorAll(sel).length,
+      text: (el.innerText || "").trim(),
+    }),
+    SKELETON_SELECTOR,
+  );
+  if (skeletons > 0) {
+    throw new Error(
+      `the frame is still a skeleton — ${skeletons} placeholder element(s) ` +
+        `inside it. ${label}`,
+    );
+  }
+  const hit = text.split("\n").map((l) => l.trim()).find((l) => LOADING_TEXT.test(l));
+  if (hit) {
+    throw new Error(`the frame is still loading — «${hit.slice(0, 50)}». ${label}`);
+  }
+}
 
 // IT MEASURES THE FRAME ABOVE MARKER_CSS, NOT THE WHOLE FRAME.
 //
@@ -369,6 +415,14 @@ const SHOTS = [
     // listing renders `rescue-list` > `rescue-list-rows` > `rescue-bag-row`
     // (enumerated from the live DOM 2026-11-08); the row is the card a reader
     // sees, and it carries pickup, name, where, stock, worth and price.
+    //
+    // THIS SHOT HAS A DEADLINE. The seeded bag's pickup window is now+1h to
+    // now+3h in Israel time (MEH-2808), and /rescue hides a bag once its
+    // window has passed — correctly. Measured 2026-11-08: captured fine at
+    // 15:00 Israel, and at 18:31 the same selector timed out because the
+    // 14:25–16:25 bag was gone. A timeout here usually means the seed is
+    // older than three hours, not that the selector is wrong. Re-run the seed
+    // and capture again.
     selector: '[data-testid="rescue-bag-row"]',
     feature_ids: ["rescue_bags"],
     note: "needs a bag seeded for TODAY; the seed adds one (MEH-2794)",
@@ -398,7 +452,11 @@ const SHOTS = [
   {
     file: "dash-qr.webp",
     route: "/producer/dashboard/qr-card",
-    selector: "main",
+    // NOT `main`. With `main` this framed the dashboard shell — tab bar on
+    // top, empty page under it — and shipped as ✓ on 2026-11-08: no skeleton
+    // and no loading text, so assertNotLoading could not see it either. The
+    // QR code's own node cannot be satisfied by an empty page.
+    selector: '[data-testid="business-qr-print-code"]',
     auth: true,
     feature_ids: ["qr_code"],
     note: "MEH-2785 merged 07/11, so this route exists",
@@ -895,6 +953,24 @@ async function captureStills(browser) {
       // IN-FRAME CLEANLINESS — the subject is the element being clipped, so
       // this asks exactly what the file will show. Checked BEFORE the write,
       // because a contaminated .webp on disk is a picture that passes review.
+      // WAIT FOR IT TO FINISH LOADING, THEN INSIST. A dashboard route mounts
+      // `main` immediately and fills it a second or two later, so the first
+      // look is the wrong moment to judge. Poll until the frame stops being a
+      // loading state; only then is a still-loading frame a real miss.
+      const loadedBy = Date.now() + (shot.timeout ?? 20_000);
+      for (;;) {
+        try {
+          await assertNotLoading(
+            el,
+            `${shot.file} gates on \`${shot.selector}\`, which can be visible ` +
+              "while its data is still in flight.",
+          );
+          break;
+        } catch (err) {
+          if (Date.now() > loadedBy) throw err;
+          await page.waitForTimeout(500);
+        }
+      }
       const framed = await el.innerText().catch(() => "");
       if (framed.includes(TEST_ROW)) {
         const line =
@@ -969,8 +1045,27 @@ async function captureClips(browser) {
       // the cleanliness question is asked over what is on screen — sampled at
       // the opening frame and again at the closing one. A body-wide read here
       // would re-create the very false positive TEST_ROW documents.
+      // SAMPLED THROUGHOUT, NOT JUST AT THE TWO ENDS.
+      // Opening and closing samples alone miss the case that matters most for
+      // a scrolling clip: a card that passes through the viewport mid-scroll
+      // and is gone by the last frame is in the recorded mp4 and in no
+      // sample. The poll runs alongside `steps()` and is stopped in
+      // `finally`, so a throwing step cannot leave it running.
       const seen = [await viewportText(page)];
-      await clip.steps(page);
+      let polling = true;
+      const poll = (async () => {
+        while (polling) {
+          await page.waitForTimeout(400);
+          if (!polling) break;
+          seen.push(await viewportText(page).catch(() => ""));
+        }
+      })();
+      try {
+        await clip.steps(page);
+      } finally {
+        polling = false;
+        await poll;
+      }
       seen.push(await viewportText(page));
       const dirty = seen.find((t) => t.includes(TEST_ROW));
       if (dirty) {
@@ -1034,10 +1129,7 @@ async function toMp4(webmPath, name, entry) {
   // subject: every `steps()` ends on the state it exists to demonstrate.
   // `-sseof -0.5` seeks relative to the end, so it needs no duration lookup.
   await run("ffmpeg", ["-y", "-sseof", "-0.5", "-i", webmPath, "-frames:v", "1", "-q:v", "80", poster]);
-  // The poster is frame 1 of the recording. On 2026-11-08 four posters came
-  // out byte-identical at 1,212 bytes — one blank frame written five times,
-  // each reported as a captured clip.
-  await assertNotFlat(poster, `poster for ${name}, 1.5s into the recording`);
+  await assertNotFlat(poster, `poster for ${name}, last frame of the recording`);
   await rename(mp4, path.join(OUT, `${name}.mp4`));
   await rename(poster, path.join(OUT, `${name}-poster.webp`));
   const { size } = await readFile(path.join(OUT, `${name}.mp4`)).then((b) => ({ size: b.length }));

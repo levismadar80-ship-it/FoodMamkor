@@ -1,7 +1,7 @@
 {
   "generated_by": "frontend/e2e/marketing/join-screenshots.mjs (MEH-2794)",
-  "captured_at": "2026-11-08T13:32:19.258Z",
-  "git_sha": "1d5119d1bdba42de1d2b8f734ada4581bd46ae48",
+  "captured_at": "2026-11-08T16:31:20.250Z",
+  "git_sha": "9fcae6d7f5a0dccc7eb2e2319c837cd13c715df4",
   "target": "https://staging.mehamakor.online",
   "demo_slug": "ruach-hasadeh",
   "viewport": {
@@ -10,8 +10,8 @@
     "deviceScaleFactor": 2
   },
   "total": 24,
-  "ok": 22,
-  "missing": 2,
+  "ok": 21,
+  "missing": 3,
   "entries": [
     {
       "file": "page-hero.webp",
@@ -127,7 +127,8 @@
         "rescue_bags"
       ],
       "note": "needs a bag seeded for TODAY; the seed adds one (MEH-2794)",
-      "status": "ok"
+      "status": "missing",
+      "error": "locator.waitFor: Timeout 20000ms exceeded."
     },
     {
       "file": "dash-insights.webp",
@@ -154,7 +155,7 @@
     {
       "file": "dash-qr.webp",
       "route": "/producer/dashboard/qr-card",
-      "selector": "main",
+      "selector": "[data-testid=\"business-qr-print-code\"]",
       "feature_ids": [
         "qr_code"
       ],
@@ -204,8 +205,8 @@
       "file": "clip-page.mp4",
       "route": "/ruach-hasadeh",
       "kind": "clip",
-      "duration_s": 5.7,
-      "size_kb": 297,
+      "duration_s": 6.2,
+      "size_kb": 374,
       "poster": "clip-page-poster.webp",
       "status": "ok"
     },
@@ -213,8 +214,8 @@
       "file": "clip-found.mp4",
       "route": "/map",
       "kind": "clip",
-      "duration_s": 3.2,
-      "size_kb": 37,
+      "duration_s": 3.1,
+      "size_kb": 25,
       "poster": "clip-found-poster.webp",
       "status": "ok"
     },
@@ -222,8 +223,8 @@
       "file": "clip-contact.mp4",
       "route": "/ruach-hasadeh",
       "kind": "clip",
-      "duration_s": 5.5,
-      "size_kb": 116,
+      "duration_s": 6,
+      "size_kb": 120,
       "poster": "clip-contact-poster.webp",
       "status": "ok"
     },
@@ -231,8 +232,8 @@
       "file": "clip-return.mp4",
       "route": "/group-buys",
       "kind": "clip",
-      "duration_s": 7.6,
-      "size_kb": 155,
+      "duration_s": 8.1,
+      "size_kb": 168,
       "poster": "clip-return-poster.webp",
       "status": "ok"
     },
@@ -240,8 +241,8 @@
       "file": "clip-trust.mp4",
       "route": "/ruach-hasadeh",
       "kind": "clip",
-      "duration_s": 4.2,
-      "size_kb": 70,
+      "duration_s": 4.4,
+      "size_kb": 73,
       "poster": "clip-trust-poster.webp",
       "status": "ok"
     },
@@ -249,8 +250,8 @@
       "file": "clip-insights.mp4",
       "route": "/producer/dashboard/insights",
       "kind": "clip",
-      "duration_s": 9.8,
-      "size_kb": 138,
+      "duration_s": 9.4,
+      "size_kb": 133,
       "poster": "clip-insights-poster.webp",
       "status": "ok"
     }
