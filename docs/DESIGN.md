@@ -818,9 +818,11 @@ underlined: two links on one line, two languages.
 
 **The treatment** (reference: `ProducerHeader.jsx`, the category link):
 `underline decoration-[1.5px] underline-offset-[5px]` + the decoration in the
-link's own ink at ~35% (`decoration-text/35`, `decoration-primary/35`, …), and
-on hover/focus the full colour (`hover:decoration-primary`). When the link
-wraps an icon, put the underline on the text span, not on the icon.
+link's own ink at ~35% (`decoration-primary/35`, `decoration-muted/35`, …), and
+on hover the full colour of that ink (`hover:decoration-current`). The
+reference link's ink is `text-text` and it turns primary on hover/focus, so
+its underline follows to primary (`group-hover:decoration-primary`). When the
+link wraps an icon, put the underline on the text span, not on the icon.
 
 **Exempt** — these already carry an always-visible cue, so they keep their
 hover-only underline (or none):
