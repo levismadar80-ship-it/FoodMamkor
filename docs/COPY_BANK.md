@@ -438,7 +438,8 @@
 ### Homepage bottom CTA
 | Field | Value |
 |---|---|
-| **Heading** | `יש לך עסק? בואו אלינו` |
+| **Heading** | `יש לכם עסק? בואו אלינו` |
+| **Previous heading** | `יש לך עסק? בואו אלינו` (singular «לך» beside plural «בואו» / «תקבלו», against BRAND §9; neutral plural approved by Sapir verbatim 08/11, MEH-2824) |
 | **Body (l1)** | `מהמקור הוא הבית של בתי עסק מקומיים בישראל — כל עסק נבחר אישית.` |
 | **Body (l2)** | `תקבלו עמוד משלכם: תמונות, סיפור, וקו ישיר ללקוחות.` |
 | **Body (l3)** | `חינם, בלי עמלות. נשמח להכיר.` |
@@ -447,7 +448,7 @@
 | **i18n keys** | `home.cta.heading` / `home.cta.body_l1` / `home.cta.body_l2` / `home.cta.body_l3` / `home.cta.button` |
 | **Status** | ✅ (variant B — MEH-980; ⏳ Sapir veto at merge) |
 | **Why** | Variant B leads with what the business gets (own page, direct line to customers) and adds the free/no-commission reassurance. Keeps the "no partial category list" + no-"דירקטורי" rules from MEH-605. |
-| **MEH** | MEH-605 → MEH-980 |
+| **MEH** | MEH-605 → MEH-980 → MEH-2824 (heading) |
 
 ### Footer made-with-love
 | Field | Value |
