@@ -104,6 +104,25 @@ describe("iPhone home-screen icon", () => {
     const ref = png("icon-512.png");
     expect([...ref.data.subarray(0, 3)]).toEqual([0xf5, 0xf0, 0xe8]);
   });
+
+  it("the mark is drawn, centred and sized like icon-512's (not a blank cream tile)", () => {
+    // Bounding box of non-cream pixels, as a fraction of the edge.
+    const box = (img) => {
+      let x0 = img.width, y0 = img.height, x1 = -1, y1 = -1;
+      for (let y = 0; y < img.height; y++) for (let x = 0; x < img.width; x++) {
+        const i = (y * img.width + x) * 4;
+        const far = Math.abs(img.data[i] - 0xf5) + Math.abs(img.data[i + 1] - 0xf0) + Math.abs(img.data[i + 2] - 0xe8);
+        if (far > 30) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+      }
+      return { w: (x1 - x0 + 1) / img.width, cx: (x0 + x1 + 1) / 2 / img.width, cy: (y0 + y1 + 1) / 2 / img.height };
+    };
+    const apple = box(png("apple-touch-icon.png"));
+    const ref = box(png("icon-512.png"));
+    expect(apple.w).toBeGreaterThan(0.4);
+    expect(Math.abs(apple.w - ref.w)).toBeLessThan(0.02);
+    expect(Math.abs(apple.cx - ref.cx)).toBeLessThan(0.02);
+    expect(Math.abs(apple.cy - ref.cy)).toBeLessThan(0.02);
+  });
 });
 
 describe("notification badge + monochrome icon", () => {
