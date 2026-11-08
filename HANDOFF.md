@@ -4,6 +4,15 @@
 > Standing procedures live in [`docs/runbooks/`](./docs/runbooks/) — e.g. the [uptime alert runbook](./docs/runbooks/UPTIME.md).
 > Decision capture is proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-11-08 — כפתור יצירת קשר בדף בית העסק (MEH-2836)
+
+**‏שורה אחת:** ‏#4196 מוזג ל-staging.
+
+**‏מה צריך לדעת לפני עבודה:**
+- ‏**הדרך הראשית ליצירת קשר** נקבעת רק ב-`getResolvedMethod` (`lib/contact-method.js`). לא קוראים את `primary_contact_method` ישירות.
+
+---
+
 ## 2026-11-08 — אייקונים (MEH-2834)
 
 **‏שורה אחת:** ‏#4187 מוזג ל-staging. ‏PR 2 (הלוגו במיילים) עצר עד החלטה של ספיר.
