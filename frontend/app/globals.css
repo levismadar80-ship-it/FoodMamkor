@@ -341,12 +341,17 @@ body:has([data-meets-footer]) footer[data-site-footer] {
    site footer (/map, the dashboard + /admin's DashboardFooter) match neither
    rule and keep the reserve on <body> (layout.js `pb-[var(--bottom-inset)]`).
    Specificity (0,2,2) beats the Tailwind utility (0,1,0) regardless of order.
-   Guard: e2e/flows/manual/footer-nav-clearance.spec.ts. */
-body:has(footer[data-site-footer]) {
-  padding-bottom: 0;
-}
-footer[data-site-footer] {
-  padding-bottom: var(--bottom-inset);
+   Guard: e2e/flows/manual/footer-nav-clearance.spec.ts.
+   Both rules sit behind @supports: a browser without :has() (Safari < 15.4)
+   would drop the body rule but keep the footer one and reserve the space
+   TWICE. Without :has() nothing changes — the reserve stays on <body>. */
+@supports selector(:has(*)) {
+  body:has(footer[data-site-footer]) {
+    padding-bottom: 0;
+  }
+  footer[data-site-footer] {
+    padding-bottom: var(--bottom-inset);
+  }
 }
 
 /* Leaflet map fixes */
