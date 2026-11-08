@@ -204,7 +204,7 @@ function setup({ desktop = false, reduce = false, markerY, sheetTop = 500, mapTo
     media: q, addEventListener: vi.fn(), removeEventListener: vi.fn(), addListener: vi.fn(), removeListener: vi.fn(),
   }));
   const container = document.createElement("div");
-  container.getBoundingClientRect = () => ({ top: mapTop });
+  container.getBoundingClientRect = () => ({ top: mapTop, left: 0 });
   const map = {
     panBy: vi.fn(),
     getContainer: () => container,
@@ -265,6 +265,31 @@ describe("mobile pick pan (MEH-2843)", () => {
     const { map, sheetTop } = setup({ markerY: 600, sheetTop: 500, reduce: true });
     await renderAndSettle(sheetTop);
     expect(map.panBy).toHaveBeenCalledWith([0, 124], { animate: false });
+  });
+
+  // Measured at 390×844 on a real build: the icons are centre-anchored, so
+  // panning the latlng point left a 36px marker's lower half 6px from the
+  // card. The rendered icon nearest the point supplies the real bottom edge.
+  it("pans by the marker icon's bottom edge, not its centre point", async () => {
+    const { map, sheetTop } = setup({ markerY: 470, sheetTop: 500 });
+    const icon = document.createElement("div");
+    icon.className = "leaflet-marker-icon";
+    icon.getBoundingClientRect = () => ({ left: 82, right: 118, top: 452, bottom: 488, height: 36 });
+    map.getContainer().appendChild(icon);
+    await renderAndSettle(sheetTop);
+    // centre 470 is 30px above the edge (would be left alone); the bottom 488
+    // is within 16px → pan the bottom to 24px above the edge.
+    expect(map.panBy).toHaveBeenCalledWith([0, 488 - (500 - 24)], { animate: true });
+  });
+
+  it("an icon far from the point is not taken as the marker", async () => {
+    const { map, sheetTop } = setup({ markerY: 300, sheetTop: 500 });
+    const other = document.createElement("div");
+    other.className = "leaflet-marker-icon";
+    other.getBoundingClientRect = () => ({ left: 300, right: 336, top: 600, bottom: 636, height: 36 });
+    map.getContainer().appendChild(other);
+    await renderAndSettle(sheetTop);
+    expect(map.panBy).not.toHaveBeenCalled();
   });
 
   it("desktop never pans", async () => {

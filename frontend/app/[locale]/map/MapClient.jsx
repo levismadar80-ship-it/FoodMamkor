@@ -762,9 +762,13 @@ export default function MapPage() {
 
   // MEH-2843: after a pick on a phone, the tapped marker must not sit under
   // the sheet that just opened over it. Once the sheet has settled (its
-  // --map-sheet-anim, 300ms), if the marker's point is below — or within 16px
-  // of — the sheet's top edge (the card lives inside the sheet, whose header
-  // above the card is opaque too), pan up so it sits 24px above that edge.
+  // --map-sheet-anim, 300ms), if the marker's BOTTOM edge is below — or within
+  // 16px of — the sheet's top edge (the card lives inside the sheet, whose
+  // header above the card is opaque too), pan up so that edge sits 24px above
+  // it. The icons are centre-anchored, so the latlng point is the marker's
+  // middle: measured at 390×844, panning the point left the lower half of a
+  // 36px marker 6px from the card. The rendered icon nearest the point gives
+  // the real bottom; no icon found → the point itself.
   // Already visible → no pan. Reduced motion → the same move, unanimated.
   useEffect(() => {
     if (!selectedProducer || typeof window === "undefined") return undefined;
@@ -777,10 +781,21 @@ export default function MapPage() {
       if (!map?.latLngToContainerPoint || !sheet) return;
       const mapTop = map.getContainer().getBoundingClientRect().top;
       const edge = sheet.getBoundingClientRect().top - mapTop;
-      const { y } = map.latLngToContainerPoint([target.lat, target.lng]);
-      if (y < edge - 16) return;
+      const { x, y } = map.latLngToContainerPoint([target.lat, target.lng]);
+      const box = map.getContainer().getBoundingClientRect();
+      let bottom = y;
+      let nearest = Infinity;
+      for (const icon of map.getContainer().querySelectorAll(".leaflet-marker-icon")) {
+        const r = icon.getBoundingClientRect();
+        const d = Math.hypot((r.left + r.right) / 2 - box.left - x, (r.top + r.bottom) / 2 - mapTop - y);
+        if (r.height && d < nearest && d <= r.height) {
+          nearest = d;
+          bottom = r.bottom - mapTop;
+        }
+      }
+      if (bottom < edge - 16) return;
       const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
-      map.panBy([0, y - (edge - 24)], { animate: !reduce });
+      map.panBy([0, bottom - (edge - 24)], { animate: !reduce });
     }, MOBILE_PICK_PAN_DELAY_MS);
     return () => window.clearTimeout(timer);
   }, [selectedProducer, selectedLocation, mapRef]);
