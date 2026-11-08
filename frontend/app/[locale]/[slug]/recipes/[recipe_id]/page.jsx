@@ -22,7 +22,7 @@ import RecipeDetail from "@/components/public/RecipeDetail";
 import RecipeJsonLd from "@/components/public/RecipeJsonLd";
 import { API_URL } from "@/lib/env";
 import { serverFetch } from "@/lib/server-fetch"; // MEH-977: timeout + transient-retry
-import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
+import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 import { buildRecipeBreadcrumbJsonLd, serializeJsonLd } from "@/lib/seo"; // MEH-1062: recipe BreadcrumbList
 import { BRAND_NAME } from "@/lib/constants";
 import { decodeSlugParam } from "@/lib/slug"; // MEH-2534
@@ -98,11 +98,11 @@ export async function generateMetadata(props) {
   const path = `/${slug}/recipes/${recipe_id}`;
   const alternates = buildAlternates(path, locale);
   if (!producer || !recipe) {
-    // title.absolute prevents layout's `%s | brand` template double-suffix.
     // MEH-476 followup: 404 paths should not be indexed even though they
     // still emit valid hreflang (so cross-locale 404s are linked).
     return {
-      title: { absolute: t("meta_title_not_found") },
+      // MEH-2853: plain title — the layout template `%s | <brand>` adds the brand.
+      title: t("meta_title_not_found"),
       robots: { index: false, follow: false },
       openGraph: { locale: OG_LOCALE[locale] },
       alternates,
@@ -111,16 +111,14 @@ export async function generateMetadata(props) {
   const truncate = (s, n) =>
     s && s.length > n ? `${s.slice(0, n - 1)}…` : s || "";
   return {
-    // title.absolute — recipes.detail.meta_title_template already ends "| מהמקור".
-    title: {
-      absolute: t("meta_title_template", {
-        recipeTitle: recipe.title,
-        producerName: producer.name,
-      }),
-    },
+    // MEH-2853: plain title — the layout template `%s | <brand>` adds the brand.
+    title: t("meta_title_template", {
+      recipeTitle: recipe.title,
+      producerName: producer.name,
+    }),
     description: truncate(recipe.description, 160),
     openGraph: {
-      title: `${recipe.title} | ${producer.name}`,
+      title: buildEntityTitle(`${recipe.title} | ${producer.name}`, locale),
       description: truncate(recipe.description, 160),
       // MEH-1060 (SEO-15): add og:url (self canonical) + siteName, mirroring the
       // producer-page precedent (lib/seo.js buildProducerMetadata).
@@ -136,7 +134,7 @@ export async function generateMetadata(props) {
     // own image + title instead of the layout's generic site card.
     twitter: {
       card: "summary_large_image",
-      title: `${recipe.title} | ${producer.name}`,
+      title: buildEntityTitle(`${recipe.title} | ${producer.name}`, locale),
       description: truncate(recipe.description, 160),
       images: recipe.image_url ? [recipe.image_url] : ["/og-image.png"],
     },

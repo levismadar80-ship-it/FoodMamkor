@@ -2,16 +2,17 @@ import { Link } from "@/i18n/navigation";
 import { Heart, MapPin, ChatCircle } from "@phosphor-icons/react/ssr";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { BRAND_NAME } from "@/lib/constants";
-import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
+import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 
 export async function generateMetadata({ params }) {
   const { locale } = await params;
   const t = await getTranslations("sweep_tail.messages");
   return {
-    title: { absolute: t("meta_title") },
+    // MEH-2853: plain title — the layout template `%s | <brand>` adds the brand.
+    title: t("meta_title"),
     description: t("meta_description"),
     openGraph: {
-      title: t("meta_title"),
+      title: buildEntityTitle(t("meta_title"), locale),
       description: t("meta_description"),
       type: "website",
       siteName: BRAND_NAME,

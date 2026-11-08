@@ -613,19 +613,19 @@
       "og_description": "The story of Sapir, our values, and how we vet the businesses we feature."
     },
     "login": {
-      "title": "Sign in to Mehamakor | Mehamakor",
+      "title": "Sign in to Mehamakor",
       "description": "Sign in to your Mehamakor account and discover local food businesses across Israel, near you.",
       "og_title": "Sign in to Mehamakor",
       "og_description": "Sign in to discover local food businesses, save favorites, and support small local businesses."
     },
     "register": {
-      "title": "Join Mehamakor | Mehamakor",
+      "title": "Join Mehamakor",
       "description": "Join Mehamakor — discover and support local food businesses across Israel, near you.",
       "og_title": "Join Mehamakor",
       "og_description": "Create a free account to discover local food businesses, real food, and quality producers."
     },
     "contact": {
-      "title": "Contact us | Mehamakor",
+      "title": "Contact us",
       "description": "Have a question, suggestion, or idea? We'd love to hear from you. Reach out and we'll get back to you shortly.",
       "og_title": "Contact Mehamakor",
       "og_description": "Questions, suggestions, or ideas for collaboration — we're here."
@@ -637,83 +637,83 @@
       "og_description": "Tell us about it. We check every recommendation, reach out to the business, and list only businesses that hold a licence."
     },
     "forgot_password": {
-      "title": "Reset your password | Mehamakor",
+      "title": "Reset your password",
       "description": "Forgot your password? Enter your email and we'll send a reset link for your Mehamakor account.",
       "og_title": "Reset your password",
       "og_description": "Enter your email and we'll send you a password reset link."
     },
     "reset_password": {
-      "title": "Set a new password | Mehamakor",
+      "title": "Set a new password",
       "description": "Choose a new, secure password for your Mehamakor account.",
       "og_title": "Set a new password",
       "og_description": "Choose a new password and sign back in to your account."
     },
     "verify_email": {
-      "title": "Verify your email | Mehamakor",
+      "title": "Verify your email",
       "description": "Verifying your email address to activate your Mehamakor account.",
       "og_title": "Verify your email",
       "og_description": "Confirming your email finishes setting up your Mehamakor account."
     },
     "join": {
-      "title": "Join as a business | Mehamakor",
+      "title": "Join as a business",
       "description": "A page of your own with photos and a story, every business hand-picked, and customers contact you directly on the channel you choose. Free to join.",
-      "og_title": "Your business. A page of its own. | Mehamakor",
+      "og_title": "Your business. A page of its own.",
       "og_description": "How local businesses get their own page on Mehamakor — about 5 minutes."
     },
     "share": {
-      "title": "Spread the word — Mehamakor",
+      "title": "Spread the word",
       "description": "Help more people discover personally vetted local food businesses — share Mehamakor.",
-      "og_title": "Spread the word — Mehamakor",
+      "og_title": "Spread the word",
       "og_description": "Help more people discover personally vetted local food businesses — share Mehamakor."
     },
     "favorites": {
-      "title": "My favorites | Mehamakor",
+      "title": "My favorites",
       "description": "All the food businesses and products you've saved on Mehamakor, in one place. Come back anytime and get alerts on what's new.",
       "og_title": "My favorites on Mehamakor",
       "og_description": "The businesses and products you've saved, waiting in one place."
     },
     "map": {
-      "title": "Map of local food businesses — Mehamakor",
+      "title": "Map of local food businesses",
       "description": "Find local food businesses on the map. Real, fresh, healthy food near you.",
-      "og_title": "Map of local food businesses — Mehamakor",
+      "og_title": "Map of local food businesses",
       "og_description": "Local businesses on the map — real food near you."
     },
     "experience": {
-      "title_fallback": "Culinary experience — Mehamakor",
+      "title_fallback": "Culinary experience",
       "description_fallback": "Culinary experiences at local food businesses."
     },
     "group_buy": {
-      "title_fallback": "Group purchase — Mehamakor",
+      "title_fallback": "Group purchase",
       "description_fallback": "Group purchases from local food businesses."
     },
     "event": {
-      "title_fallback": "Culinary event — Mehamakor",
+      "title_fallback": "Culinary event",
       "description_fallback": "Culinary events at local food businesses."
     },
     "events": {
-      "title": "Events at local food businesses — open days, market stalls and harvests | Mehamakor",
+      "title": "Events at local food businesses — open days, market stalls and harvests",
       "description": "Open days, market stalls, seasonal harvests and launches at local food businesses across Israel. Workshops and tours you sign up for are on the experiences page.",
       "og_title": "Events at local food businesses — open days, market stalls and harvests",
       "og_description": "Open days, market stalls, seasonal harvests and launches at local food businesses across Israel."
     },
     "experiences": {
-      "title": "Food experiences and workshops at local businesses | Mehamakor",
+      "title": "Food experiences and workshops at local businesses",
       "description": "Cooking workshops, food tours and tastings hosted by licensed local businesses in Israel. Find one by city and category.",
-      "og_title": "Food experiences and workshops at local businesses | Mehamakor",
+      "og_title": "Food experiences and workshops at local businesses",
       "og_description": "Learn, taste, discover — food experiences at local businesses."
     },
     "group_buys": {
-      "title": "Group purchases | Mehamakor",
+      "title": "Group purchases",
       "description": "Buy together and save — group purchases from local businesses across Israel.",
-      "og_title": "Group purchases | Mehamakor",
+      "og_title": "Group purchases",
       "og_description": "Buy together and save — group purchases from local businesses."
     },
     "register_producer": {
-      "title": "Register your business | Mehamakor",
+      "title": "Register your business",
       "description": "Join Mehamakor — register your local food business. Every business is hand-picked."
     },
     "claim": {
-      "title": "Take your business page | Mehamakor",
+      "title": "Take your business page",
       "description": "We prepared a page for you on Mehamakor"
     },
     "producer": {
@@ -1030,8 +1030,8 @@
       "producer_cta_heading": "Everything in this recipe — from {name}",
       "producer_cta_link": "Visit {name}'s page",
       "back_to_producer": "← Back to business page",
-      "meta_title_not_found": "Recipe not found | Mehamakor",
-      "meta_title_template": "{recipeTitle} | {producerName} | Mehamakor"
+      "meta_title_not_found": "Recipe not found",
+      "meta_title_template": "{recipeTitle} | {producerName}"
     },
     "form": {
       "heading_edit": "Edit recipe",
@@ -3264,7 +3264,7 @@
     }
   },
   "newsletter_unsubscribe": {
-    "meta_title": "Unsubscribe from the newsletter · Mehamakor",
+    "meta_title": "Unsubscribe from the newsletter",
     "loading": "Unsubscribing…",
     "success_title": "You've been unsubscribed",
     "success_body": "You won't receive the newsletter anymore. You're always welcome back.",
@@ -3273,7 +3273,7 @@
     "cta_home": "Back to home"
   },
   "delivery_waitlist_host_confirm": {
-    "meta_title": "Pickup point confirmation · Mehamakor",
+    "meta_title": "Pickup point confirmation",
     "loading": "Confirming…",
     "success_title": "Thanks! Your email was passed to {producer}.",
     "expired_resent_title": "This link has expired. We've emailed you a new one.",
@@ -3282,7 +3282,7 @@
     "cta_home": "Back to home"
   },
   "delivery_waitlist_unsubscribe": {
-    "meta_title": "Stop delivery updates · Mehamakor",
+    "meta_title": "Stop delivery updates",
     "loading": "Removing you…",
     "success_title": "You've been removed from the waitlist",
     "success_body": "You won't get an update about these deliveries. You can always ask again from the business page.",
@@ -3551,7 +3551,7 @@
     "copyright": "Mehamakor"
   },
   "accessibility": {
-    "meta_title": "Accessibility Statement | Mehamakor",
+    "meta_title": "Accessibility Statement",
     "meta_description": "Mehamakor's accessibility statement — we are committed to making the site usable for all users, including people with disabilities.",
     "heading": "Accessibility Statement",
     "date_label": "The site has been tested using automated tools and manual checks. A formal accessibility audit by an external certified accessibility examiner has not yet been performed.",
@@ -3672,9 +3672,9 @@
     "meta_line": "Free · no commissions · about 5 minutes · live within 3 business days"
   },
   "about_business": {
-    "meta_title": "FAQ for businesses — Mehamakor",
+    "meta_title": "FAQ for businesses",
     "meta_description": "Frequently-asked questions from local businesses about Mehamakor: cost, value, time, trust, and customer control. Direct, transparent answers.",
-    "og_title": "FAQ for businesses — Mehamakor",
+    "og_title": "FAQ for businesses",
     "og_description": "Common questions + direct answers for businesses deciding whether to join.",
     "eyebrow": "For businesses",
     "heading": "Frequently-asked questions for businesses",
@@ -3768,7 +3768,7 @@
     "cta": "Add your business"
   },
   "privacy": {
-    "meta_title": "Privacy Policy | Mehamakor",
+    "meta_title": "Privacy Policy",
     "meta_description": "Mehamakor's privacy policy — what data we collect, how we use it, and your rights under the Protection of Privacy Law (Amendment 13, 2025).",
     "heading": "Privacy Policy",
     "date_label": "Last updated: July 2026 · Aligned with the Protection of Privacy Law, 1981 and Amendment 13 (2025)",
@@ -3916,7 +3916,7 @@
     }
   },
   "terms": {
-    "meta_title": "Terms of Use | Mehamakor",
+    "meta_title": "Terms of Use",
     "meta_description": "Terms of use for Mehamakor — local food businesses from across Israel, in one place.",
     "heading": "Terms of Use",
     "date_label": "Last updated: November 2026",
@@ -3989,7 +3989,7 @@
   },
   "guides": {
     "index": {
-      "meta_title": "Guides for businesses | Mehamakor",
+      "meta_title": "Guides for businesses",
       "meta_description": "Three short guides for businesses on Mehamakor: how to write your story, how to photograph your products, and how to reply to customer messages.",
       "og_description": "Three short guides for businesses on Mehamakor — story, photography, messages.",
       "eyebrow": "Guides for business owners",
@@ -5060,7 +5060,7 @@
   },
   "sweep_tail": {
     "messages": {
-      "meta_title": "Messages | Mehamakor",
+      "meta_title": "Messages",
       "meta_description": "Every business on Mehamakor chooses how you reach it — WhatsApp, phone, or another channel that suits them.",
       "heading": "How communication works on Mehamakor",
       "intro": "There's no internal chat in the app — we believe in a direct, real connection between buyer and business. On every business card you'll find a direct-contact button — WhatsApp, phone, or another channel the business chose — that connects you directly to the business owner.",
@@ -5428,9 +5428,9 @@
   },
   "process": {
     "meta": {
-      "title": "Our Acceptance Process | Mehamakor",
+      "title": "Our Acceptance Process",
       "description": "Every business on Mehamakor goes through a personal introduction — identity, story, and sometimes a conversation. Here's our acceptance process, and the criteria by category, in full transparency.",
-      "og_title": "Our Acceptance Process — Mehamakor",
+      "og_title": "Our Acceptance Process",
       "og_description": "How a business is accepted to Mehamakor: a personal introduction, and what's checked in every category."
     },
     "tier": {
@@ -5564,7 +5564,7 @@
     "order_window": "Like opening hours, but for orders. Fixed and weekly; it changes only when you change it. Shown on the business page as a status and a day strip. This schedule applies to the whole business. Branch or pickup-point hours are set separately in the location editor."
   },
   "about_badges": {
-    "meta_title": "What the badges mean | Mehamakor",
+    "meta_title": "What the badges mean",
     "meta_description": "What each badge on the site means, and who stands behind it.",
     "h1": "What the badges mean",
     "intro": "Some businesses show badges next to their name. Here is what each one means and who stands behind it. Badges don't affect the order businesses appear in, and they can't be bought.",
@@ -5588,7 +5588,7 @@
     }
   },
   "about_why_local": {
-    "meta_title": "Why local? — Mehamakor",
+    "meta_title": "Why local?",
     "meta_description": "Five reasons to choose local food — taste, local economy, fairness, transparency, and the environment — and how to find local businesses on Mehamakor.",
     "og_title": "Why local?",
     "og_description": "Food grown, baked, or made close to home. Five good reasons to choose local — and how to find it.",
@@ -5644,7 +5644,7 @@
     "send_label": "Send question"
   },
   "diet_pages": {
-    "meta_title": "{label} — local food businesses | Mehamakor",
+    "meta_title": "{label} — local food businesses",
     "breadcrumb_producers": "Businesses",
     "faq_heading": "Frequently asked questions",
     "siblings_aria": "More dietary pages",
@@ -6194,7 +6194,7 @@
     "care": "Care & home"
   },
   "region_pages": {
-    "meta_title": "{category} in {region_in} — local businesses | Mehamakor",
+    "meta_title": "{category} in {region_in} — local businesses",
     "meta_description": "{count} local {category} businesses in {region_in}. Every business is personally reviewed, and you contact it directly.",
     "h1": "{category} in {region_in}",
     "count_line": "{count} local businesses",

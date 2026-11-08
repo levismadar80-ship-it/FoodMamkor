@@ -1,6 +1,6 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Envelope, Phone } from "@phosphor-icons/react/ssr";
-import { buildAlternates, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
+import { buildAlternates, buildEntityTitle, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
 import { BRAND_NAME } from "@/lib/constants";
 import { CONTACT_EMAIL } from "@/lib/env.client";
 
@@ -12,13 +12,12 @@ export async function generateMetadata({ params }) {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "accessibility" });
   return {
-    // title.absolute prevents the layout's `%s | ${BRAND_NAME}` template
-    // from appending — the meta_title keys already include the brand suffix.
-    title: { absolute: t("meta_title") },
+    // MEH-2853: plain title — the layout template `%s | <brand>` adds the brand.
+    title: t("meta_title"),
     description: t("meta_description"),
     // MEH-740: per-page openGraph + self og:url (was inheriting layout root).
     openGraph: {
-      title: t("meta_title"),
+      title: buildEntityTitle(t("meta_title"), locale),
       description: t("meta_description"),
       type: "website",
       url: urlForLocalePath("/accessibility", locale),
