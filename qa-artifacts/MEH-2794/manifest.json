@@ -1,7 +1,7 @@
 {
   "generated_by": "frontend/e2e/marketing/join-screenshots.mjs (MEH-2794)",
-  "captured_at": "2026-11-08T12:49:14.184Z",
-  "git_sha": "75f09ee2bceea20bb932409b763ddd647eb0e999",
+  "captured_at": "2026-11-08T13:32:19.258Z",
+  "git_sha": "1d5119d1bdba42de1d2b8f734ada4581bd46ae48",
   "target": "https://staging.mehamakor.online",
   "demo_slug": "ruach-hasadeh",
   "viewport": {
@@ -10,8 +10,8 @@
     "deviceScaleFactor": 2
   },
   "total": 24,
-  "ok": 14,
-  "missing": 10,
+  "ok": 22,
+  "missing": 2,
   "entries": [
     {
       "file": "page-hero.webp",
@@ -26,8 +26,7 @@
         "editor_pick"
       ],
       "note": "cover + name + badges + open-for-orders + contact button",
-      "status": "missing",
-      "error": "the frame is flat — one colour above the demo marker (max channel stdev 0.05, floor 2). The DOM can be complete and the raster still empty: measured on /ruach-hasadeh at 390px, where the producer page renders at 768 and 1440 but not at mobile width."
+      "status": "ok"
     },
     {
       "file": "page-products.webp",
@@ -37,8 +36,7 @@
         "product_details",
         "top_product"
       ],
-      "status": "missing",
-      "error": "the frame is flat — one colour above the demo marker (max channel stdev 0.04, floor 2). The DOM can be complete and the raster still empty: measured on /ruach-hasadeh at 390px, where the producer page renders at 768 and 1440 but not at mobile width."
+      "status": "ok"
     },
     {
       "file": "page-contact.webp",
@@ -52,8 +50,7 @@
         "nav_buttons",
         "save_share"
       ],
-      "status": "missing",
-      "error": "the frame is flat — one colour above the demo marker (max channel stdev 0.05, floor 2). The DOM can be complete and the raster still empty: measured on /ruach-hasadeh at 390px, where the producer page renders at 768 and 1440 but not at mobile width."
+      "status": "ok"
     },
     {
       "file": "search-diet.webp",
@@ -63,8 +60,7 @@
         "discovery",
         "reservist_diet_tags"
       ],
-      "status": "missing",
-      "error": "\"(בדיקה)\" is inside the frame: «משק הכרמל הירוק (בדיקה)»"
+      "status": "ok"
     },
     {
       "file": "group-buy.webp",
@@ -82,8 +78,7 @@
       "feature_ids": [
         "events"
       ],
-      "status": "missing",
-      "error": "\"(בדיקה)\" is inside the frame: «בוקר במאפייה: מהתנור לשולחן (בדיקה)»"
+      "status": "ok"
     },
     {
       "file": "reviews.webp",
@@ -93,8 +88,7 @@
         "reviews_contacted",
         "review_request"
       ],
-      "status": "missing",
-      "error": "the frame is flat — one colour above the demo marker (max channel stdev 0.10, floor 2). The DOM can be complete and the raster still empty: measured on /ruach-hasadeh at 390px, where the producer page renders at 768 and 1440 but not at mobile width."
+      "status": "ok"
     },
     {
       "file": "offer.webp",
@@ -103,8 +97,7 @@
       "feature_ids": [
         "offer"
       ],
-      "status": "missing",
-      "error": "the frame is flat — one colour above the demo marker (max channel stdev 0.22, floor 2). The DOM can be complete and the raster still empty: measured on /ruach-hasadeh at 390px, where the producer page renders at 768 and 1440 but not at mobile width."
+      "status": "ok"
     },
     {
       "file": "recipe.webp",
@@ -211,8 +204,8 @@
       "file": "clip-page.mp4",
       "route": "/ruach-hasadeh",
       "kind": "clip",
-      "duration_s": 5.8,
-      "size_kb": 274,
+      "duration_s": 5.7,
+      "size_kb": 297,
       "poster": "clip-page-poster.webp",
       "status": "ok"
     },
@@ -220,8 +213,8 @@
       "file": "clip-found.mp4",
       "route": "/map",
       "kind": "clip",
-      "duration_s": 3.1,
-      "size_kb": 30,
+      "duration_s": 3.2,
+      "size_kb": 37,
       "poster": "clip-found-poster.webp",
       "status": "ok"
     },
@@ -230,7 +223,7 @@
       "route": "/ruach-hasadeh",
       "kind": "clip",
       "duration_s": 5.5,
-      "size_kb": 127,
+      "size_kb": 116,
       "poster": "clip-contact-poster.webp",
       "status": "ok"
     },
@@ -238,15 +231,17 @@
       "file": "clip-return.mp4",
       "route": "/group-buys",
       "kind": "clip",
-      "status": "missing",
-      "error": "\"(בדיקה)\" is on screen in this clip — «ובמבר 06:00 בוקר במאפייה: מהתנור לשולחן (בדיקה) מאפיית השדה »"
+      "duration_s": 7.6,
+      "size_kb": 155,
+      "poster": "clip-return-poster.webp",
+      "status": "ok"
     },
     {
       "file": "clip-trust.mp4",
       "route": "/ruach-hasadeh",
       "kind": "clip",
-      "duration_s": 4.3,
-      "size_kb": 75,
+      "duration_s": 4.2,
+      "size_kb": 70,
       "poster": "clip-trust-poster.webp",
       "status": "ok"
     },
@@ -254,8 +249,8 @@
       "file": "clip-insights.mp4",
       "route": "/producer/dashboard/insights",
       "kind": "clip",
-      "duration_s": 9.1,
-      "size_kb": 125,
+      "duration_s": 9.8,
+      "size_kb": 138,
       "poster": "clip-insights-poster.webp",
       "status": "ok"
     }

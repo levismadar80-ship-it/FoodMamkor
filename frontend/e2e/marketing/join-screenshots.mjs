@@ -909,9 +909,19 @@ async function captureStills(browser) {
       try {
         await assertNotFlat(
           outFile,
-          "The DOM can be complete and the raster still empty: measured on " +
-            `${shot.route} at ${VIEWPORT.width}px, where the producer page ` +
-            "renders at 768 and 1440 but not at mobile width.",
+          // THE CAUSE IS NOT ESTABLISHED, AND THE WIDTH THEORY WAS WRONG.
+          // On 2026-11-08 the five producer-page stills came back flat for
+          // run after run at 390px while 768 and 1440 rendered, through
+          // `animations: "disabled"`, `scale: "css"`, reload, resize and
+          // `--headless=new`. The obvious read was "it does not raster at
+          // mobile width". Later the same day, at the same 390px and on a
+          // page that had grown from 8,073 to 8,123px, the same five
+          // captured normally with nothing changed in this file. So it is
+          // neither width nor height, it is intermittent, and it is silent —
+          // which is the whole reason this assertion runs on every write
+          // rather than once at the start.
+          `the DOM can be complete and the raster still empty — ${shot.route} ` +
+            `at ${VIEWPORT.width}px. Cause unestablished; see the note here.`,
         );
       } catch (err) {
         // The blank file does not survive the failure. Left on disk it would
