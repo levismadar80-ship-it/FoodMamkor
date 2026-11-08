@@ -335,7 +335,7 @@ function PickupHostsCard({ data }) {
             <a
               href={`mailto:${row.email}`}
               dir="ltr"
-              className="text-primary underline-offset-2 hover:underline break-all"
+              className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current break-all"
             >
               {row.email}
             </a>

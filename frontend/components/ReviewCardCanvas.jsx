@@ -427,7 +427,7 @@ export default function ReviewCardCanvas({ producer }) {
             link: (chunks) => (
               <LocaleLink
                 href="/producer/dashboard/tools"
-                className="text-primary font-medium hover:underline"
+                className="text-primary font-medium underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current"
                 data-testid="review-card-empty-cta"
               >
                 {chunks}

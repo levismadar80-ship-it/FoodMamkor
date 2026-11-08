@@ -297,7 +297,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
             <button
               type="button"
               onClick={() => setForm({ ...form, image_url: "" })}
-              className="text-sm text-danger-600 hover:underline"
+              className="text-sm text-danger-600 underline decoration-[1.5px] underline-offset-[5px] decoration-danger-600/35 hover:decoration-current"
             >
               {t("image_remove")}
             </button>
