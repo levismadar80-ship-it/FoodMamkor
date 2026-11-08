@@ -25,6 +25,22 @@ describe("ImageWithFallback", () => {
     expect(fallback).toBeInTheDocument();
     // Fallback is a div, not a real <img> element.
     expect(fallback.tagName).toBe("DIV");
+    // MEH-2833: sand + one seed, no leaf, no raw green-50 hex
+    expect(fallback.className).toMatch(/\bbg-background-alt\b/);
+    expect(fallback.getAttribute("style") || "").not.toMatch(/background/i);
+    expect(fallback.querySelectorAll("svg[data-seed-color]")).toHaveLength(1);
+  });
+
+  it("the seed's colour follows seedKey, else the URL — not a shared alt text (MEH-2833)", async () => {
+    const { seedColorFor } = await import("@/lib/brand-seeds");
+    optimize.mockReturnValue(undefined);
+    const colour = () => document.querySelector("svg[data-seed-color]").getAttribute("data-seed-color");
+    const { unmount } = render(<ImageWithFallback src={null} alt="תמונה 1" seedKey={42} />);
+    expect(colour()).toBe(seedColorFor(42).fill);
+    unmount();
+    // two images with the same (translated) alt but different URLs need not match
+    render(<ImageWithFallback src="https://res.cloudinary.com/x/a.jpg" alt="תמונה 1" />);
+    expect(colour()).toBe(seedColorFor("https://res.cloudinary.com/x/a.jpg").fill);
   });
 
   it("renders a real image when the source optimizes to a usable URL", () => {

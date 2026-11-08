@@ -1,7 +1,9 @@
 import RescueSection from "@/components/rescue/RescueSection";
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
-import { CaretLeft, Leaf, MapPin } from "@phosphor-icons/react";
+import { CaretLeft, MapPin } from "@phosphor-icons/react";
+import Seed from "@/components/brand/Seed";
+import { seedColorFor } from "@/lib/brand-seeds";
 import dynamic from "next/dynamic";
 import { useTranslations, useLocale } from "next-intl";
 import api from "@/lib/api";
@@ -394,8 +396,14 @@ export default function ProducerSections({
                     sizes="(min-width: 768px) 144px, 112px"
                   />
                 ) : (
-                  <div className="w-full h-full bg-background flex items-center justify-center" aria-hidden="true">
-                    <Leaf size={40} weight="light" className="text-primary/[0.32]" />
+                  // MEH-2833 (seed layer): sand + one seed in the business's own
+                  // colour, no text (the product name sits beside it).
+                  <div
+                    className="w-full h-full bg-background-alt flex items-center justify-center"
+                    aria-hidden="true"
+                    data-testid="signature-image-missing"
+                  >
+                    <Seed color={seedColorFor(producer.id).fill} size={40} rotate={-36} highlight />
                   </div>
                 )}
               </div>

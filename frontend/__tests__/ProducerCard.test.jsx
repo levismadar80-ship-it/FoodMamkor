@@ -231,6 +231,21 @@ describe("ProducerCard — Phase B anatomy", () => {
     expect(screen.queryByText("מהמקור")).not.toBeInTheDocument();
   });
 
+  // MEH-2833 (seed layer, board 7): the plate gains one seed in the business's
+  // own colour, 70 wide, rotated −36°, in the end-top corner; the name stays
+  // above it in paint order.
+  it("the name plate carries one seed in the business's fixed colour", async () => {
+    const { seedColorFor } = await import("@/lib/brand-seeds");
+    render(<ProducerCard producer={minimalProducer} />);
+    const plate = screen.getByTestId("card-name-plate");
+    const seed = plate.parentElement.querySelector(":scope > svg[data-seed-color]");
+    expect(seed.getAttribute("data-seed-color")).toBe(seedColorFor(minimalProducer.id).fill);
+    expect(seed.getAttribute("width")).toBe("70");
+    expect(seed.querySelector("g").getAttribute("transform")).toMatch(/^rotate\(-36 /);
+    expect(seed.getAttribute("class")).toMatch(/-end-\[30px\]/);
+    expect(plate.className).toMatch(/^relative /);
+  });
+
   // MEH-1211: a present-but-dead image URL must fall back to the canonical
   // no-photo placeholder instead of the browser broken-glyph + alt overflow.
   it("renders fallback when the image errors (present-but-dead URL)", () => {
