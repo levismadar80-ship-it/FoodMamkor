@@ -3,7 +3,7 @@
 import { Link } from "@/i18n/navigation";
 import { motion } from "framer-motion";
 import { useRevealSkip } from "@/lib/route-memory";
-import { Faders, Info, Leaf, MapPin, X } from "@phosphor-icons/react";
+import { ArrowLeft, Faders, Info, Leaf, MapPin, X } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import ProducerCard from "@/components/ProducerCard";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
@@ -624,6 +624,18 @@ export function HomeProducersGrid({
                   {t("home.producers.explore_map")}
                 </Link>
               )}
+              {/* MEH-2827 PR 4: nothing here → someone may know a business that
+                  belongs here. Carries the active city so the form starts there. */}
+              <div className="mt-4">
+                <Link
+                  href={filters.delivery_city ? `/recommend?city=${encodeURIComponent(filters.delivery_city)}` : "/recommend"}
+                  data-testid="recommend-link-home-empty"
+                  className="inline-flex items-center gap-1 min-h-touch text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                >
+                  {t("nav.footer.recommend")}
+                  <ArrowLeft size={15} className="ltr:rotate-180" aria-hidden="true" />
+                </Link>
+              </div>
             </div>
           )}
           {hasMore && (
@@ -647,6 +659,21 @@ export function HomeProducersGrid({
                 </button>
               )}
             </div>
+          )}
+          {/* MEH-2827 PR 4: one quiet line after the list — no card, no button —
+              so the way to /recommend is not only the footer. */}
+          {producers.length > 0 && (
+            <p className="mt-8 text-center text-sm text-fg-muted" data-testid="home-recommend-line">
+              {t("recommend.title")}{" "}
+              <Link
+                href="/recommend"
+                data-testid="recommend-link-home"
+                className="inline-flex items-center gap-1 min-h-touch text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              >
+                {t("nav.footer.recommend")}
+                <ArrowLeft size={15} className="ltr:rotate-180" aria-hidden="true" />
+              </Link>
+            </p>
           )}
           {/* MEH-1476: surprise-me relocated here from the hero (was
               MEH-1288/MEH-1369). Full-catalog random producer via onSurprise

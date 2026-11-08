@@ -31,7 +31,7 @@ vi.mock("next-intl", () => {
   const flat = {
     "recommend.title": "מכירים בית עסק שצריך להיות כאן?",
     "recommend.subtitle":
-      "ספרו לנו עליו. אנחנו בודקים כל המלצה, פונים לבית העסק ומצרפים רק בתי עסק עם רישיון.",
+      "ספרו לנו עליו. אנחנו בודקות כל המלצה, פונות לבית העסק, ומצרפות רק בתי עסק שפועלים כדין.",
     "recommend.field_name_label": "שם בית העסק",
     "recommend.field_city_label": "עיר",
     "recommend.field_contact_label": "אינסטגרם, טלפון או אתר",
@@ -98,7 +98,7 @@ describe("RecommendClient", () => {
   it("idle renders the approved title, subtitle and the contact hint", () => {
     render(<RecommendClient />);
     expect(screen.getByText("מכירים בית עסק שצריך להיות כאן?")).toBeInTheDocument();
-    expect(screen.getByText(/אנחנו בודקים כל המלצה/)).toBeInTheDocument();
+    expect(screen.getByText(/אנחנו בודקות כל המלצה/)).toBeInTheDocument();
     expect(screen.getByText("מספיק אחד, כדי שנוכל לפנות אליהם")).toBeInTheDocument();
     expect(screen.getByTestId("recommend-form")).toBeInTheDocument();
     expect(screen.queryByTestId("recommend-success")).toBeNull();
