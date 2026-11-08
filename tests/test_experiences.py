@@ -582,7 +582,9 @@ class TestExperienceListing:
         assert self._titles(client.get("/experiences")) == everything
         assert self._titles(client.get("/experiences?category=")) == everything
 
-    def test_unknown_category_is_ignored_as_today(self, client, db):
+    def test_unknown_category_alone_matches_nothing_and_beside_a_real_one_is_dropped(
+        self, client, db
+    ):
         """Pin: not refused (200, as before), matches nothing, hides nothing."""
         self._three_by_category(db)
 
@@ -591,6 +593,25 @@ class TestExperienceListing:
 
         assert self._titles(alone) == set()
         assert self._titles(mixed) == {"Farm"}
+
+    def test_a_value_outside_the_category_set_is_not_matched(self, client, db):
+        """Each value is checked against EXPERIENCE_CATEGORIES (MEH-2847). A
+        row saved before MEH-2602's check may hold the English key
+        («workshop»); it is not reachable through the filter. Without the
+        check this returned the legacy row."""
+        host = _make_host(db)
+        _make_experience(
+            db, host, title="Legacy", category="workshop", status="approved"
+        )
+        _make_experience(db, host, title="Farm", category="חקלאות", status="approved")
+
+        alone = client.get("/experiences", params={"category": "workshop"})
+        both = client.get(
+            "/experiences", params={"category": ["workshop", "חקלאות", "חקלאות"]}
+        )
+
+        assert self._titles(alone) == set()
+        assert self._titles(both) == {"Farm"}
 
     def test_filter_by_city(self, client, db):
         host = _make_host(db)

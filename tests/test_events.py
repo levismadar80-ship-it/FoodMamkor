@@ -233,7 +233,9 @@ class TestEventListMultiCategory:
         assert _titles(client.get("/events")) == everything
         assert _titles(client.get("/events?category=")) == everything
 
-    def test_unknown_category_is_ignored_as_today(self, client, db):
+    def test_unknown_category_alone_matches_nothing_and_beside_a_real_one_is_dropped(
+        self, client, db
+    ):
         """Pin: an unknown value is not refused (200, as the single value
         was) and matches nothing; next to a real one it hides nothing."""
         _three_events(db)
@@ -243,3 +245,16 @@ class TestEventListMultiCategory:
 
         assert _titles(alone) == set()
         assert _titles(mixed) == {"קטיף"}
+
+    def test_a_value_outside_the_category_set_is_not_matched(self, client, db):
+        """Each value is checked against VALID_CATEGORIES (MEH-2847). A row
+        still holding a category the set no longer has («סדנה», removed from
+        events in MEH-1657) is not reachable through the filter. Without the
+        check this returned the legacy row."""
+        producer = make_producer(db, status="approved")
+        _listed_event(db, producer.id, title="ישן", category="סדנה")
+        _listed_event(db, producer.id, title="קטיף", category="קטיף")
+
+        assert _titles(client.get("/events", params={"category": "סדנה"})) == set()
+        both = client.get("/events", params={"category": ["סדנה", "קטיף", "קטיף"]})
+        assert _titles(both) == {"קטיף"}

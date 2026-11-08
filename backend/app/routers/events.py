@@ -158,11 +158,14 @@ def list_events(
     if filters.city:
         q = q.filter(Event.city == filters.city)
     # MEH-2847: several categories → OR (IN). Blank values are dropped, so a
-    # bare ?category= still means "no filter", exactly as before. An unknown
-    # value is not refused — it matches nothing, as the single value did.
-    categories = [c for c in filters.category or [] if c]
-    if categories:
-        q = q.filter(Event.category.in_(categories))
+    # bare ?category= still means "no filter", exactly as before. Each value
+    # is checked against VALID_CATEGORIES and kept once, which also caps the
+    # IN list at that set's size. An unknown value is not refused — it
+    # matches nothing, as the single value did (an empty IN matches no row).
+    given = [c for c in filters.category or [] if c]
+    if given:
+        known = [c for c in dict.fromkeys(given) if c in VALID_CATEGORIES]
+        q = q.filter(Event.category.in_(known))
     if filters.from_date:
         q = q.filter(Event.event_date >= filters.from_date)
     else:
