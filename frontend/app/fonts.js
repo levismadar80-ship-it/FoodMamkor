@@ -169,6 +169,11 @@ export const heeboLatin = localFont({
     { path: "./fonts/heebo-latin.woff2", weight: "700", style: "normal" },
   ],
   display: "swap",
+  // MEH-2850: not preloaded. DM Sans comes first in every body stack and
+  // covers the Latin glyphs, so this face is rarely used — yet its preload
+  // cost 31KB on every page. It still loads (display: swap) when a glyph needs
+  // it, with the adjusted Arial fallback holding the metrics meanwhile.
+  preload: false,
   variable: "--font-hebrew-latin",
   declarations: [
     {
@@ -192,6 +197,11 @@ export const cormorantGaramond = localFont({
     { path: "./fonts/cormorant-garamond-latin-italic.woff2", weight: "600", style: "italic" },
   ],
   display: "swap",
+  // MEH-2850: not preloaded — the home page renders no Cormorant text at all
+  // (measured 08/11: only dmSans + frankRuhlLibre), yet both files (78KB)
+  // were preloaded on every page. Pages that use it still load it on first
+  // use (display: swap, adjusted Times fallback — no layout shift).
+  preload: false,
   variable: "--font-latin",
   declarations: [
     {

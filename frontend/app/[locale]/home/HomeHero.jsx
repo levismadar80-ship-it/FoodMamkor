@@ -17,10 +17,19 @@ import { optimizeCloudinary } from "@/lib/cloudinary";
 // the 4032 original (never upscales). f_auto,q_auto via the helper.
 // REUSES: components/ProducerCard.jsx (optimizeCloudinary aspectRatio + g_auto)
 const HERO_MAX_WIDTH = 1920;
-const HERO_IMAGE = optimizeCloudinary(
-  "https://res.cloudinary.com/dfzpscjks/image/upload/home/hero-produce.jpg",
-  { aspectRatio: "16:9", width: HERO_MAX_WIDTH }
-);
+const HERO_SRC = "https://res.cloudinary.com/dfzpscjks/image/upload/home/hero-produce.jpg";
+const heroAt = (width) => optimizeCloudinary(HERO_SRC, { aspectRatio: "16:9", width });
+const HERO_IMAGE = heroAt(HERO_MAX_WIDTH);
+// MEH-2850 (Sapir 08/11: shrink the home page, nothing visible may change):
+// below 640px the photo is shown ~704 CSS px wide (cover of a 16:9 image in a
+// ~396px-tall band, the -5% inset included) and the Ken Burns drift scales it
+// to ≤1.06 → ≤746 CSS px. Every phone still gets at least that many device
+// pixels: 1x → w_828 (needs ≤746), 2x → w_1600 (≤1492), 3x → w_1920 (as
+// before — a 3x phone already received the cap). Lighthouse's mobile profile
+// (DPR 1.75) gets w_1600 instead of w_1920. 640px and up: unchanged.
+export const HERO_PHONE_MAX_PX = 639;
+export const HERO_IMAGE_SET_PHONE = `image-set(url("${heroAt(828)}") 1x, url("${heroAt(1600)}") 2x, url("${HERO_IMAGE}") 3x)`;
+export { HERO_IMAGE };
 
 // MEH-643: ease-quart curve mirrored for Framer (JS) — same as the .ease-quart
 // CSS utility (MEH-136, globals.css). Reduced-motion honored globally via
@@ -189,11 +198,15 @@ export function HomeHero({
           component — MEH-1567.) */}
       <div className="absolute inset-0 z-0 overflow-hidden" aria-hidden="true">
         <div
-          className="kenburns-right absolute"
+          // MEH-2850: both images are CSS variables and the classes pick one —
+          // an inline background-image would outrank any class, so the phone
+          // set could never apply. ≥640px: the same w_1920 url as before.
+          className="kenburns-right absolute [background-image:var(--hero-bg)] max-[639px]:[background-image:var(--hero-phone)]"
           data-testid="hero-image-layer"
           style={{
             inset: "-5%",
-            backgroundImage: `url(${HERO_IMAGE})`,
+            "--hero-bg": `url(${HERO_IMAGE})`,
+            "--hero-phone": HERO_IMAGE_SET_PHONE,
             backgroundSize: "cover",
             backgroundPosition: "center",
             backgroundRepeat: "no-repeat",
