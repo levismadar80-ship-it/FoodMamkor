@@ -18,8 +18,7 @@ import { optimizeCloudinary } from "@/lib/cloudinary";
 // REUSES: components/ProducerCard.jsx (optimizeCloudinary aspectRatio + g_auto)
 const HERO_MAX_WIDTH = 1920;
 const HERO_SRC = "https://res.cloudinary.com/dfzpscjks/image/upload/home/hero-produce.jpg";
-const heroAt = (width) => optimizeCloudinary(HERO_SRC, { aspectRatio: "16:9", width });
-const HERO_IMAGE = heroAt(HERO_MAX_WIDTH);
+const HERO_IMAGE = optimizeCloudinary(HERO_SRC, { aspectRatio: "16:9", width: HERO_MAX_WIDTH });
 // MEH-2850 (Sapir 08/11: shrink the home page, nothing visible may change):
 // below 640px the photo is shown ~704 CSS px wide (cover of a 16:9 image in a
 // ~396px-tall band, the -5% inset included) and the Ken Burns drift scales it
@@ -27,8 +26,10 @@ const HERO_IMAGE = heroAt(HERO_MAX_WIDTH);
 // pixels: 1x → w_828 (needs ≤746), 2x → w_1600 (≤1492), 3x → w_1920 (as
 // before — a 3x phone already received the cap). Lighthouse's mobile profile
 // (DPR 1.75) gets w_1600 instead of w_1920. 640px and up: unchanged.
-export const HERO_PHONE_MAX_PX = 639;
-export const HERO_IMAGE_SET_PHONE = `image-set(url("${heroAt(828)}") 1x, url("${heroAt(1600)}") 2x, url("${HERO_IMAGE}") 3x)`;
+// Each width is explicit at its call (MEH-2010: every c_fill site is capped).
+const HERO_PHONE_1X = optimizeCloudinary(HERO_SRC, { aspectRatio: "16:9", width: 828 });
+const HERO_PHONE_2X = optimizeCloudinary(HERO_SRC, { aspectRatio: "16:9", width: 1600 });
+export const HERO_IMAGE_SET_PHONE = `image-set(url("${HERO_PHONE_1X}") 1x, url("${HERO_PHONE_2X}") 2x, url("${HERO_IMAGE}") 3x)`;
 export { HERO_IMAGE };
 
 // MEH-643: ease-quart curve mirrored for Framer (JS) — same as the .ease-quart
