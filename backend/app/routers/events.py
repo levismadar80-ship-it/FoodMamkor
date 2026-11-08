@@ -129,7 +129,8 @@ def _producer_phone(db: Session, producer_id) -> str | None:
 @limiter.limit("120/minute")
 def list_events(
     request: Request,
-    filters: Annotated[EventFilters, Depends()],
+    # MEH-2847: Query(), not Depends() — see EventFilters for why.
+    filters: Annotated[EventFilters, Query()],
     viewer: User | None = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
 ):
@@ -156,8 +157,12 @@ def list_events(
         q = q.filter(Event.producer_id == filters.producer_id)
     if filters.city:
         q = q.filter(Event.city == filters.city)
-    if filters.category:
-        q = q.filter(Event.category == filters.category)
+    # MEH-2847: several categories → OR (IN). Blank values are dropped, so a
+    # bare ?category= still means "no filter", exactly as before. An unknown
+    # value is not refused — it matches nothing, as the single value did.
+    categories = [c for c in filters.category or [] if c]
+    if categories:
+        q = q.filter(Event.category.in_(categories))
     if filters.from_date:
         q = q.filter(Event.event_date >= filters.from_date)
     else:

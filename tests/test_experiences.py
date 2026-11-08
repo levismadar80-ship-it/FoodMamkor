@@ -502,6 +502,96 @@ class TestExperienceListing:
         resp = client.get("/experiences", params={"category": "בישול"})
         assert [e["title"] for e in resp.json()] == ["Cook"]
 
+    # ---- MEH-2847: several categories (OR) ----
+
+    def _three_by_category(self, db):
+        """One approved experience per category, so every result is checked
+        against rows it must KEEP and a row it must DROP."""
+        host = _make_host(db)
+        for title, category in [
+            ("Cook", "בישול"),
+            ("Tour", "סיור אוכל"),
+            ("Farm", "חקלאות"),
+        ]:
+            _make_experience(
+                db, host, title=title, category=category, status="approved"
+            )
+
+    @staticmethod
+    def _titles(resp) -> set[str]:
+        assert resp.status_code == 200, resp.text
+        return {e["title"] for e in resp.json()}
+
+    def test_filter_by_two_categories_returns_the_union(self, client, db):
+        """The new behaviour. Before MEH-2847 `category` was one string and
+        FastAPI kept only the LAST repeated value — this returned {"Tour"}."""
+        self._three_by_category(db)
+
+        # Repeated ?category=בישול&category=סיור אוכל — the frontend's format.
+        resp = client.get("/experiences", params={"category": ["בישול", "סיור אוכל"]})
+
+        assert self._titles(resp) == {"Cook", "Tour"}
+
+    def test_two_categories_still_and_with_the_city(self, client, db):
+        host = _make_host(db)
+        _make_experience(
+            db,
+            host,
+            title="Cook TLV",
+            category="בישול",
+            city="תל אביב",
+            status="approved",
+        )
+        _make_experience(
+            db,
+            host,
+            title="Tour TLV",
+            category="סיור אוכל",
+            city="תל אביב",
+            status="approved",
+        )
+        _make_experience(
+            db,
+            host,
+            title="Cook JLM",
+            category="בישול",
+            city="ירושלים",
+            status="approved",
+        )
+
+        resp = client.get(
+            "/experiences",
+            params={"category": ["בישול", "סיור אוכל"], "city": "תל אביב"},
+        )
+
+        assert self._titles(resp) == {"Cook TLV", "Tour TLV"}
+
+    def test_one_category_behaves_as_before(self, client, db):
+        """Pin: an old single-value link is unchanged."""
+        self._three_by_category(db)
+
+        resp = client.get("/experiences", params={"category": "בישול"})
+
+        assert self._titles(resp) == {"Cook"}
+
+    def test_no_and_blank_category_return_everything(self, client, db):
+        """Pin: a bare ?category= must not become IN ('') and hide every row."""
+        self._three_by_category(db)
+        everything = {"Cook", "Tour", "Farm"}
+
+        assert self._titles(client.get("/experiences")) == everything
+        assert self._titles(client.get("/experiences?category=")) == everything
+
+    def test_unknown_category_is_ignored_as_today(self, client, db):
+        """Pin: not refused (200, as before), matches nothing, hides nothing."""
+        self._three_by_category(db)
+
+        alone = client.get("/experiences", params={"category": "אפייה"})
+        mixed = client.get("/experiences", params={"category": ["אפייה", "חקלאות"]})
+
+        assert self._titles(alone) == set()
+        assert self._titles(mixed) == {"Farm"}
+
     def test_filter_by_city(self, client, db):
         host = _make_host(db)
         _make_experience(db, host, title="TLV", city="תל אביב", status="approved")

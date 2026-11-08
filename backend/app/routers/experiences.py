@@ -17,7 +17,7 @@ after the Claude verdict — the admin_experiences router handles that side.
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload, object_session
 
@@ -240,7 +240,10 @@ def _public_listing_query(db: Session):
 @limiter.limit("120/minute")
 def list_experiences(
     request: Request,
-    category: str | None = None,
+    # MEH-2847: several categories → OR. Repeated ?category=A&category=B, the
+    # format /producers uses (MEH-1465); one value is a one-item list, so an
+    # old single-value link behaves as before.
+    category: list[str] | None = Query(None),
     city: str | None = None,
     # MEH-2602: the business page lists that business's own experiences.
     producer_id: UUID | None = None,
@@ -252,8 +255,11 @@ def list_experiences(
     q = _public_listing_query(db)
     if producer_id:
         q = q.filter(Producer.id == producer_id)
-    if category:
-        q = q.filter(Experience.category == category)
+    # Blank values are dropped, so a bare ?category= still means "no filter".
+    # An unknown value is not refused — it matches nothing, as before.
+    categories = [c for c in category or [] if c]
+    if categories:
+        q = q.filter(Experience.category.in_(categories))
     if city:
         q = q.filter(func.lower(Experience.city) == city.lower())
     rows = q.order_by(Experience.event_date.asc()).all()
