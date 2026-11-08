@@ -130,6 +130,7 @@ Phrasings that survived to production once and must be caught in review:
 - Stock illustrations (iStock, Freepik) — kill the "curated" signal.
 - Phosphor duotone weight — too playful for editorial; regular weight only.
 - `"מורשה"` / `"מורשים"` in consumer copy — regulatory term consumers don't parse; tier language is מאומת / מוצהר only (ADR-022). Legal surfaces (terms, declaration text) may use it.
+- `"קבוצת רכש"` / `"רכישה קבוצתית"` / `"קנייה קבוצתית"` / `"קניות קבוצתיות"` — the feature is **«קבוצת רכישה / קבוצות רכישה»**, the common Israeli term (Sapir 08/11/2026, MEH-2827). Definite and prefixed forms follow it: «קבוצת הרכישה», «לקבוצת רכישה», «בקבוצות הרכישה». Keys, routes (`/group-buys`) and API fields keep their names; English stays "group buy".
 
 ### דיבור בשם בית העסק
 

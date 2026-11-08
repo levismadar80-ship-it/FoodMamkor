@@ -174,6 +174,19 @@ export function useMapSync({
   }, [setActiveProducerId, setSelectedProducer, setSheetSnap]);
   // setSelectedLocation is a stable setState fn — omitted from deps intentionally.
 
+  // MEH-2049: back from a producer page, reopen the business that was
+  // selected — card open, pin active — WITHOUT a flyTo: the camera was
+  // already restored as the map's first setView. Same state the marker tap
+  // sets (sheet to HALF on a phone so the card is on screen), minus the move.
+  const restoreSelection = useCallback((producer, location = null) => {
+    if (!producer?.id) return;
+    setActiveProducerId(producer.id);
+    setSelectedProducer(producer);
+    setSelectedLocation(location);
+    const isDesktop = typeof window !== "undefined" && window.innerWidth >= 1024;
+    if (!isDesktop) setSheetSnap(HALF);
+  }, [setActiveProducerId, setSelectedProducer, setSheetSnap]);
+
   // docs/archive/MAP_IMPROVEMENTS.md #3 — hover sync: map → card
   const handleMarkerHover = useCallback((producerId) => {
     setHoveredProducerId(producerId);
@@ -296,5 +309,6 @@ export function useMapSync({
     handleMapCanvasClick,
     handleSearchThisArea,
     selectedLocation,
+    restoreSelection,
   };
 }

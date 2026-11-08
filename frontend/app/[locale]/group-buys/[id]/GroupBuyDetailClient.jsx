@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import * as Sentry from "@sentry/nextjs";
 import { useRouter } from "next/navigation";
 import { Link } from "@/i18n/navigation";
-import { MagnifyingGlass, MapPin, Clock, ShoppingCart, Truck } from "@phosphor-icons/react";
+import { MagnifyingGlass, MapPin, Clock, ShoppingCart, Truck, ShareNetwork, Check } from "@phosphor-icons/react";
 import Image from "next/image";
 import OwnerRow from "@/components/OwnerRow";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
@@ -15,7 +15,8 @@ import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
 import { formatPrice } from "@/lib/utils";
-import { groupBuyProgressPct, groupBuyDiscountPct } from "@/lib/group-buy-progress"; // MEH-2540, MEH-2544
+import { groupBuyDiscountPct } from "@/lib/group-buy-progress"; // MEH-2544
+import { GroupBuyProgressMark, SEEDS_BESIDE_TEXT } from "@/app/[locale]/producer/[id]/components/ProducerActivities"; // MEH-2827 PR 7: one mark, card + page
 import Input from "@/components/ui/Input";
 import DeliveryChecker from "@/components/DeliveryChecker";
 import api from "@/lib/api";
@@ -99,6 +100,11 @@ export default function GroupBuyDetailClient({ id }) {
   const t = useTranslations("group_buys.detail");
   // MEH-848: shared generic error copy (collapsed from group_buys.detail.errors.generic).
   const tError = useTranslations("error");
+  // MEH-2827 PR 7: the price-tile labels the owner's form already uses, and
+  // the site-wide «שתפו» + copied toast — no new copy.
+  const tForm = useTranslations("group_buys.dashboard.form");
+  const tShare = useTranslations("share");
+  const tSharePage = useTranslations("share_page");
   const locale = useLocale();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -323,41 +329,94 @@ export default function GroupBuyDetailClient({ id }) {
   const cancelled = gb.status === "cancelled";
   const open = gb.status === "open";
   const expired = new Date(gb.deadline) < new Date();
-  const pct = groupBuyProgressPct(gb.commits_count, gb.min_participants);
   const discount = groupBuyDiscountPct(gb.price_per_unit_regular, gb.price_per_unit_group);
   const heroSrc = gb.producer_image_url
     ? optimizeCloudinary(gb.producer_image_url, { aspectRatio: IMAGE_RATIOS.banner, width: 1200 })
     : null;
   const showHero = heroSrc && failedHero !== heroSrc;
-  const waShareText = encodeURIComponent(
-    t("share_text", {
-      title: gb.title,
-      city: gb.city || t("share_default_region"),
-      id,
-    }),
-  );
+  // MEH-2827 PR 7: «שתפו» opens the phone's own share sheet (WhatsApp,
+  // Instagram, Facebook… are inside it) — no WhatsApp-only link. The text is
+  // the existing share_text minus its URL line; the URL goes ONLY as `url`, so
+  // iOS shares a link card instead of a text blob.
+  const shareText = t("share_text", { title: gb.title, city: gb.city || t("share_default_region"), id })
+    .split("\n")
+    .filter((line) => !/^https?:\/\//.test(line.trim()))
+    .join("\n");
+  const handleShare = async () => {
+    const url = `${window.location.origin}${window.location.pathname}`;
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({ title: gb.title, text: shareText, url });
+        return;
+      } catch (err) {
+        // Cancelled = the reader's answer. Any other failure (e.g.
+        // NotAllowedError) falls through to copying the link.
+        if (err?.name === "AbortError") return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      showToast.success(tShare("copied_toast"), { icon: <Check size={18} /> });
+    } catch {
+      // No sheet and no clipboard: say so (existing copy) instead of a
+      // button that silently does nothing.
+      showToast.error(tSharePage("copy_failed_toast"));
+    }
+  };
+  const progressLabel = t("progress_label", { commits: gb.commits_count, min: gb.min_participants });
+  const remaining = Math.max(0, gb.min_participants - gb.commits_count);
+  // Stacked (count above, mark full width) for the bar and for 6–10 seeds;
+  // side by side only while the seeds fit beside the count at 375.
+  const stacked = gb.min_participants > SEEDS_BESIDE_TEXT;
+  const showRemaining = !expired && open && remaining > 0;
 
   const joinCard = (
-    <div className="bg-surface rounded-lg border border-border p-5 md:p-6">
-      <div className="flex items-baseline gap-2">
-        <span dir="ltr" className="text-4xl font-bold text-primary">{formatPrice(Number(gb.price_per_unit_group).toFixed(0))}</span>
-        <span dir="ltr" className="text-fg-muted line-through text-lg">{formatPrice(Number(gb.price_per_unit_regular).toFixed(0))}</span>
-        {gb.unit && <span className="text-sm text-fg-muted">{t("unit_suffix", { unit: gb.unit })}</span>}
+    <div className="rounded-2xl border border-border bg-surface-card p-5 md:p-6" data-testid="group-buy-join-card">
+      {/* MEH-2827 PR 7 (FinalGroupBuyFlow): two price tiles — the group price
+          framed in primary, the regular price beside it, struck through. */}
+      <div className="grid grid-cols-2 gap-2">
+        <div className="rounded-xl border-2 border-primary bg-background px-3 py-2.5" data-testid="group-buy-price-group">
+          <p className="text-xs font-semibold text-primary">{tForm("price_group_label")}</p>
+          <p className="mt-0.5 flex items-baseline gap-1">
+            <span dir="ltr" className="font-headline-md text-4xl font-black text-primary leading-none">
+              {formatPrice(Number(gb.price_per_unit_group).toFixed(0))}
+            </span>
+            {gb.unit && <span className="text-xs text-fg-muted">{t("unit_suffix", { unit: gb.unit })}</span>}
+          </p>
+        </div>
+        <div className="rounded-xl border border-border px-3 py-2.5" data-testid="group-buy-price-regular">
+          <p className="text-xs font-medium text-fg-muted">{tForm("price_regular_label")}</p>
+          <p className="mt-0.5">
+            <span dir="ltr" className="text-2xl text-fg-muted line-through leading-none">
+              {formatPrice(Number(gb.price_per_unit_regular).toFixed(0))}
+            </span>
+          </p>
+        </div>
       </div>
-      {discount > 0 && <p className="text-sm text-fg-muted mt-1">{t("discount_hint", { discount })}</p>}
+      {discount > 0 && <p className="mt-2 text-sm font-semibold text-gold-deep">{t("discount_hint", { discount })}</p>}
 
-      <div className="mt-5">
-        <div className="w-full bg-border rounded-full h-3 overflow-hidden">
-          <div className={`h-3 rounded-full transition-all duration-500 ${funded || fulfilled ? "bg-primary" : "bg-primary/80"}`} style={{ width: `${pct}%` }} />
-        </div>
-        <div className="flex justify-between text-sm mt-2">
-          <span className="font-medium text-text">{t("progress_label", { commits: gb.commits_count, min: gb.min_participants })}</span>
-        </div>
-        {!expired && open && (
-          <p className="text-sm text-primary font-medium mt-1">{t("remaining_to_open", { n: Math.max(0, gb.min_participants - gb.commits_count) })}</p>
+      <div className="mt-4 rounded-xl bg-background-alt px-3 py-3" data-testid="group-buy-progress">
+        {stacked ? (
+          <>
+            <div className="text-end mb-2">
+              {showRemaining && <p className="text-sm font-bold text-text">{t("remaining_to_open", { n: remaining })}</p>}
+              <p className="text-xs text-fg-muted">{progressLabel}</p>
+            </div>
+            <GroupBuyProgressMark size="lg" commits={gb.commits_count} min={gb.min_participants} funded={funded || fulfilled} label={progressLabel} />
+          </>
+        ) : (
+          <div className="flex items-end justify-between gap-3">
+            <span className="min-w-0 flex-1">
+              <GroupBuyProgressMark size="lg" commits={gb.commits_count} min={gb.min_participants} funded={funded || fulfilled} label={progressLabel} />
+            </span>
+            <div className="text-end shrink-0">
+              {showRemaining && <p className="text-sm font-bold text-text">{t("remaining_to_open", { n: remaining })}</p>}
+              <p className="text-xs text-fg-muted">{progressLabel}</p>
+            </div>
+          </div>
         )}
-        <p className="text-sm text-fg-muted mt-3 inline-flex items-center gap-1.5">
-          <Clock size={16} aria-hidden="true" />
+        <p className="mt-2.5 border-t border-accent/35 pt-2 flex w-full items-center gap-1 text-xs text-fg-muted">
+          <Clock size={14} aria-hidden="true" />
           {t("deadline_prefix", { date: formatEventDate(gb.deadline, locale, { day: "numeric", month: "long", year: "numeric" }) })}
         </p>
       </div>
@@ -430,17 +489,15 @@ export default function GroupBuyDetailClient({ id }) {
         )}
       </div>
       <div className="mt-5 pt-5 border-t border-border">
-        <a
-          href={`https://wa.me/?text=${waShareText}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="btn-whatsapp-outline flex items-center justify-center gap-2 w-full py-2.5 rounded-md text-sm font-medium"
+        <button
+          type="button"
+          onClick={handleShare}
+          data-testid="group-buy-share"
+          className="flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-background text-text min-h-touch text-sm font-medium hover:border-primary transition focus-ring"
         >
-          <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5" aria-hidden="true">
-            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-          </svg>
-          {t("share_wa")}
-        </a>
+          <ShareNetwork size={18} aria-hidden="true" />
+          {tShare("trigger")}
+        </button>
       </div>
     </div>
   );
@@ -490,9 +547,7 @@ export default function GroupBuyDetailClient({ id }) {
                   <ShoppingCart size={56} weight="light" className="text-primary/70" aria-hidden="true" />
                 </div>
               )}
-              {discount > 0 && (
-                <span dir="ltr" data-testid="group-buy-discount" className="absolute top-3 start-3 bg-primary text-white text-sm font-bold px-3 py-1 rounded-full">-{discount}%</span>
-              )}
+              {/* MEH-2827 PR 7: no -% pill on the photo — the price tiles say it. */}
             </div>
 
             <div className="mt-5">
@@ -517,14 +572,14 @@ export default function GroupBuyDetailClient({ id }) {
             {/* MEH-2544: how a group buy works, while it can still be joined —
                 copy approved by Sapir 29/10. */}
             {open && (
-              <section className="mt-6 rounded-md bg-green-50 p-4" data-testid="group-buy-how">
+              <section className="mt-6 rounded-xl bg-background-alt p-4" data-testid="group-buy-how">
                 <h2 className="font-headline-md text-lg font-bold text-text mb-3">{t("how_title")}</h2>
                 <ol className="space-y-2">
                   {[t("how_join"), t("how_unlock", { min: gb.min_participants }), t("how_no_commit")].map((line, i) => (
                     <li key={i} className="flex gap-3 text-base text-text">
                       <span
                         aria-hidden="true"
-                        className="shrink-0 w-6 h-6 rounded-full bg-primary text-white text-sm font-bold grid place-items-center"
+                        className="shrink-0 w-6 h-6 rounded-full bg-primary text-background text-sm font-bold grid place-items-center"
                       >
                         {i + 1}
                       </span>
