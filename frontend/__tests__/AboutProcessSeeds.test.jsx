@@ -57,7 +57,8 @@ describe("/about/process steps on seeds (MEH-2833)", () => {
       expect(svg.getAttribute("aria-hidden")).toBe("true");
       expect([svg.getAttribute("width"), svg.getAttribute("height")]).toEqual(["40", "60"]);
     }
-    expect(container.querySelector(".rounded-full.border-accent")).toBeNull();
+    // The old numeral circle is gone from the steps.
+    expect(container.querySelector('[data-testid="process-steps"] .rounded-full.border-accent')).toBeNull();
   });
 
   it("number ink: cream on the dark seeds, text on gold — each ≥ 3:1 at 20px bold (large text)", () => {
