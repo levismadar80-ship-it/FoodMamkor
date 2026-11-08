@@ -29,8 +29,21 @@ async function selectedName(page: Page) {
   return page.getByTestId("map-selected-card").locator("h3").first().textContent();
 }
 
+// The pick may fly the map (focusProducer, 250 ms later, then a moveend):
+// read the camera only once two reads a moment apart agree.
+async function settledCamera(page: Page) {
+  let prev = JSON.stringify(await savedCamera(page));
+  for (let i = 0; i < 20; i++) {
+    await page.waitForTimeout(300);
+    const now = JSON.stringify(await savedCamera(page));
+    if (now === prev) return JSON.parse(now);
+    prev = now;
+  }
+  return JSON.parse(prev);
+}
+
 async function leaveAndComeBack(page: Page) {
-  const before = await savedCamera(page);
+  const before = await settledCamera(page);
   const name = await selectedName(page);
   await page.getByTestId("map-selected-card").locator('a[href*="from=map"]').first().click();
   await page.waitForURL((u) => !u.pathname.endsWith("/map"), FIRST_PAINT);

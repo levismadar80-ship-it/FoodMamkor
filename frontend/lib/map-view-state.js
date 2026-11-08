@@ -71,10 +71,15 @@ export function readMapViewState({ storage, now = Date.now() } = {}) {
 
 // MEH-2049: the record also carries the selected business (+ which of its
 // points), so back-navigation reopens the same card. Read the raw record to
-// carry those fields across camera writes.
-function readRaw(store) {
+// carry those fields across camera writes — but ONLY while it is fresh: a
+// stale record is treated as absent, so a later write can never revive an
+// expired selection (or camera) with a new timestamp.
+function readRaw(store, now) {
   try {
-    return JSON.parse(store.getItem(MAP_VIEW_STATE_KEY) || "null") || null;
+    const record = JSON.parse(store.getItem(MAP_VIEW_STATE_KEY) || "null") || null;
+    if (!record || !isFiniteNumber(record.ts)) return null;
+    const age = now - record.ts;
+    return age < 0 || age > MAP_VIEW_STATE_TTL_MS ? null : record;
   } catch {
     return null;
   }
@@ -91,7 +96,7 @@ export function writeMapViewState({ lat, lng, zoom }, { storage, now = Date.now(
   if (!store) return false;
   if (!allFinite([lat, lng, zoom])) return false;
   try {
-    const keep = selectionOf(readRaw(store));
+    const keep = selectionOf(readRaw(store, now));
     store.setItem(MAP_VIEW_STATE_KEY, JSON.stringify({ lat, lng, zoom, ts: now, ...keep }));
     return true;
   } catch {
@@ -110,7 +115,7 @@ export function writeMapViewState({ lat, lng, zoom }, { storage, now = Date.now(
 export function writeMapSelection(selectedId, selectedLocationId = null, { storage, now = Date.now(), camera = null } = {}) {
   const store = resolveStorage(storage);
   if (!store) return false;
-  let record = readRaw(store);
+  let record = readRaw(store, now);
   if (!record || !allFinite([record.lat, record.lng, record.zoom])) {
     if (!camera || !allFinite([camera.lat, camera.lng, camera.zoom])) return false;
     record = { lat: camera.lat, lng: camera.lng, zoom: camera.zoom };
@@ -135,7 +140,7 @@ export function readMapSelection({ storage, now = Date.now() } = {}) {
   const store = resolveStorage(storage);
   if (!store) return null;
   if (!readMapViewState({ storage: store, now })) return null;
-  const sel = selectionOf(readRaw(store));
+  const sel = selectionOf(readRaw(store, now));
   if (sel.selectedId == null) return null;
   return { producerId: sel.selectedId, locationId: sel.selectedLocationId };
 }

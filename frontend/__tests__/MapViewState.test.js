@@ -150,5 +150,22 @@ describe("MEH-2049 — the selected business rides in the same record", () => {
     expect(storage.dump()[MAP_VIEW_STATE_KEY]).toBeUndefined();
     expect(readMapSelection({ storage, now: NOW })).toBeNull();
   });
-});
 
+  it("a stale record is never revived: a camera write drops its expired selection", () => {
+    const storage = memoryStorage();
+    writeMapViewState(view, { storage, now: NOW });
+    writeMapSelection("p-7", null, { storage, now: NOW });
+    const later = NOW + MAP_VIEW_STATE_TTL_MS + 1;
+    writeMapViewState({ lat: 32.1, lng: 34.8, zoom: 9 }, { storage, now: later });
+    expect(readMapSelection({ storage, now: later + 1 })).toBeNull();
+  });
+
+  it("a stale record is not reused: a first selection saves the camera on screen", () => {
+    const storage = memoryStorage();
+    writeMapViewState(view, { storage, now: NOW });
+    const later = NOW + MAP_VIEW_STATE_TTL_MS + 1;
+    const onScreen = { lat: 33, lng: 35.5, zoom: 10 };
+    writeMapSelection("p-9", null, { storage, now: later, camera: onScreen });
+    expect(readMapViewState({ storage, now: later + 1 })).toEqual(onScreen);
+  });
+});

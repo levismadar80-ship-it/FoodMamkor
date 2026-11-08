@@ -734,7 +734,9 @@ export default function MapPage() {
     if (!saved) return;
     const producer = filteredByCategory.find((p) => String(p.id) === String(saved.producerId));
     if (!producer) {
-      writeMapSelection(null);
+      // Not in a list that loaded → gone or filtered out: drop it. An EMPTY
+      // list (a failed or malformed first fetch) proves nothing — keep it.
+      if (filteredByCategory.length > 0) writeMapSelection(null);
       return;
     }
     const location = saved.locationId == null
