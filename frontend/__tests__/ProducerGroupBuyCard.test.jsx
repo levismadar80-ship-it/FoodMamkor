@@ -45,6 +45,7 @@ vi.mock("@/lib/toast", () => ({ showToast: { success: vi.fn(), error: vi.fn(), i
 const get = vi.fn();
 vi.mock("@/lib/api", () => ({ default: { get: (...a) => get(...a), post: vi.fn(), delete: vi.fn() } }));
 
+import { showToast } from "@/lib/toast";
 import ProducerActivities from "@/app/[locale]/producer/[id]/components/ProducerActivities";
 import GroupBuyDetailClient from "@/app/[locale]/group-buys/[id]/GroupBuyDetailClient";
 
@@ -205,6 +206,70 @@ describe("group-buy page — the join card", () => {
     const box = screen.getByTestId("group-buy-progress");
     expect(box.textContent).not.toContain("עוד 0");
     expect(box.textContent).toContain("3 מתוך 3 הצטרפו");
+  });
+
+  describe("«שתפו» fallbacks", () => {
+    const clip = (impl) => Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: vi.fn(impl) } });
+    beforeEach(() => {
+      showToast.success.mockClear();
+      showToast.error.mockClear();
+    });
+
+    it("no share sheet → copies the page URL and says so", async () => {
+      Object.defineProperty(navigator, "share", { configurable: true, value: undefined });
+      clip(() => Promise.resolve());
+      await renderPage();
+      fireEvent.click(screen.getByTestId("group-buy-share"));
+      await waitFor(() => expect(showToast.success).toHaveBeenCalledTimes(1));
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(`${window.location.origin}${window.location.pathname}`);
+      expect(showToast.error).not.toHaveBeenCalled();
+    });
+
+    it("no share sheet and the clipboard refuses → the copy-failed toast", async () => {
+      Object.defineProperty(navigator, "share", { configurable: true, value: undefined });
+      clip(() => Promise.reject(new Error("denied")));
+      await renderPage();
+      fireEvent.click(screen.getByTestId("group-buy-share"));
+      await waitFor(() => expect(showToast.error).toHaveBeenCalledTimes(1));
+      expect(showToast.success).not.toHaveBeenCalled();
+    });
+
+    it("the sheet fails (not a cancel) → falls back to copying", async () => {
+      const err = Object.assign(new Error("no"), { name: "NotAllowedError" });
+      Object.defineProperty(navigator, "share", { configurable: true, value: vi.fn(() => Promise.reject(err)) });
+      clip(() => Promise.resolve());
+      await renderPage();
+      fireEvent.click(screen.getByTestId("group-buy-share"));
+      await waitFor(() => expect(navigator.clipboard.writeText).toHaveBeenCalledTimes(1));
+    });
+
+    it("the reader cancels the sheet → nothing else happens", async () => {
+      const err = Object.assign(new Error("cancel"), { name: "AbortError" });
+      const share = vi.fn(() => Promise.reject(err));
+      Object.defineProperty(navigator, "share", { configurable: true, value: share });
+      clip(() => Promise.resolve());
+      await renderPage();
+      fireEvent.click(screen.getByTestId("group-buy-share"));
+      await waitFor(() => expect(share).toHaveBeenCalledTimes(1));
+      await new Promise((r) => setTimeout(r, 0));
+      expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
+      expect(showToast.success).not.toHaveBeenCalled();
+      expect(showToast.error).not.toHaveBeenCalled();
+    });
+  });
+
+  it("0 joined: every seed empty and «עוד 3 לפתיחת המחיר»", async () => {
+    await renderPage({ ...GB, commits_count: 0 });
+    const box = screen.getByTestId("group-buy-progress");
+    expect(box.textContent).toContain("עוד 3 לפתיחת המחיר");
+    expect(box.textContent).toContain("0 מתוך 3 הצטרפו");
+  });
+
+  it("expired: no «עוד N» line, the count stays", async () => {
+    await renderPage({ ...GB, deadline: "2000-01-01T00:00:00Z" });
+    const box = screen.getByTestId("group-buy-progress");
+    expect(box.textContent).not.toContain("לפתיחת המחיר");
+    expect(box.textContent).toContain("1 מתוך 3 הצטרפו");
   });
 
   it("no -% pill on the photo", async () => {

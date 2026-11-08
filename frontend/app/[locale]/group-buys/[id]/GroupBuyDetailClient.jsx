@@ -347,10 +347,12 @@ export default function GroupBuyDetailClient({ id }) {
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
         await navigator.share({ title: gb.title, text: shareText, url });
-      } catch {
-        // cancelled — the reader's answer
+        return;
+      } catch (err) {
+        // Cancelled = the reader's answer. Any other failure (e.g.
+        // NotAllowedError) falls through to copying the link.
+        if (err?.name === "AbortError") return;
       }
-      return;
     }
     try {
       await navigator.clipboard.writeText(url);

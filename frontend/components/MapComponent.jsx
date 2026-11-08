@@ -704,19 +704,28 @@ export default function MapComponent({
       // docs/archive/MAP_IMPROVEMENTS.md #1 — notify parent that the user moved the
       // map so it can show "search this area". Suppress for our own
       // flyTo/fitBounds calls (initial fit, focusProducer, my-location).
-      if (programmaticMoveRef.current) {
-        programmaticMoveRef.current = false;
-        return;
+      const programmatic = programmaticMoveRef.current;
+      programmaticMoveRef.current = false;
+      // MEH-2049: save the camera on EVERY move after init — including
+      // focusProducer, a cluster zoom and the GPS flyTo. MEH-1414 saved only
+      // user pans, so a visitor who picked a business from the list or a pin
+      // and never dragged came back to the default view (Phase 0, staging,
+      // Chromium + WebKit: 0 writes before leaving). The initial restore
+      // setView runs before this listener exists, so it is still not saved.
+      // Only a VISIBLE instance writes: the other shell's map lives in a
+      // display:none box and must never speak for the camera on screen.
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (rect && rect.width > 0 && rect.height > 0) {
+        const savedCenter = mapInstanceRef.current.getCenter();
+        writeMapViewState({
+          lat: savedCenter.lat,
+          lng: savedCenter.lng,
+          zoom: mapInstanceRef.current.getZoom(),
+        });
       }
-      // MEH-1414: only a USER move is a camera worth restoring later. The
-      // programmatic branches (initial restore, focusProducer, GPS flyTo)
-      // returned above and are deliberately not saved.
-      const savedCenter = mapInstanceRef.current.getCenter();
-      writeMapViewState({
-        lat: savedCenter.lat,
-        lng: savedCenter.lng,
-        zoom: mapInstanceRef.current.getZoom(),
-      });
+      // Saving and «חפשו באזור זה» are separate concerns: our own moves
+      // (initial fit, focusProducer, my-location) still never raise the button.
+      if (programmatic) return;
       onMapMoveRef.current?.();
     });
 

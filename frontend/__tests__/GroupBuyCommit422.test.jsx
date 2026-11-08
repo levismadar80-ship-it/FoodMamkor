@@ -55,7 +55,7 @@ vi.mock("@/lib/format-date", () => ({
 // An open, joinable group buy with a far-future deadline.
 const OPEN_GB = {
   id: "gb-1",
-  title: "קבוצת רכש לדוגמה",
+  title: "קבוצת רכישה לדוגמה",
   status: "open",
   deadline: "2099-01-01T00:00:00Z",
   min_participants: 2,

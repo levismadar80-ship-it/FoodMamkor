@@ -25,8 +25,8 @@ describe("EmptyState — default render is unchanged by chunk 1 (hard gate)", ()
     const { container } = render(
       <EmptyState
         icon={ShoppingCart}
-        title="עדיין אין קבוצות רכש"
-        description="קבוצות רכש = מחיר סיטונאי ללקוחות שלך."
+        title="עדיין אין קבוצות רכישה"
+        description="קבוצות רכישה = מחיר סיטונאי ללקוחות שלך."
         ctaLabel="צרו קבוצה ראשונה"
         ctaOnClick={() => {}}
       />,
@@ -91,7 +91,7 @@ describe("EmptyState — default render is unchanged by chunk 1 (hard gate)", ()
 describe("EmptyState — `circle` variant (MEH-1630 decision 2)", () => {
   it("wraps the icon in the green disc the 9 inline blocks hand-rolled", () => {
     const { container } = render(
-      <EmptyState circle icon={ShoppingCart} title="עדיין אין קבוצות רכש" />,
+      <EmptyState circle icon={ShoppingCart} title="עדיין אין קבוצות רכישה" />,
     );
     const disc = container.querySelector(".rounded-full");
     expect(disc).toBeTruthy();
@@ -176,7 +176,7 @@ describe("EmptyState — `gated` variant (MEH-1630 decision 4)", () => {
       <EmptyState
         gated
         icon={Lock}
-        title="פתיחת קבוצת רכש נעולה"
+        title="פתיחת קבוצת רכישה נעולה"
         description="תתאפשר לאחר אישור העסק."
         ctaLabel="צרו קבוצה"
         ctaOnClick={() => {}}

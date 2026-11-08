@@ -31,6 +31,9 @@ const GROUP_BUYS_PREVIEW = 2;
 // Up to SEEDS_MAX participants → one seed each, filled in the logo colours in
 // order; more → five segments, each a fifth of the target, the current one
 // partly filled. One mark for the business-page card and the group-buy page.
+// Raw hex on purpose: these are the five fixed petal colours of public/logo.svg
+// (the board draws the logo's own seeds), not theme tokens — baselined in
+// raw-color-baseline.txt with that reason.
 const SEED_COLORS = ["#2E6853", "#C8632E", "#C99846", "#D9C8B0", "#5A8F73"];
 const SEEDS_MAX = 10;
 const BAR_SEGMENTS = 5;
@@ -130,6 +133,7 @@ function GroupBuyRow({ gb }) {
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-3">
           <h3 className="font-headline-md text-lg font-bold text-text leading-snug line-clamp-2 min-w-0">{gb.title}</h3>
+          {/* Forward caret: points left in Hebrew, flipped to point right in English. */}
           <CaretLeft size={20} aria-hidden="true" className="text-primary shrink-0 mt-1 ltr:rotate-180" />
         </div>
         {gb.product_name && (
