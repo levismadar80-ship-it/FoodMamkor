@@ -332,6 +332,28 @@ body:has([data-meets-footer]) footer[data-site-footer] {
   margin-top: 0;
 }
 
+/* MEH-2824 (Sapir 08/11, option ב): the bottom reserve for the floating
+   BottomNav (+ cookie banner) moves from <body> INTO the site footer, so the
+   footer's dark green runs to the screen edge instead of ending on an 80px
+   cream strip behind the nav. Same value — var(--bottom-inset), no new
+   number — just a different owner. Desktop is unchanged: there the var is the
+   cookie banner's live height only (0 once dismissed). Routes without the
+   site footer (/map, the dashboard + /admin's DashboardFooter) match neither
+   rule and keep the reserve on <body> (layout.js `pb-[var(--bottom-inset)]`).
+   Specificity (0,2,2) beats the Tailwind utility (0,1,0) regardless of order.
+   Guard: e2e/flows/manual/footer-nav-clearance.spec.ts.
+   Both rules sit behind @supports: a browser without :has() (Safari < 15.4)
+   would drop the body rule but keep the footer one and reserve the space
+   TWICE. Without :has() nothing changes — the reserve stays on <body>. */
+@supports selector(:has(*)) {
+  body:has(footer[data-site-footer]) {
+    padding-bottom: 0;
+  }
+  footer[data-site-footer] {
+    padding-bottom: var(--bottom-inset);
+  }
+}
+
 /* Leaflet map fixes */
 .leaflet-container {
   height: 100%;
