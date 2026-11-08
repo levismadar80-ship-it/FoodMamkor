@@ -370,10 +370,16 @@ function Badge({ badge, surface = "hero", avoidRef = null }) {
   // the toggle, Esc/outside-click dismissal, and the ProducerCard-Link tap
   // guard that used to live inline here.
   return (
-    // MEH-2849: max-w-full down the chain so a long label (e.g. «עסק של
-    // מילואימניקים» at 200% text on a 375 card) wraps inside the card instead
-    // of running past it — measured 35px off-screen before. Labels that fit
-    // render exactly as before.
+    // MEH-2849: a long label (e.g. «עסק של מילואימניקים» at 200% text on a 375
+    // card) wraps inside the card instead of running past it — measured 35px
+    // off-screen before. What makes it wrap is the label's min-w-0 +
+    // overflow-wrap (the Popover's inline-block wrapper then fits the
+    // available width); max-w-full keeps each box from asking for more.
+    // rounded-xl, not rounded-full: on a one-line pill the 0.75rem radius is
+    // ≥ half its height, so the ends are exactly as round as before (it scales
+    // with rem, so this holds at 200% too); on a wrapped pill it stays a
+    // rounded rectangle instead of swelling into an ellipse. Labels that fit
+    // render as before.
     <span role="listitem" className="inline-block max-w-full">
       <Popover
         contentTestId={`badge-tooltip-${badge.key}`}
@@ -392,7 +398,7 @@ function Badge({ badge, surface = "hero", avoidRef = null }) {
             data-badge={badge.key}
             className="group inline-flex items-center justify-center min-h-[24px] min-w-[24px] max-w-full focus:outline-none"
           >
-            <span className={`inline-flex items-center max-w-full ${compact ? "gap-0.5 px-2" : "gap-1 px-2.5"} text-xs py-0.5 rounded-full font-medium group-focus-visible:ring-2 group-focus-visible:ring-primary/40 transition ${colorClass}`}>
+            <span className={`inline-flex items-center max-w-full ${compact ? "gap-0.5 px-2" : "gap-1 px-2.5"} text-xs py-0.5 rounded-xl font-medium group-focus-visible:ring-2 group-focus-visible:ring-primary/40 transition ${colorClass}`}>
               {/* MEH-2584: same glyph as the filter chip (lib/chip-icons.js),
                   aria-hidden — the label stays the accessible name. */}
               {icon && <span aria-hidden="true" className="inline-flex shrink-0">{icon}</span>}

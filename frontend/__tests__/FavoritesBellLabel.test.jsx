@@ -155,6 +155,14 @@ describe("MEH-2849 · the bell sits opposite the card heart", () => {
     expect(bellSide, "control: the bell sits in a logical top corner").not.toBeNull();
     expect(bellSide).not.toBe(heartSide);
     expect(bellSide).toBe("start");
+    // …at sm+ too (the 44px heart sits at sm:end-3).
+    const smHeart = /(?:^|\s)sm:(start|end)-3(?:\s|$)/.exec(heartClass)?.[1];
+    expect(smHeart, "control: the heart has an sm corner").toMatch(/^(start|end)$/);
+    const smBell = bellCls.includes("sm:start-3") ? "start" : bellCls.includes("sm:end-3") ? "end" : null;
+    expect(smBell).not.toBe(smHeart);
+    // At 200% text the bell grows to ~145px on a 166px card; the cap keeps it
+    // 8px short of the heart (measured by the PR reviewer, 08/11).
+    expect(bellCls).toEqual(expect.arrayContaining(["max-w-[calc(100%-58px)]", "sm:max-w-[calc(100%-76px)]"]));
   });
 });
 
