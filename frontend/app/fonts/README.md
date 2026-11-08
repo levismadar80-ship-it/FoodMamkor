@@ -62,13 +62,13 @@ Full text: <https://openfontlicense.org/open-font-license-official-text/>
 ## Which faces are preloaded (MEH-2850)
 
 `localFont` preloads every face by default, on **every** page. Two calls opt out
-with `preload: false`, because the home page renders neither and the preloads
-cost 109KB against the Lighthouse page-weight budget (measured 08/11: fonts on
-`/` went from 223KB to 118KB):
+with `preload: false`, because the home page never renders them above the fold
+and the preloads cost 109KB against the Lighthouse page-weight budget (measured
+08/11: fonts on `/` went from 223KB to 118KB):
 
 | Call | Why it is not preloaded |
 |---|---|
-| `cormorantGaramond` (regular + italic) | No text on `/` uses it. Pages that do load it on first use (`display: swap`, adjusted Times fallback, no layout shift). |
+| `cormorantGaramond` (regular + italic) | Nothing above the fold on `/` uses it. The one use on `/` is the event times in «אירועים קרובים» (`EventEntryRow`, `.font-english italic`), a section far below the fold that renders only after `/events/upcoming` answers and only when there are events; the face is fetched when that text first renders. Every page that uses it loads it on first use (`display: swap`, adjusted Times fallback, no layout shift). |
 | `heeboLatin` | DM Sans comes first in every body stack and covers the Latin glyphs, so this face is rarely reached. |
 
 `__tests__/HomeWeightMEH2850.test.jsx` pins the split: these two say

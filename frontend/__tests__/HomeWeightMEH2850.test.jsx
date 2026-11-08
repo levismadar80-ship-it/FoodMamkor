@@ -1,9 +1,10 @@
 /**
  * MEH-2850 (Sapir 08/11: shrink the home page under the 1.30MB Lighthouse
  * budget, nothing visible may change).
- *  A) The hero photo: below 640px an image-set gives every device at least the
- *     pixels it displays (1x w_828 · 2x w_1600 · 3x w_1920); 640px and up keep
- *     the w_1920 url. Same Cloudinary transform (c_fill,g_auto,ar_16:9).
+ *  A) The hero photo: on /he below 640px an image-set gives every device at
+ *     least the pixels it displays (1x w_828 · 2x w_1600 · 3x w_1920); 640px
+ *     and up, and /en everywhere (taller band), keep the w_1920 url. Same
+ *     Cloudinary transform (c_fill,g_auto,ar_16:9).
  *  B) Cormorant (both styles) and Heebo-latin are no longer preloaded; every
  *     other face keeps next/font's default preload.
  */
@@ -35,6 +36,8 @@ describe("MEH-2850 A — hero photo sized to the phone, unchanged from 640px", (
   });
 
   it("the phone set: 1x w_828, 2x w_1600, 3x w_1920 — same image, same crop", () => {
+    // Prefixed: inside a custom property an unsupported value computes to none.
+    expect(HERO_IMAGE_SET_PHONE.startsWith("-webkit-image-set(")).toBe(true);
     const pairs = [...HERO_IMAGE_SET_PHONE.matchAll(/url\("([^"]+)"\)\s+(\d)x/g)].map((m) => [m[2], m[1]]);
     expect(pairs.map(([x]) => x)).toEqual(["1", "2", "3"]);
     const width = Object.fromEntries(pairs.map(([x, u]) => [x, Number(/,w_(\d+)\//.exec(u)[1])]));
@@ -48,7 +51,7 @@ describe("MEH-2850 A — hero photo sized to the phone, unchanged from 640px", (
     expect(width[2]).toBeGreaterThanOrEqual(NEED_CSS * 2);
   });
 
-  it("the layer reads both through CSS variables; the class picks the phone set below 640px", () => {
+  it("the layer reads both through CSS variables; the class picks the phone set below 640px, /he only", () => {
     render(<HomeHero onSubmit={() => {}} onNearMe={() => {}} />);
     const layer = screen.getByTestId("hero-image-layer");
     // No inline background-image: it would outrank the phone class.
@@ -57,8 +60,13 @@ describe("MEH-2850 A — hero photo sized to the phone, unchanged from 640px", (
     expect(layer.style.getPropertyValue("--hero-phone")).toBe(HERO_IMAGE_SET_PHONE);
     const cls = layer.className.split(/\s+/);
     expect(cls).toEqual(
-      expect.arrayContaining(["[background-image:var(--hero-bg)]", "max-[639px]:[background-image:var(--hero-phone)]"]),
+      expect.arrayContaining([
+        "[background-image:var(--hero-bg)]",
+        "max-[639px]:[html[lang=he]_&]:[background-image:var(--hero-phone)]",
+      ]),
     );
+    // No ungated phone class: /en (lang="en") must keep --hero-bg.
+    expect(cls).not.toContain("max-[639px]:[background-image:var(--hero-phone)]");
   });
 });
 
