@@ -139,6 +139,22 @@ export const COLOR_CLASSES = {
   muted: "bg-surface-card text-green-700 border border-border",
 };
 
+// The hero verified chip's face (gold ring + seal on the card surface). The
+// interactive chip below wraps it in a popover button; explainers that show
+// the badge as it looks — /about trust cards, /about/badges (MEH-2827) — use
+// VerifiedChip, the same face with no button and no popover.
+export const VERIFIED_CHIP_CLASS =
+  "inline-flex items-center gap-1 rounded-full border border-accent/40 bg-surface-card text-accent text-xs px-2.5 py-0.5 font-medium";
+
+export function VerifiedChip({ label, className = "" }) {
+  return (
+    <span data-testid="verified-chip" className={`${VERIFIED_CHIP_CLASS} ${className}`.trim()}>
+      <SealCheck size={14} aria-hidden="true" />
+      {label}
+    </span>
+  );
+}
+
 /** d.m.yyyy from a date-only ISO string, LRI/PDI-isolated (S12 bidi lock). */
 function formatTierDate(isoDate) {
   if (!isoDate) return null;
@@ -233,7 +249,7 @@ function VerifiedTierBadge({ producer, surface, t, avoidRef = null }) {
               // (AA fail for 12px text) — same usage-level fix as the iconOnly
               // branch above (MEH-2025/#2825): solid bg-surface-card gets accent
               // to 5.19:1.
-              "inline-flex items-center gap-1 rounded-full border border-accent/40 bg-surface-card text-accent text-xs px-2.5 py-0.5 font-medium group-focus-visible:ring-2 group-focus-visible:ring-accent/40 transition"
+              `${VERIFIED_CHIP_CLASS} group-focus-visible:ring-2 group-focus-visible:ring-accent/40 transition`
         }
       >
         <SealCheck size={iconOnly ? 16 : 14} aria-hidden="true" />

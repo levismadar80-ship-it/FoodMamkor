@@ -13,9 +13,19 @@ import he from "@/messages/he.json";
 import en from "@/messages/en.json";
 import { BADGE_CONFIG } from "@/lib/badges";
 
+// MEH-2827: the /about trust bodies are split into keys for the card layout
+// (same words, joined back here) — the claims below are about the copy, not
+// about how many paragraphs it renders in.
+const PART_KEYS = /^(body_\d+|list_lead|item_\d+)$/;
+const joined = (msgs, section) =>
+  Object.entries(msgs.about.consumer[section])
+    .filter(([k]) => PART_KEYS.test(k))
+    .map(([, v]) => v)
+    .join(" ");
+
 describe("MEH-2527 trust copy", () => {
   it("about: does not promise a licence check for every business", () => {
-    const body = he.about.consumer.verification.body;
+    const body = joined(he, "verification");
     expect(body).not.toContain("בודקות רישיון עסק בתוקף");
     // MEH-2636: the pinned substring was "ואם יש לעסק רישיון". The claim this
     // case exists to protect is the CONDITIONAL — not a licence check on every
@@ -25,8 +35,8 @@ describe("MEH-2527 trust copy", () => {
     // pinned on its own, and the time scope is pinned beside it.
     expect(body).toContain("ואם יש לעסק");
     expect(body).toContain("במועד ההצטרפות");
-    expect(en.about.consumer.verification.body).not.toContain("we check a valid business license and");
-    expect(en.about.consumer.verification.body).toContain("at the time it joins");
+    expect(joined(en, "verification")).not.toContain("we check a valid business license and");
+    expect(joined(en, "verification")).toContain("at the time it joins");
   });
 
   // MEH-2636: a NEW false promise this file now pins the absence of, in the
@@ -90,9 +100,9 @@ describe("MEH-2527 trust copy", () => {
 
   it("about explains the automatic «מובילת קהילה» badge in both locales", () => {
     expect(he.about.consumer.community_leader.heading).toBe(he.trust.tier_4.label);
-    expect(he.about.consumer.community_leader.body).toContain("10 ביקורות");
-    expect(he.about.consumer.community_leader.body).toContain("4.5");
-    expect(en.about.consumer.community_leader.body).toContain("10 reviews");
+    expect(joined(he, "community_leader")).toContain("10 ביקורות");
+    expect(joined(he, "community_leader")).toContain("4.5");
+    expect(joined(en, "community_leader")).toContain("10 reviews");
     expect(en.about.consumer.community_leader.heading).toBe(en.trust.tier_4.label);
   });
 
