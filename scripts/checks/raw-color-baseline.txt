@@ -213,7 +213,6 @@ frontend/components/ImageGallery.jsx:bg-gray-100
 frontend/components/ImageGallery.jsx:bg-gray-100
 frontend/components/ImageGallery.jsx:bg-white
 frontend/components/ImageGallery.jsx:hex:#dfdbcb
-frontend/components/ImageWithFallback.jsx:hex:#eaf3de
 frontend/components/Lightbox.jsx:bg-white
 frontend/components/Lightbox.jsx:bg-white
 frontend/components/Lightbox.jsx:bg-white

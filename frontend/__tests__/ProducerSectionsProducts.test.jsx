@@ -95,6 +95,7 @@ vi.mock("@/components/ReportButton", () => ({ default: () => null }));
 vi.mock("@/components/ReviewsSection", () => ({ default: () => null }));
 
 import ProducerSections from "@/app/[locale]/producer/[id]/components/ProducerSections";
+import { seedColorFor } from "@/lib/brand-seeds";
 
 const baseProps = {
   events: [],
@@ -118,9 +119,9 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
         producer={producerWith([{ id: 11, name: "גרנולה ביתית", image_url: null }])}
       />,
     );
-    // No leaf glyph in the grid anymore — the product initial carries the
-    // no-photo state on a bg-primary/[0.06] tint (MEH-1126 "no icon" intent).
-    expect(screen.queryByTestId("leaf-icon")).not.toBeInTheDocument();
+    // The product initial carries the grid's no-photo state on a
+    // bg-primary/[0.06] tint (MEH-1126 "no icon" intent). (The leaf check that
+    // stood here can no longer fail: MEH-2833 removed Leaf from the file.)
     const initial = screen.getByText("ג"); // first letter of "גרנולה"
     expect(initial).toBeInTheDocument();
     const placeholder = initial.closest("div");
@@ -150,7 +151,6 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
       />,
     );
     expect(screen.getByTestId("product-image")).toBeInTheDocument();
-    expect(screen.queryByTestId("leaf-icon")).not.toBeInTheDocument();
     expect(screen.queryByText("מהמקור")).not.toBeInTheDocument();
     expect(screen.getByText("דבש פרחי בר")).toBeInTheDocument();
   });
@@ -267,15 +267,16 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
     expect(screen.getAllByText("לחם")).toHaveLength(2);
     // The survivor's photo renders once, in the grid. (This one does NOT
     // discriminate — it was also once under the old chain, in the highlight
-    // instead. Kept because it pins WHERE the photo is, via the leaf below.)
+    // instead. Kept because it pins WHERE the photo is, via the no-photo slot below.)
     const imgs = screen.getAllByTestId("product-image").map((i) => i.getAttribute("src") || "");
     expect(imgs.filter((src) => src.includes("other.jpg"))).toHaveLength(1);
-    // …and the highlight shows the no-photo leaf, which the old chain could not
-    // produce here: it had a real product with a real image to feature.
-    expect(screen.getAllByTestId("leaf-icon").length).toBeGreaterThanOrEqual(1);
+    // …and the highlight shows the no-photo seed (MEH-2833; was the leaf),
+    // which the old chain could not produce here: it had a real product with a
+    // real image to feature.
+    expect(screen.getByTestId("signature-image-missing")).toBeInTheDocument();
   });
 
-  it("free-text signature with no matching product: name + leaf placeholder, grid intact", () => {
+  it("free-text signature with no matching product: name + no-photo seed slot, grid intact", () => {
     render(
       <ProducerSections
         {...baseProps}
@@ -290,8 +291,11 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
       />,
     );
     expect(screen.getByText("מארז טעימות")).toBeInTheDocument();
-    // no match → leaf placeholder in the highlight
-    expect(screen.getAllByTestId("leaf-icon").length).toBeGreaterThanOrEqual(1);
+    // no match → the no-photo placeholder in the highlight: sand + one seed
+    // in the business's own colour (MEH-2833; was the leaf)
+    const slot = screen.getByTestId("signature-image-missing");
+    expect(slot.className).toMatch(/\bbg-background-alt\b/);
+    expect(slot.querySelector("svg[data-seed-color]").getAttribute("data-seed-color")).toBe(seedColorFor(1).fill);
     // the grid product remains
     expect(screen.getByText("לחם מחמצת כפרי")).toBeInTheDocument();
   });

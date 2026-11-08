@@ -39,6 +39,8 @@ import {
   subscribeFavorites,
 } from "@/lib/favorites-cache";
 import api from "@/lib/api";
+import Seed from "@/components/brand/Seed";
+import { seedColorFor } from "@/lib/brand-seeds";
 import { humanTime } from "@/lib/time-format";
 
 // MEH-1678: bidi-safe amount interpolation, mirroring the pattern
@@ -391,8 +393,21 @@ export default function ProducerCard({ producer, active, onClick, referrer, high
                 role="img"
                 aria-label={t("producer.card.aria.image_missing", { name: producer.name })}
               >
+                {/* MEH-2833 (seed layer, board 7): one seed in the business's own
+                    colour (seedColorFor(producer.id) — fixed per business),
+                    ≈70×105, rotated −36°, cropped in the end-top corner by the
+                    image box. The name plate is unchanged and its top padding
+                    keeps the name below the seed. Mirrored in LTR so the round
+                    end always sits in the corner. */}
+                <Seed
+                  color={seedColorFor(producer.id).fill}
+                  size={70}
+                  rotate={-36}
+                  highlight
+                  className="absolute -top-[46px] -end-[30px] pointer-events-none ltr:-scale-x-100"
+                />
                 <span
-                  className="font-headline-lg font-black text-2xl sm:text-3xl leading-[1.05] text-text line-clamp-3 [word-break:keep-all] [overflow-wrap:anywhere]"
+                  className="relative font-headline-lg font-black text-2xl sm:text-3xl leading-[1.05] text-text line-clamp-3 [word-break:keep-all] [overflow-wrap:anywhere]"
                   data-testid="card-name-plate"
                   aria-hidden="true"
                 >
