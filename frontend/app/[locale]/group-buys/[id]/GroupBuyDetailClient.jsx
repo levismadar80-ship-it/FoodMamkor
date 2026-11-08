@@ -104,6 +104,7 @@ export default function GroupBuyDetailClient({ id }) {
   // the site-wide «שתפו» + copied toast — no new copy.
   const tForm = useTranslations("group_buys.dashboard.form");
   const tShare = useTranslations("share");
+  const tSharePage = useTranslations("share_page");
   const locale = useLocale();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -355,7 +356,9 @@ export default function GroupBuyDetailClient({ id }) {
       await navigator.clipboard.writeText(url);
       showToast.success(tShare("copied_toast"), { icon: <Check size={18} /> });
     } catch {
-      // no clipboard either: nothing more to offer
+      // No sheet and no clipboard: say so (existing copy) instead of a
+      // button that silently does nothing.
+      showToast.error(tSharePage("copy_failed_toast"));
     }
   };
   const progressLabel = t("progress_label", { commits: gb.commits_count, min: gb.min_participants });
