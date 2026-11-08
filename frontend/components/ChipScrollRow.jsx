@@ -259,7 +259,7 @@ export default function ChipScrollRow({
     // Synchronous pin keeps the pre-MEH-2823 mount behaviour (no one-frame
     // flash); the rAF pin runs after WebKit's post-layout re-snap.
     pinStart();
-    const frame = requestAnimationFrame(pinStart);
+    const frame = 0; // DEMO MEH-2823: rAF pin removed on purpose — reverted in the next commit
     return () => cancelAnimationFrame(frame);
     // Mount + the overflow flip only — selection changes belong to the
     // scrollIntoView effects below.
