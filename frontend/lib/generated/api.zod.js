@@ -6609,6 +6609,7 @@ export const GetAlertPrefsUsersMeFavoritesProducerIdAlertsGetResponse = /*#__PUR
   "has_push": /*#__PURE__*/ zod.boolean(),
   "notify_delivery_area": /*#__PURE__*/ zod.boolean(),
   "notify_new_event": /*#__PURE__*/ zod.boolean(),
+  "notify_new_group_buy": /*#__PURE__*/ zod.boolean(),
   "notify_new_product": /*#__PURE__*/ zod.boolean(),
   "notify_new_recipe": /*#__PURE__*/ zod.boolean(),
   "whatsapp_opt_in": /*#__PURE__*/ zod.boolean()
@@ -6623,6 +6624,7 @@ export const UpsertAlertPrefsUsersMeFavoritesProducerIdAlertsPutResponse = /*#__
   "has_push": /*#__PURE__*/ zod.boolean(),
   "notify_delivery_area": /*#__PURE__*/ zod.boolean(),
   "notify_new_event": /*#__PURE__*/ zod.boolean(),
+  "notify_new_group_buy": /*#__PURE__*/ zod.boolean(),
   "notify_new_product": /*#__PURE__*/ zod.boolean(),
   "notify_new_recipe": /*#__PURE__*/ zod.boolean(),
   "whatsapp_opt_in": /*#__PURE__*/ zod.boolean()

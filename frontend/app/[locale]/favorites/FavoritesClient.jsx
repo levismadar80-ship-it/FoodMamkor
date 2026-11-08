@@ -65,7 +65,9 @@ function FavoriteCardWrapper({ fav, open, onToggle, onClose }) {
     // grows the grid row or stretches the sibling card.
     <div className="relative h-full flex flex-col">
       <div className="flex-1">
-        <ProducerCard producer={fav.producer} />
+        {/* MEH-2844: the bell below takes the card's top-start corner and the
+            heart the top-end one, so the no-photo plate drops its seed. */}
+        <ProducerCard producer={fav.producer} startCornerControl />
       </div>
       <button
         ref={bellRef}
@@ -85,13 +87,21 @@ function FavoriteCardWrapper({ fav, open, onToggle, onClose }) {
         data-testid="favorites-bell"
         // MEH-1203: mirror CardHeart's density variant (ProducerCard.jsx:144)
         // so the bell keeps a comfortable tap target inside the smaller 2-col
-        // card — 34px on mobile, 44px sm: up, top-end corner opposite the heart.
+        // card — 34px on mobile, 44px sm: up.
         // MEH-2526: circle → pill so the label sits beside the bell; same
-        // heights, same corner.
-        className="absolute top-2 end-2 sm:top-3 sm:end-3 h-[34px] sm:h-11 px-2.5 sm:px-3 gap-1 flex items-center justify-center rounded-full bg-background/90 hover:bg-background text-primary transition z-10"
+        // heights.
+        // MEH-2849: #4000 (MEH-2671) moved the card heart to the top-END
+        // corner, which is where this bell sat — it covered the heart, so a tap
+        // on the heart hit «עדכונים» and nothing was removed. The bell takes the
+        // corner opposite the heart: top-START. Its width is capped so that even
+        // at 200% text (bell ≈145px on a 166px card) it stops 8px before the
+        // heart: card − start inset − heart − end inset − 8px gap = 100% − 58px
+        // on a phone (8+34+8+8), 100% − 76px from sm (12+44+12+8). Below that
+        // width the label truncates; the accessible name keeps the full text.
+        className="absolute top-2 start-2 sm:top-3 sm:start-3 max-w-[calc(100%-58px)] sm:max-w-[calc(100%-76px)] h-[34px] sm:h-11 px-2.5 sm:px-3 gap-1 flex items-center justify-center rounded-full bg-background/90 hover:bg-background text-primary transition z-10"
       >
-        <Bell size={18} weight={open ? "fill" : "regular"} aria-hidden="true" />
-        <span className="text-xs font-medium">{t("bell_label")}</span>
+        <Bell size={18} weight={open ? "fill" : "regular"} aria-hidden="true" className="shrink-0" />
+        <span className="text-xs font-medium min-w-0 truncate">{t("bell_label")}</span>
       </button>
       {open && (
         // MEH-1359: out of flow. Mobile → fixed bottom-sheet above BottomNav
@@ -110,7 +120,7 @@ function FavoriteCardWrapper({ fav, open, onToggle, onClose }) {
         // below, and Tailwind arbitrary values take no spaces.
         <div
           ref={panelRef}
-          className="fixed inset-x-3 bottom-[calc(var(--bottom-nav-clearance,calc(4.5rem+env(safe-area-inset-bottom,0px)))+8px)] z-[1150] sm:absolute sm:inset-x-auto sm:bottom-auto sm:top-14 sm:end-0 sm:w-72"
+          className="fixed inset-x-3 bottom-[calc(var(--bottom-nav-clearance,calc(4.5rem+env(safe-area-inset-bottom,0px)))+8px)] z-[1150] sm:absolute sm:inset-x-auto sm:bottom-auto sm:top-14 sm:start-0 sm:w-72"
         >
           <AlertPrefsPanel
             producerId={fav.producer_id}

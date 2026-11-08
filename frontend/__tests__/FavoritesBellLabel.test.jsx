@@ -41,7 +41,11 @@ vi.mock("@/lib/favorites-cache", () => ({
   subscribeFavorites: () => () => {},
 }));
 vi.mock("@/components/ProducerCard", () => ({
-  default: ({ producer }) => <div data-testid="card">{producer.name}</div>,
+  default: ({ producer, startCornerControl }) => (
+    <div data-testid="card" data-start-corner-control={String(Boolean(startCornerControl))}>
+      {producer.name}
+    </div>
+  ),
 }));
 vi.mock("@/components/AlertPrefsPanel", () => ({
   default: () => <div data-testid="alert-panel" />,
@@ -129,5 +133,51 @@ describe("MEH-2526 · favorites bell label", () => {
     expect(screen.getAllByTestId("alert-panel")).toHaveLength(1);
     expect(bells()[0]).toHaveAttribute("aria-expanded", "true");
     expect(screen.getAllByText(LABEL)).toHaveLength(n);
+  });
+});
+
+// MEH-2849: #4000 moved the card heart to the top-END corner — where this bell
+// sat — so the bell covered the heart and a tap meant to remove a favourite hit
+// «עדכונים» (E2E 31-favorites-journey-d D2, 08/11). The bell must sit in the
+// corner OPPOSITE the heart. ProducerCard is mocked above, so the heart's
+// corner is read from its source: if either of them moves into the other's
+// corner, this goes red.
+describe("MEH-2849 · the bell sits opposite the card heart", () => {
+  it("bell at top-start, heart at top-end — never the same corner", async () => {
+    const fs = await import("node:fs");
+    const path = await import("node:path");
+    const src = fs.readFileSync(path.resolve(__dirname, "../components/ProducerCard.jsx"), "utf8");
+    const at = src.indexOf('data-testid="card-heart"');
+    expect(at, "control: ProducerCard still renders the card-heart").toBeGreaterThan(0);
+    // The heart's className is the attribute right after its testid.
+    const heartClass = /className="([^"]*)"/.exec(src.slice(at, at + 400))?.[1] ?? "";
+    const heartSide = /(?:^|\s)(start|end)-2(?:\s|$)/.exec(heartClass)?.[1];
+    expect(heartSide, "control: the heart sits in a logical top corner").toMatch(/^(start|end)$/);
+    await renderWith(1);
+    const bellCls = bells()[0].className.split(/\s+/);
+    const bellSide = bellCls.includes("start-2") ? "start" : bellCls.includes("end-2") ? "end" : null;
+    expect(bellSide, "control: the bell sits in a logical top corner").not.toBeNull();
+    expect(bellSide).not.toBe(heartSide);
+    expect(bellSide).toBe("start");
+    // …at sm+ too (the 44px heart sits at sm:end-3).
+    const smHeart = /(?:^|\s)sm:(start|end)-3(?:\s|$)/.exec(heartClass)?.[1];
+    expect(smHeart, "control: the heart has an sm corner").toMatch(/^(start|end)$/);
+    const smBell = bellCls.includes("sm:start-3") ? "start" : bellCls.includes("sm:end-3") ? "end" : null;
+    expect(smBell).not.toBe(smHeart);
+    // At 200% text the bell grows to ~145px on a 166px card; the cap keeps it
+    // 8px short of the heart (measured by the PR reviewer, 08/11).
+    expect(bellCls).toEqual(expect.arrayContaining(["max-w-[calc(100%-58px)]", "sm:max-w-[calc(100%-76px)]"]));
+  });
+});
+
+// MEH-2844 (Sapir 08/11): with the bell at top-start and the heart at top-end,
+// both corners hold a control — /favorites tells the card so, and the card
+// drops its no-photo seed (ProducerCard.test.jsx covers the card side).
+describe("MEH-2844 · /favorites cards hold both top corners", () => {
+  it("every card on /favorites is told its start corner is taken", async () => {
+    await renderWith(3);
+    const cards = screen.getAllByTestId("card");
+    expect(cards).toHaveLength(3);
+    for (const c of cards) expect(c.getAttribute("data-start-corner-control")).toBe("true");
   });
 });

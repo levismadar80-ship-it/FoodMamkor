@@ -242,6 +242,11 @@
             "title": "Notify New Event",
             "type": "boolean"
           },
+          "notify_new_group_buy": {
+            "default": true,
+            "title": "Notify New Group Buy",
+            "type": "boolean"
+          },
           "notify_new_product": {
             "default": true,
             "title": "Notify New Product",
@@ -291,6 +296,10 @@
             "title": "Notify New Event",
             "type": "boolean"
           },
+          "notify_new_group_buy": {
+            "title": "Notify New Group Buy",
+            "type": "boolean"
+          },
           "notify_new_product": {
             "title": "Notify New Product",
             "type": "boolean"
@@ -310,6 +319,7 @@
           "notify_new_event",
           "notify_delivery_area",
           "notify_new_recipe",
+          "notify_new_group_buy",
           "whatsapp_opt_in",
           "has_push"
         ],

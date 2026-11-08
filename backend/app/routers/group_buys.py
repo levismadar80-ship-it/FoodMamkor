@@ -1,5 +1,6 @@
 """MEH-52: Group buy endpoints — commit counter + price unlock."""
 
+from decimal import Decimal
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
@@ -347,6 +348,7 @@ def cancel_commit(
 @router.post("", status_code=201)
 def create_group_buy(
     data: GroupBuyCreate,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(require_verified_producer),
     db: Session = Depends(get_db),
 ):
@@ -395,7 +397,36 @@ def create_group_buy(
     db.add(gb)
     db.commit()
     db.refresh(gb)
+
+    # MEH-2828: tell the people who saved this business (and kept the new
+    # toggle on) that it opened a group buy. Fired here only — on create, with
+    # the row committed and open — never on edit, funded or cancel. Same
+    # fan-out, channels and 24h cap as the other four alert types.
+    from app.routers.alerts import AlertContent, fire_alerts
+
+    background_tasks.add_task(
+        fire_alerts,
+        db,
+        producer.id,
+        "new_group_buy",
+        AlertContent(
+            title=f"🛒 קבוצת רכישה חדשה: {gb.title}",
+            body=(
+                f"{producer.name} — {format_price(gb.price_per_unit_group)} "
+                f"במקום {format_price(gb.price_per_unit_regular)}"
+            ),
+            url=f"/group-buys/{gb.id}",
+        ),
+    )
     return {"id": str(gb.id), "detail": "קבוצת הרכישה נוצרה בהצלחה"}
+
+
+def format_price(amount: Decimal | float | int) -> str:
+    """A price as the site writes it (frontend/lib/utils.js formatPrice):
+    thousands separators, at most 2 decimals with trailing zeros dropped, and
+    the shekel sign right after the number — «45₪», «1,250₪», «12.5₪»."""
+    text = f"{Decimal(str(amount)).quantize(Decimal('0.01')):,.2f}"
+    return f"{text.rstrip('0').rstrip('.')}₪"
 
 
 # MEH-2436: what the business may do to its own group buy. Anything not listed

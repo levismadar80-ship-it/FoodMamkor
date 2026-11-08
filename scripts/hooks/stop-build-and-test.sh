@@ -209,7 +209,19 @@ run_all() {
     if skipped_step build; then echo "build: skipped (STOP_HOOK_SKIP)"
     else
       echo "build: npm run build"
-      if ! (cd "$root/frontend" && npm run build 2>&1 | tail -20); then
+      # MEH-2845: next.config.js refuses to load without NEXT_PUBLIC_API_URL
+      # (lib/env.client.js), so the hook failed on the environment, not on the
+      # code. A local default for THIS build only — not an app env var; nothing
+      # is added to Vercel or Railway. It is injected ONLY when the value is
+      # neither exported nor written in a frontend/.env* file: Next.js never
+      # lets a file override an existing process.env value, so an injected
+      # default would silently beat a developer's .env.local.
+      api_default=""
+      if [ -z "${NEXT_PUBLIC_API_URL:-}" ] && ! grep -qsE '^[[:space:]]*(export[[:space:]]+)?NEXT_PUBLIC_API_URL=' \
+          "$root"/frontend/.env "$root"/frontend/.env.local "$root"/frontend/.env.production "$root"/frontend/.env.production.local; then
+        api_default="http://localhost:8000"
+      fi
+      if ! (cd "$root/frontend" && if [ -n "$api_default" ]; then export NEXT_PUBLIC_API_URL="$api_default"; fi; npm run build 2>&1 | tail -20); then
         reasons+=("Frontend build failed — fix errors before completing this task")
       fi
     fi

@@ -472,9 +472,11 @@ front matter for the normative token bindings.
     Frank Ruhl 900 (22px / 30px sm+), `background-alt` fill, bottom-aligned
     above the badge row. Replaces the MEH-643 leaf glyph + wordmark on
     `green-50`, which read as a template when most cards had no photo.
-    **MEH-2833:** plus one `Seed` (≈70×105, rotated −36°, cropped in the
-    end-top corner) in `seedColorFor(producer.id)` — the business keeps "its"
-    colour. The same plate + seed replaces every leaf placeholder for a missing
+    **MEH-2833:** plus one `Seed` (≈70×105, rotated −36°, cropped in a
+    top corner) in `seedColorFor(producer.id)` — the business keeps "its"
+    colour. **MEH-2844:** wherever a control sits in a top corner (the card
+    heart, the recipe page's share/save), the seed takes the opposite
+    (start-top) corner; a seed never sits under or against a control. The same plate + seed replaces every leaf placeholder for a missing
     recipe/product/event image; image-only slots (no name) get the seed alone.
 - **Inputs:** white `surface`, `text` foreground, `border` hairline, 8px
   radius. Dividers use the `border` token.

@@ -223,6 +223,18 @@ describe("RecommendClient", () => {
     expect(burst.getAttribute("data-variant")).toBe("light");
   });
 
+  // MEH-2844 (Sapir 08/11): one success mark — the burst. The ✓ that sat in
+  // the panel under it is gone; heading and text unchanged.
+  it("success shows ONE mark: the burst, no ✓ in the panel", async () => {
+    render(<RecommendClient />);
+    fillValid();
+    fireEvent.submit(screen.getByTestId("recommend-form"));
+    const panel = await screen.findByTestId("recommend-success");
+    expect(panel.querySelectorAll("svg")).toHaveLength(0);
+    expect(screen.getAllByTestId("seed-burst")).toHaveLength(1);
+    expect(screen.getByText("תודה! קיבלנו את ההמלצה. נבדוק ונפנה לבית העסק.")).toBeInTheDocument();
+  });
+
   it("opting in swaps the success copy for the email promise", async () => {
     render(<RecommendClient />);
     fillValid();

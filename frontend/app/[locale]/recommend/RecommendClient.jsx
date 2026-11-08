@@ -33,7 +33,7 @@
 
 import SeedBurst from "@/components/brand/SeedBurst";
 import { useEffect, useState } from "react";
-import { ArrowLeft, CheckCircle } from "@phosphor-icons/react";
+import { ArrowLeft } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import Input from "@/components/ui/Input";
@@ -143,12 +143,11 @@ export default function RecommendClient() {
       <section>
         <div className="max-w-2xl mx-auto px-4 py-16">
           {/* MEH-2833 (seed layer, board 5 v2): the thank-you moment opens
-              with the seeds, light set on cream, above the success panel. */}
+              with the seeds, light set on cream, above the success panel.
+              MEH-2844 (Sapir 08/11): the burst is the one success mark — the
+              ✓ (CheckCircle) under it made two, so it is gone. */}
           <SeedBurst variant="light" className="mb-2" />
           <div className="text-center" data-testid="recommend-success">
-            <div className="mb-4 flex justify-center">
-              <CheckCircle size={56} weight="fill" className="text-primary" aria-hidden="true" />
-            </div>
             <p className="text-fg-muted" role="status">
               {thanked ? t("success_wants_update") : t("success")}
             </p>
