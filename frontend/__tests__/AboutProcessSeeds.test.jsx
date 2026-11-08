@@ -36,7 +36,7 @@ vi.mock("@/components/BusinessCtaLink", () => ({
 import { SEEDS_LIGHT } from "@/lib/brand-seeds";
 
 /**
- * MEH-2833 PR 4 (seed layer, board 3) — each /about/process step is a 40×56
+ * MEH-2833 PR 4 (seed layer, board 3) — each /about/process step is a 40×60
  * seed in logo order (green, terracotta, gold, sage — no sand) with its
  * number on it: cream on the dark seeds, text-ink on gold; 20px bold (WCAG
  * large text). The numeral circle is gone.
@@ -56,6 +56,10 @@ describe("/about/process steps on seeds (MEH-2833)", () => {
       const svg = m.querySelector("svg");
       expect(svg.getAttribute("aria-hidden")).toBe("true");
       expect([svg.getAttribute("width"), svg.getAttribute("height")]).toEqual(["40", "60"]);
+      // the box is the seed's own size (no 4px of seed hanging out of it)
+      expect(m.className).toMatch(/\bw-10 h-\[60px\]/);
+      // no inner highlight under the number (it would drop cream below 3:1)
+      expect(svg.querySelector("ellipse")).toBeNull();
     }
     // The old numeral circle is gone from the steps.
     expect(container.querySelector('[data-testid="process-steps"] .rounded-full.border-accent')).toBeNull();

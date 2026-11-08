@@ -153,19 +153,24 @@ export default function AboutProcessClient() {
                 key={i}
                 className="grid grid-cols-[44px_1fr] md:grid-cols-1 gap-4 items-start"
               >
-                {/* MEH-2833 (seed layer, board 3): each step is a 40×56 seed in
-                    logo order — green, terracotta, gold, sage (sand would vanish
-                    on cream) — with its number on it: cream on the three dark
-                    seeds, text-ink on gold. 20px bold = WCAG large text, so cream
-                    passes at 3.3–3.5:1 on terracotta/sage. The seed is
-                    aria-hidden; the number is real text. */}
+                {/* MEH-2833 (seed layer, board 3): each step is a seed in logo
+                    order — green, terracotta, gold, sage (sand would vanish on
+                    cream) — with its number on it: cream on the three dark
+                    seeds, text-ink on gold. 40px wide → 60 tall (Seed keeps the
+                    logo seed's 2:3; the card's «40×56» is the board's rounding),
+                    and the box is the seed's own size. No inner highlight: the
+                    number sits where the highlight would be, and on it cream
+                    drops below 3:1. 20px bold = WCAG large text, so cream passes
+                    at 3.3–3.5:1 on terracotta/sage. The seed is aria-hidden; the
+                    number is real text. Phone: centred in its 44px column; md+:
+                    start-aligned with the step's text, as the circle was. */}
                 <span
                   data-testid="process-step-seed"
                   data-seed={STEP_SEEDS[i].name}
                   dir="ltr"
-                  className="relative grid place-items-center w-10 h-14 justify-self-center"
+                  className="relative grid place-items-center w-10 h-[60px] justify-self-center md:justify-self-start"
                 >
-                  <Seed color={STEP_SEEDS[i].fill} size={40} highlight className="absolute inset-0" />
+                  <Seed color={STEP_SEEDS[i].fill} size={40} className="absolute inset-0" />
                   <span
                     className={`relative numeric font-english font-bold text-xl pt-1 ${STEP_SEEDS[i].name === "gold" ? "text-text" : "text-background"}`}
                   >
