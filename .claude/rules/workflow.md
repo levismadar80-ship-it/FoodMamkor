@@ -12,9 +12,10 @@ headings and numbers; read it before re-opening a rule.
 **Linear is the channel. Nothing arrives by chat.** At session start and after
 each item, run **both** lanes. Lane A first, then Lane B, each Urgent → High →
 Normal → Low. The card description is the full spec (§4 = the XML prompt);
-authority is ADR-032: **§3.5** RED items stop before merge until the
-adversarial reviewer (the fresh reviewer subagent, rule 5a) runs; **§3.6** exploit-proving tests assert **behaviour**,
-never that the prescribed change was applied.
+authority is ADR-032: **§2.5** RED items stop before merge until the
+adversarial reviewer (the fresh reviewer subagent, rule 5a) runs; **§2.6**
+exploit-proving tests assert **behaviour**, never that the prescribed change
+was applied. (These read §3.5/§3.6 until 08/11; ADR-032 numbers them §2.5/§2.6.)
 
 ### Lane A — `In Progress`: opt-in only
 
@@ -103,7 +104,8 @@ archived).
 
 ## The reviewer is a fresh subagent — the CI reviewer is off (Sapir 08/11, until MEH-569)
 
-The `claude[bot]` CI review (`claude-review.yml`, «Adversarial review») was red
+The `claude[bot]` CI review (`claude-review.yml`, workflow «Claude PR Review»,
+job «Adversarial review (calibration)») was red
 on every PR for a reason it never printed (MEH-2845), so Sapir disabled it from
 the Actions page until the MEH-569 audit. Its job goes to a **fresh reviewer
 subagent** (rule 5a): a missing `claude[bot]` comment blocks nothing and is
@@ -131,10 +133,11 @@ never waited for. (MEH-1844's "the CI reviewer works" — 13/08 — is history.)
    spec-vs-plan gap ("Spec says X, plan proposes Y"); never drop a requirement
    silently.
 5a. **Adversarial review before every merge to staging.** See
-   [testing.md](./testing.md). The reviewer is a **fresh subagent** CC starts
-   with the diff and the card's acceptance_criteria (not the `claude[bot]` CI
-   comment — off since 08/11, until MEH-569); every finding is fixed or answered
-   in the PR before the merge.
+   [testing.md](./testing.md). In addition to `/adversarial-review`, the
+   independent pass is a **fresh reviewer subagent** CC starts with the diff
+   and the card's acceptance_criteria (not the `claude[bot]` CI comment — off
+   since 08/11, until MEH-569); every finding is fixed or answered in the PR
+   before the merge.
 5. **Tests before implementation.** See [testing.md](./testing.md).
 6. **Commit per task with a clear message.** One logical change = one commit;
    the message states *why*.
@@ -431,10 +434,12 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     self-clear it.** Sapir clears it, even after merge is authorized and even on
     CC's own marker, even when it looks stale. Never edit metadata or push a
     no-op to get past a gate; only fix a real cause CC owns. "Auto-merge
-    unarmed" is not a substitute for the marker. A gate whose reviewer half is
-    the adversarial review (rule 5a, ADR-032 §3.5) is cleared by the **fresh
-    reviewer subagent's** pass with its findings fixed — never by waiting for
-    a `claude[bot]` comment, which is off since 08/11 (Sapir, until MEH-569).
+    unarmed" is not a substitute for the marker. Narrowly: the ADR-032 §2.5
+    "RED stops until the adversarial reviewer runs" is satisfied by the
+    **fresh reviewer subagent's** pass (rule 5a) with its findings fixed or
+    answered — not by waiting for a `claude[bot]` comment, which is off since
+    08/11 (Sapir, until MEH-569). That is the only thing the pass satisfies: a
+    `do-not-merge` label or any other marker is still Sapir's to clear.
 
     ### 30b — the marker is a LABEL, not a sentence (MEH-1523)
 
