@@ -617,14 +617,17 @@ test.describe("manual › /about/why-local (MEH-1289)", () => {
     for (let i = 0; i < WHY_H2_KEYS.length; i += 1) {
       await expect(h2s.nth(i)).toHaveText(WHY_HE[WHY_H2_KEYS[i]]);
     }
-    // Magazine prose: no list bullets, no emoji anywhere in the article.
-    await expect(article.locator("li")).toHaveCount(0);
+    // Magazine prose: no emoji anywhere in the article. MEH-2827 (FinalWhyLocal):
+    // the ONE list is «מה שמשתנה בדרך» — its three lines, in the card.
+    await expect(article.locator("li")).toHaveCount(3);
+    await expect(article.locator('[data-testid="why-local-changes"] li')).toHaveCount(3);
     const text = (await article.textContent()) ?? "";
     expect(text).not.toMatch(/\p{Extended_Pictographic}/u);
     expect(await computed(article, "direction")).toBe("rtl");
-    // The reason headings are brand green — the same token the CTA fills with.
+    // The reason headings are brand green — the same token the closing band
+    // fills with (MEH-2827: the CTA moved onto that band, cream on green).
     expect(await computed(h2s.first(), "color")).toBe(
-      await computed(scope(page).getByTestId("why-local-cta"), "background-color"),
+      await computed(page.locator("[data-meets-footer]"), "background-color"),
     );
   });
 
@@ -768,10 +771,14 @@ test.describe("manual › design leftovers (MEH-2487)", () => {
     expect(await numeral.evaluate((el) => getComputedStyle(el).fontStyle)).toBe("italic");
   });
 
-  // /about/process ends on its green CTA band. (/about does NOT: its contact
-  // form follows the green close, so it keeps the footer margin — control below.)
-  test("/about/process: the green close runs straight into the footer — no cream strip", async ({ page }) => {
-    await gotoProcess(page);
+  // /about/process and (MEH-2827) /about/why-local end on a green band. (/about
+  // does NOT: its contact form follows the green close, so it keeps the footer
+  // margin — control below.)
+  for (const [path, go] of [
+    ["/about/process", gotoProcess],
+    ["/about/why-local", gotoWhyLocal],
+  ] as const) test(`${path}: the green close runs straight into the footer — no cream strip`, async ({ page }) => {
+    await go(page);
     const footer = page.locator("footer[data-site-footer]");
     await expect(footer).toHaveCount(1, FIRST_PAINT);
     const band = page.locator("[data-meets-footer]");
@@ -787,10 +794,7 @@ test.describe("manual › design leftovers (MEH-2487)", () => {
 
   // Control for the rule above: pages that do NOT end on a coloured band keep
   // the footer's own top margin (64px was the strip measured on /about/process).
-  for (const [path, go] of [
-    ["/about", gotoAbout],
-    ["/about/why-local", gotoWhyLocal],
-  ] as const) {
+  for (const [path, go] of [["/about", gotoAbout]] as const) {
     test(`${path} keeps the footer's top margin`, async ({ page }) => {
       await go(page);
       const footer = page.locator("footer[data-site-footer]");

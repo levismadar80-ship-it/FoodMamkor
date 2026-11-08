@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { ArrowLeft } from "@phosphor-icons/react";
+import { Link } from "@/i18n/navigation";
 
 import { SkeletonStyles } from "@/components/Skeleton";
 
@@ -110,6 +112,8 @@ export default function MapBottomSheet({
   const t = useTranslations("map.bottom_sheet");
   // MEH-1054: existing key reused for the skeleton's AT label (no new copy).
   const tSkeleton = useTranslations("common.skeleton");
+  // MEH-2827 PR 4: a town with no businesses is a town someone could recommend.
+  const tNav = useTranslations("nav.footer");
   const sheetRef = useRef(null);
   // MEH-2148: the scroller, so a touch can be attributed to the list or to the
   // sheet chrome. `sheetRef` cannot answer that — it contains both.
@@ -284,9 +288,19 @@ export default function MapBottomSheet({
           // MEH-2639: a town with no businesses is not an empty result. The
           // list below is the full set, nearest-first from this town's
           // centroid, so the row says what happened and what follows.
-          <p className="text-sm font-medium text-accent" data-testid="sheet-city-zero">
-            {t("city_zero", { city: zeroCity })}
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-x-3 w-full">
+            <p className="text-sm font-medium text-accent" data-testid="sheet-city-zero">
+              {t("city_zero", { city: zeroCity })}
+            </p>
+            <Link
+              href={`/recommend?city=${encodeURIComponent(zeroCity)}`}
+              data-testid="recommend-link-city-zero"
+              className="-my-2.5 shrink-0 inline-flex items-center gap-1 min-h-touch text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
+              {tNav("recommend")}
+              <ArrowLeft size={15} className="ltr:rotate-180" aria-hidden="true" />
+            </Link>
+          </div>
         ) : count === 0 && filtered && onResetFilters ? (
           // MEH-2425: zero BECAUSE of filters is not an empty area. "אין בתי
           // עסק מקומיים באזור" under five active filters read as "nothing
