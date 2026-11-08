@@ -62,7 +62,7 @@ export default function RescueHomeModule({ city = "" }) {
         <Link
           href="/rescue"
           data-testid="rescue-home-all"
-          className="font-body-sm text-sm text-primary font-semibold hover:underline shrink-0"
+          className="font-body-sm text-sm text-primary font-semibold underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current shrink-0"
         >
           {total > 1 ? t("home.all_count", { count: total }) : t("home.all")}
         </Link>

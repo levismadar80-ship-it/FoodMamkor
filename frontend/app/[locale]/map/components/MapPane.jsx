@@ -338,7 +338,7 @@ export default function MapPane({
                 );
               })}
               {activeCategoryNames !== null && (
-                <button type="button" onClick={() => setActiveCategoryNames(null)} className="w-full text-sm text-primary hover:underline mt-1 pt-1 border-t border-border">{t("map.pane.show_all")}</button>
+                <button type="button" onClick={() => setActiveCategoryNames(null)} className="w-full text-sm text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current mt-1 pt-1 border-t border-border">{t("map.pane.show_all")}</button>
               )}
             </div>
           </div>

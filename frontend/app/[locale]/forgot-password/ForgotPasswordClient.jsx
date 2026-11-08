@@ -54,7 +54,7 @@ export default function ForgotPasswordClient() {
             {t("auth.passwordRecovery.forgot.success_contact_prefix")}{" "}
             <a
               href={`mailto:${CONTACT_EMAIL}`}
-              className="text-primary hover:underline break-all"
+              className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current break-all"
               dir="ltr"
             >
               {CONTACT_EMAIL}
@@ -100,7 +100,7 @@ export default function ForgotPasswordClient() {
             <Link
               href="/login"
               data-testid="forgot-back-to-login"
-              className="text-primary hover:underline"
+              className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current"
             >
               {t("auth.passwordRecovery.forgot.back_to_login")}
             </Link>
