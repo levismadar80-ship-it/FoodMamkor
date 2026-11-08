@@ -564,6 +564,30 @@ describe("ChipScrollRow — re-pin to inline-start after overflow appears (MEH-2
     expect(getScroller(container).scrollTo).toHaveBeenCalledWith(PIN_START);
   });
 
+  // The deferred (rAF) pin is the one that lands AFTER WebKit's post-layout
+  // re-snap — the synchronous pin alone loses to it on iOS. Capture the frame
+  // instead of running it, so deleting the rAF pin turns this red even though
+  // the synchronous pin still fires.
+  it("the deferred pin runs in the next animation frame, after the synchronous one", () => {
+    const frames = [];
+    rafSpy.mockImplementation((cb) => {
+      frames.push(cb);
+      return frames.length;
+    });
+    const { container } = renderRow({ activeKey: "all" });
+    const scroller = getScroller(container);
+    frames.length = 0;
+    Element.prototype.scrollTo.mockClear();
+
+    setScrollGeometry(container, { scrollWidth: 1000, clientWidth: 500, scrollLeft: -500 });
+    expect(scroller.scrollTo).toHaveBeenCalledTimes(1); // synchronous pin
+    expect(frames).toHaveLength(1); // deferred pin scheduled, not yet run
+
+    frames[0](0);
+    expect(scroller.scrollTo).toHaveBeenCalledTimes(2);
+    expect(scroller.scrollTo).toHaveBeenLastCalledWith(PIN_START);
+  });
+
   it("user touched the row first → never yanked back to the start", () => {
     const { container } = renderRow({ activeKey: "all" });
     fireEvent.pointerDown(getScroller(container));
