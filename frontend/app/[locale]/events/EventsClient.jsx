@@ -492,7 +492,7 @@ function EmptyState({ tab, t }) {
         <Link
           href="/producers"
           data-testid="events-browse-producers"
-          className="min-h-touch inline-flex items-center text-sm font-semibold text-primary hover:underline"
+          className="min-h-touch inline-flex items-center text-sm font-semibold text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current"
         >
           {t("empty_browse_producers")}
         </Link>
