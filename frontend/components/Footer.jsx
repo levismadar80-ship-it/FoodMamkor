@@ -15,6 +15,7 @@ import { BRAND_NAME } from "@/lib/constants";
 import { useExperiencesNavGate } from "@/lib/use-experiences-nav-gate";
 import { useEventsNavGate } from "@/lib/use-events-nav-gate";
 import { useAuth } from "@/lib/auth-context";
+import ShareSiteActions from "@/components/ShareSiteActions";
 
 /**
  * Footer (MEH-37 redesign) — brings the implementation in line with the
@@ -118,7 +119,9 @@ export default function Footer() {
     // MEH-1289: reader-facing "why local" editorial page.
     { href: "/about/why-local", label: t("nav.footer.why_local") },
     // MEH-1160: reader-facing share page — the site-level viral loop.
-    { href: "/share", label: t("share_page.footer_link") },
+    // MEH-2827 PR 5: /share became the «ספרו עלינו» section of /recommend
+    // (/share 308s there too); the label is unchanged.
+    { href: "/recommend#share", label: t("share_page.footer_link") },
   ];
   const businessLinks = [
     // MEH-721/995: the canonical recruitment door; the wizard stays one tap
@@ -322,6 +325,15 @@ export default function Footer() {
               >
                 {message}
               </p>
+            )}
+            {/* MEH-2827 PR 5: right after joining is when a reader is most
+                likely to pass the site on. One «שתפו» (the phone's own share
+                sheet), on-dark colours; shares the site URL. */}
+            {status === "success" && (
+              <div className="mt-4 rounded-xl border border-white/15 bg-white/5 p-4" data-testid="newsletter-share">
+                <p className="text-sm font-semibold text-background">{t("share_page.h1")}</p>
+                <ShareSiteActions layout="compact" tone="dark" className="mt-3" />
+              </div>
             )}
           </div>
         </div>

@@ -1,38 +1,19 @@
-import { getTranslations } from "next-intl/server";
-import ShareClient from "./ShareClient";
-import { BRAND_NAME } from "@/lib/constants";
-import { buildAlternates, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
+import { permanentRedirect } from "next/navigation";
+import { getPathname } from "@/i18n/navigation";
 
 /**
- * /share — "ספרו עלינו" server wrapper (MEH-1160).
+ * /share — permanent redirect to /recommend#share (MEH-2827 PR 5).
  *
- * Purpose:  generateMetadata (seo.share.*) + renders ShareClient.
- * Does NOT: hold page copy or share logic — see ShareClient.jsx.
- * Related:  frontend/app/[locale]/about/page.js (metadata pattern source)
- * History:  MEH-1160 (creation)
+ * Purpose:  keeps every old /share link working after «ספרו עלינו» moved onto
+ *           /recommend — one «help us grow» page instead of two. 308, so
+ *           search engines and saved links follow it.
+ * Does NOT: render anything. The section itself is ShareClient.jsx, rendered
+ *           by RecommendClient.jsx.
+ * History:  MEH-1160 (creation, the /share page) · MEH-2827 PR 5 (redirect)
  */
-// REUSES: frontend/app/[locale]/about/page.js:9-30 — per-page generateMetadata
-// with title.absolute + og url/siteName/locale + buildAlternates.
-export async function generateMetadata({ params }) {
+export default async function SharePage({ params }) {
   const { locale } = await params;
-  const t = await getTranslations({ locale, namespace: "seo.share" });
-
-  return {
-    title: { absolute: t("title") },
-    description: t("description"),
-    openGraph: {
-      title: t("og_title"),
-      description: t("og_description"),
-      type: "website",
-      url: urlForLocalePath("/share", locale),
-      siteName: BRAND_NAME,
-      locale: OG_LOCALE[locale],
-      images: ["/og-image.png"],
-    },
-    alternates: buildAlternates("/share", locale),
-  };
-}
-
-export default function SharePage() {
-  return <ShareClient />;
+  // getPathname keeps the locale prefix rule in one place («as-needed»: no
+  // prefix for he, /en for en).
+  permanentRedirect(`${getPathname({ href: "/recommend", locale })}#share`);
 }
