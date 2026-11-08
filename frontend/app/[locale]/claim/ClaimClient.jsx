@@ -241,7 +241,7 @@ export default function ClaimClient({ tokenFromPath = null }) {
           <p className="text-sm text-fg-muted">{t("logged_out.email_note")}</p>
           <p className="text-sm text-fg-muted">
             {t("logged_out.have_account")}{" "}
-            <Link href={loginHref} data-testid="claim-login" className="text-primary font-medium hover:underline">
+            <Link href={loginHref} data-testid="claim-login" className="text-primary font-medium underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current">
               {t("logged_out.login")}
             </Link>
           </p>
@@ -284,7 +284,7 @@ export default function ClaimClient({ tokenFromPath = null }) {
               type="button"
               onClick={logout}
               data-testid="claim-switch-account"
-              className="text-primary font-medium hover:underline"
+              className="text-primary font-medium underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current"
             >
               {t("eligible.switch_account")}
             </button>
@@ -300,8 +300,8 @@ export default function ClaimClient({ tokenFromPath = null }) {
             />
             <span className="leading-relaxed text-fg-muted">
               {tReg("terms.intro")}{" "}
-              <Link href="/terms" target="_blank" className="text-primary hover:underline">{tReg("terms.tos_link")}</Link>{" "}
-              {tReg("terms.and")}<Link href="/privacy" target="_blank" className="text-primary hover:underline">{tReg("terms.privacy_link")}</Link>
+              <Link href="/terms" target="_blank" className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current">{tReg("terms.tos_link")}</Link>{" "}
+              {tReg("terms.and")}<Link href="/privacy" target="_blank" className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current">{tReg("terms.privacy_link")}</Link>
             </span>
           </label>
 

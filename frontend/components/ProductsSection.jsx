@@ -570,7 +570,7 @@ export default function ProductsSection({
           <button
             type="button"
             onClick={() => setReloadKey((k) => k + 1)}
-            className="text-sm text-primary font-medium hover:underline"
+            className="text-sm text-primary font-medium underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current"
           >
             {t("load_retry_cta")}
           </button>
@@ -1211,7 +1211,7 @@ function UploadZone({ imageUrl, uploading, onUpload, onRemove, tForm }) {
             display:none removes it and the wrapping label is not natively
             focusable (WCAG 2.1.1). Ring on focus-within is the keyboard
             affordance; this label has no border, so the ring alone carries it. */}
-        <label className="cursor-pointer text-sm text-primary hover:underline rounded focus-within:ring-2 focus-within:ring-primary/30">
+        <label className="cursor-pointer text-sm text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current rounded focus-within:ring-2 focus-within:ring-primary/30">
           {uploading ? tForm("image_uploading") : tForm("image_replace")}
           <input
             type="file"
@@ -1221,7 +1221,7 @@ function UploadZone({ imageUrl, uploading, onUpload, onRemove, tForm }) {
             disabled={uploading}
           />
         </label>
-        <button type="button" onClick={onRemove} className="text-sm text-error hover:underline">
+        <button type="button" onClick={onRemove} className="text-sm text-error underline decoration-[1.5px] underline-offset-[5px] decoration-error/35 hover:decoration-current">
           {tForm("image_remove")}
         </button>
       </div>
