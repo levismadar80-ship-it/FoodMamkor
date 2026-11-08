@@ -156,6 +156,13 @@ describe("RecommendClient prefill from the query", () => {
     expect(cityField().value).toHaveLength(80);
   });
 
+  it("a query that is nothing but markup reduces to an empty field, not «< >»", async () => {
+    window.history.replaceState({}, "", `/recommend?name=${encodeURIComponent("<>\u0001")}&city=${encodeURIComponent("חיפה")}`);
+    render(<RecommendClient />);
+    await waitFor(() => expect(cityField().value).toBe("חיפה"));
+    expect(nameField().value).toBe("");
+  });
+
   it("no query → empty fields", () => {
     render(<RecommendClient />);
     expect(nameField().value).toBe("");
