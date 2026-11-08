@@ -486,3 +486,21 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     from CC's own local production build, and the message says so. This adds to
     rule 23 (375/1440 in `qa-artifacts/`) and replaces none of it; a per-batch
     instruction to merge UI does not carry over to the next PR.
+
+---
+
+## Launch tier (/join tool list) — MEH-2830
+
+`frontend/lib/business-features.js` feeds the tool list on /join (MEH-2791).
+Its test catches a tool that was **removed**, not one that was **added and
+never listed** — so every PR that adds or changes something a **business** can
+use states its tier in the PR body:
+
+- **א׳ new tool** → add an entry to `frontend/lib/business-features.js`, with
+  the he/en copy from the issue's approved table. No tile unless the issue says
+  so (max 4 tiles per group — Sapir decides).
+- **ב׳ change to an existing tool** → update that entry's copy / `codeRef`.
+- **ג׳ internal** (bug, design, perf) → no registry change; CHANGELOG only.
+
+If the issue states no tier and the PR touches a business-facing tool →
+**STOP and ask.** No registry copy without word-by-word approval in the issue.
