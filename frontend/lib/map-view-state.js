@@ -7,6 +7,8 @@
  *           and a detail page loses the place when the routing page resets.
  * Touches:  sessionStorage["map_view_state"] only. Read/write helpers are pure
  *           over an injectable storage so they unit-test without a browser.
+ * MEH-2049: the same record also holds the selected business (writeMapSelection
+ *           / readMapSelection), so the card reopens on the way back.
  * Does NOT: touch filters, URL params, or the default camera. A fresh visit
  *           (nothing saved, or saved more than 30 minutes ago) reads null and
  *           the map falls through to its default exactly as before.
@@ -67,15 +69,78 @@ export function readMapViewState({ storage, now = Date.now() } = {}) {
   return { lat, lng, zoom };
 }
 
-/** @returns {boolean} whether the write happened. */
+// MEH-2049: the record also carries the selected business (+ which of its
+// points), so back-navigation reopens the same card. Read the raw record to
+// carry those fields across camera writes — but ONLY while it is fresh: a
+// stale record is treated as absent, so a later write can never revive an
+// expired selection (or camera) with a new timestamp.
+function readRaw(store, now) {
+  try {
+    const record = JSON.parse(store.getItem(MAP_VIEW_STATE_KEY) || "null") || null;
+    if (!record || !isFiniteNumber(record.ts)) return null;
+    const age = now - record.ts;
+    return age < 0 || age > MAP_VIEW_STATE_TTL_MS ? null : record;
+  } catch {
+    return null;
+  }
+}
+
+function selectionOf(record) {
+  if (!record || record.selectedId == null || record.selectedId === "") return {};
+  return { selectedId: record.selectedId, selectedLocationId: record.selectedLocationId ?? null };
+}
+
+/** @returns {boolean} whether the write happened. Keeps a stored selection. */
 export function writeMapViewState({ lat, lng, zoom }, { storage, now = Date.now() } = {}) {
   const store = resolveStorage(storage);
   if (!store) return false;
   if (!allFinite([lat, lng, zoom])) return false;
   try {
-    store.setItem(MAP_VIEW_STATE_KEY, JSON.stringify({ lat, lng, zoom, ts: now }));
+    const keep = selectionOf(readRaw(store, now));
+    store.setItem(MAP_VIEW_STATE_KEY, JSON.stringify({ lat, lng, zoom, ts: now, ...keep }));
     return true;
   } catch {
     return false;
   }
+}
+
+/**
+ * MEH-2049: remember (or, with a null id, forget) the selected business in the
+ * same record, under the same TTL. A selection needs a camera to come back
+ * to: the saved one, else `camera` (the map on screen right now — a pick that
+ * does not move the map writes no camera of its own). With neither, nothing
+ * is written.
+ * @returns {boolean} whether the write happened.
+ */
+export function writeMapSelection(selectedId, selectedLocationId = null, { storage, now = Date.now(), camera = null } = {}) {
+  const store = resolveStorage(storage);
+  if (!store) return false;
+  let record = readRaw(store, now);
+  if (!record || !allFinite([record.lat, record.lng, record.zoom])) {
+    if (!camera || !allFinite([camera.lat, camera.lng, camera.zoom])) return false;
+    record = { lat: camera.lat, lng: camera.lng, zoom: camera.zoom };
+  }
+  const { selectedId: _a, selectedLocationId: _b, ...saved } = record;
+  const next = selectedId == null || selectedId === ""
+    ? { ...saved, ts: now }
+    : { ...saved, ts: now, selectedId, selectedLocationId: selectedLocationId ?? null };
+  try {
+    store.setItem(MAP_VIEW_STATE_KEY, JSON.stringify(next));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * @returns {{producerId:(string|number), locationId:(string|number|null)}|null}
+ * the stored selection when the record is valid and fresh; null otherwise.
+ */
+export function readMapSelection({ storage, now = Date.now() } = {}) {
+  const store = resolveStorage(storage);
+  if (!store) return null;
+  if (!readMapViewState({ storage: store, now })) return null;
+  const sel = selectionOf(readRaw(store, now));
+  if (sel.selectedId == null) return null;
+  return { producerId: sel.selectedId, locationId: sel.selectedLocationId };
 }
