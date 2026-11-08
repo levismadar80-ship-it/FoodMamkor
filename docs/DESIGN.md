@@ -629,7 +629,10 @@ reads as a rendering bug (the ghost-strip class). Rules:
   When that green band is the **last** thing on the page, mark it
   `data-meets-footer` so it runs straight into the footer without the footer's
   64px cream top margin (MEH-2487, `/about/process`). `/about` is not marked:
-  its contact form follows the green close.
+  its contact form follows the green close. A page that **ends on a business
+  call to action** uses the shared `components/ClosingCtaBand.jsx` (MEH-2824:
+  `/join`, home, `/about/process`) — it carries all of the above, plus the
+  inverted mark and the auth-aware button. Don't hand-build another one.
 - **Do** clamp a card's preview text with `line-clamp-N`, and show it at a
   breakpoint with `sm:[display:-webkit-box]`, never `sm:block`: line-clamp only
   works on `-webkit-box`, so `sm:block` silently lets the text wrap without
