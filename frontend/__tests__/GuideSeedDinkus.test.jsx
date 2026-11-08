@@ -1,6 +1,6 @@
 /**
  * MEH-2833 PR 3 (seed layer, board 2) — in the business guides, a section
- * break between two titled parts is a small centred bloom (the dinkus), not a
+ * break between two parts is a small centred bloom (the dinkus), not a
  * hairline. Phase 0: the guides' `hr` blocks are the only true prose section
  * breaks on the long-form pages (/about's and /why-local's hairlines belong to
  * chapter and numeral labels, not breaks).
@@ -35,6 +35,8 @@ describe("guide section break = seed dinkus", () => {
     for (const m of marks) {
       expect(m.getAttribute("aria-hidden")).toBe("true");
       expect(m.className).toMatch(/\bflex justify-center py-7\b/);
+      // the next block's top margin is evened out, so the mark sits midway
+      expect(m.className).toContain("[&+*]:mt-4");
       const svg = m.querySelector("svg[data-seed-mark]");
       expect(svg.getAttribute("width")).toBe("28");
       expect([...svg.querySelectorAll("[data-seed]")].map((p) => p.getAttribute("fill"))).toEqual(SEED_FILLS);
