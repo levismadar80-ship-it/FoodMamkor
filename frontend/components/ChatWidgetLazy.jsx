@@ -48,6 +48,12 @@ export default function ChatWidgetLazy() {
   // chat chunk; ChatWidget internals and its positioning on every other page
   // are untouched.
   if (pathname === "/map" || pathname.startsWith("/map/")) return null;
+  // MEH-2835: this gate STAYS for now. Replacing it with data-chat-hide on the
+  // sticky bar alone would bring back the MEH-1168 overlap: while the inline
+  // ContactCard is on screen the bar is hidden, so the launcher would sit over
+  // the card's CTA/channels at 375. A second mark on the inline card is needed
+  // first (outside MEH-2835's file list — open for Sapir). The sticky bar
+  // already carries data-chat-hide, ready for that switch.
   if (isProducerDetail(pathname)) return null;
   // MEH-1203: /favorites is the third page where the FAB does damage — at the
   // canonical 2-col grid the launcher's bottom-END corner (insetInlineEnd,
