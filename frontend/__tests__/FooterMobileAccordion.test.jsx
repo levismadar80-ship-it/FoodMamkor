@@ -100,7 +100,7 @@ describe("Footer link groups collapse on mobile (MEH-2397)", () => {
       screen.getByRole("navigation", { name: "nav.footer.nav_aria" }).querySelectorAll("a[href]"),
     ).map((a) => a.getAttribute("href"));
     expect(navLinks.sort()).toEqual(
-      ["/", "/about", "/about/for-businesses", "/about/why-local", "/about/process", "/join", "/map", "/producers", "/share"].sort(),
+      ["/", "/about", "/about/for-businesses", "/about/why-local", "/about/process", "/join", "/map", "/producers", "/recommend#share"].sort(),
     );
   });
 });
