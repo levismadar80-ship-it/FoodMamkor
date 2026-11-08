@@ -200,7 +200,7 @@ class TestApprovedBusinessOnly:
         assert client.get(f"/group-buys/{gb.id}").status_code == 404
         resp = client.get(f"/group-buys/{gb.id}", headers=auth_header(stranger))
         assert resp.status_code == 404
-        assert resp.json()["detail"] == "קבוצת הרכש לא נמצאה"
+        assert resp.json()["detail"] == "קבוצת הרכישה לא נמצאה"
 
     def test_detail_stays_visible_to_its_owner_and_to_admin(self, client, db):
         producer, owner = _producer_user(db, email="gb-own@test.com", status="pending")
@@ -1274,7 +1274,7 @@ class TestExpectedStatus:
                 client, gb, {"status": "cancelled", "expected_status": "open"}, owner
             )
         assert resp.status_code == 409, resp.json()
-        assert resp.json()["detail"] == "אי אפשר לשנות את קבוצת הרכש למצב הזה"
+        assert resp.json()["detail"] == "אי אפשר לשנות את קבוצת הרכישה למצב הזה"
         assert self._status_in_db(db, gb) == "funded"
         send.assert_not_called()
 

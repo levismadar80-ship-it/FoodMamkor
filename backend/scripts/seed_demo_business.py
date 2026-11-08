@@ -326,7 +326,7 @@ DEMO_MODERATION_EXPERIENCES = [
 # min_participants sits BELOW the seeded commit count so the funded path is
 # reachable on the demo rather than permanently short of its threshold.
 DEMO_GROUP_BUY = {
-    "title": "רכישה קבוצתית: שק קמח כוסמין מלא",
+    "title": "קבוצת רכישה: שק קמח כוסמין מלא",
     "description": (
         "שק קמח כוסמין מלא מטחינת אבן, ישירות מהטחנה. מתחלקות בשק ומוזילות "
         "את המחיר לקילו. איסוף מהמאפייה בזכרון יעקב."
