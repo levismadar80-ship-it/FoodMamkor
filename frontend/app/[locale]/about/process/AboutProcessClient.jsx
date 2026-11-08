@@ -29,10 +29,9 @@ import {
   Note,
   HandHeart,
   Cursor,
-  ArrowLeft,
 } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
-import BusinessCtaLink from "@/components/BusinessCtaLink";
+import ClosingCtaBand from "@/components/ClosingCtaBand";
 
 // Illustrative tooltip date — this page has NO producer object, so the badge
 // is editorial chrome (refchip in the S11 design). Reuses the live tier-1
@@ -382,35 +381,20 @@ export default function AboutProcessClient() {
       </section>
 
       {/* ======== 07 — CTA → register ======== */}
-      {/* MEH-2439: full brand green (was mint green-50), one column, cream button. */}
-      <section id="join" data-testid="process-cta" data-meets-footer className="bg-primary text-background py-12 md:py-20 scroll-mt-24">
-        <div className="max-w-5xl mx-auto px-4 md:px-12">
-          <div className="grid grid-cols-1 gap-8 items-start">
-            <div>
-              <h2 className="font-headline-lg font-black text-background text-[clamp(28px,6vw,44px)] leading-tight max-w-[22ch] text-balance">
-                {t("cta.h2")}
-              </h2>
-              <p className="mt-3.5 font-body-md text-base leading-relaxed text-background/90 max-w-[46ch]">
-                {t("cta.intro")}
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
-              {/* MEH-1489: auth-state-aware CTA (producer -> dashboard, admin -> hidden). */}
-              <BusinessCtaLink
-                href="/register/producer"
-                className="inline-flex items-center gap-2 min-h-[52px] px-7 py-3.5 bg-background text-primary rounded-lg font-body-md font-semibold text-base hover:bg-background-alt transition-colors duration-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-on-dark focus-visible:ring-offset-2 focus-visible:ring-offset-primary max-w-full"
-              >
-                {t("cta.submit")}
-                <ArrowLeft size={19} aria-hidden />
-              </BusinessCtaLink>
-              {/* MEH-2634: the «ממשיכים לטופס ההרשמה» caption is gone. It sat
-                  beside the button looking like a second, unclickable action
-                  while only restating where the button already goes — which
-                  the relabelled button now says itself. */}
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* MEH-2439: full brand green (was mint green-50), one column, cream button.
+          MEH-2824: now the shared ClosingCtaBand — same band as /join and home
+          (centred, inverted mark; the ArrowLeft beside the button is gone with
+          the old layout). Copy verbatim; `id="join"` + scroll-mt-24
+          keep the in-page anchor landing below the sticky header. */}
+      <ClosingCtaBand
+        id="join"
+        data-testid="process-cta"
+        className="scroll-mt-24"
+        title={t("cta.h2")}
+        body={t("cta.intro")}
+        ctaHref="/register/producer"
+        ctaLabel={t("cta.submit")}
+      />
 
       {/* Subtle film grain — house signature for the cream editorial surfaces
           (mirrors /about). Inline feTurbulence data-URI, pointer-events-none,

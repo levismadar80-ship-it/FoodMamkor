@@ -1,8 +1,8 @@
-import Image from "next/image";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { ArrowLeft, CaretDown, ListChecks, PencilSimple } from "@phosphor-icons/react/ssr";
 import BusinessCtaLink from "@/components/BusinessCtaLink";
+import ClosingCtaBand from "@/components/ClosingCtaBand";
 import EditorialPhoto from "@/components/EditorialPhoto";
 import JoinFeatures from "@/components/join/JoinFeatures";
 import JoinStickyBar from "@/components/join/JoinStickyBar";
@@ -35,7 +35,6 @@ import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
  */
 
 const MEDIA_DIR = "/images/join";
-const LOGO_MARK_PX = 56;
 const VIDEO_WIDTH = 1080;
 const VIDEO_HEIGHT = 1350;
 
@@ -266,50 +265,17 @@ export default async function JoinPage({ params }) {
       </div>
 
       {/* ── Closing band: full brand green, runs into the footer (MEH-2487 marker) ── */}
-      <section
+      <ClosingCtaBand
         data-testid="join-closing"
         data-join-closing
-        data-meets-footer
-        className="bg-primary text-background py-14 md:py-20"
-      >
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
-          <Image
-            src="/logo-inverted.svg"
-            alt=""
-            aria-hidden="true"
-            width={LOGO_MARK_PX}
-            height={LOGO_MARK_PX}
-            unoptimized
-            className="mx-auto mb-5"
-          />
-          <h2 className="font-headline-lg font-black text-background text-[clamp(28px,6vw,44px)] leading-tight text-balance">
-            {t("closing.heading")}
-          </h2>
-          <p className="mt-3.5 text-base leading-relaxed text-background/90 max-w-[46ch] mx-auto">
-            {t("closing.line")}
-          </p>
-          <div className="mt-7">
-            {/* Same target as the hero CTA. MEH-1489: auth-state-aware. */}
-            <BusinessCtaLink
-              href="/register/producer"
-              data-testid="join-closing-cta"
-              className="inline-flex items-center gap-2 min-h-[52px] px-8 py-3.5 bg-background text-primary rounded-lg font-semibold text-base hover:bg-background-alt transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-on-dark focus-visible:ring-offset-2 focus-visible:ring-offset-primary"
-            >
-              {t("cta")}
-            </BusinessCtaLink>
-          </div>
-          <p className="mt-3 text-sm text-background/90">{t("meta_line")}</p>
-          <p className="mt-4 text-sm text-background">
-            {t("closing.question")}{" "}
-            <Link
-              href="/contact"
-              className="underline underline-offset-2 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-on-dark"
-            >
-              {t("draft.cta")}
-            </Link>
-          </p>
-        </div>
-      </section>
+        title={t("closing.heading")}
+        body={t("closing.line")}
+        ctaHref="/register/producer"
+        ctaLabel={t("cta")}
+        ctaTestId="join-closing-cta"
+        meta={t("meta_line")}
+        contact
+      />
 
       <JoinStickyBar />
     </div>

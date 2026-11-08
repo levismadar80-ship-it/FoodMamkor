@@ -15,6 +15,9 @@ vi.mock("next-intl/server", () => {
   t.raw = () => [];
   return { setRequestLocale: () => {}, getTranslations: async () => t };
 });
+// MEH-2824: /join's closing band is the shared ClosingCtaBand, which reads its
+// contact pair with useTranslations. Same key-echo stub.
+vi.mock("next-intl", () => ({ useTranslations: () => (key) => key }));
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ children, href, ...props }) => <a href={href} {...props}>{children}</a>,
 }));
