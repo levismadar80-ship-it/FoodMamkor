@@ -53,7 +53,7 @@ function ContactLine() {
 /**
  * @param {object} props
  * @param {string} props.title
- * @param {string | string[]} props.body  one line, or several (one <p> each)
+ * @param {string | string[]} [props.body]  one line, several (one <p> each), or none
  * @param {string} props.ctaHref
  * @param {string} props.ctaLabel  the guest/consumer label
  * @param {string} [props.meta]  small line under the button
@@ -73,12 +73,14 @@ export default function ClosingCtaBand({
   className = "",
   ...rest
 }) {
-  const lines = Array.isArray(body) ? body : [body];
+  const lines = [body].flat().filter(Boolean);
   return (
+    // `rest` first: a caller can add attributes but cannot drop the footer
+    // marker or the band's own classes.
     <section
+      {...rest}
       data-meets-footer
       className={`bg-primary text-background py-14 md:py-20 ${className}`.trim()}
-      {...rest}
     >
       <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
         <Image
@@ -94,7 +96,8 @@ export default function ClosingCtaBand({
           {title}
         </h2>
         {lines.map((line, i) => (
-          <p key={line} className={`${i === 0 ? "mt-3.5" : "mt-1.5"} ${BODY_CLASS}`}>
+          // Static list, may repeat a line — the index is the stable key.
+          <p key={i} className={`${i === 0 ? "mt-3.5" : "mt-1.5"} ${BODY_CLASS}`}>
             {line}
           </p>
         ))}

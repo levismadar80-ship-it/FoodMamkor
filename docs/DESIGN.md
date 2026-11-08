@@ -631,7 +631,7 @@ reads as a rendering bug (the ghost-strip class). Rules:
   64px cream top margin (MEH-2487, `/about/process`). `/about` is not marked:
   its contact form follows the green close. A page that **ends on a business
   call to action** uses the shared `components/ClosingCtaBand.jsx` (MEH-2824:
-  `/join`, home, `/about/process`) — it carries all of the above, plus the
+  `/join`, home, `/about/process`, `/about/for-businesses`) — it carries all of the above, plus the
   inverted mark and the auth-aware button. Don't hand-build another one.
 - **Do** clamp a card's preview text with `line-clamp-N`, and show it at a
   breakpoint with `sm:[display:-webkit-box]`, never `sm:block`: line-clamp only

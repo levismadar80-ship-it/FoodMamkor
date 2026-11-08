@@ -9,6 +9,7 @@ import {
 } from "@phosphor-icons/react/ssr";
 import { Link } from "@/i18n/navigation";
 import BusinessCtaLink from "@/components/BusinessCtaLink";
+import ClosingCtaBand from "@/components/ClosingCtaBand";
 import EditorialPhoto from "@/components/EditorialPhoto";
 import { BRAND_NAME } from "@/lib/constants";
 import { SITE_URL, serializeJsonLd } from "@/lib/seo";
@@ -135,8 +136,11 @@ export default async function FaqForBusinessesPage({ params }) {
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations({ locale, namespace: "about_business" });
+  const tHome = await getTranslations({ locale, namespace: "home" });
+  const tJoin = await getTranslations({ locale, namespace: "join" });
   const jsonLd = buildFaqJsonLd(t);
   return (
+    <>
     <section className="min-h-screen bg-background text-text">
       <script
         type="application/ld+json"
@@ -306,15 +310,21 @@ export default async function FaqForBusinessesPage({ params }) {
               <bdi>{CONTACT_EMAIL}</bdi>
             </a>
           </p>
-          {/* MEH-1489: auth-state-aware CTA (producer -> dashboard, admin -> hidden). */}
-          <BusinessCtaLink
-            href="/register/producer"
-            className="inline-flex items-center gap-2 font-medium transition hover:opacity-90 bg-primary text-white rounded-sm px-6 py-3 focus-ring"
-          >
-            {t("cta")}
-          </BusinessCtaLink>
+          {/* MEH-2824: the green «הוסיפו את העסק שלכם» button that sat here is
+              gone — the closing band below carries the page's one join button
+              (Sapir 08/11, decision 3). The questions line stays above it. */}
         </footer>
       </div>
     </section>
+    {/* MEH-2824: the shared full-green closing band, last before the site
+        footer. Title reuses the approved home heading KEY (not a copy), button
+        «מצטרפים» like /join, no body (Sapir 08/11, decision 3). */}
+    <ClosingCtaBand
+      data-testid="for-businesses-closing"
+      title={tHome("cta.heading")}
+      ctaHref="/register/producer"
+      ctaLabel={tJoin("cta")}
+    />
+    </>
   );
 }

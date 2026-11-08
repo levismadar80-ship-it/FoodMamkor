@@ -5,6 +5,7 @@ import { NextIntlClientProvider } from "next-intl";
 import he from "../messages/he.json";
 import ClosingCtaBand from "@/components/ClosingCtaBand";
 import { HomeCTA } from "@/app/[locale]/home/HomeStaticBlocks";
+import { rootClientMessages } from "@/lib/client-messages";
 
 /**
  * MEH-2824 — the shared full-green closing band (extracted from /join's,
@@ -123,6 +124,30 @@ describe("ClosingCtaBand — the one look", () => {
     expect(band.id).toBe("join");
   });
 
+  it("two identical body lines both render (no key collision)", () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    renderBand({ body: ["שורה", "שורה"] });
+    expect(screen.getByTestId("band").querySelectorAll("p")).toHaveLength(2);
+    expect(spy.mock.calls.flat().join(" ")).not.toMatch(/same key/);
+    spy.mockRestore();
+  });
+
+  it("contact line renders under the ROOT client message set (the join namespace ships there)", () => {
+    render(
+      <NextIntlClientProvider locale="he" messages={rootClientMessages(he)}>
+        <ClosingCtaBand title="t" body="b" ctaHref="/register/producer" ctaLabel={J.cta} contact data-testid="band" />
+      </NextIntlClientProvider>,
+    );
+    const band = screen.getByTestId("band");
+    expect(band.textContent).toContain(J.closing.question);
+    expect(screen.getByRole("link", { name: J.draft.cta })).toBeTruthy();
+  });
+
+  it("a caller cannot drop the footer marker", () => {
+    renderBand({ "data-meets-footer": undefined });
+    expect(screen.getByTestId("band").hasAttribute("data-meets-footer")).toBe(true);
+  });
+
   it("ctaTestId lands on the guest button only", () => {
     renderBand({ ctaTestId: "band-cta" });
     expect(screen.getByTestId("band-cta").textContent).toBe(J.cta);
@@ -146,12 +171,19 @@ describe("home: the closing business section is the shared band", () => {
     expect(screen.getByRole("heading", { level: 2 }).textContent).toBe("יש לכם עסק? בואו אלינו");
   });
 
-  it("keeps its three body lines and its own button label, verbatim", () => {
+  it("keeps its three body lines verbatim", () => {
     renderHomeCta();
     const band = screen.getByTestId("home-cta");
     for (const line of [he.home.cta.body_l1, he.home.cta.body_l2, he.home.cta.body_l3]) {
       expect(band.textContent).toContain(line);
     }
-    expect(screen.getByRole("link", { name: he.home.cta.button }).getAttribute("href")).toMatch(/\/register\/producer$/);
+  });
+
+  it("one band, one button: «מצטרפים» like /join (Sapir 08/11, decision 1)", () => {
+    renderHomeCta();
+    const links = screen.getByTestId("home-cta").querySelectorAll("a");
+    expect(links).toHaveLength(1);
+    expect(links[0].textContent).toBe(J.cta);
+    expect(links[0].getAttribute("href")).toMatch(/\/register\/producer$/);
   });
 });

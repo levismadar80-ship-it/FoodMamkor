@@ -383,7 +383,8 @@ export default function AboutProcessClient() {
       {/* ======== 07 — CTA → register ======== */}
       {/* MEH-2439: full brand green (was mint green-50), one column, cream button.
           MEH-2824: now the shared ClosingCtaBand — same band as /join and home
-          (centred, inverted mark). Copy verbatim; `id="join"` + scroll-mt-24
+          (centred, inverted mark; the ArrowLeft beside the button is gone with
+          the old layout). Copy verbatim; `id="join"` + scroll-mt-24
           keep the in-page anchor landing below the sticky header. */}
       <ClosingCtaBand
         id="join"

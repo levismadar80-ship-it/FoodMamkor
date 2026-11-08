@@ -314,7 +314,8 @@ export function HomeFeaturedProducer({ featured }) {
  * MEH-2824: the shared full-green ClosingCtaBand (was MEH-1041's cream surface
  * + green pill). It is the last section before the footer (HomeClient.jsx), so
  * it ends the page on the brand green like /join. Copy unchanged except the
- * heading, now neutral plural (Sapir 08/11).
+ * heading, now neutral plural, and the button, now «מצטרפים» like /join — one
+ * band, one button site-wide (Sapir 08/11; home.cta.button retired).
  */
 export function HomeCTA() {
   const t = useTranslations();
@@ -324,7 +325,7 @@ export function HomeCTA() {
       title={t("home.cta.heading")}
       body={[t("home.cta.body_l1"), t("home.cta.body_l2"), t("home.cta.body_l3")]}
       ctaHref="/register/producer"
-      ctaLabel={t("home.cta.button")}
+      ctaLabel={t("join.cta")}
     />
   );
 }
