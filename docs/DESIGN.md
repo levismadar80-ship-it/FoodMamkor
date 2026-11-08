@@ -828,7 +828,9 @@ link wraps an icon, put the underline on the text span, not on the icon.
 hover-only underline (or none):
 - whole-card links (the card is the link);
 - nav items (header, footer columns, bottom nav, tab bars, breadcrumbs);
-- buttons and pills (a filled or bordered shape);
+- buttons and pills (a filled or bordered shape). A text-only button — no fill,
+  no border, e.g. «נסו שוב», «שלחו שוב» — is a link for this rule and gets the
+  underline;
 - icon buttons;
 - links with an always-visible arrow or icon inside them (ArrowLeft, CaretLeft,
   MapPin, Phone, ArrowSquareOut …), including an arrow that is part of the copy
