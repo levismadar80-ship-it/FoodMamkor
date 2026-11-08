@@ -588,6 +588,28 @@ describe("ChipScrollRow — re-pin to inline-start after overflow appears (MEH-2
     expect(scroller.scrollTo).toHaveBeenLastCalledWith(PIN_START);
   });
 
+  // A touch can land inside that one frame (slow iOS device). The deferred
+  // pin must re-check the touch flag, or it yanks the row from under the finger.
+  it("a touch between the synchronous pin and the frame cancels the deferred pin", () => {
+    const frames = [];
+    rafSpy.mockImplementation((cb) => {
+      frames.push(cb);
+      return frames.length;
+    });
+    const { container } = renderRow({ activeKey: "all" });
+    const scroller = getScroller(container);
+    frames.length = 0;
+    Element.prototype.scrollTo.mockClear();
+
+    setScrollGeometry(container, { scrollWidth: 1000, clientWidth: 500, scrollLeft: -500 });
+    expect(scroller.scrollTo).toHaveBeenCalledTimes(1); // synchronous pin
+    expect(frames).toHaveLength(1);
+
+    fireEvent.pointerDown(scroller);
+    frames[0](0);
+    expect(scroller.scrollTo).toHaveBeenCalledTimes(1); // no second pin
+  });
+
   it("user touched the row first → never yanked back to the start", () => {
     const { container } = renderRow({ activeKey: "all" });
     fireEvent.pointerDown(getScroller(container));
