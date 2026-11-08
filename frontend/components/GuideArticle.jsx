@@ -19,6 +19,7 @@ import { Link } from "@/i18n/navigation";
 import { ArrowRight } from "@phosphor-icons/react/ssr";
 import { getTranslations } from "next-intl/server";
 import { BRAND_NAME } from "@/lib/constants";
+import SeedMark from "@/components/brand/SeedMark";
 
 // MEH-821: brand colors via canonical ADR-019 token classes (text-primary,
 // text-primary-dark, text-text, text-accent, bg-background, border-border) —
@@ -105,8 +106,18 @@ function renderBlock(block, i) {
         </blockquote>
       );
     case "hr":
+      // MEH-2833 (seed layer, board 2): a section break between two parts of
+      // a guide is a small centred bloom instead of a hairline — the magazine
+      // dinkus. Decoration only (aria-hidden, as the card asks): a screen
+      // reader no longer hears a separator. The next part opens with an <h3>
+      // in business-story, and with a bold numbered paragraph in the other
+      // two guides. `[&+*]:mt-4` sets the next block's top margin to 16px
+      // (an <h3> has mt-8 of its own), so the mark sits midway: the prose
+      // above ends with mb-4, and py-7 adds 28px on each side.
       return (
-        <hr key={key} className="my-8 border-0 border-t border-border" />
+        <div key={key} aria-hidden="true" data-testid="seed-dinkus" className="flex justify-center py-7 [&+*]:mt-4">
+          <SeedMark size={28} />
+        </div>
       );
     case "callout":
       return (
