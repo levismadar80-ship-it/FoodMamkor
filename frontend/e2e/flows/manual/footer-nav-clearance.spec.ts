@@ -18,16 +18,22 @@ import { test, expect, type Page } from "../_cloudinary-stub";
 const PHONE = { width: 390, height: 844 };
 const PAGES = ["/he/join", "/he", "/he/about"];
 
-async function settle(page: Page, path: string) {
+const rootVar = (page: Page, name: string) =>
+  page.evaluate((n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim(), name);
+
+async function settle(page: Page, path: string, { phone = false } = {}) {
   // Consent seeded so the cookie banner is not up: its height is a separate,
   // live term of --bottom-inset and would change the numbers below.
   await page.addInitScript(() => localStorage.setItem("cookieConsent", "essential"));
   await page.goto(path);
   await expect(page.locator("footer[data-site-footer]")).toHaveCount(1, { timeout: 15_000 });
-  // Let BottomNav publish --bottom-nav-clearance (ResizeObserver + 150ms debounce).
-  await page.waitForTimeout(600);
+  // On a phone, wait until BottomNav has published its height (ResizeObserver
+  // + 150ms debounce) rather than sleeping a fixed time.
+  if (phone) await expect.poll(() => rootVar(page, "--bottom-nav-clearance"), { timeout: 10_000 }).not.toBe("");
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
-  await page.waitForTimeout(400);
+  await expect
+    .poll(() => page.evaluate(() => Math.round(innerHeight + scrollY - document.documentElement.scrollHeight)))
+    .toBeGreaterThanOrEqual(-1);
 }
 
 /**
@@ -57,7 +63,7 @@ test.describe("MEH-2824 · footer reaches the screen edge under the floating nav
 
   for (const path of PAGES) {
     test(`${path}: no cream strip under the footer, last line above the nav`, async ({ page }) => {
-      await settle(page, path);
+      await settle(page, path, { phone: true });
       const m = await page.evaluate(() => {
         const footer = document.querySelector("footer[data-site-footer]")!;
         // The visible pill (BottomNav.jsx `data-testid="bottom-nav"`), not its
@@ -78,7 +84,9 @@ test.describe("MEH-2824 · footer reaches the screen edge under the floating nav
         };
       });
       expect(m.navTop, "control: the floating nav is on screen at this width").not.toBeNull();
-      expect(m.bodyPad, "control: no cookie banner, so the reserve is the nav's").toBeGreaterThanOrEqual(0);
+      // Control (falsifiable): the cookie banner is down, so its live height —
+      // a separate term of --bottom-inset — is not in the numbers below.
+      expect(await rootVar(page, "--cookie-banner-h"), "control: no cookie banner up").toBe("");
 
       // The footer, not <body>, carries the reserve…
       expect.soft(m.footerPad, "the footer carries the bottom reserve").toBeGreaterThan(0);
