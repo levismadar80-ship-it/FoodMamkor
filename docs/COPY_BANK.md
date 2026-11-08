@@ -20,12 +20,12 @@
 ### Subtitle — Homepage hero
 | Field | Value |
 |---|---|
-| **Current** | `ישר מהמקור אלייך. בתי עסק שכבר בדקנו בשבילך.` |
-| **Previous** | `ישר מהמקור אלייך. עסקים שכבר בדקנו בשבילך.` (MEH-620 wording; `עסקים` → `בתי עסק` in MEH-1308) · earlier `בתי עסק מקומיים, כולם במקום אחד.` |
+| **Current** | `ישר מהמקור אליכם. בתי עסק שכבר בדקנו בשבילכם.` |
+| **Previous** | `ישר מהמקור הביתה. בתי עסק שכבר בדקנו בשבילך.` (MEH-2661, 04/11 — the neutral-address sweep) · `ישר מהמקור אלייך. בתי עסק שכבר בדקנו בשבילך.` (the value still live on the site) · `ישר מהמקור אלייך. עסקים שכבר בדקנו בשבילך.` (MEH-620 wording; `עסקים` → `בתי עסק` in MEH-1308) · earlier `בתי עסק מקומיים, כולם במקום אחד.` |
 | **i18n key** | `home.hero.subtitle` |
-| **Status** | ✅ (MEH-620, PR #690; value corrected per MEH-1308, PR #1904) |
-| **Why** | MEH-522 ideation winner (variant κ). H1 asks "לא ידעת איפה" → Sub answers "אנחנו כבר בדקנו". Closes the arc; uses "כבר" work-already-done signal. |
-| **MEH** | MEH-620 (refs MEH-522) |
+| **Status** | ✅ (MEH-620, PR #690; value corrected per MEH-1308, PR #1904; `אלייך` → `הביתה` in MEH-2661; `הביתה` → `אליכם` in MEH-2842) |
+| **Why** | MEH-522 ideation winner (variant κ). H1 asks "לא ידעת איפה" → Sub answers "אנחנו כבר בדקנו". Closes the arc; uses "כבר" work-already-done signal. **08/11 (MEH-2842):** MEH-2661's `הביתה` reads oddly — Sapir rejected it and approved `אליכם` / `בשבילכם` verbatim. Neutral plural per ADR-014, and it keeps the κ arc intact. |
+| **MEH** | MEH-620 (refs MEH-522) · MEH-2661 · MEH-2842 |
 
 ### Subtitle — Friday variant
 | Field | Value |
@@ -465,6 +465,8 @@
 
 | Date | MEH | Changed | Before | After | Why |
 |---|---|---|---|---|---|
+| 2026-11-08 | MEH-2841 | /join copy wave — `join.trust_hint`, `join.meta_line`, `join.subhead`, `join.closing.line` (he+en) + new `join.faq.{q,a}_price` and `join.faq.{q,a}_updates`; FAQ order 4 → 6 items | `חינם להצטרף` · `חינם · כ-5 דקות · …` · the two-«הסיפור שלכם» subhead · `עמוד אחד עם כל הפרטים…` | `חינם, בלי עמלות` · `חינם · בלי עמלות · …` · the shorter subhead · `קישור אחד עם כל מה שצריך לדעת עליכם…` | Businesses answer enquiries and do not register; «בלי עמלות» was buried in an FAQ answer and the price question had no answer at all. Commission is a known fear (ynet 03/2019: group-buy organisers take 10%–15%). «זה עוד מקום שצריך לעדכן» is a recurring objection in Topaz's calls. Sapir approved every string word-for-word 08/11. Full table in Section 9. |
+| 2026-11-08 | MEH-2842 | Home hero subtitle — `home.hero.subtitle` (he only) | `ישר מהמקור הביתה. בתי עסק שכבר בדקנו בשבילך.` | `ישר מהמקור אליכם. בתי עסק שכבר בדקנו בשבילכם.` | `הביתה` came from the MEH-2661 neutral-address sweep (04/11) and reads oddly; Sapir approved this wording verbatim 08/11. Neutral plural per ADR-014. `en.json` untouched — `Straight from the source. Businesses we've already vetted for you.` is already neutral. **Side effect on MEH-1692:** that row below closed the hero/trust-band duplication from the band side only and recorded the hero as unchanged. The retired lead `בתי עסק שכבר בדקנו בשבילך` was a byte-exact substring of the old subtitle; with `בשבילכם` it no longer is, so it now renders **zero** times page-wide — which is what MEH-1692's own acceptance criterion asked for and could not reach while the hero was locked. `HomeTrustBandCountGate.test.jsx` updated from `toBe(1)` to `toBe(0)` accordingly. |
 | 2026-10-25 | MEH-2313 | Canonical brand sentence — `CANONICAL_SENTENCE` (`lib/constants.js`) + `public/llms.txt` line 3 + `about.consumer.hero.subheading` (he+en); `seo.login.og_description` (he) | `אוכל מבתי עסק קטנים שבדקנו אישית — קרוב אלייך, בלי לחפש שעות.` / `Food from small businesses we've personally checked — …`; `…ולתמוך בעסקים קטנים מהסביבה שלך.` | `אוכל מבתי עסק מקומיים שבחרנו אישית — קרוב אלייך, בלי לחפש שעות.` / `Food from local businesses we've personally chosen — …`; `…ולתמוך בעסקים מהסביבה שלך.` | Not every business on the site is small. «בדקנו» read as a promise that the food was checked, which collides with the «מאומת» badge (a licence check only); «נבחר» matches «כל בית עסק נבחר אישית» (MEH-1692). Approved verbatim by Sapir 25/10. `about.consumer.story.p4` and `about.consumer.benefits.local.body` keep «קטנים» on purpose: they say some businesses are small, not all. |
 | 2026-07-31 | MEH-1692 | Home trust band — `home.trust.lead` + new count key (threshold 25) | `home.trust.lead` = `בתי עסק שכבר בדקנו בשבילך` (single state, shown at any catalog depth) | below 25: `בלי מתווך באמצע · איסוף עצמי או משלוח, ישירות מבית העסק` · at/above 25: `{count} בתי עסק · כל אחד נבחר אישית` | Closes a **byte-exact** duplication: the old value was a verbatim substring of `home.hero.subtitle`, rendering the same sentence twice on one screen. Replaces compliance register ("נבדקו" — over-claims across `license` \| `exemption` \| `cosmetics`, MEH-762 / ADR-022) with a structural fact (no intermediary; pickup-or-delivery) below the threshold, and with editorial judgement ("נבחר אישית", value 1 of Brand Hub `04-mission-vision-values`, external) above it. Deliberately avoids an outcome promise ("cheaper") — Barn2Door's `no markups` precedent. Numbers-above-threshold follows CrowdFarming / LocalHarvest / Open Food Network, none of which leads on a verification claim. **`home.hero.subtitle` and `nav.trust_strip` are unchanged** — the duplication is closed from the trust-band side only; `Header.jsx` and `HomeHero.jsx` are out of scope. |
 | 2026-06-05 | MEH-756 | /events S10 copy wave — 12 keys across `events.list.*`, `events.detail.*`, `dashboard.producer.quick_links.add_event.title`, `sweep_tail.event_new.submit`, `experiences.list.cross_link_events` (he+en) | mixed-voice set: `subtitle` `סדנאות, סיורים, ימים פתוחים וטעימות — ישר מהמקור`; feminine-singular `הוסיפי אירוע` / `הגישי חוויה` / `סנן לפי עיר` / `חפשי עיר...` / `טוענת אירועים...` / `טוענת חוויות...` / `טוענת את האירוע...` / `מחפשת… ראי את…`; masculine-imperative outliers `צור קשר עם בית העסק` / `הוסף אירוע` / `פרסם אירוע` | S10-aligned + ADR-014 neutralized: `subtitle` `מה קורה החודש — סוף שבוע אחרי סוף שבוע, ישר מהמקור` / `What's on this month — weekend after weekend, straight from the source` · `add_event` `הוסיפו אירוע` · `submit_experience` `הוסיפו חוויה` / `Add experience` (unified add verb) · `filter_city_label` `חיפוש לפי עיר` / `Search by city` · `filter_city_placeholder` `שם עיר או יישוב` / `City or town name` · `loading_events` `טוענים אירועים...` · `loading_experiences` `טוענים חוויות...` (ellipsis `...` preserved per file convention) · `events.detail.loading` `טוענים את האירוע...` · `events.detail.contact_producer` `יצירת קשר עם בית העסק` (noun phrase — drops masculine imperative) · `dashboard.producer.quick_links.add_event.title` `הוסיפו אירוע` · `sweep_tail.event_new.submit` `פרסמו אירוע` · `experiences.list.cross_link_events` `מחפשים גם אירועים בחוות? כל האירועים והחוויות ביחד ←` / `Also looking for farm events? All events and experiences together ←` (arrow `←` preserved) | ADR-014 HYBRID — UI chrome is gender-neutral. Aligns the /events surfaces to S10 design (MEH-134, Direction A "The Almanac") ahead of the visual port so it stays visual-only. Zero JSX. Zero copy-of-verification (not blocked by MEH-742). EN mirror updates only where HE meaning shifted (subtitle, submit_experience, filter_city_*, cross_link_events); other 7 EN strings already neutral. **Out of scope:** `events.list.empty_*` + eyebrow + per-tab H1 (JSX-dependent — land with MEH-134 port); rest of `sweep_tail.event_new.*` (~30 keys — needs separate extraction probe); `events.list.title` + tab keys + `events.categories.*` (untouched). |
@@ -900,6 +902,32 @@ Unchanged and reused as-is: `join.eyebrow` · `join.h1` · `join.subhead` · `jo
 | insights | contact_clicks | CursorClick | `לחיצות` | `וואטסאפ, טלפון ואתר` |
 | insights | top_cities | MapPin | `ערים` | `מאיפה מגיעים המבקרים` |
 | insights | demand_cities | TrendUp | `ביקוש חדש` | `ערים שעוד אין אליהן משלוח` |
+
+### /join copy wave — 08/11 (MEH-2841)
+
+> **Source:** Sapir approved every Hebrew string below word-for-word on 08/11. **Why this wave:** businesses answer enquiries and do not register. These changes move the two answers that matter most for them — there is no commission, and the price is theirs — to the top of the page, and add the objection that kept coming back in Topaz's calls («it's one more place to keep updated»). Commission is a known fear: per ynet (03/2019) group-buy organisers take 10%–15%. Neutral plural per ADR-014.
+
+#### Changed strings (existing keys)
+
+| Key | Old | New | Why |
+|---|---|---|---|
+| `join.trust_hint` | `חינם להצטרף` | `חינם, בלי עמלות` | «בלי עמלות» lived only in the answer to «כמה זה עולה?», far down the page. It now sits next to the button. |
+| `join.meta_line` | `חינם · כ-5 דקות · עולה תוך עד 3 ימי עסקים` | `חינם · בלי עמלות · כ-5 דקות · עולה תוך עד 3 ימי עסקים` | Same reason. One key, two surfaces — the closing band and the sticky bar (no code change). |
+| `join.subhead` | `עמוד עם התמונות והסיפור שלכם, כל עסק נבחר אישית, ופנייה ישירה אליכם, בוואטסאפ או בערוץ שתבחרו — לקוחות מקומיים פוגשים את הסיפור שלכם.` | `עמוד עם התמונות והסיפור שלכם, ולקוחות מקומיים פונים אליכם ישירות, בערוץ שתבחרו.` | «הסיפור שלכם» appeared twice in one sentence, and the line was long for a phone. Channel-neutral rule kept (SPEC §5): the channel is named, WhatsApp is not. |
+| `join.closing.line` | `עמוד אחד עם כל הפרטים, והלקוח פונה ישירות אליכם.` | `קישור אחד עם כל מה שצריך לדעת עליכם: לביו באינסטגרם, לסטטוס בוואטסאפ, ולכל מי ששואל.` | Says what the page is *for* — somewhere to point people — instead of restating the subhead. WhatsApp and Instagram are named because they are literally those surfaces. |
+
+#### New keys
+
+| Key | he | Where |
+|---|---|---|
+| `join.faq.q_price` | `מי קובע את המחיר?` | FAQ, position 2 |
+| `join.faq.a_price` | `אתם. המחיר בעמוד הוא שלכם, ואנחנו לא לוקחים אחוז מאף מכירה.` | |
+| `join.faq.q_updates` | `זה עוד מקום שצריך לעדכן?` | FAQ, position 4 |
+| `join.faq.a_updates` | `כמעט לא. אין באתר הזמנות ואין מלאי, אז כשמשהו נגמר הלקוחות פשוט שואלים אתכם. מעדכנים רק כשמשהו קבוע משתנה.` | |
+
+**FAQ order is now** `["cost", "price", "google", "updates", "revenue", "customers"]` (`join/page.js`): cost and price first because they are the two questions that stop a registration, then discovery, then the update objection.
+
+English twins land in `en.json` in the same PR (parity guard, MEH-978/840).
 
 ## Section 10 — /share "ספרו עלינו" (MEH-1160)
 

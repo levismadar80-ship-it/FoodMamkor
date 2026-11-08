@@ -299,7 +299,8 @@ test.describe("decision modal — reject", () => {
     await openKebab(page, "ממתין לבדיקה");
     const reject = page.getByRole("menuitem", { name: "דחייה" });
     await expect(reject).toBeVisible();
-    await expect(reject).toHaveClass(/text-red/);
+    // ADR-038 (#4041): status colours are the danger/warning tokens, not red/amber.
+    await expect(reject).toHaveClass(/text-danger/);
     await page.keyboard.press("Escape");
     await expect(page.getByRole("menu")).toHaveCount(0);
     await openKebab(page, "כבר מאושר");

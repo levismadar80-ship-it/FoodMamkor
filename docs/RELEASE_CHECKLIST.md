@@ -21,9 +21,8 @@
 
 - [ ] `CI gate` ו-`Deploy gate` ירוקים על ה-head של `staging`
 - [ ] ריצת `Playwright E2E` ירוקה על ה-push האחרון ל-`staging` (היא רצה תמיד על staging, MEH-2779)
-- [ ] `staging-smoke` ירוק אחרי ה-deploy האחרון של staging
+- [ ] «Post-deploy checks» (`post-deploy-checks.yml`) ירוק אחרי ה-deploy האחרון של staging. ‏`staging-smoke` לא רץ מאז 05/2026 (MEH-2846)
 - [ ] Sentry: אין issues חדשים מה-deploy של staging
-- [ ] **אין נתוני דמו בפרודקשן.** `python scripts/check_no_demo_data.py` מחזיר exit 0. מריצים ב-Railway Console, שם `/app` הוא כבר `backend/`. יציאה 1 פירושה ששורה דלפה: בודקים כל שורה שסומנה (הסקריפט לא מוחק) ומנקים לפני הקידום. מדיניות: [ADR-029](./decisions/ADR-029-demo-data-staging-only.md)
 - [ ] תיאור ה-PR מפרט כל שינוי התנהגות שנכנס מאז הגרסה הקודמת
 
 ## ב׳ — סיבוב על staging (ה-thread, Playwright ב-375 וב-1440)
