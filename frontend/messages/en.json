@@ -829,7 +829,8 @@
           "cta": "Our recipes"
         },
         "group_buys": {
-          "heading": "Open group buys"
+          "heading": "Open group buys",
+          "show_all": "Show all group buys"
         }
       },
       "header": {
