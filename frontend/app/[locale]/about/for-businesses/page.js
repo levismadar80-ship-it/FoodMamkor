@@ -156,9 +156,11 @@ export default async function FaqForBusinessesPage({ params }) {
           </h1>
           {/* MEH-923: surface the existing footer register CTA here in the header,
               above the FAQ, so the primary action isn't gated behind 8 accordion
-              items. Same string t("cta") + markup as the footer CTA below — no
-              new he.json key (MEH-840 freeze). Footer CTA also updated to the
-              next-intl Link + focus-ring in this PR (IMP-21). */}
+              items. No new he.json key (MEH-840 freeze); next-intl Link +
+              focus-ring (IMP-21). MEH-2824: the matching footer CTA this note
+              used to point at is gone — the page now ends on the shared
+              closing band, whose button is «מצטרפים» (join.cta), so the two
+              join links here carry different labels on purpose. */}
           {/* MEH-1489: auth-state-aware CTA (producer -> dashboard, admin -> hidden). */}
           <BusinessCtaLink
             href="/register/producer"

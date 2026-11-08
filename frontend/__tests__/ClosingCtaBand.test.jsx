@@ -155,9 +155,11 @@ describe("ClosingCtaBand — the one look", () => {
 });
 
 describe("home: the closing business section is the shared band", () => {
+  // The ROOT client message set (lib/client-messages.js), as the home page
+  // really gets it: the band's «מצטרפים» comes from the `join` namespace.
   function renderHomeCta() {
     return render(
-      <NextIntlClientProvider locale="he" messages={he}>
+      <NextIntlClientProvider locale="he" messages={rootClientMessages(he)}>
         <HomeCTA />
       </NextIntlClientProvider>,
     );
