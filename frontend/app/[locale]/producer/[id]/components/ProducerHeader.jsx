@@ -262,11 +262,19 @@ export default function ProducerHeader({
       <Link
         key="category"
         href={categoryListingHref(primaryCategory.id)}
-        className="inline-flex min-h-[24px] items-center gap-1 font-medium text-text underline-offset-[3px] hover:underline hover:text-primary transition"
+        className="group inline-flex min-h-[24px] items-center gap-1 font-medium text-text hover:text-primary focus-visible:text-primary transition"
         data-testid="producer-header-category-link"
       >
         <CategoryGlyph category={primaryCategory} />
-        {primaryCategory.name}
+        {/* MEH-2831: a phone has no hover, so the name carries a permanent
+            subtle underline (the «3 ביקורות» cue beside it); hover/focus
+            strengthens it to primary. The glyph stays un-underlined. */}
+        <span
+          data-testid="producer-header-category-name"
+          className="underline decoration-text/35 decoration-[1.5px] underline-offset-[5px] group-hover:decoration-primary group-focus-visible:decoration-primary"
+        >
+          {primaryCategory.name}
+        </span>
       </Link>,
     );
   }
