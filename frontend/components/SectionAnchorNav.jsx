@@ -1,6 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+// MEH-2836: the same overflow signal ChipScrollRow uses for its edge fades.
+import useScrollAffordance from "@/hooks/useScrollAffordance";
+
+// MEH-2836: ChipScrollRow's mask depths (MEH-1572), same approach — a CSS
+// mask (.chip-scroll-fade-mask in globals.css) whose edge is transparent only
+// on a side that has hidden tabs, so the bar shows it scrolls.
+const START_FADE_PX = 12;
+const END_FADE_PX = 48;
 
 /**
  * Sticky in-page section anchor-nav (a row of underline tabs). Each tab is a real
@@ -27,7 +35,13 @@ export default function SectionAnchorNav({ items, ariaLabel, className = "" }) {
 
   const [activeId, setActiveId] = useState(null);
   const navRef = useRef(null);
-  const rowRef = useRef(null);
+  // MEH-2836: the hook owns the row ref (rowRef is the same object) and
+  // reports whether tabs are hidden past either edge.
+  const { scrollRef: rowRef, canScrollStart, canScrollEnd } = useScrollAffordance();
+  const fadeVars = {
+    "--chip-fade-start": `${canScrollStart ? START_FADE_PX : 0}px`,
+    "--chip-fade-end": `${canScrollEnd ? END_FADE_PX : 0}px`,
+  };
   const pillRefs = useRef(new Map());
 
   // Publish the bar's live height for the targets' scroll-margin-top.
@@ -112,7 +126,9 @@ export default function SectionAnchorNav({ items, ariaLabel, className = "" }) {
     >
       <div
         ref={rowRef}
-        className="flex gap-1 overflow-x-auto scrollbar-hide min-w-0 snap-x snap-proximity"
+        data-testid="section-nav-row"
+        className="flex gap-1 overflow-x-auto scrollbar-hide min-w-0 snap-x snap-proximity chip-scroll-fade-mask"
+        style={fadeVars}
       >
         {visible.map(({ id, label }) => {
           const active = id === effectiveActive;

@@ -23,24 +23,17 @@ export const CONTACT_METHODS = [
   { key: "external_order" },
 ];
 
-/** Default-safe accessor. Falls back to "whatsapp" for old rows. */
-export function getPrimaryMethod(producer) {
+/** The DECLARED method — "whatsapp" for old rows (NULL column). Internal. */
+function declaredMethod(producer) {
   const m = producer?.primary_contact_method;
   return CONTACT_METHODS.some((c) => c.key === m) ? m : "whatsapp";
 }
 
 /**
- * Build the href for the primary CTA. Returns null when the producer
- * is missing the field the method needs — caller should hide the
- * button (backend validation should prevent this, but defense in depth).
- *
- * MEH-2753: `waMessage` is the WhatsApp prefill, already translated by the
- * caller — `t("contact_cta.wa_greeting", { name })`. This helper stays pure
- * (no React, no i18n). Callers that only test whether a CTA exists may omit it.
+ * The href for one method, or null when the producer lacks the field that
+ * method needs. Pure; the method is given, not read from the producer.
  */
-export function getPrimaryContactHref(producer, waMessage = "") {
-  if (!producer) return null;
-  const method = getPrimaryMethod(producer);
+function hrefFor(method, producer, waMessage = "") {
   switch (method) {
     case "whatsapp": {
       const digits = normalizePhone(producer.phone);
@@ -67,8 +60,7 @@ export function getPrimaryContactHref(producer, waMessage = "") {
     case "instagram":
       // MEH-296 stripped the leading "@" here; MEH-2174 moved that rule into
       // lib/social-links.js so this surface, ContactCard and the outreach
-      // table cannot drift apart. Returns null when there is no handle,
-      // exactly as the inline version did.
+      // table cannot drift apart. Returns null when there is no handle.
       return instagramUrl(producer.instagram);
     case "facebook": {
       const raw = (producer.facebook || "").trim();
@@ -86,6 +78,46 @@ export function getPrimaryContactHref(producer, waMessage = "") {
 }
 
 /**
+ * MEH-2836: the ONE resolver for "which channel does the contact button use".
+ * The declared method if the business has the data it needs; else the first
+ * method in CONTACT_METHODS order that has data; else null (no contact detail
+ * at all). Before this, a business with no WhatsApp number (the default for
+ * old rows) got NO button at all, even with a website, email or Instagram —
+ * «מעדניית בן שמן» on staging showed a sticky bar with only its rating.
+ * @returns {string|null}
+ */
+export function getResolvedMethod(producer) {
+  if (!producer) return null;
+  const declared = declaredMethod(producer);
+  if (hrefFor(declared, producer)) return declared;
+  const fallback = CONTACT_METHODS.find((c) => hrefFor(c.key, producer));
+  return fallback ? fallback.key : null;
+}
+
+/**
+ * The channel the contact button uses — the RESOLVED method (MEH-2836), so the
+ * label, href, CTA variant, external flag and the WhatsApp beacon/unlock all
+ * agree. With no contact detail at all it falls back to the declared method
+ * (whatsapp for old rows); the href is null then, and callers hide the button.
+ */
+export function getPrimaryMethod(producer) {
+  return getResolvedMethod(producer) ?? declaredMethod(producer);
+}
+
+/**
+ * Build the href for the primary CTA (the resolved method). Returns null when
+ * the producer has no contact detail at all — caller hides the button.
+ *
+ * MEH-2753: `waMessage` is the WhatsApp prefill, already translated by the
+ * caller — `t("contact_cta.wa_greeting", { name })`. This helper stays pure
+ * (no React, no i18n). Callers that only test whether a CTA exists may omit it.
+ */
+export function getPrimaryContactHref(producer, waMessage = "") {
+  const method = getResolvedMethod(producer);
+  return method ? hrefFor(method, producer, waMessage) : null;
+}
+
+/**
  * CTA label for the primary contact button. `t` is a ROOT-namespace
  * translator; the words are `contact_cta.<method>` (MEH-2753). Copy history,
  * kept with the strings' owners: MEH-2634 named the WhatsApp channel;
@@ -97,7 +129,9 @@ export function getPrimaryContactLabel(producer, t) {
 }
 
 /**
- * True when the business DECLARED WhatsApp as its primary channel (MEH-2154).
+ * True when WhatsApp is the channel the contact button uses (MEH-2154). Since
+ * MEH-2836 that is the RESOLVED method: a business that declared WhatsApp but
+ * has no number gets no WhatsApp chips (they could not have worked anyway).
  *
  * Lives here, beside getPrimaryMethod / isPrimaryExternal, because it is a
  * statement about the contact channel and this module is the single owner of
