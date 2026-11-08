@@ -538,7 +538,7 @@ function PasswordChangeCard({ isOAuth }) {
     <section className="bg-surface border border-border rounded-lg p-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-semibold text-text">{t("heading")}</h2>
-        <Link href="/forgot-password" className="text-xs text-primary hover:underline">
+        <Link href="/forgot-password" className="text-xs text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current">
           {t("forgot_link")}
         </Link>
       </div>
@@ -767,7 +767,7 @@ function DangerZoneCard() {
         <button
           type="button"
           onClick={() => router.push("/login")}
-          className="mt-2 text-sm text-primary hover:underline"
+          className="mt-2 text-sm text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current"
         >
           {t("back_to_login")}
         </button>

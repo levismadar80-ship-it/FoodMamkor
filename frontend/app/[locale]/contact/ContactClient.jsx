@@ -82,7 +82,7 @@ export default function ContactClient() {
               <span>{t("email_label")}</span>
               <a
                 href={`mailto:${CONTACT_EMAIL}`}
-                className="text-primary hover:underline font-medium break-all"
+                className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current font-medium break-all"
                 dir="ltr"
               >
                 {CONTACT_EMAIL}
@@ -109,7 +109,7 @@ export default function ContactClient() {
               <button
                 type="button"
                 onClick={() => setStatus("idle")}
-                className="mt-6 text-primary hover:underline text-sm"
+                className="mt-6 text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current text-sm"
               >
                 {t("success_send_another")}
               </button>

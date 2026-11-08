@@ -61,7 +61,7 @@ function ResetPasswordForm() {
           </p>
           <Link
             href="/forgot-password"
-            className="text-primary font-medium hover:underline text-sm justify-self-start"
+            className="text-primary font-medium underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current text-sm justify-self-start"
           >
             {t("auth.passwordRecovery.reset.request_new_link")}
           </Link>
@@ -185,7 +185,7 @@ function ResetPasswordForm() {
             {isLinkError && (
               <Link
                 href="/forgot-password"
-                className="text-primary hover:underline text-xs mt-1 block"
+                className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current text-xs mt-1 block"
               >
                 {t("auth.passwordRecovery.reset.request_new_link")}
               </Link>

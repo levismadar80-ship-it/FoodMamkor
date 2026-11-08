@@ -807,6 +807,38 @@ recorded reason — do not "fix" them:
   (WCAG 2.5.8 Target Size (Minimum) inline exception) — enlarging them would
   break the line box.
 
+## Text links look tappable without hover (MEH-2831)
+
+**Text links must look tappable without hover: a permanent underline (or
+another always-visible cue such as a chevron/arrow icon or a button shape).
+Hover only strengthens the cue.** A phone has no hover, so a link whose only
+cue is `hover:underline` reads as plain text there — Sapir found «ירקות» on the
+business page that way (iPhone, 08/11), sitting beside «3 ביקורות», which was
+underlined: two links on one line, two languages.
+
+**The treatment** (reference: `ProducerHeader.jsx`, the category link):
+`underline decoration-[1.5px] underline-offset-[5px]` + the decoration in the
+link's own ink at ~35% (`decoration-primary/35`, `decoration-muted/35`, …), and
+on hover the full colour of that ink (`hover:decoration-current`). The
+reference link's ink is `text-text` and it turns primary on hover/focus, so
+its underline follows to primary (`group-hover:decoration-primary`). When the
+link wraps an icon, put the underline on the text span, not on the icon.
+
+**Exempt** — these already carry an always-visible cue, so they keep their
+hover-only underline (or none):
+- whole-card links (the card is the link);
+- nav items (header, footer columns, bottom nav, tab bars, breadcrumbs);
+- buttons and pills (a filled or bordered shape). A text-only button — no fill,
+  no border, e.g. «נסו שוב», «שלחו שוב» — is a link for this rule and gets the
+  underline;
+- icon buttons;
+- links with an always-visible arrow or icon inside them (ArrowLeft, CaretLeft,
+  MapPin, Phone, ArrowSquareOut …), including an arrow that is part of the copy
+  («לכל האירועים ←»).
+
+Colour alone (`text-primary`) is **not** a cue: on a page whose headings are
+already green it does not read as "tap me".
+
 ## Required-field marking (MEH-2015)
 
 **The rule: an asterisk is an enforced gate, always.** A field showing `*`
