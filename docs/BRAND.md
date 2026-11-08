@@ -113,6 +113,7 @@ Design **patterns** (component-level decisions like navbar shape, hero layout, c
 | Logo lockup (5-pomegranate-seed) | MEH-637 | Done 2026-05-22 (+ MEH-664 DoD fix) |
 | Category glyph system | ADR-013 Amendment + PR #2026 (hand-drawn MEH-683/666 archived) | LOCKED v2.1 |
 | Join page: feature groups (phone shelf / desktop list+stage), tiles, toggletip, sticky join bar | MEH-2799 | Done 2026-11-07 (#4123) |
+| Closing CTA band (site-wide, shared component) — full-green band that ends every page closing on a business call to action | MEH-2824 | In progress |
 
 **Rule:** before opening a new design pattern, search this index. If the pattern overlaps with a Done entry, extend the existing one rather than starting parallel work.
 

@@ -477,3 +477,12 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     decisions on the same screen (e.g. MEH-912); (7) a recommendation. Sapir
     picks, then code. Post-launch, add a PostHog click event on the feature.
     Precedent: MEH-2724 built under the hero before the study was asked for.
+38. **A PR that changes what users see is never merged by CC — even a small fix
+    (MEH-2825).** Open the PR, send Sapir a preview + 390 and 1280 screenshots,
+    and stop until she writes «go merge». Docs-only / tests-only / CI PRs: CC
+    merges when green. "Changes what users see" = any rendered pixel or copy on
+    any surface, `/admin` included; unsure → treat it as UI. Until Vercel
+    previews for feature branches are on (Sapir's switch), the screenshots come
+    from CC's own local production build, and the message says so. This adds to
+    rule 23 (375/1440 in `qa-artifacts/`) and replaces none of it; a per-batch
+    instruction to merge UI does not carry over to the next PR.
