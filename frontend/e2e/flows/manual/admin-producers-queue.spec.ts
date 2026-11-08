@@ -477,7 +477,7 @@ test.describe("admin lockout", () => {
     { who: "admin", user: ADMIN, cta: 0, adminRow: 1 },
     { who: "consumer", user: CONSUMER, cta: 1, adminRow: 0 },
   ]) {
-    test(`the account sheet ${c.cta ? "offers" : "hides"} «יש לך בית עסק?» for a ${c.who}`, async ({ page }, testInfo) => {
+    test(`the account sheet ${c.cta ? "offers" : "hides"} «יש לכם בית עסק?» for a ${c.who}`, async ({ page }, testInfo) => {
       test.skip(testInfo.project.name !== "mobile", "the AccountSheet is md:hidden — a mobile-only surface");
       await stubAdmin(page, { user: c.user });
       await page.goto("/about");
@@ -486,7 +486,8 @@ test.describe("admin lockout", () => {
       await trigger.click();
       const sheet = page.getByRole("dialog", { name: "חשבון" });
       await expect(sheet).toBeVisible();
-      await expect(sheet.getByRole("link", { name: "יש לך בית עסק?" })).toHaveCount(c.cta);
+      // MEH-2827 copy row 7: neutral plural.
+      await expect(sheet.getByRole("link", { name: "יש לכם בית עסק?" })).toHaveCount(c.cta);
       // The role reached the sheet: the admin row is the registry's other audience-gated entry.
       await expect(sheet.getByRole("link", { name: "ממשק אדמין" })).toHaveCount(c.adminRow);
     });

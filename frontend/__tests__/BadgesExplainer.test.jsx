@@ -26,6 +26,12 @@ vi.mock("@/i18n/navigation", () => ({
 vi.mock("@/lib/chip-icons", () => ({ badgeIcon: () => null }));
 vi.mock("@/components/BadgeRow", () => ({
   COLOR_CLASSES: { primary: "p", accent: "a", secondary: "s", muted: "m" },
+  // MEH-2827: the verified item renders BadgeRow's presentational chip face.
+  VerifiedChip: ({ label, className }) => (
+    <span data-testid="verified-chip" className={className}>
+      {label}
+    </span>
+  ),
 }));
 
 import BadgesExplainer from "@/app/[locale]/about/badges/BadgesExplainer";
@@ -100,3 +106,27 @@ describe("BadgesExplainer (MEH-2701)", () => {
     }
   });
 });
+
+describe("MEH-2827 · badges shown exactly as readers see them", () => {
+  beforeEach(() => vi.stubEnv("NEXT_PUBLIC_RESCUE_BAGS_ENABLED", "true"));
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("«מאומת» is the gold seal chip, not the green pill", () => {
+    renderPage();
+    const item = screen.getByTestId("badges-item-verified");
+    const chip = within(item).getByTestId("verified-chip");
+    expect(chip.textContent).toBe(he.badges.verified.label);
+    // The green pill was COLOR_CLASSES.primary ("p" in this mock).
+    expect(item.querySelector(".p")).toBeNull();
+  });
+
+  it("«מובילת קהילה» is listed FIRST in the automatic group, with its tooltip text", () => {
+    renderPage();
+    const group = screen.getByTestId("badges-group-system");
+    const first = group.querySelector("ul > li");
+    expect(first.getAttribute("data-testid")).toBe("badges-item-community_leader");
+    expect(first.textContent).toContain(he.trust.tier_4.label);
+    expect(first.querySelector("p").textContent).toBe(he.trust.tier_4.tooltip);
+  });
+});
+

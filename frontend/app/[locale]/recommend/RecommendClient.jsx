@@ -148,10 +148,13 @@ export default function RecommendClient() {
     <section className="min-h-screen">
       <div className="max-w-2xl mx-auto px-4 py-16">
         <div className="md:bg-surface md:rounded-lg md:p-8 md:border md:border-border md:shadow-[0_2px_12px_rgba(46,104,83,0.04)]">
-          <h1 className="font-headline-display text-5xl font-bold text-text mb-2 text-center">
+          {/* MEH-2827 (FinalRecommend): the standard page title — start-aligned,
+              fluid size, the same classes as /about/why-local's h1. The 5xl
+              centred title broke into three lines on a phone. */}
+          <h1 className="font-headline-lg mb-3 text-primary-dark text-[clamp(28px,6vw,44px)] leading-[1.15] font-black text-start">
             {t("title")}
           </h1>
-          <p className="text-fg-muted text-center mb-8">{t("subtitle")}</p>
+          <p className="text-fg-muted text-start mb-8">{t("subtitle")}</p>
 
           {/* No `noValidate` (adversarial review, finding 2). ui/Input
               forwards `required` as the NATIVE attribute, and MEH-2015 records

@@ -24,7 +24,7 @@ import Image from "next/image";
 import { useState, useEffect } from "react";
 // MEH-1113: prefill the contact-form topic from ?topic= (whitelist-guarded).
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, PaperPlaneTilt } from "@phosphor-icons/react";
+import { ArrowLeft, Check, Minus, PaperPlaneTilt } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import Input from "@/components/ui/Input";
 import api from "@/lib/api";
@@ -37,6 +37,7 @@ import { optimizeCloudinary } from "@/lib/cloudinary";
 // MEH-788: gentle scroll-reveal on the content sections (hero excluded — LCP).
 import FadeInSection, { REVEAL_PRESET } from "@/components/FadeInSection";
 import Button from "@/components/ui/Button";
+import { COLOR_CLASSES, VerifiedChip } from "@/components/BadgeRow";
 
 // MEH-1130: the editorial image layer. Raw asset URLs — every transform is
 // applied by optimizeCloudinary at the call site, never baked into the string
@@ -147,12 +148,12 @@ function Chapter({ label, as: Tag = "p" }) {
 // those re-renders would unmount and remount all three links, throwing away the
 // IntersectionObserver registrations next/link uses to prefetch. Caught by the
 // CI adversarial reviewer on #3123.
-function ExitLink({ href, testId, children }) {
+function ExitLink({ href, testId, children, spacing = "mt-8" }) {
   return (
     <LocaleLink
       href={href}
       data-testid={testId}
-      className="mt-8 inline-flex items-center gap-1 font-body-md font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+      className={`${spacing} inline-flex items-center gap-1 font-body-md font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40`}
     >
       {children}
       <ArrowLeft size={15} aria-hidden="true" />
@@ -170,6 +171,11 @@ export default function AboutPage() {
   // build-time date, which would re-stamp on every deploy and signal a review
   // that never happened.
   const tAbout = useTranslations("about");
+  // MEH-2827: the trust group's chapter mark and the real badge labels.
+  const tBadges = useTranslations("about_badges");
+  const tBadgeCopy = useTranslations("badges");
+  const tTier = useTranslations("producer.badge");
+  const tTrust = useTranslations("trust");
   // MEH-848: shared generic error copy (collapsed from about.consumer.contact.error_toast).
   const tError = useTranslations("error");
   const [form, setForm] = useState({ name: "", email: "", message: "", topic: "general" });
@@ -343,19 +349,24 @@ export default function AboutPage() {
                 twice, three lines apart. Both keys remain in he.json and
                 en.json untouched, so restoring either is a one-line change
                 if Sapir wants it back. */}
-            <div data-testid="about-signature" className="!mt-9 border-s-2 border-accent ps-4 rounded-none">
-              <p className="font-headline-display font-black text-primary text-2xl md:text-3xl leading-tight">
-                {tAbout("signature.name")}
-              </p>
-              <p className="mt-1 font-body-md text-sm text-fg-muted leading-snug">
-                {tAbout("signature.role")}
-              </p>
-              <p className="mt-2.5 font-body-md text-base text-text font-medium leading-snug max-w-[46ch]">
+            {/* MEH-2827 (FinalAbout, Sapir 08/11): quote first, then who said
+                it — a gold quote mark, the sentence at headline weight, and a
+                quiet attribution row. The side rule is gone. Same strings. */}
+            <div data-testid="about-signature" className="!mt-10 relative">
+              <span aria-hidden="true" className="block font-headline-display font-black text-accent text-6xl leading-none h-8 -mb-1">
+                ”
+              </span>
+              <p className="font-headline-md font-bold text-text text-[clamp(20px,5.5vw,24px)] leading-snug max-w-[24ch]">
                 {t("story.caption3")}
+              </p>
+              <p className="mt-4 flex items-center gap-2 font-body-md text-sm">
+                <span aria-hidden="true" className="h-px w-6 bg-accent" />
+                <span className="font-semibold text-primary">{tAbout("signature.name")}</span>
+                <span className="text-fg-muted">· {tAbout("signature.role")}</span>
               </p>
             </div>
           </div>
-          <ExitLink href="/producers" testId="about-exit-story">
+          <ExitLink href="/producers" testId="about-exit-story" spacing="mt-6">
             {tAbout("exit.story")}
           </ExitLink>
 
@@ -379,7 +390,9 @@ export default function AboutPage() {
               this section's `md:pb-14` plus chapter 02's `md:py-14` — the
               largest gap in the seam, which is exactly where the chapter
               break should read. DOM order is unchanged; only the wrapper is. */}
-          <div className="mt-10 border-t border-border pt-6">
+          {/* MEH-2827: lead + link on ONE row (flex-wrap: it still wraps on a
+              narrow phone rather than overflowing). */}
+          <div className="mt-8 border-t border-border pt-5 flex flex-wrap items-baseline gap-x-2 gap-y-1">
             <p
               id="about-biz-lead"
               className="font-body-md text-base text-fg-muted leading-snug"
@@ -408,7 +421,7 @@ export default function AboutPage() {
               href="/about/for-businesses"
               data-testid="about-biz-strip"
               aria-labelledby="about-biz-lead about-biz-cta"
-              className="mt-1.5 inline-flex items-center gap-1 font-body-md font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="inline-flex items-center gap-1 font-body-md font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
               <span id="about-biz-cta">{tAbout("biz_strip")}</span>
               <ArrowLeft size={15} aria-hidden="true" />
@@ -451,25 +464,49 @@ export default function AboutPage() {
               two sides; «מה שמשתנה בדרך» was dropped with the spine. The
               /about/process exit link that sat here was dropped too: the
               verification section and the closing band already link there. */}
-          <table className="w-full border-collapse table-fixed">
+          {/* MEH-2827 (FinalAbout): the Mehamakor column is a lifted card
+              column — surface-card fill, side borders, rounded ends, the seed
+              mark on its head, a ✓ on each of its cells and a − on each
+              supermarket cell. Gold header rule instead of the black one;
+              58/42 widths. border-separate so the column's own borders and
+              rounded corners render (collapse would merge them away). The
+              icons are aria-hidden: the copy carries the meaning, and the
+              <table>/<th>/<td> semantics are unchanged. */}
+          <table className="w-full table-fixed border-separate border-spacing-0">
+            <colgroup>
+              <col style={{ width: "58%" }} />
+              <col style={{ width: "42%" }} />
+            </colgroup>
             <thead>
               <tr>
-                <th scope="col" className="pb-2.5 text-start align-bottom font-body-md text-sm md:text-sm font-semibold text-primary-dark border-b border-text">
-                  {tCompare("col_brand")}
+                <th scope="col" className="pb-2.5 pt-3 ps-3 text-start align-bottom font-body-md text-sm md:text-sm font-semibold text-primary-dark bg-surface-card border-x border-t border-border border-b border-b-accent/35 rounded-t-xl">
+                  <span className="inline-flex items-center gap-1.5">
+                    <Image src="/logo.svg" alt="" aria-hidden="true" width={18} height={18} unoptimized />
+                    {tCompare("col_brand")}
+                  </span>
                 </th>
-                <th scope="col" className="pb-2.5 text-start align-bottom font-body-md text-sm md:text-sm font-semibold text-fg-muted border-b border-text">
+                <th scope="col" className="pb-2.5 ps-3 text-start align-bottom font-body-md text-sm md:text-sm font-semibold text-fg-muted border-b border-b-accent/35">
                   {tCompare("col_super")}
                 </th>
               </tr>
             </thead>
             <tbody>
-              {COMPARE_STOPS.map((row) => (
-                <tr key={row} className="border-b border-border">
-                  <th scope="row" className="py-4 md:py-5 pe-4 md:pe-8 text-start align-top font-headline-md font-bold text-primary-dark text-lg md:text-2xl leading-snug">
-                    {tCompare(`${row}_brand`)}
+              {COMPARE_STOPS.map((row, i) => (
+                <tr key={row}>
+                  <th
+                    scope="row"
+                    className={`py-4 md:py-5 ps-3 pe-4 md:pe-8 text-start align-top font-headline-md font-bold text-primary-dark text-lg md:text-xl leading-snug bg-surface-card border-x border-b border-border ${i === COMPARE_STOPS.length - 1 ? "rounded-b-xl" : ""}`}
+                  >
+                    <span className="flex gap-2">
+                      <Check size={18} weight="bold" aria-hidden="true" className="mt-1 shrink-0 text-primary" />
+                      <span>{tCompare(`${row}_brand`)}</span>
+                    </span>
                   </th>
-                  <td className="py-4 md:py-5 align-top font-body-md text-fg-muted text-base md:text-lg leading-relaxed">
-                    {tCompare(`${row}_super`)}
+                  <td className="py-4 md:py-5 ps-3 align-top font-body-md text-fg-muted text-base md:text-lg leading-relaxed border-b border-border">
+                    <span className="flex gap-2">
+                      <Minus size={16} aria-hidden="true" className="mt-1.5 shrink-0 text-fg-muted/70" />
+                      <span>{tCompare(`${row}_super`)}</span>
+                    </span>
                   </td>
                 </tr>
               ))}
@@ -573,64 +610,90 @@ export default function AboutPage() {
         </div>
       </FadeInSection>
 
-      {/* ======== Verification — "איך אנחנו מאמתים" (MEH-1336 · render-gated until copy ✓) ========
-          id="verification" is KEPT as a live anchor even though the verified-badge
-          popover no longer points here — MEH-1840 retargeted that popover to
-          /about/process (the canonical "how we vet" surface), and this section is now
-          the summary that teases it. Existing /about#verification deep-links must keep
-          resolving, so the id stays. scroll-mt-24 offsets the sticky header (same as
-          #contact). */}
-      {SHOW_VERIFICATION && (
-        <FadeInSection id="verification" as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
-          <div className="max-w-3xl mx-auto px-4 md:px-12">
-            <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight">
-              {t("verification.heading")}
-            </h2>
-            <p className="font-body-md text-fg-muted text-lg leading-relaxed mt-4 max-w-[58ch]">
-              {t("verification.body")}
-            </p>
-            {/* MEH-1840: in-section teaser to the full acceptance process. Reuses the
-                existing process.crosslink_from_about key (also rendered in the footer
-                CTA row below) — no new copy. ArrowLeft points LEFT = forward in RTL,
-                same convention as the badge popover's CaretLeft. */}
-            <LocaleLink
-              href="/about/process"
-              data-testid="verification-process-link"
-              className="mt-4 inline-flex items-center gap-1 font-body-md font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-            >
-              {tProcess("crosslink_from_about")}
-              <ArrowLeft size={15} aria-hidden="true" />
-            </LocaleLink>
+      {/* ======== Trust group — "מה אומרים התגים" (MEH-2827, FinalAbout 08/11) ========
+          The three badge explanations used to be three full sections (heading +
+          one long paragraph each, with a chapter-sized gap between them and no
+          badge in sight). They are now ONE section: the Chapter mark, then three
+          cards in the /about/badges item idiom, each with the REAL badge face
+          beside its heading — the verified seal (BadgeRow's VerifiedChip, no
+          popover), the editor's-pick pill (COLOR_CLASSES.accent) and the
+          community TrustBadge.
+
+          The anchors #verification (MEH-1336/1840 deep-links), #editors-pick
+          (the recommended-badge popover, BadgeRow) and #community-leader
+          (MEH-2527) move onto the cards and keep resolving; scroll-mt-24 keeps
+          the sticky header off them. SHOW_VERIFICATION still gates its card.
+          Body copy is the same words split into keys (AboutTrustCards.test.jsx
+          joins them back and compares to the old strings). */}
+      <FadeInSection as="section" data-testid="about-trust" {...REVEAL_PRESET} className="bg-background py-9 md:py-14">
+        <div className="max-w-3xl mx-auto px-4 md:px-12">
+          <Chapter label={tBadges("h1")} as="h2" />
+          <div className="grid gap-3">
+            {SHOW_VERIFICATION && (
+              <article id="verification" className="scroll-mt-24 rounded-xl border border-border bg-surface-card p-5">
+                <div className="flex flex-wrap items-center justify-between gap-2.5 mb-2.5">
+                  <h3 className="font-headline-md font-bold text-text text-xl leading-tight">{t("verification.heading")}</h3>
+                  <VerifiedChip label={tTier("verified_label")} />
+                </div>
+                <p className="font-body-md text-fg-muted text-base leading-relaxed">{t("verification.body_1")}</p>
+                <p className="mt-2.5 font-body-md text-fg-muted text-base leading-relaxed">{t("verification.body_2")}</p>
+                {/* MEH-1840: teaser to the full acceptance process — same key and
+                    target as before, now inside the card. */}
+                <LocaleLink
+                  href="/about/process"
+                  data-testid="verification-process-link"
+                  className="mt-3 inline-flex min-h-touch items-center gap-1 font-body-md font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                >
+                  {tProcess("crosslink_from_about")}
+                  <ArrowLeft size={15} aria-hidden="true" />
+                </LocaleLink>
+              </article>
+            )}
+            <article id="editors-pick" className="scroll-mt-24 rounded-xl border border-border bg-surface-card p-5">
+              <div className="flex flex-wrap items-center justify-between gap-2.5 mb-2.5">
+                <h3 className="font-headline-md font-bold text-text text-xl leading-tight">{t("editors_pick.heading")}</h3>
+                <span
+                  data-testid="editors-pick-chip"
+                  className={`inline-flex items-center text-xs px-2.5 py-0.5 rounded-full font-medium ${COLOR_CLASSES.accent}`}
+                >
+                  {tBadgeCopy("recommended.label")}
+                </span>
+              </div>
+              <p className="font-body-md text-fg-muted text-base leading-relaxed">{t("editors_pick.body_1")}</p>
+              <p className="mt-2.5 font-body-md text-fg-muted text-base leading-relaxed">{t("editors_pick.list_lead")}</p>
+              <ul className="mt-2 grid gap-2">
+                {["item_1", "item_2"].map((item) => (
+                  <li key={item} className="flex gap-2.5 font-body-md text-fg-muted text-base leading-relaxed">
+                    <span aria-hidden="true" className="mt-[0.7em] h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
+                    <span>{t(`editors_pick.${item}`)}</span>
+                  </li>
+                ))}
+              </ul>
+            </article>
+            <article id="community-leader" className="scroll-mt-24 rounded-xl border border-border bg-surface-card p-5">
+              <div className="flex flex-wrap items-center justify-between gap-2.5 mb-2.5">
+                <h3 className="font-headline-md font-bold text-text text-xl leading-tight">{t("community_leader.heading")}</h3>
+                {/* The TrustBadge tier-4 face without its tooltip wrapper: that
+                    wrapper puts aria-label on a role-less span (axe
+                    aria-prohibited-attr), and the card already explains the
+                    badge. AboutTrustCards.test.jsx renders the real TrustBadge
+                    and asserts these classes match it, so they cannot drift. */}
+                <span data-testid="community-chip" className="inline-flex items-center rounded-full border font-medium text-xs px-2 py-0.5 bg-warning-50 text-warning-700 border-warning-200">
+                  {tTrust("tier_4.label")}
+                </span>
+              </div>
+              <p className="font-body-md text-fg-muted text-base leading-relaxed">{t("community_leader.body_1")}</p>
+              <p className="mt-2.5 font-body-md text-fg-muted text-base leading-relaxed">{t("community_leader.body_2")}</p>
+            </article>
           </div>
-        </FadeInSection>
-      )}
-
-      {/* ======== "בחירת העורכת" — MEH-1492 (editorial badge criteria + ADR-030 promise) ========
-          id="editors-pick" is the anchor target of /about#editors-pick (the recommended-
-          badge popover, BadgeRow.jsx). Mirrors the #verification section (MEH-1336); copy
-          is Sapir-locked in he.json/en.json, so it renders unconditionally. */}
-      <FadeInSection id="editors-pick" as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
-        <div className="max-w-3xl mx-auto px-4 md:px-12">
-          <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight">
-            {t("editors_pick.heading")}
-          </h2>
-          <p className="font-body-md text-fg-muted text-lg leading-relaxed mt-4 max-w-[58ch]">
-            {t("editors_pick.body")}
-          </p>
-        </div>
-      </FadeInSection>
-
-      {/* ======== "מובילת קהילה" — MEH-2527: the automatic TrustBadge (tier 4,
-          10+ reviews, average 4.5+) was explained nowhere. Copy Sapir-approved
-          28/10, sits right after the editorial badge it is the opposite of. */}
-      <FadeInSection id="community-leader" as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
-        <div className="max-w-3xl mx-auto px-4 md:px-12">
-          <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight">
-            {t("community_leader.heading")}
-          </h2>
-          <p className="font-body-md text-fg-muted text-lg leading-relaxed mt-4 max-w-[58ch]">
-            {t("community_leader.body")}
-          </p>
+          <LocaleLink
+            href="/about/badges"
+            data-testid="about-badges-link"
+            className="mt-5 inline-flex min-h-touch items-center gap-1 font-body-md font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          >
+            {t("badges_link.label")}
+            <ArrowLeft size={15} aria-hidden="true" />
+          </LocaleLink>
         </div>
       </FadeInSection>
 
