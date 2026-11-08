@@ -102,11 +102,6 @@ frontend/app/[locale]/experiences/[id]/ExperienceDetailClient.jsx:border-orange-
 frontend/app/[locale]/experiences/[id]/ExperienceDetailClient.jsx:border-yellow-300
 frontend/app/[locale]/experiences/[id]/ExperienceDetailClient.jsx:text-orange-900
 frontend/app/[locale]/experiences/[id]/ExperienceDetailClient.jsx:text-yellow-900
-frontend/app/[locale]/group-buys/[id]/GroupBuyDetailClient.jsx:hex:#2e6853
-frontend/app/[locale]/group-buys/[id]/GroupBuyDetailClient.jsx:hex:#2e6853
-frontend/app/[locale]/group-buys/[id]/GroupBuyDetailClient.jsx:hex:#a3c9a8
-frontend/app/[locale]/group-buys/[id]/GroupBuyDetailClient.jsx:hex:#c9a227
-frontend/app/[locale]/group-buys/[id]/GroupBuyDetailClient.jsx:hex:#f5f0e8
 frontend/app/[locale]/layout.js:hex:#2e6853
 frontend/app/[locale]/map/MapClient.jsx:hex:#f5f0e8
 frontend/app/[locale]/map/components/MapKey.jsx:arb:#4f7a5f
