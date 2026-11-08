@@ -32,6 +32,11 @@ import {
 } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import ClosingCtaBand from "@/components/ClosingCtaBand";
+import Seed from "@/components/brand/Seed";
+import { SEEDS_LIGHT } from "@/lib/brand-seeds";
+
+// MEH-2833: the four steps' seeds — logo order without sand.
+const STEP_SEEDS = SEEDS_LIGHT.filter((seed) => seed.name !== "sand");
 
 // Illustrative tooltip date — this page has NO producer object, so the badge
 // is editorial chrome (refchip in the S11 design). Reuses the live tier-1
@@ -148,12 +153,24 @@ export default function AboutProcessClient() {
                 key={i}
                 className="grid grid-cols-[44px_1fr] md:grid-cols-1 gap-4 items-start"
               >
+                {/* MEH-2833 (seed layer, board 3): each step is a 40×56 seed in
+                    logo order — green, terracotta, gold, sage (sand would vanish
+                    on cream) — with its number on it: cream on the three dark
+                    seeds, text-ink on gold. 20px bold = WCAG large text, so cream
+                    passes at 3.3–3.5:1 on terracotta/sage. The seed is
+                    aria-hidden; the number is real text. */}
                 <span
-                  aria-hidden
+                  data-testid="process-step-seed"
+                  data-seed={STEP_SEEDS[i].name}
                   dir="ltr"
-                  className="numeric w-11 h-11 rounded-full border border-accent bg-background grid place-items-center font-english italic font-semibold text-xl text-accent"
+                  className="relative grid place-items-center w-10 h-14 justify-self-center"
                 >
-                  {`0${i + 1}`}
+                  <Seed color={STEP_SEEDS[i].fill} size={40} highlight className="absolute inset-0" />
+                  <span
+                    className={`relative numeric font-english font-bold text-xl pt-1 ${STEP_SEEDS[i].name === "gold" ? "text-text" : "text-background"}`}
+                  >
+                    {i + 1}
+                  </span>
                 </span>
                 <div>
                   <div className="flex items-center gap-2.5 mb-2">
