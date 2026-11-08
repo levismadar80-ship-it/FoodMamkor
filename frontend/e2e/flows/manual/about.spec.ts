@@ -202,8 +202,11 @@ async function gotoWhyLocal(page: Page, path = "/about/why-local"): Promise<void
 test.describe("manual › /about (MEH-841)", () => {
   // MT:MEH-841:1 — /about comparison: between the pull-quote and Benefits, a two-column table
   //   «מהמקור / בסופר» (05/11, replaced the gold-dot spine): column heads are <th scope="col">,
-  //   each of the 3 rows = a brand <th scope="row"> + a supermarket <td>; no spine, no icons, RTL.
-  test("comparison table: two column heads, three rows, between the quote and Benefits, no spine, no icons", async ({
+  //   each of the 3 rows = a brand <th scope="row"> + a supermarket <td>; no spine, RTL.
+  //   MEH-2827 (FinalAbout, Sapir 08/11): each cell now opens with ONE decorative
+  //   icon — ✓ for the brand side, − for the supermarket side — aria-hidden, so
+  //   the accessible text is still the copy alone.
+  test("comparison table: two column heads, three rows, between the quote and Benefits, no spine, one hidden icon per cell", async ({
     page,
   }) => {
     await gotoAbout(page);
@@ -224,10 +227,12 @@ test.describe("manual › /about (MEH-841)", () => {
     await expect(benefits).toHaveCount(1);
     expect(await precedes(section, benefits), "Benefits must follow the comparison").toBe(true);
 
-    // The spine is gone: no list, no dots, no icons.
+    // The spine is gone: no list, no dots. Icons: exactly one per body cell,
+    // every one hidden from assistive tech (MEH-2827).
     await expect(section.locator("ol")).toHaveCount(0);
     await expect(table.locator("span[aria-hidden]")).toHaveCount(0);
-    await expect(table.locator("svg")).toHaveCount(0);
+    await expect(table.locator("tbody svg")).toHaveCount(COMPARE_ROWS.length * 2);
+    await expect(table.locator('tbody svg:not([aria-hidden="true"])')).toHaveCount(0);
     expect(await computed(table, "direction")).toBe("rtl");
 
     const heads = table.locator('thead th[scope="col"]');
