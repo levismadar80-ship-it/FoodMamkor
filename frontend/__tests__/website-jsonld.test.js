@@ -63,7 +63,7 @@ describe("WebSite JSON-LD (MEH-2851)", () => {
     expect(he.url).toBe(he["@id"].replace(/#website$/, ""));
     expect(he.publisher).toEqual({ "@id": `${he.url}#organization` });
     expect(he.inLanguage).toBe("he-IL");
-    expect(en.inLanguage).not.toBe("he-IL");
+    expect(en.inLanguage).toBe("en-US");
   });
 
   it("does not touch the Organization node", () => {
