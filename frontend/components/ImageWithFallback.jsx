@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { Leaf } from "@phosphor-icons/react";
+import Seed from "@/components/brand/Seed";
+import { seedColorFor } from "@/lib/brand-seeds";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 
 /**
@@ -39,10 +40,10 @@ export default function ImageWithFallback({
       <div
         aria-label={alt}
         role="img"
-        className={`flex items-center justify-center ${className}`}
+        // MEH-2833 (seed layer): sand (background-alt) + one seed, no text —
+        // this slot has no name. Replaces the MEH-1400 green-50 + leaf tile.
+        className={`flex items-center justify-center overflow-hidden bg-background-alt ${className}`}
         style={{
-          // MEH-1400: cream #F5F0E8 → green-50 #EAF3DE (MEH-1243 locked no-photo tile).
-          background: "#EAF3DE",
           width: fill ? "100%" : width,
           height: fill ? "100%" : height,
           position: fill ? "absolute" : "relative",
@@ -50,7 +51,13 @@ export default function ImageWithFallback({
           ...style,
         }}
       >
-        <Leaf size={40} className="text-primary/70" aria-hidden="true" />
+        <Seed
+          color={seedColorFor(alt || src).fill}
+          size={40}
+          rotate={-36}
+          highlight
+          className="h-1/2 w-auto max-h-[60px]"
+        />
       </div>
     );
   }

@@ -25,6 +25,10 @@ describe("ImageWithFallback", () => {
     expect(fallback).toBeInTheDocument();
     // Fallback is a div, not a real <img> element.
     expect(fallback.tagName).toBe("DIV");
+    // MEH-2833: sand + one seed, no leaf, no raw green-50 hex
+    expect(fallback.className).toMatch(/\bbg-background-alt\b/);
+    expect(fallback.getAttribute("style") || "").not.toMatch(/background/i);
+    expect(fallback.querySelectorAll("svg[data-seed-color]")).toHaveLength(1);
   });
 
   it("renders a real image when the source optimizes to a usable URL", () => {
