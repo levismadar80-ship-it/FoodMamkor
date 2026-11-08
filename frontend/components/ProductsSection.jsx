@@ -27,6 +27,7 @@ import { CaretDown, CaretUp, Package, Pencil, Plus, Star, Trash, X } from "@phos
 // FilterSheet diet group uses. `vegetarian` has no icon in the map → text-only,
 // exactly as it renders in FilterSheet.
 import { chipIcon } from "@/lib/chip-icons";
+import { ALLERGEN_CODES, toggleAllergen } from "@/lib/allergens";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
@@ -34,6 +35,7 @@ import { showToast } from "@/lib/toast";
 import { formatPriceRange } from "@/lib/utils";
 import EmptyState from "@/components/ui/EmptyState";
 import Input from "@/components/ui/Input";
+import Button from "@/components/ui/Button";
 
 // MEH-2047: the diet tags that carry a definition, in the order the chip row
 // above them renders. Each key resolves BOTH strings — the term from the chip's
@@ -138,7 +140,7 @@ export default function ProductsSection({
   const [products, setProducts] = useState(null);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ name: "", description: "", image_url: "", price_min: "", price_max: "", is_gluten_free: false, is_vegan: false, is_vegetarian: false, is_lactose_free: false, is_no_added_sugar: false });
+  const [form, setForm] = useState({ name: "", description: "", image_url: "", price_min: "", price_max: "", is_gluten_free: false, is_vegan: false, is_vegetarian: false, is_lactose_free: false, is_no_added_sugar: false, ingredients: "", allergens: [] });
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -331,10 +333,13 @@ export default function ProductsSection({
         is_vegetarian: form.is_vegetarian,
         is_lactose_free: form.is_lactose_free,
         is_no_added_sugar: form.is_no_added_sugar,  // MEH-1934
+        // MEH-2662: blank → null; the backend also collapses [] to null.
+        ingredients: form.ingredients.trim() || null,
+        allergens: form.allergens.length ? form.allergens : null,
       };
       const r = await api.post("/producers/me/products", body);
       setProducts((p) => [...(p || []), r.data]);
-      setForm({ name: "", description: "", image_url: "", price_min: "", price_max: "", is_gluten_free: false, is_vegan: false, is_vegetarian: false, is_lactose_free: false, is_no_added_sugar: false });
+      setForm({ name: "", description: "", image_url: "", price_min: "", price_max: "", is_gluten_free: false, is_vegan: false, is_vegetarian: false, is_lactose_free: false, is_no_added_sugar: false, ingredients: "", allergens: [] });
       setAdding(false);
       showToast.success(t("toast_added")); // MEH-1446
     } catch {
@@ -357,6 +362,8 @@ export default function ProductsSection({
       is_vegetarian: !!product.is_vegetarian,
       is_lactose_free: !!product.is_lactose_free,
       is_no_added_sugar: !!product.is_no_added_sugar,  // MEH-1934
+      ingredients: product.ingredients || "",  // MEH-2662
+      allergens: product.allergens || [],
     });
     setError("");
     setEditFormErrors({});
@@ -441,6 +448,10 @@ export default function ProductsSection({
         is_vegetarian: !!editForm.is_vegetarian,
         is_lactose_free: !!editForm.is_lactose_free,
         is_no_added_sugar: !!editForm.is_no_added_sugar,  // MEH-1934
+        // MEH-2662: sent explicitly so clearing the box / every chip clears
+        // the stored value (null), rather than leaving the old one.
+        ingredients: (editForm.ingredients || "").trim() || null,
+        allergens: editForm.allergens?.length ? editForm.allergens : null,
       };
       const r = await api.put(`/producers/me/products/${productId}`, body);
       setProducts((p) => p.map((x) => (x.id === productId ? r.data : x)));
@@ -510,7 +521,7 @@ export default function ProductsSection({
     <div
       ref={sectionRef}
       tabIndex={-1}
-      className={`focus:outline-none ${embedded ? "" : "bg-white border border-border rounded-[16px] p-6"}`}
+      className={`focus:outline-none ${embedded ? "" : "bg-surface border border-border rounded-lg p-6"}`}
     >
       <div className={embedded ? "flex items-center justify-end mb-4" : "flex items-center justify-between mb-4"}>
         {!embedded && (
@@ -522,7 +533,7 @@ export default function ProductsSection({
         {!adding && products?.length > 0 && (
           <button
             onClick={() => { setAdding(true); setError(""); setFormErrors({}); }}
-            className="inline-flex items-center gap-1.5 text-sm text-primary border border-primary/30 rounded-[8px] px-3 py-1.5 hover:bg-primary/5 transition"
+            className="inline-flex items-center gap-1.5 text-sm text-primary border border-primary/30 rounded-sm px-3 py-1.5 hover:bg-primary/5 transition"
           >
             <Plus size={14} aria-hidden="true" />
             {t("add_cta")}
@@ -545,7 +556,7 @@ export default function ProductsSection({
         </p>
       )}
 
-      {error && <p className="text-sm text-red-500 mb-3">{error}</p>}
+      {error && <p className="text-sm text-error mb-3">{error}</p>}
 
       {/* MEH-1261 F1: load failure gets its own state — never the EmptyState
           (which invites adding a product to a catalog that may already exist). */}
@@ -553,13 +564,13 @@ export default function ProductsSection({
         <div
           role="alert"
           data-testid="products-load-error"
-          className="border border-border rounded-[10px] p-4 bg-red-50 text-center"
+          className="border border-border rounded-md p-4 bg-danger-50 text-center"
         >
           <p className="text-sm text-text mb-2">{tErr("load_failed")}</p>
           <button
             type="button"
             onClick={() => setReloadKey((k) => k + 1)}
-            className="text-sm text-primary font-medium hover:underline"
+            className="text-sm text-primary font-medium underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current"
           >
             {t("load_retry_cta")}
           </button>
@@ -576,9 +587,9 @@ export default function ProductsSection({
             // MEH-1172: no floating decorative icon — the example card IS the
             // visual (Carbon empty-state pattern). Full opacity, slightly wider.
             <div className="w-full max-w-sm text-start">
-              <p className="text-[11px] text-fg-muted mb-1">{t("empty.sample_label")}</p>
-              <div className="border border-border rounded-[12px] p-3 bg-surface-card flex items-center gap-3">
-                <div className="w-14 h-14 rounded-[8px] bg-green-50 flex items-center justify-center shrink-0">
+              <p className="text-2xs text-fg-muted mb-1">{t("empty.sample_label")}</p>
+              <div className="border border-border rounded-md p-3 bg-surface-card flex items-center gap-3">
+                <div className="w-14 h-14 rounded-sm bg-green-50 flex items-center justify-center shrink-0">
                   <Package size={22} className="text-fg-muted" aria-hidden="true" />
                 </div>
                 <div className="min-w-0">
@@ -598,7 +609,7 @@ export default function ProductsSection({
               key={product.id}
               onSubmit={(e) => handleEdit(product.id, e)}
               noValidate
-              className="border border-border rounded-[10px] p-4 space-y-5 bg-green-50"
+              className="border border-border rounded-md p-4 space-y-5 bg-green-50"
             >
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium text-text">{t("edit_heading")}</p>
@@ -683,6 +694,14 @@ export default function ProductsSection({
                       the DietDefinitions doc comment. */}
                   <DietDefinitions id={`edit-diet-definitions-${product.id}`} tForm={tForm} />
                 </div>
+                <IngredientsAllergensFields
+                  idPrefix={`edit-product-${product.id}`}
+                  ingredients={editForm.ingredients || ""}
+                  allergens={editForm.allergens || []}
+                  onIngredients={(v) => setEditForm((f) => ({ ...f, ingredients: v }))}
+                  onToggleAllergen={(code) => setEditForm((f) => ({ ...f, allergens: toggleAllergen(f.allergens, code) }))}
+                  tForm={tForm}
+                />
                 <div>
                   {/* MEH-1096: group heading — file input below is labelled by its
                       own wrapping <label>, so this stays a <span>. */}
@@ -697,17 +716,17 @@ export default function ProductsSection({
                 </div>
               </div>
               <div className="flex gap-2">
-                <button
+                <Button
                   type="submit"
                   disabled={savingEdit || editUploading}
-                  className="flex-1 bg-primary text-white rounded-[8px] py-2 text-sm font-medium hover:bg-primary-dark transition disabled:opacity-50"
+                  variant="primary" size="sm" className="flex-1"
                 >
                   {savingEdit ? t("save_edit_saving") : t("save_edit_cta")}
-                </button>
+                </Button>
                 <button
                   type="button"
                   onClick={cancelEdit}
-                  className="px-4 bg-white border border-border text-text rounded-[8px] py-2 text-sm font-medium hover:bg-green-50 transition"
+                  className="px-4 bg-surface border border-border text-text rounded-sm py-2 text-sm font-medium hover:bg-green-50 transition"
                 >
                   {t("cancel_edit_cta")}
                 </button>
@@ -720,14 +739,14 @@ export default function ProductsSection({
               // MEH-2094: the marked row is distinguishable AT REST (ring +
               // tinted fill), not only on hover — a hover-only cue is invisible
               // on touch, which is the primary surface here.
-              className={`flex items-center gap-3 p-3 rounded-[10px] ${
+              className={`flex items-center gap-3 p-3 rounded-md ${
                 isTopProduct(product)
                   ? "bg-primary/5 ring-2 ring-primary"
                   : "bg-green-50"
               }`}
             >
               {product.image_url && failedThumbs[product.id] !== product.image_url ? (
-                <div className="relative w-12 h-12 shrink-0 rounded-[6px] overflow-hidden">
+                <div className="relative w-12 h-12 shrink-0 rounded-sm overflow-hidden">
                   <Image
                     src={product.image_url}
                     alt={product.name}
@@ -743,14 +762,14 @@ export default function ProductsSection({
                   />
                 </div>
               ) : (
-                <div className="w-12 h-12 shrink-0 rounded-[6px] bg-white border border-border flex items-center justify-center">
+                <div className="w-12 h-12 shrink-0 rounded-sm bg-surface border border-border flex items-center justify-center">
                   <Package size={20} className="text-fg-muted/60" aria-hidden="true" />
                 </div>
               )}
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-sm text-text truncate">{product.name}</p>
                 {isTopProduct(product) && (
-                  <p className="text-[11px] font-medium text-primary">{t("card.top_product_badge")}</p>
+                  <p className="text-2xs font-medium text-primary">{t("card.top_product_badge")}</p>
                 )}
                 {(() => {
                   if (product.price_min != null)
@@ -784,7 +803,7 @@ export default function ProductsSection({
                       : "card.top_product_mark_aria_template",
                     { name: product.name },
                   )}
-                  className={`p-1.5 rounded-[6px] transition disabled:opacity-40 ${
+                  className={`p-1.5 rounded-full transition disabled:opacity-40 ${
                     isTopProduct(product)
                       ? "text-primary hover:bg-primary/10"
                       : "text-fg-muted hover:text-primary hover:bg-primary/5"
@@ -800,7 +819,7 @@ export default function ProductsSection({
               <button
                 onClick={() => startEdit(product)}
                 aria-label={t("card.edit_aria_template", { name: product.name })}
-                className="p-1.5 rounded-[6px] text-fg-muted hover:text-primary hover:bg-primary/5 transition"
+                className="p-1.5 rounded-full text-fg-muted hover:text-primary hover:bg-primary/5 transition"
               >
                 <Pencil size={16} aria-hidden="true" />
               </button>
@@ -808,7 +827,7 @@ export default function ProductsSection({
                 onClick={() => { setError(""); setConfirmDelete({ id: product.id, name: product.name }); }}
                 disabled={deletingId === product.id}
                 aria-label={t("card.delete_aria_template", { name: product.name })}
-                className="p-1.5 rounded-[6px] text-fg-muted hover:text-red-500 hover:bg-red-50 transition disabled:opacity-40"
+                className="p-1.5 rounded-full text-fg-muted hover:text-error hover:bg-danger-50 transition disabled:opacity-40"
               >
                 <Trash size={16} aria-hidden="true" />
               </button>
@@ -818,7 +837,7 @@ export default function ProductsSection({
       </div>
 
       {adding && (
-        <form onSubmit={handleAdd} noValidate className="border border-border rounded-[10px] p-4 space-y-5 bg-green-50">
+        <form onSubmit={handleAdd} noValidate className="border border-border rounded-md p-4 space-y-5 bg-green-50">
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium text-text">{t("add_heading")}</p>
             <button type="button" onClick={() => { setAdding(false); setError(""); setFormErrors({}); }} aria-label={t("cancel_aria")}>
@@ -902,6 +921,14 @@ export default function ProductsSection({
               {/* MEH-2047: …and what each tag MEANS. */}
               <DietDefinitions id="add-diet-definitions" tForm={tForm} />
             </div>
+            <IngredientsAllergensFields
+              idPrefix="new-product"
+              ingredients={form.ingredients}
+              allergens={form.allergens}
+              onIngredients={(v) => setForm((f) => ({ ...f, ingredients: v }))}
+              onToggleAllergen={(code) => setForm((f) => ({ ...f, allergens: toggleAllergen(f.allergens, code) }))}
+              tForm={tForm}
+            />
             <div>
               {/* MEH-1096: group heading — file input below is labelled by its
                   own wrapping <label>, so this stays a <span>. */}
@@ -916,13 +943,13 @@ export default function ProductsSection({
             </div>
           </div>
           <div className="flex gap-2">
-            <button
+            <Button
               type="submit"
               disabled={saving || uploading}
-              className="flex-1 bg-primary text-white rounded-[8px] py-2 text-sm font-medium hover:bg-primary-dark transition disabled:opacity-50"
+              variant="primary" size="sm" className="flex-1"
             >
               {saving ? t("add_submitting") : t("add_submit_cta")}
-            </button>
+            </Button>
           </div>
         </form>
       )}
@@ -938,28 +965,28 @@ export default function ProductsSection({
             role="dialog"
             aria-modal="true"
             aria-labelledby="product-delete-title"
-            className="bg-white rounded-[16px] shadow-xl p-6 max-w-sm w-full text-start space-y-3"
+            className="bg-surface rounded-lg shadow-xl p-6 max-w-sm w-full text-start space-y-3"
           >
             <p id="product-delete-title" className="font-medium text-base text-text">
               {t("delete_confirm.title", { name: confirmDelete.name })}
             </p>
             <p className="text-sm text-fg-muted">{t("delete_confirm.body")}</p>
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && <p className="text-sm text-danger-600">{error}</p>}
             <div className="flex gap-3 justify-start pt-1">
-              <button
+              <Button
                 type="button"
                 disabled={deletingId != null}
                 onClick={() => handleDelete(confirmDelete.id)}
-                className="px-4 py-2 rounded-[10px] text-sm font-medium text-white transition bg-red-600 hover:bg-red-700 disabled:opacity-50"
+                variant="danger" size="sm"
               >
                 {t("delete_confirm.confirm")}
-              </button>
+              </Button>
               <button
                 type="button"
                 data-autofocus
                 disabled={deletingId != null}
                 onClick={() => setConfirmDelete(null)}
-                className="px-4 py-2 rounded-[10px] text-sm border border-border text-fg-muted hover:bg-gray-50 transition disabled:opacity-50"
+                className="px-4 py-2 rounded-full text-sm border border-border text-fg-muted hover:bg-gray-50 transition disabled:opacity-50"
               >
                 {t("delete_confirm.cancel")}
               </button>
@@ -979,13 +1006,13 @@ export default function ProductsSection({
             role="dialog"
             aria-modal="true"
             aria-labelledby="product-duplicate-title"
-            className="bg-white rounded-[16px] shadow-xl p-6 max-w-sm w-full text-start space-y-3"
+            className="bg-surface rounded-lg shadow-xl p-6 max-w-sm w-full text-start space-y-3"
           >
             <p id="product-duplicate-title" className="font-medium text-base text-text">
               {t("duplicate_name_confirm.title")}
             </p>
             <div className="flex gap-3 justify-start pt-1">
-              <button
+              <Button
                 type="button"
                 data-testid="duplicate-confirm"
                 disabled={saving}
@@ -993,17 +1020,17 @@ export default function ProductsSection({
                   setConfirmDuplicate(false);
                   submitAdd();
                 }}
-                className="px-4 py-2 rounded-[10px] text-sm font-medium text-white transition bg-primary hover:opacity-90 disabled:opacity-50"
+                variant="primary" size="sm"
               >
                 {t("duplicate_name_confirm.confirm")}
-              </button>
+              </Button>
               <button
                 type="button"
                 data-testid="duplicate-cancel"
                 data-autofocus
                 disabled={saving}
                 onClick={() => setConfirmDuplicate(false)}
-                className="px-4 py-2 rounded-[10px] text-sm border border-border text-fg-muted hover:bg-gray-50 transition disabled:opacity-50"
+                className="px-4 py-2 rounded-full text-sm border border-border text-fg-muted hover:bg-gray-50 transition disabled:opacity-50"
               >
                 {t("duplicate_name_confirm.cancel")}
               </button>
@@ -1099,6 +1126,46 @@ function DietDefinitions({ id, tForm }) {
   );
 }
 
+// MEH-2662: ingredients (free text) + allergens (closed list, chips) — what
+// the owner declares about the food. Shown on the public product sheet
+// «לפי הצהרת בית העסק». Optional; nothing chosen = nothing shown.
+function IngredientsAllergensFields({ idPrefix, ingredients, allergens, onIngredients, onToggleAllergen, tForm }) {
+  const headingId = `${idPrefix}-allergens-heading`;
+  return (
+    <>
+      <div>
+        <label htmlFor={`${idPrefix}-ingredients`} className="text-xs text-fg-muted mb-1 block">
+          {tForm("ingredients_label")}
+        </label>
+        <textarea
+          id={`${idPrefix}-ingredients`}
+          data-testid="product-ingredients-input"
+          rows={2}
+          maxLength={2000}
+          value={ingredients}
+          placeholder={tForm("ingredients_placeholder")}
+          onChange={(e) => onIngredients(e.target.value)}
+          className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm text-text focus-ring"
+        />
+      </div>
+      <div>
+        <p id={headingId} className="text-xs text-fg-muted mb-2">{tForm("allergens_heading")}</p>
+        <div role="group" aria-labelledby={headingId} data-testid="product-allergens-group" className="flex flex-wrap gap-2">
+          {ALLERGEN_CODES.map((code) => (
+            <DietChip
+              key={code}
+              label={tForm(`allergen_${code}`)}
+              pressed={allergens.includes(code)}
+              onToggle={() => onToggleAllergen(code)}
+            />
+          ))}
+        </div>
+        <p className="text-xs text-fg-muted mt-2">{tForm("allergens_helper")}</p>
+      </div>
+    </>
+  );
+}
+
 // Diet flag as a toggleable chip (≥44px tap target, aria-pressed, focus ring).
 // REUSES: components/CategorySelector.jsx:163-200 selected idiom
 // (border-primary bg-green-50 vs border-border hover:border-primary) — ADR-019
@@ -1114,10 +1181,10 @@ function DietChip({ label, pressed, onToggle, iconKey }) {
       onClick={onToggle}
       aria-pressed={pressed}
       className={[
-        "inline-flex items-center gap-1.5 min-h-[44px] rounded-[10px] border px-4 py-2 text-sm text-start transition focus-ring",
+        "inline-flex items-center gap-1.5 min-h-touch rounded-full border px-4 py-2 text-sm text-start transition focus-ring",
         pressed
           ? "border-primary bg-green-50 text-text"
-          : "border-border bg-white text-text hover:border-primary",
+          : "border-border bg-surface text-text hover:border-primary",
       ].join(" ")}
     >
       {icon && <span aria-hidden="true">{icon}</span>}
@@ -1137,14 +1204,14 @@ function UploadZone({ imageUrl, uploading, onUpload, onRemove, tForm }) {
   if (imageUrl && failedSrc !== imageUrl) {
     return (
       <div className="flex items-center gap-3">
-        <div className="relative w-16 h-16 rounded-[8px] overflow-hidden shrink-0 border border-border">
+        <div className="relative w-16 h-16 rounded-sm overflow-hidden shrink-0 border border-border">
           <Image src={imageUrl} alt={tForm("image_alt")} fill className="object-cover" sizes="64px" onError={() => setFailedSrc(imageUrl)} />
         </div>
         {/* MEH-2033: sr-only (NOT hidden) keeps the input in the tab order —
             display:none removes it and the wrapping label is not natively
             focusable (WCAG 2.1.1). Ring on focus-within is the keyboard
             affordance; this label has no border, so the ring alone carries it. */}
-        <label className="cursor-pointer text-sm text-primary hover:underline rounded-[4px] focus-within:ring-2 focus-within:ring-primary/30">
+        <label className="cursor-pointer text-sm text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current rounded focus-within:ring-2 focus-within:ring-primary/30">
           {uploading ? tForm("image_uploading") : tForm("image_replace")}
           <input
             type="file"
@@ -1154,7 +1221,7 @@ function UploadZone({ imageUrl, uploading, onUpload, onRemove, tForm }) {
             disabled={uploading}
           />
         </label>
-        <button type="button" onClick={onRemove} className="text-sm text-red-500 hover:underline">
+        <button type="button" onClick={onRemove} className="text-sm text-error underline decoration-[1.5px] underline-offset-[5px] decoration-error/35 hover:decoration-current">
           {tForm("image_remove")}
         </button>
       </div>
@@ -1163,7 +1230,7 @@ function UploadZone({ imageUrl, uploading, onUpload, onRemove, tForm }) {
   // MEH-2033: sr-only + focus-within — same keyboard-reachability fix as
   // EventForm (MEH-2031) / ExperienceForm (MEH-2012), word for word.
   return (
-    <label className="flex flex-col items-center justify-center gap-1 text-center text-sm text-fg-muted border border-dashed border-border rounded-[8px] px-4 py-6 cursor-pointer hover:bg-green-50 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30">
+    <label className="flex flex-col items-center justify-center gap-1 text-center text-sm text-fg-muted border border-dashed border-border rounded-sm px-4 py-6 cursor-pointer hover:bg-green-50 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30">
       <Package size={20} className="text-fg-muted" aria-hidden="true" />
       <span>{uploading ? tForm("image_uploading") : tForm("image_upload_cta")}</span>
       <input

@@ -104,7 +104,7 @@ export default function LoginPromptModal({
 
   const overlay = (
     <div
-      className="fixed inset-0 z-[9500] flex items-center justify-center p-4 bg-black/50"
+      className="fixed inset-0 z-[9500] flex items-center justify-center p-4 bg-black/40"
       onClick={onClose}
       role="presentation"
     >
@@ -114,7 +114,7 @@ export default function LoginPromptModal({
         aria-modal="true"
         aria-labelledby="login-prompt-title"
         onClick={(e) => e.stopPropagation()}
-        className="relative bg-white rounded-[16px] max-w-sm w-full p-6 shadow-xl text-center"
+        className="relative bg-surface rounded-lg max-w-sm w-full p-6 shadow-xl text-center"
       >
         <button
           type="button"
@@ -144,7 +144,7 @@ export default function LoginPromptModal({
         <a
           ref={primaryRef}
           href={loginHref}
-          className="block w-full bg-primary text-white py-3 rounded-[12px] hover:bg-primary-dark transition font-medium focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="block w-full bg-primary text-white py-3 rounded-md hover:bg-primary-dark transition font-medium focus-visible:ring-2 focus-visible:ring-primary/40"
         >
           {t("login_cta")}
         </a>

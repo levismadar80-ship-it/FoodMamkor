@@ -25,6 +25,7 @@ from app.utils.clock import ISRAEL_TZ, israel_today, utc_now
 from app.models import (
     ContactClick,
     DeliveryArea,
+    DeliveryWaitlistEntry,
     Favorite,
     HomeProduct,
     Producer,
@@ -42,10 +43,9 @@ import string
 
 from app.models.models import PhoneOtpToken, KashrutBadgeRequest
 from app.schemas.schemas import (
-    AVAILABILITY_STATES,
+    WRITABLE_AVAILABILITY_STATES,
     clean_display_city,
     AvailabilityStateUpdate,
-    AvailabilityStatusUpdate,
     BioGenerateIn,
     KashrutRequestCreate,
     KashrutRequestOut,
@@ -59,7 +59,6 @@ from app.schemas.schemas import (
     ProductOut,
     ProductUpdate,
     ReviewInviteLinkOut,
-    state_to_legacy,
 )
 from app.services.auth_notifications import (
     notify_admin_new_producer,
@@ -78,7 +77,7 @@ from app.services.delivery_validation import (
 )
 from app.services.license_validation import (
     categories_require_license,
-    ensure_license_for_categories,
+    enforce_license_gate_on_update,
 )
 from app.services.analytics import israel_day_of, unique_views_count
 from app.services.analytics_rollup import rollup_snapshot
@@ -252,46 +251,6 @@ def _sync_active_offer(db: Session, producer: Producer, offer: dict | None):
         ) from exc
 
 
-def _enforce_owner_license_gate(db, producer, payload, category_ids):
-    """MEH-999: grandfather rule — validate NEWLY-ADDED categories only, never
-    the set the producer already holds. The MEH-530 full-set re-check bricked
-    every edit for MEH-971 license-pending producers (licensed category +
-    NULL license → 422 on any PUT). Same posture as the auth.py register
-    bypass: NOT a security relaxation — licensed-only is enforced downstream
-    by the admin approval guard and by publication requiring
-    status=="approved"; a pending producer editing her bio publishes nothing.
-    """
-    effective_license = (
-        payload.get("producer_license_number")
-        if "producer_license_number" in payload
-        else producer.producer_license_number
-    )
-    persisted_category_ids = {c.id for c in producer.categories}
-    added_category_ids = (
-        [cid for cid in category_ids if cid not in persisted_category_ids]
-        if category_ids is not None
-        else []
-    )
-    # Helper short-circuits on an empty list, so this only fires for adds.
-    ensure_license_for_categories(db, added_category_ids, effective_license)
-
-    # MEH-999 (2c): the one hole grandfathering would open — a LICENSED
-    # producer blanking her license while keeping a license-required category.
-    # Re-run the gate against the final category set with the cleared value.
-    # Pending producers are unaffected: their license is already NULL, so
-    # nothing is being cleared.
-    license_cleared = (
-        "producer_license_number" in payload
-        and not (payload.get("producer_license_number") or "").strip()
-        and (producer.producer_license_number or "").strip()
-    )
-    if license_cleared:
-        final_category_ids = (
-            category_ids if category_ids is not None else list(persisted_category_ids)
-        )
-        ensure_license_for_categories(db, final_category_ids, None)
-
-
 # MEH-1351: approvability = the admin approve gate's definition, REUSED not
 # reimplemented — ≥1 image (MEH-799) AND license present when the categories
 # require one (MEH-971). Keep in sync with admin.py:approve_producer.
@@ -327,8 +286,18 @@ def _pending_and_approvable(db, producer) -> bool:
 # city through the locations CRUD, which pings nobody. That gap is real and
 # pre-dates this change; it is MEH-2073 chunk 2's to close by moving the ping
 # into `_sync_producer_city_from_primary`, not this handler's to paper over.
+#
+# MEH-2626: `whatsapp_group` (the WhatsApp updates link) joined — it goes live
+# on the public page the moment it is saved, and a swapped link sends every
+# visitor who taps it to a different group or channel.
 SENSITIVE_FIELDS = frozenset(
-    {"phone", "vegan_scope", "vegetarian_scope", "gluten_free_facility"}
+    {
+        "phone",
+        "vegan_scope",
+        "vegetarian_scope",
+        "gluten_free_facility",
+        "whatsapp_group",
+    }
 )
 
 # MEH-1938 follow-up (Sapir, 02/09) — the single-primary invariant speaks with
@@ -350,6 +319,21 @@ PRIMARY_MUST_BE_BRANCH = (
     "המיקום הראשי חייב להיות סניף. "
     "אם אין לעסק כתובת פיזית, אפשר להשאיר את המיקום הראשי ריק."
 )
+
+# MEH-1943 chunk 1: `{code, message, params}` (the MEH-1164 / MEH-1940 shape).
+# `message` is the approved sentence above, word for word, so a consumer that
+# still renders `detail.message` shows exactly what it showed before; the
+# frontend maps the `code` to settings.locations.errors.<code> (he + en).
+ONE_PRIMARY_REQUIRED_DETAIL = {
+    "code": "one_primary_required",
+    "message": ONE_PRIMARY_REQUIRED,
+    "params": {},
+}
+PRIMARY_MUST_BE_BRANCH_DETAIL = {
+    "code": "primary_must_be_branch",
+    "message": PRIMARY_MUST_BE_BRANCH,
+    "params": {},
+}
 
 
 def _snapshot_sensitive(producer) -> dict:
@@ -624,6 +608,8 @@ def update_my_producer(
         "instagram",
         "website",
         "whatsapp_group",
+        # MEH-1676: the owner's opt-out for the public coverage CTA.
+        "coverage_cta_enabled",
         "primary_contact_method",
         "contact_email",
         "facebook",
@@ -639,6 +625,8 @@ def update_my_producer(
         "owner_bio",
         "owner_photo_url",
         "grass_fed",
+        # «עסק של מילואימניקים»: owner declares; editor = ReservistOwnedCard.jsx.
+        "reservist_owned",
         # MEH-1508 ch2: owner declares business-level dietary scope. Values are
         # enum-validated in ProducerUpdate (schemas.py); this opens the write path.
         "vegan_scope",
@@ -788,7 +776,7 @@ def update_my_producer(
     offer_sent = "active_offer" in payload
     offer_payload = payload.pop("active_offer", None)
 
-    _enforce_owner_license_gate(db, producer, payload, category_ids)
+    enforce_license_gate_on_update(db, producer, payload, category_ids)
     # MEH-1255: effective-state guard — excluded cities require nationwide.
     ensure_exclusion_requires_nationwide(producer, payload)
     # MEH-1879: same shape — nationwide delivery requires the delivery flag,
@@ -885,6 +873,14 @@ def update_my_producer(
             ),
             new_cities,
         )
+        # MEH-2618: the no-account sibling of the alert above — everyone who
+        # left «תודיעו לי כשתגיעו ל{עיר}» for one of these cities gets her
+        # one email. Called through the module so tests can patch it.
+        from app.services import delivery_waitlist
+
+        background_tasks.add_task(
+            delivery_waitlist.notify_cities, db, producer.id, new_cities
+        )
 
     _maybe_fire_review_ready(background_tasks, db, producer, was_approvable)
     # MEH-2073: notification only — runs after the commit above, adds a
@@ -900,145 +896,11 @@ def update_my_producer(
     return producer
 
 
-# LEGACY(2026-11-30, MEH-1854)
-# MEH-291 — the two endpoints below are the legacy availability write paths.
-# MEH-2271 (chunk 3a) removed the dual-WRITE: nothing in this module writes
-# is_available_today or availability_status any more, so the two mapping
-# helpers that lived here are gone. What replaced them:
-#
-#   enum -> legacy   schemas.state_to_legacy — one caller, the ProducerListOut
-#                    derivation. Not called from a router at all.
-#   legacy -> enum   _status_to_state below, which reads the CURRENT STATE
-#                    rather than the two columns. That is the whole point: the
-#                    old _legacy_to_state consulted columns this module had
-#                    stopped updating, so a producer who set full_this_week on
-#                    the new endpoint and then touched a legacy one would have
-#                    been silently reset from stale input.
-#
-# MEH-2273 deletes both endpoints and the columns. scripts/legacy-expiry-check.sh
-# fails once the date above passes, so the next person either finishes it or
-# extends the date in a reviewed PR.
-
-
-def _status_to_state(current_state: str | None, status: str) -> str:
-    """Map a legacy ``availability_status`` write onto the 4-value enum,
-    resolved against the producer's CURRENT state.
-
-    Only ``"available"`` is ambiguous: it means "not full and not on vacation"
-    and says nothing about today. Preserving `available_today` across such a
-    write is what keeps the legacy endpoint's observable behaviour identical to
-    the pre-MEH-2271 one, where writing status="available" left the separate
-    `is_available_today` boolean untouched.
-    """
-    if status == "vacation":
-        return "on_vacation"
-    if status == "full":
-        return "full_this_week"
-    return (
-        "available_today" if current_state == "available_today" else "accepting_orders"
-    )
-
-
-@router.post("/availability")
-@limiter.limit("20/hour")
-def toggle_availability(
-    request: Request,
-    user: User = Depends(require_producer),
-    db: Session = Depends(get_db),
-):
-    """Toggle today's availability for the logged-in producer.
-
-    Legacy endpoint — kept during MEH-291 7-day overlap. Mirrors the toggle to
-    `availability_state` so consumers reading the new column stay consistent.
-    """
-    producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
-    if not producer:
-        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
-    # MEH-2271: toggle the STATE. Previously this flipped the boolean column
-    # and derived the state from it; the column is no longer written by the
-    # canonical endpoint, so deriving from it would toggle against stale data.
-    #
-    # full_this_week and on_vacation are LEFT ALONE, and that is preservation
-    # rather than a new rule. The old `_legacy_to_state` ranked
-    # `availability_status` above `is_available_today`, so on a producer whose
-    # status was "full" or "vacation" the boolean flip changed nothing the
-    # state could see — this endpoint was already a no-op for them. Dragging
-    # them to available_today would be a behaviour change wearing a refactor's
-    # clothes, and the durable states are exactly the ones a "am I free today"
-    # toggle has no business clearing.
-    #
-    # (The first version of this block did exactly that, with a comment
-    # claiming parity that did not hold. Caught by the CI reviewer on #3460.)
-    if producer.availability_state in ("accepting_orders", "available_today"):
-        producer.availability_state = (
-            "accepting_orders"
-            if producer.availability_state == "available_today"
-            else "available_today"
-        )
-    producer.last_active_at = utc_now()
-    db.commit()
-    return {
-        # Derived for the response, not read back off a column. MEH-2272
-        # removes this key together with the field on ProducerListOut.
-        "is_available_today": producer.availability_state == "available_today",
-        "availability_state": producer.availability_state,
-    }
-
-
-# MEH-12: durable availability status ("open | full | vacation") that
-# persists until the producer changes it, vs. the per-day
-# `is_available_today` flag above. Rendered as a colored-dot badge on
-# ProducerCard + ProducerDetail. Keep the two endpoints separate —
-# collapsing them would break the existing "זמין היום" UX.
-AVAILABILITY_STATUSES = {"available", "full", "vacation"}
-
-
-@router.post("/availability-status")
-def set_availability_status(
-    data: AvailabilityStatusUpdate,
-    user: User = Depends(require_producer),
-    db: Session = Depends(get_db),
-):
-    """Legacy endpoint — kept during MEH-291 7-day overlap. Mirrors the
-    durable status to `availability_state`."""
-    if data.status not in AVAILABILITY_STATUSES:
-        raise HTTPException(
-            status_code=400,
-            detail=f"סטטוס לא תקין. חייב להיות אחד מתוך: {sorted(AVAILABILITY_STATUSES)}",
-        )
-    # AUD-039: reject a past return date here too (Israel tz), so the legacy
-    # surface can't persist an already-expired vacation.
-    if (
-        data.status == "vacation"
-        and data.vacation_until is not None
-        and data.vacation_until < israel_today()
-    ):
-        raise HTTPException(
-            status_code=422, detail="תאריך החזרה לחופשה חייב להיות עתידי"
-        )
-    producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
-    if not producer:
-        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
-    # MEH-2271: state-only write, resolved against the current state so that
-    # status="available" does not silently clear an available_today producer.
-    producer.availability_state = _status_to_state(
-        producer.availability_state, data.status
-    )
-    producer.vacation_until = data.vacation_until if data.status == "vacation" else None
-    producer.last_active_at = utc_now()
-    db.commit()
-    return {
-        # Derived, same as the toggle above.
-        "availability_status": state_to_legacy(producer.availability_state)[1],
-        "availability_state": producer.availability_state,
-        "vacation_until": producer.vacation_until.isoformat()
-        if producer.vacation_until
-        else None,
-    }
-
-
-# MEH-291 — new unified endpoint. Phase 3 frontend will call this exclusively;
-# the two legacy endpoints above stay during the 7-day overlap and dual-write.
+# MEH-2758 (MEH-2757 chunk 1): the two legacy availability write paths
+# (POST /availability, POST /availability-status — MEH-291, LEGACY MEH-1854)
+# are deleted. No frontend called either, and both could still write
+# `available_today` / `full_this_week`, which MEH-2782 later removed.
+# POST /availability-state below is the only availability write endpoint.
 
 
 @router.post("/availability-state")
@@ -1052,10 +914,16 @@ def set_availability_state(
     # Value membership stays a 400 before the DB hit (preserves existing
     # contract); the transition + return-date guards run against the
     # producer's current state below (AUD-039/040).
-    if data.state not in AVAILABILITY_STATES:
+    # MEH-2758: pause-only — the read-side enum is wider than what may be written.
+    if data.state not in WRITABLE_AVAILABILITY_STATES:
         raise HTTPException(
             status_code=400,
-            detail=f"מצב לא תקין. חייב להיות אחד מתוך: {', '.join(AVAILABILITY_STATES)}",
+            # MEH-1943 chunk 2: the allowed set moves to params, never the message.
+            detail={
+                "code": "invalid_availability_state",
+                "message": "מצב לא תקין",
+                "params": {"allowed": list(WRITABLE_AVAILABILITY_STATES)},
+            },
         )
 
     producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
@@ -1118,26 +986,10 @@ def dashboard(
         or 0
     )
 
-    # MEH-2271 — bound here rather than spread inline from a zip(): the
-    # comment below is load-bearing and a zip idiom buries it (CI reviewer,
-    # #3460).
-    _derived_today, _derived_status = state_to_legacy(producer.availability_state)
-
     return {
         "producer": {
             "id": str(producer.id),
             "name": producer.name,
-            # MEH-2271 — both derived from the enum, not read off the two
-            # columns this module no longer writes. Reading the columns here
-            # would report the value they froze at, which is the exact bug
-            # deriving everywhere else exists to prevent. This is the SECOND
-            # call site of state_to_legacy, and Sapir's ruling of 2026-09-06 asked for
-            # exactly one (the schema derivation) — the deviation is stated in
-            # the PR body rather than resolved by leaving a stale read here.
-            # MEH-2272 removes both keys; the frontend dashboard already reads
-            # only availability_state (app/[locale]/producer/dashboard/page.js).
-            "is_available_today": _derived_today,
-            "availability_status": _derived_status,
             # MEH-291 — durable 4-value enum, the only one written.
             # Defensive default in case ORM ever returns NULL despite NOT NULL.
             "availability_state": producer.availability_state or "accepting_orders",
@@ -1244,6 +1096,8 @@ def producer_analytics(
       - home_products_count (active only, scoped to the owning user)
       - views_by_day: 30-entry zero-filled daily series for the line chart
       - top_cities: top 5 cities the views come from (NULL excluded)
+      - pickup_hosts: [{email, city}] waitlist visitors who offered to host a
+        pickup point for THIS business (MEH-2673), newest first, max 50
     """
     producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
     if not producer:
@@ -1408,6 +1262,62 @@ def producer_analytics(
     )
     top_cities = [{"city": row.city, "count": int(row.count)} for row in top_city_rows]
 
+    # MEH-1676 ── coverage_requests: "לא מגיעים ל{עיר}?" clicks grouped by
+    # the city they asked about, last 30 days, most-requested first. The city
+    # has been captured since MEH-1677 (`producer_whatsapp_clicks.city`) and
+    # no screen read it until now. `city IS NOT NULL` is the whole filter: an
+    # ordinary WhatsApp click stores NULL there by construction (only
+    # CoverageRequestCta sends a body), so NULL means "not a coverage click"
+    # and the two kinds cannot be confused. Counted raw, like the WhatsApp KPI
+    # above — the table carries no viewer hash — so one visitor tapping twice
+    # is two requests; the dashboard copy says "פניות", not "אנשים".
+    # The city is the visitor's typed text (outer whitespace stripped only), so
+    # «Haifa» / «haifa» and a doubled inner space are one city: group on a
+    # case- and whitespace-folded key and show one spelling of it.
+    city_key = func.lower(
+        func.regexp_replace(func.trim(ProducerWhatsAppClick.city), r"\s+", " ", "g")
+    )
+    coverage_rows = (
+        db.query(
+            func.min(ProducerWhatsAppClick.city).label("city"),
+            func.count(ProducerWhatsAppClick.id).label("count"),
+        )
+        .filter(
+            ProducerWhatsAppClick.producer_id == pid,
+            ProducerWhatsAppClick.city.isnot(None),
+            ProducerWhatsAppClick.clicked_at >= utc_now() - timedelta(days=30),
+        )
+        .group_by(city_key)
+        .order_by(func.count(ProducerWhatsAppClick.id).desc(), city_key)
+        .limit(5)
+        .all()
+    )
+    coverage_requests = [
+        {"city": row.city, "count": int(row.count)} for row in coverage_rows
+    ]
+
+    # MEH-2673 ── pickup_hosts: waitlist visitors who ticked «אשמח לארח נקודת
+    # מסירה ב{עיר}». Ticking is consent for THIS business to see the email —
+    # the form says so under the box — so the filter is this producer's rows
+    # only (`pid` is the caller's own business, require_producer above), and
+    # a plain waitlist signup (wants_to_host False) never appears. Newest
+    # CONFIRMATION first (not signup — a late click on an old signup is still
+    # news); capped so a popular business gets a readable card, not a dump.
+    host_rows = (
+        db.query(DeliveryWaitlistEntry.email, DeliveryWaitlistEntry.city)
+        .filter(
+            DeliveryWaitlistEntry.producer_id == pid,
+            DeliveryWaitlistEntry.wants_to_host.is_(True),
+        )
+        .order_by(
+            DeliveryWaitlistEntry.host_confirmed_at.desc().nulls_last(),
+            DeliveryWaitlistEntry.created_at.desc(),
+        )
+        .limit(50)
+        .all()
+    )
+    pickup_hosts = [{"email": row.email, "city": row.city} for row in host_rows]
+
     # MEH-57 ── conversion_rate: contact actions / profile views × 100 (30d).
     #
     # MEH-2157: the numerator is EVERY logged contact action — the WhatsApp CTA
@@ -1485,6 +1395,8 @@ def producer_analytics(
         "home_products_count": int(home_products_count),
         "views_by_day": views_by_day,
         "top_cities": top_cities,
+        "coverage_requests": coverage_requests,
+        "pickup_hosts": pickup_hosts,
         # MEH-2529: `rank_in_city` (a per-request city ranking query) and
         # `profile_strength` (a second completeness score beside the
         # dashboard's own, MEH-1002) were computed here and read by no screen.
@@ -1732,7 +1644,12 @@ def request_kashrut_badge(
     if body.badge_code not in VALID_BADGE_CODES:
         raise HTTPException(
             status_code=400,
-            detail=f"קוד badge לא תקין. ערכים מותרים: {', '.join(sorted(VALID_BADGE_CODES))}",
+            # MEH-1943 chunk 2: the allowed set moves to params, never the message.
+            detail={
+                "code": "invalid_badge_code",
+                "message": "קוד תג לא תקין",
+                "params": {"allowed": sorted(VALID_BADGE_CODES)},
+            },
         )
     producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
     if not producer:
@@ -2578,7 +2495,7 @@ def create_my_location(
     #      owner adding her only pickup point, and per MEH-213 she legitimately
     #      has no pin at all. Refusing her would block a valid business shape.
     if loc.is_primary and loc.kind != "branch":
-        raise HTTPException(status_code=422, detail=PRIMARY_MUST_BE_BRANCH)
+        raise HTTPException(status_code=422, detail=PRIMARY_MUST_BE_BRANCH_DETAIL)
 
     # Single-primary: the first BRANCH is primary; an explicit is_primary=true
     # on a later one clears the existing primary. A producer whose only rows
@@ -2645,13 +2562,13 @@ def update_my_location(  # noqa: PLR0913 — all 6 args are FastAPI-injected (sl
         # DeliveryBlock.jsx:468). A primary whose own marker disappears under a
         # layer toggle is a third answer to a question that must have one.
         if loc.kind != "branch":
-            raise HTTPException(status_code=422, detail=PRIMARY_MUST_BE_BRANCH)
+            raise HTTPException(status_code=422, detail=PRIMARY_MUST_BE_BRANCH_DETAIL)
         _clear_other_primaries(db, user.producer_id, loc.id)
         loc.is_primary = True
     elif want_primary is False and loc.is_primary:
         # Can't directly demote the sole primary (that would leave zero) — the
         # owner promotes another location instead (which clears this one).
-        raise HTTPException(status_code=422, detail=ONE_PRIMARY_REQUIRED)
+        raise HTTPException(status_code=422, detail=ONE_PRIMARY_REQUIRED_DETAIL)
 
     # MEH-2141: re-derive `Producer.city` on exactly two events — this row was
     # just PROMOTED to primary (the primary's identity changed), or this row is
@@ -2708,7 +2625,7 @@ def delete_my_location(
             is not None
         )
         if others_remain:
-            raise HTTPException(status_code=422, detail=ONE_PRIMARY_REQUIRED)
+            raise HTTPException(status_code=422, detail=ONE_PRIMARY_REQUIRED_DETAIL)
 
     # Deleting the LAST remaining location is allowed and leaves no primary.
     # The business stays approved but is unpinned and cannot submit — STRICT

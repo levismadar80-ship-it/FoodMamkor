@@ -34,7 +34,30 @@ colors:
   state-selected: "#2E4A2E"
   error: "#B3261E"
   error-on-dark: "#FCA5A5"
+  danger-50: "#FEF2F2"
+  danger-100: "#FEE2E2"
+  danger-200: "#FECACA"
+  danger-300: "#FCA5A5"
+  danger-400: "#F87171"
+  danger-500: "#EF4444"
+  danger-600: "#DC2626"
+  danger-700: "#B91C1C"
+  danger-800: "#991B1B"
+  danger-900: "#7F1D1D"
+  warning-50: "#FFFBEB"
+  warning-100: "#FEF3C7"
+  warning-200: "#FDE68A"
+  warning-300: "#FCD34D"
+  warning-400: "#FBBF24"
+  warning-500: "#F59E0B"
+  warning-600: "#D97706"
+  warning-700: "#B45309"
+  warning-800: "#92400E"
+  warning-900: "#78350F"
 typography:
+  2xs:
+    fontSize: 11px
+    lineHeight: 16px
   headline-display:
     fontFamily: '"Frank Ruhl Libre", "David Libre", Georgia, serif'
     fontSize: 48px
@@ -87,6 +110,7 @@ spacing:
   "5xl": 96px
   "6xl": 128px
   gutter: 16px
+  touch: 44px
 rounded:
   sm: 8px
   md: 12px
@@ -151,10 +175,11 @@ exception (quotes, loan words), not the baseline.
 
 ## Colors
 
-The palette is deliberately small: **one brand green** — expressed as a
+The UI palette is deliberately small: **one action green** — expressed as a
 systematic 6-stop tint scale (`green-50`…`green-900`) for badges, hovers and
-depth, **not** as multiple brand colors — plus one warm gold accent, a cream
-background, and a tight set of neutrals. There is **no state-color palette**
+depth — plus one warm gold accent, a cream background, and a tight set of
+neutrals. The logo's other colours enter only as **decoration in the seed
+shape** — see *Seed layer* below (MEH-2833); they are never UI colours. There is **no state-color palette**
 (no red/amber/slate) — see *Elevation & Depth* for how state is expressed
 instead, and *Do's and Don'ts* for why.
 
@@ -211,9 +236,23 @@ instead, and *Do's and Don'ts* for why.
 Tailwind's stock palettes (`red-*`, `gray-*`, `amber-*`, …) are **not** tokens.
 Use the semantic name: `text-error`, `bg-surface`, `border-border`,
 `text-fg-muted`, `text-muted`. `green-*` is the one exception — it **is** a token
-(the 6-stop scale above) and is exempt. An ESLint selector warns on the rest
+(the 6-stop scale above) and is exempt. A card or panel background is
+`bg-surface` (and `bg-surface/90`, `/95` for frosted bars), never `bg-white`;
+`bg-white/5…/60` stays raw on purpose, because it is a white tint over a dark or
+photo ground, not a surface, and must not follow the surface in a future theme. An ESLint selector warns on the rest
 (MEH-1629, `warn`: the ~170 historical hits are debt, not a build failure). If a
 raw shade is genuinely required, mark it `// token-ok` + `eslint-disable-next-line`.
+
+**The blocking gate is `scripts/checks/raw-color-tokens.sh` (MEH-2717, Repo guards).**
+It ratchets every raw colour in `frontend/{app,components,lib,hooks}` — palette
+classes including `white`/`black`, arbitrary `bg-[#…]` classes and hex literals in
+JS/CSS — against `scripts/checks/raw-color-baseline.txt`. Existing occurrences are
+frozen; a new one fails CI. `bg-white`, `border-white`, `ring-white` etc. are gated;
+only `text-white` and `bg-black/<n>` scrims are exempt. The
+`// token-ok` comment above silences only the ESLint warning; for the gate, a
+genuinely fixed colour (a third-party brand colour, an SVG fill) is
+`--update-baseline` plus a reason in the PR body. Why it matters: a future theme
+switch (dark mode) can only re-colour what goes through the tokens.
 
 ### Address/city fields must use the canonical component
 
@@ -265,10 +304,75 @@ Latin and digits still get Cormorant. The change is global — it reaches every
 `.font-english` use (home, process, events, join, producer sign-up, account
 sheet) — but it only moves Hebrew glyphs, which had no brand face there before.
 
+**Price token (ADR-039, MEH-2804).** An event's price — on the event row and the
+event page, free and paid alike — is **Frank Ruhl (`font-headline-display`),
+upright, bold, in the row's accent**, digits `dir="ltr"`, never `align-middle`.
+Free reads «כניסה חופשית» in the same token. Cormorant italic (`.font-english`)
+stays for **times of day** and **inline Latin** — never for a number inside a
+Hebrew line (its old-style italic figures read as «ɜı»). The home trust band is
+the locked sentence at every count, plus «N בתי עסק שהצטרפו עד היום» from 25,
+the numeral in the line's own face, semibold, `text-primary`; a three-column
+fact row was tried and rejected (07/11). See [ADR-039](./decisions/ADR-039-display-numerals.md).
+
 **Headings never strand one word on the last line** — `h1, h2, h3` carry
 `text-wrap: balance` in `globals.css` (MEH-2488). **Hebrew is never
 letter-spaced** (no `tracking-*` on Hebrew; MEH-2488 removed the last two:
 the home trust band and the admin help ToC label).
+
+**One type scale (MEH-1687 phase 4, 06/11/2026).** Font sizes are scale steps,
+never `text-[Npx]`: `text-2xs` 11/16 (badges, chips; Material 3 label-small) ·
+`text-xs` 12 · `text-sm` 14 · `text-base` 16 · `text-lg` 18 · `text-xl` 20 ·
+`text-2xl` 24 · `text-3xl` 30 · `text-4xl` 36 · `text-5xl` 48 · `text-6xl` 60.
+The 308 arbitrary sizes (26 values: 10, 13, 15, 17, 22 …) were snapped to the
+nearest step, ties up for phone legibility. Fluid display headings
+(`text-[clamp(…)]`) are allowed — that is fluid type, not drift.
+`TypeScaleCodemod.test.js` blocks a new arbitrary size.
+
+### Seed layer (MEH-2833, approved by Sapir 08/11/2026)
+
+Until 08/11 the rule was "one brand green — don't introduce a second brand
+color". Now: **green stays the only action colour**, and the logo's colours
+(the five pomegranate seeds) enter the site as the **seed layer** — an identity
+layer, not UI colours. Source of truth in code: `frontend/lib/brand-seeds.js`
+(shape, both colour sets, order, `seedColorFor`); components
+`components/brand/SeedMark.jsx` (the bloom) and `Seed.jsx` (one seed).
+
+| Seed | On light (cream) | On dark (`bg-primary`, footer) |
+|---|---|---|
+| green | `#2E6853` | `#F5F0E8` |
+| terracotta | `#C8632E` | `#E8823A` |
+| gold | `#C99846` | `#E0B266` |
+| sand | `#D9C8B0` | `#D9C8B0` |
+| sage | `#5A8F73` | `#8FB89F` |
+
+**Rules**
+1. **Only in the seed shape, or as a soft tint (≤ ~25%) of a background.**
+   Never text, buttons, links or status. Contrast on cream: terracotta 3.5:1,
+   sage 3.3:1, gold 2.3:1, sand 1.4:1 — not enough for text.
+2. **Green stays the only action colour.** Gold (`accent` `#896714`) stays for
+   prices and highlights.
+3. **In a sequence, always the logo order:** green, terracotta, gold, sand, sage.
+4. **One colour moment per screen.**
+5. **On a dark surface, the on-dark set.**
+6. **Seeds are decoration** (`aria-hidden`). When they carry information (e.g.
+   group-buy progress) it is always with text.
+
+**The logo vs a single seed**
+- **The logo (the five-seed bloom):** never rotated, recoloured, rearranged or
+  distorted.
+- **Supergraphic:** the logo may be enlarged and cropped in a corner — no
+  rotation, no mirroring, no tiling as a pattern, at least 3 seeds visible;
+  text over it keeps valid contrast.
+- **A single seed = a brand element, not the logo:** it may be rotated, scaled
+  and given any seed colour.
+
+**Where it appears (approved 08/11):** imageless business masthead
+(supergraphic on sand) · section break in long-form pages (small bloom) ·
+/about/process steps (a seed per step) · reviewer initials (a soft seed tint,
+fixed per name) · success moments (bloom + seeds opening out) · footer seed row
+(on-dark) · no-photo card plate (name + one seed, colour fixed per business) ·
+missing recipe/product/event image (same rule) · 404 and every «not found»
+page (the full logo, small).
 
 ## Layout
 
@@ -316,11 +420,33 @@ Concrete applications:
 
 ## Shapes
 
-Corners are softly rounded, never pill-shaped on rectangles. Inputs and
-buttons use `rounded.sm` (8px); cards use `rounded.lg` (16px) — `rounded.md`
-(12px) is the in-between for smaller cards and chips; modals use `rounded.xl`
-(20px). **No `rounded-full` on rectangular elements** (BRAND.md §3) — full
-rounding is reserved for genuinely circular elements (avatars, icon buttons).
+Corners are softly rounded, never pill-shaped on non-action rectangles.
+**Buttons (actions) are `rounded-full`** — `frontend/components/ui/Button.jsx`
+is the canonical action radius (ruling «⚖️ 03/11», MEH-1687 E). Inputs use
+`rounded.sm` (8px); cards use `rounded.lg` (16px) — `rounded.md` (12px) is the
+in-between for smaller cards and chips; modals use `rounded.xl` (20px). **No
+`rounded-full` on non-action rectangles** (cards, inputs, containers) — beyond
+actions, full rounding is reserved for genuinely circular elements (avatars,
+icon buttons).
+
+**No off-scale radius (MEH-1687 phase 5, 06/11/2026).** Radius is a scale step,
+never `rounded-[Npx]`. The 140 off-scale sites (107 of them 10px) were placed by
+the rule above: buttons and primary/outline link-actions → `rounded-full`;
+inputs, selects, textareas → `rounded-sm`; everything else → the nearest step,
+ties up (10→`md`, 14→`lg`, 18→`xl`, 6/9→`sm`, 4/5→`rounded`, top-24→`rounded-t-3xl`).
+`RadiusTokenCodemod.test.js` blocks a new one.
+
+**Actions are the shared `<Button>` (MEH-1687 phase 6, 06/11/2026).** A filled
+primary, destructive or outlined action is `components/ui/Button.jsx`
+(`variant="primary" | "danger" | "outlined"`, `size="sm" | "md" | "lg"`), never a
+hand-styled `<button>`; layout classes (`w-full`, `flex-1`, margins) go in
+`className`. `ButtonPrimitiveGuard.test.js` ratchets the hand-styled remainder.
+
+_As-of 03/11: the front-matter `button-primary` binding still reads
+`{rounded.sm}`, because the token scale has no `full` step. Adding one changes
+`frontend/tailwind.tokens.json` (the design-token drift gate re-exports it), so
+it belongs to a code PR, not to this docs-only one. Until then this paragraph
+and `ui/Button.jsx` are the action-radius rule._
 
 ## Components
 
@@ -328,7 +454,7 @@ Components are composed from the tokens above; see the `components` block in the
 front matter for the normative token bindings.
 
 - **Buttons:** `button-primary` is forest green (`primary`) with white
-  (`surface`) text, 8px radius, `label-md` type. Hover goes **darker**
+  (`surface`) text, `rounded-full` (see Shapes), `label-md` type. Hover goes **darker**
   (`primary-dark`), never lighter and never with a shadow.
 - **Cards (ProducerCard et al.):** white `surface` on cream, `border` hairline,
   16px radius, 24px desktop padding. Captions and metadata use the `muted`
@@ -346,6 +472,10 @@ front matter for the normative token bindings.
     Frank Ruhl 900 (22px / 30px sm+), `background-alt` fill, bottom-aligned
     above the badge row. Replaces the MEH-643 leaf glyph + wordmark on
     `green-50`, which read as a template when most cards had no photo.
+    **MEH-2833:** plus one `Seed` (≈70×105, rotated −36°, cropped in the
+    end-top corner) in `seedColorFor(producer.id)` — the business keeps "its"
+    colour. The same plate + seed replaces every leaf placeholder for a missing
+    recipe/product/event image; image-only slots (no name) get the seed alone.
 - **Inputs:** white `surface`, `text` foreground, `border` hairline, 8px
   radius. Dividers use the `border` token.
 - **Price tags / premium accents:** `accent` gold, used sparingly with
@@ -442,10 +572,16 @@ front matter for the normative token bindings.
 
 ### Home page — section rhythm (MEH-2441, Sapir 27/10)
 
-- **Order:** hero → mini-map → category grid → businesses grid → **היכרות** (featured
+- **Order:** hero → category grid → businesses grid → mini-map → **היכרות** (featured
   business) → seasonal → events → recently viewed → closing CTA. "איך זה עובד"
   and the comparison teaser are **not** on home: `/about` carries the full
   comparison (MEH-841) and `/about/process` the real four steps.
+- **One order on every viewport (MEH-2747, Sapir 6/11).** Phone and desktop
+  render the same sections in the same order, and that order is the JSX order.
+  Never reorder sections with CSS (`order-*`, `*-reverse`, `row-start-*`): it
+  moves only the paint, so VoiceOver and the keyboard read a different page
+  (WCAG 1.3.2 / 2.4.3). Guards: `__tests__/VisualOrderGuard.test.js` (static)
+  and the 375 ↔ 1440 parity row in `e2e/flows/manual/home.spec.ts`.
 - **Featured business ("היכרות")** = the page's one strong colour moment: a
   full-bleed `bg-primary` band, `text-background`. h2 "היכרות" with a short
   `gold-on-dark` rule above it; photo 7/12 columns at 4:3 (`IMAGE_RATIOS.featured`);
@@ -478,6 +614,15 @@ primary is the contact card's CTA; the sticky bar mirrors it (never co-visible);
 the delivery section's WhatsApp order button is tertiary; follow + share are
 tertiary. Verified per-viewport, not just per-section.
 
+**Contact CTA colour per channel (MEH-2813).** One map,
+`components/ContactCtaVariants.jsx`, read by both the contact-card CTA and the
+sticky bar, so the two cannot drift. WhatsApp = its own darkened green fill
+(`btn-whatsapp`); phone = `bg-primary`; email = `bg-primary-dark`; website,
+Instagram, Facebook, external order = white outlined button. Instagram and
+Facebook carry their brand colour **in the logo only** (multicolour Instagram
+glyph, Facebook blue) — never as a fill: white text on the Instagram gradient's
+orange end is 2.6:1.
+
 ### Chrome budget — at most one top + one bottom sticky layer (MEH-1202)
 
 On any mobile viewport, at most **one** sticky top layer and **one** fixed
@@ -502,8 +647,9 @@ reads as a rendering bug (the ghost-strip class). Rules:
 
 - **Do** keep pure white (`surface`) only on top of the cream page — cards,
   modals, inputs. **Don't** use `#FFFFFF` as a page background.
-- **Do** use `primary` as the single brand accent and `accent` gold only for
-  prices/premium. **Don't** introduce a second brand color.
+- **Do** use `primary` as the single action colour and `accent` gold only for
+  prices/premium. **Don't** use the seed colours for text, buttons, links or
+  status — they live only in the seed shape (*Seed layer*, MEH-2833).
 - **Do** express state with opacity-on-cream + `fg-muted`. **Don't** add
   state-color tokens.
 - **Do** maintain WCAG 2.1 AA contrast — ≥ 4.5:1 body, ≥ 3:1 large text.
@@ -535,7 +681,10 @@ reads as a rendering bug (the ghost-strip class). Rules:
   When that green band is the **last** thing on the page, mark it
   `data-meets-footer` so it runs straight into the footer without the footer's
   64px cream top margin (MEH-2487, `/about/process`). `/about` is not marked:
-  its contact form follows the green close.
+  its contact form follows the green close. A page that **ends on a business
+  call to action** uses the shared `components/ClosingCtaBand.jsx` (MEH-2824:
+  `/join`, home, `/about/process`, `/about/for-businesses`) — it carries all of the above, plus the
+  inverted mark and the auth-aware button. Don't hand-build another one.
 - **Do** clamp a card's preview text with `line-clamp-N`, and show it at a
   breakpoint with `sm:[display:-webkit-box]`, never `sm:block`: line-clamp only
   works on `-webkit-box`, so `sm:block` silently lets the text wrap without
@@ -568,6 +717,13 @@ on-dark pair `error-on-dark` (`#FCA5A5`, for `green-900` surfaces) are the sole
 state-color tokens, added for form/validation error text that failed AA as raw
 Tailwind reds. This is the "new ADR supersedes ADR-019" path in action — error
 only; `warning`/`info`/`success` remain un-tokenized (success = `primary`).
+
+**Status scales (ADR-038, 06/11/2026):** `danger-50…900` and `warning-50…900`
+are tokens, at exactly Tailwind's `red` / `amber` values, so `red-N → danger-N` and
+`amber-N → warning-N` was a pixel-identical codemod. Use them for status surfaces,
+borders and destructive buttons; keep `error` for error text on cream. Success
+stays `primary` / `green-*`. `yellow-*`, `gray-*` and `blue-*` are still raw debt —
+moving them changes colour and needs a mock first.
 
 ## S4 design tokens (MEH-136)
 
@@ -671,10 +827,21 @@ the absolute minimum for secondary/compact controls (`sm` buttons, dense
 metadata actions); nothing interactive renders below it. Sub-14px type is
 reserved for the documented non-interactive or exception cases below.
 
-**Tap-target floor (reach).** Every tappable control has a hit area of
-**≥ 44 × 44px** (WCAG 2.5.5 Target Size (Enhanced); Apple HIG 44pt). When the
+**Tap-target floor (reach).** On mobile (< md) every tappable control has a
+hit area of **≥ 44 × 44px, with no exceptions for standalone controls** (WCAG 2.5.5 Target Size
+(Enhanced); Apple HIG 44pt). On desktop (md+) **≥ 32px** is allowed — pointer
+precision, not touch. There is no 34px mobile carve-out (ruling «⚖️ 03/11»,
+the decision block at the top of the MEH-1687 Linear card, item E — delegated
+by Sapir 03/11 01:18). _As of 03/11/2026 three shipped sites still sit below
+the floor and are known violations of this rule, not exceptions to it:
+`components/ProducerCard.jsx:174` (card heart, `w-[34px] h-[34px] sm:w-11`),
+`app/[locale]/favorites/FavoritesClient.jsx:90` (`h-[34px] sm:h-11`) and
+`components/Header.jsx:761` (avatar button, `w-[34px] h-[34px]`). Their fix is
+a separate code PR, tracked on MEH-1687; until it lands, do not copy them._ When the
 visible control is smaller than 44px, the target is enlarged with
-`min-h-[44px] min-w-[44px]` plus `flex items-center justify-center` so the
+`min-h-touch min-w-touch` (the `spacing.touch` token = 44px, MEH-2719; the
+arbitrary `[44px]` spelling is forbidden by `TouchTokenCodemod.test.js`) plus
+`flex items-center justify-center` so the
 glyph stays centered inside the padded hit area — the `HeroSearch` submit
 button and `BadgeRow` (MEH-813) outer-button hit-area are the canonical
 patterns.
@@ -691,6 +858,38 @@ recorded reason — do not "fix" them:
   body text size and are exempt from the standalone tap-target floor
   (WCAG 2.5.8 Target Size (Minimum) inline exception) — enlarging them would
   break the line box.
+
+## Text links look tappable without hover (MEH-2831)
+
+**Text links must look tappable without hover: a permanent underline (or
+another always-visible cue such as a chevron/arrow icon or a button shape).
+Hover only strengthens the cue.** A phone has no hover, so a link whose only
+cue is `hover:underline` reads as plain text there — Sapir found «ירקות» on the
+business page that way (iPhone, 08/11), sitting beside «3 ביקורות», which was
+underlined: two links on one line, two languages.
+
+**The treatment** (reference: `ProducerHeader.jsx`, the category link):
+`underline decoration-[1.5px] underline-offset-[5px]` + the decoration in the
+link's own ink at ~35% (`decoration-primary/35`, `decoration-muted/35`, …), and
+on hover the full colour of that ink (`hover:decoration-current`). The
+reference link's ink is `text-text` and it turns primary on hover/focus, so
+its underline follows to primary (`group-hover:decoration-primary`). When the
+link wraps an icon, put the underline on the text span, not on the icon.
+
+**Exempt** — these already carry an always-visible cue, so they keep their
+hover-only underline (or none):
+- whole-card links (the card is the link);
+- nav items (header, footer columns, bottom nav, tab bars, breadcrumbs);
+- buttons and pills (a filled or bordered shape). A text-only button — no fill,
+  no border, e.g. «נסו שוב», «שלחו שוב» — is a link for this rule and gets the
+  underline;
+- icon buttons;
+- links with an always-visible arrow or icon inside them (ArrowLeft, CaretLeft,
+  MapPin, Phone, ArrowSquareOut …), including an arrow that is part of the copy
+  («לכל האירועים ←»).
+
+Colour alone (`text-primary`) is **not** a cue: on a page whose headings are
+already green it does not read as "tap me".
 
 ## Required-field marking (MEH-2015)
 

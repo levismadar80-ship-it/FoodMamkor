@@ -39,6 +39,10 @@ let params = {};
 // next/navigation for real and fails under the partial mocks in this file.
 // Stubbed here; the notice's own contract lives in EnSearchNotice.test.jsx and
 // its mount on /producers is pinned in ProducersClientSearch.test.jsx.
+// MEH-2767: the chip gate counts the unfiltered snapshot hook; see the helper.
+import { setCatalogSnapshot } from "./helpers/catalog-snapshot";
+vi.mock("@/lib/use-catalog-snapshot", async () =>
+  (await import("./helpers/catalog-snapshot")).catalogSnapshotMock);
 vi.mock("@/components/EnSearchNotice", () => ({ default: () => null }));
 vi.mock("next/navigation", () => ({
   useRouter: () => router,
@@ -50,6 +54,8 @@ vi.mock("next/navigation", () => ({
 vi.mock("next-intl", () => ({ useTranslations: (s) => (k) => (s ? `${s}.${k}` : k) }));
 vi.mock("next/link", () => ({ default: ({ children, href }) => <a href={href}>{children}</a> }));
 vi.mock("@phosphor-icons/react", () => ({
+  // MEH-2827 PR 4: the «המליצו על בית עסק» links in the empty states.
+  ArrowLeft: (p) => <span {...p} />,
   // MEH-2131: the open-now chip's leading glyph (lib/chip-icons.js). Absent
   // here, the whole suite dies at import with "No \"Clock\" export is defined".
   Clock: (p) => <span {...p} />,
@@ -82,6 +88,8 @@ vi.mock("@phosphor-icons/react", () => ({
   Certificate: (p) => <span {...p} />,
   GrainsSlash: (p) => <span {...p} />,
   Barn: (p) => <span {...p} />,
+  Medal: (p) => <span {...p} />,
+  HandHeart: (p) => <span {...p} />,
   DropSlash: (p) => <span {...p} />,
   FlowerTulip: (p) => <span {...p} />,
 }));
@@ -131,7 +139,9 @@ vi.mock("@/lib/api", () => ({
 const items = (n) =>
   Array.from({ length: n }, (_, i) => ({ id: `p${i}`, name: `עסק ${i}`, categories: [] }));
 
-const props = (initialItems) => ({
+// MEH-2767: the gate counts the snapshot — make it the rendered fixture.
+const props = (initialItems) => (setCatalogSnapshot(initialItems), propsBase(initialItems));
+const propsBase = (initialItems) => ({
   initialItems,
   initialTotal: initialItems.length,
   initialPage: 1,
@@ -173,9 +183,10 @@ describe("MEH-1862 — attribute axes move into the sheet", () => {
   it("offers every gated-open attribute inside the sheet", () => {
     render(<ProducersClient {...props(items(3))} />);
     openSheet();
-    // The four ungated axes: closed runtime gates (MEH-1881 open-now,
-    // MEH-1934 diet) are asserted separately — see the gate specs.
-    for (const key of ["kosher", "vegan", "vegetarian", "gluten_free"]) {
+    // The ungated axes. MEH-2767: the diet axes and grass_fed are count-gated
+    // now (one rule on every surface), and this fixture carries no markings,
+    // so they are asserted in surfaceParity.test.js / the gate specs instead.
+    for (const key of ["kosher", "verified"]) {
       expect(screen.getByTestId(`chip-${key}`)).toBeTruthy();
     }
   });
@@ -288,6 +299,8 @@ describe("MEH-1862 — the /map surface is not disturbed", () => {
     const diet = grouped.filter((c) => c.group === "diet").map((c) => c.key);
     // The five diet axes are the ones a fallback would visibly swallow.
     // MEH-2047 withdrew a sixth (low_carb) with the claim itself.
+    // MEH-1508 chunk 3ב-2 added the two 100% axes; MEH-2677 removed them
+    // again (badge-only, one chip per diet).
     expect(diet).toEqual([
       "vegan",
       "vegetarian",

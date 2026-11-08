@@ -92,7 +92,7 @@ const SECTIONS = [
         <Envelope size={16} className="inline align-[-2px] text-primary" aria-hidden="true" />{" "}
         <a
           href={`mailto:${CONTACT_EMAIL}`}
-          className="text-primary hover:underline break-all"
+          className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current break-all"
           dir="ltr"
         >
           {CONTACT_EMAIL}
@@ -105,7 +105,7 @@ const SECTIONS = [
         <strong>{t("sections.contact.phone_label")}</strong>{" "}
         <a
           href="tel:+972552553744"
-          className="text-primary hover:underline"
+          className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current"
           dir="ltr"
         >
           055-255-3744
@@ -157,7 +157,7 @@ export default async function AccessibilityPage({ params }) {
             <section
               key={section.id}
               id={section.id}
-              className="bg-white rounded-[16px] p-7 border border-border shadow-[0_2px_12px_rgba(46,104,83,0.04)]"
+              className="bg-surface rounded-lg p-7 border border-border shadow-[0_2px_12px_rgba(46,104,83,0.04)]"
             >
               <h2 className="font-headline-md text-2xl font-bold text-text mb-3">
                 {t(`sections.${section.id}.title`)}

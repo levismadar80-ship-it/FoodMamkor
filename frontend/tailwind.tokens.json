@@ -27,7 +27,27 @@
         "action-primary-hover": "#2e4a2e",
         "state-selected": "#2e4a2e",
         "error": "#b3261e",
-        "error-on-dark": "#fca5a5"
+        "error-on-dark": "#fca5a5",
+        "danger-50": "#fef2f2",
+        "danger-100": "#fee2e2",
+        "danger-200": "#fecaca",
+        "danger-300": "#fca5a5",
+        "danger-400": "#f87171",
+        "danger-500": "#ef4444",
+        "danger-600": "#dc2626",
+        "danger-700": "#b91c1c",
+        "danger-800": "#991b1b",
+        "danger-900": "#7f1d1d",
+        "warning-50": "#fffbeb",
+        "warning-100": "#fef3c7",
+        "warning-200": "#fde68a",
+        "warning-300": "#fcd34d",
+        "warning-400": "#fbbf24",
+        "warning-500": "#f59e0b",
+        "warning-600": "#d97706",
+        "warning-700": "#b45309",
+        "warning-800": "#92400e",
+        "warning-900": "#78350f"
       },
       "fontFamily": {
         "headline-display": [
@@ -56,6 +76,12 @@
         ]
       },
       "fontSize": {
+        "2xs": [
+          "11px",
+          {
+            "lineHeight": "16px"
+          }
+        ],
         "headline-display": [
           "48px",
           {
@@ -122,7 +148,8 @@
         "4xl": "64px",
         "5xl": "96px",
         "6xl": "128px",
-        "gutter": "16px"
+        "gutter": "16px",
+        "touch": "44px"
       }
     }
   }

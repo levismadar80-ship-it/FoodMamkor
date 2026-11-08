@@ -55,6 +55,6 @@ describe("TrustBadge (MEH-1120 recognition-only)", () => {
 
   it("applies the compact size when compact", () => {
     render(<TrustBadge tier={4} compact />);
-    expect(screen.getByText("מובילת קהילה").className).toContain("text-[10px]");
+    expect(screen.getByText("מובילת קהילה").className).toContain("text-2xs");
   });
 });

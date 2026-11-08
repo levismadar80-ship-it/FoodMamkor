@@ -22,6 +22,7 @@ import EventEntryRow, { toEventEntry } from "@/components/EventEntryRow";
 import RecipeCard from "@/components/public/RecipeCard";
 import SaveButton from "@/components/SaveButton";
 import { EMPTY_SAVED, loadSavedItems, splitByTime } from "./savedItems";
+import Button from "@/components/ui/Button";
 
 // MEH-2560: the chips, in order. "all" mixes every type in sections headed by
 // the same labels; the others show one type.
@@ -84,13 +85,21 @@ function FavoriteCardWrapper({ fav, open, onToggle, onClose }) {
         data-testid="favorites-bell"
         // MEH-1203: mirror CardHeart's density variant (ProducerCard.jsx:144)
         // so the bell keeps a comfortable tap target inside the smaller 2-col
-        // card — 34px on mobile, 44px sm: up, top-end corner opposite the heart.
+        // card — 34px on mobile, 44px sm: up.
         // MEH-2526: circle → pill so the label sits beside the bell; same
-        // heights, same corner.
-        className="absolute top-2 end-2 sm:top-3 sm:end-3 h-[34px] sm:h-11 px-2.5 sm:px-3 gap-1 flex items-center justify-center rounded-full bg-background/90 hover:bg-background text-primary transition z-10"
+        // heights.
+        // MEH-2849: #4000 (MEH-2671) moved the card heart to the top-END
+        // corner, which is where this bell sat — it covered the heart, so a tap
+        // on the heart hit «עדכונים» and nothing was removed. The bell takes the
+        // corner opposite the heart: top-START. Its width is capped so that even
+        // at 200% text (bell ≈145px on a 166px card) it stops 8px before the
+        // heart: card − start inset − heart − end inset − 8px gap = 100% − 58px
+        // on a phone (8+34+8+8), 100% − 76px from sm (12+44+12+8). Below that
+        // width the label truncates; the accessible name keeps the full text.
+        className="absolute top-2 start-2 sm:top-3 sm:start-3 max-w-[calc(100%-58px)] sm:max-w-[calc(100%-76px)] h-[34px] sm:h-11 px-2.5 sm:px-3 gap-1 flex items-center justify-center rounded-full bg-background/90 hover:bg-background text-primary transition z-10"
       >
-        <Bell size={18} weight={open ? "fill" : "regular"} aria-hidden="true" />
-        <span className="text-xs font-medium">{t("bell_label")}</span>
+        <Bell size={18} weight={open ? "fill" : "regular"} aria-hidden="true" className="shrink-0" />
+        <span className="text-xs font-medium min-w-0 truncate">{t("bell_label")}</span>
       </button>
       {open && (
         // MEH-1359: out of flow. Mobile → fixed bottom-sheet above BottomNav
@@ -109,7 +118,7 @@ function FavoriteCardWrapper({ fav, open, onToggle, onClose }) {
         // below, and Tailwind arbitrary values take no spaces.
         <div
           ref={panelRef}
-          className="fixed inset-x-3 bottom-[calc(var(--bottom-nav-clearance,calc(4.5rem+env(safe-area-inset-bottom,0px)))+8px)] z-[1150] sm:absolute sm:inset-x-auto sm:bottom-auto sm:top-14 sm:end-0 sm:w-72"
+          className="fixed inset-x-3 bottom-[calc(var(--bottom-nav-clearance,calc(4.5rem+env(safe-area-inset-bottom,0px)))+8px)] z-[1150] sm:absolute sm:inset-x-auto sm:bottom-auto sm:top-14 sm:start-0 sm:w-72"
         >
           <AlertPrefsPanel
             producerId={fav.producer_id}
@@ -397,12 +406,12 @@ export default function FavoritesClient() {
           {t("empty_subtitle")}
         </p>
         <div>
-          <button
+          <Button
             onClick={() => router.push("/")}
-            className="bg-primary text-white px-6 py-3 rounded-full hover:bg-primary-dark transition font-medium"
+            variant="primary" size="lg"
           >
             {t("empty_cta")}
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -455,7 +464,7 @@ export default function FavoritesClient() {
           type="button"
           onClick={handleSavedRetry}
           data-testid="favorites-saved-retry"
-          className="mt-4 text-sm text-primary font-medium hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+          className="mt-4 text-sm text-primary font-medium underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         >
           {tError("retry")}
         </button>
@@ -487,7 +496,7 @@ export default function FavoritesClient() {
             type="button"
             onClick={handleRetry}
             data-testid="favorites-retry"
-            className="mt-4 text-sm text-primary font-medium hover:underline rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            className="mt-4 text-sm text-primary font-medium underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           >
             {tError("retry")}
           </button>
@@ -504,12 +513,12 @@ export default function FavoritesClient() {
           </h2>
           <p className="text-fg-muted mb-6 max-w-md mx-auto">{t("empty_all_subtitle")}</p>
           <div>
-            <button
+            <Button
               onClick={() => router.push("/")}
-              className="bg-primary text-white px-6 py-3 rounded-full hover:bg-primary-dark transition font-medium"
+              variant="primary" size="lg"
             >
               {t("empty_cta")}
-            </button>
+            </Button>
           </div>
         </div>
       ) : (

@@ -40,16 +40,18 @@ const withFlag = (key, n) => {
 };
 
 describe("MEH-1934 — diet chip data gate", () => {
-  it("gates exactly the new axis, and never the four that already have data", () => {
-    // MEH-2598: on_site is the second new axis, gated on sells_on_site.
-    expect(GATED_DIET_KEYS).toEqual(["no_added_sugar", "on_site"]);
+  it("gates every count-gated axis — the four older diet axes included (MEH-2767)", () => {
+    // MEH-2598: on_site gated on sells_on_site. MEH-2677 took the 100% pair
+    // out of the filter (badge-only), so they are not gated.
+    // MEH-2767 (Sapir 06/11, «כלל אחד, הסתרה מתחת ל-5»): this case used to
+    // assert the four older axes were NEVER gated here, while /map gated them
+    // (MEH-2170) — the drift Sapir screenshotted. One rule now, on every surface.
+    expect([...GATED_DIET_KEYS].sort()).toEqual(
+      ["gluten_free", "grass_fed", "lactose_free", "no_added_sugar", "on_site", "vegan", "vegetarian"],
+    );
     // MEH-2047: and the withdrawn axis is not gated either — it is GONE. A
     // stale entry here would keep a chip key alive that no config defines.
     expect(GATED_DIET_KEYS).not.toContain("low_carb");
-    // Retro-gating an existing axis would REMOVE a working filter.
-    for (const old of ["vegan", "vegetarian", "gluten_free", "lactose_free"]) {
-      expect(GATED_DIET_KEYS).not.toContain(old);
-    }
   });
 
   it("the gated chip is on the shared row, so both surfaces must gate it", () => {

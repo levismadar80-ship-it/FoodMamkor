@@ -8,13 +8,17 @@
  * is broken.
  *
  * What it pins:
- *   1. The old lead string renders ZERO times IN THE BAND, and exactly once
- *      page-wide — in the hero. Not "zero on the homepage": it is a byte-exact
- *      substring of home.hero.subtitle, which decision 1 locks unchanged, so a
- *      page-wide zero is unreachable without breaking that lock. See the
- *      comment above the first test.
+ *   1. The old lead string renders ZERO times IN THE BAND, and — since MEH-2842
+ *      (08/11) reworded home.hero.subtitle — zero times page-wide too. It used
+ *      to be a byte-exact substring of that subtitle, which is why this
+ *      originally pinned "exactly once, in the hero". See the comment above the
+ *      first test.
  *   2. Below TRUST_COUNT_THRESHOLD (25) the lead is the locked sentence.
- *   3. At/above 25 the lead is the locked count string, number substituted.
+ *   3. MEH-2804 follow-up (07/11, Sapir): the locked sentence renders at EVERY
+ *      count, and while /stats loads. From TRUST_COUNT_THRESHOLD (25) a quiet
+ *      second line adds «N בתי עסק שהצטרפו עד היום»; below 25 there is no number
+ *      at all (MEH-521). The #4143 fact row (31 · 18 · 0₪) was rejected and must
+ *      not come back.
  *   4. THE BUSINESS COUNT IS NEVER STATED TWICE IN THE BAND. This is the
  *      assertion the ticket did not originally carry: applying the count to the
  *      lead alone would have restated the number that the MEH-521 secondary line
@@ -44,8 +48,12 @@ vi.mock("@/app/[locale]/home/UpcomingEventsPreview", () => ({
 vi.mock("@/app/[locale]/home/HomeStaticBlocks", () => ({
   HomeFeaturedProducer: () => null,
   HomeRecentlyViewed: () => null,
+  HomeFavoritesStrip: () => null,
   HomeCTA: () => null,
 }));
+// MEH-2724: the favorites strip reads useAuth; this file renders HomeClient
+// without an AuthProvider, so the hook is stubbed like useHomePage below.
+vi.mock("@/lib/use-favorite-producers", () => ({ useFavoriteProducers: () => ({ items: [], reserve: false }) }));
 vi.mock("@/app/[locale]/home/HomeCategoryGrid", () => ({ HomeCategoryGrid: () => null }));
 vi.mock("@/app/[locale]/home/HomeProducersGrid", () => ({ HomeProducersGrid: () => null }));
 // MEH-1287 chunk B added a child to HomeClient. It is stubbed for the same
@@ -76,7 +84,7 @@ vi.mock("@/lib/use-home-page", () => ({ useHomePage: () => useHomePage() }));
 // trust band this file tests lives in the client body, which moved to
 // home/HomeClient.jsx. Same subject, same assertions — only the mount point
 // changed, because an async component cannot be rendered by RTL.
-import HomePage from "@/app/[locale]/home/HomeClient";
+import HomePage, { TRUST_COUNT_LINE } from "@/app/[locale]/home/HomeClient";
 
 const LOCKED_LEAD = "בלי מתווך באמצע · איסוף עצמי או משלוח, ישירות מבית העסק";
 const OLD_LEAD = "בתי עסק שכבר בדקנו בשבילך";
@@ -128,11 +136,22 @@ function countBusinessCount(text, n) {
   return (text.match(new RegExp(`(?<!\\d)${n}(?!\\d)\\s*בתי עסק`, "g")) || []).length;
 }
 
-/** The rendered text of the whole trust band (lead + secondary). */
+/** The rendered text of the whole trust band (sentence + optional count line). */
 function bandText() {
-  const lead = screen.getByTestId("trust-lead");
-  const secondary = screen.queryByTestId("trust-secondary");
-  return `${lead.textContent} ${secondary ? secondary.textContent : ""}`;
+  return screen.getByTestId("home-trust-band").textContent;
+}
+
+const TRUST = he.home.trust;
+const countLine = () => screen.queryByTestId("trust-count");
+const COUNT_WORDS = TRUST.count_line.replace(/<num>\{count\}<\/num>\s*/, "");
+
+function renderLoading() {
+  useHomePage.mockReturnValue({ ...hookState(30), statsLoaded: false, showStatsCounter: false, showTrustCount: false });
+  return render(
+    <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
+      <HomePage />
+    </NextIntlClientProvider>,
+  );
 }
 
 beforeEach(() => {
@@ -140,14 +159,23 @@ beforeEach(() => {
 });
 
 describe("MEH-1692 — trust band lead", () => {
-  // The ticket's acceptance criterion reads "renders 0 times on the homepage".
-  // That is UNSATISFIABLE as written, and the conflict is with the ticket's own
-  // decision 1: OLD_LEAD is a verbatim substring of home.hero.subtitle, which is
-  // locked unchanged. Driving the page-wide count to 0 would require editing the
-  // hero — the one thing decision 1 forbids. The satisfiable, and intended,
-  // form is asserted here: gone from the BAND, still present exactly once on the
-  // page, in the hero that owns it. That is what "the duplication is closed"
-  // means when only one side moves.
+  // MEH-2842 (08/11) RESOLVED THIS, AND THE COUNT MOVED FROM 1 TO 0.
+  //
+  // What stood here: the ticket's acceptance criterion reads "renders 0 times on
+  // the homepage", and that was UNSATISFIABLE, because decision 1 locked
+  // home.hero.subtitle unchanged while OLD_LEAD was a verbatim substring of it.
+  // The satisfiable form — gone from the BAND, present exactly once in the hero
+  // that owns it — was asserted instead.
+  //
+  // MEH-2842 changed the subtitle to «ישר מהמקור אליכם. בתי עסק שכבר בדקנו
+  // בשבילכם.» for reasons of its own (Sapir rejected MEH-2661's «הביתה»). The
+  // final kaf moved: «בשבילך» (U+05DA) became «בשבילכם» (U+05DB U+05DD), so
+  // OLD_LEAD is no longer a substring of anything the homepage renders —
+  // measured, not assumed. The duplication is now closed from BOTH sides and
+  // the original criterion is reachable, so this pins 0 rather than 1.
+  //
+  // This is a stronger assertion, not a relaxed one: it still pins an exact
+  // count, and it is the count the ticket asked for.
   it("never renders the retired lead string in the trust band", () => {
     for (const n of [0, 3, 5, 12, 24, 25, 30, 500]) {
       const { unmount } = renderAt(n);
@@ -156,41 +184,109 @@ describe("MEH-1692 — trust band lead", () => {
     }
   });
 
-  it("renders the retired string exactly once page-wide — in the hero, not twice", () => {
+  it("renders the retired string zero times page-wide — both sides now closed", () => {
     for (const n of [3, 12, 30]) {
       const { unmount, container } = renderAt(n);
       const hits = (container.textContent.match(new RegExp(OLD_LEAD, "g")) || []).length;
-      expect(hits, `count=${n}`).toBe(1);
+      expect(hits, `count=${n}`).toBe(0);
       unmount();
     }
   });
 
-  it("leads with the locked sentence below 25", () => {
-    for (const n of [0, 3, 12, 24]) {
+  it("below 5 the band is the locked sentence and nothing else — no numerals", () => {
+    for (const n of [0, 3, 4]) {
       const { unmount } = renderAt(n);
-      expect(screen.getByTestId("trust-lead").textContent.trim(), `count=${n}`)
-        .toBe(LOCKED_LEAD);
+      expect(screen.getByTestId("trust-lead").textContent.trim(), `count=${n}`).toBe(LOCKED_LEAD);
+      expect(countLine(), `count=${n}`).toBeNull();
+      unmount();
+    }
+  });
+});
+
+// MEH-2804 follow-up (07/11, Sapir): the sentence always; the count line from 25.
+describe("MEH-2804 follow-up — the sentence always, a count line from 25", () => {
+  it("renders the locked sentence at every count", () => {
+    for (const n of [0, 3, 5, 12, 24, 25, 30, 500]) {
+      const { unmount } = renderAt(n);
+      expect(screen.getByTestId("trust-lead").textContent.trim(), `count=${n}`).toBe(LOCKED_LEAD);
       unmount();
     }
   });
 
-  it("leads with the locked count string at 25 and above", () => {
+  it("below 25 there is no count line and no number in the band (MEH-521)", () => {
+    for (const n of [0, 3, 5, 12, 24]) {
+      const { unmount } = renderAt(n);
+      expect(countLine(), `count=${n}`).toBeNull();
+      expect(bandText(), `count=${n}`).not.toMatch(/\d/);
+      unmount();
+    }
+  });
+
+  it("from 25 a second line states «N בתי עסק שהצטרפו עד היום», under the sentence", () => {
     for (const n of [25, 30, 500]) {
       const { unmount } = renderAt(n);
-      expect(screen.getByTestId("trust-lead").textContent.trim(), `count=${n}`)
-        .toBe(`${n} בתי עסק · כל אחד נבחר אישית`);
+      const line = countLine();
+      expect(line, `count=${n}`).not.toBeNull();
+      expect(screen.getByTestId("trust-count-value").textContent, `count=${n}`).toBe(String(n));
+      expect(line.textContent, `count=${n}`).toContain(COUNT_WORDS);
+      // Order: the sentence first, the count line after it.
+      const lead = screen.getByTestId("trust-lead");
+      expect(lead.compareDocumentPosition(line) & Node.DOCUMENT_POSITION_FOLLOWING, `count=${n}`).toBeTruthy();
       unmount();
     }
   });
 
-  it("switches exactly at 25, not at 24 or 26", () => {
-    const { unmount } = renderAt(24);
-    expect(screen.getByTestId("trust-lead").textContent.trim()).toBe(LOCKED_LEAD);
+  it("switches exactly at 25", () => {
+    const at = (n) => {
+      const r = renderAt(n);
+      const out = countLine() !== null;
+      r.unmount();
+      return out;
+    };
+    expect([at(24), at(25)]).toEqual([false, true]);
+  });
+
+  // Sapir 07/11: Cormorant's old-style italic «31» read as «ɜı» beside Hebrew.
+  // The numeral is the line's own face — semibold, brand green, upright.
+  it("the numeral is the line's own face: semibold, brand green, upright, LTR-isolated", () => {
+    const { unmount } = renderAt(30);
+    const num = screen.getByTestId("trust-count-value");
+    const cls = num.className.split(/\s+/);
+    for (const want of ["font-semibold", "text-primary"]) expect(cls, want).toContain(want);
+    for (const banned of ["font-english", "italic", "align-middle", "text-lg"]) expect(cls, banned).not.toContain(banned);
+    expect(num.getAttribute("dir")).toBe("ltr");
     unmount();
-    const second = renderAt(25);
-    expect(screen.getByTestId("trust-lead").textContent.trim())
-      .toBe("25 בתי עסק · כל אחד נבחר אישית");
-    second.unmount();
+  });
+
+  it("while /stats loads: the sentence is already up, and a placeholder holds the count line's slot (MEH-1686)", () => {
+    const { unmount } = renderLoading();
+    const band = screen.getByTestId("home-trust-band");
+    expect(band.getAttribute("aria-busy")).toBe("true");
+    expect(screen.getByTestId("trust-lead").textContent.trim()).toBe(LOCKED_LEAD);
+    const slot = screen.getByTestId("trust-count-skeleton");
+    for (const c of TRUST_COUNT_LINE.split(" ")) expect(slot.className, c).toContain(c);
+    unmount();
+    // …and the loaded count line carries the same classes, min-height included.
+    const { unmount: unmount2 } = renderAt(30);
+    expect(screen.getByTestId("home-trust-band").getAttribute("aria-busy")).toBeNull();
+    for (const c of TRUST_COUNT_LINE.split(" ")) expect(countLine().className, c).toContain(c);
+    unmount2();
+  });
+
+  // Reviewer, #4148: asserting the absence of the deleted `trust-fact` testid
+  // could never fail. The band's STRUCTURE is what a returning fact row would
+  // change, so that is what is pinned: the sentence, plus the count line only
+  // from 25 — nothing else inside the section.
+  it("the rejected #4143 fact row does not come back: the band holds only the sentence and the count line", () => {
+    for (const [n, ids] of [[5, ["trust-lead"]], [12, ["trust-lead"]], [30, ["trust-lead", "trust-count"]]]) {
+      const { unmount } = renderAt(n);
+      const kids = Array.from(screen.getByTestId("home-trust-band").children).map((el) => el.getAttribute("data-testid"));
+      expect(kids, `count=${n}`).toEqual(ids);
+      expect(bandText(), `count=${n}`).not.toContain("0₪");
+      expect(bandText(), `count=${n}`).not.toContain(String(CATEGORIES) + " קטגוריות");
+      unmount();
+    }
+    expect(Object.keys(TRUST).sort()).toEqual(["count_line", "lead"]);
   });
 });
 
@@ -201,7 +297,7 @@ describe("MEH-1692 — the count is never stated twice", () => {
   // pre-existing "never show a low number" behaviour, deliberately preserved.
   it.each([
     ["N < 5           ", 3, 0],
-    ["5 <= N < 25     ", 12, 1],
+    ["5 <= N < 25     ", 12, 0], // withheld below 25 (MEH-521)
     ["N >= 25         ", 30, 1],
   ])("%s → business count rendered %i time(s)", (_label, n, expected) => {
     const { unmount } = renderAt(n);
@@ -240,7 +336,7 @@ describe("MEH-1692 — positive guards (surfaces that must NOT change)", () => {
   });
 
   it("the hero subtitle value itself is untouched in he.json", () => {
-    expect(he.home.hero.subtitle).toBe("ישר מהמקור אלייך. בתי עסק שכבר בדקנו בשבילך.");
+    expect(he.home.hero.subtitle).toBe("ישר מהמקור אליכם. בתי עסק שכבר בדקנו בשבילכם.");
   });
 
   it("nav.trust_strip value is untouched in he.json", () => {

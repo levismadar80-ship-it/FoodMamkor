@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { X } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { getActiveHoliday } from "@/lib/holidays";
+import HolidayIcon from "@/components/HolidayIcon";
 import api from "@/lib/api";
 
 const DISMISS_KEY = "holiday_banner_dismissed";
@@ -14,6 +15,8 @@ export default function HolidayBanner({ suppressed = false, onVisibilityChange }
   // files — the producer.holiday_banner namespace never existed (same trap
   // as FridayDeliveryStrip), so t() rendered raw key paths.
   const t = useTranslations("group_buys.holiday_banner");
+  // MEH-2741: the holiday's own words live under `holidays.<key>`.
+  const tHoliday = useTranslations("holidays");
   const [holiday, setHoliday] = useState(null);
   const [dismissed, setDismissed] = useState(true); // start hidden to avoid flash
 
@@ -60,9 +63,8 @@ export default function HolidayBanner({ suppressed = false, onVisibilityChange }
   };
 
   const searchHref = `/producers?q=${encodeURIComponent(holiday.searchParams.q)}`;
-  const label = holiday.upcoming
-    ? t("approaching", { name: holiday.name, emoji: holiday.emoji })
-    : `${holiday.name} ${holiday.emoji}`;
+  const name = tHoliday(`${holiday.key}.name`);
+  const label = holiday.upcoming ? t("approaching", { name }) : name;
 
   return (
     <div
@@ -70,13 +72,14 @@ export default function HolidayBanner({ suppressed = false, onVisibilityChange }
       aria-label={t("aria")}
       // MEH-991: VRT hides this date-dependent banner via injected CSS (e2e/visual/parity.css)
       data-testid="holiday-banner"
-      className="relative mx-4 md:mx-auto md:max-w-3xl rounded-[16px] px-5 py-4 flex items-center gap-4 shadow-sm"
+      className="relative mx-4 md:mx-auto md:max-w-3xl rounded-lg px-5 py-4 flex items-center gap-4 shadow-sm"
       style={{ backgroundColor: holiday.color + "18", border: `1.5px solid ${holiday.color}40` }}
     >
-      <span className="text-2xl shrink-0" aria-hidden="true">{holiday.emoji}</span>
+      {/* MEH-1687 D: Phosphor icon, not a colour emoji — 1em of this text-2xl slot. */}
+      <span className="text-2xl shrink-0 flex" aria-hidden="true"><HolidayIcon name={holiday.icon} /></span>
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-text text-sm leading-snug">{label}</p>
-        <p className="text-fg-muted text-xs mt-0.5 leading-snug line-clamp-1">{holiday.tagline}</p>
+        <p className="text-fg-muted text-xs mt-0.5 leading-snug line-clamp-1">{tHoliday(`${holiday.key}.tagline`)}</p>
       </div>
       {/* MEH-1103: text-xs py-1.5 → text-sm py-2 (DESIGN.md interactive
           sizing minimums); dismiss gains a 44px hit area. */}
@@ -85,12 +88,12 @@ export default function HolidayBanner({ suppressed = false, onVisibilityChange }
         className="shrink-0 text-sm font-semibold px-3 py-2 rounded-full text-white transition hover:opacity-90"
         style={{ backgroundColor: holiday.color }}
       >
-        {holiday.cta}
+        {tHoliday(`${holiday.key}.cta`)}
       </Link>
       <button
         onClick={dismiss}
         aria-label={t("close_aria")}
-        className="shrink-0 text-fg-muted hover:text-text transition min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg"
+        className="shrink-0 text-fg-muted hover:text-text transition min-h-touch min-w-touch flex items-center justify-center rounded-lg"
       >
         <X size={16} weight="bold" aria-hidden="true" />
       </button>

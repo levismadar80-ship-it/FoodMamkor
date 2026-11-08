@@ -60,7 +60,7 @@ export default function MapCardList({
       // recipe, same styled-jsx mount (skeleton-box is not global CSS).
       <div data-testid="sidebar-list-skeleton" role="status" aria-label={t("common.skeleton.loading_businesses")}>
         {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="skeleton-box rounded-[16px] h-20 mb-3" aria-hidden="true" />
+          <div key={i} className="skeleton-box rounded-lg h-20 mb-3" aria-hidden="true" />
         ))}
         <SkeletonStyles />
       </div>
@@ -105,7 +105,7 @@ export default function MapCardList({
               type="button"
               onClick={onResetAll}
               data-testid="map-card-list-reset"
-              className="text-sm text-primary font-medium hover:underline"
+              className="text-sm text-primary font-medium underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current"
             >
               {t("map.card_list.empty.reset_filters")}
             </button>

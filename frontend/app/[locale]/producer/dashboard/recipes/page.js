@@ -29,6 +29,7 @@ import BackLink from "@/components/ui/BackLink";
 // MEH-1640: shared status colours across the four tools spokes.
 import { STATUS_CLASSES } from "@/lib/dashboard-status-classes";
 import { SkeletonList } from "@/components/Skeleton";
+import Button from "@/components/ui/Button";
 
 export default function ProducerRecipesPage() {
   const t = useTranslations("recipes.dashboard");
@@ -73,7 +74,7 @@ export default function ProducerRecipesPage() {
     <div className="max-w-3xl mx-auto px-4 py-10">
       {/* MEH-1655: min-h pins the row at CTA height so it doesn't shrink
           when the button unmounts. */}
-      <div className="flex items-center justify-between mb-6 min-h-[44px]">
+      <div className="flex items-center justify-between mb-6 min-h-touch">
         <div>
           {/* MEH-999: entered from the Tools tab (tools/page.js:101), so back
               goes to Tools — not the overview. */}
@@ -88,12 +89,12 @@ export default function ProducerRecipesPage() {
             MEH-1655: also hidden while loading (items === null) — it used to
             render then jump to the EmptyState CTA on an empty result. */}
         {items !== null && !(items.length === 0 && !showForm) && (
-          <button
+          <Button
             onClick={() => setShowForm((v) => !v)}
-            className="bg-primary text-white px-4 py-2 min-h-[44px] rounded-[8px] text-sm font-medium hover:bg-primary-dark transition"
+            variant="primary" size="sm"
           >
             {showForm ? t("btn_close_form") : t("btn_open_form")}
-          </button>
+          </Button>
         )}
       </div>
 
@@ -124,9 +125,9 @@ export default function ProducerRecipesPage() {
             ctaOnClick={() => setShowForm(true)}
             example={
               <div className="w-full max-w-xs text-start opacity-70">
-                <p className="text-[11px] text-fg-muted mb-1">{t("sample_label")}</p>
-                <div className="border border-border rounded-[12px] p-3 bg-surface-card flex items-center gap-3">
-                  <div className="w-14 h-14 rounded-[8px] bg-green-50 flex items-center justify-center shrink-0">
+                <p className="text-2xs text-fg-muted mb-1">{t("sample_label")}</p>
+                <div className="border border-border rounded-md p-3 bg-surface-card flex items-center gap-3">
+                  <div className="w-14 h-14 rounded-sm bg-green-50 flex items-center justify-center shrink-0">
                     <Bread size={22} className="text-fg-muted" aria-hidden="true" />
                   </div>
                   <div className="min-w-0">
@@ -143,7 +144,7 @@ export default function ProducerRecipesPage() {
           {items.map((r) => (
             <div
               key={r.id}
-              className="bg-white rounded-[14px] border border-border p-5"
+              className="bg-surface rounded-lg border border-border p-5"
             >
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div className="min-w-0">
@@ -167,12 +168,12 @@ export default function ProducerRecipesPage() {
                 </p>
               )}
               {r.moderation_status === "needs_revision" && r.moderation_notes && (
-                <div className={`rounded-[8px] p-3 text-sm mb-3 border ${STATUS_CLASSES.warning}`}>
+                <div className={`rounded-sm p-3 text-sm mb-3 border ${STATUS_CLASSES.warning}`}>
                   <strong>{t("notes_needs_revision")}</strong> {r.moderation_notes}
                 </div>
               )}
               {r.moderation_status === "rejected" && r.moderation_notes && (
-                <div className={`rounded-[8px] p-3 text-sm mb-3 border ${STATUS_CLASSES.error}`}>
+                <div className={`rounded-sm p-3 text-sm mb-3 border ${STATUS_CLASSES.error}`}>
                   <strong>{t("notes_rejected")}</strong> {r.moderation_notes}
                 </div>
               )}
@@ -184,14 +185,14 @@ export default function ProducerRecipesPage() {
                 <span>·</span>
                 <Link
                   href={`/producer/dashboard/recipes/${r.id}/edit`}
-                  className="text-primary hover:underline"
+                  className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current"
                 >
                   {t("edit")}
                 </Link>
                 <span>·</span>
                 <button
                   onClick={() => handleDelete(r.id)}
-                  className="text-red-600 hover:underline"
+                  className="text-danger-600 underline decoration-[1.5px] underline-offset-[5px] decoration-danger-600/35 hover:decoration-current"
                 >
                   {t("delete")}
                 </button>

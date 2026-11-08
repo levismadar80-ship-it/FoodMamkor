@@ -123,8 +123,9 @@ const KNOWN_UNDECLARED = {
     "pickup_points",
     "status",
     "vacation_until",
-    "vegan_scope",
-    "vegetarian_scope",
+    // MEH-1508 chunk 3ב-2 removed `vegan_scope` / `vegetarian_scope` — now
+    // declared on ProducerListSchema (the «טבעוני/צמחוני» badge + chip
+    // gate read them), so the baseline shrinks rather than drifts.
   ],
   // D2 — the 17 above (inherited) plus the 13 detail-only fields the Zod
   // detail schema does not declare. Six of these ARE rendered by the producer
@@ -163,8 +164,8 @@ const KNOWN_UNDECLARED = {
     "story_card_url",
     "updated_at",
     "vacation_until",
-    "vegan_scope",
-    "vegetarian_scope",
+    // MEH-1508 chunk 3ב-2: vegan_scope / vegetarian_scope declared (inherited
+    // from ProducerListSchema) — removed here for the same reason.
     "whatsapp_group",
   ],
 };

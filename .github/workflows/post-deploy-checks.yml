@@ -1,0 +1,120 @@
+name: Post-deploy checks
+
+# MEH-2749 — after every push to staging or main, once the new build is live:
+#   1. production smoke (main only) — scripts/checks/smoke_production.py
+#   2. broken-link crawl — scripts/link-check.mjs (MEH-1963, reused) +
+#      live security headers — scripts/checks/live_security_headers.py
+#   3. Lighthouse performance budget — scripts/checks/lighthouserc.cjs
+# Not a required check: it runs after merge, against the live site. A red
+# here means "the deploy that just landed broke something" and arrives as the
+# usual GitHub Actions failure email. All logic lives in scripts/checks/;
+# this file only wires it, so changing a budget never needs a workflow edit.
+
+"on":
+  push:
+    branches: [staging, main]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Which site to check"
+        type: choice
+        options: [production, staging]
+        default: production
+
+permissions:
+  contents: read
+
+concurrency:
+  group: post-deploy-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Post-deploy checks (${{ github.ref_name }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      BASE_URL: ${{ (github.event_name == 'workflow_dispatch' && inputs.target == 'staging' || github.event_name == 'push' && github.ref == 'refs/heads/staging') && 'https://staging.mehamakor.online' || 'https://mehamakor.co.il' }}
+      IS_PRODUCTION: ${{ (github.event_name == 'workflow_dispatch' && inputs.target == 'production' || github.event_name == 'push' && github.ref == 'refs/heads/main') && 'true' || 'false' }}
+    steps:
+      - name: Target
+        run: echo "BASE_URL=$BASE_URL IS_PRODUCTION=$IS_PRODUCTION (smoke and Lighthouse run only when IS_PRODUCTION=true)"
+
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+
+      - name: Wait for the new build to be live
+        if: github.event_name == 'push'
+        env:
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        run: python scripts/checks/wait_for_deploy.py --base-url "$BASE_URL" --sha "${{ github.sha }}" || echo "::warning title=Deploy not detected::the checks below may describe the previous build"
+
+      - name: Production smoke
+        id: smoke
+        if: env.IS_PRODUCTION == 'true'
+        continue-on-error: true
+        run: python scripts/checks/smoke_production.py --base-url "$BASE_URL"
+
+      - name: Broken links
+        id: links
+        continue-on-error: true
+        env:
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        run: node scripts/link-check.mjs "$BASE_URL"
+
+      - name: Security headers (live)
+        id: headers
+        continue-on-error: true
+        env:
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        run: |
+          python scripts/checks/live_security_headers.py --self-test
+          python scripts/checks/live_security_headers.py --base-url "$BASE_URL"
+
+      - name: Lighthouse budget
+        id: lighthouse
+        # Production only, and no bypass secret in this step: Lighthouse would
+        # send it to every third-party host the page loads.
+        if: env.IS_PRODUCTION == 'true'
+        continue-on-error: true
+        env:
+          LHCI_BASE_URL: ${{ env.BASE_URL }}
+        run: |
+          npx --yes @lhci/cli@0.15.1 collect --config=scripts/checks/lighthouserc.cjs
+          # upload (to the local report folder) BEFORE assert, so a red run still keeps its report
+          npx --yes @lhci/cli@0.15.1 upload --config=scripts/checks/lighthouserc.cjs
+          npx --yes @lhci/cli@0.15.1 assert --config=scripts/checks/lighthouserc.cjs
+
+      - name: Keep the Lighthouse report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: lighthouse-report-${{ github.ref_name }}-${{ github.run_id }}
+          path: lhci-report/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Verdict
+        if: always()
+        env:
+          R_SMOKE: ${{ steps.smoke.outcome }}
+          R_LINKS: ${{ steps.links.outcome }}
+          R_HEADERS: ${{ steps.headers.outcome }}
+          R_LH: ${{ steps.lighthouse.outcome }}
+        run: |
+          fail=0
+          for pair in "Production smoke:$R_SMOKE" "Broken links:$R_LINKS" "Security headers:$R_HEADERS" "Lighthouse budget:$R_LH"; do
+            name="${pair%%:*}"; res="${pair##*:}"
+            case "$res" in
+              success|skipped) echo "  OK   $name: $res" ;;
+              *) echo "::error::$name: $res"; fail=1 ;;
+            esac
+          done
+          exit $fail

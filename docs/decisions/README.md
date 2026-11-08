@@ -44,7 +44,7 @@ Permanent architectural decisions recorded once, never re-litigated.
 | [021](./ADR-021-personal-prefs-dual-surface.md) | Personal-preferences dual-surface architecture (PK pointer vs Settings full) | Accepted | 2026-06-03 | MEH-691 |
 | [022](./ADR-022-two-tier-licensing-model.md) | Two-tier licensing model — מאומת / מוצהר | Accepted | 2026-06-05 | MEH-742 |
 | [023](./ADR-023-motion-nav-indicator-spring.md) | Motion — restrained spring for bottom-nav indicator | Accepted | 2026-06-16 | MEH-789 |
-| [024](./ADR-024-voice-surface-function.md) | Voice — surface-function taxonomy + owner-noun gender (refines ADR-014) | Accepted | 2026-06-25 | MEH-944 |
+| [024](./ADR-024-voice-surface-function.md) | Voice — surface-function taxonomy + owner-noun gender (refines ADR-014) | Accepted · §1 partly superseded by 037 | 2026-06-25 | MEH-944 |
 | [025](./ADR-025-loop-tiers.md) | Loop-primitive authority by risk tier — /goal, /loop, /schedule (extends ADR-016) | Accepted | 2026-07-09 | MEH-1052 |
 | [026](./ADR-026-error-color-token.md) | Error color token — AA-passing cream + on-dark pair (narrows ADR-019) | Accepted | 2026-07-09 | MEH-1073 |
 | [027](./ADR-027-revenue-model.md) | Revenue model — base free forever, no transaction fees, trigger-gated premium | Accepted | 2026-07-12 | MEH-1147 |
@@ -55,6 +55,9 @@ Permanent architectural decisions recorded once, never re-litigated.
 | [034](./ADR-034-data-gate-in-code.md) | A data gate lives in the code as a render threshold, not in Linear as a waiting card | Accepted | 2026-09-04 | MEH-2250 |
 | [035](./ADR-035-one-home-per-fact.md) | One home per fact — every other surface points, none keeps a copy; upkeep rules get a staleness guard | Accepted | 2026-10-26 | MEH-2344 |
 | [036](./ADR-036-organizer-kind.md) | An event organizer is a `Producer` row with `kind='organizer'`, hidden from every business surface by one shared predicate | Accepted | 2026-10-28 | MEH-2459 |
+| [037](./ADR-037-neutral-reader-address.md) | Reader address is gender-neutral on every surface; feminine only for the founder's own voice and admin (supersedes ADR-024 §1 feminine half) | Accepted | 2026-11-04 | MEH-2661 |
+| [038](./ADR-038-status-color-scales.md) | Status colours are tokens — `danger-*` / `warning-*` scales at Tailwind red/amber values (narrows ADR-019, extends ADR-026) | Accepted | 2026-11-06 | MEH-1687 |
+| [039](./ADR-039-display-numerals.md) | The event price token is Frank Ruhl upright bold; Cormorant italic stays for times and inline Latin (narrows MEH-2488; band fact row rejected 07/11) | Accepted (amended) | 2026-11-07 | MEH-2804 |
 
 ## Related
 - `docs/LOCKED_DECISIONS.md` — older free-form decisions; being migrated

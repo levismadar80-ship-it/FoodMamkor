@@ -47,7 +47,7 @@ export default function CityPickerModal({ open, onClose, onSelectCity }) {
 
   if (!open) return null;
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby="city-picker-title" className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+    <div role="dialog" aria-modal="true" aria-labelledby="city-picker-title" className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40 px-4" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="bg-surface-floating rounded-lg border border-border w-full max-w-sm p-5 relative">
         <button type="button" onClick={onClose} className="absolute top-2 end-2 w-11 h-11 rounded-full hover:bg-green-50 flex items-center justify-center text-fg-muted" aria-label={t("common.aria.close")}>
           <X size={20} weight="bold" />
@@ -59,7 +59,7 @@ export default function CityPickerModal({ open, onClose, onSelectCity }) {
             desktop single-row layout unchanged. */}
         <div className="grid grid-cols-2 gap-2 mb-4 sm:flex sm:flex-wrap">
           {POPULAR_CITIES.map(({ key, canonical }) => (
-            <button key={key} type="button" onClick={() => onSelectCity(canonical)} className="px-4 py-2 rounded-full text-sm font-medium border border-border bg-white text-text hover:border-primary hover:text-primary transition">{t(`modals.location.popular_cities.${key}`)}</button>
+            <button key={key} type="button" onClick={() => onSelectCity(canonical)} className="px-4 py-2 rounded-full text-sm font-medium border border-border bg-surface text-text hover:border-primary hover:text-primary transition">{t(`modals.location.popular_cities.${key}`)}</button>
           ))}
         </div>
         <CitySearch id="city-picker-search" label={t("map.city_picker.other.label")} value="" onChange={(v) => { if (v.trim()) onSelectCity(v.trim()); }} placeholder={t("map.city_picker.other.placeholder")} />

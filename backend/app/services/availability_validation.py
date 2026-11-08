@@ -18,21 +18,20 @@ from __future__ import annotations
 
 from datetime import date
 
-from app.schemas.schemas import AVAILABILITY_STATES
+from app.schemas.schemas import AVAILABILITY_STATES, WRITABLE_AVAILABILITY_STATES
 from app.utils.clock import israel_today
 
 ON_VACATION = "on_vacation"
 
 # Allowed-transition matrix (AUD-039 Phase 0). A producer controls their own
-# availability, so every state may move to every other state — the matrix is
-# fully permissive BY DESIGN. It is encoded explicitly (rather than assumed)
-# so (a) an invalid current_state can never silently pass, and (b) any future
-# restriction is a one-line edit here, not a scattered router change. The
-# merged mutation suite (test_expansion_availability.py) exercises
-# accepting_orders⇄available_today and accepting_orders⇄on_vacation — all of
-# which remain allowed.
+# availability, so every state may move to every WRITABLE state. It is encoded
+# explicitly (rather than assumed) so (a) an invalid current_state can never
+# silently pass, and (b) any future restriction is a one-line edit here, not a
+# scattered router change.
+#
+# MEH-2758 / MEH-2782: both sets are the same two values (pause-only).
 ALLOWED_TRANSITIONS: dict[str, frozenset[str]] = {
-    state: frozenset(AVAILABILITY_STATES) for state in AVAILABILITY_STATES
+    state: frozenset(WRITABLE_AVAILABILITY_STATES) for state in AVAILABILITY_STATES
 }
 
 
@@ -52,9 +51,9 @@ def validate_transition(current_state: str | None, new_state: str) -> None:
     `current_state` is `None` for a brand-new producer (any initial state
     is allowed). Raises `AvailabilityValidationError(kind="value")`.
     """
-    if new_state not in AVAILABILITY_STATES:
+    if new_state not in WRITABLE_AVAILABILITY_STATES:
         raise AvailabilityValidationError(
-            f"מצב לא תקין. חייב להיות אחד מתוך: {', '.join(AVAILABILITY_STATES)}",
+            f"מצב לא תקין. חייב להיות אחד מתוך: {', '.join(WRITABLE_AVAILABILITY_STATES)}",
             kind="value",
         )
     if current_state is None:

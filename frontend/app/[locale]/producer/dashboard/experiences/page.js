@@ -15,7 +15,7 @@
 import { Link, useRouter } from "@/i18n/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
-import { Sparkle, PencilSimple, Prohibit, ArrowCounterClockwise, Trash } from "@phosphor-icons/react";
+import { Sparkle, PencilSimple, Prohibit, ArrowCounterClockwise, Trash, Check } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { showToast } from "@/lib/toast";
@@ -30,6 +30,7 @@ import BackLink from "@/components/ui/BackLink";
 // MEH-1640: shared status colours across the four tools spokes.
 import { STATUS_CLASSES } from "@/lib/dashboard-status-classes";
 import { SkeletonList } from "@/components/Skeleton";
+import RegistrationsList from "@/components/RegistrationsList";
 
 const STATUS_STYLE = {
   approved: STATUS_CLASSES.success,
@@ -41,8 +42,85 @@ const STATUS_STYLE = {
 // manage_experiences.status_*. Any unknown value falls back to the raw string.
 const KNOWN_STATUSES = ["pending", "approved", "rejected", "changes_requested"];
 
+// Sign-up happens on WhatsApp, so the host types how many signed up. Saved on
+// blur / Enter as a bare {participants_count} PUT, which the backend keeps out
+// of moderation (experiences.py _NON_CONTENT_FIELDS). The page then shows
+// «נשארו N מקומות» at 3 or fewer and «הסדנה מלאה» + a waitlist at 0.
+// MEH-2766: with «טופס הרשמה באתר» the site counts its own sign-ups, so this
+// field becomes the OTHER ones only («נרשמו מחוץ לאתר») and its ceiling is
+// what the site sign-ups leave.
+function SignupCountField({ ex, t, onSaved, label, max }) {
+  const [value, setValue] = useState(String(ex.participants_count ?? 0));
+  const [state, setState] = useState("idle"); // idle | saving | saved
+  const id = `signed-up-${ex.id}`;
+  const hintId = `${id}-hint`;
+
+  const save = async () => {
+    const n = Number(value);
+    const current = ex.participants_count ?? 0;
+    // Focus + leave without typing is not an edit — never let the clamp below
+    // lower a stored tally that is above today's ceiling.
+    if (value === String(current)) return;
+    if (value.trim() === "" || !Number.isInteger(n) || n < 0) {
+      setValue(String(current));
+      return;
+    }
+    const clamped = Math.min(n, max);
+    if (clamped === current) {
+      setValue(String(current));
+      return;
+    }
+    setState("saving");
+    try {
+      const r = await api.put(`/experiences/${ex.id}`, { participants_count: clamped });
+      setValue(String(r.data.participants_count ?? clamped));
+      onSaved(r.data);
+      setState("saved");
+    } catch (err) {
+      setValue(String(current));
+      setState("idle");
+      showToast.error(detailToMessage(err.response?.data?.detail) || t("action_error"));
+    }
+  };
+
+  return (
+    <div className="mt-3 pt-3 border-t border-border flex items-center gap-3 flex-wrap" data-testid="experience-signup-count">
+      <label htmlFor={id} className="text-sm font-medium text-text">
+        {label}
+      </label>
+      <div className="flex items-center gap-2">
+        <input
+          id={id}
+          type="number"
+          inputMode="numeric"
+          min={0}
+          max={max}
+          value={value}
+          aria-describedby={hintId}
+          disabled={state === "saving"}
+          onChange={(e) => {
+            setValue(e.target.value);
+            setState("idle");
+          }}
+          onBlur={save}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") e.currentTarget.blur();
+          }}
+          className="w-20 min-h-touch border border-border rounded-sm px-3 text-center numeric focus-ring disabled:opacity-50"
+        />
+        <span className="text-sm text-fg-muted numeric" aria-hidden="true">/ {ex.max_participants}</span>
+        {state === "saved" && <Check size={18} weight="bold" className="text-primary" aria-hidden="true" />}
+      </div>
+      <p id={hintId} className="basis-full text-xs text-fg-muted">
+        {t("signed_up_hint")}
+      </p>
+    </div>
+  );
+}
+
 export default function ManageExperiencesPage() {
   const t = useTranslations("dashboard.producer.manage_experiences");
+  const tReg = useTranslations("registration.list");
   const today = israelToday();
   const locale = useLocale();
   const router = useRouter();
@@ -104,7 +182,7 @@ export default function ManageExperiencesPage() {
       <BackLink href="/producer/dashboard/tools" label={t("back_to_tools")} />
       {/* MEH-1655: min-h pins the row at CTA height so the h1 doesn't grow
           when the button unmounts. */}
-      <div className="flex items-center justify-between gap-3 mt-1 mb-6 min-h-[44px]">
+      <div className="flex items-center justify-between gap-3 mt-1 mb-6 min-h-touch">
         <h1 className="font-headline-lg text-3xl font-bold text-text">{t("heading")}</h1>
         {/* MEH-999: single-CTA pattern (MEH-1097 F14 / MEH-1420) — the header
             CTA hides while the list is empty so the EmptyState's own CTA is the
@@ -114,7 +192,7 @@ export default function ManageExperiencesPage() {
         {Array.isArray(items) && items.length > 0 && (
           <Link
             href="/producer/dashboard/experiences/new"
-            className="inline-flex items-center gap-1.5 bg-primary text-white px-4 py-2 min-h-[44px] rounded-[8px] text-sm font-medium hover:bg-primary-dark transition"
+            className="inline-flex items-center gap-1.5 bg-primary text-white px-4 py-2 min-h-touch rounded-sm text-sm font-medium hover:bg-primary-dark transition"
           >
             <Sparkle size={18} weight="bold" aria-hidden="true" />
             {t("create_cta")}
@@ -140,10 +218,11 @@ export default function ManageExperiencesPage() {
             // «מאושרת» with a «ביטול» button (staging 27/10, three from 09/2026).
             const past = ex.status === "approved" && ex.event_date < today;
             const cancelled = !past && ex.status === "approved" && !ex.is_active;
+            const siteForm = ex.registration_method === "site_form";
             return (
             <li
               key={ex.id}
-              className={`bg-white border rounded-[12px] p-4 ${cancelled ? "border-yellow-300 bg-yellow-50/40" : "border-border"}`}
+              className={`bg-surface border rounded-md p-4 ${cancelled ? "border-yellow-300 bg-yellow-50/40" : "border-border"}`}
             >
               <div className="flex items-start justify-between gap-3 flex-wrap">
                 <div className="min-w-0">
@@ -173,7 +252,7 @@ export default function ManageExperiencesPage() {
                   <Link
                     href={`/producer/dashboard/experiences/${ex.id}/edit`}
                     aria-label={t("action_edit")}
-                    className="inline-flex items-center gap-1 border border-border rounded-[8px] px-3 py-1.5 min-h-[44px] text-xs hover:bg-green-50 transition"
+                    className="inline-flex items-center gap-1 border border-border rounded-sm px-3 py-1.5 min-h-touch text-xs hover:bg-green-50 transition"
                   >
                     <PencilSimple size={16} aria-hidden="true" />
                     {t("action_edit")}
@@ -183,7 +262,7 @@ export default function ManageExperiencesPage() {
                       type="button"
                       onClick={() => toggleActive(ex)}
                       disabled={busyId === ex.id}
-                      className="inline-flex items-center gap-1 border border-border rounded-[8px] px-3 py-1.5 min-h-[44px] text-xs hover:bg-green-50 transition disabled:opacity-50"
+                      className="inline-flex items-center gap-1 border border-border rounded-sm px-3 py-1.5 min-h-touch text-xs hover:bg-green-50 transition disabled:opacity-50"
                     >
                       {ex.is_active ? (
                         <>
@@ -203,13 +282,30 @@ export default function ManageExperiencesPage() {
                     onClick={() => remove(ex)}
                     disabled={busyId === ex.id}
                     aria-label={t("action_delete")}
-                    className="inline-flex items-center gap-1 border border-red-300 text-red-600 rounded-[8px] px-3 py-1.5 min-h-[44px] text-xs hover:bg-red-50 transition disabled:opacity-50"
+                    className="inline-flex items-center gap-1 border border-danger-300 text-danger-600 rounded-sm px-3 py-1.5 min-h-touch text-xs hover:bg-danger-50 transition disabled:opacity-50"
                   >
                     <Trash size={16} aria-hidden="true" />
                     {t("action_delete")}
                   </button>
                 </div>
               </div>
+              {ex.status === "approved" && !past && ex.max_participants != null && (
+                <SignupCountField
+                  ex={ex}
+                  t={t}
+                  label={siteForm || (ex.registered_count ?? 0) > 0 ? tReg("offline_label") : t("signed_up_label")}
+                  max={Math.max(0, ex.max_participants - (ex.registered_count ?? 0))}
+                  onSaved={(saved) =>
+                    setItems((list) => list.map((e) => (e.id === ex.id ? { ...e, ...saved } : e)))
+                  }
+                />
+              )}
+              {/* MEH-2766: «טופס הרשמה באתר» sign-ups, closed by default. */}
+              {/* Shown after a switch away too: earlier sign-ups still hold
+                  seats, and the owner still needs their details. */}
+              {(siteForm || (ex.registered_count ?? 0) > 0) && (
+                <RegistrationsList kind="experiences" itemId={ex.id} count={ex.registered_count ?? 0} />
+              )}
             </li>
             );
           })}

@@ -32,6 +32,10 @@ from app.services.delivery_validation import (
 )
 from app.services.email import send_email
 from app.services.group_buy_delist import cancel_live_group_buys  # MEH-2498
+from app.services.availability_validation import (  # MEH-2758
+    AvailabilityValidationError,
+    validate_transition,
+)
 from app.services.producer_listing import is_business  # MEH-2459
 from app.services import retired_slugs  # MEH-2528
 
@@ -57,12 +61,14 @@ from app.schemas.schemas import (
     ProducerAdminOut,
     ProducerRejectIn,
     ProducerAdminUpdate,
+    WRITABLE_AVAILABILITY_STATES,
     RejectionPresetOut,
     RequestChangesIn,
     StoryCardUploadRequest,
 )
 from app.services.license_validation import (
     categories_require_license,
+    enforce_license_gate_on_update,
     ensure_license_for_categories,
 )
 from app.services.producer_queries import (
@@ -258,7 +264,7 @@ def _assert_approvable(
     if needs_license and not overrides.without_license:
         raise HTTPException(
             status_code=422,
-            detail="לא ניתן לאשר בית עסק בקטגוריה הדורשת רישיון יצרן ללא מספר רישיון. אמתי את הרישיון, או אשרי עם דריסה מפורשת.",
+            detail="לא ניתן לאשר בית עסק בקטגוריה הדורשת רישיון ייצור ללא מספר רישיון. אמתי את הרישיון, או אשרי עם דריסה מפורשת.",
         )
     if needs_license and overrides.without_license:
         # Audit trail: an admin bypassed the license guard — visible in Railway logs.
@@ -839,6 +845,52 @@ def _retire_replaced_slug(db: Session, producer: Producer, payload: dict) -> Non
         retired_slugs.reclaim(db, payload["slug"], producer.id)
 
 
+def _guard_vacation_return_date(producer: Producer, payload: dict) -> None:
+    """MEH-2782: a paused business always has a return date, on the admin PUT
+    too — the owner endpoint has required it since AUD-039/040. The past-date
+    check stays in ProducerUpdate._validate_vacation_until."""
+    if "availability_state" not in payload and "vacation_until" not in payload:
+        return  # an unrelated edit of a legacy dateless pause stays possible
+    state = payload.get("availability_state", producer.availability_state)
+    until = (
+        payload["vacation_until"]
+        if "vacation_until" in payload
+        else producer.vacation_until
+    )
+    if state == "on_vacation" and until is None:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "vacation_return_date_required",
+                "message": "תאריך חזרה לחופשה נדרש",
+            },
+        )
+
+
+def _guard_availability_change(producer: Producer, payload: dict) -> None:
+    """MEH-2758: pause-only availability writes on the admin PUT.
+
+    Only a CHANGE is checked, since ProducerForm sends availability_state on
+    every save. Since MEH-2782 the schema enum is the same two values, so this
+    is the second line of defence. Runs the MEH-2782 return-date check first.
+    """
+    _guard_vacation_return_date(producer, payload)
+    new_state = payload.get("availability_state")
+    if "availability_state" not in payload or new_state == producer.availability_state:
+        return
+    try:
+        validate_transition(producer.availability_state, new_state)
+    except AvailabilityValidationError as e:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "invalid_availability_state",
+                "message": "מצב לא תקין",
+                "params": {"allowed": list(WRITABLE_AVAILABILITY_STATES)},
+            },
+        ) from e
+
+
 @router.put("/producers/{producer_id}", response_model=ProducerAdminOut)
 def admin_update_producer(
     producer_id: UUID,
@@ -881,24 +933,13 @@ def admin_update_producer(
     # or the DB CHECK (MEH-1849) turns a partial update into a 500.
     ensure_nationwide_requires_delivery(producer, payload)
 
-    # MEH-530: PATCH semantics — guard against the EFFECTIVE state after
-    # the update. If category_ids is being changed → use the new list,
-    # otherwise read existing producer-category join rows. Same for license:
-    # if the field is in the payload (even explicitly None to clear) → use
-    # that, otherwise keep the current column. Helper short-circuits to OK
-    # when no required-category is touched, so this is cheap on non-license
-    # admin edits.
-    effective_category_ids = (
-        category_ids
-        if category_ids is not None
-        else [c.id for c in producer.categories]
-    )
-    effective_license = (
-        payload.get("producer_license_number")
-        if "producer_license_number" in payload
-        else producer.producer_license_number
-    )
-    ensure_license_for_categories(db, effective_category_ids, effective_license)
+    # MEH-2707: the owner path's MEH-999 grandfather rule, shared — only a
+    # NEWLY-ADDED licensed category, or blanking a held license, is refused.
+    # This used to re-check the FULL effective category set (MEH-530), so any
+    # edit to an unlicensed business in a licensed category 422'd — the admin
+    # could not even fix its description. Going live is still gated by
+    # approve_producer → _assert_approvable (MEH-971), unchanged.
+    enforce_license_gate_on_update(db, producer, payload, category_ids)
 
     # Keep slug unique if changed; reject reserved slugs.
     if "slug" in payload and payload["slug"]:
@@ -919,6 +960,8 @@ def admin_update_producer(
     # below — that loop is what turns `producer.is_recommended` into the new
     # value, so the transition has to be read while it is still the old one.
     _apply_recommended_pick(producer, payload)
+
+    _guard_availability_change(producer, payload)  # MEH-2758
 
     for field, value in payload.items():
         setattr(producer, field, value)

@@ -20,7 +20,7 @@ import { showToast } from "@/lib/toast";
 import { SkeletonList } from "@/components/Skeleton";
 
 const STATUS_COLORS = {
-  failed: "bg-red-100 text-red-800",
+  failed: "bg-danger-100 text-danger-800",
   window_expired: "bg-yellow-100 text-yellow-800",
 };
 
@@ -49,13 +49,13 @@ export default function AdminWhatsappFailuresPage() {
       </div>
 
       {rows.length === 0 ? (
-        <div className="bg-white border border-border rounded-[12px] p-8 text-center text-fg-muted">
+        <div className="bg-surface border border-border rounded-md p-8 text-center text-fg-muted">
           {t("whatsapp_failures.empty")}
         </div>
       ) : (
         // MEH-2426: -hidden clipped the status / error columns at 375 with no
         // way to reach them. Below md: one card per row (.table-stack).
-        <div className="bg-white border border-border rounded-[12px] overflow-x-auto">
+        <div className="bg-surface border border-border rounded-md overflow-x-auto">
           <table className="table-stack w-full text-sm">
             <thead>
               <tr className="bg-gray-50 text-fg-muted text-xs">

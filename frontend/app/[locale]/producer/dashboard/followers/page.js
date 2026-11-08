@@ -101,7 +101,7 @@ export default function FollowersPage() {
           )}
         </>
       ) : (
-        <div className="bg-white rounded-[14px] border border-border p-8 text-center">
+        <div className="bg-surface rounded-lg border border-border p-8 text-center">
           <Plant size={48} weight="fill" className="text-primary mx-auto mb-3" aria-hidden="true" />
           <p className="text-3xl font-bold text-text mb-1">{followerCount}</p>
           <p className="text-fg-muted mb-6">{t("followers_label")}</p>

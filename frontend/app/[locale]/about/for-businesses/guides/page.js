@@ -11,7 +11,7 @@
  *           MEH-475 PR-C4b/chunk-5 (i18n, 2026-05-20) — GUIDES + chrome
  *           wired to `guides.index.*` + per-guide title keys.
  */
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { BRAND_NAME } from "@/lib/constants";
 import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
@@ -54,8 +54,10 @@ export default async function GuidesIndexPage({ params }) {
   const t = await getTranslations({ locale, namespace: "guides" });
   const ti = await getTranslations({ locale, namespace: "guides.index" });
   return (
-    <section className="min-h-screen bg-background text-text">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
+    // MEH-2827 (FinalGuides): no min-h-screen and a short bottom pad, so no
+    // empty band is left between the last card and the site footer.
+    <section className="bg-background text-text">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-12 sm:pt-16 pb-2">
         <header className="mb-10 sm:mb-14">
           <p className="text-xs sm:text-sm mb-3 text-accent">
             {ti("eyebrow")}
@@ -63,7 +65,7 @@ export default async function GuidesIndexPage({ params }) {
           <h1 className="font-headline-lg mb-4 text-primary-dark text-[clamp(28px,6vw,44px)] leading-[1.15] font-black">
             {ti("heading")}
           </h1>
-          <p className="text-[17px] sm:text-[18px] leading-relaxed text-text/90">
+          <p className="text-lg sm:text-lg leading-relaxed text-text/90">
             {ti("intro")}
           </p>
         </header>
@@ -73,18 +75,18 @@ export default async function GuidesIndexPage({ params }) {
             <li key={g.slug}>
               <Link
                 href={`/about/for-businesses/guides/${g.slug}`}
-                className="block rounded-lg border border-border bg-white p-5 sm:p-6 transition focus-visible:outline-none focus-visible:ring-2"
+                className="block rounded-lg border border-border bg-surface-card p-5 sm:p-6 transition focus-visible:outline-none focus-visible:ring-2"
               >
-                <p className="text-[11px] sm:text-[12px] mb-2 text-accent">
+                <p className="text-2xs sm:text-xs mb-2 text-accent">
                   {ti("minutes_label", { minutes: g.readMinutes })}
                 </p>
-                <h2 className="font-headline-md mb-2 text-primary-dark text-[20px] font-bold">
+                <h2 className="font-headline-md mb-2 text-primary-dark text-xl font-bold">
                   {t(`${g.nsKey}.title`)}
                 </h2>
-                <p className="text-[15px] sm:text-[16px] leading-relaxed mb-3 text-text/90">
+                <p className="text-base sm:text-base leading-relaxed mb-3 text-text/90">
                   {ti(`card_previews.${g.nsKey}`)}
                 </p>
-                <span className="inline-flex items-center gap-2 text-[14px] text-primary font-semibold">
+                <span className="inline-flex items-center gap-2 text-sm text-primary font-semibold">
                   {ti("cta")}
                 </span>
               </Link>
@@ -92,18 +94,17 @@ export default async function GuidesIndexPage({ params }) {
           ))}
         </ul>
 
-        <footer className="mt-14 sm:mt-16 border-t border-border pt-8">
-          <p className="text-[15px] text-text/90">
-            {ti("footer_prefix")}{" "}
-            <a
-              href="https://www.instagram.com/meha_makor"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline text-primary"
-            >
-              @meha_makor
-            </a>
-            {ti("footer_suffix")}
+        <footer className="mt-8 rounded-xl bg-background-alt p-5">
+          {/* MEH-2832: questions go to the one contact form, not Instagram
+              (Instagram stays in the site footer as social). */}
+          <p className="text-base text-text/90" data-testid="guides-footer-question">
+            {ti.rich("footer_prefix", {
+              link: (chunks) => (
+                <Link href="/contact?topic=business" className="underline text-primary">
+                  {chunks}
+                </Link>
+              ),
+            })}
           </p>
         </footer>
       </div>

@@ -4,6 +4,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 // MEH-475 PR-C4a chunk 4b: mock next-intl per established precedent.
 // MEH-76 chunk 4: the mock now covers the producer.badge tier keys and does
 // simple {param} interpolation so the S12 tooltip strings stay assertable.
+vi.mock("@/lib/use-badge-copy", async () => (await import("./helpers/he-badge-copy")).badgeCopyMock);
 vi.mock("next-intl", () => ({
   useTranslations: () => (key, values = {}) => {
     const flat = {
@@ -276,7 +277,7 @@ describe("BadgeRow", () => {
 
     // MEH-1170: the S12 "מוצהר" chip contradicted ADR-022 ("tier 2 = no
     // badge") and was removed. Declared renders no tier badge on ANY surface;
-    // the affirmative declared_explainer moved to ProducerHeader as visible copy.
+    // the affirmative explanation lives on /about/process (MEH-2710).
     it("declared renders no tier badge on the hero surface (ADR-022 no-badge)", () => {
       const { container } = render(
         <BadgeRow producer={{ verification_tier: "declared" }} />,
@@ -312,5 +313,43 @@ describe("BadgeRow", () => {
       const link = container.querySelector('a[href="/about#editors-pick"]');
       expect(link).not.toBeNull();
     });
+
+    // MEH-2701: every other hero badge links to its evidence group on the
+    // /about/badges explainer; the card surface stays plain text.
+    it("self-declared hero badge popover links to /about/badges#self-declared", () => {
+      const { container } = render(<BadgeRow producer={{ grass_fed: true }} />);
+      fireEvent.click(screen.getByText("גראס פד"));
+      expect(container.querySelector('a[href="/about/badges#self-declared"]')).not.toBeNull();
+    });
+
+    it("card surface badge popover has no explainer link", () => {
+      const { container } = render(<BadgeRow producer={{ grass_fed: true }} surface="card" />);
+      fireEvent.click(screen.getByText("גראס פד"));
+      expect(container.querySelector('a[href^="/about/badges"]')).toBeNull();
+    });
   });
 });
+
+// MEH-2849: at 200% text on a 375 phone the «עסק של מילואימניקים» pill was
+// wider than its card and ran 35px off-screen (44-text-scale, / and
+// /producers). The label may now shrink and break, so a long label wraps INSIDE
+// the card, and the pill is rounded-xl so a wrapped pill stays a rounded
+// rectangle. jsdom has no layout, so this pins the classes that make it
+// possible; the 200% run is in e2e/flows/44-text-scale.spec.ts.
+describe("BadgeRow — a long card label wraps inside the card (MEH-2849)", () => {
+  it("listitem, button and pill are max-w-full; the label can shrink and break", () => {
+    render(<BadgeRow producer={{ reservist_owned: true, verification_tier: null }} surface="card" limit={2} />);
+    const button = document.querySelector('button[data-badge="reservist_owned"]');
+    expect(button, "control: the reservist badge renders on the card").not.toBeNull();
+    const pill = button.firstElementChild;
+    const label = [...pill.children].at(-1);
+    expect(button.closest('[role="listitem"]').className.split(/\s+/)).toContain("max-w-full");
+    expect(button.className.split(/\s+/)).toContain("max-w-full");
+    expect(pill.className.split(/\s+/)).toContain("max-w-full");
+    expect(label.className.split(/\s+/)).toEqual(expect.arrayContaining(["min-w-0", "[overflow-wrap:anywhere]"]));
+    expect(label.textContent.length).toBeGreaterThan(0);
+    expect(pill.className.split(/\s+/)).toContain("rounded-xl");
+    expect(pill.className.split(/\s+/)).not.toContain("rounded-full");
+  });
+});
+

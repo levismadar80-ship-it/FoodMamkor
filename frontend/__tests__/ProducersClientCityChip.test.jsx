@@ -33,6 +33,8 @@ vi.mock("next/navigation", () => ({
 vi.mock("next-intl", () => ({ useTranslations: (s) => (k) => (s ? `${s}.${k}` : k) }));
 vi.mock("next/link", () => ({ default: ({ children, href }) => <a href={href}>{children}</a> }));
 vi.mock("@phosphor-icons/react", () => ({
+  // MEH-2827 PR 4: the «המליצו על בית עסק» links in the empty states.
+  ArrowLeft: (p) => <span {...p} />,
   // MEH-2131: the open-now chip's leading glyph (lib/chip-icons.js). Absent
   // here, the whole suite dies at import with "No \"Clock\" export is defined".
   Clock: (p) => <span {...p} />,
@@ -64,6 +66,8 @@ vi.mock("@phosphor-icons/react", () => ({
   Certificate: (p) => <span {...p} />,
   GrainsSlash: (p) => <span {...p} />,
   Barn: (p) => <span {...p} />,
+  Medal: (p) => <span {...p} />,
+  HandHeart: (p) => <span {...p} />,
   DropSlash: (p) => <span {...p} />,
   FlowerTulip: (p) => <span {...p} />,
 }));
@@ -103,6 +107,8 @@ vi.mock("@/components/LocationModal", () => ({
 }));
 vi.mock("@/components/Skeleton", () => ({ SkeletonProducerGrid: () => null }));
 vi.mock("@/lib/producer-filters", () => ({
+  // MEH-2767: the one chip gate. Identity — these specs do not exercise gating.
+  visibleAxisChips: ({ chips }) => chips,
   // MEH-1862: ProducersClient now imports this to attach FilterSheet group
   // metadata, and a partial vi.mock throws on any export it omits (same
   // reason the MEH-1881 names above are stubbed). Identity is the right

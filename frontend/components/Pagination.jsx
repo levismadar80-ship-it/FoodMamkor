@@ -51,7 +51,7 @@ export default function Pagination({
           <select
             value={perPage}
             onChange={(e) => onPerPageChange(Number(e.target.value))}
-            className="border border-border rounded-[8px] px-2 py-1 bg-white text-text"
+            className="border border-border rounded-sm px-2 py-1 bg-surface text-text"
             aria-label={t("per_page_aria")}
           >
             {perPageOptions.map((opt) => (
@@ -71,7 +71,7 @@ export default function Pagination({
           onClick={() => go(safePage - 1)}
           disabled={safePage <= 1}
           aria-label={t("prev_aria")}
-          className="px-3 py-1.5 rounded-[8px] text-sm border border-border bg-white hover:bg-green-50 disabled:opacity-40 disabled:cursor-not-allowed"
+          className="px-3 py-1.5 rounded-sm text-sm border border-border bg-surface hover:bg-green-50 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {t("prev")}
         </button>
@@ -96,10 +96,10 @@ export default function Pagination({
               onClick={() => go(entry)}
               aria-current={active ? "page" : undefined}
               aria-label={t("page_aria", { page: entry })}
-              className={`min-w-[36px] px-2 py-1.5 rounded-[8px] text-sm border transition ${
+              className={`min-w-[36px] px-2 py-1.5 rounded-sm text-sm border transition ${
                 active
                   ? "bg-primary text-white border-primary"
-                  : "bg-white text-text border-border hover:bg-green-50"
+                  : "bg-surface text-text border-border hover:bg-green-50"
               }`}
             >
               {entry}
@@ -112,7 +112,7 @@ export default function Pagination({
           onClick={() => go(safePage + 1)}
           disabled={safePage >= totalPages}
           aria-label={t("next_aria")}
-          className="px-3 py-1.5 rounded-[8px] text-sm border border-border bg-white hover:bg-green-50 disabled:opacity-40 disabled:cursor-not-allowed"
+          className="px-3 py-1.5 rounded-sm text-sm border border-border bg-surface hover:bg-green-50 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {t("next")}
         </button>

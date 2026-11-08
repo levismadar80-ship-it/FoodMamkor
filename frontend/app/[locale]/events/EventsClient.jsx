@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 // MEH-2245: the tab is the ROUTE (/events vs /experiences), so switching it is
 // a navigation. next-intl's router keeps the locale prefix (/en/experiences).
 import { useRouter } from "@/i18n/navigation";
@@ -20,7 +20,6 @@ import api from "@/lib/api";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { formatEventDate } from "@/lib/format-date";
 import CitySearch from "@/components/CitySearch";
-import Breadcrumb from "@/components/Breadcrumb";
 import ChipScrollRow from "@/components/ChipScrollRow";
 import CalendarView from "@/components/CalendarView";
 // MEH-2497: the date-rail row (and its row normalizer) now lives in one shared
@@ -33,6 +32,7 @@ import { EVENT_CATEGORIES, EXPERIENCE_CATEGORIES, withAll } from "@/lib/event-ca
 // mapping would drift, and a drifted arrow direction is invisible in review —
 // it reads as a plausible line either way.
 import useTabsKeyboard from "@/hooks/useTabsKeyboard";
+import Button from "@/components/ui/Button";
 
 // MEH-134: S10 "The Almanac" visual port. Events API + filter logic +
 // date formatting (lib/format-date.js) untouched — layout layer only.
@@ -40,8 +40,8 @@ import useTabsKeyboard from "@/hooks/useTabsKeyboard";
 // gesture); experiences render through the SAME EventEntryRow (gold accent),
 // so the old experience card is no longer imported here (the route-as-tab
 // merge deleted its last route consumer, the old /experiences client, and
-// MEH-2248 deleted the component itself). Calendar view keeps
-// CalendarView as-is.
+// MEH-2248 deleted the component itself). MEH-2771: the calendar view
+// lists its month through the same EventEntryRow (renderItem).
 
 // MEH-788: events hero — license-clean Pexels market-produce photo (3:4
 // 2400×3200, Pexels Free). Smart-cropped to a wide 16:9 band via g_auto
@@ -247,16 +247,9 @@ export default function EventsPage({ initialTab = "events" }) {
 
   return (
     <div>
-      {/* Breadcrumb — stays on cream so it reads on the dark desktop hero
-          below without recoloring the shared component. */}
-      <div className="max-w-5xl mx-auto px-4 pt-4">
-        <Breadcrumb
-          items={[
-            { href: "/", label: t("breadcrumb_home") },
-            { label: isExp ? t("breadcrumb_experiences") : t("breadcrumb_events") },
-          ]}
-        />
-      </div>
+      {/* no breadcrumb on this list page — no other top-level list
+          (/producers, /group-buys) carries one, and «בית › חוויות» on a
+          first-level page only repeats the bottom nav. Detail pages keep theirs. */}
 
       {/* Header — type-led per tab, now a full-bleed Ken Burns produce hero
           (MEH-788). Image on all viewports; the green HERO_SCRIM band holds the
@@ -317,7 +310,7 @@ export default function EventsPage({ initialTab = "events" }) {
             aria-selected={!isExp}
             tabIndex={isExp ? -1 : 0}
             onClick={() => switchTab("events")}
-            className={`pb-3 pt-2 min-h-[44px] inline-flex items-center text-sm md:text-base font-semibold border-b-2 -mb-px transition ${
+            className={`pb-3 pt-2 min-h-touch inline-flex items-center text-sm md:text-base font-semibold border-b-2 -mb-px transition ${
               !isExp ? "border-primary text-primary" : "border-transparent text-fg-muted hover:text-primary"
             }`}
           >
@@ -329,7 +322,7 @@ export default function EventsPage({ initialTab = "events" }) {
             aria-selected={isExp}
             tabIndex={isExp ? 0 : -1}
             onClick={() => switchTab("experiences")}
-            className={`pb-3 pt-2 min-h-[44px] inline-flex items-center text-sm md:text-base font-semibold border-b-2 -mb-px transition ${
+            className={`pb-3 pt-2 min-h-touch inline-flex items-center text-sm md:text-base font-semibold border-b-2 -mb-px transition ${
               isExp ? "border-primary text-primary" : "border-transparent text-fg-muted hover:text-primary"
             }`}
           >
@@ -338,7 +331,7 @@ export default function EventsPage({ initialTab = "events" }) {
           </div>
           <Link
             href={isExp ? "/producer/dashboard/experiences/new" : "/producer/dashboard/events/new"}
-            className="ms-auto min-w-0 self-center min-h-[44px] inline-flex items-center text-sm font-medium text-primary hover:underline"
+            className="ms-auto min-w-0 self-center min-h-touch inline-flex items-center text-sm font-medium text-primary hover:underline"
           >
             {isExp ? t("submit_experience") : t("add_event")}
             {/* MEH-990: raw → dingbat → Phosphor ArrowRight; rtl:rotate-180 = reading-forward in he (MEH-938 pattern) */}
@@ -379,7 +372,7 @@ export default function EventsPage({ initialTab = "events" }) {
                   // accessible name on every viewport (MEH-134 — a11y + E2E locator).
                   aria-label={t("view_list")}
                   onClick={() => setView("list")}
-                  className={`inline-flex items-center justify-center gap-1.5 px-4 py-2 min-h-[44px] text-sm font-medium transition ${
+                  className={`inline-flex items-center justify-center gap-1.5 px-4 py-2 min-h-touch text-sm font-medium transition ${
                     view === "list" ? "bg-primary text-white" : "text-fg-muted hover:text-primary"
                   }`}
                 >
@@ -393,7 +386,7 @@ export default function EventsPage({ initialTab = "events" }) {
                   tabIndex={view === "calendar" ? 0 : -1}
                   aria-label={t("view_calendar")}
                   onClick={() => setView("calendar")}
-                  className={`inline-flex items-center justify-center gap-1.5 px-4 py-2 min-h-[44px] text-sm font-medium transition ${
+                  className={`inline-flex items-center justify-center gap-1.5 px-4 py-2 min-h-touch text-sm font-medium transition ${
                     view === "calendar" ? "bg-primary text-white" : "text-fg-muted hover:text-primary"
                   }`}
                 >
@@ -427,7 +420,13 @@ export default function EventsPage({ initialTab = "events" }) {
         ) : datasetEmpty ? (
           <EmptyState tab={tab} t={t} />
         ) : view === "calendar" ? (
-          <CalendarView items={events} linkPrefix={isExp ? "/experiences" : "/events"} />
+          <CalendarView
+            items={events}
+            kind={isExp ? "experiences" : "events"}
+            renderItem={(row) => (
+              <EventEntryRow entry={toEventEntry(row, tab, t)} freeLabel={t("free")} />
+            )}
+          />
         ) : (
           <div className="space-y-2">
             {groupedByMonth.map((group) => (
@@ -493,7 +492,7 @@ function EmptyState({ tab, t }) {
         <Link
           href="/producers"
           data-testid="events-browse-producers"
-          className="min-h-[44px] inline-flex items-center text-sm font-semibold text-primary hover:underline"
+          className="min-h-touch inline-flex items-center text-sm font-semibold text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current"
         >
           {t("empty_browse_producers")}
         </Link>
@@ -514,15 +513,15 @@ function LoadError({ tErr, onRetry }) {
       <h2 className="font-headline-md text-2xl font-bold text-text max-w-[22ch] leading-snug">
         {tErr("generic")}
       </h2>
-      <button
+      <Button
         type="button"
         onClick={onRetry}
         data-testid="events-retry"
-        className="mt-6 min-h-[44px] inline-flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold px-5 py-3 rounded-sm"
+        variant="primary" size="sm" className="mt-6"
       >
         <ArrowCounterClockwise size={18} />
         {tErr("retry")}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -537,15 +536,15 @@ function NoResults({ t, onReset }) {
       <h2 className="font-headline-md text-2xl font-bold text-text max-w-[22ch] leading-snug">
         {t("no_results_title")}
       </h2>
-      <button
+      <Button
         type="button"
         onClick={onReset}
         data-testid="events-clear-filters"
-        className="mt-6 min-h-[44px] inline-flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold px-5 py-3 rounded-sm"
+        variant="primary" size="sm" className="mt-6"
       >
         <ArrowCounterClockwise size={18} />
         {t("no_results_cta")}
-      </button>
+      </Button>
     </div>
   );
 }

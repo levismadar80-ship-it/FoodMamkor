@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { ShoppingCart } from "@phosphor-icons/react";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import api from "@/lib/api";
+import { DELIVERY_DAYS } from "@/lib/delivery-days";
 import useScrollAffordance, { ScrollArrows } from "@/hooks/useScrollAffordance";
 
 function ProducerMiniCard({ producer }) {
@@ -31,7 +32,7 @@ function ProducerMiniCard({ producer }) {
   return (
     <Link
       href={producer.slug ? `/${producer.slug}` : `/producer/${producer.id}`}
-      className="flex-shrink-0 w-36 rounded-[12px] overflow-hidden border border-border bg-white transition group"
+      className="flex-shrink-0 w-36 rounded-md overflow-hidden border border-border bg-surface transition group"
       aria-label={producer.name}
     >
       <div className="relative h-24 bg-green-50">
@@ -42,13 +43,13 @@ function ProducerMiniCard({ producer }) {
             {(producer.name || "?")[0]}
           </div>
         )}
-        <span className="absolute top-1.5 end-1.5 inline-flex items-center gap-0.5 bg-primary text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
+        <span className="absolute top-1.5 end-1.5 inline-flex items-center gap-0.5 bg-primary text-white text-2xs font-bold px-1.5 py-0.5 rounded-full leading-none">
           <ShoppingCart size={11} weight="fill" aria-hidden="true" />{t("today")}
         </span>
       </div>
       <div className="px-2 py-1.5">
         <p className="text-xs font-semibold text-text truncate">{producer.name}</p>
-        {producer.city && <p className="text-[11px] text-fg-muted truncate">{producer.city}</p>}
+        {producer.city && <p className="text-2xs text-fg-muted truncate">{producer.city}</p>}
       </div>
     </Link>
   );
@@ -64,9 +65,12 @@ export default function FridayDeliveryStrip({ city, onVisibilityChange }) {
   const affordance = useScrollAffordance();
 
   useEffect(() => {
-    // MEH-291 Phase 3 — switched from is_available_today=true to the unified
-    // availability_state filter. Backend dual-writes during the 7-day overlap.
-    const params = { availability_state: "available_today", page_size: 12 };
+    // MEH-2759: businesses that DELIVER ON FRIDAY (an explicit שישי row in
+    // their delivery days — producer_listing._delivery_day_condition), instead
+    // of the owner-ticked «זמין היום» state, which is no longer writable.
+    // The default listing already hides on_vacation.
+    // DELIVERY_DAYS is sun→sat, so index 5 is שישי (the backend vocabulary).
+    const params = { delivery_day: DELIVERY_DAYS[5], page_size: 12 };
     if (city) params.delivery_city = city;
     api
       .get("/producers", { params })
@@ -85,7 +89,7 @@ export default function FridayDeliveryStrip({ city, onVisibilityChange }) {
 
   return (
     <section
-      className="bg-[#F5F0E8] border-b border-border py-4 px-4"
+      className="bg-background border-b border-border py-4 px-4"
       aria-label={t("title")}
       // MEH-991: VRT hides this weekday-dependent strip via injected CSS (e2e/visual/parity.css)
       data-testid="friday-delivery-strip"

@@ -7,6 +7,7 @@ import { resolveCategoryGlyph } from "@/lib/category-registry";
 import FilterSheet from "@/components/FilterSheet";
 import DeliveryContextBanner from "./DeliveryContextBanner";
 import ServiceChipRow from "./ServiceChipRow";
+import { useChipCopy } from "@/lib/use-chip-copy";
 
 /**
  * The /map filter bar: one category chip row + a "סינון" button + a
@@ -48,6 +49,7 @@ export default function FilterChipsBar({
   originTag = null,
 }) {
   const t = useTranslations();
+  const withChipCopy = useChipCopy(); // MEH-2748: tag words from messages
   const [sheetOpen, setSheetOpen] = useState(false);
   // MEH-1441: attach a 16px CATEGORY_ICONS glyph (via the chip's `iconName`) to
   // each category chip at the render site — map-chips.js stays React-free (only
@@ -88,8 +90,8 @@ export default function FilterChipsBar({
         className={`${inRow ? "" : "mt-2 "}flex flex-wrap items-center gap-1.5`}
         aria-live="polite"
       >
-        {activeFilterTags.map((tag) => (
-          // MEH-825: ≥44px hit area via the transparent button (min-h-[44px]
+        {activeFilterTags.map(withChipCopy).map((tag) => (
+          // MEH-825: ≥44px hit area via the transparent button (min-h-touch
           // + -my-2.5 keeps the visible row compact); the visible pill is the
           // inner span (~24px, AA floor).
           <button
@@ -101,9 +103,9 @@ export default function FilterChipsBar({
             onClick={() => onToggleChipClick(tag.key)}
             data-testid="map-active-filter-tag"
             aria-label={t("map.filter.aria.remove", { label: tag.label })}
-            className="group inline-flex items-center min-h-[44px] -my-2.5"
+            className="group inline-flex items-center min-h-touch -my-2.5"
           >
-            <span className="inline-flex items-center gap-1 rounded-md bg-green-50 text-primary px-2 py-1 text-[11px] group-hover:bg-green-50/80 transition">
+            <span className="inline-flex items-center gap-1 rounded-md bg-green-50 text-primary px-2 py-1 text-2xs group-hover:bg-green-50/80 transition">
               <span aria-hidden="true">×</span>
               {tag.label}
             </span>
@@ -113,7 +115,7 @@ export default function FilterChipsBar({
           type="button"
           onClick={resetAllFilters}
           data-testid="map-clear-all"
-          className="inline-flex items-center min-h-[44px] -my-2.5 text-primary text-[11px] no-underline hover:opacity-80 transition"
+          className="inline-flex items-center min-h-touch -my-2.5 text-primary text-2xs no-underline hover:opacity-80 transition"
         >
           {t("map.filter.clear_all")}
         </button>
@@ -164,7 +166,7 @@ export default function FilterChipsBar({
             // `max-[359px]:min-h-[42px]`: with the word hidden and no count the
             // button holds only the 16px glyph and shrank to 38px beside 42px
             // chips (py-2.5 + the 20px text line + border) — measured.
-            className="inline-flex items-center gap-1.5 whitespace-nowrap px-4 max-[374px]:px-3 max-[359px]:min-h-[42px] py-2.5 rounded-md text-sm font-medium border transition bg-white text-text border-border hover:border-primary hover:text-primary"
+            className="inline-flex items-center gap-1.5 whitespace-nowrap px-4 max-[374px]:px-3 max-[359px]:min-h-[42px] py-2.5 rounded-md text-sm font-medium border transition bg-surface text-text border-border hover:border-primary hover:text-primary"
           >
             <Faders size={16} aria-hidden="true" />
             {/* MEH-2514: under 360px the word is for screen readers only — the

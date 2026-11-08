@@ -8,6 +8,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import api from "@/lib/api";
 import EventDetailClient from "@/app/[locale]/events/[id]/EventDetailClient";
+import { PRICE_BASE } from "@/components/EventEntryRow";
 
 // MEH-2559: the heart needs AuthProvider; its behaviour is SaveButton.test.jsx's.
 // A stub that names its props, so where and for what it renders is checkable.
@@ -34,7 +35,7 @@ vi.mock("@phosphor-icons/react", () => {
   const Stub = () => null;
   return {
     Basket: Stub, Calendar: Stub, CalendarBlank: Stub, CalendarPlus: Stub, CaretLeft: Stub, Coins: Stub,
-    CookingPot: Stub, Drop: Stub, Leaf: Stub, MapPin: Stub, MapTrifold: Stub, Path: Stub, Plant: Stub,
+    CookingPot: Stub, ForkKnife: Stub, Leaf: Stub, MapPin: Stub, MapTrifold: Stub, Path: Stub, Plant: Stub,
     Storefront: Stub, UsersThree: Stub,
   };
 });
@@ -206,6 +207,9 @@ describe("MEH-2559 — save heart", () => {
     const hearts = [...screen.getByTestId("event-cover-actions").querySelectorAll('[data-testid="save-event"]')];
     expect(hearts).toHaveLength(1);
     expect(hearts[0].getAttribute("data-id")).toBe("ev-1");
+    // MEH-2671: the inline-END corner (top-left in RTL).
+    expect(screen.getByTestId("event-cover-actions").className).toMatch(/\bend-3\b/);
+    expect(screen.getByTestId("event-cover-actions").className).not.toMatch(/\bstart-3\b/);
     expect(screen.getByTestId("event-actions").querySelector('[data-testid="save-event"]')).toBeNull();
   });
 
@@ -218,5 +222,32 @@ describe("MEH-2559 — save heart", () => {
     await renderEvent({ event_date: "2026-10-20" });
     expect(screen.queryByTestId("event-add-to-calendar")).toBeNull();
     expect(screen.getByTestId("event-cover-actions").querySelector('[data-testid="save-event"]')).toBeTruthy();
+  });
+});
+
+describe("MEH-2804 — the price is the event row's token (ADR-039)", () => {
+  it.each([
+    ["free", { price: 0 }],
+    ["paid", { price: 60 }],
+  ])("%s: every class of the shared PRICE_BASE is on the detail price", async (_name, extra) => {
+    await renderEvent(extra);
+    const classes = screen.getByTestId("event-detail-price").className.split(/\s+/);
+    for (const cls of PRICE_BASE.split(" ")) expect(classes, cls).toContain(cls);
+  });
+});
+
+describe("MEH-2675 — category chip", () => {
+  it("a known category → link to the events list filtered by it", async () => {
+    await renderEvent();
+    const chip = screen.getByTestId("event-category");
+    expect(chip.tagName).toBe("A");
+    expect(chip.getAttribute("href")).toBe(`/events?category=${encodeURIComponent("שוק")}`);
+  });
+
+  it("a legacy category outside the list → plain chip, no dead filter link", async () => {
+    await renderEvent({ category: "סדנה" });
+    const chip = screen.getByTestId("event-category");
+    expect(chip.tagName).toBe("SPAN");
+    expect(chip.textContent).toBe("סדנה");
   });
 });

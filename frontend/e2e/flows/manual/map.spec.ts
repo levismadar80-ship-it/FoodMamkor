@@ -157,6 +157,9 @@ const mobileOnly = (info: TestInfo, why: string) => test.skip(isDesktop(info), w
 const MC = he.map.client;
 const MP = he.map.pane;
 const MF = he.map.filter;
+// `NM.empty` is not rendered anywhere since #3959: the empty near-me result is
+// the bottom sheet's `he.map.bottom_sheet.near_me_empty` line. Only `NM.aria`
+// is read here — a check against `NM.empty` would pass on any page.
 const NM = he.map.near_me_pill;
 const CP = he.map.city_picker;
 const CARD_EMPTY = he.map.card_list.empty;
@@ -173,7 +176,22 @@ const CHAT_OPEN_EN = eitherName(en.chat.launcher_open_label, en.chat.launcher_pi
 const MC_EN = en.map.client;
 
 type Axis = { key: string; label: string };
-const AXES = FILTER_AXES as Record<string, Axis>;
+/**
+ * MEH-2748 moved every axis's consumer label (and subtext) out of
+ * filter-taxonomy.js into messages/he.json `filter_axes.<key>`. Reading
+ * `FILTER_AXES[k].label` now yields undefined, and `getByRole("button",
+ * { name: undefined })` matches EVERY button — the 08/11 strict-mode reds. So
+ * the label is joined in from he.json here, and a missing one throws at load
+ * instead of silently widening a locator.
+ */
+const HE_AXES = (he as unknown as { filter_axes: Record<string, { label?: string; subtext?: string | null }> }).filter_axes;
+const AXES = Object.fromEntries(
+  Object.entries(FILTER_AXES as Record<string, object>).map(([k, a]) => {
+    const copy = HE_AXES[k];
+    if (!copy?.label) throw new Error(`he.json filter_axes.${k}.label is missing — the spec cannot name the chip`);
+    return [k, { ...a, label: copy.label, subtext: copy.subtext ?? null }];
+  }),
+) as Record<string, Axis>;
 
 /** Minimal ICU plural resolver for the `{count, plural, …}` strings in he/en.json. */
 function icu(msg: string, count: number): string {
@@ -262,10 +280,11 @@ const P_ASH = producer(6, "עסק לדוגמה", null, [branch(31.67, 34.57, "א
 const PRODUCERS: Producer[] = [P_HAIFA, P_TLV, P_JLM, P_BSV, P_KSH, P_ASH];
 const MEAT = PRODUCERS.filter((p) => (p.categories as Array<{ name: string }>)[0]?.name === CAT_MEAT.name);
 const DAIRY = PRODUCERS.filter((p) => (p.categories as Array<{ name: string }>)[0]?.name === CAT_DAIRY.name);
-// avg_rating DESC, then reviews_count DESC, unrated last (mapSort.test.js:39 pins
-// the comparator; this is the fixture's answer under it, written out so a
-// reader can check it against the ratings above without running anything).
-const RATING_ORDER = [P_KSH, P_HAIFA, P_TLV, P_JLM, P_BSV, P_ASH].map((p) => p.name);
+// MEH-2617: weighted rating DESC — (avg·n + 4.0·5) / (n + 5), so one 4.9 review
+// no longer outranks twelve 4.8s — then reviews_count DESC, unrated last
+// (mapSort.test.js pins the comparator). Written out so a reader can check it:
+// HAIFA 4.56 · TLV 4.40 · JLM 4.19 · KSH 4.15 · BSV 3.98 · ASH unrated.
+const RATING_ORDER = [P_HAIFA, P_TLV, P_JLM, P_KSH, P_BSV, P_ASH].map((p) => p.name);
 const FEED_ORDER = PRODUCERS.map((p) => p.name);
 
 // A GPS fix 1 km south of P_HAIFA's branch — nearest by construction, and inside
@@ -946,7 +965,7 @@ test.describe("manual › near-me pill + empty-near-me guard, mobile (MEH-970)",
     await shell.getByTestId("map-near-me-pill").click();
     await expect.poll(() => tiles.some((t) => t.z === GPS_FLY_ZOOM), "the camera must fetch tiles at the fly-to zoom").toBe(true);
     await expect(shell.locator("path.leaflet-interactive")).toHaveCount(1);
-    await expect(page.getByText(NM.empty, { exact: true })).toHaveCount(0);
+    await expect(page.getByText(he.map.bottom_sheet.near_me_empty, { exact: true })).toHaveCount(0);
     await expect(cards(shell)).toHaveCount(PRODUCERS.length);
   });
 
@@ -989,7 +1008,7 @@ test.describe("manual › near-me pill + empty-near-me guard, mobile (MEH-970)",
 
   // MT:MEH-970:3 — nothing within 25 km: the toast, the camera back on the
   //   default view (zoom 8), and ALL businesses still listed — never a blank map.
-  test("mobile: near me with nothing within 25 km toasts, returns to the default view and keeps every business", async ({ page, context }, info) => {
+  test("mobile: near me with nothing within 25 km says so in the sheet, returns to the default view and keeps every business", async ({ page, context }, info) => {
     mobileOnly(info, "the pill is mounted inside the mobile shell only");
     await grantGps(context, GPS_FAR);
     await fitFixtureSpread(page, info);
@@ -1011,7 +1030,10 @@ test.describe("manual › near-me pill + empty-near-me guard, mobile (MEH-970)",
       })
       .toBeGreaterThan(0);
     await shell.getByTestId("map-near-me-pill").click();
-    await expect(page.getByText(NM.empty, { exact: true })).toBeVisible();
+    // #3959: the empty near-me result is said IN the bottom sheet
+    // (MapBottomSheet.jsx `near_me_empty`), no longer as a toast — the old
+    // `near_me_pill.empty` string is rendered nowhere since.
+    await expect(page.getByText(he.map.bottom_sheet.near_me_empty, { exact: true })).toBeVisible();
     await expect(shell.locator("path.leaflet-interactive")).toHaveCount(1);
     // The fallback flyTo cancels the zoom-13 flight mid-air, so the camera
     // settles back on the default zoom: every tile the visible map holds is a
@@ -1547,12 +1569,23 @@ test.describe("manual › /map service row fits narrow phones (MEH-2514)", () =>
   // MEH-2532: the upper edge of `max-[374px]`. The geometry above stays green
   // if the breakpoint drifts (375 has room for px-4), so the padding itself is
   // pinned on both sides of it.
-  for (const [width, pad] of [[374, 12], [375, 16]] as const) {
-    test(`${width}px: the service chips and «סינון» use ${pad}px inline padding`, async ({ page }, info) => {
+  // MEH-2598 (Sapir 29/10, «אחיד»): the service chips are now the shared
+  // PromotedServiceChips — one geometry on home, /producers and /map, `px-4`
+  // at every width — and the row became a sideways rail, so they no longer
+  // squeeze. The `max-[374px]` step survives on «סינון» alone
+  // (FilterChipsBar.jsx:167), which is what this pair now pins; the chips are
+  // pinned to the shared 16px on both sides so a per-surface fork shows here.
+  for (const [width, filtersPad] of [[374, 12], [375, 16]] as const) {
+    test(`${width}px: «סינון» uses ${filtersPad}px inline padding, the shared service chips 16px`, async ({ page }, info) => {
       mobileOnly(info, "the service row's phone geometry");
       await page.setViewportSize({ width, height: 700 });
       const { shell } = await gotoWithCatalog(page, info);
-      for (const [name, btn] of [["has_delivery", serviceChip(shell, "has_delivery")], ["pickup_points", serviceChip(shell, "pickup_points")], ["filters", filtersButton(shell)]] as const) {
+      const SHARED_CHIP_PAD = 16;
+      for (const [name, btn, pad] of [
+        ["has_delivery", serviceChip(shell, "has_delivery"), SHARED_CHIP_PAD],
+        ["pickup_points", serviceChip(shell, "pickup_points"), SHARED_CHIP_PAD],
+        ["filters", filtersButton(shell), filtersPad],
+      ] as const) {
         const padding = await btn.evaluate((el) => [getComputedStyle(el).paddingInlineStart, getComputedStyle(el).paddingInlineEnd]);
         expect(padding, `${name} inline padding at ${width}px`).toEqual([`${pad}px`, `${pad}px`]);
       }
@@ -1616,5 +1649,108 @@ test.describe("manual › /map PEEK sheet count clears the nav pill on short pho
     // snaps open — unless the drag never reached the sheet.
     await dragSheetUp(page, at, 200);
     await sheetSettledAt(page, shell, 0.45);
+  });
+});
+
+// ── MEH-2776: one control, one place, at 375 AND 1440 ────────────────────────
+// /map mounts two shells (desktop `hidden lg:grid`, mobile `lg:hidden`) and
+// most controls exist once in each. A fix made to one copy leaves the other as
+// it was: MEH-2506 moved «מרחק מ…» into the filter tag row on the phone and
+// left the desktop chip above the card list, which Sapir found on 6/11
+// (MEH-2769). This test inventories every VISIBLE data-testid in each shell,
+// with the nearest data-testid ancestor it sits in, and fails when
+//   (a) a control is in both shells but inside a different container, or
+//   (b) a control is in one shell only and not on the list below.
+// Industry practice is one responsive element per control; where the repo has
+// two, the inventory is what keeps them from drifting. A NEW one-shell control
+// is not a failure to silence: put it in both shells, or add it here with why.
+const SHELL_ONLY: Record<string, { shell: "desktop" | "phone"; why: string }> = {
+  // desktop
+  "map-gps-button": { shell: "desktop", why: "desktop GPS circle; the phone uses map-near-me-pill (MEH-970)" },
+  "map-key-toggle-desktop": { shell: "desktop", why: "per-shell twin of map-key-toggle-mobile (MapPane.jsx)" },
+  "pickup-layer-toggle-desktop": { shell: "desktop", why: "per-shell twin of pickup-layer-toggle-mobile (MapPane.jsx)" },
+  "map-legend": { shell: "desktop", why: "desktop legend panel (MapPane.jsx hidden lg:block, MEH-979)" },
+  "map-legend-toggle": { shell: "desktop", why: "lives inside map-legend" },
+  "map-list-count": { shell: "desktop", why: "desktop list count; the phone shows sheet-count in the bottom sheet" },
+  "map-sort-select": { shell: "desktop", why: "the phone has no sort control and never did (MEH-1864)" },
+  // mobile
+  "map-key-toggle-mobile": { shell: "phone", why: "per-shell twin of map-key-toggle-desktop" },
+  "pickup-layer-toggle-mobile": { shell: "phone", why: "per-shell twin of pickup-layer-toggle-desktop" },
+  "map-near-me-pill": { shell: "phone", why: "phone GPS control; desktop uses map-gps-button" },
+  "map-mobile-bar": { shell: "phone", why: "the phone's top bar container" },
+  "map-bottom-sheet": { shell: "phone", why: "the phone's card list container" },
+  "map-sheet-content": { shell: "phone", why: "inside map-bottom-sheet" },
+  "sheet-count": { shell: "phone", why: "phone count; desktop shows map-list-count" },
+};
+// Shown by state, not by shell: «חפשו באזור זה» (MapPane.jsx, both shells)
+// appears once the map has moved, and the resize below moves it.
+const TRANSIENT = new Set(["map-search-this-area"]);
+// Layout wrappers that hold a whole region in one shell and have no twin: a
+// control directly inside one of them counts as directly in the shell.
+const SHELL_WRAPPERS = new Set(["map-mobile-bar", "map-bottom-sheet", "map-sheet-content"]);
+
+async function shellInventory(page: Page, shellId: string): Promise<Map<string, string>> {
+  // id → sorted, de-duplicated set of containers, so a control that sits in two
+  // containers inside ONE shell is visible to the comparison too.
+  const rows = await page.evaluate(
+    ([id, wrappers, transient]) => {
+      const root = document.querySelector(`[data-testid="${id}"]`);
+      if (!root) throw new Error(`no ${id}`);
+      const out: [string, string][] = [];
+      for (const el of root.querySelectorAll<HTMLElement>("[data-testid]")) {
+        const r = el.getBoundingClientRect();
+        if (transient.includes(el.dataset.testid!)) continue;
+        if (!r.width || !r.height || getComputedStyle(el).visibility === "hidden") continue;
+        let p = el.parentElement;
+        while (p && p !== root && (!p.dataset.testid || wrappers.includes(p.dataset.testid))) p = p.parentElement;
+        out.push([el.dataset.testid!, p && p !== root ? p.dataset.testid! : "(shell)"]);
+      }
+      return out;
+    },
+    [shellId, [...SHELL_WRAPPERS], [...TRANSIENT]] as const,
+  );
+  const byId = new Map<string, Set<string>>();
+  for (const [id, parent] of rows) byId.set(id, (byId.get(id) ?? new Set()).add(parent));
+  return new Map([...byId].map(([id, parents]) => [id, [...parents].sort().join(" + ")]));
+}
+
+test.describe("manual › /map desktop ↔ phone: one control, one place (MEH-2776)", () => {
+  test("every control sits in the same container in both shells", async ({ page }, info) => {
+    desktopOnly(info, "one run measures both shells by resizing; the mobile project would repeat it");
+    await seedGps(page, GPS_NEAR); // origin tag on
+    await gotoWithCatalog(page, info, "/map?kosher=true"); // an active filter tag on
+    await expect(page.getByTestId("map-desktop-shell").getByTestId("sort-origin-label")).toBeVisible(FIRST_PAINT);
+    const desktop = await shellInventory(page, "map-desktop-shell");
+
+    await page.setViewportSize({ width: 375, height: 812 });
+    await expect(page.getByTestId("map-mobile-shell").getByTestId("sort-origin-label")).toBeVisible(FIRST_PAINT);
+    const mobile = await shellInventory(page, "map-mobile-shell");
+
+    // Control: the inventory must have seen the controls this test is about, in
+    // BOTH shells. An empty or broken probe would otherwise pass (testing.md).
+    for (const id of ["sort-origin", "map-active-filter-tag", "map-filters-button", "map-card"]) {
+      expect(desktop.has(id), `desktop inventory saw ${id}`).toBe(true);
+      expect(mobile.has(id), `phone inventory saw ${id}`).toBe(true);
+    }
+
+    const moved = [...desktop]
+      .filter(([id, parent]) => mobile.has(id) && mobile.get(id) !== parent)
+      .map(([id, parent]) => `${id}: desktop in ${parent}, phone in ${mobile.get(id)}`);
+    expect(moved, "same control, different container").toEqual([]);
+
+    const oneShell = [
+      ...[...desktop.keys()].filter((id) => !mobile.has(id)).map((id) => ({ id, shell: "desktop", label: `desktop only: ${id}` })),
+      ...[...mobile.keys()].filter((id) => !desktop.has(id)).map((id) => ({ id, shell: "phone", label: `phone only: ${id}` })),
+    ];
+    // An exemption names its shell: a desktop-only control showing up in the
+    // phone shell alone is still a finding.
+    expect(
+      oneShell.filter(({ id, shell }) => SHELL_ONLY[id]?.shell !== shell).map(({ label }) => label),
+      "control in one shell only — put it in both, or list it in SHELL_ONLY with why",
+    ).toEqual([]);
+    // The exemptions go stale too: an entry that gained a twin, or no longer
+    // renders, would silently hide the drift it was written for.
+    const seenOnce = new Set(oneShell.map(({ id }) => id));
+    expect(Object.keys(SHELL_ONLY).filter((id) => !seenOnce.has(id)), "stale SHELL_ONLY entry").toEqual([]);
   });
 });

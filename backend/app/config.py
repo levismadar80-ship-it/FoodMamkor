@@ -164,6 +164,14 @@ class Settings(BaseSettings):
     # tests, which exercise run_watchdog() directly via the public API.
     watchdog_enabled: bool = False
 
+    # MEH-2644: rescue-bags pilot. Both default off/empty, so every /rescue
+    # route answers 404 until RESCUE_BAGS_ENABLED=true is set in Railway, and
+    # an enabled pilot opens in no town until RESCUE_BAGS_CITIES names one
+    # (comma-separated). The frontend half is NEXT_PUBLIC_RESCUE_BAGS_ENABLED
+    # in Vercel, set together with this one (it is inlined at build time).
+    rescue_bags_enabled: bool = False
+    rescue_bags_cities: str = ""
+
     class Config:
         env_file = ".env"
         # Read JWT_SECRET_KEY env var into .secret_key (the more canonical name).

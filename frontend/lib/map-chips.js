@@ -1,6 +1,9 @@
 /**
- * Map filter chips (MEH-14). Category chips per spec:
- *   כל · בשר ודגים · ירקות ופירות · חלב וגבינות · לחמים ואפייה · משלוח
+ * Map filter chips (MEH-14). Category chips: all · meat · produce · dairy ·
+ * bread (keys). MEH-2748: the words a reader sees are `map_category_chips.<key>`
+ * (and `filter_axes.<key>` for TOGGLE_CHIPS) in messages/{he,en}.json, attached
+ * at render time by lib/use-chip-copy.js. The Hebrew left in this file is DB
+ * category names in `matches` / `iconName` — data, not copy.
  *   (MEH-1259: the "אורגני" quality toggle was removed — see TOGGLE_CHIPS.)
  *
  * Layout:
@@ -27,7 +30,10 @@ import {
   chipsForKeys,
   mapEmitsParam,
 } from "@/lib/filter-taxonomy";
-import { DIET_CHIP_MIN } from "@/lib/producer-filters";
+import {
+  GATED_DIET_KEYS,
+  visibleAxisChips,
+} from "@/lib/producer-filters";
 
 // `matches` lists every DB category.name variant the chip should resolve to.
 // Names drift between seed_data.py, CATEGORY_STYLES (map-categories.js), and
@@ -51,13 +57,25 @@ import { DIET_CHIP_MIN } from "@/lib/producer-filters";
 //   pin for the aggregate produce chip). All values ≥3:1 on white (WCAG 1.4.11);
 //   no new palette colour is introduced. "כל" has no iconColor (iconless reset).
 export const CATEGORY_CHIPS = [
-  { key: "all", label: "כל", matches: null },
+  { key: "all", matches: null },
   // MEH-927: "בשר ודגים" split into "בשר" + "דגים"; "דגים" folded into the meat
   // chip for launch (legacy "בשר ודגים" kept for any pre-migration admin rows).
-  { key: "meat", label: "בשר ודגים", matches: ["בשר ועוף", "בשר", "דגים", "בשר ודגים", "בשר, עוף ודגים"], iconName: "בשר", iconColor: "#c04040" },
-  { key: "produce", label: "ירקות ופירות", matches: ["ירקות ופירות", "ירקות", "ירקות, פירות ומשקים"], iconName: "ירקות", iconColor: "#2e6853" },
-  { key: "dairy", label: "חלב וגבינות", matches: ["חלב וגבינות", "חלב"], iconName: "חלב וגבינות", iconColor: "#3b72ad" },
-  { key: "bread", label: "לחמים ואפייה", matches: ["לחם ומאפה", "לחם", "לחמים ואפייה", "לחמים"], iconName: "לחמים ואפייה", iconColor: "#896714" },
+  { key: "meat", matches: ["בשר ועוף", "בשר", "דגים", "בשר ודגים", "בשר, עוף ודגים"], iconName: "בשר", iconColor: "#c04040" },
+  { key: "produce", matches: ["ירקות ופירות", "ירקות", "ירקות, פירות ומשקים"], slugs: ["fruit"], iconName: "ירקות", iconColor: "#2e6853" },
+  // MEH-2783: eggs join dairy («חלב וביצים», the Market Wagon "Dairy & Eggs" department).
+  { key: "dairy", matches: ["חלב וגבינות", "חלב"], slugs: ["eggs"], iconName: "חלב וגבינות", iconColor: "#3b72ad" },
+  { key: "bread", matches: ["לחם ומאפה", "לחם", "לחמים ואפייה", "לחמים"], iconName: "לחמים ואפייה", iconColor: "#896714" },
+  // MEH-2783 (Sapir 06/11, «6 קבוצות שמכסות הכל»): two departments so every DB
+  // category has a chip — the farm-marketplace pattern (Market Wagon: Pantry +
+  // Non-Food). categoryGroupCoverage.test.js pins that each canonical category
+  // lands in exactly one group. New memberships match on the STABLE `slug`
+  // (backend category_slug.NAME_TO_SLUG, serialized on CategoryOut since
+  // MEH-2139), not the Hebrew name, so the Hebrew-literal ratchet does not grow;
+  // `iconSlug` is resolved to the glyph's name key from the loaded DB categories
+  // (withResolvedIcons) instead of a frontend slug→name table; the tint comes
+  // from that category's CATEGORY_STYLES row (no new palette colour).
+  { key: "pantry", matches: [], slugs: ["honey", "oil", "spices", "ferments", "prepared", "drinks", "chocolate"], iconSlug: "honey" },
+  { key: "care", matches: [], slugs: ["care", "cosmetics", "herbs", "candles"], iconSlug: "care" },
 ];
 
 // MEH-58 Phase 3: RTL order right→left. Boolean toggles are
@@ -88,13 +106,11 @@ export const TOGGLE_CHIPS = chipsForKeys(axisKeysFor("map", MAP_CHIP_ORDER));
 // components/PromotedServiceChips.jsx (Sapir 29/10: one row everywhere).
 export const SERVICE_CHIP_KEYS = ["has_delivery", "pickup_points", "on_site"];
 
-// MEH-2170 (option ב׳, Sapir 25/08): the five diet axes are gated on /map the
-// way /producers already gates them (DIET_CHIP_MIN, MEH-1934) — a toggle that
-// is guaranteed to return "0 businesses" on the current catalog is not
-// rendered. Only these five: verified / kosher / grass_fed / has_delivery /
-// pickup_points / open_for_orders_now stay visible whatever they return
-// (out of scope by decision; option א׳ — an unfiltered source of truth +
-// catalogFullyLoaded — is post-launch).
+// MEH-2170 (option ב׳, Sapir 25/08): the diet axes are gated on /map — a
+// toggle that is guaranteed to return "0 businesses" on the current catalog is
+// not rendered. MEH-2767 (Sapir 06/11) extended the SAME rule to grass_fed and
+// open-now here, and to every surface; verified / kosher / has_delivery /
+// pickup_points stay visible whatever they return, on every surface.
 //
 // The count source is a ONE-TIME snapshot of the mount catalog
 // (useProducersFeed.catalogSnapshot: the first, unfiltered, non-viewport
@@ -105,56 +121,40 @@ export const SERVICE_CHIP_KEYS = ["has_delivery", "pickup_points", "on_site"];
 // and never updates, which is exactly what makes both assertions in the
 // e2e spec hold: the visible set is identical before and after a toggle,
 // and before and after a geo-search.
-export const DIET_GATED_KEYS = [
-  "vegan",
-  "vegetarian",
-  "gluten_free",
-  "lactose_free",
-  "no_added_sugar",
-  // MEH-2598: not a diet axis, but gated by the same snapshot count — a new
-  // axis starts gated (producer-filters.js GATED_DIET_KEYS note).
-  "on_site",
-];
-
-// ProducerListOut boolean per axis (lib/schemas.js:215-222) — the same
-// fields /producers counts (MEH-1934 `has_no_added_sugar_products`).
-const DIET_FIELD = {
-  vegan: "has_vegan_products",
-  vegetarian: "has_vegetarian_products",
-  gluten_free: "has_gluten_free_products",
-  lactose_free: "has_lactose_free_products",
-  no_added_sugar: "has_no_added_sugar_products",
-  on_site: "sells_on_site", // MEH-2598
-};
+// MEH-2767: no longer a /map-local list. The gated set is declared once, per
+// axis, by `gate` in lib/filter-taxonomy.js, and /map gates through the same
+// function home and /producers use (producer-filters.js visibleAxisChips).
+// Before this, /map gated the four older diet axes and not open-now, while
+// /producers gated open-now and not the four — the drift in Sapir's two
+// screenshots (06/11). The export name is kept for its existing importers.
+export const DIET_GATED_KEYS = GATED_DIET_KEYS;
 
 /**
  * The toggle chips FilterSheet should offer on /map, given the mount snapshot.
+ * A thin adapter from /map's snapshot vocabulary to visibleAxisChips:
  *
- * - `catalogSnapshot` null/undefined (not loaded yet, or the load failed):
- *   NO gating — every chip renders. Hiding on an unknown would be the
- *   "probe never ran" green in the other direction.
- * - An axis already active (deep link ?vegan=1 post MEH-2049): kept, so the
- *   visitor is never stranded with a filter she can see and cannot switch
- *   off — the same carve-out /producers makes.
- * - Otherwise a diet chip renders iff >= DIET_CHIP_MIN snapshot businesses
- *   carry its product flag.
+ * - `snapshotPending` (the mount fetch is still in flight) → "pending": gated
+ *   chips are held back until it answers — a chip should arrive once, not
+ *   arrive and vanish (the «קנייה במקום» flash, Sapir 30/10).
+ * - `catalogSnapshot` null/undefined once settled (the load failed) →
+ *   "failed": NO gating, every chip renders.
+ * - otherwise "ready": the shared rule (≥ DIET_CHIP_MIN for "count" axes, the
+ *   order-window gate for open-now). An active axis always keeps its chip.
  *
- * Pure: same snapshot + same chipState => same array, which is what keeps
- * the sheet stable across toggles and area searches.
+ * Pure: same snapshot + same chipState + same clock => same array, which is
+ * what keeps the sheet stable across toggles and area searches.
  */
 export function visibleMapToggleChips({
   catalogSnapshot,
   chipState = {},
   chips = TOGGLE_CHIPS,
+  snapshotPending = false,
+  now = null,
 }) {
-  if (!Array.isArray(catalogSnapshot)) return chips;
-  return chips.filter((chip) => {
-    if (!DIET_GATED_KEYS.includes(chip.key)) return true;
-    if (chipState[chip.key]) return true;
-    const field = DIET_FIELD[chip.key];
-    const n = catalogSnapshot.filter((p) => p && p[field]).length;
-    return n >= DIET_CHIP_MIN;
-  });
+  let status = "ready";
+  if (snapshotPending) status = "pending";
+  else if (!Array.isArray(catalogSnapshot)) status = "failed";
+  return visibleAxisChips({ chips, catalog: catalogSnapshot, status, chipState, now });
 }
 
 // The /map axes that actually emit a query param. See the note in
@@ -184,7 +184,31 @@ export function resolveCategoryIds(chip, dbCategories) {
     const hit = dbCategories.find((c) => c.name === candidate);
     if (hit) ids.push(hit.id);
   }
+  // MEH-2783: slug memberships (see CATEGORY_CHIPS).
+  for (const slug of chip.slugs ?? []) {
+    const hit = dbCategories.find((c) => c.slug === slug);
+    if (hit && !ids.includes(hit.id)) ids.push(hit.id);
+  }
   return ids;
+}
+
+/**
+ * MEH-2783 — a chip that names its glyph by `iconSlug` gets the matching
+ * `iconName` (the CATEGORY_ICONS name key) from the loaded DB categories.
+ * No DB row for the slug → the chip stays text-only.
+ */
+export function withResolvedIcons(chips, dbCategories = [], styles = {}) {
+  return chips.map((chip) => {
+    if (!chip.iconSlug || chip.iconName) return chip;
+    const name = dbCategories.find((c) => c.slug === chip.iconSlug)?.name;
+    if (!name) return chip;
+    // The tint is the category's own CATEGORY_STYLES colour (WCAG-safe
+    // textColor first), passed in by the caller so this module stays
+    // React-free; a category with no style row stays untinted (MEH-763 lock).
+    const style = styles[name];
+    const iconColor = style ? (style.textColor ?? style.color) : undefined;
+    return { ...chip, iconName: name, ...(iconColor ? { iconColor } : {}) };
+  });
 }
 
 /**
@@ -277,4 +301,40 @@ export function boundsToCenterRadius(bounds) {
   // largest realistic "zoomed-out Israel" viewport without the timeout.
   const radius_km = Math.min(50, Math.ceil(EARTH_RADIUS_KM * c));
   return { lat, lng, radius_km };
+}
+
+/**
+ * MEH-2783 — the /producers category row uses the SAME 6 groups as /map.
+ *
+ * Returns one entry per group that has at least one visible DB category,
+ * `{ ...chip, ids: [String id…] }` (ids = every DB category the group
+ * resolves to, so a group tap selects the whole department). A visible DB
+ * category that no group claims (a new admin category) keeps its own chip,
+ * `{ key: String(id), ids: [String(id)], dbCategory }`, so nothing is ever
+ * unreachable. The URL stays ?category=<id> — home cards deep-link one id.
+ */
+export function categoryGroupRow(dbCategories = [], visibleCategories = dbCategories, styles = {}) {
+  const visible = new Set(visibleCategories.map((c) => String(c.id)));
+  const claimed = new Set();
+  const rows = [];
+  for (const chip of withResolvedIcons(CATEGORY_CHIPS, dbCategories, styles)) {
+    if (!chip.matches) continue;
+    // An id claimed by an earlier group is not re-offered (a legacy admin row
+    // could match one group by name and another by slug).
+    const ids = resolveCategoryIds(chip, dbCategories).map(String).filter((id) => !claimed.has(id));
+    ids.forEach((id) => claimed.add(id));
+    if (ids.some((id) => visible.has(id))) rows.push({ ...chip, ids });
+  }
+  for (const c of visibleCategories) {
+    const id = String(c.id);
+    if (!claimed.has(id)) rows.push({ key: id, ids: [id], dbCategory: c });
+  }
+  return rows;
+}
+
+/** MEH-2783 — tap on a group: active (any id selected) → drop all its ids; else add them. */
+export function toggleCategoryGroup(selected = [], ids = []) {
+  const on = ids.some((id) => selected.includes(id));
+  if (on) return selected.filter((id) => !ids.includes(id));
+  return [...selected, ...ids.filter((id) => !selected.includes(id))];
 }

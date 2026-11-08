@@ -99,7 +99,7 @@ const NEF_URL = "https://www.sustainweb.org/blogs/jul25-what-is-local-food/";
 const COLLECTIVECROP_URL =
   "https://collectivecrop.com/guides/fresh-picked-vs-supermarket-produce-does-it-matter";
 
-/** Derived, not stated: the three comparison stops are `row1..row3` in he.json. */
+/** Derived, not stated: the three comparison rows are `row1..row3` in he.json. */
 const COMPARE_ROWS = ["row1", "row2", "row3"] as const;
 
 /** Derived: the step count is the number of `s<n>_title` keys in the copy. */
@@ -200,86 +200,88 @@ async function gotoWhyLocal(page: Page, path = "/about/why-local"): Promise<void
 
 // ════════════════════════════════════════════════════════════════════════════
 test.describe("manual › /about (MEH-841)", () => {
-  // MT:MEH-841:1 — /about comparison strip: between the pull-quote and Benefits, a vertical spine with 3 gold dots; each stop = big green line + small grey "בסופר —" line; no shadow, no icons, hairline; RTL dots on the start (right) side.
-  test("comparison strip: 3 stops on a hairline spine between the quote and Benefits, dots at the RTL start edge, no icons, no shadow", async ({
+  // MT:MEH-841:1 — /about comparison: between the pull-quote and Benefits, a two-column table
+  //   «מהמקור / בסופר» (05/11, replaced the gold-dot spine): column heads are <th scope="col">,
+  //   each of the 3 rows = a brand <th scope="row"> + a supermarket <td>; no spine, RTL.
+  //   MEH-2827 (FinalAbout, Sapir 08/11): each cell now opens with ONE decorative
+  //   icon — ✓ for the brand side, − for the supermarket side — aria-hidden, so
+  //   the accessible text is still the copy alone.
+  test("comparison table: two column heads, three rows, between the quote and Benefits, no spine, one hidden icon per cell", async ({
     page,
   }) => {
     await gotoAbout(page);
     const section = scope(page).getByTestId("about-comparison");
     await section.scrollIntoViewIfNeeded(); // scroll-reveal section (opacity 0 until in view)
 
-    // Chapter mark + the section lead read from copy.
     await expect(section).toContainText(ABOUT_HE.chapter[2].label);
-    await expect(section).toContainText(COMPARE_HE.heading);
 
-    // Placement: the pull-quote is this chapter's h2 and sits ABOVE the spine;
+    // Placement: the pull-quote is this chapter's h2 and sits ABOVE the table;
     // the Benefits chapter (h2 = chapter 03's label) comes AFTER the section.
     const quote = section.getByRole("heading", { level: 2 });
     await expect(quote).toHaveCount(1);
     await expect(quote).toHaveText(he.about.consumer.parallax.quote);
-    const spine = section.locator("ol");
-    await expect(spine).toHaveCount(1);
-    expect(await precedes(quote, spine), "the quote must precede the spine").toBe(true);
+    const table = section.locator("table");
+    await expect(table).toHaveCount(1);
+    expect(await precedes(quote, table), "the quote must precede the table").toBe(true);
     const benefits = scope(page).getByRole("heading", { level: 2, name: ABOUT_HE.chapter[3].label });
     await expect(benefits).toHaveCount(1);
     expect(await precedes(section, benefits), "Benefits must follow the comparison").toBe(true);
 
-    // Three stops, each exactly two lines (brand line + supermarket line).
-    const stops = spine.locator("li");
-    await expect(stops).toHaveCount(COMPARE_ROWS.length);
-    // No icons anywhere on the spine (the dots are CSS), and no shadow on a stop.
-    await expect(spine.locator("svg")).toHaveCount(0);
-    expect(await computed(spine, "border-inline-start-width"), "hairline spine").toBe("1px");
-    expect(await computed(spine, "direction")).toBe("rtl");
+    // The spine is gone: no list, no dots. Icons: exactly one per body cell,
+    // every one hidden from assistive tech (MEH-2827).
+    await expect(section.locator("ol")).toHaveCount(0);
+    await expect(table.locator("span[aria-hidden]")).toHaveCount(0);
+    await expect(table.locator("tbody svg")).toHaveCount(COMPARE_ROWS.length * 2);
+    await expect(table.locator('tbody svg:not([aria-hidden="true"])')).toHaveCount(0);
+    expect(await computed(table, "direction")).toBe("rtl");
 
+    const heads = table.locator('thead th[scope="col"]');
+    await expect(heads).toHaveCount(2);
+    await expect(heads.nth(0)).toHaveText(COMPARE_HE.col_brand);
+    await expect(heads.nth(1)).toHaveText(COMPARE_HE.col_super);
+    // RTL: the brand column is the START (right) column.
+    const [brandHead, superHead] = await Promise.all([box(heads.nth(0)), box(heads.nth(1))]);
+    expect(brandHead.x, "brand column must be on the right in RTL").toBeGreaterThan(superHead.x);
+
+    const rows = table.locator("tbody tr");
+    await expect(rows).toHaveCount(COMPARE_ROWS.length);
     for (let i = 0; i < COMPARE_ROWS.length; i += 1) {
-      const stop = stops.nth(i);
-      await expect(stop.locator("p")).toHaveCount(2);
-      expect(await computed(stop, "box-shadow"), `stop ${i + 1} must cast no shadow`).toBe("none");
-      const dot = stop.locator("span[aria-hidden]").first();
-      await expect(dot).toHaveCount(1);
-      // RTL: the dot sits on the START edge, which is the RIGHT half of the stop.
-      const [stopBox, dotBox] = await Promise.all([box(stop), box(dot)]);
-      const dotCenter = dotBox.x + dotBox.width / 2;
-      const stopCenter = stopBox.x + stopBox.width / 2;
-      expect(dotCenter, `stop ${i + 1}: dot must be on the right (start) side in RTL`).toBeGreaterThan(
-        stopCenter,
-      );
-      // The brand line is the big one, the supermarket line the small one.
-      const [brand, superLine] = [stop.locator("p").nth(0), stop.locator("p").nth(1)];
+      const brand = rows.nth(i).locator('th[scope="row"]');
+      const superCell = rows.nth(i).locator("td");
+      await expect(brand).toHaveCount(1);
+      await expect(superCell).toHaveCount(1);
       const brandSize = parseFloat(await computed(brand, "font-size"));
-      const superSize = parseFloat(await computed(superLine, "font-size"));
-      expect(brandSize, `stop ${i + 1}: brand line must be the larger line`).toBeGreaterThan(superSize);
+      const superSize = parseFloat(await computed(superCell, "font-size"));
+      expect(brandSize, `row ${i + 1}: brand cell must be the larger text`).toBeGreaterThan(superSize);
     }
   });
 
-  // MT:MEH-841:2 — /about exact copy: the 3 brand/supermarket pairs, no trailing period on the brand lines.
-  test("comparison copy: three brand/supermarket pairs verbatim from he.json, brand lines without a trailing period", async ({
+  // MT:MEH-841:2 — /about exact copy: the 3 brand/supermarket pairs, no trailing period on the brand
+  //   lines, and the supermarket cells no longer repeat the «בסופר —» prefix (the column head says it).
+  test("comparison copy: three brand/supermarket pairs verbatim from he.json, no «בסופר —» prefix", async ({
     page,
   }) => {
     await gotoAbout(page);
     const section = scope(page).getByTestId("about-comparison");
     await section.scrollIntoViewIfNeeded();
-    const stops = section.locator("ol li");
-    await expect(stops).toHaveCount(COMPARE_ROWS.length);
+    const rows = section.locator("tbody tr");
+    await expect(rows).toHaveCount(COMPARE_ROWS.length);
     for (let i = 0; i < COMPARE_ROWS.length; i += 1) {
       const row = COMPARE_ROWS[i];
-      const brand = stops.nth(i).locator("p").nth(0);
-      const superLine = stops.nth(i).locator("p").nth(1);
+      const brand = rows.nth(i).locator("th");
+      const superCell = rows.nth(i).locator("td");
       await expect(brand).toHaveText(COMPARE_HE[`${row}_brand`]);
-      await expect(superLine).toHaveText(COMPARE_HE[`${row}_super`]);
-      const brandText = ((await brand.textContent()) ?? "").trim();
-      expect(brandText, `brand line ${i + 1} must not end with a period`).not.toMatch(/\.$/);
+      await expect(superCell).toHaveText(COMPARE_HE[`${row}_super`]);
+      expect(((await brand.textContent()) ?? "").trim(), `brand ${i + 1}: no trailing period`).not.toMatch(/\.$/);
+      expect(((await superCell.textContent()) ?? "").trim(), `row ${i + 1}: no «בסופר» prefix`).not.toMatch(/^בסופר/);
     }
   });
 
   // MT:MEH-841:3 — HOME teaser «ההבדל / מה שמשתנה בדרך / גלו את ההבדל» → /about, no supermarket table on `/`:
   //   NOT converted here — lives on `/` (chunk 7's route, home fixture); the teaser has no testid. Residual.
 
-  // MT:MEH-841:4 — EN mirror: /en/about (+ /en/ — residual, see above). The checklist expects a HE-mirror
-  //   ("הטקסט עדיין בעברית, TODO i18n EN"); en.json now carries real English copy for the strip, so the
-  //   LIVE expectation is English text, LTR — asserted here, drift recorded in docs/qa/conversion-progress.md.
-  test("EN twin: /en/about renders the strip in English, LTR, dots on the left (start) edge", async ({
+  // MT:MEH-841:4 — EN mirror: /en/about renders the table in English, LTR, brand column on the left.
+  test("EN twin: /en/about renders the table in English, LTR, brand column on the left (start)", async ({
     page,
   }) => {
     await gotoAbout(page, "/en/about");
@@ -288,21 +290,19 @@ test.describe("manual › /about (MEH-841)", () => {
     const section = scope(page).getByTestId("about-comparison");
     await section.scrollIntoViewIfNeeded();
     await expect(section).toContainText(ABOUT_EN.chapter[2].label);
-    await expect(section).toContainText(COMPARE_EN.heading);
-    const stops = section.locator("ol li");
-    await expect(stops).toHaveCount(COMPARE_ROWS.length);
-    expect(await computed(section.locator("ol"), "direction")).toBe("ltr");
+    const table = section.locator("table");
+    expect(await computed(table, "direction")).toBe("ltr");
+    const heads = table.locator('thead th[scope="col"]');
+    await expect(heads.nth(0)).toHaveText(COMPARE_EN.col_brand);
+    await expect(heads.nth(1)).toHaveText(COMPARE_EN.col_super);
+    const [brandHead, superHead] = await Promise.all([box(heads.nth(0)), box(heads.nth(1))]);
+    expect(brandHead.x, "brand column must be on the left in LTR").toBeLessThan(superHead.x);
+    const rows = table.locator("tbody tr");
+    await expect(rows).toHaveCount(COMPARE_ROWS.length);
     for (let i = 0; i < COMPARE_ROWS.length; i += 1) {
       const row = COMPARE_ROWS[i];
-      await expect(stops.nth(i).locator("p").nth(0)).toHaveText(COMPARE_EN[`${row}_brand`]);
-      await expect(stops.nth(i).locator("p").nth(1)).toHaveText(COMPARE_EN[`${row}_super`]);
-      const [stopBox, dotBox] = await Promise.all([
-        box(stops.nth(i)),
-        box(stops.nth(i).locator("span[aria-hidden]").first()),
-      ]);
-      expect(dotBox.x + dotBox.width / 2, `stop ${i + 1}: LTR dot on the left (start) side`).toBeLessThan(
-        stopBox.x + stopBox.width / 2,
-      );
+      await expect(rows.nth(i).locator("th")).toHaveText(COMPARE_EN[`${row}_brand`]);
+      await expect(rows.nth(i).locator("td")).toHaveText(COMPARE_EN[`${row}_super`]);
     }
   });
 });
@@ -356,8 +356,11 @@ test.describe("manual › /about/process (MEH-534)", () => {
     await expect(hero).toContainText(PROCESS_HE.hero.sub);
   });
 
-  // MT:MEH-534:3 — 4 steps: mobile vertical list with numerals 01–04, desktop 4 columns; one icon per step; the "מאומת is a separate step" aside below.
-  test("four steps: numerals 01–04, titles from copy, an icon each, stacked on mobile / 4 columns on desktop, badge aside below", async ({
+  // MT:MEH-534:3 — 4 steps: mobile vertical list, desktop 4 columns; one icon per step; the "מאומת is a separate step" aside below.
+  // MEH-2833 (#4199): each step's number 1–4 sits on a seed (data-testid
+  // process-step-seed) instead of the old 01–04 numeral; the seed is an svg too,
+  // so the icon count excludes it (svg[data-seed-color]).
+  test("four steps: a numbered seed each (1–4), titles from copy, an icon each, stacked on mobile / 4 columns on desktop, badge aside below", async ({
     page,
   }, testInfo) => {
     await gotoProcess(page);
@@ -365,13 +368,14 @@ test.describe("manual › /about/process (MEH-534)", () => {
     await steps.scrollIntoViewIfNeeded();
     const items = steps.locator("li");
     await expect(items).toHaveCount(STEP_TITLES_HE.length);
-    await expect(steps.locator("li svg")).toHaveCount(STEP_TITLES_HE.length);
+    await expect(steps.locator("li svg:not([data-seed-color])")).toHaveCount(STEP_TITLES_HE.length);
+    await expect(steps.locator("li svg[data-seed-color]")).toHaveCount(STEP_TITLES_HE.length);
     const boxes: { x: number; y: number; width: number; height: number }[] = [];
     for (let i = 0; i < STEP_TITLES_HE.length; i += 1) {
       const item = items.nth(i);
-      await expect(item.locator("span[aria-hidden]").first()).toHaveText(`0${i + 1}`);
+      await expect(item.getByTestId("process-step-seed")).toHaveText(`${i + 1}`);
       await expect(item.getByRole("heading", { level: 3 })).toHaveText(STEP_TITLES_HE[i]);
-      await expect(item.locator("svg")).toHaveCount(1);
+      await expect(item.locator("svg:not([data-seed-color])")).toHaveCount(1);
       boxes.push(await box(item));
     }
     if (testInfo.project.name === "mobile") {
@@ -540,8 +544,9 @@ test.describe("manual › /about/process (MEH-534)", () => {
     expect(await precedes(quote, closing.getByText(PROCESS_HE.closing.attrib, { exact: true }))).toBe(true);
   });
 
-  // MT:MEH-534:9 — CTA «ספרו לנו על העסק» → /register/producer, with the secondary line.
-  test("CTA: one link to /register/producer with the copy's label and secondary line", async ({ page }) => {
+  // MT:MEH-534:9 — CTA «ספרו לנו על העסק» → /register/producer, with its intro line
+  // (MEH-2634 / #3951 replaced `cta.secondary` with `cta.intro`).
+  test("CTA: one link to /register/producer with the copy's label and intro line", async ({ page }) => {
     await gotoProcess(page);
     const cta = scope(page).getByTestId("process-cta");
     await cta.scrollIntoViewIfNeeded();
@@ -550,7 +555,7 @@ test.describe("manual › /about/process (MEH-534)", () => {
     await expect(link).toHaveCount(1);
     await expect(link).toHaveText(PROCESS_HE.cta.submit);
     await expect(link).toHaveAttribute("href", /\/register\/producer(?:[/?#]|$)/);
-    await expect(cta).toContainText(PROCESS_HE.cta.secondary);
+    await expect(cta).toContainText(PROCESS_HE.cta.intro);
   });
 
   // MT:MEH-534:10 — footer «תהליך הקבלה» → /about/process: COVERED by frontend/__tests__/FooterNavGroups.test.jsx:62 (not duplicated here).
@@ -616,14 +621,17 @@ test.describe("manual › /about/why-local (MEH-1289)", () => {
     for (let i = 0; i < WHY_H2_KEYS.length; i += 1) {
       await expect(h2s.nth(i)).toHaveText(WHY_HE[WHY_H2_KEYS[i]]);
     }
-    // Magazine prose: no list bullets, no emoji anywhere in the article.
-    await expect(article.locator("li")).toHaveCount(0);
+    // Magazine prose: no emoji anywhere in the article. MEH-2827 (FinalWhyLocal):
+    // the ONE list is «מה שמשתנה בדרך» — its three lines, in the card.
+    await expect(article.locator("li")).toHaveCount(3);
+    await expect(article.locator('[data-testid="why-local-changes"] li')).toHaveCount(3);
     const text = (await article.textContent()) ?? "";
     expect(text).not.toMatch(/\p{Extended_Pictographic}/u);
     expect(await computed(article, "direction")).toBe("rtl");
-    // The reason headings are brand green — the same token the CTA fills with.
+    // The reason headings are brand green — the same token the closing band
+    // fills with (MEH-2827: the CTA moved onto that band, cream on green).
     expect(await computed(h2s.first(), "color")).toBe(
-      await computed(scope(page).getByTestId("why-local-cta"), "background-color"),
+      await computed(page.locator("[data-meets-footer]"), "background-color"),
     );
   });
 
@@ -649,13 +657,14 @@ test.describe("manual › /about/why-local (MEH-1289)", () => {
     expect(await computed(link, "color")).toBe(await computed(money.getByRole("heading", { level: 2 }), "color"));
   });
 
-  // MT:MEH-1289:3 — CTA «גלו בתי עסק באזור שלכם» → /producers (he); /en → /en/producers is asserted in the /en test.
-  test("CTA: the copy's button → /producers", async ({ page }) => {
+  // MT:MEH-1289:3 — CTA «גלו בתי עסק באזור שלכם» → /map (he); /en → /en/map is asserted in the /en test.
+  // MEH-2634 (#3951) moved it from /producers to /map: the catalog has no area axis, the map does.
+  test("CTA: the copy's button → /map", async ({ page }) => {
     await gotoWhyLocal(page);
     const cta = scope(page).getByTestId("why-local-cta");
     await cta.scrollIntoViewIfNeeded();
     await expect(cta).toHaveText(WHY_HE.cta);
-    await expect(cta).toHaveAttribute("href", /^\/producers(?:[/?#]|$)/);
+    await expect(cta).toHaveAttribute("href", /^\/map(?:[/?#]|$)/);
   });
 
   // MT:MEH-1289:4 — sources line: «מקורות:» + two live links (Sustain UK, CollectiveCrop), both target=_blank.
@@ -701,7 +710,7 @@ test.describe("manual › /about/why-local (MEH-1289)", () => {
   });
 
   // MT:MEH-1289:7 — /en/about/why-local renders the English version (short summary, not a full translation); no Hebrew leaks.
-  test("English twin: /en/about/why-local in English, LTR, no Hebrew in the article, CTA → /en/producers", async ({
+  test("English twin: /en/about/why-local in English, LTR, no Hebrew in the article, CTA → /en/map", async ({
     page,
   }) => {
     await gotoWhyLocal(page, "/en/about/why-local");
@@ -720,7 +729,7 @@ test.describe("manual › /about/why-local (MEH-1289)", () => {
     expect(text, "no Hebrew may leak into the English article").not.toMatch(/[\u0590-\u05FF]/);
     const cta = scope(page).getByTestId("why-local-cta");
     await expect(cta).toHaveText(WHY_EN.cta);
-    await expect(cta).toHaveAttribute("href", /^\/en\/producers(?:[/?#]|$)/);
+    await expect(cta).toHaveAttribute("href", /^\/en\/map(?:[/?#]|$)/);
   });
 });
 
@@ -756,20 +765,36 @@ test.describe("manual › design leftovers (MEH-2487)", () => {
     });
   }
 
-  // Control: the upright rule is for Hebrew only. The step numerals 01–04 are
-  // Cormorant digits with a real italic face, so they are a dir="ltr" island and
-  // stay italic — without `dir="ltr"` the rtl rule straightened them too.
-  test("/about/process: the step numerals keep their real Cormorant italic", async ({ page }) => {
+  // Control: the upright rule is for Hebrew only — Latin text in a dir="ltr"
+  // island keeps its real Cormorant italic. Until MEH-2833 the step numerals
+  // were that island; since #4199 they sit upright and bold on seeds, and the
+  // page has no italic Latin left (measured 08/11: zero italic text elements on
+  // /about/process and /about). So the control brings its own island — the
+  // same classes the numerals used — instead of borrowing one the page can
+  // drop again. It fails if the rtl rule ever straightens dir="ltr" text.
+  test("/about/process: a dir=\"ltr\" island keeps its real Cormorant italic", async ({ page }) => {
     await gotoProcess(page);
-    const numeral = page.locator('[data-testid="process-steps"] span.numeric').first();
-    await expect(numeral).toHaveText(/^\d+$/);
-    expect(await numeral.evaluate((el) => getComputedStyle(el).fontStyle)).toBe("italic");
+    const style = await page.evaluate(() => {
+      const probe = document.createElement("span");
+      probe.dir = "ltr";
+      probe.className = "numeric font-english italic";
+      probe.textContent = "01";
+      document.querySelector('[data-testid="process-steps"]')!.appendChild(probe);
+      const s = getComputedStyle(probe).fontStyle;
+      probe.remove();
+      return s;
+    });
+    expect(style).toBe("italic");
   });
 
-  // /about/process ends on its green CTA band. (/about does NOT: its contact
-  // form follows the green close, so it keeps the footer margin — control below.)
-  test("/about/process: the green close runs straight into the footer — no cream strip", async ({ page }) => {
-    await gotoProcess(page);
+  // /about/process and (MEH-2827) /about/why-local end on a green band. (/about
+  // does NOT: its contact form follows the green close, so it keeps the footer
+  // margin — control below.)
+  for (const [path, go] of [
+    ["/about/process", gotoProcess],
+    ["/about/why-local", gotoWhyLocal],
+  ] as const) test(`${path}: the green close runs straight into the footer — no cream strip`, async ({ page }) => {
+    await go(page);
     const footer = page.locator("footer[data-site-footer]");
     await expect(footer).toHaveCount(1, FIRST_PAINT);
     const band = page.locator("[data-meets-footer]");
@@ -785,10 +810,7 @@ test.describe("manual › design leftovers (MEH-2487)", () => {
 
   // Control for the rule above: pages that do NOT end on a coloured band keep
   // the footer's own top margin (64px was the strip measured on /about/process).
-  for (const [path, go] of [
-    ["/about", gotoAbout],
-    ["/about/why-local", gotoWhyLocal],
-  ] as const) {
+  for (const [path, go] of [["/about", gotoAbout]] as const) {
     test(`${path} keeps the footer's top margin`, async ({ page }) => {
       await go(page);
       const footer = page.locator("footer[data-site-footer]");

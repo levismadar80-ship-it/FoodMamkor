@@ -17,6 +17,8 @@ vi.mock("next-intl", () => ({
 vi.mock("next/image", () => ({ default: (p) => <img alt={p.alt} src={p.src} /> }));
 vi.mock("next/dynamic", () => ({ default: () => () => <div data-testid="minimap" /> }));
 vi.mock("@/lib/api", () => ({ default: { get: vi.fn(() => new Promise(() => {})) } }));
+// MEH-2659: ProducerActivities (events + group buys) has its own test file.
+vi.mock("@/app/[locale]/producer/[id]/components/ProducerActivities", () => ({ default: () => null }));
 vi.mock("@/lib/cloudinary", async (importOriginal) => ({
   ...(await importOriginal()),
   optimizeCloudinary: (u) => u,
@@ -24,6 +26,18 @@ vi.mock("@/lib/cloudinary", async (importOriginal) => ({
 // Hand-enumerated: every glyph ProducerSections + its children + the nav load.
 vi.mock("@phosphor-icons/react", () => ({
   Leaf: () => <span />,
+  // MEH-2654: ProducerSections now loads lib/chip-icons (diet glyphs on rows).
+  SealCheck: () => <span />,
+  Certificate: () => <span />,
+  Carrot: () => <span />,
+  GrainsSlash: () => <span />,
+  Barn: () => <span />,
+  Medal: () => <span />,
+  HandHeart: () => <span />,
+  DropSlash: () => <span />,
+  Cube: () => <span />,
+  Clock: () => <span />,
+  Storefront: () => <span />,
   CaretLeft: () => <span />,
   MapPin: () => <span />,
   WhatsappLogo: () => <span />,
@@ -74,6 +88,10 @@ const FULL = {
   lng: 34,
   locations: [{ kind: "branch", is_primary: true, lat: 32, lng: 34, precision: "exact", id: 1 }],
   categories: [{ id: 1, name: "ירקות" }],
+  // MEH-2634: the reviews pill is data-gated now, so a "full" producer must
+  // actually have reviews for the five-pill expectation below to mean anything.
+  reviews_count: 7,
+  avg_rating: 4.6,
 };
 
 // No description, no products/signature, no delivery/pickup, no location row,
@@ -90,6 +108,12 @@ const BARE = {
   locations: [],
   categories: [],
 };
+
+// MEH-2634: BARE plus reviews. Keeps a MIXED case in the suite — exactly one
+// pill, the reviews one — now that BARE itself yields none. Without it, the
+// suite would only ever see all-five or none, and a gate that returned a
+// constant would pass both.
+const BARE_WITH_REVIEWS = { ...BARE, id: 3, reviews_count: 4, avg_rating: 4.1 };
 
 function renderSections(producer) {
   return render(
@@ -109,16 +133,43 @@ const pill = (id) => screen.queryByTestId(`section-nav-pill-${id}`);
 describe("SectionAnchorNav — data gating", () => {
   afterEach(cleanup);
 
+  // MEH-2634: `reviews` is the ONE id whose pill is deliberately narrower than
+  // its anchor — the `#reviews` div is the lazy-load IO observation point and
+  // always renders, while the pill is gated on reviews_count (section-nav.js
+  // says why). So the biconditional holds for the other four, and for reviews
+  // the direction this suite exists to protect — pill ⇒ anchor, i.e. never a
+  // dead jump — is asserted on its own. Nothing is dropped: the reviews gate
+  // gets its own count-driven cases below.
+  const ONE_WAY_IDS = new Set(["reviews"]);
+
   it.each([
     ["full", FULL],
     ["bare", BARE],
+    ["bare + reviews", BARE_WITH_REVIEWS],
+    // MEH-2803: store hours moved to «שעות», so hours alone no longer open the
+    // location section — and must not open its pill (a dead jump otherwise).
+    ["store hours, no location", { ...BARE, id: 4, opening_hours: "Sun-Thu 09:00-17:00" }],
   ])("every gate agrees with the real ProducerSections render (%s producer)", (_, producer) => {
     const items = getSectionNavItems(producer, t);
     const { container } = renderSections(producer);
     for (const item of items) {
       const rendered = !!container.querySelector(`#${item.id}`);
-      expect({ id: item.id, show: item.show }).toEqual({ id: item.id, show: rendered });
+      if (ONE_WAY_IDS.has(item.id)) {
+        // A shown pill must have somewhere to land; a rendered anchor need not
+        // have a pill.
+        if (item.show) expect({ id: item.id, rendered }).toEqual({ id: item.id, rendered: true });
+      } else {
+        expect({ id: item.id, show: item.show }).toEqual({ id: item.id, show: rendered });
+      }
     }
+  });
+
+  it("the reviews pill follows reviews_count, not a constant", () => {
+    const show = (p) => getSectionNavItems(p, t).find((i) => i.id === "reviews").show;
+    expect(show(BARE)).toBe(false);                 // 0 → no pill
+    expect(show({ ...BARE, reviews_count: 0 })).toBe(false);
+    expect(show({ ...BARE, reviews_count: 1 })).toBe(true);  // 1 → pill
+    expect(show(FULL)).toBe(true);                  // many → pill
   });
 
   it("covers the five sections, in page order", () => {
@@ -141,13 +192,27 @@ describe("SectionAnchorNav — data gating", () => {
   });
 
   it("renders a pill per shown section and NO pill for an absent one", () => {
-    render(<SectionAnchorNav items={getSectionNavItems(BARE, t)} ariaLabel="nav" />);
+    // MEH-2634: BARE_WITH_REVIEWS, not BARE — the reviews pill is data-gated
+    // now, so BARE shows no pills at all and this assertion needs the fixture
+    // that still produces exactly one.
+    render(<SectionAnchorNav items={getSectionNavItems(BARE_WITH_REVIEWS, t)} ariaLabel="nav" />);
     expect(pill("section-products")).toBeNull();
     expect(pill("section-bio")).toBeNull();
     expect(pill("section-delivery")).toBeNull();
     expect(pill("section-location")).toBeNull();
     expect(pill("reviews")).not.toBeNull();
     expect(screen.getAllByRole("link")).toHaveLength(1);
+  });
+
+  it("a producer with nothing to show — reviews included — gets no pills", () => {
+    const { container } = render(
+      <SectionAnchorNav items={getSectionNavItems(BARE, t)} ariaLabel="nav" />,
+    );
+    for (const id of ["section-bio", "section-products", "reviews", "section-delivery", "section-location"]) {
+      expect(pill(id)).toBeNull();
+    }
+    expect(screen.queryAllByRole("link")).toHaveLength(0);
+    expect(container.querySelector("nav")).toBeNull();
   });
 
   it("renders all five pills for a full producer", () => {

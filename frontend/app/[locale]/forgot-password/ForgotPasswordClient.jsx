@@ -8,6 +8,7 @@ import api from "@/lib/api";
 import Input from "@/components/ui/Input";
 import CollectionNotice from "@/components/CollectionNotice";
 import { CONTACT_EMAIL } from "@/lib/env.client";
+import Button from "@/components/ui/Button";
 
 export default function ForgotPasswordClient() {
   const t = useTranslations();
@@ -44,20 +45,23 @@ export default function ForgotPasswordClient() {
              for a known and an unknown address — the spec asserts exactly that. */
         <div
           data-testid="forgot-sent"
-          className="bg-green-50 border border-primary/20 rounded-[12px] px-5 py-4 text-primary text-sm"
+          className="bg-green-50 border border-primary/20 rounded-md px-5 py-4 text-primary text-sm"
         >
           <p className="font-medium mb-1">
             {t("auth.passwordRecovery.forgot.success_main")}
           </p>
           <p className="text-fg-muted text-xs mt-2">
             {t("auth.passwordRecovery.forgot.success_contact_prefix")}{" "}
-            <a
-              href={`mailto:${CONTACT_EMAIL}`}
-              className="text-primary hover:underline break-all"
+            {/* MEH-2832: the way to reach us is the /contact form, not a
+                mailto. The visible address stays as the link text — the
+                copy ends «צרו קשר:» and needs what follows the colon. */}
+            <Link
+              href="/contact"
+              className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current break-all"
               dir="ltr"
             >
               {CONTACT_EMAIL}
-            </a>
+            </Link>
           </p>
         </div>
       ) : (
@@ -81,25 +85,25 @@ export default function ForgotPasswordClient() {
             testId="forgot-collection-notice"
           />
           {error && (
-            <p className="text-red-600 text-sm text-center" role="alert">
+            <p className="text-danger-600 text-sm text-center" role="alert">
               {error}
             </p>
           )}
-          <button
+          <Button
             type="submit"
             data-testid="forgot-submit"
             disabled={loading || !email}
-            className="w-full bg-primary text-white py-3.5 rounded-[10px] hover:bg-primary-dark transition font-medium disabled:opacity-50"
+            variant="primary" size="lg" className="w-full"
           >
             {loading
               ? t("auth.passwordRecovery.forgot.submit_sending")
               : t("auth.passwordRecovery.forgot.submit")}
-          </button>
+          </Button>
           <p className="text-center text-sm text-fg-muted">
             <Link
               href="/login"
               data-testid="forgot-back-to-login"
-              className="text-primary hover:underline"
+              className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current"
             >
               {t("auth.passwordRecovery.forgot.back_to_login")}
             </Link>

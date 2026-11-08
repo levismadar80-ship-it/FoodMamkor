@@ -30,11 +30,12 @@ import { showToast } from "@/lib/toast";
 import { Leaf } from "@phosphor-icons/react";
 import Input from "@/components/ui/Input";
 import UnverifiedEmailNotice from "@/components/UnverifiedEmailNotice";
+import Button from "@/components/ui/Button";
 
 // MEH-1128 Wave B: single-line fields render via ui/Input; baseInput remains
 // for the textareas only (no textarea primitive yet — epic Wave D+).
 const baseInput =
-  "w-full border border-border rounded-[10px] px-3 py-2 bg-white text-start focus-visible:ring-2 focus-visible:ring-primary/40 outline-none";
+  "w-full border border-border rounded-sm px-3 py-2 bg-surface text-start focus-visible:ring-2 focus-visible:ring-primary/40 outline-none";
 
 const EMPTY = {
   title: "",
@@ -154,6 +155,10 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
         setError(detail.reason || t("errors.rejected_default"));
       } else if (typeof detail === "string") {
         setError(detail);
+      } else if (detail?.code && typeof detail.message === "string") {
+        // MEH-1943 chunk 2: the {code, message, params} contract
+        // (products_not_found). Pydantic's 422 array still goes generic.
+        setError(detail.message);
       } else {
         setError(tError("generic"));
       }
@@ -165,7 +170,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-4 bg-white rounded-[16px] border border-border p-6"
+      className="space-y-4 bg-surface rounded-lg border border-border p-6"
     >
       <h2 className="font-headline-md text-lg font-bold text-text">
         {mode === "edit" ? t("heading_edit") : t("heading_create")}
@@ -287,18 +292,18 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
             <img
               src={form.image_url}
               alt={t("image_label")}
-              className="w-24 h-24 object-cover rounded-[10px] border border-border"
+              className="w-24 h-24 object-cover rounded-sm border border-border"
             />
             <button
               type="button"
               onClick={() => setForm({ ...form, image_url: "" })}
-              className="text-sm text-red-600 hover:underline"
+              className="text-sm text-danger-600 underline decoration-[1.5px] underline-offset-[5px] decoration-danger-600/35 hover:decoration-current"
             >
               {t("image_remove")}
             </button>
           </div>
         ) : (
-          <label className="inline-flex items-center text-sm border border-dashed border-border rounded-[10px] px-4 py-3 cursor-pointer hover:bg-green-50 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30">
+          <label className="inline-flex items-center text-sm border border-dashed border-border rounded-sm px-4 py-3 cursor-pointer hover:bg-green-50 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30">
             {/* MEH-2033: sr-only + focus-within — keyboard reachability, the
                 MEH-2031 pattern. */}
             <input
@@ -330,7 +335,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
             {t("no_products")}
           </p>
         ) : (
-          <ul className="space-y-1 max-h-48 overflow-y-auto border border-border rounded-[10px] p-2 bg-green-50">
+          <ul className="space-y-1 max-h-48 overflow-y-auto border border-border rounded-sm p-2 bg-green-50">
             {products.map((p) => (
               <li key={p.id}>
                 <label className="flex items-center gap-2 text-sm cursor-pointer py-1">
@@ -356,13 +361,13 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
       )}
 
       <div className="flex items-center gap-3">
-        <button
+        <Button
           type="submit"
           disabled={submitting || uploading}
-          className="bg-primary text-white px-6 py-2.5 rounded-[10px] hover:bg-primary-dark transition font-medium disabled:opacity-50"
+          variant="primary" size="lg"
         >
           {submitting ? t("submit_saving") : t("submit")}
-        </button>
+        </Button>
         {onCancel && (
           <button
             type="button"

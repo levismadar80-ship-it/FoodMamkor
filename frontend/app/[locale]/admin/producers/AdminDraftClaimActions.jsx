@@ -39,7 +39,7 @@ export function DraftOwnerBadge({ producer }) {
     <span
       data-testid="draft-owner-badge"
       data-owner={claimed ? "claimed" : "waiting"}
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-2xs font-medium ${
         claimed ? "bg-green-100 text-green-800" : "bg-sky-100 text-sky-800"
       }`}
     >
@@ -155,7 +155,7 @@ function ManualCopyBox({ text, tClaim }) {
         onFocus={(e) => e.target.setSelectionRange(0, e.target.value.length)}
         // No min-width: the producers table keeps its columns at 375
         // (MEH-2070), and a wide box would push the actions column off-screen.
-        className="w-full border border-border rounded-[12px] px-3 py-2 text-xs bg-background"
+        className="w-full border border-border rounded-md px-3 py-2 text-xs bg-background"
       />
     </>
   );
@@ -223,7 +223,7 @@ export function CopyClaimMessageButton({ producer, onStale, onMinted }) {
         onClick={onClick}
         disabled={busy || locked}
         aria-busy={busy}
-        className="text-primary hover:underline text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline"
+        className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline"
       >
         {t("copy_message")}
       </button>

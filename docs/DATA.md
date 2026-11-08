@@ -89,7 +89,7 @@
 
 > **MEH-2495 (2026-10-28):** `ProducerAdminOut` gains a derived **`has_owner: bool | None`** (default `None`, so a route that forgot to hydrate it **fails closed** — the admin UI renders neither chip nor action for a non-boolean) — True iff at least one `users` row has `producer_id` = the producer (the same predicate as `producer_claim._has_owner`, which 409s the claim link). **Never stored, no migration.** Hydrated by `admin.py::_attach_has_owner` in **one** `SELECT DISTINCT users.producer_id … IN (…)` per response (no N+1; DISTINCT because `users.producer_id` has no unique index) on every route that returns `ProducerAdminOut` (`GET /admin/producers`, `/pending`, `/{id}`, `PUT /{id}`, `POST`). **Admin-only** — absent from `ProducerListOut` / `ProducerDetailOut` / `ProducerOwnerOut` (asserted in `tests/test_meh2495_admin_draft_owner.py`). Drives the drafts-list chips «מחכה לבעלים» / «נקלט, בהשלמה» and the row action «העתקת הודעה עם קישור» (ownerless drafts only). The set of routes returning `ProducerAdminOut` is pinned by an OpenAPI-derived inventory test, so a sixth route has to be added — and hydrated — on purpose.
 
-> **MEH-1255 (2026-07-17):** delivery-exclusion mode ("משלוחים לכל הארץ חוץ מ:"). `producers.delivery_excluded_cities` (`TEXT[] NOT NULL DEFAULT '{}'`, migration `e7c4b1f95a2d`) holds the cities a nationwide-delivery producer does NOT ship to (ShipperHQ include/exclude zone model). CHECK `delivery_excluded_requires_nationwide` (`delivery_nationwide OR delivery_excluded_cities = '{}'`) keeps it empty unless nationwide — the sibling of `delivery_nationwide_xor_cities`. Schema (`ProducerUpdate`/`ProducerAdminCreate`) validators reject an exclusion list without nationwide; partial-update effective-state (list sent alone, or nationwide switched off over a stored list) is guarded in the routers (`app/services/delivery_validation.py`) so it 422s (`ערים מוחרגות אפשריות רק עם משלוחים לכל הארץ`) instead of a DB CHECK 500. **Public** — `ProducerListOut`/`ProducerDetailOut` carry `delivery_excluded_cities` so `DeliveryBlock` renders "משלוחים לכל הארץ (למעט …)". **Consumer filter:** `GET /producers?delivery_city=X` (`producer_listing.py`) switched from an inner `JOIN delivery_areas` to `EXISTS (…) OR (delivery_nationwide AND NOT X = ANY(delivery_excluded_cities))` — a nationwide producer now matches any city except its exclusions (previously nationwide producers were never returned by the city filter, their `delivery_areas` being empty by the XOR).
+> **MEH-1255 (2026-07-17):** delivery-exclusion mode ("משלוחים לכל הארץ חוץ מ:"). `producers.delivery_excluded_cities` (`TEXT[] NOT NULL DEFAULT '{}'`, migration `e7c4b1f95a2d`) holds the cities a nationwide-delivery producer does NOT ship to (ShipperHQ include/exclude zone model). CHECK `delivery_excluded_requires_nationwide` (`delivery_nationwide OR delivery_excluded_cities = '{}'`) keeps it empty unless nationwide — the sibling of `delivery_nationwide_xor_cities`. Schema (`ProducerUpdate`/`ProducerAdminCreate`) validators reject an exclusion list without nationwide; partial-update effective-state (list sent alone, or nationwide switched off over a stored list) is guarded in the routers (`app/services/delivery_validation.py`) so it 422s instead of a DB CHECK 500 — detail `{code: "excluded_requires_nationwide", message: "ערים מוחרגות אפשריות רק עם משלוחים לכל הארץ", params: {}}` since MEH-1943 chunk 3 (its MEH-1879 sibling: `nationwide_requires_delivery`); the owner DeliveryCard and admin ProducerForm resolve the code to `dashboard.producer.delivery.errors.<code>` (`lib/delivery-errors.js`). **Public** — `ProducerListOut`/`ProducerDetailOut` carry `delivery_excluded_cities` so `DeliveryBlock` renders "משלוחים לכל הארץ (למעט …)". **Consumer filter:** `GET /producers?delivery_city=X` (`producer_listing.py`) switched from an inner `JOIN delivery_areas` to `EXISTS (…) OR (delivery_nationwide AND NOT X = ANY(delivery_excluded_cities))` — a nationwide producer now matches any city except its exclusions (previously nationwide producers were never returned by the city filter, their `delivery_areas` being empty by the XOR).
 
 > **MEH-1291 (2026-07-18):** producer freshness signal. `producers.updated_at` (`TIMESTAMP WITH TIME ZONE`, **nullable**, migration `a3f1c9d2e4b7`, Chunk A) is stamped by the model-level `onupdate=func.now()` (`models.py`) on every real producer UPDATE — owner edits (`producer_me.py:update_my_producer`) and admin edits (`admin.py:admin_update_producer`), both of which load the ORM object + `setattr` + `commit` (a bulk `update()` execute would skip the stamp — no such path exists on producers). **No `server_default`, NO backfill** (ADR-007 Expand-only): the column stays NULL for producers never edited since the migration, so the public "עודכן לאחרונה: {חודש שנה}" line renders nothing for them (honest signal). **Public** — `ProducerDetailOut` (Chunk B) carries `updated_at` read-only; `ProducerListOut`/map do NOT (detail-page-only). Rendered as a modest month-year footnote at the page end (`ProducerSections.jsx`, `frontend/lib/format-date.js` → he-IL/en-US).
 
@@ -194,11 +194,12 @@ producers (
   referral_source varchar(40) nullable, referral_source_other varchar(120) nullable,
   price_range,  -- MEH-1855 chunk 2 dropped the legacy alias (9849fab1637a)
   grass_fed bool, organic_certified bool, kosher,
+  reservist_owned bool NOT NULL default false,  -- owner-declared «עסק של מילואימניקים»; badge only, never ranking (f1c7a2b9d4e6)
   has_delivery bool, pickup_points bool,
   -- MEH-213 location mode + MEH-1255 nationwide exclusion list
   has_physical_location bool, offers_delivery bool,
   delivery_nationwide bool, delivery_excluded_cities text[] NOT NULL default '{}',
-  admin_notes, is_available_today bool,
+  admin_notes, is_available_today bool (legacy column — no reader, no writer, in no response since MEH-2272; dropped by MEH-2273),
   avg_rating float, reviews_count int,
   created_at, last_active_at,
   -- MEH-51: trust ladder + kashrut
@@ -257,7 +258,9 @@ products       (id, producer_id FK, name, description,
                 is_vegetarian Boolean NOT NULL DEFAULT FALSE,    -- MEH-1438: 4th dietary axis. ?vegetarian filter matches is_vegetarian OR is_vegan (a vegan product is vegetarian by definition); migration c5d9f3a1b2e8 seeded TRUE for existing vegan rows
                 is_lactose_free Boolean NOT NULL DEFAULT FALSE,   -- MEH-293/MEH-479: same
                 is_no_added_sugar Boolean NOT NULL DEFAULT FALSE, -- MEH-1934: 5th dietary axis ("ללא סוכר מוסף"). NO backfill — no existing flag implies it, so seeding would invent a nutrition claim on the business's behalf
-                is_low_carb Boolean NOT NULL DEFAULT FALSE)      -- MEH-1934: 6th dietary axis ("דל פחמימות"). Partial index idx_products_dietary on (producer_id) WHERE any flag TRUE — predicate extended with is_vegetarian in MEH-1438 and with both MEH-1934 flags in revision a2f7d4c8e153 (a product marked only low-carb would otherwise fall outside the index)
+                is_low_carb Boolean NOT NULL DEFAULT FALSE,
+                ingredients Text NULL,                           -- MEH-2662: owner-declared free-text ingredient list; NULL = not filled
+                allergens Text[] NULL)                           -- MEH-2662: owner-declared codes from app/allergens.py (14-item closed list, canonical order, unknown → 422); NULL = not filled, never "none"      -- MEH-1934: 6th dietary axis ("דל פחמימות"). Partial index idx_products_dietary on (producer_id) WHERE any flag TRUE — predicate extended with is_vegetarian in MEH-1438 and with both MEH-1934 flags in revision a2f7d4c8e153 (a product marked only low-carb would otherwise fall outside the index)
 producer_offers (id, producer_id FK CASCADE, offer_type text NOT NULL,
                  threshold_value int nullable, threshold_unit text nullable,
                  headline text nullable, starts_at date nullable,
@@ -384,10 +387,30 @@ events (
   price int,                         -- 0 = free
   max_participants int,
   registration_url text,             -- external signup link
+  registration_method varchar(20) NOT NULL DEFAULT 'site_form',
+                                     -- MEH-2763 «איך נרשמים?»: site_form|whatsapp|phone|external_url (CHECK)
   is_active bool,
   created_at
 )
 ```
+
+### Registrations (on-site sign-ups — MEH-2763, migration `e8c4a1f2b7d9`)
+
+```sql
+registrations (
+  id uuid PK,
+  event_id FK events ON DELETE CASCADE,          -- exactly one of the two
+  experience_id FK experiences ON DELETE CASCADE,-- (CHECK ck_registrations_one_item)
+  name varchar(100), phone varchar(20), email varchar(200),  -- what the visitor typed; no account
+  cancel_token varchar(64) UNIQUE,               -- the visitor's only credential (cancel link in her email)
+  status: registered|cancelled,
+  created_at, cancelled_at
+)
+```
+
+Only items whose owner picked `registration_method = 'site_form'` take rows.
+PII is returned to the owner/admin only. Purged 30 days after the item's
+date (`retention_purge._purge_registrations`, the promise under the form).
 
 ### Experiences (community workshops — **admin-moderated**)
 
@@ -405,9 +428,12 @@ experiences (
   city, address text,                -- address PRIVATE — redacted from public list
   lat float, lng float,
 
-  max_participants int, participants_count int,
+  max_participants int, participants_count int,  -- count: host-reported, clamped to max (MEH-2663)
+  min_participants int,              -- nullable; minimum to run, ≤ max or 422 (MEH-2665, migration c4d8e1f05a27)
   price_per_person numeric(10,2),    -- NULL/0 = free
   requirements text,                 -- "what to bring / prerequisites"
+  registration_method varchar(20) NOT NULL DEFAULT 'site_form',  -- MEH-2763; rows before it backfilled to whatsapp
+  registration_url varchar(500),     -- MEH-2763: used by external_url only
 
   is_active bool NOT NULL DEFAULT true,  -- MEH-1419: reversible host cancel (mirrors Event.is_active). Public list filters is_active IS TRUE; /mine returns inactive too.
 
@@ -560,11 +586,71 @@ retired_slugs          (slug varchar(100) PK, producer_id uuid FK→producers SE
 saved_items            (id uuid PK, user_id uuid FK→users CASCADE,
                         item_type 'recipe'|'event'|'experience' (CHECK), item_id uuid (no FK),
                         created_at, UNIQUE(user_id,item_type,item_id))  -- MEH-2556
+delivery_waitlist      (id uuid PK, producer_id uuid FK→producers CASCADE,
+                        city varchar(60), city_key varchar(60), email varchar(200),
+                        user_id uuid FK→users SET NULL nullable, created_at, notified_at nullable,
+                        wants_to_host bool NOT NULL DEFAULT false,
+                        host_confirm_sent_at nullable, host_confirmed_at nullable,  -- MEH-2673
+                        UNIQUE(producer_id,city_key,email), INDEX(producer_id,city_key))  -- MEH-2618
+```
+
+> **MEH-2618 — `delivery_waitlist` (30/10/2026):** «תודיעו לי כשתגיעו ל{עיר}». A visitor whose city the business does not deliver to leaves an **email + city** under the delivery checker's negative verdict — no account needed (Oddbox-style waitlist). `city` is her own spelling (used in her email); `city_key` is `app.data.cities.city_key`, the ONE comparison form (MEH-2456). `user_id` is set when she was signed in, and her empty profile `users.city` is filled from the form (never overwritten). `notified_at` is the once-only guard: when `PUT /producers/me` adds a city to `delivery_area_cities`, `services/delivery_waitlist.notify_cities` runs as a BackgroundTask (the same hop as the `delivery_area` favorite alert), mails every un-notified entry whose `city_key` matches, and stamps it; a send that raises leaves the row un-notified so the next add retries. Nothing is sent for a non-live business (`is_business()`, MEH-2513). Unsubscribe = a signed stateless token (`sub` = entry id, scope `delivery_waitlist_unsubscribe`, same pattern as the newsletter's) → `/delivery-waitlist/unsubscribe?token=` → `POST /delivery-waitlist/unsubscribe` deletes the row. Migration `d4e7a1b2c3f5`; **`EXPECTED_TABLES` 43 → 44**. **MEH-2673 (05/11/2026):** `wants_to_host` = she ticked «אשמח לארח נקודת מסירה ב{עיר}» **and clicked the confirmation link** mailed to that address (Sapir 05/11: the waitlist has no email verification, so the box alone must not hand a typed-in stranger's email to a business). Ticking sends `services/delivery_waitlist.send_host_confirmation` as a BackgroundTask (signed token, scope `delivery_waitlist_host_confirm`, distinct from the unsubscribe scope so neither link can do the other's job) → `/delivery-waitlist/host-confirm?token=` → `POST /delivery-waitlist/host-confirm` sets the flag and stamps `host_confirmed_at` (the consent record). The confirmation token expires after 7 days (`exp`, checked in `_decode`; unsubscribe tokens still never expire), and `host_confirm_sent_at` caps the mail at one per ENTRY per 24 h plus `HOST_CONFIRM_ADDRESS_CAP` (3) per ADDRESS per 24 h across every business and city — each link confirms one entry only, so a second business the same day still gets its own mail, while a re-submitted form cannot flood an inbox (serialised per address with `pg_advisory_xact_lock`; index `ix_delivery_waitlist_email_host_sent`). The POST answers `host_confirm: sent | already_sent | limit_reached | confirmed | null` so the form never claims a mail that was not sent (`already_sent` = this entry's link is already in the inbox; `limit_reached` = the address cap, nothing sent for this one); an expired link is **410** and, since the token still names the entry, the endpoint mails a fresh link to the same address under the same cooldown/cap and answers `{detail, resent: bool}` (no dead end, no confirmation); a bad or unsubscribed one is 400. Only ever False → True; an unticked repeat signup never clears it. The owner reads the list as `pickup_hosts` on `GET /producers/me/analytics`. Migration `e5a9c3d17b28` (additive column, `EXPECTED_TABLES` unchanged). The sibling for signed-in users stays `favorite_alerts.notify_delivery_area` (+ `whatsapp_opt_in`); the form points a signed-in visitor there for WhatsApp.
+
+### Rescue bags (pilot, flag-gated — MEH-2644)
+
+```sql
+rescue_offers          (id uuid PK, producer_location_id uuid FK→producer_locations CASCADE,
+                        date, qty_total, qty_left, price_agorot,
+                        value_min_agorot nullable, value_max_agorot nullable,
+                        pickup_start, pickup_end, cancel_until,
+                        status 'active'|'cancelled' (CHECK), created_at,
+                        CHECK qty_total 1..20, CHECK 0<=qty_left<=qty_total,
+                        CHECK price_agorot>=0, CHECK pickup_end>pickup_start,
+                        qty_donated int NOT NULL DEFAULT 0
+                          (CHECK 0<=qty_donated<=qty_total),             -- MEH-2703
+                        codes_sent_at timestamptz nullable               -- MEH-2756
+                        INDEX (producer_location_id, date))             -- MEH-2644
+rescue_orders          (id uuid PK, offer_id uuid FK→rescue_offers CASCADE,
+                        user_id uuid FK→users CASCADE, qty (CHECK 1..2),
+                        pickup_code char(4) (CHECK ^[0-9]{4}$),
+                        status 'reserved'|'handed'|'no_show'|'cancelled' (CHECK),
+                        handed_at nullable, handed_by uuid FK→users SET NULL nullable,
+                        cancelled_at nullable, created_at,
+                        UNIQUE(offer_id,pickup_code), INDEX (user_id))   -- MEH-2644
+rescue_reviews         (id uuid PK, order_id uuid FK→rescue_orders CASCADE UNIQUE,
+                        rating (CHECK 1..5), contents_tags jsonb nullable,
+                        highlight_tags jsonb nullable, photo_url nullable,
+                        comment text nullable, created_at)              -- MEH-2644
+rescue_typical_items   (id uuid PK, producer_id uuid FK→producers CASCADE UNIQUE,
+                        items jsonb NOT NULL, allergens text[] nullable,
+                        created_at, updated_at)            -- MEH-2644, MEH-2752
 ```
 
 > **MEH-2528 — `retired_slugs` (28/10/2026):** tombstones for public business URLs. A business delete is a hard delete, so its UNIQUE `producers.slug` used to be free at once and the next business with the same name inherited every `/p/<slug>` link. Now admin delete, owner account delete and an admin slug change/clear write a row (`services/retired_slugs.py`, the only writer), and `_ensure_unique_slug` (`routers/admin.py`) treats a retired slug as taken (`-2`…). A business may take back a slug it retired itself (the row is then removed). Drafts are not retired — never public. `producer_id` = owner of a renamed slug (for a future redirect), NULL for a deleted business. Migration `c3d8e2f1a9b4`; **`EXPECTED_TABLES` 41 → 42**. A deleted business's URL answers **410** and renders the «בית העסק הזה כבר לא במהמקור» page (MEH-2534). Not yet: a 301 from a renamed slug.
 
 > **MEH-2556 — `saved_items` (29/10/2026):** the recipes, events and experiences a user saved to «המועדפים שלי» (parent MEH-2555). Businesses keep `favorites` (FavoriteAlert hangs off it). `item_id` has no FK — it points at a different table per `item_type`; the read path serves only items that still exist and are public, so a deleted/hidden item drops out on its own. One save per item (UNIQUE), three types only (DB CHECK, mirrored by `SAVED_ITEM_TYPES` in models.py — `tests/test_meh2556_saved_items_table.py` fails if the two disagree), account delete cascades. Migration `9c534d477f2b`; **`EXPECTED_TABLES` 42 → 43**. API (MEH-2557): `GET /users/me/saved` → `{recipes, events, experiences}`, newest save first, public items only (recipe published+approved by a live business; event owner approved, past/cancelled kept and labelled by the page; experience `_publicly_visible_query`) · `GET /users/me/saved/ids` → `[{item_type, item_id}]` for the hearts' cache · `POST /users/me/saved/{type}/{id}` → 201, idempotent, **404 unless public** · `DELETE` → 200, own rows only, works after the item was hidden. All 🔑 (401 for a guest).
+
+> **MEH-2644 — rescue bags, chunk 1 (03/11/2026):** the four tables behind «סלי הצלה» (parent MEH-2643), all dormant until `RESCUE_BAGS_ENABLED`. An offer hangs off a **location**, not a business — a bag is collected at a place, and chunk 2 refuses a location whose `location_precision` is not `exact`. `qty_left` is the counter chunk 2 decrements under `with_for_update` (the group_buys MEH-773 pattern); the `0<=qty_left<=qty_total` CHECK is what makes a lost oversell race a failed transaction instead of negative stock. `pickup_code` is unique **per offer**, not globally — two businesses may both issue 0431 on the same evening, and a global 4-digit code exhausts after 10k rows. Money is integer agorot. **The pilot has no payment** (03/11 ruling): there is no `amount_agorot`, no `paid_at`, and `paid` is not a status — buyers pay at the counter, and re-adding payment later is an expand-phase CHECK widening (ADR-007). Same revision adds `users.rescue_no_show_count` (int NOT NULL DEFAULT 0, server_default so no backfill pass): the second `no_show` inside 30 days blocks new reservations with a 422, and `rescue_orders.status` over the window stays the authority — this column is the cheap counter the gate reads first. Status vocabularies live once in `RESCUE_OFFER_STATUSES` / `RESCUE_ORDER_STATUSES` (models.py) and `tests/test_rescue_migration.py` reds if the revision's literal CHECK drifts from them. Migration `a1c9f3e8d204`; **`EXPECTED_TABLES` 43 → 47**. No endpoints yet (chunk 2), no UI (chunk 4).
+
+> **MEH-2646 — rescue bags, chunk 2: the API (04/11/2026):** eight routes, all **404 while `RESCUE_BAGS_ENABLED` is off**, which is its default — 404 rather than 403 so the feature is not advertised before launch. **No payment endpoint and no amount field exist**: the buyer pays at the counter. `POST /rescue/offers` ✅👤 (approved business, pickup point must be `location_precision='exact'` per MEH-829, `qty_total` 1–20, one active bag per point per day else 409) · `GET /rescue/offers?city=&lat=&lng=` 🌐 (today's active bags with stock with at least 15 minutes of pickup window left — MEH-2713/MEH-2726, the same `RESERVE_CLOSES_BEFORE_END` the reserve guard uses, so reserve refuses the rest with 409 «זמן האיסוף חלף», producer summary, `typical_items`, and `distance_km` to **that pickup point** — deliberately not `haversine_min_km`, which answers "nearest of all the business's locations" and would quote a walk to a branch holding no bag) · `POST /rescue/offers/{id}/cancel` 👤 (cancels every open reservation with it; buyers are **not** messaged yet — a business-initiated WhatsApp needs a Meta-approved template and none exists for rescue) · `POST /rescue/orders` 🔑 (`qty` 1–2 **per buyer per offer**, summed not per-request; `SELECT … FOR UPDATE` on the offer per MEH-773; returns the 4-digit `pickup_code`, unique per offer) · `POST /rescue/orders/{id}/handed` 👤 (second call 409 naming `handed_at`, never a silent 200 — at a counter a repeated tap means the first was not seen) · `POST /rescue/orders/{id}/no_show` 👤 (only after `pickup_end`) · `POST /rescue/orders/{id}/cancel` 🔑 (own order, only before `cancel_until`, returns stock under the same lock) · `POST /rescue/orders/{id}/review` 🔑 (own order, after `handed`, once — `uq_rescue_reviews_order`) · `POST /admin/rescue/users/{id}/clear-block` 🛡️. Adds `users.rescue_block_cleared_at` (migration `b2e6d4a17c93`, no table, `EXPECTED_TABLES` unchanged). **The 422 block counts no-shows from `rescue_orders` inside 30 days and after that stamp — `rescue_no_show_count` is a lifetime display/metrics counter and is NOT the gate**, because it has no window.
+
+> **MEH-2715 — rescue bags: confirmation email (06/11/2026):** `POST /rescue/orders` now queues one email to the buyer after the commit (`app/services/rescue_emails.py`, a FastAPI BackgroundTask fed plain values, never the Session). It carries the pickup code, the total paid at the counter (`price_agorot × qty`), the pickup window and the free-cancel cutoff in Israel time, the pickup address, and a «לבטל את השריון» link to `/producer/{id}`. A refused reservation sends nothing. `send_email` stays fail-open, so a failed send never undoes a reservation. No schema or response change.
+
+> **MEH-2680 — rescue bags: the buyer's own orders (05/11/2026):** `GET /rescue/orders/mine` 🔑 — the caller's `reserved`/`handed` orders on **today's** offers (Israel date), same fields as the `POST /rescue/orders` response plus `reviewed` (a review exists) and `producer_id`. The business page reads it on mount and on window focus, so a reload no longer loses the pickup code and the review appears once the counter marks the bag handed. It matches on `producer_id`, not `offer_id`, because `GET /rescue/offers` drops a sold-out offer. Guests are never asked (their 401 would end in the session-expired toast). Behind the same flag.
+
+> **MEH-2716 — «מצילים מזון» badge (06/11/2026):** `ProducerListOut.rescued_recently` (bool, computed, no column) — True when the business, in the last 30 days, handed a surprise bag over (`rescue_orders.status='handed'`, `handed_at` in window) or reported bags given away free (`rescue_offers.qty_donated>0`, `pickup_end` in window). Set by `attach_rescue_saving()` (`services/producer_queries.py`) on `GET /producers`, `/producers/{id}`, `/producers/by-slug/{slug}` and the favorites list — two queries per page, none and always False while `RESCUE_BAGS_ENABLED` is off. Drives the `rescue_saving` badge (evidence `system`); never ranking.
+
+> **MEH-2756 — rescue bags: the pickup_start codes digest (06/11/2026):** `rescue_offers.codes_sent_at` (`timestamptz` **NULL**able, no default, no backfill; migration `a3f7c21e9b05`, no table, `EXPECTED_TABLES` unchanged) is when the day's pickup codes for that offer were sent to the **business** over WhatsApp, and it is the whole duplicate-send guarantee. **No endpoint reads or writes it** — the only writer is the scheduler job `services/rescue_digest.py::send_rescue_digests`, registered on the existing `followup_scheduler` at a 5-minute interval (`startup.py`), because `pickup_start` is per-offer and no daily hour is the start of every business's window. Due = active · `codes_sent_at IS NULL` · `pickup_start` passed · `pickup_end` **not** passed · town in `RESCUE_BAGS_CITIES` · ≥1 `reserved` order. **An offer whose window closes undigested stays `NULL` forever** — `pickup_end > now` drops it from the candidate set, so NULL means "not digested" and the filter, not the column, separates "not yet" from "never". Gated by a second flag, `RESCUE_DIGEST_ENABLED` (default **False**), because the send needs the Meta-approved template `rescue_codes_digest_v1` — before approval every send answers 132001 and `send_template` returns False without raising. Each send appends one `alert_log` row on channel **`whatsapp_digest`**, deliberately NOT the consumer `whatsapp` channel: the cap key is `(user_id, producer_id, channel, sent_at)` and excludes `alert_type`, so a shared channel would make a business digest and a consumer favourite-alert share one 24h budget. **Note the mixed timezone on this table** — `codes_sent_at` is `timestamptz` while `pickup_start`/`pickup_end`/`created_at` are naive-UTC; that is intentional, matching `producers.email_pending_nudge_sent_at`, since a send-stamp is compared against `utc_now()` and never rendered on the Israel clock.
+
+> **MEH-2752 — rescue bags: per-business allergens (06/11/2026):** `rescue_typical_items.allergens` (`text[]` **NULL**able, no server default, no backfill; migration `e4c71b9a2f68`, no table, `EXPECTED_TABLES` unchanged) is the business's own allergen declaration for the bag, replacing a fixed sentence every bag showed whatever the business sold. **`NULL` and `[]` are different claims and only one of them is storable:** `NULL` = not filled, `[]` would read as "contains no allergens" — a statement about food nobody made. `normalize_allergens` (`app/allergens.py:29`) collapses both `[]` and `None` to `None`, de-dupes, returns the 14 codes in canonical order and raises on an unknown one, so `RescueTypicalItemsIn` delegates to it and an unknown code is **422 with nothing written**. Carried on `GET`/`PUT /producers/me/rescue/typical-items` 👤 and on the public bag in `GET /rescue/offers` (`allergens`, `null` when undeclared — never `[]`). Same code list and Hebrew labels as `products.allergens` (MEH-2662); one owner, no second list.
+
+> **MEH-2703 — rescue bags: what was not collected (06/11/2026):** `rescue_offers.qty_donated` (int NOT NULL, `server_default 0`, CHECK `0..qty_total`; migration `b7d2e4f1a903`, no table, `EXPECTED_TABLES` unchanged) is the business's own report of uncollected bags it gave away free. `GET /producers/me/rescue/offers` 👤 — today's bags for this business (Israel clock) with `leftover` = `qty_left` + bags on `no_show` orders; **0 before `pickup_end`** (a bag may still be reserved or collected) and **0 for a cancelled offer**; a `reserved` order not yet marked «לא הגיע» does not count. `PUT /producers/me/rescue/offers/{id}/donated` 👤 `{qty}` — owner or admin, a **set** not an increment (a repeated tap is a no-op, a mistake is corrected by sending the right number), 409 before `pickup_end` or on a cancelled bag, **422 above `leftover`** — the CHECK only bounds `qty_total`, because the no-show half lives on `rescue_orders`. `GET /admin/rescue/metrics` gains `bags_donated`. Behind the same flag.
+
+> **MEH-2649 — rescue bags, chunk 5: the counter tool and the pilot controls (04/11/2026):** three routes, all behind the same flag. `GET /producers/me/rescue/orders` 👤 — today's reservations across the business's pickup points, Israel-clock today only; it returns **no buyer identity** (handing a bag over needs four digits, and a list of today's customers on a dashboard screen is more personal data than the job requires), and it carries the offer's `pickup_end` so the dashboard can decide whether «לא הגיע» is legal without a second request · `GET`/`PUT /producers/me/rescue/typical-items` 👤 — the «בדרך כלל» list, one row per business (`uq_rescue_typical_items_producer`), upserted in place, bounded at 12 so the line stays one line on a phone · `GET /admin/rescue/metrics?days=` 🛡️ — offers/day, sell-through, no-show rate and repeat buyers; **the two rates are `null`, never `0`, when their denominator is zero**, because in week one "nothing published" and "nothing sold" must not read the same. **Per-town gate:** `RESCUE_BAGS_CITIES` (comma separated) — **empty means NO town, not every town**, which is what a missing env var produces; names are canonicalised (`תל אביב` matches `תל אביב-יפו`); and it is enforced on the **read** as well as the write, so a town removed from the list stops serving offers published while it was in. No schema change in this chunk.
+
+> **MEH-2737 — rescue bags: the buyer's cancel (06/11/2026):** `POST /rescue/orders/{id}/cancel` now locks the offer **and then the order** (`FOR UPDATE`, the order reserving takes them in) and re-reads the order's status under the lock — before this, two cancels of one order (double tap, or page + email) both passed the unlocked status check and returned its bags to `qty_left` twice. A successful cancel emails the buyer (`send_cancel_email`, fail-open, no code in it). The reservation email drops the cancel line and button when the bag was reserved after `cancel_until`. `GET /admin/rescue/metrics`: **`no_show_rate` is now out of the reservations that were not cancelled**, `repeat_buyers`/`buyers_total` ignore cancelled reservations, `bags_offered`/`bags_reserved`/`sell_through` exclude bags the business cancelled, and two new counts `orders_cancelled` / `offers_cancelled`. No schema change.
+
+> **MEH-2738 — rescue bags: the business cancels the bag (06/11/2026):** `POST /rescue/offers/{id}/cancel` is now refused once `pickup_end` passed (409 «זמן האיסוף חלף»); a bag already handed stays handed (unchanged: only `reserved` orders are cancelled); after the commit each buyer whose reservation went with it gets **one** email (`send_business_cancel_email`, fail-open, links to `/rescue`). `GET /rescue/orders/mine` also returns the caller's reservations **the business cancelled**, with a new required bool **`cancelled_by_business`** (False on every other row). There is no column saying who cancelled: a buyer's cancel returns its bags to `qty_left` and the business cancel does not, so the business-cancelled bags are `(qty_total − qty_left) − bags on orders never cancelled`, stamped with the offer's latest `cancelled_at`. That also handles the case where the buyer cancelled first and nobody else held a bag. No schema change.
 
 ---
 
@@ -619,6 +705,19 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > background task and a failed send never fails the 200. Once by construction:
 > cancelled is final in `OWNER_TRANSITIONS`, so a repeat is a 409 and sends
 > nothing. No latch column. An admin cancel (admin route) sends nothing.
+>
+> **MEH-2621 (MEH-2615 split, chunk 1) — pickup and delivery as two answers.**
+> Two new nullable `Text` columns on `group_buys`: `pickup_note`,
+> `delivery_note` (Expand-only, no backfill; `fulfillment_note` unchanged).
+> `POST /group-buys` accepts both (stripped, ≤1000, ≥3 letters when given);
+> **at least one of `pickup_note` / `delivery_note` / `fulfillment_note` is
+> required** — none → 422 «יש למלא איסוף או משלוח»
+> (`GroupBuyCreate._require_pickup_or_delivery`). Blank / whitespace / `null`
+> count as not given. `fulfillment_note` is now optional on write (kept for the
+> pre-split form) and keeps its own wordless-text message. `GET /group-buys`
+> and `GET /group-buys/{id}` return `pickup_note` and `delivery_note`
+> (`null` on older rows). This supersedes the "required" rule in the MEH-2453
+> note below.
 >
 > **MEH-2453 (MEH-2435 chunk 5) — how a participant from another city gets the
 > product.** `POST /group-buys`: `fulfillment_note` is now **required** — a
@@ -744,11 +843,12 @@ DELETE /admin/producers/{id}/products/{product_id}  admin — 60/hour. Same 409 
 
 ```
 GET    /producers                                 public — filters: lat+lng+radius_km, require_physical, category, delivery_city,
-                                               has_delivery, verified, kosher, city (producer city), is_available_today, grass_fed,
+                                               has_delivery, verified, kosher, city (producer city), availability_state, grass_fed,
                                                near_city (MEH-2602 — the map's city filter: own city OR a location row in it OR
                                                delivers there; located ones ordered first, non-geo mode only)
                                                sort: newest (default) | rating (MEH-1483). "newest"/absent → created_at DESC
-                                               (byte-identical default). "rating" → avg_rating DESC, NULLs last, tiebreak
+                                               (byte-identical default). "rating" → unreviewed (NULL avg or reviews_count<1) LAST, then
+                                               MEH-2617 Bayesian score (avg*n + 4.0*5)/(n + 5) DESC, tiebreak
                                                reviews_count DESC, then created_at DESC. Any other value → 422 "ערך מיון לא חוקי".
                                                Non-geo only (geo results always order by distance). Drives the /producers sort select.
                                                MEH-1829: sort=distance (needs lat+lng, NO radius_km) → ORDER BY the MEH-1402
@@ -814,8 +914,9 @@ GET    /categories                                public
 GET    /producers/me                              producer
 PUT    /producers/me                              producer — MEH-999: license gate grandfathers already-held categories (validates NEWLY-ADDED category_ids only, so MEH-971 license-pending producers can edit their profile); clearing a held producer_license_number while a license-required category remains → 422.
                                                   MEH-2073: notification-only admin ping when an ALREADY-APPROVED producer changes a
-                                                  sensitive field — SENSITIVE_FIELDS = {city, phone, vegan_scope, vegetarian_scope,
-                                                  gluten_free_facility} (producer_me.py). Values are snapshotted before the setattr
+                                                  sensitive field — SENSITIVE_FIELDS = {phone, vegan_scope, vegetarian_scope,
+                                                  gluten_free_facility, whatsapp_group (MEH-2626)} (producer_me.py; `city` left
+                                                  under MEH-1938 5a and pings from the locations CRUD). Values are snapshotted before the setattr
                                                   loop and diffed post-commit, so a form resubmitting an unchanged value does NOT
                                                   ping; one BackgroundTask per PUT listing every changed field. Persistence,
                                                   status, requested_changes and the response shape are all untouched — this closes
@@ -842,13 +943,15 @@ PATCH  /admin/name-change-requests/{id}          admin     — {status: approved
 GET    /producers/me/review-link                 producer  — MEH-1428 chunk 1: the owner's shareable "request a review" URL → {url}. Approved only (else 403 «קישור לבקשת ביקורת זמין רק לעסק מאושר»), 30/min, no DB write. URL = {frontend_url}/p/{slug}?rt=<token> (or /producer/{id} when the business has no slug). Token = HS256 JWT {producer_id, scope:"review_invite"}, 30-day TTL, NOT single-use (auth.py create_review_invite_token); a fresh call re-mints. Presenting it as `review_token` on POST /producers/{id}/reviews satisfies the contact-click gate for THAT producer only — invalid/expired/forged/other-producer → the same 403 as no contact; the row is stamped source="invite_link" (DB + admin payload only; the public ReviewOut never exposes it).
 POST   /producers/me/request-review              producer  — MEH-1236 resubmit-for-review ping: pending → notification-only (admin WhatsApp+email via notify_admin_producer_resubmit, fail-open), NO DB write, requested_changes stays admin-owned. MEH-2210: ALSO admits rejected → cap 3 (constants.MAX_PRODUCER_RESUBMISSIONS) else 409; then the MEH-2120 completeness gate (unverified phone → 422); then status=pending, resubmission_count+=1, resubmitted_at=now(), rejection_reason+code KEPT, admin ping «🔁 שליחה חוזרת #n», returns {detail,status,resubmission_count}. Every other status → 409. 3/hr
 POST   /producers/me/submit-for-review           producer  — MEH-2100 draft→pending: DRAFT ONLY (else 409), 5/hr. Server-side completeness gate via services/submission_gate.submission_missing_items — image>=1 · product>=1 · category>=1 · location · phone_verified. On failure 422 with detail={code:"submit_gate_incomplete", message, params:{missing:[codes]}} (MEH-1943 shape, so detailToMessage renders `message` unchanged). On success: status="pending", submitted_for_review_at=now(tz-aware), admin ping via notify_admin_new_producer (post-commit BackgroundTask, fail-open). License is deliberately NOT gated (MEH-971 license_pending must still reach the queue); opening hours are recommended, not required.
-POST   /producers/me/availability                 producer  — toggle is_available_today (legacy; mirrors to availability_state during MEH-291 7-day overlap)
-POST   /producers/me/availability-status           producer  — set durable status (legacy; mirrors to availability_state during MEH-291 overlap)
-POST   /producers/me/availability-state            producer  — MEH-291 unified 4-value enum
-                                                              body: { state: "accepting_orders"|"available_today"|"full_this_week"|"on_vacation",
-                                                                      vacation_until?: ISO date }
+POST   /producers/me/availability-state            producer  — MEH-291 enum write. MEH-2758: WRITES are pause-only
+                                                              body: { state: "accepting_orders"|"on_vacation", vacation_until?: ISO date }
+                                                              any other value → 400 (available_today / full_this_week removed, MEH-2782)
+                                                              {code:"invalid_availability_state", params:{allowed:[...]}}. Both are the only values (MEH-2782).
                                                               vacation_until REQUIRED when state="on_vacation" (422 with "תאריך חזרה לחופשה נדרש")
-                                                              dual-writes to is_available_today + availability_status during 7-day overlap
+                                                              the ONLY availability write endpoint — the legacy POST /availability and
+                                                              /availability-status are deleted (MEH-2758). PUT /admin/producers/{id} refuses
+                                                              a CHANGE into a non-writable state (422, same code); an unchanged legacy value
+                                                              resubmitted by ProducerForm still saves. PUT /producers/me never writes the field
                                                               GET /producers supports ?availability_state= filter (opt-in; default listing unchanged in Phase 2)
 GET    /producers/me/locations                    producer  — MEH-1421 (MEH-1388 chunk 4a): owner's producer_locations
                                                               rows (ProducerLocationOwnerOut — full, incl. address/hours/phone),
@@ -877,7 +980,12 @@ GET    /producers/me/analytics                    producer  — feature/producer
                                                               favorites, the canonical interest record — decision A);
                                                               average_rating + total_reviews;
                                                               home_products_count; views_by_day (30-entry zero-filled
-                                                              series); top_cities (top 5, excludes NULL city)
+                                                              series); top_cities (top 5, excludes NULL city);
+                                                              coverage_requests (MEH-1676: [{city, count}], top 5,
+                                                              last 30 days, from producer_whatsapp_clicks rows whose
+                                                              city IS NOT NULL — i.e. «לא מגיעים ל{עיר}?» clicks only);
+                                                              pickup_hosts (MEH-2673: [{email, city}], this business's
+                                                              delivery_waitlist rows with wants_to_host, newest first, max 50)
 
 # Producer detail — public (tracked, anonymous)
 GET    /producers/{id}?from=search|map|...        public    — GET that also logs a producer_page_views row
@@ -895,6 +1003,31 @@ POST   /producers/{id}/whatsapp-click             public    — anonymous, rate-
                                                               would break every anonymous click. Only
                                                               the coverage CTA sends one, via
                                                               fetch(keepalive)
+POST   /producers/{id}/delivery-waitlist          public    — MEH-2618 «תודיעו לי כשתגיעו ל{עיר}».
+                                                              { email, city, wants_to_host? } → delivery_waitlist row.
+                                                              wants_to_host (MEH-2673, default false) mails a
+                                                              confirmation link (new or existing row); the flag
+                                                              itself is set only by /delivery-waitlist/host-confirm.
+                                                              201 {status:"added"} · 200 {status:"exists"}
+                                                              (same email+city already waiting) · 422 bad
+                                                              email or a city without letters (MEH-555) ·
+                                                              404 unknown OR non-live business (is_business).
+                                                              JWT optional (lenient): sets user_id and fills
+                                                              an EMPTY users.city. Rate-limited 10/min per IP.
+POST   /delivery-waitlist/host-confirm            public    — MEH-2673 { token } (signed, from the host confirmation
+                                                              email) → wants_to_host = true · 200 {producer_name} ·
+                                                              410 expired {detail, resent} — mails a fresh link under
+                                                              the cooldown/cap, confirms nothing ·
+                                                              400 bad token / entry gone · idempotent · 10/min per IP
+POST   /delivery-waitlist/unsubscribe             public    — MEH-2618 { token } (signed, from the email)
+                                                              → deletes the one entry. Idempotent 200;
+                                                              400 on a token that does not verify.
+POST   /producers/{id}/contact-click              public    — 10/min, body {method} ∈ phone | instagram | website |
+                                                              email | whatsapp_group (MEH-2626: the WhatsApp updates
+                                                              link — contact-card bell + delivery-checker pill); else
+                                                              422. 204 + a producer_contact_clicks row (owner/admin
+                                                              clicks not logged). A row with user_id satisfies the
+                                                              first-review gate (reviews.py, MEH-2204).
 ```
 
 ### Favorites (`app/routers/favorites.py`)
@@ -937,6 +1070,37 @@ POST   /events                     producer — require_verified_producer (MEH-1
 PUT    /events/{event_id}          producer — owner only (cross-owner → 404)
 DELETE /events/{event_id}          auth    — owner or admin (stranger → 404)
 ```
+
+**MEH-2763 — «איך נרשמים?».** `EventCreate/Update.registration_method`
+(`site_form` default | `whatsapp` | `phone` | `external_url`). Prerequisites →
+422 `{code, message}`: whatsapp needs an Israeli **mobile** on the business
+(`registration_whatsapp_needs_mobile`), phone needs a phone
+(`registration_phone_needs_phone`), external_url needs `registration_url`
+(`registration_external_needs_url`). On PUT they are checked only when the
+edit touches the method or the URL. `EventOut` adds `registration_method`,
+`registered_count` (active on-site sign-ups) and `spots_left`
+(`max_participants − registered_count`, null without a cap). Same fields on
+experiences, where `spots_left` also subtracts the host's own
+`participants_count`, and a method change does not re-moderate.
+**MEH-2768:** `EventOut.producer_phone` — the owning business's phone (the
+number its public page already shows), for the event page's WhatsApp / phone
+CTA and «או שאלה למארחת». Experiences already carry it as `host.producer_phone`.
+
+### Registrations (on-site sign-ups — `app/routers/registrations.py`, MEH-2763)
+
+```
+POST   /events/{id}/registrations         public — 10/hour/IP. {name, phone, email} all required. 201 {status:"registered"} (no token, no PII back).
+POST   /experiences/{id}/registrations    public — same. Item must be public + upcoming + active + registration_method=site_form, else 404 (not public) / 409 registration_closed. Full → 409 registration_full (row lock on the item). Same email twice → same 201, nothing stored or sent.
+GET    /events/{id}/registrations         auth — owner or admin; others 404 (MEH-1001). Rows incl. cancelled.
+GET    /experiences/{id}/registrations    auth — host or admin; others 404.
+GET    /registrations/{token}             public — {kind, item_id, title, event_date, status} for the cancel page.
+POST   /registrations/{token}/cancel      public — idempotent; first cancel emails the owner.
+```
+
+Emails (`services/registration_emails.py`, fail-open, queued after commit):
+visitor confirmation with the cancel link; owner «הרשמה חדשה» with name,
+phone, email and «נשארו N מקומות»; owner «ביטול הרשמה». A home experience's
+address never goes in the visitor email (city only, MEH-1417).
 
 No per-event moderation. An **approved** producer publishes and it's live;
 a **pending** producer's events exist but are invisible to the public until
@@ -1246,6 +1410,54 @@ POST /contact                    public — { name, email, message, topic? } →
 GET  /cities                     public — canonical cities table (data.gov.il seed,
                                  MEH-1343) ∪ live producer/delivery cities; static
                                  list only as unseeded-env fallback (MEH-1349)
+```
+
+### Community business suggestions (`app/routers/business_suggestions.py` — MEH-2633)
+
+```
+POST /business-suggestions       public — { name, city, instagram|phone|website (≥1),
+                                 reason?, suggester_name?, suggester_email?,
+                                 wants_update?, company? } → an outreach_leads row
+                                 with source="community". Nothing is published.
+                                 rate-limited 5/hour per IP
+                                 RESPONSE IS ALWAYS {"ok": true} — no id, no echo.
+                                 A new suggestion, a duplicate and a honeypot hit
+                                 are byte-identical from outside, so the endpoint
+                                 cannot be used to probe whether a business is
+                                 already in the outreach queue.
+                                 company = honeypot: any value → 201, nothing
+                                 stored, no admin ping.
+                                 duplicate (lower(name), lower(city)) → the reason
+                                 is appended to the existing lead's notes
+                                 ("המלצה נוספת: …"); the first suggester is kept,
+                                 except where the slot is empty (an admin-typed
+                                 lead), which is filled so the person can still be
+                                 thanked. `source` is never rewritten.
+                                 logged-in caller: suggester_email is prefilled
+                                 from the account ONLY when the field is empty.
+```
+
+`outreach_leads` gains five columns (revision `d7a511246b14`, no new table):
+`suggested_by_name` VARCHAR(100) NULL · `suggested_by_email` VARCHAR(254) NULL ·
+`suggester_wants_update` BOOLEAN NOT NULL DEFAULT false ·
+`suggestion_reason` TEXT NULL · `suggester_thanked_at` TIMESTAMP NULL.
+**`suggested_by_email` is admin-only** — the single reader is `OutreachLeadOut`,
+behind `require_admin`; no public endpoint returns it and it is never logged
+unmasked (`services/email.py:47` `_mask`). Retention is MEH-2638.
+
+```
+GET  /admin/outreach?source=     admin — new optional filter, exact, validated
+                                 against {manual, community} (400 otherwise).
+                                 COALESCEs a NULL source to "manual".
+POST /admin/outreach/{id}/thank-suggester
+                                 admin — emails the suggester that the business
+                                 joined; stamps suggester_thanked_at, which is the
+                                 idempotency key. Four distinct 409s: no
+                                 suggester email · no opt-in · already thanked ·
+                                 status != "registered".
+GET  /admin/outreach/metrics/summary
+                                 admin — gains "community" (a SOURCE count, not a
+                                 status); still ONE grouped SELECT (MEH-2553).
 ```
 
 ### Search (`app/routers/search.py` — MEH-99)

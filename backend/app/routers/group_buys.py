@@ -61,6 +61,8 @@ def _enrich(gb: GroupBuy, current_user: User | None = None) -> dict:
         "deadline": gb.deadline,
         "city": gb.city,
         "fulfillment_note": gb.fulfillment_note,
+        "pickup_note": gb.pickup_note,
+        "delivery_note": gb.delivery_note,
         "status": gb.status,
         "commits_count": commits_count,
         "created_at": gb.created_at,
@@ -162,7 +164,7 @@ def get_group_buy(
 ):
     gb = db.query(GroupBuy).filter(GroupBuy.id == group_buy_id).first()
     if not gb:
-        raise HTTPException(status_code=404, detail="קבוצת הרכש לא נמצאה")
+        raise HTTPException(status_code=404, detail="קבוצת הרכישה לא נמצאה")
     # MEH-2484: a stranger gets the SAME 404 when the business is not public,
     # so the row's existence does not leak. Owner and admin still see it.
     is_owner = bool(
@@ -172,7 +174,7 @@ def get_group_buy(
     )
     is_admin = bool(current_user and current_user.role == "admin")
     if not (is_owner or is_admin) and not _is_public(db, gb.id):
-        raise HTTPException(status_code=404, detail="קבוצת הרכש לא נמצאה")
+        raise HTTPException(status_code=404, detail="קבוצת הרכישה לא נמצאה")
     return _enrich(gb, current_user)
 
 
@@ -243,9 +245,9 @@ def commit_to_group_buy(
     )
     # MEH-2484: a group buy whose page is 404 cannot be joined via a held link.
     if not gb or not _is_public(db, gb.id):
-        raise HTTPException(status_code=404, detail="קבוצת הרכש לא נמצאה")
+        raise HTTPException(status_code=404, detail="קבוצת הרכישה לא נמצאה")
     if gb.status != "open":
-        raise HTTPException(status_code=400, detail="קבוצת הרכש אינה פתוחה להצטרפות")
+        raise HTTPException(status_code=400, detail="קבוצת הרכישה אינה פתוחה להצטרפות")
     if gb.deadline < utc_now():
         raise HTTPException(status_code=400, detail="המועד האחרון חלף")
 
@@ -257,7 +259,7 @@ def commit_to_group_buy(
         .scalar()
     )
     if gb.max_participants and current_count >= gb.max_participants:
-        raise HTTPException(status_code=400, detail="קבוצת הרכש מלאה")
+        raise HTTPException(status_code=400, detail="קבוצת הרכישה מלאה")
 
     existing = (
         db.query(GroupBuyCommit)
@@ -268,7 +270,7 @@ def commit_to_group_buy(
         .first()
     )
     if existing:
-        raise HTTPException(status_code=400, detail="כבר הצטרפת לקבוצת רכש זו")
+        raise HTTPException(status_code=400, detail="כבר הצטרפת לקבוצת רכישה זו")
 
     # MEH-1651: `phone` is no longer collected or written. Nothing ever read
     # the column, and after the funded notification the participant is reached
@@ -309,11 +311,11 @@ def cancel_commit(
         db.query(GroupBuy).filter(GroupBuy.id == group_buy_id).with_for_update().first()
     )
     if not gb:
-        raise HTTPException(status_code=404, detail="קבוצת הרכש לא נמצאה")
+        raise HTTPException(status_code=404, detail="קבוצת הרכישה לא נמצאה")
     # MEH-2436: the owner can now close a group buy before its deadline; after
     # that, the list of who took part is a record, not something to edit.
     if gb.status not in ("open", "funded"):
-        raise HTTPException(status_code=400, detail="קבוצת הרכש כבר נסגרה")
+        raise HTTPException(status_code=400, detail="קבוצת הרכישה כבר נסגרה")
     if gb.deadline < utc_now():
         raise HTTPException(status_code=400, detail="לא ניתן לבטל לאחר המועד האחרון")
 
@@ -355,7 +357,7 @@ def create_group_buy(
         raise HTTPException(status_code=404, detail="בעל עסק לא נמצא")
     if producer.status != "approved":
         raise HTTPException(
-            status_code=403, detail="רק בעלי עסק מאושרים יכולים לפתוח קבוצת רכש"
+            status_code=403, detail="רק בעלי עסק מאושרים יכולים לפתוח קבוצת רכישה"
         )
     # MEH-2459: a group buy is selling, and an organizer sells nothing
     # (ADR-036). Same 403 shape as the status gate above; the public
@@ -363,7 +365,7 @@ def create_group_buy(
     # organizer could otherwise surface as a seller.
     if producer.kind != "producer":
         raise HTTPException(
-            status_code=403, detail="מארגן שווקים ואירועים לא יכול לפתוח קבוצת רכש"
+            status_code=403, detail="מארגן שווקים ואירועים לא יכול לפתוח קבוצת רכישה"
         )
 
     if data.price_per_unit_group >= data.price_per_unit_regular:
@@ -386,12 +388,14 @@ def create_group_buy(
         deadline=data.deadline,
         city=data.city or producer.city,
         fulfillment_note=data.fulfillment_note,
+        pickup_note=data.pickup_note,
+        delivery_note=data.delivery_note,
         status="open",
     )
     db.add(gb)
     db.commit()
     db.refresh(gb)
-    return {"id": str(gb.id), "detail": "קבוצת הרכש נוצרה בהצלחה"}
+    return {"id": str(gb.id), "detail": "קבוצת הרכישה נוצרה בהצלחה"}
 
 
 # MEH-2436: what the business may do to its own group buy. Anything not listed
@@ -430,11 +434,11 @@ def update_group_buy_status(  # noqa: PLR0913 — all 6 args are FastAPI-injecte
         db.query(GroupBuy).filter(GroupBuy.id == group_buy_id).with_for_update().first()
     )
     if not gb:
-        raise HTTPException(status_code=404, detail="קבוצת הרכש לא נמצאה")
+        raise HTTPException(status_code=404, detail="קבוצת הרכישה לא נמצאה")
     # IDOR (security.md): the group buy must belong to the caller's business.
     # A producer user with no business owns nothing.
     if current_user.producer_id is None or gb.producer_id != current_user.producer_id:
-        raise HTTPException(status_code=403, detail="אין הרשאה לשנות קבוצת רכש זו")
+        raise HTTPException(status_code=403, detail="אין הרשאה לשנות קבוצת רכישה זו")
     # MEH-2489: checked under the row lock, after the ownership check (a
     # stranger learns nothing about the row's state). Same 409 and wording as
     # a refused transition: either way the dashboard reloads and shows the
@@ -443,11 +447,11 @@ def update_group_buy_status(  # noqa: PLR0913 — all 6 args are FastAPI-injecte
     # went through on a funded group whose double confirm she never saw.
     if data.expected_status is not None and gb.status != data.expected_status:
         raise HTTPException(
-            status_code=409, detail="אי אפשר לשנות את קבוצת הרכש למצב הזה"
+            status_code=409, detail="אי אפשר לשנות את קבוצת הרכישה למצב הזה"
         )
     if (gb.status, data.status) not in OWNER_TRANSITIONS:
         raise HTTPException(
-            status_code=409, detail="אי אפשר לשנות את קבוצת הרכש למצב הזה"
+            status_code=409, detail="אי אפשר לשנות את קבוצת הרכישה למצב הזה"
         )
 
     # MEH-2435 chunk 4: tell every participant the group was cancelled.
@@ -514,7 +518,7 @@ def admin_update_status(
         )
     gb = db.query(GroupBuy).filter(GroupBuy.id == group_buy_id).first()
     if not gb:
-        raise HTTPException(status_code=404, detail="קבוצת הרכש לא נמצאה")
+        raise HTTPException(status_code=404, detail="קבוצת הרכישה לא נמצאה")
     gb.status = status
     db.commit()
     return {"detail": "סטטוס עודכן", "status": gb.status}

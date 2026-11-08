@@ -11,6 +11,7 @@ from app.routers import (
     admin_whatsapp,
     alerts,
     auth,
+    business_suggestions,
     category_requests,
     chat,
     cities,
@@ -27,7 +28,9 @@ from app.routers import (
     producer_me,
     producer_name_requests,
     producer_recipes,
+    rescue,
     producers,
+    registrations,
     report_info,
     reports,
     reviews,
@@ -104,6 +107,8 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(events.router)
     app.include_router(experiences.router)
     app.include_router(admin_experiences.router)
+    # MEH-2763: on-site sign-ups for events + experiences.
+    app.include_router(registrations.router)
     # MEH-589: producer recipes chunk 2/4
     app.include_router(producer_recipes.router)
     app.include_router(admin_recipes.router)
@@ -119,6 +124,8 @@ def register_routers(app: FastAPI) -> None:
     # MEH-771 Chunk C: admin view of undelivered WhatsApp sends.
     app.include_router(admin_whatsapp.router)
     app.include_router(chat.router)
+    # MEH-2633: public community suggestions (POST /business-suggestions).
+    app.include_router(business_suggestions.router)
     app.include_router(category_requests.router)
     # MEH-1872: the re-moderated name-change route. Deliberately NOT part of
     # producer_me — that router's writable-field set is what MEH-1851 closed.
@@ -135,3 +142,16 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(holiday_mode.router)
     # MEH-509 PR2c: Meta WhatsApp webhook receiver. /webhook/whatsapp.
     app.include_router(whatsapp_webhook.router)
+    # MEH-2646: the rescue-bags pilot. Every route inside answers 404 while
+    # RESCUE_BAGS_ENABLED is off, which is its default — registering the
+    # routers does not expose the feature.
+    # Registered last simply to keep the pilot's two lines together; the
+    # position carries no meaning. (It was briefly believed to shrink the
+    # openapi.json diff — measured, it does not: the ~450 apparent deletions
+    # there are JSON key reflow, and a semantic compare against HEAD shows
+    # exactly 8 paths and 10 schemas added and nothing else changed.)
+    app.include_router(rescue.router)
+    app.include_router(rescue.admin_router)
+    # MEH-2649: GET /producers/me/rescue/orders — the business's own counter
+    # list, beside /producers/me/group-buys.
+    app.include_router(rescue.me_router)

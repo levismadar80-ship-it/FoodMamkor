@@ -6,6 +6,7 @@ import {
   buildPageUrl,
   buildProducerMetadata,
   ogImage,
+  serializeJsonLd,
   SITE_URL,
 } from "@/lib/seo";
 
@@ -532,5 +533,142 @@ describe("buildJsonLd — locale (HOT-006 / MEH-778)", () => {
     const json = buildJsonLd(fullProducer, "fr");
     expect(getWebPage(json).inLanguage).toBe("he-IL");
     expect(getBreadcrumb(json).itemListElement[0].name).toBe("ישראל");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// MEH-2789 — hasOfferCatalog
+//
+// DISCRIMINATION. Each case below fails against a plausible wrong build:
+//   - emit the catalogue for a producer with no products  → "omits" goes red
+//   - put `price_range` (free text) into minPrice          → "no numeric price"
+//   - drop the signature hoist and use producer.products   → "page order"
+//   - raise or remove the 30 cap                           → "caps at 30"
+//   - add any field outside hasOfferCatalog                → "purely additive"
+// Verified by running each mutation against this file before committing.
+// ---------------------------------------------------------------------------
+const PRODUCTS = [
+  { id: "p-1", name: "גבינת עיזים", description: "מיושנת 60 יום", image_url: "https://res.cloudinary.com/demo/image/upload/v1/cheese.jpg", price_min: 38, price_max: 52 },
+  { id: "p-2", name: "לאבנה", price_min: 24, price_max: null },
+  // price_range is the LEGACY free-text label — it must never become a price.
+  { id: "p-3", name: "יוגורט כבשים", price_range: "משתנה לפי עונה", price_min: null, price_max: null },
+];
+const withProducts = { ...fullProducer, products: PRODUCTS };
+const getCatalog = (p) => getBusiness(buildJsonLd(p)).hasOfferCatalog;
+
+describe("MEH-2789 — hasOfferCatalog", () => {
+  it("omits the catalogue entirely when the page shows no products", () => {
+    expect(getBusiness(buildJsonLd(fullProducer)).hasOfferCatalog).toBeUndefined();
+    expect(getCatalog({ ...fullProducer, products: [] })).toBeUndefined();
+    // a row with no usable name yields no Offer, so no catalogue either
+    expect(getCatalog({ ...fullProducer, products: [{ id: "x", name: "   " }] })).toBeUndefined();
+  });
+
+  it("is an OfferCatalog of Offers wrapping Products", () => {
+    const catalog = getCatalog(withProducts);
+    expect(catalog["@type"]).toBe("OfferCatalog");
+    expect(catalog.itemListElement).toHaveLength(3);
+    for (const offer of catalog.itemListElement) {
+      expect(offer["@type"]).toBe("Offer");
+      expect(offer.itemOffered["@type"]).toBe("Product");
+      expect(offer.itemOffered.name).toBeTruthy();
+    }
+  });
+
+  it("names the catalogue per locale", () => {
+    expect(getBusiness(buildJsonLd(withProducts, "he")).hasOfferCatalog.name).toBe("מוצרים");
+    expect(getBusiness(buildJsonLd(withProducts, "en")).hasOfferCatalog.name).toBe("Products");
+  });
+
+  it("emits priceSpecification only for a numeric price, in ILS", () => {
+    const [cheese, labneh, yogurt] = getCatalog(withProducts).itemListElement;
+    expect(cheese.priceSpecification).toEqual({
+      "@type": "PriceSpecification",
+      minPrice: "38",
+      maxPrice: "52",
+      priceCurrency: "ILS",
+    });
+    // one price → maxPrice falls back to minPrice, not a half-open range
+    expect(labneh.priceSpecification).toEqual({
+      "@type": "PriceSpecification",
+      minPrice: "24",
+      maxPrice: "24",
+      priceCurrency: "ILS",
+    });
+    // free-text price_range is NOT a price
+    expect(yogurt.priceSpecification).toBeUndefined();
+    expect(JSON.stringify(yogurt)).not.toContain("משתנה לפי עונה");
+  });
+
+  it("carries description and an absolute image only when present", () => {
+    const [cheese, labneh] = getCatalog(withProducts).itemListElement;
+    expect(cheese.itemOffered.description).toBe("מיושנת 60 יום");
+    expect(cheese.itemOffered.image).toBe("https://res.cloudinary.com/demo/image/upload/v1/cheese.jpg");
+    expect(labneh.itemOffered.description).toBeUndefined();
+    expect(labneh.itemOffered.image).toBeUndefined();
+  });
+
+  it("makes a root-relative image absolute and drops an unresolvable one", () => {
+    const [rel, bad] = getCatalog({
+      ...fullProducer,
+      products: [
+        { id: "r", name: "לחם", image_url: "/img/bread.jpg" },
+        { id: "b", name: "חלה", image_url: "httpfoo.co.il/x.jpg" },
+      ],
+    }).itemListElement;
+    expect(rel.itemOffered.image).toBe(`${SITE_URL}/img/bread.jpg`);
+    expect(bad.itemOffered.image).toBeUndefined();
+  });
+
+  it("uses the page's order: the signature product first, deduped", () => {
+    // by id (the MEH-2137 chunk 3 path)
+    const byId = getCatalog({ ...withProducts, top_product_id: "p-3" });
+    expect(byId.itemListElement.map((o) => o.itemOffered.name)).toEqual([
+      "יוגורט כבשים", "גבינת עיזים", "לאבנה",
+    ]);
+    // by name, only when no id is set
+    const byName = getCatalog({ ...withProducts, top_product_name: "לאבנה" });
+    expect(byName.itemListElement.map((o) => o.itemOffered.name)).toEqual([
+      "לאבנה", "גבינת עיזים", "יוגורט כבשים",
+    ]);
+    // an id that names a deleted product must NOT fall through to the name —
+    // that is the wrong-row bug ProducerSections.jsx:217-225 exists to prevent
+    const deleted = getCatalog({ ...withProducts, top_product_id: "gone", top_product_name: "לאבנה" });
+    expect(deleted.itemListElement.map((o) => o.itemOffered.name)).toEqual([
+      "גבינת עיזים", "לאבנה", "יוגורט כבשים",
+    ]);
+  });
+
+  it("caps the catalogue at 30 items", () => {
+    const many = Array.from({ length: 45 }, (_, i) => ({ id: `m-${i}`, name: `מוצר ${i}` }));
+    const catalog = getCatalog({ ...fullProducer, products: many });
+    expect(catalog.itemListElement).toHaveLength(30);
+    expect(catalog.itemListElement[0].itemOffered.name).toBe("מוצר 0");
+    expect(catalog.itemListElement[29].itemOffered.name).toBe("מוצר 29");
+  });
+
+  it("is purely additive — every other field is byte-identical", () => {
+    const before = buildJsonLd(fullProducer);
+    const after = buildJsonLd(withProducts);
+    const businessAfter = { ...getBusiness(after) };
+    expect(businessAfter.hasOfferCatalog).toBeDefined();
+    delete businessAfter.hasOfferCatalog;
+    expect(businessAfter).toEqual(getBusiness(before));
+    // and nothing new at the @graph level
+    expect(after["@graph"].map((n) => n["@type"])).toEqual(
+      before["@graph"].map((n) => n["@type"]),
+    );
+  });
+
+  it("survives the shared escaper", () => {
+    const json = buildJsonLd({
+      ...fullProducer,
+      products: [{ id: "x", name: "גבינה <script>alert(1)</script> & co" }],
+    });
+    const out = serializeJsonLd(json);
+    expect(out).not.toContain("<script>");
+    expect(out).toContain("\\u003cscript\\u003e");
+    expect(out).toContain("\\u0026");
+    expect(JSON.parse(out.replace(/\\u003c/g, "<").replace(/\\u003e/g, ">").replace(/\\u0026/g, "&"))).toBeTruthy();
   });
 });

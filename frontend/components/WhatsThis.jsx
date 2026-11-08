@@ -34,7 +34,7 @@ export default function WhatsThis({ content, className = "", testId }) {
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((v) => !v)}
-        className="min-h-[44px] inline-flex items-center text-sm text-primary underline underline-offset-2 hover:text-primary-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-[6px] transition"
+        className="min-h-touch inline-flex items-center text-sm text-primary underline underline-offset-2 hover:text-primary-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full transition"
       >
         {t("trigger")}
       </button>
@@ -42,7 +42,7 @@ export default function WhatsThis({ content, className = "", testId }) {
       <div
         id={panelId}
         hidden={!open}
-        className="mb-2 max-w-prose rounded-[10px] bg-background-alt border border-border px-3 py-2 text-sm leading-relaxed text-text"
+        className="mb-2 max-w-prose rounded-md bg-background-alt border border-border px-3 py-2 text-sm leading-relaxed text-text"
       >
         {content}
       </div>

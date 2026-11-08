@@ -1,3 +1,5 @@
+> **⛔ CLOSED 2026-11-07 (MEH-2796).** Sapir chose to archive `docs/MANUAL_TESTING.md` (now `docs/archive/MANUAL_TESTING-until-2026-11-07.md`) instead of finishing the conversion. New behaviour gets an automated test at the time it ships (workflow rule 10), and real-device-only items live in `docs/RELEASE_CHECKLIST.md`. This file, the matrix and the two `scripts/qa/*-manual-testing.py` generators are frozen history.
+
 # MEH-1171 — Conversion progress (checkpoint file)
 
 > Updated after EVERY converted section (checkpoint-and-continue, per ticket).

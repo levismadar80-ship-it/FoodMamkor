@@ -42,7 +42,9 @@ from app.services.availability_validation import ON_VACATION
 from app.services.producer_queries import (
     attach_badge_fields,
     attach_favorites_counts,
+    attach_rescue_saving,
     haversine_min_km,
+    weighted_rating_expr,
 )
 from app.services.verification_status import verified_current_condition
 from app.utils.clock import israel_now, israel_today, utc_now
@@ -130,11 +132,8 @@ _SIMPLE_FILTERS: list[tuple[str, str]] = [
     # consumers surface unverified "organic" producers — same risk family as the
     # MEH-986 free-text kosher filter. Re-add only behind an admin-verified flow
     # (post-launch, Option B). The column stays (owner/admin managed).
-    # MEH-2271 — ("is_available_today", "is_available_today") was here. The
-    # public parameter survives as a deprecated ALIAS onto availability_state
-    # (block below); it no longer reads the column, which nothing writes any
-    # more. Removing it from this table is what makes that true rather than
-    # leaving two filters racing on one parameter name.
+    # MEH-2271 removed the legacy boolean availability row from this table;
+    # MEH-2272 removed the alias that briefly replaced it.
     # MEH-291 — opt-in 4-value enum filter. Default listing behavior unchanged
     # in Phase 2 (Q4b — default-hide-on_vacation ships in Phase 3 with frontend).
     ("availability_state", "availability_state"),
@@ -287,7 +286,19 @@ def _build_base_queries(  # noqa: PLR0913 — keyword-only query axes; MEH-2602 
         # so those drop out without an explicit coord-IS-NOT-NULL guard. Before
         # chunk 5a this also required the producer to have no own lat/lng; the
         # rule is now the single one, because the rows are the single source.
-        q = q.filter(distance_expr <= radius_km).order_by(distance_expr.asc())
+        # MEH-2787: `Producer.id` closes this ordering. Two businesses at the
+        # same distance (co-located pickup points, or identical seeded coords)
+        # left the radius path with NO tiebreaker at all — not even the
+        # created_at the other branches carry — so their relative order was
+        # whatever the plan happened to produce. That is unobservable in a
+        # single page and silently drops rows under offset paging. This path is
+        # beyond the four branches MEH-2787 enumerates; it is the same one-line
+        # change in the same function, and leaving the least-ordered path out
+        # while fixing four others would have been the odd choice. Flagged in
+        # the PR rather than done quietly.
+        q = q.filter(distance_expr <= radius_km).order_by(
+            distance_expr.asc(), Producer.id.asc()
+        )
         count_q = count_q.filter(haversine_min_km(lat, lng) <= radius_km)
         return q, count_q
 
@@ -295,14 +306,19 @@ def _build_base_queries(  # noqa: PLR0913 — keyword-only query axes; MEH-2602 
     # the distance too" switch below.
     distance_expr = None
     if sort == "rating":
-        # MEH-1483: avg_rating DESC, NULLs last, tiebreak reviews_count DESC,
-        # then created_at DESC. `avg_rating.is_(None)` is a boolean order key
-        # (FALSE < TRUE → non-null first, null last) — the portable nulls-last
-        # idiom this codebase already uses instead of .nullslast() (see
-        # search.py:85-87, which orders on `(Producer.name != q_clean)`).
-        order = (
+        # MEH-1483: rated first, NULL/unreviewed last, tiebreak reviews_count
+        # DESC, then created_at DESC. The `unrated` key is a boolean order key
+        # (FALSE < TRUE → rated first) — the portable nulls-last idiom this
+        # codebase already uses instead of .nullslast() (see search.py:85-87).
+        # MEH-2617: the primary key is the Bayesian average, not the raw mean,
+        # so one 5.0 review no longer outranks a 4.8 from twelve.
+        unrated = or_(
             Producer.avg_rating.is_(None),
-            Producer.avg_rating.desc(),
+            func.coalesce(Producer.reviews_count, 0) < 1,
+        )
+        order = (
+            unrated,
+            weighted_rating_expr().desc(),
             Producer.reviews_count.desc(),
             Producer.created_at.desc(),
         )
@@ -330,6 +346,21 @@ def _build_base_queries(  # noqa: PLR0913 — keyword-only query axes; MEH-2602 
         # and Postgres sorts NULL last — which split the deliverers' group.
         located = func.coalesce(_located_in_city_condition(near_city), False)
         order = (~located, *order)
+    # MEH-2787: a unique, always-LAST tiebreaker, appended once rather than
+    # written into each branch above — that is what makes it reach all four
+    # (default created_at, rating, distance, near_city) AND stay last, which a
+    # tiebreaker has to be to be one. Every key above it is non-unique and
+    # `created_at` is nullable (models.py:497) with no server_default, so in
+    # Postgres `DESC` puts the NULL rows FIRST as an unordered clump — exactly
+    # where the first offset boundary falls. Two pages of the same query are
+    # two statements and may be planned differently, so a row sitting on that
+    # boundary could appear twice while another vanished, with no error. That
+    # is the bug the sitemap loop in this PR would otherwise have shipped.
+    #
+    # It cannot move the visible catalog order: it only orders rows that every
+    # preceding key has already tied on. `Producer.id` is a random UUID4
+    # (models.py:57), so this buys determinism, not a meaningful sequence.
+    order = (*order, Producer.id.asc())
     # MEH-1829: the distance sort selects the distance alongside the row (the
     # same two-entity shape as the geo path) so `_finalize_results` can attach
     # `distance_km` to each producer. Every other sort keeps the single-entity
@@ -366,6 +397,10 @@ def _build_base_queries(  # noqa: PLR0913 — keyword-only query axes; MEH-2602 
 # frontend/data/regions.js is ~18 cities; 40 is generous headroom while
 # still bounding a hostile caller's ?delivery_cities= list.
 _MAX_DELIVERY_CITIES = 40
+# MEH-2790: the same bound, under a public name, so the router can 422 on an
+# over-long ?cities= list without a second constant drifting from this one
+# (MEH-271 smell #1 — one owner for one number).
+MAX_CITIES_PER_QUERY = _MAX_DELIVERY_CITIES
 
 
 def _city_matches(column, city: str):
@@ -826,63 +861,9 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, P
         q = q.filter(veg_cond if vegetarian else ~veg_cond)
         count_q = count_q.filter(veg_cond if vegetarian else ~veg_cond)
 
-    # MEH-2271 (MEH-1854 chunk 3a) — the deprecated ?is_available_today=
-    # alias, mapped onto availability_state.
-    #
-    # It maps rather than 422s because the frontend is the only consumer and
-    # a hard removal is MEH-2272's job, one release later (Expand-Contract:
-    # the alias IS the expand phase for the parameter).
-    #
-    # `true`  -> availability_state == "available_today"
-    # `false` -> availability_state != "available_today"
-    #
-    # The false half is a real negation, not a no-op: the old column filter
-    # answered `is_available_today = FALSE`, and dropping that half would
-    # silently widen a caller's result set. The negation is safe against
-    # SQL's three-valued logic because availability_state is NOT NULL
-    # (models.py, server_default 'accepting_orders') — `!=` on a nullable
-    # column would drop unmarked rows from BOTH halves of the comparison.
-    #
-    # An explicit ?availability_state= WINS: the caller asked for the real
-    # filter, so the alias does not get to override or intersect it.
-    #
-    # MEH-2276 — what this block does NOT do, because it reads like a missing
-    # clause and is not one. It does not suppress the MEH-291 default-hide of
-    # `on_vacation` below, and that is correct rather than an oversight.
-    #
-    # The gate down there is `if filters.get("availability_state") is None`. It
-    # keys on the PRESENCE of that parameter, not on where this block sits, so
-    # moving these lines above or below it changes nothing. A caller passing
-    # only `?is_available_today=` leaves `availability_state` unset, the gate
-    # therefore fires, and the vacation exclusion applies to BOTH halves of the
-    # alias — which is exactly what the old column filter did, for the same
-    # reason, before 3a replaced it. Preserving that is the whole point of an
-    # alias.
-    #
-    # (Raised as a Minor on #3460 with the placement stated the other way round.
-    # The observation was worth recording, the premise was not: order is not the
-    # mechanism here, parameter presence is.)
-    legacy_available = filters.get("is_available_today")
-    if legacy_available is not None:
-        if filters.get("availability_state") is not None:
-            logger.warning(
-                "deprecated_filter_ignored",
-                filter="is_available_today",
-                reason="explicit availability_state wins",
-                removed_in="MEH-2272",
-            )
-        else:
-            logger.warning(
-                "deprecated_filter_used",
-                filter="is_available_today",
-                mapped_to="availability_state",
-                value=bool(legacy_available),
-                removed_in="MEH-2272",
-            )
-            avail_cond = Producer.availability_state == "available_today"
-            cond = avail_cond if legacy_available else ~avail_cond
-            q = q.filter(cond)
-            count_q = count_q.filter(cond)
+    # MEH-2272 (MEH-1854 chunk 3b): the legacy boolean alias that MEH-2271
+    # mapped onto availability_state is gone. The router no longer declares
+    # the parameter, so nothing reaches this function under that key.
 
     # MEH-291 Phase 3 — default-hide on_vacation. When the caller does NOT
     # explicitly filter by availability_state, exclude vacation producers from
@@ -1034,6 +1015,29 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912, P
     if city:
         q = q.filter(_city_matches(Producer.city, city))
         count_q = count_q.filter(_city_matches(Producer.city, city))
+
+    # MEH-2790: OR over several cities, for the category x region landing
+    # pages — a region is 7 to 18 towns, and `city` takes exactly one.
+    #
+    # The per-city condition is `_located_in_city_condition` (:445), i.e. the
+    # business IS there: its own city OR any of its location rows (store,
+    # pickup point, market stand). That is the same reading `near_city` uses,
+    # and the right one for "bakeries in Haifa" — a business registered in one
+    # town that keeps a market stall in Haifa belongs on Haifa's page.
+    #
+    # AND-ed like `city` and `near_city`, so it narrows whatever the service
+    # ladder above produced and combines with `category`.
+    #
+    # Capped at _MAX_DELIVERY_CITIES and empty-stripped, exactly like the
+    # MEH-1487 `delivery_cities` list: same shape of input, same hostile-caller
+    # bound. Over the cap the router 422s rather than silently truncating.
+    cities = filters.get("cities")
+    if cities:
+        clean = [c for c in cities if c and c.strip()][:_MAX_DELIVERY_CITIES]
+        if clean:
+            located = or_(*[_located_in_city_condition(c) for c in clean])
+            q = q.filter(located)
+            count_q = count_q.filter(located)
 
     near_city = (filters.get("near_city") or "").strip()
     if near_city:
@@ -1208,12 +1212,14 @@ def _finalize_results(q, db: Session, *, with_distance: bool, limit: int, offset
             attach_badge_fields(producer)
             results.append(producer)
         attach_favorites_counts(results, db)
+        attach_rescue_saving(results, db)
         return results
 
     rows = q.offset(offset).limit(limit).all()
     for p in rows:
         attach_badge_fields(p)
     attach_favorites_counts(rows, db)
+    attach_rescue_saving(rows, db)
     return rows
 
 
@@ -1246,8 +1252,7 @@ def build_producers_query(db: Session, **filters: Any) -> tuple[list[Producer], 
     canonical Hebrew day; explicit-row matching only), delivery_days (MEH-2036 —
     OR-list of the same vocabulary; WINS over delivery_day when both are
     present), has_delivery, verified, kosher, city, near_city (MEH-2602),
-    is_available_today (MEH-2271 — DEPRECATED alias onto availability_state,
-    removed by MEH-2272; it no longer reads the column), grass_fed,
+    grass_fed,
     gluten_free, vegan, vegetarian, lactose_free,
     no_added_sugar, low_carb (MEH-1934), sort, search_q, limit, offset, exclude.
     (MEH-1259: `organic` removed — the public ?organic filter is gone.)

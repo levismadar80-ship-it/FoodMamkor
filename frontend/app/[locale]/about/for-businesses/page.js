@@ -9,6 +9,7 @@ import {
 } from "@phosphor-icons/react/ssr";
 import { Link } from "@/i18n/navigation";
 import BusinessCtaLink from "@/components/BusinessCtaLink";
+import ClosingCtaBand from "@/components/ClosingCtaBand";
 import EditorialPhoto from "@/components/EditorialPhoto";
 import { BRAND_NAME } from "@/lib/constants";
 import { SITE_URL, serializeJsonLd } from "@/lib/seo";
@@ -135,8 +136,11 @@ export default async function FaqForBusinessesPage({ params }) {
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations({ locale, namespace: "about_business" });
+  const tHome = await getTranslations({ locale, namespace: "home" });
+  const tJoin = await getTranslations({ locale, namespace: "join" });
   const jsonLd = buildFaqJsonLd(t);
   return (
+    <>
     <section className="min-h-screen bg-background text-text">
       <script
         type="application/ld+json"
@@ -152,9 +156,11 @@ export default async function FaqForBusinessesPage({ params }) {
           </h1>
           {/* MEH-923: surface the existing footer register CTA here in the header,
               above the FAQ, so the primary action isn't gated behind 8 accordion
-              items. Same string t("cta") + markup as the footer CTA below — no
-              new he.json key (MEH-840 freeze). Footer CTA also updated to the
-              next-intl Link + focus-ring in this PR (IMP-21). */}
+              items. No new he.json key (MEH-840 freeze); next-intl Link +
+              focus-ring (IMP-21). MEH-2824: the matching footer CTA this note
+              used to point at is gone — the page now ends on the shared
+              closing band, whose button is «מצטרפים» (join.cta), so the two
+              join links here carry different labels on purpose. */}
           {/* MEH-1489: auth-state-aware CTA (producer -> dashboard, admin -> hidden). */}
           <BusinessCtaLink
             href="/register/producer"
@@ -174,7 +180,7 @@ export default async function FaqForBusinessesPage({ params }) {
         <div className="flex flex-col gap-10 sm:gap-12">
           {CATEGORIES.map((cat) => (
             <section key={cat.key}>
-              <h2 className="font-headline-md mb-4 text-primary text-[20px] font-bold">
+              <h2 className="font-headline-md mb-4 text-primary text-xl font-bold">
                 {t(`categories.${cat.key}`)}
               </h2>
               <ul className="flex flex-col gap-3">
@@ -184,7 +190,7 @@ export default async function FaqForBusinessesPage({ params }) {
                       open={item.open || undefined}
                       className="group rounded-lg border border-border bg-surface transition-colors"
                     >
-                      <summary className="cursor-pointer list-none flex items-start justify-between gap-4 px-5 py-4 font-headline-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-lg text-text text-[17px] font-semibold">
+                      <summary className="cursor-pointer list-none flex items-start justify-between gap-4 px-5 py-4 font-headline-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-lg text-text text-lg font-semibold">
                         <span>{t(`faq.${item.key}.q`)}</span>
                         <CaretDown
                           aria-hidden="true"
@@ -193,7 +199,7 @@ export default async function FaqForBusinessesPage({ params }) {
                           className="shrink-0 mt-1 transition-transform group-open:rotate-180 text-primary"
                         />
                       </summary>
-                      <div className="px-5 pb-5 pt-1 text-[15px] leading-relaxed text-text/90">
+                      <div className="px-5 pb-5 pt-1 text-base leading-relaxed text-text/90">
                         {renderAnswer(t(`faq.${item.key}.a`))}
                       </div>
                     </details>
@@ -216,7 +222,7 @@ export default async function FaqForBusinessesPage({ params }) {
           <div className="flex items-center gap-3 mb-4">
             <h2
               id="showcase-heading"
-              className="font-headline-md text-primary text-[20px] font-bold"
+              className="font-headline-md text-primary text-xl font-bold"
             >
               {t("showcase.heading")}
             </h2>
@@ -224,18 +230,18 @@ export default async function FaqForBusinessesPage({ params }) {
               {t("showcase.label")}
             </span>
           </div>
-          <p className="text-[15px] leading-relaxed text-text/90 mb-6">
+          <p className="text-base leading-relaxed text-text/90 mb-6">
             {t("showcase.intro")}
           </p>
           <figure className="rounded-lg border border-border bg-surface p-6 sm:p-7">
             <figcaption className="mb-5">
-              <p className="font-headline-md text-[17px] font-bold text-text">
+              <p className="font-headline-md text-lg font-bold text-text">
                 {t("showcase.example_name")}{" "}
-                <span className="ms-1 align-middle rounded-full bg-surface px-2 py-0.5 text-[11px] font-semibold text-fg-muted">
+                <span className="ms-1 align-middle rounded-full bg-surface px-2 py-0.5 text-2xs font-semibold text-fg-muted">
                   {t("showcase.label")}
                 </span>
               </p>
-              <p className="text-[14px] text-fg-muted">
+              <p className="text-sm text-fg-muted">
                 {t("showcase.example_tagline")}
               </p>
             </figcaption>
@@ -257,17 +263,17 @@ export default async function FaqForBusinessesPage({ params }) {
                     aria-hidden="true"
                   />
                   <div>
-                    <p className="text-[15px] font-semibold text-text">
+                    <p className="text-base font-semibold text-text">
                       {t(`showcase.items.${key}.title`)}
                     </p>
-                    <p className="text-[14px] leading-relaxed text-text/80">
+                    <p className="text-sm leading-relaxed text-text/80">
                       {t(`showcase.items.${key}.desc`)}
                     </p>
                   </div>
                 </li>
               ))}
             </ul>
-            <p className="mt-6 border-t border-border pt-4 text-[14px] text-fg-muted">
+            <p className="mt-6 border-t border-border pt-4 text-sm text-fg-muted">
               {t("showcase.nudge")}
             </p>
           </figure>
@@ -275,7 +281,7 @@ export default async function FaqForBusinessesPage({ params }) {
 
         {/* MEH-1284: surface the /about/for-businesses/guides index (MEH-539,
             3 guides) — previously reachable only from onboarding emails. */}
-        <p className="mt-10 sm:mt-12 text-[15px]">
+        <p className="mt-10 sm:mt-12 text-base">
           <Link
             href="/about/for-businesses/guides"
             className="inline-flex items-center gap-1 underline text-primary focus-ring rounded-sm"
@@ -292,7 +298,7 @@ export default async function FaqForBusinessesPage({ params }) {
           <p className="text-base mb-4 text-text/90">
             {t("footer_questions_prefix")}{" "}
             <Link
-              href="/about?topic=business#contact"
+              href="/contact?topic=business"
               className="underline text-primary"
             >
               {t("footer_form_link")}
@@ -306,15 +312,21 @@ export default async function FaqForBusinessesPage({ params }) {
               <bdi>{CONTACT_EMAIL}</bdi>
             </a>
           </p>
-          {/* MEH-1489: auth-state-aware CTA (producer -> dashboard, admin -> hidden). */}
-          <BusinessCtaLink
-            href="/register/producer"
-            className="inline-flex items-center gap-2 font-medium transition hover:opacity-90 bg-primary text-white rounded-sm px-6 py-3 focus-ring"
-          >
-            {t("cta")}
-          </BusinessCtaLink>
+          {/* MEH-2824: the green «הוסיפו את העסק שלכם» button that sat here is
+              gone — the closing band below carries the page's one join button
+              (Sapir 08/11, decision 3). The questions line stays above it. */}
         </footer>
       </div>
     </section>
+    {/* MEH-2824: the shared full-green closing band, last before the site
+        footer. Title reuses the approved home heading KEY (not a copy), button
+        «מצטרפים» like /join, no body (Sapir 08/11, decision 3). */}
+    <ClosingCtaBand
+      data-testid="for-businesses-closing"
+      title={tHome("cta.heading")}
+      ctaHref="/register/producer"
+      ctaLabel={tJoin("cta")}
+    />
+    </>
   );
 }

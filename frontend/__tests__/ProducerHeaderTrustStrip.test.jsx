@@ -107,40 +107,27 @@ describe("ProducerHeader trust strip (MEH-1048)", () => {
   // longer exists, so nothing can put it back in the header.
 });
 
-// MEH-1170: the removed BadgeRow "מוצהר" chip's tooltip was the only surface of
-// declared_explainer; Option 1 relocated it here as quiet visible copy so the
-// tier-2 badge absence stays "affirmatively explained" (ADR-022 gate 1). The
-// next-intl mock echoes the key, so we assert on the key path.
-describe("ProducerHeader declared explainer (MEH-1170)", () => {
-  it("renders declared_explainer copy for the declared tier", () => {
-    render(
-      <ProducerHeader
-        producer={{ ...baseProducer, verification_tier: "declared" }}
-        primaryCategory={null}
-        hasImages
-      />,
-    );
-    expect(screen.getByText("producer.badge.declared_explainer")).toBeInTheDocument();
-  });
-
-  it("does not render the explainer for verified or null tiers", () => {
-    const { rerender } = render(
-      <ProducerHeader
-        producer={{ ...baseProducer, verification_tier: "verified" }}
-        primaryCategory={null}
-        hasImages
-      />,
-    );
-    expect(screen.queryByText("producer.badge.declared_explainer")).not.toBeInTheDocument();
-    rerender(
-      <ProducerHeader
-        producer={{ ...baseProducer, verification_tier: null }}
-        primaryCategory={null}
-        hasImages
-      />,
-    );
-    expect(screen.queryByText("producer.badge.declared_explainer")).not.toBeInTheDocument();
-  });
+// MEH-2710: the declared (tier 2) header carries NO line about the badge it
+// lacks — «ללא תג מאומת · מה זה אומר?» was removed (Sapir 06/11). ADR-022
+// gate 1's affirmative explanation lives on /about/process. The cells assert
+// on rendered text, not a testid, so a re-added line under a new testid still
+// goes red: the next-intl mock echoes keys, so any producer.badge.* key or the
+// Hebrew "מאומת" in the header would show up in textContent.
+describe("ProducerHeader declared tier — no badge-absence line (MEH-2710)", () => {
+  for (const tier of ["declared", "verified", null]) {
+    it(`renders no badge-absence copy for tier=${tier}`, () => {
+      const { container } = render(
+        <ProducerHeader
+          producer={{ ...baseProducer, verification_tier: tier }}
+          primaryCategory={null}
+          hasImages
+        />,
+      );
+      expect(container.textContent).not.toMatch(/producer\.badge\.declared/);
+      expect(container.textContent).not.toMatch(/ללא תג/);
+      expect(screen.queryByTestId("declared-explainer-trigger")).not.toBeInTheDocument();
+    });
+  }
 });
 
 // MEH-1334 chunk 1: the page's single order-status line lives in the header
@@ -153,16 +140,17 @@ describe("ProducerHeader status line + חדש fallback (MEH-1334)", () => {
     expect(screen.queryByTestId("status-closed")).not.toBeInTheDocument();
   });
 
-  it("renders the closed status for full_this_week (and no open status)", () => {
-    render(
+  it("MEH-2759: full_this_week renders the open status — no closed status, no slow-response box", () => {
+    const { container } = render(
       <ProducerHeader
         producer={{ ...baseProducer, availability_state: "full_this_week" }}
         primaryCategory={null}
         hasImages
       />,
     );
-    expect(screen.getByTestId("status-closed")).toBeInTheDocument();
-    expect(screen.queryByTestId("status-open")).not.toBeInTheDocument();
+    expect(screen.getByTestId("status-open")).toBeInTheDocument();
+    expect(screen.queryByTestId("status-closed")).not.toBeInTheDocument();
+    expect(container.textContent).not.toMatch(/slow_response/);
   });
 
   it("renders the gold vacation status when on vacation", () => {

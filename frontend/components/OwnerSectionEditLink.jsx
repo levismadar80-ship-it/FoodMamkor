@@ -47,7 +47,7 @@ export default function OwnerSectionEditLink({
       data-testid={`section-edit-${sectionKey}`}
       // Calm idiom (ADR-019): muted glyph, never a primary CTA. min-h/w 44px
       // keeps the tap target ≥44px (MEH-813) around the small pencil.
-      className={`inline-flex items-center justify-center min-h-[44px] min-w-[44px] text-fg-muted hover:text-accent focus-visible:text-accent transition-colors shrink-0 ${className}`}
+      className={`inline-flex items-center justify-center min-h-touch min-w-touch text-fg-muted hover:text-accent focus-visible:text-accent transition-colors shrink-0 ${className}`}
     >
       <PencilSimple size={18} weight="regular" aria-hidden="true" />
     </LocaleLink>

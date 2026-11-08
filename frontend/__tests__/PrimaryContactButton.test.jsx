@@ -9,6 +9,15 @@ vi.mock("@/lib/utils", async (importOriginal) => ({
   normalizePhone: (p) => (p ? p.replace(/^0/, "972").replace(/\D/g, "") : ""),
 }));
 
+// MEH-2753: label + WhatsApp prefill read `contact_cta.*` — run the real ICU
+// translator over the shipped he.json, not a copy of the strings.
+vi.mock("next-intl", async (importOriginal) => {
+  const orig = await importOriginal();
+  const he = (await import("../messages/he.json")).default;
+  const t = orig.createTranslator({ locale: "he", messages: he });
+  return { ...orig, useTranslations: () => t };
+});
+
 vi.mock("@phosphor-icons/react", () => ({
   WhatsappLogo: (props) => <span data-testid="icon-whatsapp" {...props} />,
   Phone: (props) => <span data-testid="icon-phone" {...props} />,
@@ -37,7 +46,9 @@ describe("PrimaryContactButton", () => {
     const btn = screen.getByTestId("primary-contact-button");
     expect(btn).toHaveAttribute("data-method", "whatsapp");
     expect(btn.getAttribute("href")).toContain("wa.me/");
-    expect(screen.getByText("שליחת הודעה")).toBeInTheDocument();
+    // MEH-2753: the prefill is the translated greeting, with the business name.
+    expect(decodeURIComponent(btn.getAttribute("href"))).toContain("text=היי! הגעתי דרך מהמקור — חוות השקמה");
+    expect(screen.getByText("שליחת הודעה בוואטסאפ")).toBeInTheDocument();
     expect(screen.getByTestId("icon-whatsapp")).toBeInTheDocument();
   });
 
@@ -73,10 +84,12 @@ describe("PrimaryContactButton", () => {
     expect(screen.getByText("שליחת מייל")).toBeInTheDocument();
   });
 
-  it("returns null when the required field is missing", () => {
+  // MEH-2836: renders nothing only when there is NO contact detail at all;
+  // a declared method missing its field falls back (see contactMethod tests).
+  it("returns null when there is no contact detail at all", () => {
     const { container } = render(
       <PrimaryContactButton
-        producer={{ ...base, phone: null, primary_contact_method: "whatsapp" }}
+        producer={{ ...base, phone: null, website: "", contact_email: null, primary_contact_method: "whatsapp" }}
       />,
     );
     expect(container.innerHTML).toBe("");

@@ -3,6 +3,8 @@
  *
  * Renders the full dashboard page (whole-component convention from
  * DashboardActivityPulse.test.jsx) and drives the availability card.
+ * MEH-2759: the four radios are now one «בהפסקה» switch; the reveal-then-
+ * confirm behaviour below is unchanged.
  *
  * Locked behavior under test:
  *   - selecting "on_vacation" reveals the return-date field BEFORE any POST
@@ -68,6 +70,8 @@ vi.mock("@/components/InfoTooltip", () => ({ default: () => null }));
 vi.mock("@/components/PhoneVerifyCard", () => ({ default: () => null }));
 vi.mock("@/components/ProfileCompletenessCard", () => ({ default: () => null }));
 vi.mock("@/lib/holidays", () => ({ getUpcomingHoliday: () => null }));
+// MEH-1687 D: the holiday hint renders HolidayIcon (Phosphor names this file's icon mock lacks).
+vi.mock("@/components/HolidayIcon", () => ({ default: () => null }));
 
 // Expose the post spy + a mutable dashboard payload (so one test can boot the
 // producer already on vacation). vi.hoisted so the api mock factory can close
@@ -111,10 +115,10 @@ describe("Dashboard vacation date reveal (MEH-999)", () => {
   it("selecting vacation reveals the return-date field before any POST", async () => {
     render(<ProducerDashboardPage />);
     // Field is hidden until vacation is selected (server state is accepting_orders).
-    await screen.findByRole("radio", { name: /options\.on_vacation/ });
+    await screen.findByRole("switch", { name: /options\.on_vacation/ });
     expect(screen.queryByLabelText(/vacation_return_label/)).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("radio", { name: /options\.on_vacation/ }));
+    fireEvent.click(screen.getByRole("switch", { name: /options\.on_vacation/ }));
 
     // Now the date field is reachable, and no POST has fired yet.
     expect(screen.getByLabelText(/vacation_return_label/)).toBeInTheDocument();
@@ -123,8 +127,8 @@ describe("Dashboard vacation date reveal (MEH-999)", () => {
 
   it("confirming vacation WITHOUT a date is blocked client-side (no POST, inline error)", async () => {
     render(<ProducerDashboardPage />);
-    await screen.findByRole("radio", { name: /options\.on_vacation/ });
-    fireEvent.click(screen.getByRole("radio", { name: /options\.on_vacation/ }));
+    await screen.findByRole("switch", { name: /options\.on_vacation/ });
+    fireEvent.click(screen.getByRole("switch", { name: /options\.on_vacation/ }));
 
     // Confirm with the date still empty.
     fireEvent.click(screen.getByRole("button", { name: /vacation_confirm/ }));
@@ -137,8 +141,8 @@ describe("Dashboard vacation date reveal (MEH-999)", () => {
 
   it("confirming vacation WITH a date POSTs { state, vacation_until }", async () => {
     render(<ProducerDashboardPage />);
-    await screen.findByRole("radio", { name: /options\.on_vacation/ });
-    fireEvent.click(screen.getByRole("radio", { name: /options\.on_vacation/ }));
+    await screen.findByRole("switch", { name: /options\.on_vacation/ });
+    fireEvent.click(screen.getByRole("switch", { name: /options\.on_vacation/ }));
 
     fireEvent.change(screen.getByLabelText(/vacation_return_label/), {
       target: { value: "2099-01-01" },
@@ -166,7 +170,7 @@ describe("Dashboard vacation date reveal (MEH-999)", () => {
     };
     render(<ProducerDashboardPage />);
 
-    // Field is present on first paint — no radio click needed.
+    // Field is present on first paint — no switch click needed.
     const input = await screen.findByLabelText(/vacation_return_label/);
     expect(input).toHaveValue("2099-01-01");
 

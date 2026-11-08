@@ -1,5 +1,5 @@
-import { resolveStoreHours } from "@/lib/hours";
 import { primaryPoint } from "@/lib/producerPoints";
+import { isPriceLabel } from "@/lib/utils";
 import { parseHasLocation } from "../components/ProducerSections";
 
 /**
@@ -29,19 +29,27 @@ export function getSectionNavItems(producer, t) {
       id: "section-products",
       label: t("producer.detail.tabs.products"),
       // ProducerSections: `producer.products?.length > 0 || hasSignature`
-      // (hasSignature = top_product_name || price_range).
+      // (hasSignature = top_product_name || a price_range with a digit —
+      // PR #3971: «₪₪» alone renders nothing, so it opens no tab).
       show: !!(
         producer.products?.length > 0 ||
         producer.top_product_name ||
-        producer.price_range
+        isPriceLabel(producer.price_range)
       ),
     },
     {
-      // The reviews wrapper always renders (it is the lazy-load IO point), so
-      // this pill is unconditional — the row is never empty.
+      // MEH-2634: gated on reviews_count, like the other four pills. The
+      // `#reviews` WRAPPER still always renders — it is the lazy-load IO
+      // observation point and cannot be gated without breaking the fetch — so
+      // this is the one item where the pill is deliberately NARROWER than its
+      // anchor: pill ⇒ anchor holds (no dead jump, which is what this list
+      // exists to prevent), anchor ⇒ pill does not. At zero reviews the
+      // section carries only the write hint (ReviewsSection, MEH-2592 + this
+      // ticket), which is not a destination worth a pill.
+      // SectionAnchorNav.test.jsx encodes that asymmetry explicitly.
       id: "reviews",
       label: t("producer.detail.tabs.reviews_label"),
-      show: true,
+      show: (producer.reviews_count ?? 0) > 0,
     },
     {
       id: "section-delivery",
@@ -55,7 +63,9 @@ export function getSectionNavItems(producer, t) {
     {
       id: "section-location",
       label: t("producer.detail.sections.location"),
-      show: !!(parseHasLocation(producer, primaryPoint(producer)) || resolveStoreHours(producer)),
+      // MEH-2803: mirrors ProducerSections' location gate, now hasLocation only
+      // — store hours live in the «שעות» section, which has no pill.
+      show: !!parseHasLocation(producer, primaryPoint(producer)),
     },
   ];
 }

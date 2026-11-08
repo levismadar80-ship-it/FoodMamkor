@@ -1,7 +1,16 @@
 import { describe, it, expect } from "vitest";
-import { ATTRIBUTE_LABELS } from "@/lib/attribute-labels";
-import { CHIPS_CONFIG } from "@/lib/producer-filters";
-import { TOGGLE_CHIPS } from "@/lib/map-chips";
+import { ATTRIBUTE_LABELS as RAW_ATTRIBUTE_LABELS } from "@/lib/attribute-labels";
+import { CHIPS_CONFIG as RAW_CHIPS_CONFIG } from "@/lib/producer-filters";
+import { TOGGLE_CHIPS as RAW_TOGGLE_CHIPS } from "@/lib/map-chips";
+import { heChipCopy } from "./helpers/he-chip-copy";
+
+// MEH-2748: the registries carry keys only; these are the chips as a Hebrew
+// renderer sees them (real resolver over the shipped he.json).
+const CHIPS_CONFIG = RAW_CHIPS_CONFIG.map(heChipCopy);
+const TOGGLE_CHIPS = RAW_TOGGLE_CHIPS.map(heChipCopy);
+const ATTRIBUTE_LABELS = Object.fromEntries(
+  Object.entries(RAW_ATTRIBUTE_LABELS).map(([key, v]) => [key, heChipCopy({ key, ...v })]),
+);
 
 // MEH-1082 [T-C]: the /producers filter row and the /map filter chips share one
 // label source (ATTRIBUTE_LABELS) so the taxonomy reads identically on both
@@ -59,14 +68,18 @@ describe("unified attribute labels (MEH-1082)", () => {
     expect(TOGGLE_CHIPS.find((c) => c.key === "kosher")?.label).toBe("כשרות מאומתת");
   });
 
-  it("grass_fed stays /map-local (not in the shared map)", () => {
-    expect(ATTRIBUTE_LABELS.grass_fed).toBeUndefined();
+  // MEH-2767 (Sapir 06/11): grass_fed is on every surface now — it was a
+  // /map-local leftover of MEH-1082, not a decision.
+  it("grass_fed is shared, with the same label on /map", () => {
+    expect(ATTRIBUTE_LABELS.grass_fed).toBeDefined();
     expect(TOGGLE_CHIPS.find((c) => c.key === "grass_fed")?.label).toBe("גראס פד");
   });
 
   it("the unified attribute labels carry no emoji/glyph (MEH-657)", () => {
     // Text-only invariant: no chars outside the Hebrew block + spaces.
     // MEH-1507: entries are objects now — assert on the `label` field.
+    // MEH-2677: the "100% " prefix exemption (MEH-1508) went with the
+    // prefix — «צמחוני» / «טבעוני» are plain Hebrew, so no exemption remains.
     for (const entry of Object.values(ATTRIBUTE_LABELS)) {
       expect(entry.label).toMatch(/^[֐-׿ ]+$/);
     }

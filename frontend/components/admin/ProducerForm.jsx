@@ -3,12 +3,13 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { ArrowSquareOut, Cow, X } from "@phosphor-icons/react";
+import { ArrowSquareOut, Cow, Medal, X } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { HEALTH_MINISTRY_FOOD_REGISTRY_URL } from "@/lib/official-registries";
 import { useAdminAction } from "@/lib/use-admin-action";
 import { showToast } from "@/lib/toast";
 import { detailToMessage } from "@/lib/errors";
+import { makeDeliveryCodeResolver } from "@/lib/delivery-errors";
 import { ProducerAdminCreatedSchema } from "@/lib/api-schemas";
 import { israelToday } from "@/lib/israel-date";
 import { optimizeCloudinary } from "@/lib/cloudinary";
@@ -23,6 +24,7 @@ import {
   hasLicenseFormatWarning,
   requiresProducerLicense,
 } from "@/lib/license-required-categories";
+import Button from "@/components/ui/Button";
 
 // MEH-1297: a producer may hold at most 3 categories; the first-selected is the
 // primary (drives categories[0] on the card/map pin). Mirrors the backend cap
@@ -105,7 +107,7 @@ function ProducerLicenseField({ form, categories, update }) {
         dir="ltr"
       />
       {warning && (
-        <p className="text-xs text-amber-600 mt-1">
+        <p className="text-xs text-warning-600 mt-1">
           {t("producers.form.fields.license_format_warning")}
         </p>
       )}
@@ -178,6 +180,9 @@ const EMPTY = {
   // columns stay; the payload simply omits the keys, and the admin PUT is
   // exclude_unset, so an edit never clears a stored value.
   grass_fed: false,
+  // MEH-2699: owner-declared «עסק של מילואימניקים». The admin sees it and can
+  // correct a false claim; `...initial` seeds it on edit.
+  reservist_owned: false,
   // MEH-1508 ch2: business-level dietary scope (admin cross-check selects).
   // `...initial` overrides these from ProducerAdminOut on edit; defaults here
   // cover the admin-create path.
@@ -222,7 +227,7 @@ const EMPTY = {
 // React remounted the whole subtree and dropped input focus mid-typing.
 function Section({ title, children, testId }) {
   return (
-    <div className="bg-white rounded-[12px] border border-border p-6" data-testid={testId}>
+    <div className="bg-surface rounded-md border border-border p-6" data-testid={testId}>
       <h2 className="font-semibold text-lg mb-4 text-primary">{title}</h2>
       {children}
     </div>
@@ -251,6 +256,9 @@ export default function ProducerForm({ initial = null, producerId = null }) {
   // MEH-1508 ch2: the admin cross-check selects reuse the owner form's locked
   // dietary-scope copy (§6.5) — one SoT, no admin-specific strings.
   const tDiet = useTranslations("dashboard.producer.dietaryScope");
+  // MEH-1943 chunk 3: the delivery 422s resolve to the owner DeliveryCard's
+  // copy (dashboard.producer.delivery.errors.<code>) — one home per sentence.
+  const tDelivery = useTranslations("dashboard.producer.delivery");
   const router = useRouter();
   const { run, isBusy } = useAdminAction();
   const [form, setForm] = useState(EMPTY);
@@ -513,7 +521,18 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       "producer-save",
       async () => {
         if (producerId) {
-          await api.put(`/admin/producers/${producerId}`, payload);
+          // MEH-2699: reservist_owned rides the EDIT payload only — the admin
+          // PUT accepts it (ProducerUpdate) while ProducerAdminCreate has no
+          // such field, and the checkbox renders on edit only. It is sent only
+          // when the admin changed it: the owner can flip it from the
+          // dashboard while this form is open, and an unrelated admin save
+          // must not overwrite that with the value loaded at page open.
+          const reservistChanged =
+            !!form.reservist_owned !== !!initial?.reservist_owned;
+          await api.put(`/admin/producers/${producerId}`, {
+            ...payload,
+            ...(reservistChanged && { reservist_owned: !!form.reservist_owned }),
+          });
         } else if (asDraft) {
           // MEH-2325: land on the draft's edit page, where the claim-link
           // panel lives — the next thing the admin does is mint the link.
@@ -529,7 +548,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       },
       (err) =>
         showToast.error(
-          detailToMessage(err.response?.data?.detail) ||
+          detailToMessage(err.response?.data?.detail, makeDeliveryCodeResolver(tDelivery)) ||
             t("producers.form.errors.save"),
         ),
     );
@@ -539,7 +558,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
   // now feeds ONLY the selects + textareas (no primitive for them until the
   // epic's later waves). Delete when those migrate.
   const inputClass =
-    "w-full border border-border rounded-[12px] px-3 py-2 focus:outline-none focus:border-primary bg-white";
+    "w-full border border-border rounded-md px-3 py-2 focus:outline-none focus:border-primary bg-surface";
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl">
@@ -582,6 +601,8 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             value={form.whatsapp_group}
             onChange={(e) => update("whatsapp_group", e.target.value)}
             placeholder={t("producers.form.fields.whatsapp_group_placeholder")}
+            // MEH-2626: group OR channel; the hint recommends a channel.
+            helperText={t("producers.form.fields.whatsapp_group_hint")}
           />
           {/* MEH-17 — primary contact method + business email. */}
           <Field label={t("producers.form.fields.primary_contact")}>
@@ -769,7 +790,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
 
       <Section title={t("producers.form.sections.categories_tags")}>
         {/* MEH-1297: primary-first + ≤3 cap hint (parity with the register CategorySelector) */}
-        <p className="text-[11px] text-fg-muted mb-2">
+        <p className="text-2xs text-fg-muted mb-2">
           {t("producers.form.category_cap_hint")}
         </p>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-4">
@@ -797,7 +818,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
                 {isPrimary && (
                   <span
                     data-testid="admin-primary-badge"
-                    className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary"
+                    className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-2xs font-medium text-primary"
                   >
                     {t("producers.form.primary_badge")}
                   </span>
@@ -816,6 +837,20 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             />
             <Cow size={16} className="inline align-[-2px] text-primary" aria-hidden="true" /> {t("producers.form.fields.grass_fed")}
           </label>
+          {/* MEH-2699: owner-declared reservist claim — shown on edit so the
+              admin can see it and correct a false declaration. */}
+          {producerId && (
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                name="reservist_owned"
+                checked={!!form.reservist_owned}
+                onChange={(e) => update("reservist_owned", e.target.checked)}
+                className="w-4 h-4 accent-primary"
+              />
+              <Medal size={16} className="inline align-[-2px] text-primary" aria-hidden="true" /> {t("producers.form.fields.reservist_owned")}
+            </label>
+          )}
           {/* MEH-293: dietary checkboxes (gluten_free / vegan / lactose_free) moved to per-product. */}
           {/* MEH-766 ch3: "verified" checkbox removed — verification is the
               admin doc-grant flow (grant-verified → verified_at), not a free toggle. */}
@@ -993,7 +1028,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             {t("producers.form.fields.offers_delivery")}
           </label>
           {!form.has_physical_location && !form.offers_delivery && (
-            <p className="text-xs text-red-600">{t("producers.form.fields.type_validation")}</p>
+            <p className="text-xs text-danger-600">{t("producers.form.fields.type_validation")}</p>
           )}
           {form.offers_delivery && (
             <div className="ms-6 space-y-3 border-s-2 border-border ps-4 pt-1">
@@ -1020,7 +1055,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
                     showRegionChips
                   />
                   {form.delivery_cities.length === 0 && (
-                    <p className="text-xs text-red-600 mt-1">{t("producers.form.fields.delivery_cities_required")}</p>
+                    <p className="text-xs text-danger-600 mt-1">{t("producers.form.fields.delivery_cities_required")}</p>
                   )}
                 </div>
               )}
@@ -1107,9 +1142,10 @@ export default function ProducerForm({ initial = null, producerId = null }) {
           type="file"
           accept="image/*"
           multiple
+          aria-label={t("producers.form.sections.images")}
           onChange={handleImageUpload}
           disabled={isBusy("producer-images")}
-          className="text-sm"
+          className="text-sm w-full max-w-full"
         />
         {isBusy("producer-images") && <p className="text-sm text-muted mt-2">{t("producers.form.uploading")}</p>}
         {form.images?.length > 0 && (
@@ -1124,12 +1160,12 @@ export default function ProducerForm({ initial = null, producerId = null }) {
                 <img
                   src={optimizeCloudinary(url)}
                   alt=""
-                  className="w-full h-24 object-cover rounded-[8px] border border-border"
+                  className="w-full h-24 object-cover rounded-sm border border-border"
                 />
                 <button
                   type="button"
                   onClick={() => removeImage(url)}
-                  className="absolute top-1 start-1 bg-red-500 text-white rounded-full w-6 h-6 inline-flex items-center justify-center opacity-100 [@media(hover:hover)_and_(pointer:fine)]:opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition"
+                  className="absolute top-1 start-1 bg-danger-500 text-white rounded-full w-6 h-6 inline-flex items-center justify-center opacity-100 [@media(hover:hover)_and_(pointer:fine)]:opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition"
                   aria-label={t("common.delete")}
                 >
                   <X size={14} weight="bold" aria-hidden="true" />
@@ -1151,11 +1187,10 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       </Section>
 
       <Section title={<>{t("producers.form.sections.availability")} <InfoTooltip content={t("producers.form.sections.availability_tooltip")} label={t("producers.form.sections.availability_tooltip_label")} position="bottom" /></>}>
+        {/* MEH-2759 / MEH-2782: pause-only — these are the only two values. */}
         <div className="flex flex-wrap gap-2 mb-3">
           {[
             { value: "accepting_orders", labelKey: "producers.form.fields.avail_accepting" },
-            { value: "available_today",  labelKey: "producers.form.fields.avail_today" },
-            { value: "full_this_week",   labelKey: "producers.form.fields.avail_full" },
             { value: "on_vacation",      labelKey: "producers.form.fields.avail_vacation" },
           ].map(({ value, labelKey }) => (
             <button
@@ -1189,6 +1224,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       <Section title={t("producers.form.sections.admin_notes")}>
         <textarea
           value={form.admin_notes}
+          aria-label={t("producers.form.sections.admin_notes")}
           onChange={(e) => update("admin_notes", e.target.value)}
           className={`${inputClass} h-20 resize-none`}
         />
@@ -1213,21 +1249,21 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       )}
 
       <div className="flex gap-3">
-        <button
+        <Button
           type="submit"
           disabled={
             isBusy("producer-save") ||
             (!form.has_physical_location && !form.offers_delivery) ||
             (form.offers_delivery && !form.delivery_nationwide && form.delivery_cities.length === 0)
           }
-          className="bg-primary text-white px-8 py-3 rounded-[12px] hover:bg-primary-dark transition font-medium disabled:opacity-50"
+          variant="primary" size="lg"
         >
           {isBusy("producer-save") ? t("common.saving") : producerId ? t("producers.form.submit_update") : t("producers.form.submit_create")}
-        </button>
+        </Button>
         <button
           type="button"
           onClick={() => router.push("/admin?tab=producers")}
-          className="bg-white border border-border px-8 py-3 rounded-[12px] hover:bg-background transition"
+          className="bg-surface border border-border px-8 py-3 rounded-md hover:bg-background transition"
         >
           {t("common.cancel")}
         </button>

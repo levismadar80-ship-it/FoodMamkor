@@ -19,7 +19,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import func
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, object_session
 
 from app.auth import (
     get_current_user,
@@ -41,6 +41,7 @@ from app.schemas.schemas import (
 )
 from app.services.experience_moderation import validate_experience
 from app.services.experience_notifications import notify_admin_new_submission
+from app.services.registrations import method_problem, registered_counts
 from app.utils.clock import israel_today
 
 router = APIRouter(prefix="/experiences", tags=["experiences"])
@@ -49,10 +50,25 @@ router = APIRouter(prefix="/experiences", tags=["experiences"])
 # ---------- Serialization ----------
 
 
-def _compute_spots_left(ex: Experience) -> int | None:
+def _compute_spots_left(ex: Experience, registered: int = 0) -> int | None:
+    # MEH-2763: the host's own tally and the on-site sign-ups share the cap.
     if ex.max_participants is None:
         return None
-    return max(0, ex.max_participants - (ex.participants_count or 0))
+    return max(0, ex.max_participants - (ex.participants_count or 0) - registered)
+
+
+def _registered(ex: Experience) -> int:
+    session = object_session(ex)
+    if session is None:
+        return 0
+    return registered_counts(session, experience_ids=[ex.id]).get(ex.id, 0)
+
+
+def _host_phone(db: Session, user_id) -> str | None:
+    """The business phone a whatsapp / phone sign-up would reach."""
+    user = db.get(User, user_id)
+    producer = user.producer if user else None
+    return producer.phone if producer else None
 
 
 def _serialize_host(host: User | None) -> dict | None:
@@ -77,8 +93,12 @@ def _serialize_host(host: User | None) -> dict | None:
     return out
 
 
-def _serialize_list(ex: Experience) -> dict:
-    """Public shape — no private fields (address, moderation context)."""
+def _serialize_list(ex: Experience, registered: int | None = None) -> dict:
+    """Public shape — no private fields (address, moderation context).
+    `registered` (MEH-2763) comes from one grouped query on list routes; a
+    single-row caller leaves it None and it is counted here."""
+    if registered is None:
+        registered = _registered(ex)
     return {
         "id": ex.id,
         "title": ex.title,
@@ -91,8 +111,12 @@ def _serialize_list(ex: Experience) -> dict:
         "location_type": ex.location_type,
         "city": ex.city,
         "max_participants": ex.max_participants,
+        "min_participants": ex.min_participants,
         "participants_count": ex.participants_count or 0,
-        "spots_left": _compute_spots_left(ex),
+        "registered_count": registered,
+        "spots_left": _compute_spots_left(ex, registered),
+        "registration_method": ex.registration_method or "site_form",
+        "registration_url": ex.registration_url,
         "price_per_person": ex.price_per_person,
         "is_recurring": bool(ex.is_recurring),
         "recurring_schedule": ex.recurring_schedule,
@@ -102,11 +126,11 @@ def _serialize_list(ex: Experience) -> dict:
     }
 
 
-def _serialize_detail(ex: Experience) -> dict:
+def _serialize_detail(ex: Experience, registered: int | None = None) -> dict:
     """Detail shape — adds private + moderation fields. Only return
     this to the owner or to an admin."""
     return {
-        **_serialize_list(ex),
+        **_serialize_list(ex, registered),
         "address": ex.address,
         "requirements": ex.requirements,
         "lat": ex.lat,
@@ -233,7 +257,8 @@ def list_experiences(
     if city:
         q = q.filter(func.lower(Experience.city) == city.lower())
     rows = q.order_by(Experience.event_date.asc()).all()
-    return [_serialize_list(ex) for ex in rows]
+    counts = registered_counts(db, experience_ids=[ex.id for ex in rows])
+    return [_serialize_list(ex, counts.get(ex.id, 0)) for ex in rows]
 
 
 # ---------- Public count (MEH-1918) ----------
@@ -276,7 +301,8 @@ def list_my_experiences(
         .all()
     )
     # Owner sees the full detail shape for their own submissions.
-    return [_serialize_detail(ex) for ex in rows]
+    counts = registered_counts(db, experience_ids=[ex.id for ex in rows])
+    return [_serialize_detail(ex, counts.get(ex.id, 0)) for ex in rows]
 
 
 # ---------- Detail ----------
@@ -366,6 +392,17 @@ def submit_experience(
       3. APPROVED / FLAGGED → persist as status=pending, admin will review
       4. moderation_status is stored so admins see Claude's signal
     """
+    if _min_above_max(data.min_participants, data.max_participants):
+        raise HTTPException(status_code=422, detail=_MIN_ABOVE_MAX_DETAIL)
+    # MEH-2763: the method's prerequisite (mobile / phone / URL).
+    problem = method_problem(
+        data.registration_method,
+        phone=_host_phone(db, user.id),
+        registration_url=data.registration_url,
+    )
+    if problem:
+        raise HTTPException(status_code=422, detail=problem)
+
     verdict = validate_experience(data.model_dump(mode="json"))
     if verdict["status"] == "REJECTED":
         raise HTTPException(
@@ -391,11 +428,14 @@ def submit_experience(
         lat=data.lat,
         lng=data.lng,
         max_participants=data.max_participants,
+        min_participants=data.min_participants,
         participants_count=0,
         price_per_person=data.price_per_person,
         requirements=data.requirements,
         is_recurring=data.is_recurring,
         recurring_schedule=data.recurring_schedule,
+        registration_method=data.registration_method,
+        registration_url=data.registration_url,
         status="pending",
         moderation_status=verdict["status"],
         moderation_reason=verdict.get("reason"),
@@ -427,6 +467,45 @@ def submit_experience(
 
 # ---------- Update ----------
 
+# MEH-2665: min_participants is a number the host sets, like the count — it
+# must not send an approved experience back to moderation.
+# MEH-2763: how visitors sign up is bookkeeping too; registration_url is NOT
+# here — a new outbound link is content and goes back through moderation.
+_NON_CONTENT_FIELDS = frozenset(
+    {"is_active", "participants_count", "min_participants", "registration_method"}
+)
+
+# MEH-2665: the form blocks it first; this is the write-boundary twin.
+_MIN_ABOVE_MAX_DETAIL = "המינימום לא יכול להיות גדול מהמקסימום"
+
+
+def _min_above_max(min_p: int | None, max_p: int | None) -> bool:
+    return min_p is not None and max_p is not None and min_p > max_p
+
+
+def _check_method_edit(db: Session, ex: Experience, payload: dict) -> None:
+    """MEH-2763: validate «איך נרשמים?» on an edit — only when the edit
+    touches the method or its URL, so a stored pair that no longer holds
+    (the business phone changed since) never blocks an unrelated edit.
+    Mutates `payload`: an explicit null method means "unchanged"."""
+    if "registration_method" in payload and payload["registration_method"] is None:
+        payload.pop("registration_method")  # NOT NULL column
+    # A form re-sends both fields on every save; a value equal to the stored
+    # one is not a change (every legacy experience was backfilled to whatsapp).
+    if (
+        payload.get("registration_method", ex.registration_method)
+        == ex.registration_method
+        and payload.get("registration_url", ex.registration_url) == ex.registration_url
+    ):
+        return
+    problem = method_problem(
+        payload.get("registration_method") or ex.registration_method,
+        phone=_host_phone(db, ex.host_user_id),
+        registration_url=payload.get("registration_url", ex.registration_url),
+    )
+    if problem:
+        raise HTTPException(status_code=422, detail=problem)
+
 
 @router.put("/{experience_id}", response_model=ExperienceDetailOut)
 def update_experience(
@@ -445,8 +524,27 @@ def update_experience(
         raise HTTPException(status_code=404, detail="Experience not found")
 
     payload = data.model_dump(exclude_unset=True)
+    # Only an edit that touches min or max is checked, so a stored pair that
+    # is somehow already inverted never blocks an unrelated edit.
+    touches_range = "min_participants" in payload or "max_participants" in payload
+    new_min = payload.get("min_participants", ex.min_participants)
+    new_max = payload.get("max_participants", ex.max_participants)
+    if touches_range and _min_above_max(new_min, new_max):
+        raise HTTPException(status_code=422, detail=_MIN_ABOVE_MAX_DETAIL)
+    _check_method_edit(db, ex, payload)
     for field, value in payload.items():
         setattr(ex, field, value)
+
+    # MEH-2663: the sign-up tally is a counter, never NULL, and never above
+    # the cap — the dashboard clamps, and a direct PUT is clamped the same way.
+    if "participants_count" in payload or "max_participants" in payload:
+        if ex.participants_count is None:
+            ex.participants_count = 0
+        if (
+            ex.max_participants is not None
+            and ex.participants_count > ex.max_participants
+        ):
+            ex.participants_count = ex.max_participants
 
     # MEH-1419: a pure cancel/reactivate toggle (is_active only) must NOT
     # re-trigger moderation or reset the experience to `pending` —
@@ -457,7 +555,9 @@ def update_experience(
     # (those never reach the feed) and still must not re-run Claude. Events
     # have no moderation, so their toggle is a plain PUT (events.py:238); the
     # experience toggle needs this guard because content edits below reset.
-    content_changed = any(field != "is_active" for field in payload)
+    # MEH-2663: participants_count is the host's own sign-up tally (sign-up
+    # is on WhatsApp) — bookkeeping like is_active, not content to moderate.
+    content_changed = any(field not in _NON_CONTENT_FIELDS for field in payload)
 
     # Any content edit after a negative moderation verdict sends the
     # experience back to `pending` and clears the admin-written feedback so
@@ -477,6 +577,7 @@ def update_experience(
                     str(ex.price_per_person) if ex.price_per_person else None
                 ),
                 "max_participants": ex.max_participants,
+                "registration_url": ex.registration_url,
             }
         )
         ex.moderation_status = verdict["status"]

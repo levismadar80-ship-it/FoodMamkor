@@ -56,7 +56,7 @@ export default function AdminAnalyticsPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Monthly chart */}
-        <div className="bg-white border border-border rounded-[12px] p-5">
+        <div className="bg-surface border border-border rounded-md p-5">
           <h2 className="font-semibold mb-3">{t("analytics.monthly_growth")}</h2>
           <div className="flex gap-4 text-xs mb-2">
             <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-primary"></span>{t("analytics.legend_producers")}</span>
@@ -80,7 +80,7 @@ export default function AdminAnalyticsPage() {
         </div>
 
         {/* Top categories */}
-        <div className="bg-white border border-border rounded-[12px] p-5">
+        <div className="bg-surface border border-border rounded-md p-5">
           <h2 className="font-semibold mb-3">{t("analytics.top_categories")}</h2>
           {cats.length === 0 ? (
             <p className="text-sm text-muted">{t("analytics.no_data")}</p>
@@ -105,7 +105,7 @@ export default function AdminAnalyticsPage() {
         </div>
 
         {/* Top cities */}
-        <div className="bg-white border border-border rounded-[12px] p-5">
+        <div className="bg-surface border border-border rounded-md p-5">
           <h2 className="font-semibold mb-3">{t("analytics.top_cities")}</h2>
           {(data.by_city || []).length === 0 ? (
             <p className="text-sm text-muted">{t("analytics.no_data_display")}</p>
@@ -122,7 +122,7 @@ export default function AdminAnalyticsPage() {
         </div>
 
         {/* Top producers */}
-        <div className="bg-white border border-border rounded-[12px] p-5">
+        <div className="bg-surface border border-border rounded-md p-5">
           <h2 className="font-semibold mb-3">{t("analytics.top_producers_favorites")}</h2>
           {topFavorited.length === 0 ? (
             <p className="text-sm text-muted">{t("analytics.no_data_display")}</p>
@@ -133,7 +133,7 @@ export default function AdminAnalyticsPage() {
                   <span>{p.name}</span>
                   <span className="text-muted inline-flex items-center gap-1">
                     {p.favorites}
-                    <Heart size={14} weight="fill" className="text-red-500" aria-hidden="true" />
+                    <Heart size={14} weight="fill" className="text-danger-500" aria-hidden="true" />
                   </span>
                 </li>
               ))}
@@ -143,17 +143,24 @@ export default function AdminAnalyticsPage() {
       </div>
 
       {/* Heat map note */}
-      <div className="bg-white border border-border rounded-[12px] p-5">
-        <h2 className="font-semibold mb-3">{t("analytics.geographic")}</h2>
+      <div className="bg-surface border border-border rounded-md p-5">
+        <h2 id="admin-analytics-map-heading" className="font-semibold mb-3">{t("analytics.geographic")}</h2>
         <p className="text-sm text-muted mb-2">
           {t("analytics.map_count", { count: (data.map_points || []).length })}
         </p>
         {(data.map_points || []).length === 0 ? (
           <p className="text-sm text-muted">{t("analytics.no_data_display")}</p>
         ) : (
-          <div className="bg-accent/30 rounded-[12px] p-4 text-xs grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto">
+          <div
+            // MEH-2708: a scrollable region must be reachable by keyboard
+            // (axe scrollable-region-focusable).
+            tabIndex={0}
+            role="region"
+            aria-labelledby="admin-analytics-map-heading"
+            className="bg-accent/30 rounded-md p-4 text-xs grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto"
+          >
             {(data.map_points || []).slice(0, 30).map((p) => (
-              <div key={p.id} className="bg-white rounded-lg p-2 border border-border">
+              <div key={p.id} className="bg-surface rounded-lg p-2 border border-border">
                 <p className="font-medium truncate">{p.name}</p>
                 <p className="text-muted">{p.lat?.toFixed(3)}, {p.lng?.toFixed(3)}</p>
               </div>

@@ -61,7 +61,7 @@ export default function ChangesRequestedBanner({ profile }) {
   if (status === "sent") {
     return (
       <div
-        className="bg-primary/10 border border-primary/30 rounded-[16px] p-4 mb-6"
+        className="bg-primary/10 border border-primary/30 rounded-lg p-4 mb-6"
         role="status"
         data-testid="changes-requested-banner"
         aria-label={t("sent_title")}
@@ -82,7 +82,7 @@ export default function ChangesRequestedBanner({ profile }) {
       // accent (gold) tint — an ACTION to take, not a failure (contrast the
       // red rejected banner). Title + body use dark text-text for WCAG on the
       // pale tint; only the icon carries the accent gold (Sapir contrast note).
-      className="bg-accent/10 border border-accent/30 rounded-[16px] p-4 mb-6"
+      className="bg-accent/10 border border-accent/30 rounded-lg p-4 mb-6"
       role="status"
       data-testid="changes-requested-banner"
       aria-label={t("aria")}
@@ -101,7 +101,7 @@ export default function ChangesRequestedBanner({ profile }) {
             <LocaleLink
               href="/producer/dashboard/edit"
               data-testid="changes-requested-cta"
-              className="inline-block bg-accent text-white px-4 py-2 rounded-[10px] text-xs font-medium hover:opacity-90 transition"
+              className="inline-block bg-accent text-white px-4 py-2 rounded-md text-xs font-medium hover:opacity-90 transition"
             >
               {t("cta")}
             </LocaleLink>
@@ -115,7 +115,7 @@ export default function ChangesRequestedBanner({ profile }) {
               onClick={resubmit}
               disabled={status === "sending"}
               data-testid="resubmit-button"
-              className="inline-block border border-accent/40 text-accent px-4 py-2 rounded-[10px] text-xs font-medium hover:bg-accent/10 transition disabled:opacity-60"
+              className="inline-block border border-accent/40 text-accent px-4 py-2 rounded-full text-xs font-medium hover:bg-accent/10 transition disabled:opacity-60"
             >
               {status === "sending" ? t("resubmit_sending") : t("resubmit_cta")}
             </button>

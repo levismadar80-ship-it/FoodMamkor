@@ -47,7 +47,7 @@ export function SkeletonStyles() {
 export function SkeletonCard({ className = "" }) {
   return (
     <div
-      className={`skeleton-box rounded-[16px] ${className}`}
+      className={`skeleton-box rounded-lg ${className}`}
       style={{ height: "320px" }}
       aria-hidden="true"
     />
@@ -138,10 +138,10 @@ export function SkeletonList({ count = 4, label, className = "", testId }) {
       {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}
-          className="flex items-center gap-3 bg-surface-card border border-border rounded-[12px] p-3"
+          className="flex items-center gap-3 bg-surface-card border border-border rounded-md p-3"
           aria-hidden="true"
         >
-          <div className="skeleton-box rounded-[9px] w-11 h-11 shrink-0" />
+          <div className="skeleton-box rounded-sm w-11 h-11 shrink-0" />
           <div className="flex-1 min-w-0 flex flex-col gap-2">
             <div className="skeleton-box rounded-lg h-[14px] w-[62%]" />
             <div className="skeleton-box rounded-lg h-[10px] w-[38%]" />
@@ -162,7 +162,7 @@ export function SkeletonTable({ rows = 5, cols = 4, label, className = "", testI
   return (
     <SkeletonStatus label={label} className={className} testId={testId}>
       <div
-        className="hidden md:block rounded-[12px] border border-border overflow-hidden bg-surface-card"
+        className="hidden md:block rounded-md border border-border overflow-hidden bg-surface-card"
         aria-hidden="true"
         data-testid="skeleton-table-wide"
       >
@@ -192,7 +192,7 @@ export function SkeletonTable({ rows = 5, cols = 4, label, className = "", testI
       </div>
       <div className="md:hidden space-y-3" aria-hidden="true" data-testid="skeleton-table-stack">
         {Array.from({ length: Math.min(rows, 4) }).map((_, r) => (
-          <div key={r} className="bg-surface-card border border-border rounded-[12px] px-4 py-3 space-y-2">
+          <div key={r} className="bg-surface-card border border-border rounded-md px-4 py-3 space-y-2">
             {[0, 1, 2].map((l) => (
               <div key={l} className="flex items-center gap-3">
                 <div className="skeleton-box rounded-lg h-[10px] w-16 shrink-0" />
@@ -213,7 +213,7 @@ export function SkeletonForm({ fields = 5, label, className = "", testId }) {
       {Array.from({ length: fields }).map((_, i) => (
         <div key={i} className="space-y-2" aria-hidden="true">
           <div className="skeleton-box rounded-lg h-[12px] w-28" />
-          <div className={`skeleton-box rounded-[12px] w-full ${i === fields - 1 ? "h-24" : "h-11"}`} />
+          <div className={`skeleton-box rounded-md w-full ${i === fields - 1 ? "h-24" : "h-11"}`} />
         </div>
       ))}
     </SkeletonStatus>
@@ -229,7 +229,7 @@ export function SkeletonTiles({ count = 4, label, className = "", testId }) {
       testId={testId}
     >
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="bg-surface-card border border-border rounded-[16px] p-4 space-y-3" aria-hidden="true">
+        <div key={i} className="bg-surface-card border border-border rounded-lg p-4 space-y-3" aria-hidden="true">
           <div className="skeleton-box rounded-lg h-[10px] w-[55%]" />
           <div className="skeleton-box rounded-lg h-[28px] w-[40%]" />
         </div>
@@ -252,7 +252,7 @@ export function SkeletonDetail({ hero = true, width = "max-w-3xl", label, classN
           MEH-2559): inside the page column, 210/300/380 px, rounded on lg. */}
       {hero && (
         <div className={`${width} mx-auto lg:px-4 lg:pt-6`} aria-hidden="true">
-          <div className="skeleton-box h-[210px] md:h-[300px] lg:h-[380px] lg:rounded-[18px]" data-skeleton="hero" />
+          <div className="skeleton-box h-[210px] md:h-[300px] lg:h-[380px] lg:rounded-xl" data-skeleton="hero" />
         </div>
       )}
       <div className={`${width} mx-auto px-4 py-12`} aria-hidden="true" data-skeleton="column">
@@ -263,7 +263,7 @@ export function SkeletonDetail({ hero = true, width = "max-w-3xl", label, classN
           <div className="skeleton-box rounded-lg w-28 h-4" />
           <div className="skeleton-box rounded-lg w-20 h-4" />
         </div>
-        <div className="skeleton-box rounded-[16px] w-full h-32" />
+        <div className="skeleton-box rounded-lg w-full h-32" />
       </div>
     </SkeletonStatus>
   );

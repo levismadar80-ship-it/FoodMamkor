@@ -375,6 +375,7 @@ SENSITIVE_FIELD_LABELS: dict[str, str] = {
     "vegan_scope": "הצהרת טבעונות",
     "vegetarian_scope": "הצהרת צמחונות",
     "gluten_free_facility": "הצהרת ללא גלוטן",
+    "whatsapp_group": "קישור לעדכונים בוואטסאפ",  # MEH-2626
     # MEH-2073 chunk 2: not a column — the event of the LAST location row being
     # deleted, which leaves an approved business with no primary location, no
     # pin on the map and nothing to submit. Phrased as a full clause because it
@@ -496,6 +497,82 @@ def notify_admin_new_category_request(
         logger.error(
             "[NOTIFY] Admin category-request email FAILED for "
             f"'{safe_requested}' (business '{safe_business}'): {e}"
+        )
+
+
+def notify_admin_new_business_suggestion(
+    business_name: str,
+    city: str | None,
+    suggester_name: str | None,
+    is_additional: bool = False,
+) -> None:
+    """Ping admin (WhatsApp + email) that a visitor suggested a business.
+
+    MEH-2633 — mirrors notify_admin_new_category_request above 1:1: free-text
+    send_text to settings.admin_whatsapp_to + email to settings.admin_email,
+    no Meta template, per-channel try blocks (a WhatsApp raise must not skip
+    the email), fire-and-forget as a BackgroundTask. Fail-open per MEH-977: an
+    outage is logged, never surfaced to the visitor who already got their 201.
+
+    `is_additional` is True when the suggestion landed on a lead that already
+    existed, so the queue grew in weight rather than in rows. It fires in that
+    case TOO, on purpose: "two different people recommended this one" is the
+    signal the whole feature exists to produce, and suppressing it would make a
+    second suggestion indistinguishable from none. The visitor's response body
+    is identical either way (BusinessSuggestionAck), so nothing here leaks back
+    to them.
+
+    # DO NOT put `suggested_by_email` in this message — the suggester's address
+    #        is PII with no job to do in a notification. It is visible to the
+    #        admin in /admin/outreach, behind require_admin, which is the one
+    #        place it belongs (MEH-2633).
+    """
+    # Visitor-controlled free text — flatten so a crafted value cannot inject
+    # extra lines (e.g. a fake URL line) into the admin message. REUSES the
+    # MEH-1051 sanitizer (one flattener per file, MEH-271) — also covers
+    # \r/\t, space runs, and the 550-char cap.
+    safe_business = _sanitize_wa_param(business_name)
+    safe_city = _sanitize_wa_param(city) if city else "לא צוין"
+    safe_suggester = _sanitize_wa_param(suggester_name) if suggester_name else "אנונימי"
+    headline = "המלצה נוספת על בית עסק" if is_additional else "המלצת קהילה חדשה"
+    message = (
+        f"{headline}: {safe_business}\n"
+        f"עיר: {safe_city}\n"
+        f"ממליצים: {safe_suggester}\n"
+        f"לטיפול: {settings.frontend_url}/admin/outreach?source=community"
+    )
+    # Per-channel guards (not one shared try) — a WhatsApp raise must not skip
+    # the email, matching notify_admin_new_category_request's independence.
+    try:
+        if settings.admin_whatsapp_to:
+            if send_text(settings.admin_whatsapp_to, message):
+                logger.info("[WHATSAPP] Business-suggestion notification sent to admin")
+            else:
+                # send_text returned False without raising — keep the MEH-977
+                # observability contract: log WITH request context.
+                logger.warning(
+                    "[WHATSAPP] Business-suggestion notification NOT delivered "
+                    f"for '{safe_business}' ({safe_city})"
+                )
+        else:
+            logger.debug(f"[WHATSAPP] Would send: {message}")
+    except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
+        logger.error(
+            "[NOTIFY] Admin business-suggestion WhatsApp FAILED for "
+            f"'{safe_business}' ({safe_city}): {e}"
+        )
+
+    try:
+        if settings.admin_email:
+            send_email(
+                settings.admin_email,
+                f"מהמקור - {headline}: {safe_business}",
+                message,
+            )
+    except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
+        logger.error(
+            "[NOTIFY] Admin business-suggestion email FAILED for "
+            f"'{safe_business}' ({safe_city}): {e}"
         )
 
 

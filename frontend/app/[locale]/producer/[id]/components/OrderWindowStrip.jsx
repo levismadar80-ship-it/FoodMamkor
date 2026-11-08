@@ -63,11 +63,22 @@
  *           the header's status already reads today's override. Clock-derived
  *           (which dates are still ahead), so it arrives after mount like the
  *           today-chip, and an override-only producer's block appears then.
+ *           MEH-2803 — the page said its hours twice: this block under «מתי
+ *           מקבלים הזמנות», then an unlabelled store-hours card under «הגעה
+ *           ומיקום», nearly the same values in two formats. Now ONE «שעות»
+ *           section (ProducerHoursSection below, Google Business Profile «More
+ *           hours» pattern): the schedule block is the «מקבלים הזמנות» SET, the
+ *           store hours the «פתוח למבקרים» set, and when both parse and match
+ *           day by day there is ONE set, «הזמנות וביקור במקום». The subtitle row
+ *           («הימים והשעות שבהם בית העסק מקבל הזמנות») restated the heading
+ *           above it and is gone. Rendering inside each set is unchanged.
  */
 
 import { Fragment, useEffect, useState } from "react";
-import { CalendarCheck, CaretDown } from "@phosphor-icons/react";
+import { CalendarCheck, CaretDown, Storefront } from "@phosphor-icons/react";
 import { useLocale, useTranslations } from "next-intl";
+import HoursText from "@/components/HoursText";
+import { parseHours, resolveStoreHours, sameWeeklyHours } from "@/lib/hours";
 import { humanTime } from "@/lib/time-format";
 
 import {
@@ -172,7 +183,17 @@ function openDaysOf(orderWindow) {
  * this returns null, so the block is absent from the DOM entirely — no empty
  * container, no heading, zero layout shift.
  */
-export function OrderWindowScheduleBlock({ orderWindow, specialHours = null }) {
+export function OrderWindowScheduleBlock({
+  orderWindow,
+  specialHours = null,
+  label = null,
+  setKey = "orders",
+}) {
+  // MEH-2803 option ב׳: the same card renders the «פתוח למבקרים» set too
+  // (store hours converted to the order_window shape), so both sets share ONE
+  // structure. Test ids keep their order-window names for the orders set and
+  // take a visit-hours prefix for the visit set, so no id repeats on the page.
+  const tid = (part) => (setKey === "visit" ? `visit-hours-${part}` : `order-window-${part}`);
   const t = useTranslations("producer.detail.order_window");
   const tDays = useTranslations("producer.detail.order_window.days");
   const locale = useLocale();
@@ -200,17 +221,18 @@ export function OrderWindowScheduleBlock({ orderWindow, specialHours = null }) {
   if (rows.length === 0 && upcoming.length === 0) return null;
 
   return (
-    <section className="mt-12" data-testid="order-window-schedule">
-      <h2 className="font-headline-md text-2xl font-bold text-text mb-3">
-        {t("schedule_heading")}
-      </h2>
-      {/* Container copied from components/OpeningHours.jsx:52 so the order
-          schedule and the store hours read as one family of Info cards. */}
-      <div className="border border-border rounded-md bg-white overflow-hidden">
-        <div className="flex items-center gap-2 px-3.5 py-2.5 border-b border-border text-sm text-text">
-          <CalendarCheck size={16} className="text-primary-dark shrink-0" aria-hidden="true" />
-          <span>{t("schedule_subtitle")}</span>
-        </div>
+    // MEH-2803: one labelled SET inside ProducerHoursSection's «שעות» section —
+    // the section owns the heading; this owns its label and its card.
+    <div data-testid="hours-set" data-set={setKey}>
+      {/* The Info-card container (same classes as components/OpeningHours.jsx);
+          since MEH-2809 both hours sets render through this one card. */}
+      <div
+        className="border border-border rounded-md bg-surface overflow-hidden"
+        data-testid={tid("schedule")}
+      >
+        {/* MEH-2803 option ב׳: the label is the card's own header row, with a
+            line icon, so it reads as part of the card it names. */}
+        {label && <SetHeader label={label} setKey={setKey} />}
         {/* MEH-1917: the summary is REPLACED by the full week, not stacked above
             it. Caught by eye, not by a pin: the first build rendered both, so a
             Sun–Thu producer showed "ראשון–שלישי" and then ראשון, שני, שלישי
@@ -221,8 +243,8 @@ export function OrderWindowScheduleBlock({ orderWindow, specialHours = null }) {
           {rows.map((row) => (
             <div
               key={row.fromDay}
-              className="flex justify-between gap-4 text-[13px] py-1.5 text-fg-muted"
-              data-testid="order-window-schedule-row"
+              className="flex justify-between gap-4 text-sm py-1.5 text-fg-muted"
+              data-testid={tid("schedule-row")}
             >
               {/* shrink-0: the day label is the shorter side, so without it flex
                   steals width from it first and a merged "ראשון–חמישי" is the
@@ -254,13 +276,13 @@ export function OrderWindowScheduleBlock({ orderWindow, specialHours = null }) {
               type="button"
               onClick={() => setExpanded((v) => !v)}
               aria-expanded={expanded}
-              aria-controls="order-window-week"
-              data-testid="order-window-week-toggle"
-              // min-h-[44px]: measured at 41px with py-2.5 alone
+              aria-controls={tid("week")}
+              data-testid={tid("week-toggle")}
+              // min-h-touch: measured at 41px with py-2.5 alone
               // (qa-meh1917-order-window.mjs P6), which is under the tap target.
               // The floor is explicit rather than tuned via padding so a future
               // font-size change cannot quietly drop it back under.
-              className="flex min-h-[44px] w-full items-center justify-center gap-1 border-t border-border px-3.5 py-2.5 text-[13px] text-fg-muted transition hover:text-text focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="flex min-h-touch w-full items-center justify-center gap-1 border-t border-border px-3.5 py-2.5 text-sm text-fg-muted transition hover:text-text focus-visible:ring-2 focus-visible:ring-primary/40"
             >
               {expanded ? t("hide_week") : t("show_week")}
               <CaretDown
@@ -272,19 +294,19 @@ export function OrderWindowScheduleBlock({ orderWindow, specialHours = null }) {
 
             {expanded && (
               <div
-                id="order-window-week"
+                id={tid("week")}
                 className="border-t border-border px-3.5 py-2"
-                data-testid="order-window-week"
+                data-testid={tid("week")}
               >
                 {openDays.map((day) => {
                   const isToday = day.dayIndex === todayIndex;
                   return (
                     <div
                       key={day.dayIndex}
-                      className={`flex justify-between gap-4 py-1.5 text-[13px] ${
+                      className={`flex justify-between gap-4 py-1.5 text-sm ${
                         isToday ? "font-medium text-text" : "text-fg-muted"
                       }`}
-                      data-testid="order-window-week-row"
+                      data-testid={tid("week-row")}
                       data-day={day.dayIndex}
                       data-today={isToday ? "true" : undefined}
                     >
@@ -292,8 +314,8 @@ export function OrderWindowScheduleBlock({ orderWindow, specialHours = null }) {
                         {tDays(DAY_LABEL_KEYS[day.dayIndex])}
                         {isToday && (
                           <span
-                            data-testid="order-window-today-chip"
-                            className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[11px] text-primary-dark"
+                            data-testid={tid("today-chip")}
+                            className="rounded-full bg-primary/10 px-1.5 py-0.5 text-2xs text-primary-dark"
                           >
                             {t("today")}
                           </span>
@@ -325,20 +347,20 @@ export function OrderWindowScheduleBlock({ orderWindow, specialHours = null }) {
         {upcoming.length > 0 && (
           <div
             className="border-t border-border px-3.5 py-2"
-            data-testid="order-window-special"
+            data-testid={tid("special")}
           >
-            <div className="py-1 text-[13px] font-medium text-text">{t("special_heading")}</div>
+            <div className="py-1 text-sm font-medium text-text">{t("special_heading")}</div>
             {upcoming.map((d) => (
               <div
                 key={d.date}
-                className="flex justify-between gap-4 py-1.5 text-[13px] text-fg-muted"
-                data-testid="order-window-special-row"
+                className="flex justify-between gap-4 py-1.5 text-sm text-fg-muted"
+                data-testid={tid("special-row")}
                 data-date={d.date}
                 data-closed={d.closed ? "true" : undefined}
               >
                 <span className="flex shrink-0 flex-col">
                   <span>{formatSpecialDate(d.date, locale)}</span>
-                  {d.note && <span className="text-[12px]">{d.note}</span>}
+                  {d.note && <span className="text-xs">{d.note}</span>}
                 </span>
                 {d.closed ? (
                   <span className="text-end">{t("special_closed")}</span>
@@ -352,6 +374,117 @@ export function OrderWindowScheduleBlock({ orderWindow, specialHours = null }) {
                 )}
               </div>
             ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** MEH-2803 option ב׳ — a set's label as the first row INSIDE its card. */
+function SetHeader({ label, setKey }) {
+  const Icon = setKey === "visit" ? Storefront : CalendarCheck;
+  return (
+    <h3
+      data-testid="hours-set-label"
+      className="flex items-center gap-2 border-b border-border px-3.5 py-2.5 text-sm font-semibold text-text"
+    >
+      <Icon size={16} className="shrink-0 text-primary-dark" aria-hidden="true" />
+      {label}
+    </h3>
+  );
+}
+
+/** parsed-hours map (dayIndex → ranges) → the order_window shape. */
+function hoursMapAsOrderWindow(map) {
+  return Object.fromEntries(
+    Object.entries(map).map(([day, ranges]) => [ORDER_DAY_KEYS[Number(day)], ranges]),
+  );
+}
+
+/** order_window → the parsed-hours map shape (dayIndex → ranges), or null. */
+function orderWindowAsHoursMap(orderWindow) {
+  const days = openDaysOf(orderWindow);
+  return days.length ? Object.fromEntries(days.map((d) => [d.dayIndex, d.ranges])) : null;
+}
+
+/**
+ * MEH-2803 — the business page's ONE hours section, «שעות».
+ *
+ * Two facts can live here, each under its own label: when the business takes
+ * orders (`order_window`, + upcoming special dates) and when the place is open
+ * to visitors (store hours, `resolveStoreHours`). When both parse AND match day
+ * by day they are one fact, said once, under «הזמנות וביקור במקום» with the
+ * order-window card. Either side unreadable → both sets, labelled — an
+ * unreadable string is never merged (sameWeeklyHours returns false on null).
+ * Upcoming special dates also block the merge: they are ORDER overrides, and
+ * under «הזמנות וביקור במקום» they would claim the shop keeps them too.
+ *
+ * Gate: order rows or upcoming specials, OR store hours. Neither → null, no
+ * heading. Upcoming specials are clock-derived and arrive after mount (same
+ * rule as OrderWindowScheduleBlock), so an override-only business's section
+ * appears then.
+ *
+ * Does NOT: show a status (ProducerHeader owns it, MEH-1305 A), touch pickup
+ * points' own hours (DeliveryBlock / MiniMap, MEH-1509), or add a section-nav
+ * pill (no new nav entry, section-nav.js).
+ * Guard: __tests__/ProducerHoursSection.test.jsx («one fact, one place»).
+ */
+export function ProducerHoursSection({ producer }) {
+  const t = useTranslations("producer.detail.hours");
+  const orderWindow = producer?.order_window;
+  const specialHours = producer?.special_hours ?? null;
+  const [upcoming, setUpcoming] = useState([]);
+  useEffect(() => setUpcoming(getUpcomingSpecialDates(specialHours)), [specialHours]);
+
+  const storeHours = resolveStoreHours(producer);
+  // A map whose every range is malformed (the English grammar does not check
+  // close > open, e.g. an overnight «22:00-02:00») would render NO rows in the
+  // shared card, which then returns null and drops the visit set. Treat it as
+  // unreadable, so the MEH-2604 «as typed» fallback shows it.
+  const parsedStore = storeHours ? parseHours(storeHours) : null;
+  const storeMap =
+    parsedStore && getOrderWindowRanges(hoursMapAsOrderWindow(parsedStore)).length > 0
+      ? parsedStore
+      : null;
+  const hasOrders = getOrderWindowRanges(orderWindow).length > 0 || upcoming.length > 0;
+  if (!hasOrders && !storeHours) return null;
+  const merged =
+    hasOrders &&
+    upcoming.length === 0 &&
+    sameWeeklyHours(orderWindowAsHoursMap(orderWindow), storeMap);
+
+  return (
+    <section className="mt-12" data-testid="producer-hours">
+      <h2 className="font-headline-md text-2xl font-bold text-text mb-3">{t("heading")}</h2>
+      <div className="space-y-3">
+        {hasOrders && (
+          <OrderWindowScheduleBlock
+            orderWindow={orderWindow}
+            specialHours={specialHours}
+            label={merged ? t("label_both") : t("label_orders")}
+          />
+        )}
+        {/* MEH-2803 option ב׳ (Sapir, 07/11): the visit set is the SAME card
+            as the orders set — header row inside, the week shown at once —
+            instead of OpeningHours' collapsed «היום · …» row, which on a closed
+            day told a visitor only «היום · סגור». Unparseable text keeps the
+            MEH-2604 rule: shown as typed, inside the same card. */}
+        {storeHours && !merged && storeMap && (
+          <OrderWindowScheduleBlock
+            orderWindow={hoursMapAsOrderWindow(storeMap)}
+            label={t("label_visit")}
+            setKey="visit"
+          />
+        )}
+        {storeHours && !merged && !storeMap && (
+          <div data-testid="hours-set" data-set="visit">
+            <div className="border border-border rounded-md bg-surface overflow-hidden">
+              <SetHeader label={t("label_visit")} setKey="visit" />
+              <p data-testid="hours-raw" className="px-3.5 py-2.5 text-sm text-text">
+                <HoursText text={storeHours.trim()} />
+              </p>
+            </div>
           </div>
         )}
       </div>

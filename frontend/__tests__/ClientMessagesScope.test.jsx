@@ -131,18 +131,24 @@ describe("root client messages (MEH-2233)", () => {
     expect(leaks).toEqual([]);
   });
 
-  it("the producer sign-up form reads only the admin subtree it is given", () => {
+  // MEH-2640: this used to assert the sign-up form reads SOME admin subtree
+  // (`keys.length > 0`) and that everything it reads sits under
+  // admin.producers.form.fields.*. Those seven strings were all inside the
+  // delivery-axis block, and that block is gone — step 2 asks one question in
+  // its own words now. The assertion flips: a consumer-facing registration
+  // form should read NOTHING from the admin namespace, and the strongest
+  // version of this test is the one that says so.
+  it("the producer sign-up form reads NO admin string at all", () => {
     const s = src.get(path.join(ROOT, SIGNUP_FORM));
     const keys = [...s.matchAll(/\bt\(\s*["'`](admin\.[a-z_.]+)["'`]/g)].map((m) => m[1]);
-    expect(keys.length).toBeGreaterThan(0);
-    for (const k of keys) expect(k.startsWith("admin.producers.form.fields.")).toBe(true);
+    expect(keys, `the register flow is borrowing admin copy again: ${keys.join(", ")}`).toEqual([]);
+  });
+
+  it("the shallow route merge still never shadows a root namespace", () => {
+    // Kept from the case above — it was asserting two unrelated things, and
+    // this half is about the provider, not about admin copy.
     for (const catalog of [he, en]) {
       const given = registerProducerMessages(catalog);
-      for (const k of keys) {
-        const value = k.split(".").reduce((o, part) => o?.[part], given);
-        expect(typeof value, k).toBe("string");
-      }
-      // The merge is shallow: a route's extras must never shadow a root namespace.
       const root = Object.keys(rootClientMessages(catalog));
       expect(Object.keys(given).filter((ns) => root.includes(ns))).toEqual([]);
     }

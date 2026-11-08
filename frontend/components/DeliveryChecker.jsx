@@ -1,12 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { CheckCircle, XCircle } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { formatPrice } from "@/lib/utils";
+import { isDeliveryCheckerUsable } from "@/lib/delivery-coverage";
+import { canonicalCity } from "@/data/cities";
 import CitySearch from "@/components/CitySearch";
 import CoverageRequestCta from "@/components/CoverageRequestCta";
+import DeliveryWaitlistForm from "@/components/DeliveryWaitlistForm";
 import { useUserCity } from "@/lib/use-user-city";
+import WhatsAppUpdatesPill, { whatsappUpdatesHref } from "@/components/WhatsAppUpdatesPill";
 
 /**
  * Module:   DeliveryChecker
@@ -24,12 +28,27 @@ import { useUserCity } from "@/lib/use-user-city";
  *           frontend/components/CitySearch.jsx:35 (canonical city input,
  *           MEH-1455 — reused as-is, no modification);
  *           backend/app/services/delivery_validation.py (exclusion invariant).
- * History:  MEH-1536 (creation).
+ * History:  MEH-1536 (creation); MEH-2626 (WhatsApp updates pill inside a
+ *           positive verdict; visibility gate in lib/delivery-coverage.js, isDeliveryCheckerUsable).
  */
 
 // MEH-1536: exact-city matching only — trimmed + case-insensitive. NO fuzzy
 // matching, no geolocation, no region fallback (over-engineering guard).
-const norm = (s) => (s || "").trim().toLowerCase();
+//
+// MEH-2797 folds ONE more thing in, and only one: a known alias of a city
+// («בנימינה» → «בנימינה-גבעת עדה») now compares equal to its official name.
+// That is still exact matching — the comparison is on a canonical key, not a
+// similarity score — so the MEH-1536 guard stands. The alias table is the
+// backend's, mirrored under test (data/cities.js, CityAliasParity.test.js).
+//
+// WHY IT IS NEEDED even though every write path canonicalises since MEH-2602:
+// rows written BEFORE that validator keep their old spelling. `city_variants`
+// in backend/app/data/cities.py says so in its own docstring, and the
+// backend's city filter already folds aliases for the same reason
+// (producer_listing.py:436). The checker was the one surface that did not, so
+// a business holding a pre-MEH-2602 «בנימינה» told a visitor who picked the
+// only spelling the autocomplete offers that it does not deliver there.
+const norm = (s) => canonicalCity(s).toLowerCase();
 
 /**
  * Pure match logic, exported for unit coverage. Returns null while the field is
@@ -92,6 +111,10 @@ export default function DeliveryChecker({
   // that no longer matches what the field says.
   const [city, setCity] = useState("");
   const [checked, setChecked] = useState("");
+  // MEH-2709: the no-verdict chips don't repeat the city on screen; they point
+  // at the verdict line with aria-describedby so a screen reader jumping
+  // between buttons still hears which city they are about.
+  const verdictId = useId();
 
   // MEH-1675: seed from the saved user_city so a visitor who already told us
   // where she is gets her answer — and, when it is "no", the coverage CTA —
@@ -110,16 +133,8 @@ export default function DeliveryChecker({
     setChecked(userCity);
   }, [userCity]);
 
-  // Gate 1 (spec): only for producers that actually deliver.
-  // Gate 2 (spec): nationwide with no exclusions — the answer is trivially
-  //   "yes" for every city, so a checker would be pure noise.
-  // Gate 3 (MEH-1536 judgment call, documented in the PR): not nationwide AND
-  //   no delivery_areas rows — every possible answer would be "לא מגיעים",
-  //   which contradicts the "משלוחים בתיאום מראש" line DeliveryBlock renders
-  //   right below it. An always-negative checker is worse than none.
-  const hasExclusions = nationwide && excluded.length > 0;
-  const usable = offersDelivery && (hasExclusions || (!nationwide && areas.length > 0));
-  if (!usable) return null;
+  // Gates documented on isDeliveryCheckerUsable (lib/delivery-coverage.js).
+  if (!isDeliveryCheckerUsable({ offersDelivery, nationwide, excluded, areas })) return null;
 
   const result = matchDeliveryCity({ city: checked, nationwide, excluded, areas });
   const positive = result?.status === "yes" || result?.status === "yes_nationwide";
@@ -137,7 +152,7 @@ export default function DeliveryChecker({
     <div className="mb-6 rounded-2xl bg-green-50 p-3.5" data-testid="delivery-checker">
       <div
         data-testid="delivery-checker-input"
-        className="[&_label]:text-[15px] [&_label]:font-bold [&_label]:mb-2"
+        className="[&_label]:text-base [&_label]:font-bold [&_label]:mb-2"
       >
         <CitySearch
           id="delivery-checker-city"
@@ -165,6 +180,7 @@ export default function DeliveryChecker({
         {result && (
           <>
             <p
+              id={verdictId}
               className={`flex items-center gap-1.5 text-sm font-medium ${
                 positive ? "text-primary" : "text-text"
               }`}
@@ -177,7 +193,7 @@ export default function DeliveryChecker({
               {t(VERDICT_KEY[result.status], { city: result.city })}
             </p>
             {(day || price) && (
-              <p className="mt-0.5 text-[13px] text-fg-muted ms-6">
+              <p className="mt-0.5 text-sm text-fg-muted ms-6">
                 {day}
                 {day && price ? <span aria-hidden="true"> · </span> : null}
                 {price && (
@@ -187,14 +203,44 @@ export default function DeliveryChecker({
                 )}
               </p>
             )}
+            {/* MEH-2626: the WhatsApp updates link — positive answer only, and
+                only when the business has one (the pill self-gates on the
+                link, so no empty wrapper renders). Below the verdict's own
+                "day · minimum" line so that line stays attached to the verdict
+                it qualifies. Nothing on "no": that slot is the coverage CTA's. */}
+            {positive && whatsappUpdatesHref(producer) && (
+              <div className="ms-6 mt-2.5">
+                <WhatsAppUpdatesPill producer={producer} />
+              </div>
+            )}
             {/* MEH-1675: the ONLY mount of the coverage CTA, and only on a
                 hard "no". A positive verdict never shows it, and because the
                 checker itself renders at most once per page (single mount in
                 DeliveryBlock.jsx:256) there is exactly one CTA block on the
                 page in every state. */}
+            {/* MEH-2709: the two follow-ups sit as one row of chips under
+                the verdict (it already names the city, so they don't repeat
+                it). DOM order = visual order (waitlist first), so keyboard
+                and screen-reader order match what is seen. Once the waitlist
+                opens into a form it takes a full row and the WhatsApp chip
+                wraps below it. `empty:hidden`: both children return null
+                (no element at all) when they have nothing to offer. */}
             {result.status === "no" && (
-              <div className="ms-6">
-                <CoverageRequestCta producer={producer} city={result.city} />
+              <div className="mt-2.5 flex flex-wrap gap-2 empty:hidden" data-testid="delivery-checker-no-actions">
+                {/* MEH-2618: the no-account waitlist, same single mount rule.
+                    Keyed by city so a new verdict starts a fresh form instead
+                    of showing "נודיע לך כשיגיעו לחיפה" under a נתניה verdict. */}
+                <DeliveryWaitlistForm
+                  key={result.city}
+                  producer={producer}
+                  city={result.city}
+                  describedBy={verdictId}
+                />
+                <CoverageRequestCta
+                  producer={producer}
+                  city={result.city}
+                  describedBy={verdictId}
+                />
               </div>
             )}
           </>

@@ -36,9 +36,9 @@ def _selects():
 def _in_month(months_back):
     """An instant well inside the month `months_back` before the current one.
 
-    The bucket starts on day 1 at the current time of day (pre-existing
-    `now.replace(day=1)`), so a seed at 00:00 on day 1 can fall in the month
-    before. Now itself, or mid-month, never does.
+    Buckets start at 00:00 on day 1 (they used to start at the request's time
+    of day, which put "now" in the month before on day 1 — see the frozen-clock
+    test at the bottom). Mid-month keeps the older months clear of any edge.
     """
     if months_back == 0:
         return utc_now()
@@ -133,6 +133,69 @@ def test_outreach_summary_one_query_same_numbers(client, db):
         "replied": 2,
         "registered": 1,
         "declined": 1,
+        # MEH-2633 added this key. The seven leads above are all ORM-created
+        # with no source, so they take the model default "manual" — none is a
+        # community suggestion. Kept as an EXACT dict comparison on purpose:
+        # relaxing it to a subset check is what would let the next added key
+        # through unexamined.
+        "community": 0,
     }
     leads = [s for s in seen if "outreach_leads" in s.lower()]
     assert len(leads) == 1, leads
+
+
+def test_month_bucket_starts_at_midnight_not_at_the_current_hour(
+    client, db, monkeypatch
+):
+    """A producer created on day 1 before the current hour is THIS month's.
+
+    `_last_six_months` used `now.replace(day=1)`, which kept the time of day, so
+    the bucket began on day 1 at the request's hour: on 15/11 at 12:00 a
+    producer created 01/11 08:00 counted in October, and on day 1 itself
+    everything created that day before the request fell into the month before
+    (the two tests above went red on 01/11/2026). Clock frozen, so this runs
+    the same on any date.
+    """
+    from datetime import datetime, timezone
+
+    from app.routers import admin_extra
+
+    frozen = datetime(2026, 11, 15, 12, 0, tzinfo=timezone.utc)
+    monkeypatch.setattr(admin_extra, "utc_now", lambda: frozen)
+    admin = make_user(db, role="admin")
+    p = make_producer(db, name="חוות הבוקר")
+    p.created_at = datetime(2026, 11, 1, 8, 0, tzinfo=timezone.utc)
+    p.kind = "producer"
+    db.commit()
+
+    r = client.get("/admin/dashboard", headers=auth_header(admin))
+    assert r.status_code == 200, r.text
+    months = {m["month"]: m["producers"] for m in r.json()["monthly_producers"]}
+    assert months["2026-11"] == 1
+    assert months["2026-10"] == 0
+
+    r = client.get("/admin/analytics", headers=auth_header(admin))
+    assert r.status_code == 200, r.text
+    monthly = {m["month"]: m for m in r.json()["monthly"]}
+    assert monthly["2026-11"]["producers"] == 1
+    assert monthly["2026-10"]["producers"] == 0
+
+
+def test_six_month_window_is_six_consecutive_months_across_february():
+    """Fixed 30-day steps from 15/03/2027 gave 2026-12 twice and no 2027-02."""
+    from datetime import datetime, timezone
+
+    from app.routers.admin_extra import _last_six_months
+
+    for now in (
+        datetime(2027, 3, 15, tzinfo=timezone.utc),
+        datetime(2027, 4, 15, tzinfo=timezone.utc),
+        datetime(2028, 3, 1, tzinfo=timezone.utc),
+        datetime(2026, 1, 31, 23, 59, tzinfo=timezone.utc),
+    ):
+        buckets = _last_six_months(now)
+        months = [start.strftime("%Y-%m") for start, _ in buckets]
+        assert len(set(months)) == 6, (now, months)
+        for (_, end), (start, _) in zip(buckets, buckets[1:]):
+            assert end == start, (now, months)
+        assert buckets[-1][0] <= now < buckets[-1][1]

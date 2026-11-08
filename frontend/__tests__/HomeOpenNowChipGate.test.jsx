@@ -20,6 +20,11 @@ import { OPEN_NOW_CHIP_MIN } from "@/lib/producer-filters";
  * the `hasMore` case below is the one that fails if the argument regresses.
  */
 
+// MEH-2767: the chip gate counts the unfiltered snapshot hook; see the helper.
+import { setCatalogSnapshot } from "./helpers/catalog-snapshot";
+vi.mock("@/lib/use-catalog-snapshot", async () =>
+  (await import("./helpers/catalog-snapshot")).catalogSnapshotMock);
+vi.mock("@/lib/use-chip-copy", async () => (await import("./helpers/he-chip-copy")).chipCopyMock);
 vi.mock("next-intl", () => ({
   useTranslations: () => (k, v) => (v ? `${k}:${JSON.stringify(v)}` : k),
 }));
@@ -35,7 +40,7 @@ vi.mock("framer-motion", () => ({
 }));
 vi.mock("@/components/ProducerCard", () => ({ default: () => <div /> }));
 vi.mock("@/components/Skeleton", () => ({ SkeletonProducerGrid: () => <div /> }));
-vi.mock("@/i18n/navigation", () => ({
+vi.mock("@/i18n/navigation", () => ({ Link: ({ href, children, prefetch, ...p }) => <a href={typeof href === "string" ? href : href?.pathname} {...p}>{children}</a>, 
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
 }));
 // MEH-2173: the axes moved off the flat row and into the FilterSheet, so the
@@ -49,15 +54,20 @@ vi.mock("@/i18n/navigation", () => ({
 // would red seven gate cases and name none of them. That the sheet actually
 // opens is asserted where it belongs: HomePromotedFilters.test.jsx, and the
 // Playwright harness.
-vi.mock("@/components/FilterSheet", () => ({
-  default: ({ chips = [] }) => (
-    <div data-testid="chip-row">
-      {chips.map((c) => (
-        <span key={c.key} data-testid={`chip-${c.key}`}>{c.label}</span>
-      ))}
-    </div>
-  ),
-}));
+// MEH-2748: the real sheet attaches chip words via useChipCopy(); the stand-in
+// runs the same resolver over he.json so the label it prints is the shipped one.
+vi.mock("@/components/FilterSheet", async () => {
+  const { heChipCopy } = await import("./helpers/he-chip-copy");
+  return {
+    default: ({ chips = [] }) => (
+      <div data-testid="chip-row">
+        {chips.map(heChipCopy).map((c) => (
+          <span key={c.key} data-testid={`chip-${c.key}`}>{c.label}</span>
+        ))}
+      </div>
+    ),
+  };
+});
 
 const CHIP = () => screen.queryByTestId("chip-open_for_orders_now");
 
@@ -105,7 +115,10 @@ const NEVER_OPEN = {};
 const rows = (n, order_window) =>
   Array.from({ length: n }, (_, i) => ({ id: i + 1, order_window }));
 
-const props = (producers, overrides = {}) => ({
+// MEH-2767: the gate counts the snapshot — make it the rendered fixture.
+const props = (producers, overrides = {}) =>
+  (setCatalogSnapshot(producers), propsBase(producers, overrides));
+const propsBase = (producers, overrides = {}) => ({
   producers,
   producersLoading: false,
   visibleProducers: producers,

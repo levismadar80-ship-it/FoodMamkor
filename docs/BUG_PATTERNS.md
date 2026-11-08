@@ -148,6 +148,34 @@ silently disables AI features in production.
 
 ---
 
+## Grid card does not fill its cell (MEH-2802)
+
+**Pattern:** a card inside a CSS grid cell ends where its content ends. The
+grid stretches the CELL to the row's tallest item, but the card's wrapper and
+link are not `h-full`, so cards in one row come out at different heights, a
+full-height decoration (the start-edge tick, the bottom border) stops short,
+and the footer row (chip + price) sits on a different line in each card. Home
+«אירועים קרובים», lg+ 3-up: `EventEntryRow` compact had none of it.
+
+**Rule:** a card in a grid fills its cell, and its footer is pushed to the
+bottom — the MDN card cookbook pattern, already in `ProducerCard.jsx`
+(`flex flex-col h-full` + `mt-auto`). In `EventEntryRow` compact (lg only):
+wrapper + link `h-full`, link `grid-rows-[auto_1fr]` (band = row 1,
+rail + body = row 2), body `flex flex-col`, chip row `mt-auto`, title
+`line-clamp-2` (one very long title must not set the height of the whole row).
+Keep a minimum
+gap above the footer with padding (`pt-*`), since `mt-auto` collapses to 0 in
+the tallest card.
+
+**Guard:** `frontend/e2e/flows/45-card-grid-equal-height.spec.ts` — at 1280px on
+`/`, equal card height (±1px) per grid row and one chip+price bottom line, for
+«אירועים קרובים» and the seasonal `ProducerCard` grid. jsdom has no layout, so
+the class half (`__tests__/EventEntryRow.test.jsx`) cannot catch a height bug on
+its own. Fewer than 2 cards → the spec skips with the reason, decided from the
+API's answer and not from the rendered count.
+
+---
+
 ## Duplicate producer-detail CTAs
 
 **Pattern:** rendering both the sidebar WhatsApp CTA and the sticky bar
@@ -155,6 +183,32 @@ CTA at the same breakpoint.
 
 **Rule:** sidebar WhatsApp is canonical. Sticky bar is mobile-only.
 Never render both at the same breakpoint.
+
+---
+
+## Same fact in two sections (MEH-2803)
+
+**Pattern:** one fact rendered in two places on one page, each correct on its
+own. The business page showed its hours under «מתי מקבלים הזמנות» (the order
+window) and again, unlabelled, under «הגעה ומיקום» (store hours) — nearly the
+same values in two formats («7:00» beside «07:00», «ראשון–חמישי» beside
+«א'-ה'»), so a visitor reads a duplicate and wonders which one is right. Same
+family as «Duplicate producer-detail CTAs» above: two renderers, no single
+owner of the fact.
+
+**Rule:** one fact, one place. A second set of the same KIND of fact is shown
+only under its own label, saying what it is the hours OF — Google Business
+Profile's «More hours» (pickup, delivery, online ordering beside the regular
+hours). When the two sets are equal, they are one fact: one set, one label
+(«הזמנות וביקור במקום»). Unreadable data is never merged — it is shown as
+typed, labelled.
+
+**Guard:** `frontend/__tests__/ProducerHoursSection.test.jsx` («one fact, one
+place») — renders ProducerSections with identical order window and store
+hours and asserts exactly one `[data-testid="hours-set"]` and that each time
+range appears ONCE in the page text. Red on the pre-MEH-2803 page («7:00–14:00»
+×2). Companion: `__tests__/hoursHebrewParse.test.js` reads the demo seed's
+`opening_hours` and fails if it drifts into a format `parseHours` cannot read.
 
 ---
 

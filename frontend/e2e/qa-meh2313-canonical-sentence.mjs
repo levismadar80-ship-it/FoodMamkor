@@ -19,7 +19,7 @@ const OUT = process.argv[2] || "../qa-artifacts/MEH-2313";
 const BASE = process.argv[3] || "http://localhost:3000";
 const CHROMIUM_PATH = "/opt/pw-browsers/chromium"; // the sandbox build; CI falls back to the default
 const EXPECTED = {
-  he: "אוכל מבתי עסק מקומיים שבחרנו אישית — קרוב אלייך, בלי לחפש שעות.",
+  he: "אוכל מבתי עסק מקומיים שבחרנו אישית — קרוב לבית, בלי לחפש שעות.",
   en: "Food from local businesses we've personally chosen — close to you, without searching for hours.",
 };
 

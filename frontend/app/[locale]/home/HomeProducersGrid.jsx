@@ -1,8 +1,9 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { motion } from "framer-motion";
-import { Faders, Info, Leaf, MapPin, X } from "@phosphor-icons/react";
+import { useRevealSkip } from "@/lib/route-memory";
+import { ArrowLeft, Faders, Info, Leaf, MapPin, X } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import ProducerCard from "@/components/ProducerCard";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
@@ -14,22 +15,23 @@ import FilterSheet from "@/components/FilterSheet";
 import PromotedServiceChips from "@/components/PromotedServiceChips";
 import { SERVICE_CHIP_KEYS } from "@/lib/map-chips";
 import { chipsToQuery } from "@/lib/filter-url";
+import { useChipCopy } from "@/lib/use-chip-copy";
 // MEH-1825: the day row is shared with /producers — one definition in components/.
 import { DeliveryDayRow } from "@/components/DeliveryDayRow";
 import { keepFocusedChipClear } from "@/lib/keepFocusedChipClear";
 import { DELIVERY_DAYS } from "@/lib/delivery-days";
-// MEH-1934: visibleGatedDietKeys gates the two newest diet chips here too.
-// CHIPS_CONFIG is shared with /producers, so a chip added there appears on
-// this row automatically — gating only at /producers would leave the home
-// row deep-linking to a listing that returns nothing.
+// MEH-2767: visibleAxisChips is the one chip gate home, /producers and /map
+// share (it replaced MEH-1934's visibleGatedDietKeys + MEH-2131's open-now
+// call here). CHIPS_CONFIG is shared with /producers, so a chip added there
+// appears on this row automatically.
 import {
   CHIPS_CONFIG,
-  GATED_DIET_KEYS,
-  openNowChipVisible,   // MEH-2131
-  visibleGatedDietKeys,
+  visibleAxisChips,
   withChipGroups,       // MEH-2173 — sheet group metadata
 } from "@/lib/producer-filters";
+import { useCatalogSnapshot } from "@/lib/use-catalog-snapshot";
 import { LOAD_MORE_CAP } from "@/lib/use-home-page";
+import Button from "@/components/ui/Button";
 
 // 🔒 The axes the home row PROMOTES onto the surface; every other axis stays
 // one tap away inside the FilterSheet. CHANGING THIS LIST IS A SAPIR DECISION,
@@ -107,8 +109,6 @@ export function HomeProducersGrid({
   filters,
   chips,
   categories,
-  showNewUserHint,
-  fridayMode,
   // MEH-2130: remove ONE active attribute filter from the applied-filter strip.
   onRemoveChip,
   // MEH-2173: the promoted chips AND the sheet's switches both call this — one
@@ -136,6 +136,9 @@ export function HomeProducersGrid({
   regionFallback,
 }) {
   const t = useTranslations();
+  const withChipCopy = useChipCopy(); // MEH-2748: chip words from messages
+  // MEH-2714: the card entrance plays on the first visit only (see route-memory).
+  const skipReveal = useRevealSkip();
   // MEH-1418: attach Phosphor leading icons once (static config → stable ref).
   // MEH-1934: recomputed when the loaded set changes — the gate turns the chips
   // on by itself once the catalog carries the markings, with nobody flipping a
@@ -154,37 +157,29 @@ export function HomeProducersGrid({
   // own glyphs: the promoted row via PromotedServiceChips, and FilterSheet internally
   // (FilterSheet.jsx calls chipIcon per row). This ticket changes WHERE an axis
   // renders, never WHETHER it is offered.
-  const gatedChips = useMemo(() => {
-    const shown = visibleGatedDietKeys(visibleProducers, chips);
-    const hidden = GATED_DIET_KEYS.filter((k) => !shown.includes(k));
-    // MEH-2131: the open-now axis reaches the home row via the unified config,
-    // so it needs the home row's copy of the gate. Gating only at /producers
-    // would leave this row deep-linking to a listing that returns nothing —
-    // the same reasoning MEH-1934 used for the diet gates.
-    //
-    // `catalogFullyLoaded: true`, and the distinction is load-bearing rather
-    // than a shortcut. Home's `hasMore` is `visibleCount < producers.length`
-    // (use-home-page.js:819) — a DISPLAY collapse behind "עוד בתי עסק", not
-    // "more pages unfetched". `producers` already holds everything home
-    // fetched, so it is the complete catalog from the guard's point of view.
-    //
-    // Passing `!hasMore` here was the first version of this line, and it was
-    // wrong in the way that matters: with more than one screenful of results
-    // `hasMore` is true, the zero-result half never ran, and the chip rendered
-    // at 3am exactly as before. The self-QA harness caught it (case B), which
-    // is the entire reason that harness asserts the withheld case and not only
-    // the visible one.
-    const openNowHidden =
-      !openNowChipVisible({
-        producers,
-        active: chips.open_for_orders_now,
-        catalogFullyLoaded: true,
+  //
+  // MEH-2767: one gate, over the UNFILTERED catalog snapshot — the same
+  // function and input /producers and /map use. The gate here used to count
+  // `visibleProducers` (the first screenful of the FILTERED results), so a
+  // diet chip could vanish because of another filter, or because its five
+  // businesses sat below the fold.
+  const catalogSnapshot = useCatalogSnapshot();
+  const gatedChips = useMemo(
+    () =>
+      visibleAxisChips({
+        chips: CHIPS_CONFIG,
+        catalog: catalogSnapshot.catalog,
+        status: catalogSnapshot.status,
+        complete: catalogSnapshot.complete,
+        // A failed snapshot gates on the feed home loaded (MEH-2131's source
+        // for open-now), so no guard drops out on a network blip.
+        fallbackCatalog: producers,
+        fallbackComplete: true,
+        chipState: chips,
         now: openNowClock,
-      }) && "open_for_orders_now";
-    return CHIPS_CONFIG.filter(
-      (c) => !hidden.includes(c.key) && c.key !== openNowHidden,
-    );
-  }, [visibleProducers, chips, producers, openNowClock]);
+      }),
+    [catalogSnapshot, chips, openNowClock, producers],
+  );
 
   // MEH-2173: the promoted pair, resolved out of CHIPS_CONFIG — the same
   // taxonomy declaration `gatedChips` (and therefore the sheet) is built from.
@@ -237,7 +232,11 @@ export function HomeProducersGrid({
   const [dayPanelHost, setDayPanelHost] = useState(null);
   // MEH-2537: focus under the sticky «סינון» — lib/keepFocusedChipClear.js.
   return (
-    <section id="producers-grid" className="max-w-7xl mx-auto px-4 pb-20">
+    // MEH-2712: pb-8 so the gap to the mini-map below is 56px on phones, not
+    // ~104px. MEH-2747: the mini-map follows this grid on desktop too now, so
+    // the same pb-8 applies there (pb-8 + the map's md:mt-12 = 80px, the
+    // spacing desktop had below this grid before).
+    <section id="producers-grid" className="max-w-7xl mx-auto px-4 pb-8">
       {/* MEH-2394: the first-visit coach-mark tour (step 0 here, step 1 by the
           chips, steps 2–3 on the bottom nav) is gone. On a first visit it was
           the THIRD thing asking for attention above the content, after the
@@ -326,7 +325,7 @@ export function HomeProducersGrid({
             data-testid="home-filters-button"
             // REUSES: frontend/components/ProducersClient.jsx:775-787 — same
             // trigger, same inactive chip visuals, same inline count.
-            className="inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 rounded-md text-sm font-medium border transition bg-white text-text border-border hover:border-primary hover:text-primary"
+            className="inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 rounded-md text-sm font-medium border transition bg-surface text-text border-border hover:border-primary hover:text-primary"
           >
             {/* `Faders`, not `FadersHorizontal` as the card's prose says: the
                 two shipped sheet triggers both use `Faders`
@@ -399,7 +398,7 @@ export function HomeProducersGrid({
               colours. The aria-label is the one addition: the /producers pill's
               accessible name is just "× {label}", which does not say what the
               button does. It reuses an existing key, so no new i18n twin. */}
-          {tagChips.map((chip) => (
+          {tagChips.map(withChipCopy).map((chip) => (
               <button
                 key={chip.key}
                 type="button"
@@ -413,9 +412,9 @@ export function HomeProducersGrid({
                 // each button a distinct name. Caught by the CI reviewer.
                 aria-label={`${t("home.producers.clear_filter")} ${chip.label}`}
                 data-testid={`home-active-filter-${chip.key}`}
-                className="inline-flex items-center gap-1 bg-white text-primary border border-primary rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap shrink-0"
+                className="inline-flex items-center gap-1 bg-surface text-primary border border-primary rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap shrink-0"
               >
-                <span aria-hidden="true" className="text-[10px] font-bold">×</span>
+                <span aria-hidden="true" className="text-2xs font-bold">×</span>
                 {chip.label}
               </button>
           ))}
@@ -479,26 +478,22 @@ export function HomeProducersGrid({
               {t("home.producers.counter", { shown: Math.min(visibleCount, producers.length), total: producers.length })}
             </p>
           )}
-          {showNewUserHint && visibleProducers.length > 0 && (
-            <div className="flex items-center gap-2 bg-green-50 border border-primary/20 rounded-[12px] px-4 py-2.5 mb-4 text-sm text-primary w-fit">
-              <span className="relative flex h-2.5 w-2.5 flex-shrink-0">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-60" />
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary" />
-              </span>
-              {t("home.producers.hint_favorites")}
-            </div>
-          )}
+          {/* MEH-2634: the first-visit "tap the heart" hint is gone. It was the
+              third green box a first-time visitor met (cookie banner, city
+              banner, this) and taught a feature nobody had asked for yet. The
+              `showNewUserHint` prop is still threaded in from use-home-page.js
+              for now — removing that state machine is out of this PR's scope. */}
           <div className="grid grid-cols-2 gap-3 md:gap-6 lg:grid-cols-4" data-testid="home-producers-grid">
             {visibleProducers.map((p, idx) => (
               <motion.div
                 key={p.id}
                 className="h-full"
-                initial={{ opacity: 0, y: 40 }}
+                initial={skipReveal ? false : { opacity: 0, y: 40 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.1 }}
                 transition={{ duration: 0.5, delay: (idx % 4) * 0.08, ease: [0.25, 0.46, 0.45, 0.94] }}
               >
-                <ProducerCard producer={p} referrer="home" fridayMode={fridayMode} />
+                <ProducerCard producer={p} referrer="home" />
               </motion.div>
             ))}
           </div>
@@ -556,7 +551,7 @@ export function HomeProducersGrid({
                       ? deliveryDaysForCity(p, filters.delivery_city)
                       : null;
                   const card = (
-                    <ProducerCard producer={p} referrer="home" fridayMode={fridayMode} />
+                    <ProducerCard producer={p} referrer="home" />
                   );
                   return (
                     <motion.div
@@ -569,7 +564,7 @@ export function HomeProducersGrid({
                          its own space inside the cell. The uncaptioned cell keeps the
                          exact markup it had before this ticket. */
                       className={captionDays === null ? "h-full" : "h-full flex flex-col"}
-                      initial={{ opacity: 0, y: 40 }}
+                      initial={skipReveal ? false : { opacity: 0, y: 40 }}
                       whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true, amount: 0.1 }}
                       transition={{ duration: 0.5, delay: (idx % 4) * 0.08, ease: [0.25, 0.46, 0.45, 0.94] }}
@@ -614,13 +609,13 @@ export function HomeProducersGrid({
                 {t(filters.category ? "home.producers.empty_subtext_category" : "home.producers.empty_subtext")}
               </p>
               {filters.category ? (
-                <button
+                <Button
                   type="button"
                   onClick={onClearCategory}
-                  className="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-sm hover:bg-primary-dark transition font-medium"
+                  variant="primary" size="lg"
                 >
                   {t("home.producers.clear_category_cta")}
-                </button>
+                </Button>
               ) : (
                 <Link
                   href="/map"
@@ -629,6 +624,18 @@ export function HomeProducersGrid({
                   {t("home.producers.explore_map")}
                 </Link>
               )}
+              {/* MEH-2827 PR 4: nothing here → someone may know a business that
+                  belongs here. Carries the active city so the form starts there. */}
+              <div className="mt-4">
+                <Link
+                  href={filters.delivery_city ? `/recommend?city=${encodeURIComponent(filters.delivery_city)}` : "/recommend"}
+                  data-testid="recommend-link-home-empty"
+                  className="inline-flex items-center gap-1 min-h-touch text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                >
+                  {t("nav.footer.recommend")}
+                  <ArrowLeft size={15} className="ltr:rotate-180" aria-hidden="true" />
+                </Link>
+              </div>
             </div>
           )}
           {hasMore && (
@@ -639,19 +646,34 @@ export function HomeProducersGrid({
               {visibleCount >= LOAD_MORE_CAP ? (
                 <Link
                   href="/producers"
-                  className="inline-block bg-white text-primary border-2 border-primary px-8 py-3 rounded-sm hover:bg-green-50 transition font-medium"
+                  className="inline-block bg-surface text-primary border-2 border-primary px-8 py-3 rounded-sm hover:bg-green-50 transition font-medium"
                 >
                   {t("home.producers.all_businesses")}
                 </Link>
               ) : (
                 <button
                   onClick={onLoadMore}
-                  className="bg-white text-primary border-2 border-primary px-8 py-3 rounded-sm hover:bg-green-50 transition font-medium"
+                  className="bg-surface text-primary border-2 border-primary px-8 py-3 rounded-sm hover:bg-green-50 transition font-medium"
                 >
                   {t("home.producers.load_more")}
                 </button>
               )}
             </div>
+          )}
+          {/* MEH-2827 PR 4: one quiet line after the list — no card, no button —
+              so the way to /recommend is not only the footer. */}
+          {producers.length > 0 && (
+            <p className="mt-8 text-center text-sm text-fg-muted" data-testid="home-recommend-line">
+              {t("recommend.title")}{" "}
+              <Link
+                href="/recommend"
+                data-testid="recommend-link-home"
+                className="inline-flex items-center gap-1 min-h-touch text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              >
+                {t("nav.footer.recommend")}
+                <ArrowLeft size={15} className="ltr:rotate-180" aria-hidden="true" />
+              </Link>
+            </p>
           )}
           {/* MEH-1476: surprise-me relocated here from the hero (was
               MEH-1288/MEH-1369). Full-catalog random producer via onSurprise

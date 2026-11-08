@@ -60,7 +60,7 @@ export function GoogleMapsGlyph() {
 export function AddressNavLinks({ links, testId }) {
   const t = useTranslations("map.mini");
   const btn =
-    "flex-1 inline-flex items-center justify-center gap-2 min-h-[44px] rounded-[10px] bg-green-50 text-sm font-semibold text-primary hover:bg-green-100 transition focus-ring";
+    "flex-1 inline-flex items-center justify-center gap-2 min-h-touch rounded-full bg-green-50 text-sm font-semibold text-primary hover:bg-green-100 transition focus-ring";
   return (
     <div className="flex gap-2 px-4 pb-3" data-testid={testId}>
       <a href={links.waze} target="_blank" rel="noopener noreferrer" aria-label={t("open_in_waze_aria")} className={btn}>

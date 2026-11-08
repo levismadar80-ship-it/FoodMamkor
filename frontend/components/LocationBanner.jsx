@@ -4,8 +4,19 @@ import { useEffect, useState } from "react";
 import { MapPin, X } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { COOKIE_CONSENT_EVENT, hasCookieConsent } from "@/lib/cookie-consent";
+import Button from "@/components/ui/Button";
 
 const DISMISS_KEY = "location_banner_dismissed";
+
+// MEH-2634: 3s → 8s. At 3s the city prompt still landed on a visitor who was
+// reading the hero for the first time: cookie consent is usually answered in
+// the first second or two, so the gate below passed almost immediately and the
+// banner opened while the hero was still being read.
+// Exported so the specs spend a timer budget DERIVED from this value instead
+// of restating it — a test that hardcodes 3500ms against an 8000ms reveal goes
+// green for the wrong reason (nothing rendered because the clock never reached
+// the timer), which is exactly how this change was first caught.
+export const REVEAL_DELAY_MS = 8000;
 
 export default function LocationBanner({ hasCity, onOpenModal, suppressed = false }) {
   const t = useTranslations("location.banner");
@@ -24,7 +35,7 @@ export default function LocationBanner({ hasCity, onOpenModal, suppressed = fals
     if (sessionStorage.getItem(DISMISS_KEY)) return;
     let timer;
     const arm = () => {
-      timer = setTimeout(() => setVisible(true), 3000);
+      timer = setTimeout(() => setVisible(true), REVEAL_DELAY_MS);
     };
     if (hasCookieConsent()) arm();
     else window.addEventListener(COOKIE_CONSENT_EVENT, arm, { once: true });
@@ -45,7 +56,7 @@ export default function LocationBanner({ hasCity, onOpenModal, suppressed = fals
 
   return (
     <div
-      className="mx-4 md:mx-auto max-w-3xl mb-6 flex items-start justify-between gap-3 rounded-[10px] px-4 py-3"
+      className="mx-4 md:mx-auto max-w-3xl mb-6 flex items-start justify-between gap-3 rounded-md px-4 py-3"
       style={{ backgroundColor: "#EAF3DE", color: "#2e6853" }}
       role="status"
     >
@@ -58,13 +69,13 @@ export default function LocationBanner({ hasCity, onOpenModal, suppressed = fals
         </p>
       </div>
       <div className="flex items-center gap-2 shrink-0">
-        <button
+        <Button
           type="button"
           onClick={onOpenModal}
-          className="bg-primary text-white text-sm font-medium px-4 py-1.5 rounded-[8px] hover:bg-primary-dark transition whitespace-nowrap"
+          variant="primary" size="sm" className="whitespace-nowrap"
         >
           {t("choose_city")}
-        </button>
+        </Button>
         <button
           type="button"
           onClick={dismiss}

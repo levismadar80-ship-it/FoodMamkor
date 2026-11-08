@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import {
   UserCircle,
@@ -24,6 +24,7 @@ import Input from "@/components/ui/Input";
 import PasswordInput from "@/components/PasswordInput";
 import { firstFailureMessage } from "@/lib/passwordMessages";
 import { validateIsraeliPhone } from "@/lib/validators";
+import Button from "@/components/ui/Button";
 
 function SettingsLoadingFallback() {
   const tCommon = useTranslations("settings.common");
@@ -51,12 +52,12 @@ function SettingsSkeleton({ label }) {
     >
       <span className="sr-only">{label}</span>
       {/* h1: text-3xl line ≈ h-9, mb-6 — same slot as the real heading */}
-      <div className="h-9 w-48 bg-border rounded-[12px] animate-pulse mb-6" />
+      <div className="h-9 w-48 bg-border rounded-md animate-pulse mb-6" />
       {/* tab bar: p-1 pill + py-2 buttons ≈ 46px, mb-8 */}
       <div className="h-[46px] w-full max-w-xs bg-border rounded-full animate-pulse mb-8" />
       <div className="space-y-4">
-        <div className="h-28 bg-border rounded-[16px] animate-pulse" />
-        <div className="h-28 bg-border rounded-[16px] animate-pulse" />
+        <div className="h-28 bg-border rounded-lg animate-pulse" />
+        <div className="h-28 bg-border rounded-lg animate-pulse" />
       </div>
     </div>
   );
@@ -136,7 +137,7 @@ function SettingsPageBody() {
       <div
         role="tablist"
         aria-label={tCommon("tabs_aria")}
-        className="flex gap-1 bg-white border border-border rounded-full p-1 mb-8 overflow-x-auto"
+        className="flex gap-1 bg-surface border border-border rounded-full p-1 mb-8 overflow-x-auto"
         // MEH-2199: the role promised arrow navigation and the bar did not
         // deliver it. Shared with /events so the RTL arrow mapping has one
         // owner — see hooks/useTabsKeyboard.js.
@@ -313,7 +314,7 @@ export function ProfileTab() {
   return (
     // MEH-2565: card from md up only. On a phone the profile form uses the full
     // width; the security tab keeps its cards (three separate sections).
-    <section role="tabpanel" aria-label={t("tabpanel_aria")} className="md:bg-white md:border md:border-border md:rounded-[16px] md:p-6">
+    <section role="tabpanel" aria-label={t("tabpanel_aria")} className="md:bg-surface md:border md:border-border md:rounded-lg md:p-6">
       {/* Avatar */}
       <div className="flex items-center gap-4 mb-6">
         <label
@@ -354,7 +355,7 @@ export function ProfileTab() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} data-chat-hide="" className="space-y-4">
         {/* MEH-1145 Wave E3: plain labeled field → ui/Input (canon; text-align
             via className, dir via ...rest — both pass through unchanged). */}
         <Input
@@ -389,7 +390,7 @@ export function ProfileTab() {
             value={user.email || ""}
             readOnly
             disabled
-            className="w-full border border-border rounded-[12px] px-3 py-2 bg-background-alt text-fg-muted cursor-not-allowed"
+            className="w-full border border-border rounded-md px-3 py-2 bg-background-alt text-fg-muted cursor-not-allowed"
             dir="ltr"
           />
           <p className="text-xs text-fg-muted mt-1 text-right">
@@ -431,15 +432,15 @@ export function ProfileTab() {
             {message}
           </p>
         )}
-        {error && <p className="text-sm text-red-600" role="alert">{error}</p>}
+        {error && <p className="text-sm text-danger-600" role="alert">{error}</p>}
 
-        <button
+        <Button
           type="submit"
           disabled={!canSave || saving}
-          className="bg-primary text-white px-6 py-2.5 rounded-[12px] hover:bg-primary-dark transition font-medium disabled:opacity-50"
+          variant="primary" size="lg"
         >
           {saving ? tCommon("saving") : tCommon("save_cta")}
-        </button>
+        </Button>
       </form>
     </section>
   );
@@ -526,7 +527,7 @@ function PasswordChangeCard({ isOAuth }) {
 
   if (isOAuth) {
     return (
-      <section role="tabpanel" aria-label={t("oauth_tabpanel_aria")} className="bg-white border border-border rounded-[16px] p-6">
+      <section role="tabpanel" aria-label={t("oauth_tabpanel_aria")} className="bg-surface border border-border rounded-lg p-6">
         <h2 className="font-semibold text-text mb-2">{t("oauth_heading")}</h2>
         <p className="text-sm text-fg-muted">{t("oauth_body")}</p>
       </section>
@@ -534,10 +535,10 @@ function PasswordChangeCard({ isOAuth }) {
   }
 
   return (
-    <section className="bg-white border border-border rounded-[16px] p-6">
+    <section className="bg-surface border border-border rounded-lg p-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-semibold text-text">{t("heading")}</h2>
-        <Link href="/forgot-password" className="text-xs text-primary hover:underline">
+        <Link href="/forgot-password" className="text-xs text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current">
           {t("forgot_link")}
         </Link>
       </div>
@@ -559,7 +560,7 @@ function PasswordChangeCard({ isOAuth }) {
               onChange={(e) => setCurrent(e.target.value)}
               required
               // eslint-disable-next-line no-restricted-syntax -- rtl-ok: eye toggle inside dir="ltr" input
-              className="w-full border border-border rounded-[12px] pr-11 pl-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition"
+              className="w-full border border-border rounded-md pr-11 pl-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition"
               dir="ltr"
             />
             <button
@@ -615,7 +616,7 @@ function PasswordChangeCard({ isOAuth }) {
               required
               aria-invalid={mismatch || undefined}
               // rtl-ok
-              className={`w-full border rounded-[12px] pr-11 pl-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition ${mismatch ? "border-red-400" : "border-border"}`}
+              className={`w-full border rounded-md pr-11 pl-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition ${mismatch ? "border-danger-400" : "border-border"}`}
               dir="ltr"
             />
             <button
@@ -630,7 +631,7 @@ function PasswordChangeCard({ isOAuth }) {
             </button>
           </div>
           {mismatch && (
-            <p className="text-xs text-red-500 mt-1 text-right" role="alert">{t("mismatch_error")}</p>
+            <p className="text-xs text-error mt-1 text-right" role="alert">{t("mismatch_error")}</p>
           )}
         </div>
 
@@ -640,15 +641,15 @@ function PasswordChangeCard({ isOAuth }) {
             {message}
           </p>
         )}
-        {error && <p className="text-sm text-red-600" role="alert">{error}</p>}
+        {error && <p className="text-sm text-danger-600" role="alert">{error}</p>}
 
-        <button
+        <Button
           type="submit"
           disabled={!canSave || saving}
-          className="bg-primary text-white px-6 py-2.5 rounded-[12px] hover:bg-primary-dark transition font-medium disabled:opacity-50"
+          variant="primary" size="lg"
         >
           {saving ? t("submit_saving") : t("submit_cta")}
-        </button>
+        </Button>
       </form>
     </section>
   );
@@ -681,7 +682,7 @@ function LogoutAllDevicesCard() {
   };
 
   return (
-    <section className="bg-white border border-border rounded-[16px] p-6">
+    <section className="bg-surface border border-border rounded-lg p-6">
       <h2 className="font-semibold text-text mb-1">{t("heading")}</h2>
       <p className="text-sm text-fg-muted mb-4">
         {t("body")}
@@ -691,31 +692,31 @@ function LogoutAllDevicesCard() {
         <button
           type="button"
           onClick={() => setConfirming(true)}
-          className="border border-amber-500 text-amber-700 px-5 py-2 rounded-[12px] text-sm font-medium hover:bg-amber-50 transition"
+          className="border border-warning-500 text-warning-700 px-5 py-2 rounded-md text-sm font-medium hover:bg-warning-50 transition"
         >
           {t("heading")}
         </button>
       ) : (
-        <div className="rounded-[12px] bg-amber-50 border border-amber-200 p-4 space-y-3">
-          <p className="text-sm text-amber-800 font-medium">{t("confirm_prompt")}</p>
+        <div className="rounded-md bg-warning-50 border border-warning-200 p-4 space-y-3">
+          <p className="text-sm text-warning-800 font-medium">{t("confirm_prompt")}</p>
           <div className="flex gap-2">
             <button
               type="button"
               onClick={handleLogout}
               disabled={loading}
-              className="bg-amber-500 text-white px-5 py-2 rounded-[12px] text-sm font-medium hover:bg-amber-600 transition disabled:opacity-50"
+              className="bg-warning-500 text-white px-5 py-2 rounded-md text-sm font-medium hover:bg-warning-600 transition disabled:opacity-50"
             >
               {loading ? t("confirm_submitting") : t("confirm_submit")}
             </button>
             <button
               type="button"
               onClick={() => setConfirming(false)}
-              className="px-5 py-2 rounded-[12px] text-sm font-medium text-fg-muted hover:text-text transition"
+              className="px-5 py-2 rounded-md text-sm font-medium text-fg-muted hover:text-text transition"
             >
               {tCommon("cancel")}
             </button>
           </div>
-          {error && <p className="text-xs text-red-600" role="alert">{error}</p>}
+          {error && <p className="text-xs text-danger-600" role="alert">{error}</p>}
         </div>
       )}
     </section>
@@ -756,7 +757,7 @@ function DangerZoneCard() {
 
   if (phase === "grace") {
     return (
-      <section className="bg-white border border-red-200 rounded-[16px] p-6 text-center space-y-3">
+      <section className="bg-surface border border-danger-200 rounded-lg p-6 text-center space-y-3">
         {/* MEH-990: raw ⏳ emoji → Phosphor HourglassSimple (grace/waiting state) */}
         <HourglassSimple size={32} weight="regular" aria-hidden="true" className="text-fg-muted" />
         <h2 className="font-semibold text-text">{t("grace_heading")}</h2>
@@ -766,7 +767,7 @@ function DangerZoneCard() {
         <button
           type="button"
           onClick={() => router.push("/login")}
-          className="mt-2 text-sm text-primary hover:underline"
+          className="mt-2 text-sm text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current"
         >
           {t("back_to_login")}
         </button>
@@ -775,8 +776,8 @@ function DangerZoneCard() {
   }
 
   return (
-    <section className="bg-white border border-red-200 rounded-[16px] p-6">
-      <h2 className="font-semibold text-red-700 mb-1">{t("heading")}</h2>
+    <section className="bg-surface border border-danger-200 rounded-lg p-6">
+      <h2 className="font-semibold text-danger-700 mb-1">{t("heading")}</h2>
       <p className="text-sm text-fg-muted mb-4">
         {t("body")}
       </p>
@@ -785,7 +786,7 @@ function DangerZoneCard() {
         <button
           type="button"
           onClick={() => setPhase("confirm")}
-          className="border border-red-400 text-red-600 px-5 py-2 rounded-[12px] text-sm font-medium hover:bg-red-50 transition"
+          className="border border-danger-400 text-danger-600 px-5 py-2 rounded-md text-sm font-medium hover:bg-danger-50 transition"
         >
           {t("delete_cta")}
         </button>
@@ -793,7 +794,7 @@ function DangerZoneCard() {
 
       {phase === "confirm" && (
         <form onSubmit={handleDelete} className="space-y-3">
-          <label htmlFor="danger-email" className="block text-sm font-medium text-red-700">
+          <label htmlFor="danger-email" className="block text-sm font-medium text-danger-700">
             {t("confirm_email_label")}
           </label>
           <input
@@ -802,23 +803,23 @@ function DangerZoneCard() {
             value={emailInput}
             onChange={(e) => setEmailInput(e.target.value)}
             placeholder={user.email || ""}
-            className="w-full border border-red-300 rounded-[12px] px-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-red-300 transition"
+            className="w-full border border-danger-300 rounded-md px-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-danger-300 transition"
             dir="ltr"
             autoComplete="off"
           />
-          {error && <p className="text-xs text-red-600" role="alert">{error}</p>}
+          {error && <p className="text-xs text-danger-600" role="alert">{error}</p>}
           <div className="flex gap-2">
-            <button
+            <Button
               type="submit"
               disabled={!emailMatch || loading}
-              className="bg-red-600 text-white px-5 py-2 rounded-[12px] text-sm font-medium hover:bg-red-700 transition disabled:opacity-40"
+              variant="danger" size="sm"
             >
               {loading ? t("submit_deleting") : t("submit_cta")}
-            </button>
+            </Button>
             <button
               type="button"
               onClick={() => { setPhase("idle"); setEmailInput(""); setError(null); }}
-              className="px-5 py-2 rounded-[12px] text-sm font-medium text-fg-muted hover:text-text transition"
+              className="px-5 py-2 rounded-md text-sm font-medium text-fg-muted hover:text-text transition"
             >
               {tCommon("cancel")}
             </button>

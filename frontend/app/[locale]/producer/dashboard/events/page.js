@@ -26,6 +26,7 @@ import BackLink from "@/components/ui/BackLink";
 import { STATUS_CLASSES } from "@/lib/dashboard-status-classes";
 import { israelToday } from "@/lib/israel-date";
 import { SkeletonList } from "@/components/Skeleton";
+import RegistrationsList from "@/components/RegistrationsList";
 
 export default function ManageEventsPage() {
   const t = useTranslations("dashboard.producer.manage_events");
@@ -86,7 +87,7 @@ export default function ManageEventsPage() {
       <BackLink href="/producer/dashboard/tools" label={t("back_to_tools")} />
       {/* MEH-1655: min-h pins the row at CTA height so the h1 doesn't grow
           when the button unmounts. */}
-      <div className="flex items-center justify-between gap-3 mt-1 mb-6 min-h-[44px]">
+      <div className="flex items-center justify-between gap-3 mt-1 mb-6 min-h-touch">
         {/* MEH-2460: an organizer's events page carries the organizer
             dashboard heading approved on MEH-2458. */}
         <h1 className="font-headline-lg text-3xl font-bold text-text">
@@ -100,7 +101,7 @@ export default function ManageEventsPage() {
         {Array.isArray(items) && items.length > 0 && (
           <Link
             href="/producer/dashboard/events/new"
-            className="inline-flex items-center gap-1.5 bg-primary text-white px-4 py-2 min-h-[44px] rounded-[8px] text-sm font-medium hover:bg-primary-dark transition"
+            className="inline-flex items-center gap-1.5 bg-primary text-white px-4 py-2 min-h-touch rounded-sm text-sm font-medium hover:bg-primary-dark transition"
           >
             <CalendarPlus size={18} weight="bold" aria-hidden="true" />
             {t("create_cta")}
@@ -108,6 +109,13 @@ export default function ManageEventsPage() {
         )}
       </div>
 
+      {/* MEH-2784: events of an unapproved business are hidden from the public
+          (events.py:241), and nothing here said so. */}
+      {user?.producer_status === "pending" && (
+        <p data-testid="events-pending-note" role="status" className="text-sm text-warning-800 bg-warning-50 border border-warning-200 rounded-md px-4 py-3 mb-4">
+          {t("pending_note")}
+        </p>
+      )}
       {items === null ? (
         <SkeletonList count={4} label={t("loading")} className="py-4" />
       ) : items.length === 0 ? (
@@ -129,7 +137,7 @@ export default function ManageEventsPage() {
             <li
               key={ev.id}
               data-testid="manage-event-row"
-              className={`bg-white border rounded-[12px] p-4 ${ev.is_active || past ? "border-border" : "border-yellow-300 bg-yellow-50/40"}`}
+              className={`bg-surface border rounded-md p-4 ${ev.is_active || past ? "border-border" : "border-yellow-300 bg-yellow-50/40"}`}
             >
               <div className="flex items-start justify-between gap-3 flex-wrap">
                 <div className="min-w-0">
@@ -156,7 +164,7 @@ export default function ManageEventsPage() {
                   <Link
                     href={`/producer/dashboard/events/${ev.id}/edit`}
                     aria-label={t("action_edit")}
-                    className="inline-flex items-center gap-1 border border-border rounded-[8px] px-3 py-1.5 min-h-[44px] text-xs hover:bg-green-50 transition"
+                    className="inline-flex items-center gap-1 border border-border rounded-sm px-3 py-1.5 min-h-touch text-xs hover:bg-green-50 transition"
                   >
                     <PencilSimple size={16} aria-hidden="true" />
                     {t("action_edit")}
@@ -166,7 +174,7 @@ export default function ManageEventsPage() {
                     type="button"
                     onClick={() => toggleActive(ev)}
                     disabled={busyId === ev.id}
-                    className="inline-flex items-center gap-1 border border-border rounded-[8px] px-3 py-1.5 min-h-[44px] text-xs hover:bg-green-50 transition disabled:opacity-50"
+                    className="inline-flex items-center gap-1 border border-border rounded-sm px-3 py-1.5 min-h-touch text-xs hover:bg-green-50 transition disabled:opacity-50"
                   >
                     {ev.is_active ? (
                       <>
@@ -186,13 +194,17 @@ export default function ManageEventsPage() {
                     onClick={() => remove(ev)}
                     disabled={busyId === ev.id}
                     aria-label={t("action_delete")}
-                    className="inline-flex items-center gap-1 border border-red-300 text-red-600 rounded-[8px] px-3 py-1.5 min-h-[44px] text-xs hover:bg-red-50 transition disabled:opacity-50"
+                    className="inline-flex items-center gap-1 border border-danger-300 text-danger-600 rounded-sm px-3 py-1.5 min-h-touch text-xs hover:bg-danger-50 transition disabled:opacity-50"
                   >
                     <Trash size={16} aria-hidden="true" />
                     {t("action_delete")}
                   </button>
                 </div>
               </div>
+              {/* MEH-2766: «טופס הרשמה באתר» sign-ups, closed by default. */}
+              {(ev.registration_method === "site_form" || (ev.registered_count ?? 0) > 0) && (
+                <RegistrationsList kind="events" itemId={ev.id} count={ev.registered_count ?? 0} />
+              )}
             </li>
             );
           })}

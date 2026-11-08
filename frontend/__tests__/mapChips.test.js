@@ -1,12 +1,17 @@
 import { describe, it, expect } from "vitest";
 import {
-  CATEGORY_CHIPS,
-  TOGGLE_CHIPS,
+  CATEGORY_CHIPS as RAW_CATEGORY_CHIPS,
+  TOGGLE_CHIPS as RAW_TOGGLE_CHIPS,
   resolveCategoryId,
   resolveCategoryIds,
   chipStateToParams,
   boundsToCenterRadius,
 } from "@/lib/map-chips";
+import { heChipCopy } from "./helpers/he-chip-copy";
+
+// MEH-2748: registries carry keys only; the chips as a Hebrew renderer sees them.
+const CATEGORY_CHIPS = RAW_CATEGORY_CHIPS.map(heChipCopy);
+const TOGGLE_CHIPS = RAW_TOGGLE_CHIPS.map(heChipCopy);
 
 const dbCategories = [
   { id: 1, name: "בשר ועוף", emoji: "🥩" },
@@ -26,7 +31,9 @@ describe("CATEGORY_CHIPS + TOGGLE_CHIPS", () => {
     const labels = CATEGORY_CHIPS.map((c) => c.label);
     expect(labels).toContain("בשר ודגים");
     expect(labels).toContain("ירקות ופירות");
-    expect(labels).toContain("חלב וגבינות");
+    expect(labels).toContain("חלב וביצים");
+    expect(labels).toContain("מזווה");
+    expect(labels).toContain("טיפוח ובית");
     expect(labels).toContain("לחמים ואפייה");
   });
 

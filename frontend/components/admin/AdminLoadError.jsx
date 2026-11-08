@@ -33,7 +33,7 @@ export default function AdminLoadError({ onRetry, testId = "admin-load-error", m
     <div
       role="alert"
       data-testid={testId}
-      className="border border-border rounded-[10px] p-4 bg-red-50 text-center"
+      className="border border-border rounded-md p-4 bg-danger-50 text-center"
     >
       <p className="text-sm text-text mb-2">{message ?? t("admin.common.error_loading")}</p>
       {onRetry && (
@@ -41,7 +41,7 @@ export default function AdminLoadError({ onRetry, testId = "admin-load-error", m
           type="button"
           onClick={onRetry}
           data-testid={`${testId}-retry`}
-          className="text-sm text-primary font-medium hover:underline"
+          className="text-sm text-primary font-medium underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current"
         >
           {t("error.retry")}
         </button>

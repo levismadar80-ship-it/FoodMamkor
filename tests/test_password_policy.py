@@ -109,20 +109,18 @@ class TestPasswordPolicyService:
         assert "too_common" not in result.failures
 
     def test_reuse_block_when_same(self):
-        from passlib.context import CryptContext
+        from app.auth import hash_password
 
-        ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
-        current_hash = ctx.hash(SAFE_PASSWORD)
+        current_hash = hash_password(SAFE_PASSWORD)
         with patch.object(password_policy, "_check_hibp", new=AsyncMock(return_value=False)):
             result = _run(validate_password(SAFE_PASSWORD, current_hash=current_hash))
         assert "same_as_current" in result.failures
         assert result.ok is False
 
     def test_reuse_allowed_when_different(self):
-        from passlib.context import CryptContext
+        from app.auth import hash_password
 
-        ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
-        current_hash = ctx.hash("AnotherPwd99X")  # different from SAFE_PASSWORD
+        current_hash = hash_password("AnotherPwd99X")  # different from SAFE_PASSWORD
         with patch.object(password_policy, "_check_hibp", new=AsyncMock(return_value=False)):
             result = _run(validate_password(SAFE_PASSWORD, current_hash=current_hash))
         assert "same_as_current" not in result.failures
@@ -130,12 +128,11 @@ class TestPasswordPolicyService:
 
     def test_concurrent_failures(self):
         # Short (<12) AND in deny list AND same as current_hash → 3 failures.
-        from passlib.context import CryptContext
+        from app.auth import hash_password
 
         # Use a deny-listed entry that is also <12 chars to stack short+common.
         short_common = "password"  # 8 chars, in deny list
-        ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
-        current_hash = ctx.hash(short_common)
+        current_hash = hash_password(short_common)
         with patch.object(password_policy, "_check_hibp", new=AsyncMock(return_value=False)):
             result = _run(
                 validate_password(short_common, current_hash=current_hash)

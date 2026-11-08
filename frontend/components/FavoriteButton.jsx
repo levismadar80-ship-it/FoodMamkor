@@ -21,6 +21,7 @@ import {
 } from "@/lib/pending-action";
 import LoginPromptModal from "./LoginPromptModal";
 import AlertPrefsPanel from "./AlertPrefsPanel";
+import { labelInName } from "@/lib/label-in-name";
 
 /**
  * FavoriteButton — save button for a producer. Visible to guests too
@@ -191,7 +192,7 @@ export default function FavoriteButton({
     button = (
       <button
         {...commonProps}
-        className="bg-white/95 hover:bg-white rounded-full w-11 h-11 flex items-center justify-center shadow-md hover:scale-105 transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40"
+        className="bg-surface/95 hover:bg-surface rounded-full w-11 h-11 flex items-center justify-center shadow-md hover:scale-105 transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40"
       >
         <HeartStraight
           size={22}
@@ -205,10 +206,12 @@ export default function FavoriteButton({
     // MEH-1334: header quiet-actions row — borderless icon + locked label
     // "שמירה"; ≥44px hit-area via min-h + transparent padding (visual size
     // unchanged, revision-2 #5). Saved state = filled primary heart.
+    // WCAG 2.5.3: the name starts with the visible «שמירה» (axe 4.14).
     button = (
       <button
         {...commonProps}
-        className={`inline-flex items-center gap-1.5 min-h-[44px] py-2 text-[13px] font-medium rounded transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40 ${
+        aria-label={labelInName(t("quiet_label"), label)}
+        className={`inline-flex items-center gap-1.5 min-h-touch py-2 text-sm font-medium rounded transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40 ${
           favorited ? "text-primary" : "text-text hover:text-primary"
         }`}
       >
@@ -225,10 +228,11 @@ export default function FavoriteButton({
     button = (
       <button
         {...commonProps}
+        aria-label={labelInName(t("inline_label"), label)}
         className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium min-h-[32px] border transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40 ${
           favorited
             ? "bg-primary/10 text-primary border-primary/30 hover:bg-primary/15"
-            : "bg-white text-text border-border hover:bg-green-50"
+            : "bg-surface text-text border-border hover:bg-green-50"
         }`}
       >
         <HeartStraight
@@ -244,7 +248,7 @@ export default function FavoriteButton({
     button = (
       <button
         {...commonProps}
-        className="min-w-[44px] min-h-[44px] flex items-center justify-center hover:scale-110 transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40 rounded-lg p-1"
+        className="min-w-touch min-h-touch flex items-center justify-center hover:scale-110 transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40 rounded-lg p-1"
       >
         <HeartStraight
           size={24}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -123,7 +123,7 @@ export default function MapProducerCard({ producer, active, onClick }) {
       data-testid="map-card"
       className={[
         // min-h + fixed rows = the uniform-template equal-height guarantee.
-        "flex gap-3 bg-white border border-border rounded-md overflow-hidden transition-colors min-h-[112px] p-2",
+        "flex gap-3 bg-surface border border-border rounded-md overflow-hidden transition-colors min-h-[112px] p-2",
         onClick || active ? "cursor-pointer" : "",
       ].join(" ")}
       // MEH-1243 (🔒 Pin-Echo): selected = 2px category-color border + 6% tint +
@@ -178,7 +178,7 @@ export default function MapProducerCard({ producer, active, onClick }) {
             LAST (flex-shrink-0, never truncates). MEH-1296: sits directly under
             the name, above the rating row. The distance <bdi> has no dir override
             so it auto-resolves to RTL and reads digits-first ("1.2 ק"מ"). 🔒 §3. */}
-        <p className="text-[13px] leading-5 text-fg-muted flex items-center min-w-0" data-testid="map-meta-line">
+        <p className="text-sm leading-5 text-fg-muted flex items-center min-w-0" data-testid="map-meta-line">
           {category?.name && (
             <span className="inline-flex items-center gap-1 min-w-0">
               <CategoryIcon size={14} weight="regular" aria-hidden="true" className="shrink-0 text-fg-muted" />
@@ -197,7 +197,7 @@ export default function MapProducerCard({ producer, active, onClick }) {
             reviews (uniform-height guarantee, 🔒 §5). MEH-1296: below the meta line. */}
         <div className="h-[18px] flex items-center" data-testid="map-rating-row">
           {showRating && (
-            <span className="inline-flex items-center gap-0.5 text-[12px] text-fg-muted" data-testid="map-rating">
+            <span className="inline-flex items-center gap-0.5 text-xs text-fg-muted" data-testid="map-rating">
               <Star size={12} weight="fill" className="text-accent" aria-hidden="true" />
               {/* 🔒 §7: ★ X.X (N), whole numeric block dir="ltr". */}
               <bdi dir="ltr">{rating.toFixed(1)} ({reviewsCount})</bdi>
@@ -224,7 +224,7 @@ export default function MapProducerCard({ producer, active, onClick }) {
             <span
               key={tag.key}
               data-testid={`map-fulfillment-${tag.key}`}
-              className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] leading-4 whitespace-nowrap ${
+              className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-2xs leading-4 whitespace-nowrap ${
                 tag.neutral ? FULFILLMENT_WASH_NEUTRAL : FULFILLMENT_WASH_GREEN
               }`}
             >

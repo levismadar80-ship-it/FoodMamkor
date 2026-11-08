@@ -106,7 +106,7 @@ function CertModal({ src, expiryText, onClose, t }) {
       aria-modal="true"
       aria-label={t("cert.dialog_label")}
       data-testid="kashrut-cert-modal"
-      className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/60 p-4"
+      className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40 p-4"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -221,7 +221,7 @@ export default function KashrutBadgeStrip({
       // before MEH-1672.
       <>
         <p
-          className={`flex flex-wrap items-center gap-x-1.5 ${className || "text-[12.5px] text-muted"}`}
+          className={`flex flex-wrap items-center gap-x-1.5 ${className || "text-xs text-muted"}`}
           title={[...tooltips, expiryText].filter(Boolean).join(" · ")}
           data-testid="kashrut-quiet-line"
         >
@@ -302,7 +302,7 @@ export default function KashrutBadgeStrip({
         );
       })}
       {nearExpiry && (
-        <span className="inline-flex items-center rounded-full border border-amber-300 bg-amber-50 text-amber-700 px-2 py-0.5 text-xs font-medium">
+        <span className="inline-flex items-center rounded-full border border-warning-300 bg-warning-50 text-warning-700 px-2 py-0.5 text-xs font-medium">
           {t("expiry.near_expiry")}
         </span>
       )}

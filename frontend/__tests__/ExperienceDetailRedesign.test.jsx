@@ -112,6 +112,9 @@ describe("MEH-2549 — share + calendar", () => {
     const heart = screen.getByTestId("save-experience");
     expect(screen.getByTestId("experience-cover-actions").contains(heart)).toBe(true);
     expect(heart.getAttribute("data-id")).toBe("x-1");
+    // MEH-2671: the inline-END corner (top-left in RTL).
+    expect(screen.getByTestId("experience-cover-actions").className).toMatch(/\bend-3\b/);
+    expect(screen.getByTestId("experience-cover-actions").className).not.toMatch(/\bstart-3\b/);
   });
 
   it("a one-off approved experience: «הוספה ליומן» downloads a .ics with start and end", async () => {

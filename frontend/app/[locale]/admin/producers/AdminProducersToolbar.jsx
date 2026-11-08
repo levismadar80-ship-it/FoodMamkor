@@ -1,8 +1,9 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { Star, Warning } from "@phosphor-icons/react";
+import Button from "@/components/ui/Button";
 
 // Phosphor icon size used in this toolbar.
 const ICON_SIZE_SM = 16;
@@ -15,7 +16,7 @@ function SearchInput({ value, onChange, onSearch }) {
       value={value}
       onChange={(e) => onChange(e.target.value)}
       onKeyDown={(e) => e.key === "Enter" && onSearch()}
-      className="flex-1 border border-border rounded-[12px] px-3 py-2"
+      className="flex-1 border border-border rounded-md px-3 py-2"
     />
   );
 }
@@ -26,7 +27,8 @@ function StatusSelect({ value, onChange }) {
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="border border-border rounded-[12px] px-3 py-2 bg-white"
+      aria-label={t("producers.table.columns.status")}
+      className="border border-border rounded-md px-3 py-2 bg-surface"
     >
       <option value="all">{t("producers.toolbar.all_statuses")}</option>
       <option value="approved">{t("producers.toolbar.active")}</option>
@@ -46,16 +48,16 @@ function IncompleteToggle({ active, count, onToggle }) {
   const t = useTranslations("admin");
   const cls = active
     ? "bg-yellow-100 border-yellow-400 text-yellow-800"
-    : "bg-white border-border text-muted hover:border-yellow-400";
+    : "bg-surface border-border text-muted hover:border-yellow-400";
   return (
     <button
       onClick={() => onToggle((v) => !v)}
-      className={`px-4 py-2 rounded-[12px] text-sm border whitespace-nowrap transition ${cls}`}
+      className={`px-4 py-2 rounded-md text-sm border whitespace-nowrap transition ${cls}`}
       title={t("producers.toolbar.incomplete_title")}
     >
       <Warning size={ICON_SIZE_SM} weight="fill" className="inline align-[-2px]" aria-hidden="true" /> {active ? t("producers.toolbar.show_all") : t("producers.toolbar.incomplete_label")}
       {count > 0 && (
-        <span className="me-2 inline-flex items-center justify-center min-w-[1.5rem] h-5 px-1.5 rounded-full bg-yellow-500 text-white text-xs font-bold">
+        <span className="me-2 inline-flex items-center justify-center min-w-[1.5rem] h-5 px-1.5 rounded-full bg-yellow-500 text-text text-xs font-bold">
           {count}
         </span>
       )}
@@ -73,12 +75,12 @@ function IncompleteToggle({ active, count, onToggle }) {
 function ReviewDueToggle({ active, onToggle }) {
   const t = useTranslations("admin");
   const cls = active
-    ? "bg-amber-100 border-amber-400 text-amber-900"
-    : "bg-white border-border text-muted hover:border-amber-400";
+    ? "bg-warning-100 border-warning-400 text-warning-900"
+    : "bg-surface border-border text-muted hover:border-warning-400";
   return (
     <button
       onClick={() => onToggle((v) => !v)}
-      className={`px-4 py-2 rounded-[12px] text-sm border whitespace-nowrap transition ${cls}`}
+      className={`px-4 py-2 rounded-md text-sm border whitespace-nowrap transition ${cls}`}
       title={t("producers.toolbar.review_due_title")}
       aria-pressed={active}
     >
@@ -92,12 +94,12 @@ function ToolbarActions({ onExport }) {
   const t = useTranslations("admin");
   return (
     <>
-      <button onClick={onExport} className="bg-white border border-border px-4 py-2 rounded-[12px] text-sm">
+      <button onClick={onExport} className="bg-surface border border-border px-4 py-2 rounded-md text-sm">
         {t("producers.toolbar.export")}
       </button>
       <Link
         href="/admin/producers/new"
-        className="bg-primary text-white px-4 py-2 rounded-[12px] text-sm whitespace-nowrap text-center"
+        className="bg-primary text-white px-4 py-2 rounded-md text-sm whitespace-nowrap text-center"
       >
         {t("producers.toolbar.new_producer")}
       </Link>
@@ -121,9 +123,9 @@ export default function AdminProducersToolbar({
     <div className="flex flex-col md:flex-row gap-3">
       <SearchInput value={producerSearch} onChange={setProducerSearch} onSearch={onSearch} />
       <StatusSelect value={producerStatus} onChange={setProducerStatus} />
-      <button onClick={() => onSearch()} className="bg-primary text-white px-4 py-2 rounded-[12px] text-sm">
+      <Button onClick={() => onSearch()} variant="primary" size="sm">
         {t("common.search")}
-      </button>
+      </Button>
       <IncompleteToggle active={incompleteOnly} count={incompleteCount} onToggle={setIncompleteOnly} />
       <ReviewDueToggle active={reviewDueOnly} onToggle={setReviewDueOnly} />
       <ToolbarActions onExport={onExport} />

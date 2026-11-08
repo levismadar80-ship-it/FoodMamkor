@@ -14,6 +14,9 @@ import { trackEvent } from "@/lib/analytics";
  * jsdom: structure and wiring only. The one-row claim at 320/375/440/1440 is a
  * layout question, measured in a real browser (qa-artifacts/MEH-2537/).
  */
+// MEH-2767: the chip gate counts the unfiltered snapshot hook; see the helper.
+vi.mock("@/lib/use-catalog-snapshot", async () =>
+  (await import("./helpers/catalog-snapshot")).catalogSnapshotMock);
 vi.mock("next-intl", () => ({
   useTranslations: () => (key, values) =>
     values && values.count !== undefined ? `${key}#${values.count}` : key,
@@ -30,7 +33,7 @@ vi.mock("framer-motion", () => ({
 }));
 vi.mock("@/components/ProducerCard", () => ({ default: () => <div /> }));
 vi.mock("@/components/Skeleton", () => ({ SkeletonProducerGrid: () => <div /> }));
-vi.mock("@/i18n/navigation", () => ({
+vi.mock("@/i18n/navigation", () => ({ Link: ({ href, children, prefetch, ...p }) => <a href={typeof href === "string" ? href : href?.pathname} {...p}>{children}</a>, 
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
 }));
 vi.mock("@/lib/analytics", () => ({ trackEvent: vi.fn() }));
@@ -46,7 +49,8 @@ vi.mock("@/lib/api", () => ({
   default: { get: vi.fn(() => Promise.resolve({ data: [] })) },
 }));
 const router = { replace: vi.fn(), push: vi.fn() };
-vi.mock("next/navigation", () => ({ useRouter: () => router }));
+// MEH-2714: the home grids read the route via usePathname (route-memory).
+vi.mock("next/navigation", () => ({ useRouter: () => router, usePathname: () => "/" }));
 
 
 const producers = Array.from({ length: 12 }, (_, i) => ({ id: i + 1 }));

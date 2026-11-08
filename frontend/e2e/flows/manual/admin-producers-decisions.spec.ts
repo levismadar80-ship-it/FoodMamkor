@@ -143,7 +143,7 @@ const ITEMS: Item[] = (ADMIN_REVIEW_CHECKLIST as { id: string; label: string; hi
 /** The two approve-gate 422 details, verbatim from routers/admin.py:240 and :251. */
 const GATE = {
   photo: "לא ניתן לאשר בית עסק ללא תמונה. בקשי מבעלת העסק להעלות תמונה אחת לפחות.",
-  license: "לא ניתן לאשר בית עסק בקטגוריה הדורשת רישיון יצרן ללא מספר רישיון. אמתי את הרישיון, או אשרי עם דריסה מפורשת.",
+  license: "לא ניתן לאשר בית עסק בקטגוריה הדורשת רישיון ייצור ללא מספר רישיון. אמתי את הרישיון, או אשרי עם דריסה מפורשת.",
 };
 
 type Rec = { method: string; url: string; body: unknown };
@@ -299,7 +299,8 @@ test.describe("decision modal — reject", () => {
     await openKebab(page, "ממתין לבדיקה");
     const reject = page.getByRole("menuitem", { name: "דחייה" });
     await expect(reject).toBeVisible();
-    await expect(reject).toHaveClass(/text-red/);
+    // ADR-038 (#4041): status colours are the danger/warning tokens, not red/amber.
+    await expect(reject).toHaveClass(/text-danger/);
     await page.keyboard.press("Escape");
     await expect(page.getByRole("menu")).toHaveCount(0);
     await openKebab(page, "כבר מאושר");
@@ -504,7 +505,7 @@ test.describe("review checklist", () => {
   // MT:MEH-1396:6 — the hard 422 gates are untouched: the decision modal opens with the matching chip preselected.
   for (const c of [
     { gate: "photo" as const, radio: "תמונה ראשית חסרה", text: "חסרה תמונה — יש להעלות לפחות תמונה אחת" },
-    { gate: "license" as const, radio: "מסמכים חסרים / לא קריאים", text: "חסר מספר רישיון יצרן" },
+    { gate: "license" as const, radio: "מסמכים חסרים / לא קריאים", text: "חסר מספר רישיון ייצור" },
   ]) {
     test(`a 422 from the ${c.gate} gate opens the decision modal with «${c.radio}» preselected and the chip text prefilled`, async ({ page }) => {
       const writes: Rec[] = [];

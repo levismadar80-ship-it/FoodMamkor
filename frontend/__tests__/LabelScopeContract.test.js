@@ -1,3 +1,4 @@
+import { heBadgeCopy } from "./helpers/he-badge-copy";
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { ATTRIBUTE_LABELS } from "@/lib/attribute-labels";
@@ -93,6 +94,13 @@ const SHARED_CLAIMS = [
   ["no_added_sugar", "no_added_sugar"],
   ["kosher", "kosher"],
   ["delivery", "has_delivery"],
+  // MEH-1508 chunk 3ב-2: the 100% layer is one claim on two surfaces — the
+  // «טבעוני» / «צמחוני» chip (`?vegan_all` / `?vegetarian_all`) and
+  // the badge of the same name. Both are `business` × `self-declared`; the
+  // partial twins above stay `any-product`, which is the distinction the card
+  // exists to draw.
+  ["vegan_all", "vegan_all"],
+  ["vegetarian_all", "vegetarian_all"],
 ];
 
 describe("MEH-1507 Label Scope Contract — every label declares scope + evidence", () => {
@@ -126,11 +134,14 @@ describe("MEH-1507 Label Scope Contract — every label declares scope + evidenc
 
   // ── MEH-1753 ─────────────────────────────────────────────────────────────
 
-  it("BADGE_CONFIG carries all eleven badges (guards a shrinking scan)", () => {
+  it("BADGE_CONFIG carries all fifteen badges (guards a shrinking scan)", () => {
     // A COUNT, not a list of names: the loop above is satisfied by an empty
     // BADGE_CONFIG, so without this a deleted entry would leave the contract
     // reporting a clean pass over ten.
-    expect(Object.keys(BADGE_CONFIG)).toHaveLength(11);
+    // MEH-1508 chunk 3ב-2: 11 → 13 (vegan_all + vegetarian_all).
+    // MEH-2693: 13 → 14 (reservist_owned).
+    // MEH-2716: 14 → 15 (rescue_saving).
+    expect(Object.keys(BADGE_CONFIG)).toHaveLength(15);
   });
 
   it("every badge that is also a filter axis agrees with it on scope + evidence", () => {
@@ -166,12 +177,13 @@ describe("MEH-1507 Label Scope Contract — every label declares scope + evidenc
   it("the pairing itself is still real (guards a guard that compares nothing)", () => {
     // If a key were renamed on either side, every pair would silently resolve
     // to undefined-vs-undefined and the assertion above would pass while
-    // comparing nothing. Both sides must exist for all nine.
+    // comparing nothing. Both sides must exist for all eleven (MEH-1508
+    // chunk 3ב-2 added the two 100% pairs to the original nine).
     for (const [badgeKey, axisKey] of SHARED_CLAIMS) {
       expect(BADGE_CONFIG[badgeKey], `BADGE_CONFIG.${badgeKey}`).toBeDefined();
       expect(FILTER_AXES[axisKey], `FILTER_AXES.${axisKey}`).toBeDefined();
     }
-    expect(SHARED_CLAIMS).toHaveLength(9);
+    expect(SHARED_CLAIMS).toHaveLength(11);
   });
 
   it("adding scope + evidence changed NO rendered string (the hard gate)", () => {
@@ -183,7 +195,7 @@ describe("MEH-1507 Label Scope Contract — every label declares scope + evidenc
     const rendered = Object.fromEntries(
       Object.entries(BADGE_CONFIG).map(([k, v]) => [
         k,
-        { key: v.key, label: v.label, tooltip: v.tooltip, color: v.color, aboutHref: v.aboutHref ?? null },
+        { key: v.key, label: heBadgeCopy(v).label, tooltip: heBadgeCopy(v).tooltip, color: v.color, aboutHref: v.aboutHref ?? null },
       ]),
     );
     expect(rendered).toEqual({
@@ -223,17 +235,35 @@ describe("MEH-1507 Label Scope Contract — every label declares scope + evidenc
         color: "muted",
         aboutHref: null,
       },
+      // MEH-1508 chunk 3ב-2 (§6.6, LOCKED 23/07): the partial pair carries
+      // its scope in the term, beside the new 100% pair below.
       vegetarian: {
         key: "vegetarian",
-        label: "צמחוני",
+        label: "מתאים לצמחונים",
         tooltip: "לעסק יש מוצרים צמחוניים מסומנים בקטלוג.",
         color: "muted",
         aboutHref: null,
       },
       vegan: {
         key: "vegan",
-        label: "טבעוני",
+        label: "מתאים לטבעונים",
         tooltip: "לעסק יש מוצרים טבעוניים מסומנים בקטלוג.",
+        color: "muted",
+        aboutHref: null,
+      },
+      // MEH-1508 chunk 3ב-2 (§6.4, LOCKED): no checkmark, muted, and the
+      // tooltip names who stands behind the claim.
+      vegan_all: {
+        key: "vegan_all",
+        label: "טבעוני",
+        tooltip: "לפי הצהרת בית העסק",
+        color: "muted",
+        aboutHref: null,
+      },
+      vegetarian_all: {
+        key: "vegetarian_all",
+        label: "צמחוני",
+        tooltip: "לפי הצהרת בית העסק",
         color: "muted",
         aboutHref: null,
       },
@@ -262,6 +292,22 @@ describe("MEH-1507 Label Scope Contract — every label declares scope + evidenc
         key: "delivery",
         label: "משלוח",
         tooltip: "העסק מוסר או שולח לכתובת שלך.",
+        color: "muted",
+        aboutHref: null,
+      },
+      // MEH-2693: copy approved word-for-word by Sapir 05/11.
+      reservist_owned: {
+        key: "reservist_owned",
+        label: "עסק של מילואימניקים",
+        tooltip: "לפי הצהרת בית העסק, אחד הבעלים משרת במילואים.",
+        color: "muted",
+        aboutHref: null,
+      },
+      // MEH-2716: Sapir approved the automatic badge 06/11.
+      rescue_saving: {
+        key: "rescue_saving",
+        label: "מצילים מזון",
+        tooltip: "בחודש האחרון העסק מסר סלי הפתעה, כך שאוכל לא נזרק.",
         color: "muted",
         aboutHref: null,
       },

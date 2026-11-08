@@ -29,7 +29,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Leaf, Clock, CookingPot, Users, Check } from "@phosphor-icons/react";
+import { Leaf, Clock, CookingPot, Users, Check, CaretLeft } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation"; // MEH-2543: next/link dropped the /en prefix
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
@@ -39,6 +39,7 @@ import PrimaryContactButton from "@/components/PrimaryContactButton";
 import SaveButton from "@/components/SaveButton"; // MEH-2558
 import ShareButton from "@/components/ShareButton";
 import { splitRecipeLines } from "@/lib/recipe-lines"; // MEH-2540
+import { formatPriceRange } from "@/lib/utils";
 
 const LINK_FOCUS =
   "rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40";
@@ -54,7 +55,7 @@ function FactTile({ icon: Icon, label, value }) {
   return (
     <div className="flex flex-col items-center gap-1 px-2 py-3 text-center">
       <Icon size={22} className="text-primary" aria-hidden="true" />
-      <span className="text-[13px] text-fg-muted">{label}</span>
+      <span className="text-sm text-fg-muted">{label}</span>
       <span className="text-base font-bold text-text">{value}</span>
     </div>
   );
@@ -111,12 +112,15 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
           empty box. */}
       <div className="relative md:px-4 md:pt-6">
         {/* MEH-2558: share + save, the business page's hero pair
-            (ImageGallery) — same corner, same circles. Sits on the no-photo
+            (ImageGallery) — same corner, same circles. MEH-2671: that corner
+            is inline-END (top-left in RTL) and the heart leads, per the
+            Apple/Material bidi rule (actions trail). Sits on the no-photo
             strip too, so the actions never depend on the photo. */}
         <div
-          className="absolute top-3 start-3 md:top-9 md:start-7 z-10 flex items-center gap-2"
+          className="absolute top-3 end-3 md:top-9 md:end-7 z-10 flex items-center gap-2"
           data-testid="recipe-hero-actions"
         >
+          <SaveButton itemType="recipe" itemId={recipe.id} />
           <ShareButton
             variant="overlay"
             subject="recipe"
@@ -124,10 +128,9 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
             title={recipe.title}
             description={recipe.description}
           />
-          <SaveButton itemType="recipe" itemId={recipe.id} />
         </div>
         {showPhoto ? (
-          <div className="relative aspect-[4/3] md:aspect-[21/9] bg-green-50 md:rounded-[16px] overflow-hidden">
+          <div className="relative aspect-[4/3] md:aspect-[21/9] bg-green-50 md:rounded-lg overflow-hidden">
             <Image
               src={heroSrc}
               alt={recipe.title}
@@ -140,7 +143,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
           </div>
         ) : (
           <div
-            className="h-24 md:h-28 bg-green-50 md:rounded-[16px] flex items-center justify-center"
+            className="h-24 md:h-28 bg-green-50 md:rounded-lg flex items-center justify-center"
             data-testid="recipe-hero-missing"
           >
             <Leaf size={40} weight="light" className="text-primary/70" aria-hidden="true" />
@@ -162,8 +165,8 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
         </nav>
 
         <header className="max-w-3xl">
-          <p className="mt-4 text-[13px] font-medium text-accent">{t("eyebrow")}</p>
-          <h1 className="font-headline-lg text-3xl md:text-[44px] md:leading-tight font-black text-text mt-1">
+          <p className="mt-4 text-sm font-medium text-accent">{t("eyebrow")}</p>
+          <h1 className="font-headline-lg text-3xl md:text-5xl md:leading-tight font-black text-text mt-1">
             {recipe.title}
           </h1>
           {recipe.description && (
@@ -173,7 +176,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
           )}
           <div className="mt-5 max-w-md">
             <OwnerRow href={`/${producer.slug}`} name={producer.name} testId="recipe-owner-row">
-              <span className="block text-[13px] text-fg-muted">{t("by_label")}</span>
+              <span className="block text-sm text-fg-muted">{t("by_label")}</span>
               <span className="block font-medium">{producer.name}</span>
             </OwnerRow>
           </div>
@@ -191,7 +194,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
 
         <div className="mt-8 grid gap-10 lg:grid-cols-[340px_1fr] lg:items-start">
           {ingredients.length > 0 && (
-            <section className="lg:sticky lg:top-24 bg-surface-card border border-border rounded-[16px] p-5">
+            <section className="lg:sticky lg:top-24 bg-surface-card border border-border rounded-lg p-5">
               <h2 className="font-headline-md text-2xl font-bold text-text mb-3">
                 {t("ingredients_heading")}
               </h2>
@@ -204,11 +207,11 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
                         type="button"
                         aria-pressed={on}
                         onClick={() => toggleIngredient(i)}
-                        className="w-full min-h-[44px] flex items-center gap-3 py-2 text-start focus-ring rounded-sm"
+                        className="w-full min-h-touch flex items-center gap-3 py-2 text-start focus-ring rounded-sm"
                       >
                         <span
                           aria-hidden="true"
-                          className={`shrink-0 w-5 h-5 rounded-[5px] border grid place-items-center transition-colors ${
+                          className={`shrink-0 w-5 h-5 rounded border grid place-items-center transition-colors ${
                             on ? "bg-primary border-primary" : "border-fg-muted/50"
                           }`}
                         >
@@ -256,10 +259,21 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
                   {t("related_products_heading")}
                 </h2>
                 <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {relatedProducts.map((p) => (
-                    <li
-                      key={p.id}
-                      className="bg-white rounded-[12px] border border-border p-3 flex items-center gap-3"
+                  {/* PR #3972 (Sapir 31/10: «קישור לרכישת המוצרים»): each row
+                      opens that product's sheet on the business page, where the
+                      price, photos and the per-product contact button live.
+                      Before, the row was a dead <li> and the price read only the
+                      legacy price_range, so any product priced via price_min
+                      showed no price at all. */}
+                  {relatedProducts.map((p) => {
+                    const numericPrice =
+                      p.price_min != null ? formatPriceRange(p.price_min, p.price_max) : null;
+                    return (
+                    <li key={p.id}>
+                    <Link
+                      href={`/${producer.slug}?product=${encodeURIComponent(p.id)}`}
+                      data-testid="recipe-product-link"
+                      className={`bg-surface rounded-md border border-border p-3 flex items-center gap-3 min-h-11 hover:border-primary transition-colors ${LINK_FOCUS}`}
                     >
                       {p.image_url ? (
                         // MEH-1229: helper-routed square crop + graceful fallback.
@@ -270,24 +284,29 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
                           optimizeWidth={112}
                           width={56}
                           height={56}
-                          className="w-14 h-14 object-cover rounded-[8px]"
+                          className="w-14 h-14 object-cover rounded-sm"
                         />
                       ) : (
                         <span
                           aria-hidden="true"
-                          className="w-14 h-14 rounded-[8px] bg-green-50 flex items-center justify-center"
+                          className="w-14 h-14 rounded-sm bg-green-50 flex items-center justify-center"
                         >
                           <Leaf size={24} weight="fill" className="text-primary" />
                         </span>
                       )}
                       <div className="min-w-0">
                         <p className="font-medium text-text truncate">{p.name}</p>
-                        {p.price_range && (
+                        {numericPrice ? (
+                          <p className="text-sm text-accent font-medium"><span dir="ltr">{numericPrice}</span></p>
+                        ) : p.price_range ? (
                           <p className="text-xs text-fg-muted">{p.price_range}</p>
-                        )}
+                        ) : null}
                       </div>
+                      <CaretLeft size={14} className="ms-auto shrink-0 text-fg-muted" aria-hidden="true" />
+                    </Link>
                     </li>
-                  ))}
+                    );
+                  })}
                 </ul>
               </section>
             )}
@@ -295,7 +314,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
             {/* Producer contact CTA (MEH-1149; audit MEH-1144 G7).
                 PrimaryContactButton self-collapses to null for a contactless
                 producer, so the profile link renders alone. */}
-            <section className="mt-10 rounded-[16px] bg-green-50 p-5 md:p-6">
+            <section className="mt-10 rounded-lg bg-green-50 p-5 md:p-6">
               <h2 className="font-headline-md text-xl md:text-2xl font-bold text-text mb-4">
                 {t("producer_cta_heading", { name: producer.name })}
               </h2>
@@ -305,7 +324,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
                 </div>
                 <Link
                   href={`/${producer.slug}`}
-                  className={`text-sm text-primary hover:underline ${LINK_FOCUS}`}
+                  className={`text-sm text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current ${LINK_FOCUS}`}
                 >
                   {t("producer_cta_link", { name: producer.name })}
                 </Link>

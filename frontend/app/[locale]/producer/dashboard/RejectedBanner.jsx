@@ -30,6 +30,7 @@ import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
+import Button from "@/components/ui/Button";
 
 // Mirrors constants.MAX_PRODUCER_RESUBMISSIONS. The server is the authority
 // (409 past it); this only decides whether to draw the button at all, so a
@@ -86,20 +87,20 @@ export default function RejectedBanner({
 
   return (
     <div
-      className="bg-red-50 border border-red-200 rounded-[16px] p-4 mb-6 text-sm space-y-3"
+      className="bg-danger-50 border border-danger-200 rounded-lg p-4 mb-6 text-sm space-y-3"
       role="alert"
       data-testid="status-rejected-banner"
       data-reason-code={code ?? ""}
       data-resubmissions={used}
     >
-      <p className="font-semibold text-red-800">{t("title")}</p>
+      <p className="font-semibold text-danger-800">{t("title")}</p>
 
       {known && (
-        <p className="text-red-800" data-testid="status-rejected-line" data-code={code}>
+        <p className="text-danger-800" data-testid="status-rejected-line" data-code={code}>
           {href ? (
             <LocaleLink
               href={href}
-              className="underline underline-offset-2 hover:text-red-900"
+              className="underline underline-offset-2 hover:text-danger-900"
               data-testid="status-rejected-fix-link"
             >
               {t(`by_code.${code}`)}
@@ -110,14 +111,14 @@ export default function RejectedBanner({
         </p>
       )}
       {code === "not_eligible" && (
-        <p className="text-red-700" data-testid="status-rejected-hint">
+        <p className="text-danger-700" data-testid="status-rejected-hint">
           {t("by_code.not_eligible_hint")}
         </p>
       )}
 
       {reason && (
         <blockquote
-          className="border-s-2 border-red-300 ps-3 text-red-600"
+          className="border-s-2 border-danger-300 ps-3 text-danger-600"
           data-testid="status-rejected-reason"
         >
           {reason}
@@ -125,28 +126,28 @@ export default function RejectedBanner({
       )}
 
       {capped ? (
-        <p className="text-red-700 font-medium" data-testid="status-rejected-capped">
+        <p className="text-danger-700 font-medium" data-testid="status-rejected-capped">
           {t("capped")}
         </p>
       ) : (
         <div className="flex flex-wrap items-center gap-3">
-          <button
+          <Button
             type="button"
             onClick={resubmit}
             disabled={status === "sending"}
-            className="inline-flex items-center rounded-full bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
+            variant="primary" size="sm"
             data-testid="status-rejected-resubmit"
           >
             {t("resubmit_cta")}
-          </button>
-          <span className="text-xs text-red-700" data-testid="status-rejected-caption">
+          </Button>
+          <span className="text-xs text-danger-700" data-testid="status-rejected-caption">
             {t("resubmit_caption", { n: used + 1, max: MAX_RESUBMISSIONS })}
           </span>
         </div>
       )}
 
       {status === "error" && errorMsg && (
-        <p role="alert" className="text-red-700" data-testid="status-rejected-error">
+        <p role="alert" className="text-danger-700" data-testid="status-rejected-error">
           {errorMsg}
         </p>
       )}

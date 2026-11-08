@@ -1,36 +1,18 @@
 import { useTranslations } from "next-intl";
-import {
-  Star,
-  WhatsappLogo,
-  Phone,
-  Globe,
-  EnvelopeSimple,
-  InstagramLogo,
-  FacebookLogo,
-  Receipt,
-} from "@phosphor-icons/react";
+import { Star } from "@phosphor-icons/react";
 
 import { getPrimaryContactHref, getPrimaryContactLabel, getPrimaryMethod, isPrimaryExternal } from "@/lib/contact-method";
 import { withReferralParams } from "@/lib/utils";
 
 import { pingWhatsAppBeacon, markWhatsAppClickedLocal } from "@/lib/contact-tracking";
 import { INERT_PRESENT } from "@/lib/inert-attr";
+import { getCtaVariant } from "@/components/ContactCtaVariants";
 
-// MEH-1411: the sticky CTA carried a label with no icon while the inline CTA
-// showed one. Mirror PrimaryContactButton.jsx's per-method icon so the sticky
-// bar matches the inline button — same WhatsappLogo (weight="fill") for the
-// common whatsapp case, method-appropriate icon otherwise. Colors are owned by
-// the className fork below (btn-whatsapp keeps #25D366) — icon only, no recolor.
-// REUSES: components/PrimaryContactButton.jsx VARIANTS icon set.
-const METHOD_ICON = {
-  whatsapp: WhatsappLogo,
-  phone: Phone,
-  website: Globe,
-  email: EnvelopeSimple,
-  instagram: InstagramLogo,
-  facebook: FacebookLogo,
-  external_order: Receipt,
-};
+// MEH-1411: the sticky CTA mirrors the inline button's per-method icon.
+// MEH-2813: icon AND colour now come from the same map the inline button reads
+// (components/ContactCtaVariants.jsx). The old local fork here sent
+// instagram / facebook / external_order to a white outlined button while the
+// inline CTA filled them green — two looks for one button on one page.
 
 /**
  * Mobile-only sticky bar that slides in from the bottom when the
@@ -54,14 +36,21 @@ export default function StickyContactBar({
   isBarVisible,
 }) {
   const t = useTranslations();
-  // MEH-1411: per-method icon for the sticky CTA (matches the inline button).
-  const CtaIcon = METHOD_ICON[getPrimaryMethod(producer)] || WhatsappLogo;
+  const variant = getCtaVariant(getPrimaryMethod(producer));
+  const CtaIcon = variant.Icon;
   // MEH-1525: mirror PrimaryContactButton — a business-website sticky CTA
   // carries referral UTM and drops `noreferrer` (keeps `noopener`). Website
   // method only; every other method's href + rel stay exactly as before.
   const isWebsite = getPrimaryMethod(producer) === "website";
-  const rawHref = getPrimaryContactHref(producer);
+  // MEH-2753: WhatsApp prefill + label from messages (contact_cta.*).
+  const rawHref = getPrimaryContactHref(
+    producer,
+    t("contact_cta.wa_greeting", { name: producer?.name || "" }),
+  );
   const href = isWebsite ? withReferralParams(rawHref) : rawHref;
+  // MEH-2836: no contact detail at all → no bar. A bar with only the rating
+  // and no button was what «מעדניית בן שמן» showed before the resolver.
+  if (!href) return null;
   return (
     <div
       // MEH-76 chunk 3: border hex literal -> border-border token class; the
@@ -77,7 +66,7 @@ export default function StickyContactBar({
       // mounts this bar there is nothing below it to clear, and the offset was
       // rendering as a strip of dead page showing under the CTA. Measured at
       // 375px before the change: bar bottom 748, viewport 812, 64px of gap.
-      className="lg:hidden fixed bottom-0 inset-x-0 z-[598] bg-white border-t border-border"
+      className="vv-pin lg:hidden fixed bottom-0 inset-x-0 z-[598] bg-surface border-t border-border"
       data-testid="sticky-contact-bar"
       style={{
         // MEH-2148: with the bar flush, its own height is the whole distance it
@@ -104,6 +93,9 @@ export default function StickyContactBar({
       // true); the old `""` idiom was a silent no-op in the browser. The choice
       // lives in lib/inert-attr.js and is tested against both renderers.
       inert={!isBarVisible ? INERT_PRESENT : undefined}
+      // MEH-2835: while the bar is shown, the mobile chat launcher steps aside
+      // (ChatWidget watches [data-chat-hide]); hidden bar → attribute gone.
+      data-chat-hide={isBarVisible ? "" : undefined}
     >
       <div className="flex items-center gap-3 px-4 py-3">
         {/* Social proof — hidden if < 3 reviews. MEH-76 chunk 1: the vacation
@@ -111,7 +103,7 @@ export default function StickyContactBar({
             surface — removed (single banner lives in ProducerHeader). The
             CTA label below still carries the honest expectation line. */}
         {producer.reviews_count >= 3 ? (
-          <div className="shrink-0 text-[11px] text-fg-muted leading-tight">
+          <div className="shrink-0 text-2xs text-fg-muted leading-tight">
             {/* MEH-76: gold hex -> accent token, emoji star -> Phosphor,
                 rating digits bidi-isolated (.numeric, MEH-763 convention). */}
             <div className="font-bold text-accent inline-flex items-center gap-0.5">
@@ -143,18 +135,10 @@ export default function StickyContactBar({
             // MEH-76 chunk 1: the vacation pale-green CTA fork was an ADR-019
             // violation (state-color fill + raw hex). The CTA keeps its normal
             // method-driven color — the whole bar is already dimmed via opacity.
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-md font-medium text-sm transition ${
-              getPrimaryMethod(producer) === "whatsapp"
-                ? "btn-whatsapp"
-                : getPrimaryMethod(producer) === "phone"
-                ? "bg-primary text-white hover:bg-primary-dark"
-                : getPrimaryMethod(producer) === "email"
-                ? "bg-primary-dark text-white hover:bg-primary"
-                : "bg-white text-text border border-primary hover:bg-green-50"
-            }`}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-md font-medium text-sm transition focus-visible:ring-2 ${variant.className}`}
           >
-            <CtaIcon size={20} weight="fill" aria-hidden="true" />
-            {isVacation ? t("producer.detail.sticky_bar.vacation_msg") : getPrimaryContactLabel(producer)}
+            <CtaIcon size={20} />
+            {isVacation ? t("producer.detail.sticky_bar.vacation_msg") : getPrimaryContactLabel(producer, t)}
           </a>
         )}
       </div>

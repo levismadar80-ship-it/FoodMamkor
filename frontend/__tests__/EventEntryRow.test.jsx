@@ -134,6 +134,75 @@ describe("EventEntryRow", () => {
     expect(band.querySelector("svg")).toBeTruthy();
   });
 
+  // MEH-2802: in the home 3-up grid (lg+) a compact row fills its grid cell —
+  // wrapper and link h-full, band = row 1, rail+body = row 2, the chip+price
+  // row pinned to the bottom. jsdom cannot measure the heights; the geometric
+  // half lives in e2e/flows/45-card-grid-equal-height.spec.ts.
+  const FILL = {
+    wrapper: ["lg:h-full"],
+    link: ["lg:h-full", "lg:grid-rows-[auto_1fr]"],
+    body: ["lg:flex", "lg:flex-col"],
+    title: ["lg:line-clamp-2"],
+    footer: ["lg:mt-auto", "lg:pt-3"],
+  };
+  // The chip row is found by its test id when compact; a full-width row has
+  // none, so there it is the body's last child (which is what it is today).
+  const partsOf = (container) => {
+    const link = container.querySelector("a");
+    const body = container.querySelector("h3").parentElement;
+    return {
+      wrapper: link.parentElement,
+      link,
+      body,
+      title: container.querySelector("h3"),
+      footer: container.querySelector("[data-testid='event-row-footer']") ?? body.lastElementChild,
+    };
+  };
+
+  it("compact fills its grid cell from lg: wrapper, link, body column and a bottom-pinned chip row", () => {
+    const { container } = render(<EventEntryRow entry={toEventEntry(EVENT, "events", t)} freeLabel="חינם" compact />);
+    const parts = partsOf(container);
+    for (const [part, classes] of Object.entries(FILL)) {
+      for (const cls of classes) expect(parts[part].classList.contains(cls), `${part} has ${cls}`).toBe(true);
+    }
+    expect(parts.footer.getAttribute("data-testid")).toBe("event-row-footer");
+    expect(parts.wrapper.getAttribute("data-testid")).toBe("event-row-compact");
+    // The phone list keeps its spacing: mt-3 stays as the base class.
+    expect(parts.footer.classList.contains("mt-3")).toBe(true);
+  });
+
+  it("a full-width row (not compact) carries none of the fill classes or the compact test ids", () => {
+    const { container } = render(<EventEntryRow entry={toEventEntry(EVENT, "events", t)} freeLabel="חינם" />);
+    const parts = partsOf(container);
+    for (const [part, classes] of Object.entries(FILL)) {
+      for (const cls of classes) expect(parts[part].classList.contains(cls), `${part} lacks ${cls}`).toBe(false);
+    }
+    expect(parts.wrapper.className).toBe("relative");
+    expect(parts.title.className).toBe("font-headline-md text-lg md:text-2xl font-bold text-text leading-snug");
+    expect(container.querySelector("[data-testid='event-row-footer']")).toBeNull();
+    expect(container.querySelector("[data-testid='event-row-compact']")).toBeNull();
+  });
+
+  // MEH-2804 / ADR-039: one price token for both states — free reads as an
+  // offer, not as a footnote. Same class set, Frank Ruhl bold, no italic.
+  it("free and paid render the SAME price token (ADR-039)", () => {
+    const priceCls = (container) =>
+      container.querySelector('[data-testid="event-row-price"]').className.split(/\s+/).sort();
+    const free = render(<EventEntryRow entry={toEventEntry(EVENT, "events", t)} freeLabel="כניסה חופשית" />);
+    const freeCls = priceCls(free.container);
+    expect(free.container.querySelector('[data-testid="event-row-price"]').textContent).toBe("כניסה חופשית");
+    free.unmount();
+    const paid = render(<EventEntryRow entry={toEventEntry({ ...EVENT, price: 60 }, "events", t)} freeLabel="כניסה חופשית" />);
+    const paidEl = paid.container.querySelector('[data-testid="event-row-price"]');
+    expect(paidEl.getAttribute("dir")).toBe("ltr");
+    expect(paidEl.className.split(/\s+/).sort()).toEqual(freeCls);
+    for (const want of ["font-headline-display", "font-bold", "text-base", "md:text-lg", "ms-auto", "text-primary"]) {
+      expect(freeCls, want).toContain(want);
+    }
+    for (const banned of ["italic", "font-english", "text-sm"]) expect(freeCls, banned).not.toContain(banned);
+    paid.unmount();
+  });
+
   // MEH-2559: the heart rides every row, typed by the row's species, and sits
   // OUTSIDE the row link — a button inside an <a> would follow the link.
   it("an event row carries an event heart beside the link, not inside it", () => {

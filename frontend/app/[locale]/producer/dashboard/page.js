@@ -12,16 +12,19 @@ import { detailToMessage } from "@/lib/errors";
 import { israelToday } from "@/lib/israel-date";
 import { showToast } from "@/lib/toast";
 import { getUpcomingHoliday } from "@/lib/holidays";
-import InfoTooltip from "@/components/InfoTooltip";
-import WhatsThis from "@/components/WhatsThis";
+import HolidayIcon from "@/components/HolidayIcon";
 import ProfileCompletenessCard from "@/components/ProfileCompletenessCard";
 import DraftSubmitBanner from "@/components/producer/DraftSubmitBanner";
+import BusinessQrCard from "@/components/producer/BusinessQrCard";
+import ReviewCardCanvas from "@/components/ReviewCardCanvas";
+import StoryCardCanvas from "@/components/StoryCardCanvas";
 import ChangesRequestedBanner from "./ChangesRequestedBanner";
 import RejectedBanner from "./RejectedBanner";
 import { producerCompleteness } from "@/lib/producer-completeness";
 // MEH-1267: canonical public domain (MEH-1242 PR4) — mehamakor.online is the
 // staging alias, never public-facing. SITE_URL is the mehamakor.co.il origin.
 import { SITE_URL, env } from "@/lib/env";
+import Button from "@/components/ui/Button";
 
 function VanityLinkCard({ slug }) {
   const t = useTranslations("dashboard.producer.vanity_link");
@@ -40,15 +43,15 @@ function VanityLinkCard({ slug }) {
   );
 
   return (
-    <div className="bg-white border border-border rounded-[16px] p-5 mb-6">
+    <div className="bg-surface border border-border rounded-lg p-5 mb-6">
       <p className="text-sm font-medium text-text mb-2">{t("label")}</p>
-      <div className="flex items-center gap-2 bg-green-50 rounded-[10px] px-3 py-2 mb-3">
+      <div className="flex items-center gap-2 bg-green-50 rounded-md px-3 py-2 mb-3">
         <span className="text-sm text-primary font-mono flex-1 truncate" dir="ltr">{url}</span>
       </div>
       <div className="flex gap-2">
         <button
           onClick={copy}
-          className="flex-1 text-sm border border-border rounded-[8px] px-3 py-1.5 hover:border-primary transition"
+          className="flex-1 text-sm border border-border rounded-sm px-3 py-1.5 hover:border-primary transition"
         >
           {copied ? t("copied") : t("copy_cta")}
         </button>
@@ -56,12 +59,49 @@ function VanityLinkCard({ slug }) {
           href={`https://wa.me/?text=${waText}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="btn-whatsapp-outline flex-1 text-sm text-center rounded-[8px] px-3 py-1.5"
+          className="btn-whatsapp-outline flex-1 text-sm text-center rounded-sm px-3 py-1.5"
         >
           {t("share_cta")}
         </a>
       </div>
     </div>
+  );
+}
+
+/**
+ * MEH-1428 "ערכת שיתוף" — the owner's own share kit. One section, two
+ * ready-to-post 1080×1920 cards: her story card (StoryCardCanvas in `owner`
+ * mode — download + caption, no Cloudinary upload) and a review card
+ * (ReviewCardCanvas, chunk B).
+ *
+ * Data source is `profile` (GET /producers/me → ProducerOwnerOut), NOT
+ * `data.producer` (GET /producers/me/dashboard), which returns only
+ * id/name/status/plan/availability — no `images`, `categories` or `slug`
+ * (producer_me.py:1125-1148). The card needs all three.
+ *
+ * Gated on approved: the story card announces a live listing ("בית עסק חדש
+ * במהמקור") and the review endpoint has nothing to serve a business with no
+ * public page yet. Also off for an organizer (ADR-036) — reviews.py:247
+ * filters `Producer.kind == "producer"`, so an organizer's review list is
+ * always empty, and this card's copy is business-shaped.
+ */
+function ShareKitSection({ profile }) {
+  const t = useTranslations("story.canvas.owner");
+
+  return (
+    <section
+      data-testid="share-kit-section"
+      aria-label={t("section_title")}
+      className="bg-surface border border-border rounded-lg p-5 mb-6"
+    >
+      <h2 className="font-headline-md text-lg font-bold text-text mb-1">
+        {t("section_title")}
+      </h2>
+      <p className="text-sm text-fg-muted">{t("section_subtitle")}</p>
+
+      <StoryCardCanvas producer={profile} mode="owner" />
+      <ReviewCardCanvas producer={profile} />
+    </section>
   );
 }
 
@@ -92,13 +132,13 @@ function SectionFetchError({ message, retryLabel, onRetry, testid }) {
     <div
       role="alert"
       data-testid={testid}
-      className="bg-white border border-border rounded-[16px] p-4 mb-6 flex items-center justify-between gap-3"
+      className="bg-surface border border-border rounded-lg p-4 mb-6 flex items-center justify-between gap-3"
     >
       <p className="text-sm text-fg-muted">{message}</p>
       <button
         type="button"
         onClick={onRetry}
-        className="text-sm text-primary font-medium hover:underline shrink-0"
+        className="text-sm text-primary font-medium underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current shrink-0"
       >
         {retryLabel}
       </button>
@@ -119,14 +159,14 @@ function StatusSupportModal({ onClose }) {
       aria-label={t("section_aria")}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-white rounded-t-[24px] sm:rounded-[20px] w-full max-w-sm p-6 space-y-4">
+      <div className="bg-surface rounded-t-3xl sm:rounded-xl w-full max-w-sm p-6 space-y-4">
         <h2 className="font-semibold text-text text-lg">{t("heading")}</h2>
         <p className="text-sm text-fg-muted">{t("body")}</p>
         <a
           href={`https://wa.me/${env.NEXT_PUBLIC_SUPPORT_PHONE || "972500000000"}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-3 rounded-[14px] border border-border px-4 py-3 hover:bg-green-50 transition"
+          className="flex items-center gap-3 rounded-lg border border-border px-4 py-3 hover:bg-green-50 transition"
         >
           <WhatsappLogo size={22} weight="fill" className="text-[#25D366] shrink-0" />
           <div>
@@ -136,7 +176,7 @@ function StatusSupportModal({ onClose }) {
         </a>
         <a
           href="mailto:contact@mehamakor.co.il"
-          className="flex items-center gap-3 rounded-[14px] border border-border px-4 py-3 hover:bg-green-50 transition"
+          className="flex items-center gap-3 rounded-lg border border-border px-4 py-3 hover:bg-green-50 transition"
         >
           <EnvelopeSimple size={22} className="text-primary shrink-0" />
           <div>
@@ -147,7 +187,7 @@ function StatusSupportModal({ onClose }) {
         <button
           type="button"
           onClick={onClose}
-          className="w-full py-2.5 rounded-[12px] text-sm font-medium text-fg-muted hover:text-text transition"
+          className="w-full py-2.5 rounded-md text-sm font-medium text-fg-muted hover:text-text transition"
         >
           {t("close_cta")}
         </button>
@@ -156,57 +196,15 @@ function StatusSupportModal({ onClose }) {
   );
 }
 
-// MEH-2199: the availability options, lifted out of the JSX so the roving tab
-// stop and each radio's own state read from ONE evaluation of the rule rather
-// than two. A second copy of "which option is active" is exactly the shape that
-// drifts (.claude/rules/workflow.md — Smell #1).
-const AVAILABILITY_OPTIONS = [
-  { value: "accepting_orders", color: "#22c55e" },
-  { value: "available_today",  color: "#2e6853" },
-  { value: "full_this_week",   color: "#f97316" },
-  { value: "on_vacation",      color: "#9ca3af" },
-];
-
-// MEH-2199: W3C APG Radio Group keyboard layer. The group declared
-// role="radiogroup" + role="radio" + aria-checked and carried no arrow keys, so
-// a keyboard user met a widget that announces itself as a radio group and then
-// behaves like four unrelated buttons.
-//
-// Arrow mapping: ArrowLeft = next, ArrowRight = previous — the house RTL
-// contract (Lightbox.jsx:58), which mirrors the HORIZONTAL axis for Hebrew
-// reading order. ArrowDown = next, ArrowUp = previous, unmirrored: the vertical
-// axis has no reading direction to follow, and APG lists both axes for this
-// pattern.
-const RADIO_ARROW_DELTA = { ArrowLeft: 1, ArrowDown: 1, ArrowRight: -1, ArrowUp: -1 };
-
-function handleAvailabilityKeyDown(e) {
-  // Only ENABLED radios participate. Pre-approval every radio is disabled
-  // (MEH-964 1D), so this list is empty, `from` is -1, and the group is inert
-  // with no separate branch to keep in sync with the disabled attribute.
-  const radios = Array.from(
-    e.currentTarget.querySelectorAll('[role="radio"]:not([disabled])'),
-  );
-  const from = radios.indexOf(e.target.closest?.('[role="radio"]'));
-  if (from === -1) return;
-  // Object.hasOwn, not `in` — see hooks/useTabsKeyboard.js for why this is
-  // defensive rather than a fix for a reachable bug.
-  if (!Object.hasOwn(RADIO_ARROW_DELTA, e.key)) return;
-  const to = (from + RADIO_ARROW_DELTA[e.key] + radios.length) % radios.length;
-  e.preventDefault();
-  radios[to].focus();
-  // .click() rather than a parallel activation path. Whatever clicking a radio
-  // means today is what arrowing onto it means — including vacation's
-  // reveal-then-confirm, which must NOT post (MEH-999). One authority for
-  // activation, so the mouse and keyboard paths cannot diverge later.
-  radios[to].click();
-}
+// MEH-2759 (MEH-2757 chunk 2): the four availability radios (and their
+// MEH-2199 arrow-key layer) became ONE «בהפסקה» switch. Owners set hours plus a
+// pause, like Google / Etsy / Wolt / Uber Eats; «פתוח להזמנות» as a status
+// clashed with the order-window line «פתוח להזמנות · עד …». Off = the server's
+// accepting_orders, the only other value since MEH-2782.
 
 export default function ProducerDashboardPage() {
   const t = useTranslations("dashboard.producer");
-  // MEH-1773: explainer for the availability card below. Its twin lives on the
-  // order-window card in edit/page.js — the pair is the point, so if one moves
-  // the other has to follow.
-  const tWhat = useTranslations("whats_this");
+  const tHoliday = useTranslations("holidays");
   const { user, loading: authLoading } = useAuth();
   const [data, setData] = useState(null);
   // MEH-956: track a failed dashboard fetch separately from the not-yet-loaded
@@ -231,18 +229,6 @@ export default function ProducerDashboardPage() {
   const [vacationDateError, setVacationDateError] = useState("");
   // MEH-1355: support-contact modal, opened from the rejected + inactive banners.
   const [supportOpen, setSupportOpen] = useState(false);
-
-  const AVAILABILITY_TOOLTIP = (
-    <>
-      {t("availability.tooltip_line_default")}
-      <br />
-      {t("availability.tooltip_line_today")}
-      <br />
-      {t("availability.tooltip_line_full")}
-      <br />
-      {t("availability.tooltip_line_vacation")}
-    </>
-  );
 
   useEffect(() => {
     if (authLoading) return;
@@ -368,7 +354,7 @@ export default function ProducerDashboardPage() {
       <div className="max-w-5xl mx-auto px-4 py-16">
         <div
           data-testid="dashboard-load-error"
-          className="bg-white border border-border rounded-[16px] p-6 text-center"
+          className="bg-surface border border-border rounded-lg p-6 text-center"
           role="alert"
         >
           <p className="font-headline-md text-xl font-bold text-text mb-2">
@@ -380,7 +366,7 @@ export default function ProducerDashboardPage() {
           <LocaleLink
             href="/contact"
             data-testid="dashboard-load-error-cta"
-            className="inline-block bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition"
+            className="inline-block bg-primary text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-primary-dark transition"
           >
             {t("load_error.cta")}
           </LocaleLink>
@@ -414,28 +400,26 @@ export default function ProducerDashboardPage() {
     (analytics?.whatsapp_clicks?.total ?? 0) > 0;
   const isApproved = producer.status === "approved";
 
-  // MEH-2199: one evaluation of the active-state rule, consumed by both the
-  // roving tab stop and each radio's aria-checked.
-  // MEH-999: while vacation is selected-but-not-yet-confirmed only the vacation
-  // radio reads active, so the group never lights up two.
-  // MEH-1092 F4: pre-approval the pills show NEUTRAL — a locked block must not
-  // read as a live status in the air — hence `&& isApproved`.
+  // MEH-2759: the switch reads ON while vacation is saved OR selected-but-not-
+  // yet-confirmed (MEH-999 reveal-then-confirm). MEH-1092 F4: pre-approval it
+  // shows OFF — a locked control must not read as a live status.
   const savedAvailability = producer.availability_state || "accepting_orders";
-  const availabilityRadios = AVAILABILITY_OPTIONS.map((opt) => {
-    const isVacation = opt.value === "on_vacation";
-    const active = isVacation
-      ? vacationSelected || savedAvailability === "on_vacation"
-      : !vacationSelected && savedAvailability === opt.value;
-    return { ...opt, isVacation, showActive: active && isApproved };
-  });
-  // APG: the checked radio holds the group's single tab stop; when NOTHING is
-  // checked the FIRST radio holds it, so the group can never become unreachable
-  // by Tab (which is what a bare `showActive ? 0 : -1` would do if the server
-  // ever returned a state outside this list).
-  const availabilityTabStop = Math.max(
-    0,
-    availabilityRadios.findIndex((o) => o.showActive),
-  );
+  const pauseOn = vacationSelected || savedAvailability === "on_vacation";
+  const togglePause = () => {
+    if (!pauseOn) {
+      // Reveal the date field first; the POST waits for «שמרו» so it always
+      // carries a return date (MEH-999).
+      setVacationSelected(true);
+      setVacationDateError("");
+    } else if (savedAvailability === "on_vacation") {
+      setVacationSelected(false);
+      setAvailabilityState("accepting_orders");
+    } else {
+      // Selected but never saved — nothing to undo on the server.
+      setVacationSelected(false);
+      setVacationDateError("");
+    }
+  };
 
   // MEH-1134: state-aware card order. While the business is pending OR the
   // completeness heuristic still reports missing fields, the completeness
@@ -527,7 +511,7 @@ export default function ProducerDashboardPage() {
         // Hebrew-text locator is the anti-pattern docs/E2E-LOCATORS.md names.
         // Opportunistic conversion, per that file's migration policy.
         <div
-          className="bg-yellow-50 border border-yellow-200 rounded-[16px] p-4 mb-6 text-sm"
+          className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6 text-sm"
           role="status"
           data-testid="status-pending-banner"
         >
@@ -573,15 +557,15 @@ export default function ProducerDashboardPage() {
           never emits, so its banner was dead code. */}
       {producer.status === "inactive" && (
         <div
-          className="bg-amber-50 border border-amber-200 rounded-[16px] p-4 mb-6 text-sm space-y-3"
+          className="bg-warning-50 border border-warning-200 rounded-lg p-4 mb-6 text-sm space-y-3"
           role="alert"
           data-testid="status-inactive-banner"
         >
-          <p className="font-semibold text-amber-800 flex items-center gap-2">
+          <p className="font-semibold text-warning-800 flex items-center gap-2">
             <Warning size={18} weight="fill" aria-hidden="true" />
             {t("status.inactive.title")}
           </p>
-          <p className="text-amber-700">{t("status.inactive.body")}</p>
+          <p className="text-warning-700">{t("status.inactive.body")}</p>
           <button
             type="button"
             onClick={() => setSupportOpen(true)}
@@ -617,12 +601,13 @@ export default function ProducerDashboardPage() {
         if (!h) return null;
         return (
           <div
-            className="rounded-[16px] p-4 mb-6 text-sm flex items-start gap-3"
+            className="rounded-lg p-4 mb-6 text-sm flex items-start gap-3"
             style={{ backgroundColor: h.color + "15", border: `1.5px solid ${h.color}35` }}
           >
-            <span className="text-xl shrink-0" aria-hidden="true">{h.emoji}</span>
+            {/* MEH-1687 D: Phosphor icon, not a colour emoji. */}
+            <span className="text-xl shrink-0 flex" aria-hidden="true"><HolidayIcon name={h.icon} /></span>
             <div>
-              <p className="font-semibold text-text">{h.dashboardHint}</p>
+              <p className="font-semibold text-text">{tHoliday(`${h.key}.dashboard_hint`)}</p>
               {/* MEH-2429: this pointed at /producer/dashboard — the page it
                   sits on, so the CTA did nothing. The catalog is the products
                   card on the edit tab (KEY_TO_ANCHOR.products). */}
@@ -649,12 +634,32 @@ export default function ProducerDashboardPage() {
       ) : producer.slug ? (
         <div
           data-testid="share-locked-hint"
-          className="bg-white border border-border rounded-[16px] p-5 mb-6 flex items-center gap-3"
+          className="bg-surface border border-border rounded-lg p-5 mb-6 flex items-center gap-3"
         >
           <LockSimple size={18} className="text-fg-muted shrink-0" aria-hidden="true" />
           <p className="text-sm text-fg-muted">{t("states.share_locked")}</p>
         </div>
       ) : null}
+
+      {/* MEH-2785: the printable QR of the business's own page. Same share
+          gate as VanityLinkCard above — a code taped to a till must not point
+          at an unpublished or incomplete listing, and an organizer's public
+          page is /organizers/{slug}, not a business page. The code itself
+          targets /producer/{id}, never the slug: a printed card is permanent
+          and a slug can be changed by an admin. */}
+      {/* The gate is the component's own (BusinessQrCard.jsx) so it can be
+          unit-tested; the condition is the same one VanityLinkCard uses. */}
+      <BusinessQrCard
+        producer={producer}
+        isComplete={isComplete}
+        isApproved={isApproved}
+        isOrganizer={isOrganizer}
+      />
+
+      {/* MEH-1428: "ערכת שיתוף" — sits with the other share surface (the vanity
+          link above), approved-only, business-only. `profile` is the data
+          source; see the ShareKitSection header for why not `data.producer`. */}
+      {isApproved && profile && !isOrganizer && <ShareKitSection profile={profile} />}
 
       {/* MEH-291 Phase 3 — unified availability card. Replaces the old
           "זמין היום" hero + "סטטוס זמינות" pill row. 4-value durable
@@ -663,96 +668,47 @@ export default function ProducerDashboardPage() {
       {/* MEH-2460: no availability states for an organizer — it takes no
           orders (ADR-036). */}
       {!isOrganizer && (
-      <div className="bg-white border border-border rounded-[16px] p-6 mb-8">
+      <div className="bg-surface border border-border rounded-lg p-6 mb-8">
         <p className="text-sm uppercase tracking-wider text-fg-muted mb-1">
-          {/* MEH-1842: the id sits on a span around the heading TEXT, not on the
-              <p>. The <p> also contains InfoTooltip, whose trigger is a button
-              with its own aria-label ("מה ההבדל בין המצבים?") — labelling the
-              radiogroup from the <p> would fold that into the computed name and
-              yield "מצב נוכחי מה ההבדל בין המצבים?". Measured, not assumed. */}
           <span id="availability-heading">{t("availability.heading")}</span>
-          <InfoTooltip content={AVAILABILITY_TOOLTIP} label={t("availability.info_label")} position="bottom" />
         </p>
         <p className="text-fg-muted text-sm mb-4">
           {t("availability.intro")}
         </p>
-        {/* MEH-1773: owners could not tell "זמינות" from "חלון הזמנות" — both
-            read as "when am I open". This says the half that is only true
-            here: temporary, manual, an exception. The other half is stated on
-            the order-window card in edit/page.js. */}
-        <WhatsThis
-          content={tWhat("availability")}
-          className="mb-2"
-          testId="whats-this-availability"
-        />
-        <div
-          role="radiogroup"
-          // MEH-1842: derived from the visible heading rather than a parallel
-          // string. The old aria-label held the pre-MEH-1830 name, so the
-          // accessible name and the visible one had drifted apart. Deriving it
-          // means they cannot drift again; the group_aria key is now deleted.
-          // NOT a WCAG 2.5.3 failure — "Label in Name" (and its ACT rule) covers
-          // widget roles named from content, and radiogroup is named from author.
-          // The basis is MDN + W3C APG: where a visible label exists, point
-          // aria-labelledby at it; aria-label is for when none does.
-          aria-labelledby="availability-heading"
+        {/* MEH-2759: the MEH-1773 «מה זה?» explainer that sat here named the
+            removed states («עמוס השבוע … זמין היום»); with one switch left the
+            intro line above already says it. Its order-window twin in
+            edit/page.js stays. */}
+        <button
+          type="button"
+          role="switch"
+          data-testid="availability-pause-switch"
+          aria-checked={pauseOn && isApproved}
           aria-describedby={!isApproved ? "availability-disabled-hint" : undefined}
-          className="flex flex-wrap gap-2"
-          // MEH-2199: the arrow-key layer the role already promised. Inert while
-          // the radios are disabled — the handler only walks enabled ones.
-          onKeyDown={handleAvailabilityKeyDown}
+          // MEH-964 1D: locked until the business is published (approved) — an
+          // unpublished listing has no public surface for a pause to affect.
+          disabled={!isApproved}
+          onClick={togglePause}
+          // MEH-2759: same switch as CoverageCtaToggle.jsx (house pattern).
+          className={`group inline-flex items-center gap-3 min-h-touch text-sm font-medium text-text focus-visible:outline-none ${
+            !isApproved ? "opacity-50 cursor-not-allowed" : ""
+          }`}
         >
-          {availabilityRadios.map((opt, i) => {
-            const { isVacation, showActive } = opt;
-            return (
-              <button
-                key={opt.value}
-                type="button"
-                role="radio"
-                // MEH-2199: data-radio-value is what the QA harness and tests
-                // name a radio by; tabIndex is the APG roving tab stop, so Tab
-                // enters the group once instead of walking all four.
-                data-radio-value={opt.value}
-                tabIndex={i === availabilityTabStop ? 0 : -1}
-                aria-checked={showActive}
-                // MEH-964 1D: availability is disabled until the business is
-                // published (approved) — an unpublished listing has no public
-                // surface for the state to affect. Hint below carries the why.
-                disabled={!isApproved}
-                onClick={() => {
-                  if (isVacation) {
-                    // Reveal the date field first; defer the POST to the
-                    // combined mini-form below so it always carries a date.
-                    setVacationSelected(true);
-                    setVacationDateError("");
-                  } else {
-                    setVacationSelected(false);
-                    setAvailabilityState(opt.value);
-                  }
-                }}
-                className={`inline-flex items-center gap-2 px-4 py-2 rounded-[12px] text-sm font-medium transition border focus-visible:ring-2 focus-visible:ring-primary/40 ${
-                  showActive
-                    ? "bg-primary text-white border-primary"
-                    : "bg-white text-text border-border hover:bg-green-50"
-                } ${!isApproved ? "opacity-50 cursor-not-allowed" : ""}`}
-              >
-                <span
-                  aria-hidden="true"
-                  style={{
-                    width: "8px",
-                    height: "8px",
-                    borderRadius: "50%",
-                    display: "inline-block",
-                    background: opt.color,
-                    flexShrink: 0,
-                  }}
-                />
-                {t(`availability.options.${opt.value}`)}
-              </button>
-            );
-          })}
-        </div>
-        {/* MEH-964 1D: why-locked hint, associated with the radiogroup via
+          <span
+            aria-hidden="true"
+            className={`relative block w-10 h-6 shrink-0 rounded-full transition-colors group-focus-visible:ring-2 group-focus-visible:ring-primary/40 ${
+              pauseOn && isApproved ? "bg-primary" : "bg-border"
+            }`}
+          >
+            <span
+              className={`absolute top-1 w-4 h-4 rounded-full bg-surface shadow transition-all ${
+                pauseOn && isApproved ? "end-1" : "start-1"
+              }`}
+            />
+          </span>
+          {t("availability.options.on_vacation")}
+        </button>
+        {/* MEH-964 1D: why-locked hint, associated with the pause switch via
             aria-describedby so it's announced (not colour/opacity-only). */}
         {!isApproved && (
           <p id="availability-disabled-hint" data-testid="availability-disabled-hint" className="text-xs text-fg-muted mt-3">
@@ -777,7 +733,7 @@ export default function ProducerDashboardPage() {
                 // offered a value the server would then reject.
                 min={israelToday()}
                 onChange={(e) => { setVacationUntil(e.target.value); setVacationDateError(""); }}
-                className="border border-border rounded-[8px] px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                className="border border-border rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 dir="ltr"
                 aria-invalid={vacationDateError ? "true" : undefined}
                 aria-describedby={vacationDateError ? "vacation-until-error" : undefined}
@@ -786,22 +742,22 @@ export default function ProducerDashboardPage() {
                 <button
                   type="button"
                   onClick={() => { setVacationUntil(""); setVacationDateError(""); }}
-                  className="text-fg-muted hover:text-red-600 transition inline-flex"
+                  className="text-fg-muted hover:text-danger-600 transition inline-flex"
                   aria-label={t("availability.remove_vacation_date_aria")}
                 >
                   <X size={14} weight="bold" aria-hidden="true" />
                 </button>
               )}
-              <button
+              <Button
                 type="button"
                 onClick={() => setAvailabilityState("on_vacation")}
-                className="px-4 py-1.5 rounded-[10px] text-sm font-medium bg-primary text-white border border-primary hover:bg-primary/90 transition focus-visible:ring-2 focus-visible:ring-primary/40"
+                variant="primary" size="sm"
               >
                 {t("availability.vacation_confirm")}
-              </button>
+              </Button>
             </div>
             {vacationDateError && (
-              <p id="vacation-until-error" role="alert" className="mt-2 text-sm text-red-600">
+              <p id="vacation-until-error" role="alert" className="mt-2 text-sm text-danger-600">
                 {vacationDateError}
               </p>
             )}
@@ -851,7 +807,7 @@ export default function ProducerDashboardPage() {
         // specific copy.
         <div
           data-testid="overview-zero-state"
-          className="bg-white border border-border rounded-[16px] p-6 mb-8"
+          className="bg-surface border border-border rounded-lg p-6 mb-8"
         >
           <p className="font-semibold text-text mb-1">{t("states.zero_activity_title")}</p>
           <div className="flex items-center gap-3">
@@ -927,7 +883,7 @@ function ActivityPulse({ analytics }) {
     <section
       data-testid="activity-pulse"
       aria-label={t("section_aria")}
-      className="bg-white border border-border rounded-[16px] p-6"
+      className="bg-surface border border-border rounded-lg p-6"
     >
       {rows.length === 0 ? (
         // MEH-1345: visible title so the empty pulse card is identifiable
@@ -970,7 +926,7 @@ function ActivityPulse({ analytics }) {
               target="_blank"
               rel="noopener noreferrer"
               data-testid="activity-pulse-cta"
-              className="btn-whatsapp inline-flex items-center justify-center gap-2 min-h-[44px] px-6 rounded-full text-sm font-medium"
+              className="btn-whatsapp inline-flex items-center justify-center gap-2 min-h-touch px-6 rounded-full text-sm font-medium"
             >
               <WhatsappLogo size={18} weight="fill" aria-hidden="true" />
               {t("cta")}
@@ -1007,7 +963,7 @@ function OverviewStatsHero({ analytics }) {
           no deltas/arrows (data reality; see header). */}
       <div data-testid="overview-kpi-strip" className="grid grid-cols-2 gap-3">
         {kpis.map((kpi) => (
-          <div key={kpi.key} className="bg-white border border-border rounded-[16px] p-4 text-center">
+          <div key={kpi.key} className="bg-surface border border-border rounded-lg p-4 text-center">
             <p className="text-xs text-fg-muted mb-1">{t(`kpi.${kpi.key}`)}</p>
             <p className="font-headline-lg text-3xl font-bold text-primary">{kpi.value}</p>
             <p className="text-xs text-fg-muted mt-1">{kpi.sub}</p>

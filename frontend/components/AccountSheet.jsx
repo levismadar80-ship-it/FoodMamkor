@@ -103,7 +103,7 @@ export default function AccountSheet({ open, onClose, user, logout }) {
   // row carries layout + ink only.
   const liCls = "border-b border-white/10 last:border-b-0";
   const rowCls =
-    "flex items-center gap-3 w-full min-h-[48px] px-1 text-start text-[14.5px] font-medium text-background transition-colors duration-fast ease-quart motion-reduce:transition-none focus-ring";
+    "flex items-center gap-3 w-full min-h-[48px] px-1 text-start text-sm font-medium text-background transition-colors duration-fast ease-quart motion-reduce:transition-none focus-ring";
   const iconCls = "text-background/65";
 
   return (
@@ -113,7 +113,7 @@ export default function AccountSheet({ open, onClose, user, logout }) {
         type="button"
         aria-label={t("nav.menu_close")}
         onClick={onClose}
-        className="fixed inset-0 z-[1001] bg-green-900/50"
+        className="fixed inset-0 z-[1001] bg-black/40"
       />
       <div
         ref={panelRef}
@@ -124,7 +124,7 @@ export default function AccountSheet({ open, onClose, user, logout }) {
         // MEH-868: clear the floating pill AND the safe-area inset (the pill
         // itself rides above safe-area via calc(env(safe-area-inset-bottom)+16px),
         // so a flat 88px overlapped it on notched devices).
-        className="fixed inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+88px)] z-[1002] rounded-[20px] bg-green-900 border border-white/10 p-[22px] shadow-[0_12px_40px_rgba(20,50,40,0.45)]"
+        className="vv-pin fixed inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+88px)] z-[1002] rounded-xl bg-green-900 border border-white/10 p-[22px] shadow-[0_12px_40px_rgba(20,50,40,0.45)]"
       >
         {/* Head — avatar · name · state */}
         <div className="flex items-center gap-3 pb-4 border-b border-white/10">
@@ -241,7 +241,7 @@ export default function AccountSheet({ open, onClose, user, logout }) {
             <li className={liCls}>
               <LanguageToggle
                 variant={row("language").surface.variant}
-                className={rowCls + " text-background/65 text-[13.5px] hover:bg-white/10"}
+                className={rowCls + " text-background/65 text-sm hover:bg-white/10"}
               >
                 {/* MEH-1542: full native language names replace the "עב / EN"
                     abbreviation — W3C / NN/g best practice (language named in its
@@ -261,7 +261,7 @@ export default function AccountSheet({ open, onClose, user, logout }) {
                   logout();
                   onClose();
                 }}
-                className={rowCls + " text-background/65 text-[13.5px]"}
+                className={rowCls + " text-background/65 text-sm"}
               >
                 <SignOut size={19} weight="regular" className={iconCls} aria-hidden="true" />
                 {/* MEH-908: gerund "התנתקות" (ADR-014) via the shared

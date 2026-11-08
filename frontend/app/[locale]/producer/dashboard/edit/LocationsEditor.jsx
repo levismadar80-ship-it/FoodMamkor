@@ -28,6 +28,8 @@
 import { forwardRef, useCallback, useEffect, useId, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
+// MEH-2805: opening hours are picked from day rows, not typed.
+import LocationHoursField from "./LocationHoursField";
 import {
   CaretDown,
   CheckCircle,
@@ -41,11 +43,15 @@ import {
 
 import api from "@/lib/api";
 import { detailToMessage, sameCityLabelParams } from "@/lib/errors";
+
+// MEH-1943: codes this editor maps to settings.locations.errors.<code>.
+const LOCATION_ERROR_CODES = new Set(["one_primary_required", "primary_must_be_branch"]);
 import { showToast } from "@/lib/toast";
 import { LocationInputSchema } from "@/lib/schemas";
 import EmptyState from "@/components/ui/EmptyState";
 import CitySearch from "@/components/CitySearch";
 import AddressSearch from "@/components/AddressSearch";
+import Button from "@/components/ui/Button";
 
 // Leaflet touches `window` at import time, so the confirmation map is loaded
 // client-side only. REUSES: RegisterProducerClient.jsx:24 — same dynamic import
@@ -190,15 +196,23 @@ export default function LocationsEditor() {
     [t, tKind],
   );
 
+  // MEH-1943 chunk 1: the backend's location 422s carry a stable `code`; the
+  // copy lives in settings.locations.errors.<code> (same sentence, he + en).
+  // Unknown codes return null so detailToMessage falls back to `message`.
+  const resolveLocationCode = useCallback(
+    (code) => (LOCATION_ERROR_CODES.has(code) ? t(`errors.${code}`) : null),
+    [t],
+  );
+
   const saveErrorFrom = useCallback(
     (err) => {
       const detail = err?.response?.data?.detail;
       const params = sameCityLabelParams(detail);
       if (params) return sameCityMessage(params);
       // Pre-`code` backend, or any other failure: the bare `message` string.
-      return detailToMessage(detail) || t("errors.save_failed");
+      return detailToMessage(detail, resolveLocationCode) || t("errors.save_failed");
     },
-    [sameCityMessage, t],
+    [sameCityMessage, resolveLocationCode, t],
   );
 
   // MEH-2144: true exactly when the server said `location_same_city_needs_label`
@@ -288,11 +302,11 @@ export default function LocationsEditor() {
         reload();
       } catch (err) {
         showToast.error(
-          detailToMessage(err?.response?.data?.detail) || t("errors.save_failed"),
+          detailToMessage(err?.response?.data?.detail, resolveLocationCode) || t("errors.save_failed"),
         );
       }
     },
-    [reload, t],
+    [reload, resolveLocationCode, t],
   );
 
   const handleDelete = useCallback(
@@ -303,13 +317,13 @@ export default function LocationsEditor() {
         reload();
       } catch (err) {
         showToast.error(
-          detailToMessage(err?.response?.data?.detail) || t("errors.delete_failed"),
+          detailToMessage(err?.response?.data?.detail, resolveLocationCode) || t("errors.delete_failed"),
         );
       } finally {
         setDeletingId(null);
       }
     },
-    [reload, t],
+    [reload, resolveLocationCode, t],
   );
 
   if (loadError) {
@@ -462,7 +476,7 @@ function LocationRow({ loc, kindLabel, deleting, onEdit, onDelete, onSetPrimary 
           <button
             type="button"
             onClick={onSetPrimary}
-            className="min-h-[44px] px-2 text-xs font-medium text-primary hover:underline"
+            className="min-h-touch px-2 text-xs font-medium text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current"
           >
             {t("set_primary_cta")}
           </button>
@@ -471,7 +485,7 @@ function LocationRow({ loc, kindLabel, deleting, onEdit, onDelete, onSetPrimary 
           type="button"
           onClick={onEdit}
           aria-label={t("edit_aria")}
-          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center text-fg-muted hover:text-primary"
+          className="inline-flex min-h-touch min-w-touch items-center justify-center text-fg-muted hover:text-primary"
         >
           <Pencil size={18} />
         </button>
@@ -480,7 +494,7 @@ function LocationRow({ loc, kindLabel, deleting, onEdit, onDelete, onSetPrimary 
           onClick={onDelete}
           disabled={deleting}
           aria-label={t("delete_aria")}
-          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center text-fg-muted hover:text-error disabled:opacity-50"
+          className="inline-flex min-h-touch min-w-touch items-center justify-center text-fg-muted hover:text-error disabled:opacity-50"
         >
           <Trash size={18} />
         </button>
@@ -522,6 +536,9 @@ function LocationForm({
   );
   const set = (field) => (e) =>
     setForm((f) => ({ ...f, [field]: e.target.value }));
+  // MEH-2805: false while any day row has a close-before-open or overlapping
+  // range — the row shows its own error and the form will not save.
+  const [hoursValid, setHoursValid] = useState(true);
 
   // MEH-1940: the message must not vanish on a timer — it stays until she acts
   // on it. `form` covers every input here (all of them write through
@@ -711,6 +728,7 @@ function LocationForm({
     <form
       onSubmit={(e) => {
         e.preventDefault();
+        if (!hoursValid) return;
         onSubmit(form);
       }}
       className="space-y-3 rounded-lg border border-primary/30 bg-primary/5 p-3"
@@ -730,7 +748,7 @@ function LocationForm({
 
       {/* MEH-1563: every field carries a hint and/or an example placeholder
           (MEH-1539 standard items 2–3). REUSES: edit/cards.jsx `*_where` /
-          `scope_helper` lines — same `text-[11px] text-fg-muted` treatment.
+          `scope_helper` lines — same `text-2xs text-fg-muted` treatment.
           MEH-1595: single column below `sm`. Two columns gave each input 134px
           at 375px (108px usable) while the example placeholders measure
           125–186px, so four of five were cut mid-example — `למשל: 050-1234567`
@@ -743,7 +761,7 @@ function LocationForm({
           <select
             value={form.kind}
             onChange={set("kind")}
-            className="w-full rounded-[10px] border border-border bg-surface px-3 py-2 text-sm"
+            className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
             data-testid="location-kind"
           >
             {KINDS.map((k) => (
@@ -766,7 +784,7 @@ function LocationForm({
             ref={errorRef}
             role="alert"
             data-testid="location-form-error"
-            className="rounded-[10px] border border-error/30 border-s-4 border-s-error bg-error/5 px-3 py-2 text-xs leading-relaxed text-error sm:col-span-2"
+            className="rounded-md border border-error/30 border-s-4 border-s-error bg-error/5 px-3 py-2 text-xs leading-relaxed text-error sm:col-span-2"
           >
             {error}
           </div>
@@ -789,7 +807,7 @@ function LocationForm({
             value={form.city}
             onChange={handleCityChange}
           />
-          <span className="mt-1 block text-[11px] text-fg-muted">{placeHint}</span>
+          <span className="mt-1 block text-2xs text-fg-muted">{placeHint}</span>
         </div>
         <div className="text-xs" data-testid="location-address-field">
           <label
@@ -806,7 +824,7 @@ function LocationForm({
             onSelect={handleAddressSelect}
             placeholder={tForm("address_placeholder")}
           />
-          <span className="mt-1 block text-[11px] text-fg-muted">{placeHint}</span>
+          <span className="mt-1 block text-2xs text-fg-muted">{placeHint}</span>
         </div>
       </div>
 
@@ -851,7 +869,7 @@ function LocationForm({
       <details
         open={detailsOpen}
         onToggle={(e) => setDetailsOpen(e.currentTarget.open)}
-        className="rounded-[10px] border border-border bg-surface px-3 py-2"
+        className="rounded-md border border-border bg-surface px-3 py-2"
         data-testid="location-details"
       >
         {/* 44px tap target and no `display` override — same two constraints
@@ -860,7 +878,7 @@ function LocationForm({
             the Phosphor one the rest of the dashboard uses; `marker:hidden`
             covers Firefox, `[&::-webkit-details-marker]:hidden` Safari/Chrome. */}
         <summary
-          className="flex min-h-[44px] cursor-pointer list-none items-center gap-2 py-3 text-xs font-medium text-fg-muted marker:hidden [&::-webkit-details-marker]:hidden"
+          className="flex min-h-touch cursor-pointer list-none items-center gap-2 py-3 text-xs font-medium text-fg-muted marker:hidden [&::-webkit-details-marker]:hidden"
           data-testid="location-details-toggle"
         >
           <CaretDown
@@ -892,13 +910,16 @@ function LocationForm({
               placeholder={tForm("phone_placeholder")}
             />
           </Field>
-          <Field label={tForm("hours_label")}>
-            <TextInput
-              value={form.opening_hours}
-              onChange={set("opening_hours")}
-              placeholder={tForm("hours_placeholder")}
-            />
-          </Field>
+          {/* MEH-2805: day-row picker instead of free text — the stored string
+              is canonical from the first save, and an unreadable legacy value
+              is shown verbatim and left untouched until the owner edits it. */}
+          <LocationHoursField
+            value={form.opening_hours}
+            onChange={(next) => setForm((f) => ({ ...f, opening_hours: next }))}
+            onValidityChange={setHoursValid}
+            isPrimary={!!form.is_primary}
+            kind={form.kind}
+          />
           <Field label={tForm("precision_label")} hint={tForm("precision_helper")}>
             <select
               value={form.location_precision}
@@ -910,7 +931,7 @@ function LocationForm({
                 setPrecisionTouched(true);
                 set("location_precision")(e);
               }}
-              className="w-full rounded-[10px] border border-border bg-surface px-3 py-2 text-sm"
+              className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
               data-testid="location-precision"
             >
               <option value="exact">{tForm("precision_exact")}</option>
@@ -947,7 +968,7 @@ function LocationForm({
           (MEH-1242 PR2 manual-coords disclosure). */}
       <details
         open={coordsOpen}
-        className="rounded-[10px] border border-border bg-surface px-3 py-2"
+        className="rounded-md border border-border bg-surface px-3 py-2"
       >
         {/* MEH-1595: 44px minimum tap target — the row was 16px tall, on the
             one control an owner has to go looking for. Padding + min-height
@@ -955,12 +976,12 @@ function LocationForm({
             default `list-item` drops the disclosure triangle that signals the
             row is expandable. */}
         <summary
-          className="min-h-[44px] cursor-pointer py-3 text-xs font-medium text-fg-muted"
+          className="min-h-touch cursor-pointer py-3 text-xs font-medium text-fg-muted"
           data-testid="location-coords-toggle"
         >
           {tForm("coords_summary")}
         </summary>
-        <p className="mt-1 text-[11px] text-fg-muted">{tForm("coords_hint")}</p>
+        <p className="mt-1 text-2xs text-fg-muted">{tForm("coords_hint")}</p>
         <div className="mt-2 grid grid-cols-2 gap-2">
           <Field label={tForm("lat_label")}>
             <TextInput
@@ -986,14 +1007,14 @@ function LocationForm({
       </details>
 
       <div className="flex items-center gap-2">
-        <button
+        <Button
           type="submit"
-          disabled={saving}
-          className="rounded-full bg-primary px-4 py-1.5 text-sm font-medium text-white hover:bg-primary-dark disabled:opacity-50"
+          disabled={saving || !hoursValid}
+          variant="primary" size="sm"
           data-testid="location-save"
         >
           {saving ? t("saving") : t("save_cta")}
-        </button>
+        </Button>
         <button
           type="button"
           onClick={onCancel}
@@ -1066,7 +1087,7 @@ function AddressState({ geocoded, unresolved, confirmLabel, lat, lng, name }) {
     return (
       <p
         data-testid="location-address-unresolved"
-        className="text-[11px] text-fg-muted text-start"
+        className="text-2xs text-fg-muted text-start"
       >
         {tForm("address_unresolved")}
       </p>
@@ -1091,7 +1112,7 @@ function Field({ label, hint, children }) {
         {children}
       </label>
       {hint ? (
-        <span className="mt-1 block text-[11px] text-fg-muted">{hint}</span>
+        <span className="mt-1 block text-2xs text-fg-muted">{hint}</span>
       ) : null}
     </div>
   );
@@ -1115,7 +1136,7 @@ const TextInput = forwardRef(function TextInput(
       onChange={onChange}
       placeholder={placeholder}
       data-testid={testid}
-      className="w-full rounded-[10px] border border-border bg-surface px-3 py-2 text-sm"
+      className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-sm"
     />
   );
 });

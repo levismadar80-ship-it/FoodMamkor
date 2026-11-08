@@ -4,7 +4,8 @@ import { cloneElement } from "react";
 import { useTranslations } from "next-intl";
 import { CaretLeft, SealCheck } from "@phosphor-icons/react";
 import { Link as LocaleLink } from "@/i18n/navigation";
-import { allBadges, topBadges } from "@/lib/badges";
+import { allBadges, topBadges, badgeExplainerHref } from "@/lib/badges";
+import { useBadgeCopy } from "@/lib/use-badge-copy";
 import { CODE_TO_KEY } from "@/components/KashrutBadgeStrip";
 import Popover from "@/components/ui/Popover";
 import { badgeIcon } from "@/lib/chip-icons";
@@ -24,9 +25,9 @@ import { badgeIcon } from "@/lib/chip-icons";
  *                          MEH-2213 made the seal the only licensing signal a
  *                          reader sees, that silence was the whole gap.)
  *   declared             → NO chip on any surface (MEH-1170: the S12 "מוצהר"
- *                          chip contradicted ADR-022 "tier 2 = no badge"; the
- *                          declared_explainer moved to ProducerHeader as quiet
- *                          visible copy — ADR-022 gate 1 "affirmatively explained")
+ *                          chip contradicted ADR-022 "tier 2 = no badge"; MEH-2710
+ *                          also removed the header's «ללא תג מאומת» line — the
+ *                          ADR-022 gate 1 explanation lives on /about/process)
  *   null                 → no badge, no negative tag (ADR-022 gate 1)
  *
  * `surface` (S12 §04): "hero" (default — full chip with the word) or "card"
@@ -76,6 +77,7 @@ function kosherLabel(producer, tKashrut, fallback) {
  *
  * Exported rather than duplicated so the overflow cannot drift from the pill:
  * the resolution rule (filter through CODE_TO_KEY, then count) lives here once.
+ * `badge` must already carry its copy (useBadgeCopy, MEH-2740).
  * Every other badge is returned untouched — this is a label resolver, not a
  * badge filter, and it must not become one.
  */
@@ -89,7 +91,8 @@ export default function BadgeRow({ producer, limit, surface = "hero", hideKeys, 
   // MEH-1711: same namespace KashrutBadgeStrip.jsx:115 uses, so both surfaces
   // read the identical `kashrut.badges.*.label` strings.
   const tKashrut = useTranslations("kashrut");
-  const all = limit != null ? topBadges(producer, limit) : allBadges(producer);
+  const withCopy = useBadgeCopy();
+  const all = (limit != null ? topBadges(producer, limit) : allBadges(producer)).map(withCopy);
   // MEH-1124 (MEH-1074 Task C): optional per-surface suppression. The producer
   // detail header passes hideKeys={["products", "delivery"]} — the products
   // badge is meaningless next to the page's own products section, and delivery
@@ -129,12 +132,28 @@ export default function BadgeRow({ producer, limit, surface = "hero", hideKeys, 
 // (white = 5.08:1 ✓). Neutral chips move green-50 → surface-card with
 // green-700 ink (v4 --bg-card / --green-dark; green-700 is the closest
 // existing token — no third green per ADR-019).
-const COLOR_CLASSES = {
+export const COLOR_CLASSES = {
   primary: "bg-primary text-background",
   accent: "bg-accent text-white",
   secondary: "bg-primary text-background",
   muted: "bg-surface-card text-green-700 border border-border",
 };
+
+// The hero verified chip's face (gold ring + seal on the card surface). The
+// interactive chip below wraps it in a popover button; explainers that show
+// the badge as it looks — /about trust cards, /about/badges (MEH-2827) — use
+// VerifiedChip, the same face with no button and no popover.
+const VERIFIED_CHIP_CLASS =
+  "inline-flex items-center gap-1 rounded-full border border-accent/40 bg-surface-card text-accent text-xs px-2.5 py-0.5 font-medium";
+
+export function VerifiedChip({ label, className = "" }) {
+  return (
+    <span data-testid="verified-chip" className={`${VERIFIED_CHIP_CLASS} ${className}`.trim()}>
+      <SealCheck size={14} aria-hidden="true" />
+      {label}
+    </span>
+  );
+}
 
 /** d.m.yyyy from a date-only ISO string, LRI/PDI-isolated (S12 bidi lock). */
 function formatTierDate(isoDate) {
@@ -230,7 +249,7 @@ function VerifiedTierBadge({ producer, surface, t, avoidRef = null }) {
               // (AA fail for 12px text) — same usage-level fix as the iconOnly
               // branch above (MEH-2025/#2825): solid bg-surface-card gets accent
               // to 5.19:1.
-              "inline-flex items-center gap-1 rounded-full border border-accent/40 bg-surface-card text-accent text-xs px-2.5 py-0.5 font-medium group-focus-visible:ring-2 group-focus-visible:ring-accent/40 transition"
+              `${VERIFIED_CHIP_CLASS} group-focus-visible:ring-2 group-focus-visible:ring-accent/40 transition`
         }
       >
         <SealCheck size={iconOnly ? 16 : 14} aria-hidden="true" />
@@ -274,7 +293,7 @@ function VerifiedTierBadge({ producer, surface, t, avoidRef = null }) {
             <SealCheck size={18} className="text-primary" weight="fill" aria-hidden="true" />
             {t("verified_popover_title")}
           </span>
-          <span className="block text-[13px] leading-relaxed">
+          <span className="block text-sm leading-relaxed">
             {getVerifiedPopoverBody(producer, t)}
           </span>
           <LocaleLink
@@ -330,10 +349,13 @@ function Badge({ badge, surface = "hero", avoidRef = null }) {
   // copy. `recommended` still points at the /about#editors-pick anchor — that
   // section has no standalone page, so the retarget did NOT apply to it.
   // Card surfaces keep the compact plain-text tooltip (never mount a locale link).
-  const linkOut = badge.aboutHref && surface === "hero";
+  // MEH-2701: every other hero badge links to its group on /about/badges, so
+  // the short tooltip always leads to the full explanation of who stands behind
+  // the claim. An explicit aboutHref (recommended) still wins.
+  const linkOut = surface === "hero";
   const popoverBody = linkOut ? (
     <LocaleLink
-      href={badge.aboutHref}
+      href={badge.aboutHref ?? badgeExplainerHref(badge)}
       className="inline-flex items-start gap-1 font-medium text-primary hover:text-primary-dark"
     >
       <span>{badge.tooltip}</span>
@@ -348,7 +370,17 @@ function Badge({ badge, surface = "hero", avoidRef = null }) {
   // the toggle, Esc/outside-click dismissal, and the ProducerCard-Link tap
   // guard that used to live inline here.
   return (
-    <span role="listitem" className="inline-block">
+    // MEH-2849: a long label (e.g. «עסק של מילואימניקים» at 200% text on a 375
+    // card) wraps inside the card instead of running past it — measured 35px
+    // off-screen before. What makes it wrap is the label's min-w-0 +
+    // overflow-wrap (the Popover's inline-block wrapper then fits the
+    // available width); max-w-full keeps each box from asking for more.
+    // rounded-xl, not rounded-full: on a one-line pill the 0.75rem radius is
+    // ≥ half its height, so the ends are exactly as round as before (it scales
+    // with rem, so this holds at 200% too); on a wrapped pill it stays a
+    // rounded rectangle instead of swelling into an ellipse. Labels that fit
+    // render as before.
+    <span role="listitem" className="inline-block max-w-full">
       <Popover
         contentTestId={`badge-tooltip-${badge.key}`}
         contentClassName="w-52"
@@ -364,13 +396,13 @@ function Badge({ badge, surface = "hero", avoidRef = null }) {
             type="button"
             aria-label={`${badge.label} — ${badge.tooltip}`}
             data-badge={badge.key}
-            className="group inline-flex items-center justify-center min-h-[24px] min-w-[24px] focus:outline-none"
+            className="group inline-flex items-center justify-center min-h-[24px] min-w-[24px] max-w-full focus:outline-none"
           >
-            <span className={`inline-flex items-center ${compact ? "gap-0.5 px-2" : "gap-1 px-2.5"} text-xs py-0.5 rounded-full font-medium group-focus-visible:ring-2 group-focus-visible:ring-primary/40 transition ${colorClass}`}>
+            <span className={`inline-flex items-center max-w-full ${compact ? "gap-0.5 px-2" : "gap-1 px-2.5"} text-xs py-0.5 rounded-xl font-medium group-focus-visible:ring-2 group-focus-visible:ring-primary/40 transition ${colorClass}`}>
               {/* MEH-2584: same glyph as the filter chip (lib/chip-icons.js),
                   aria-hidden — the label stays the accessible name. */}
-              {icon && <span aria-hidden="true" className="inline-flex">{icon}</span>}
-              {badge.label}
+              {icon && <span aria-hidden="true" className="inline-flex shrink-0">{icon}</span>}
+              <span className="min-w-0 [overflow-wrap:anywhere]">{badge.label}</span>
             </span>
           </button>
         }

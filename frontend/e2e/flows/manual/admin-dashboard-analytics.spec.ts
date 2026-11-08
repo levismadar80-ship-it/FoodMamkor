@@ -232,7 +232,7 @@ const moreGroup = (page: Page) => page.getByTestId("admin-nav-more");
  * the heading by role + exact name, which is a strict-mode violation on two.
  */
 const card = (page: Page, heading: string) =>
-  page.locator("main div.bg-white").filter({ has: page.getByRole("heading", { name: heading, exact: true }) }).last();
+  page.locator("main div.bg-surface").filter({ has: page.getByRole("heading", { name: heading, exact: true }) }).last();
 /** The pills that are actually rendered — the desktop sidebar and the mobile nav each carry a set; the other is display:none.
  *  MEH-2359: the pending-businesses count sits on BOTH approvals entries («מה מחכה לטיפול» + «בתי עסק»), so a count resolves to two. */
 const pill = (page: Page, count: number) => page.locator(`[aria-label="${count} פריטים לאישור"]:visible`);
@@ -247,7 +247,8 @@ test.describe("/admin — «מה מחכה לטיפול»", () => {
     const stub = await stubAdmin(page);
     await openDashboard(page);
     expect(stub.unstubbed, "an /api/* read reached the 404 catch-all — a stub is missing").toEqual([]);
-    expect(stub.dashboardCalls(), "the layout and the page each read /admin/dashboard once").toBe(2);
+    // MEH-2399 (admin/dashboard-data.js): the layout and the home share ONE /admin/dashboard fetch.
+    expect(stub.dashboardCalls(), "the layout and the page share one /admin/dashboard read").toBe(1);
   });
 
   // MT:MEH-2359:1 — the pending list IS the page: one row per preview entry, «בדוק» → the edit screen,
@@ -314,7 +315,7 @@ async function openSettings(page: Page): Promise<void> {
 /** The vacation block — the page carries two other switches (holiday window, Friday mode) above it.
  *  Same shape and same reasoning as `card()`: <main>-scoped, innermost white container around the heading. */
 const vacationBlock = (page: Page) =>
-  page.locator("main div.bg-white").filter({ has: page.getByRole("heading", { name: /^מצב חופשה/ }) }).last();
+  page.locator("main div.bg-surface").filter({ has: page.getByRole("heading", { name: /^מצב חופשה/ }) }).last();
 const vacationSwitch = (page: Page) => vacationBlock(page).getByRole("switch");
 const vacationSave = (page: Page) => page.getByRole("button", { name: "שמרי מצב חופשה" });
 const returnDate = (page: Page) => page.getByLabel("אני בחופשה עד");
@@ -365,7 +366,7 @@ test.describe("/admin/settings — vacation mode", () => {
     await expect(vacationSave(page)).toBeDisabled();
     const warn = page.getByText("חובה לציין תאריך חזרה כשמצב חופשה מופעל");
     await expect(warn).toBeVisible();
-    await expect(warn).toHaveClass(/text-red-600/);
+    await expect(warn).toHaveClass(/text-danger-600/);
     await returnDate(page).fill("2026-10-01");
     await expect(warn).toHaveCount(0);
     await expect(vacationSave(page)).toBeEnabled();
@@ -398,7 +399,7 @@ test.describe("/admin/producers — the risk badge", () => {
     await expect(badge(page, "עסק צהוב")).toHaveText("סיכון בינוני (50)");
     await expect(badge(page, "עסק צהוב")).toHaveClass(/bg-yellow-100/);
     await expect(badge(page, "עסק אדום")).toHaveText("סיכון גבוה (90)");
-    await expect(badge(page, "עסק אדום")).toHaveClass(/bg-red-100/);
+    await expect(badge(page, "עסק אדום")).toHaveClass(/bg-danger-100/);
   });
 
   // MT:ANALYTICS:29 — the tooltip carries the full Hebrew reasoning, or «טרם דורג» when unscored.

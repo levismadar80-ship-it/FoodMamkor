@@ -54,7 +54,7 @@ function missingItemHref(code, producer) {
 
 // 44px tall: the list is now a column of tap targets on a phone.
 const LINK_CLASS =
-  "inline-flex items-center min-h-[44px] text-primary underline underline-offset-2 hover:text-primary-dark focus-ring rounded";
+  "inline-flex items-center min-h-touch text-primary underline underline-offset-2 hover:text-primary-dark focus-ring rounded";
 
 /** The item label as a link to where it is filled in. A same-page hash is a
  *  plain anchor (no route change); an edit-page target goes through the
@@ -149,7 +149,7 @@ export default function DraftSubmitBanner({ producer, onSubmitted, onPhoneVerifi
 
   return (
     <div
-      className="bg-primary/5 border border-primary/20 rounded-[16px] p-4 md:p-6 mb-6 text-sm"
+      className="bg-primary/5 border border-primary/20 rounded-lg p-4 md:p-6 mb-6 text-sm"
       role="status"
       data-testid="draft-submit-banner"
       data-state-ready={ready}
@@ -219,7 +219,7 @@ export default function DraftSubmitBanner({ producer, onSubmitted, onPhoneVerifi
             disabled={!ready}
             data-testid="draft-submit-cta"
             aria-describedby={ready ? undefined : "draft-cta-hint"}
-            className="inline-flex items-center justify-center gap-2 min-h-[44px] px-6 rounded-full font-medium bg-action-primary hover:bg-action-primary-hover text-white transition-colors focus-ring disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-action-primary"
+            className="inline-flex items-center justify-center gap-2 min-h-touch px-6 rounded-full font-medium bg-action-primary hover:bg-action-primary-hover text-white transition-colors focus-ring disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-action-primary"
           >
             <PaperPlaneTilt size={16} weight="bold" aria-hidden="true" />
             {t("submit_cta")}
@@ -241,7 +241,7 @@ export default function DraftSubmitBanner({ producer, onSubmitted, onPhoneVerifi
               // missing, so a disabled button points at the reason.
               disabled={submitting || !ready}
               data-testid="draft-submit-confirm-yes"
-              className="inline-flex items-center justify-center gap-2 min-h-[44px] px-5 rounded-full font-medium bg-action-primary hover:bg-action-primary-hover text-white transition-colors focus-ring disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-2 min-h-touch px-5 rounded-full font-medium bg-action-primary hover:bg-action-primary-hover text-white transition-colors focus-ring disabled:opacity-50"
             >
               <Check size={16} weight="bold" aria-hidden="true" />
               {submitting ? t("confirm_sending") : t("confirm_yes")}
@@ -251,7 +251,7 @@ export default function DraftSubmitBanner({ producer, onSubmitted, onPhoneVerifi
               onClick={() => setConfirming(false)}
               disabled={submitting}
               data-testid="draft-submit-confirm-no"
-              className="min-h-[44px] px-4 text-primary hover:underline focus-ring rounded-full"
+              className="min-h-touch px-4 text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current focus-ring rounded-full"
             >
               {t("confirm_no")}
             </button>

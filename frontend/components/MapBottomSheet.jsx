@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { ArrowLeft } from "@phosphor-icons/react";
+import { Link } from "@/i18n/navigation";
 
 import { SkeletonStyles } from "@/components/Skeleton";
 
@@ -47,7 +49,7 @@ function SheetListSkeleton({ label }) {
     // (bars themselves stay aria-hidden).
     <div data-testid="sheet-list-skeleton" role="status" aria-label={label}>
       {[0, 1, 2, 3].map((i) => (
-        <div key={i} className="skeleton-box rounded-[16px] h-20 mb-3" aria-hidden="true" />
+        <div key={i} className="skeleton-box rounded-lg h-20 mb-3" aria-hidden="true" />
       ))}
       {/* skeleton-box styles are NOT global CSS — they ship via styled-jsx
           from Skeleton.jsx; without this mount the bars render invisible. */}
@@ -88,10 +90,30 @@ export function sheetClaimsGesture({ startedInScroller, scrollTopAtStart, dy, sn
 // every gesture and claim (or release) the sheet essentially at random.
 const GESTURE_SLOP_PX = 4;
 
-export default function MapBottomSheet({ snap, onSnapChange, children, count, loading = false, filtered = false, onResetFilters }) {
+export default function MapBottomSheet({
+  snap,
+  onSnapChange,
+  children,
+  count,
+  loading = false,
+  filtered = false,
+  onResetFilters,
+  // MEH-2639: the city the visitor asked about, when that city returned
+  // nothing AND no other filter is on. Truthy = the peek row explains the
+  // city instead of counting, and offers NO "clear the filter" — clearing is
+  // un-asking the question she just asked.
+  zeroCity = "",
+  // MEH-2639: near-me found nothing within 25km. A persistent notice above
+  // the list, replacing a toast that vanished before it was read.
+  nearMeEmpty = false,
+  // MEH-2639: the count line names an area only when one is actually set.
+  hasOrigin = false,
+}) {
   const t = useTranslations("map.bottom_sheet");
   // MEH-1054: existing key reused for the skeleton's AT label (no new copy).
   const tSkeleton = useTranslations("common.skeleton");
+  // MEH-2827 PR 4: a town with no businesses is a town someone could recommend.
+  const tNav = useTranslations("nav.footer");
   const sheetRef = useRef(null);
   // MEH-2148: the scroller, so a touch can be attributed to the list or to the
   // sheet chrome. `sheetRef` cannot answer that — it contains both.
@@ -262,6 +284,23 @@ export default function MapBottomSheet({ snap, onSnapChange, children, count, lo
             style={{ width: "120px", height: "14px" }}
             aria-hidden="true"
           />
+        ) : zeroCity ? (
+          // MEH-2639: a town with no businesses is not an empty result. The
+          // list below is the full set, nearest-first from this town's
+          // centroid, so the row says what happened and what follows.
+          <div className="flex flex-wrap items-center justify-between gap-x-3 w-full">
+            <p className="text-sm font-medium text-accent" data-testid="sheet-city-zero">
+              {t("city_zero", { city: zeroCity })}
+            </p>
+            <Link
+              href={`/recommend?city=${encodeURIComponent(zeroCity)}`}
+              data-testid="recommend-link-city-zero"
+              className="-my-2.5 shrink-0 inline-flex items-center gap-1 min-h-touch text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
+              {tNav("recommend")}
+              <ArrowLeft size={15} className="ltr:rotate-180" aria-hidden="true" />
+            </Link>
+          </div>
         ) : count === 0 && filtered && onResetFilters ? (
           // MEH-2425: zero BECAUSE of filters is not an empty area. "אין בתי
           // עסק מקומיים באזור" under five active filters read as "nothing
@@ -275,14 +314,17 @@ export default function MapBottomSheet({ snap, onSnapChange, children, count, lo
               type="button"
               onClick={onResetFilters}
               data-testid="sheet-reset-filters"
-              className="inline-flex items-center min-h-[44px] -my-2.5 shrink-0 text-sm font-medium text-primary hover:underline"
+              className="inline-flex items-center min-h-touch -my-2.5 shrink-0 text-sm font-medium text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current"
             >
               {t("reset_filters")}
             </button>
           </div>
         ) : (
           <p className="text-sm font-medium text-accent numeric" data-testid="sheet-count">
-            {t("count", { count })}
+            {/* MEH-2639: "באזור" is a claim about a place. Without an origin
+                or a city there is no place it refers to, and the map is
+                showing the whole country. */}
+            {hasOrigin ? t("count_area", { count }) : t("count", { count })}
           </p>
         )}
       </div>
@@ -308,6 +350,18 @@ export default function MapBottomSheet({ snap, onSnapChange, children, count, lo
         data-testid="map-sheet-content"
         className="flex-1 overflow-y-auto overscroll-y-contain [overflow-anchor:none] px-4 pt-1"
       >
+        {/* MEH-2639: the near-me notice. Above the list, inside the scroller,
+            so it travels with the results it explains rather than stealing a
+            line of the peek row — which on a phone is the only line visible
+            before the visitor drags the sheet up. */}
+        {!loading && nearMeEmpty && (
+          <div
+            data-testid="sheet-near-me-empty"
+            className="mb-3 rounded-md border border-primary/20 bg-green-50 px-4 py-3 text-sm text-primary"
+          >
+            {t("near_me_empty")}
+          </div>
+        )}
         {loading ? <SheetListSkeleton label={tSkeleton("loading_businesses")} /> : children}
       </div>
     </div>

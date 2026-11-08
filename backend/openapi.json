@@ -371,7 +371,7 @@
       "AvailabilityStateUpdate": {
         "properties": {
           "state": {
-            "description": "accepting_orders | available_today | full_this_week | on_vacation",
+            "description": "accepting_orders | on_vacation",
             "title": "State",
             "type": "string"
           },
@@ -393,33 +393,6 @@
           "state"
         ],
         "title": "AvailabilityStateUpdate",
-        "type": "object"
-      },
-      "AvailabilityStatusUpdate": {
-        "properties": {
-          "status": {
-            "description": "available | full | vacation",
-            "title": "Status",
-            "type": "string"
-          },
-          "vacation_until": {
-            "anyOf": [
-              {
-                "format": "date",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Optional return date (vacation only)",
-            "title": "Vacation Until"
-          }
-        },
-        "required": [
-          "status"
-        ],
-        "title": "AvailabilityStatusUpdate",
         "type": "object"
       },
       "BioGenerateIn": {
@@ -527,6 +500,129 @@
           "file"
         ],
         "title": "Body_upload_owner_photo_upload_owner_photo_post",
+        "type": "object"
+      },
+      "BusinessSuggestionAck": {
+        "description": "The ENTIRE public response to POST /business-suggestions: `{\"ok\": true}`.\n\nThis model exists so the no-leak guarantee is structural rather than a\npromise about what the router happens to return. A duplicate suggestion and\na brand-new one produce byte-identical bodies, so the endpoint cannot be\nused to probe whether a business is already in the outreach queue; and\nthere is no field here that could ever carry a lead id or the suggester's\nemail.\n\n# DO NOT add fields to this model — every addition is a disclosure on an\n#        unauthenticated endpoint (MEH-2633).",
+        "properties": {
+          "ok": {
+            "default": true,
+            "title": "Ok",
+            "type": "boolean"
+          }
+        },
+        "title": "BusinessSuggestionAck",
+        "type": "object"
+      },
+      "BusinessSuggestionCreate": {
+        "description": "Public body for POST /business-suggestions (MEH-2633).\n\nA visitor suggesting a business that is not on Mehamakor yet. The row it\nproduces is an ordinary OutreachLead with source=\"community\" — nothing is\npublished, and the business still registers itself and passes manual\napproval + the licence check.\n\nField rules worth stating, because each one is a decision:\n\n- `city` is REQUIRED. REUSES `clean_display_city` (:259), so it gets the\n  same bleach + >=1-letter floor as the registration form's city; \"בת ים\"\n  and \"לוד\" clear a 1-letter floor where the >=3 used for names would not.\n- `instagram` / `phone` / `website`: at least ONE is required, enforced by\n  `_require_one_contact` below — without a way to reach the business the\n  suggestion is unactionable, which is the whole point of the queue. The\n  error text is the approved `<hebrew_copy>` string verbatim.\n- `company` is a HONEYPOT. No human sees it (Chunk B hides it from sighted\n  users AND from screen readers), so any value at all means a bot. The\n  router answers 201 and stores nothing — never a 4xx, which would tell\n  the bot what tripped it.\n- `suggester_email` is optional PII. It is normalised through\n  `_normalize_contact_email` (:342) so a cleared field arrives as None\n  rather than 422-ing, and capped at 254 to match the column. It is NEVER\n  echoed back: see BusinessSuggestionAck.\n\n`Field(max_length=…)` sits at field level on `instagram` / `suggester_name`\n/ `reason`, whose separate `@field_validator`s may return None. That is\nsafe, and deliberately NOT the Annotated form: an `AfterValidator` inside\nthe annotation would have the cap applied to the validator's OUTPUT and\nblow up with \"Unable to apply constraint 'max_length' to supplied value\nNone\" (the trap documented at :640-652). `suggester_email` carries no\nfield-level cap for the same reason in reverse — its validator is\nmode=\"before\", so a cap would land after it.",
+        "properties": {
+          "city": {
+            "maxLength": 100,
+            "title": "City",
+            "type": "string"
+          },
+          "company": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company"
+          },
+          "instagram": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Instagram"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "maxLength": 30,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "suggester_email": {
+            "anyOf": [
+              {
+                "format": "email",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggester Email"
+          },
+          "suggester_name": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggester Name"
+          },
+          "wants_update": {
+            "default": false,
+            "title": "Wants Update",
+            "type": "boolean"
+          },
+          "website": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Website"
+          }
+        },
+        "required": [
+          "name",
+          "city"
+        ],
+        "title": "BusinessSuggestionCreate",
         "type": "object"
       },
       "CategoryHit": {
@@ -1010,6 +1106,98 @@
         "title": "DeliveryAreaOut",
         "type": "object"
       },
+      "DeliveryWaitlistHostConfirmIn": {
+        "description": "MEH-2673: the signed token from the «אשמח לארח» confirmation link.\nIts own model so a change to the unsubscribe input never changes this\nendpoint.",
+        "properties": {
+          "token": {
+            "minLength": 1,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "title": "DeliveryWaitlistHostConfirmIn",
+        "type": "object"
+      },
+      "DeliveryWaitlistIn": {
+        "description": "MEH-2618: body of POST /producers/{id}/delivery-waitlist.\n\nUnlike WhatsAppClickIn above, `city` is REQUIRED and RAISES: this is a\nform the visitor fills on purpose, not a beacon — a junk city here would\nmake a promise («נודיע לך כשיגיעו ל???») that can never be kept. Same\nletter floor as the siblings (MEH-555), same 60-char cap as\nproducer_whatsapp_clicks.city so the dashboard's demand row can one day\ncount both sources on one key.",
+        "properties": {
+          "city": {
+            "maxLength": 60,
+            "minLength": 1,
+            "title": "City",
+            "type": "string"
+          },
+          "email": {
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          },
+          "wants_to_host": {
+            "default": false,
+            "title": "Wants To Host",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "email",
+          "city"
+        ],
+        "title": "DeliveryWaitlistIn",
+        "type": "object"
+      },
+      "DeliveryWaitlistOut": {
+        "description": "MEH-2618: `added` (201) on a new row, `exists` (200) when the same\nemail already waits for the same business + city — the form shows the\nsame calm confirmation for both.\n\nMEH-2673 `host_confirm` — only when the request ticked «אשמח לארח»:\n`sent` = a confirmation mail went out now · `already_sent` = THIS\nbusiness+city's link already went to the address within the last 24 h,\nnothing new was sent (the form says «check your inbox» instead of a false\n«we sent») · `limit_reached` = the address hit its daily cap of\nconfirmation mails across businesses/cities, nothing was sent for this\none (the form says «try again tomorrow», never «check your inbox») ·\n`confirmed` = this row is already a host. None when the box was not\nticked.",
+        "properties": {
+          "host_confirm": {
+            "anyOf": [
+              {
+                "enum": [
+                  "sent",
+                  "already_sent",
+                  "limit_reached",
+                  "confirmed"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Host Confirm"
+          },
+          "status": {
+            "enum": [
+              "added",
+              "exists"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "DeliveryWaitlistOut",
+        "type": "object"
+      },
+      "DeliveryWaitlistUnsubscribeIn": {
+        "description": "MEH-2618: the signed token from the «לא רוצה עדכונים» link.",
+        "properties": {
+          "token": {
+            "minLength": 1,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "title": "DeliveryWaitlistUnsubscribeIn",
+        "type": "object"
+      },
       "EventCreate": {
         "properties": {
           "category": {
@@ -1123,6 +1311,17 @@
             "default": 0,
             "title": "Price",
             "type": "integer"
+          },
+          "registration_method": {
+            "default": "site_form",
+            "enum": [
+              "site_form",
+              "whatsapp",
+              "phone",
+              "external_url"
+            ],
+            "title": "Registration Method",
+            "type": "string"
           },
           "registration_url": {
             "anyOf": [
@@ -1324,6 +1523,27 @@
             ],
             "title": "Producer Name"
           },
+          "producer_phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Producer Phone"
+          },
+          "registered_count": {
+            "default": 0,
+            "title": "Registered Count",
+            "type": "integer"
+          },
+          "registration_method": {
+            "default": "site_form",
+            "title": "Registration Method",
+            "type": "string"
+          },
           "registration_url": {
             "anyOf": [
               {
@@ -1334,6 +1554,17 @@
               }
             ],
             "title": "Registration Url"
+          },
+          "spots_left": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spots Left"
           },
           "title": {
             "title": "Title",
@@ -1501,6 +1732,23 @@
             ],
             "title": "Price"
           },
+          "registration_method": {
+            "anyOf": [
+              {
+                "enum": [
+                  "site_form",
+                  "whatsapp",
+                  "phone",
+                  "external_url"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Registration Method"
+          },
           "registration_url": {
             "anyOf": [
               {
@@ -1662,6 +1910,19 @@
             ],
             "title": "Max Participants"
           },
+          "min_participants": {
+            "anyOf": [
+              {
+                "maximum": 500.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Participants"
+          },
           "price_per_person": {
             "anyOf": [
               {
@@ -1686,6 +1947,29 @@
               }
             ],
             "title": "Recurring Schedule"
+          },
+          "registration_method": {
+            "default": "site_form",
+            "enum": [
+              "site_form",
+              "whatsapp",
+              "phone",
+              "external_url"
+            ],
+            "title": "Registration Method",
+            "type": "string"
+          },
+          "registration_url": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Registration Url"
           },
           "requirements": {
             "anyOf": [
@@ -1872,6 +2156,17 @@
             ],
             "title": "Max Participants"
           },
+          "min_participants": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Participants"
+          },
           "moderation_reason": {
             "anyOf": [
               {
@@ -1931,6 +2226,27 @@
               }
             ],
             "title": "Recurring Schedule"
+          },
+          "registered_count": {
+            "default": 0,
+            "title": "Registered Count",
+            "type": "integer"
+          },
+          "registration_method": {
+            "default": "site_form",
+            "title": "Registration Method",
+            "type": "string"
+          },
+          "registration_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Registration Url"
           },
           "rejection_reason": {
             "anyOf": [
@@ -2158,6 +2474,17 @@
             ],
             "title": "Max Participants"
           },
+          "min_participants": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Participants"
+          },
           "participants_count": {
             "default": 0,
             "title": "Participants Count",
@@ -2184,6 +2511,27 @@
               }
             ],
             "title": "Recurring Schedule"
+          },
+          "registered_count": {
+            "default": 0,
+            "title": "Registered Count",
+            "type": "integer"
+          },
+          "registration_method": {
+            "default": "site_form",
+            "title": "Registration Method",
+            "type": "string"
+          },
+          "registration_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Registration Url"
           },
           "spots_left": {
             "anyOf": [
@@ -2400,6 +2748,32 @@
             ],
             "title": "Max Participants"
           },
+          "min_participants": {
+            "anyOf": [
+              {
+                "maximum": 500.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Participants"
+          },
+          "participants_count": {
+            "anyOf": [
+              {
+                "maximum": 500.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Participants Count"
+          },
           "price_per_person": {
             "anyOf": [
               {
@@ -2424,6 +2798,35 @@
               }
             ],
             "title": "Recurring Schedule"
+          },
+          "registration_method": {
+            "anyOf": [
+              {
+                "enum": [
+                  "site_form",
+                  "whatsapp",
+                  "phone",
+                  "external_url"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Registration Method"
+          },
+          "registration_url": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Registration Url"
           },
           "requirements": {
             "anyOf": [
@@ -2796,6 +3199,18 @@
             "title": "Deadline",
             "type": "string"
           },
+          "delivery_note": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Note"
+          },
           "description": {
             "anyOf": [
               {
@@ -2808,9 +3223,16 @@
             "title": "Description"
           },
           "fulfillment_note": {
-            "maxLength": 1000,
-            "title": "Fulfillment Note",
-            "type": "string"
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fulfillment Note"
           },
           "max_participants": {
             "anyOf": [
@@ -2828,6 +3250,18 @@
             "minimum": 2.0,
             "title": "Min Participants",
             "type": "integer"
+          },
+          "pickup_note": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Note"
           },
           "price_per_unit_group": {
             "anyOf": [
@@ -2884,8 +3318,7 @@
           "price_per_unit_regular",
           "price_per_unit_group",
           "min_participants",
-          "deadline",
-          "fulfillment_note"
+          "deadline"
         ],
         "title": "GroupBuyCreate",
         "type": "object"
@@ -2918,6 +3351,17 @@
             "format": "date-time",
             "title": "Deadline",
             "type": "string"
+          },
+          "delivery_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Note"
           },
           "description": {
             "anyOf": [
@@ -2960,6 +3404,17 @@
           "min_participants": {
             "title": "Min Participants",
             "type": "integer"
+          },
+          "pickup_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Note"
           },
           "price_per_unit_group": {
             "title": "Price Per Unit Group",
@@ -3078,6 +3533,17 @@
             "title": "Deadline",
             "type": "string"
           },
+          "delivery_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Note"
+          },
           "description": {
             "anyOf": [
               {
@@ -3119,6 +3585,17 @@
           "min_participants": {
             "title": "Min Participants",
             "type": "integer"
+          },
+          "pickup_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pickup Note"
           },
           "price_per_unit_group": {
             "title": "Price Per Unit Group",
@@ -4135,6 +4612,56 @@
             "title": "Status",
             "type": "string"
           },
+          "suggested_by_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggested By Email"
+          },
+          "suggested_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggested By Name"
+          },
+          "suggester_thanked_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggester Thanked At"
+          },
+          "suggester_wants_update": {
+            "default": false,
+            "title": "Suggester Wants Update",
+            "type": "boolean"
+          },
+          "suggestion_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggestion Reason"
+          },
           "updated_at": {
             "format": "date-time",
             "title": "Updated At",
@@ -4698,11 +5225,6 @@
             "title": "Availability State",
             "type": "string"
           },
-          "availability_status": {
-            "default": "available",
-            "title": "Availability Status",
-            "type": "string"
-          },
           "avg_rating": {
             "default": 0,
             "title": "Avg Rating",
@@ -5077,11 +5599,6 @@
             ],
             "title": "Instagram"
           },
-          "is_available_today": {
-            "default": false,
-            "title": "Is Available Today",
-            "type": "boolean"
-          },
           "is_recommended": {
             "default": false,
             "title": "Is Recommended",
@@ -5397,6 +5914,16 @@
             ],
             "title": "Requested Changes"
           },
+          "rescued_recently": {
+            "default": false,
+            "title": "Rescued Recently",
+            "type": "boolean"
+          },
+          "reservist_owned": {
+            "default": false,
+            "title": "Reservist Owned",
+            "type": "boolean"
+          },
           "resubmission_count": {
             "default": 0,
             "title": "Resubmission Count",
@@ -5690,17 +6217,6 @@
             ],
             "title": "Availability State"
           },
-          "availability_status": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Availability Status"
-          },
           "category_ids": {
             "anyOf": [
               {
@@ -5748,6 +6264,17 @@
               }
             ],
             "title": "Contact Name"
+          },
+          "coverage_cta_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coverage Cta Enabled"
           },
           "custom_questions": {
             "anyOf": [
@@ -5988,17 +6515,6 @@
             ],
             "title": "Instagram"
           },
-          "is_available_today": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is Available Today"
-          },
           "is_recommended": {
             "anyOf": [
               {
@@ -6212,6 +6728,17 @@
               }
             ],
             "title": "Recommended Note"
+          },
+          "reservist_owned": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reservist Owned"
           },
           "short_description": {
             "anyOf": [
@@ -6654,11 +7181,6 @@
             "title": "Availability State",
             "type": "string"
           },
-          "availability_status": {
-            "default": "available",
-            "title": "Availability Status",
-            "type": "string"
-          },
           "avg_rating": {
             "default": 0,
             "title": "Avg Rating",
@@ -6958,11 +7480,6 @@
             ],
             "title": "Instagram"
           },
-          "is_available_today": {
-            "default": false,
-            "title": "Is Available Today",
-            "type": "boolean"
-          },
           "is_recommended": {
             "default": false,
             "title": "Is Recommended",
@@ -7171,6 +7688,16 @@
             "default": 0,
             "title": "Report Count",
             "type": "integer"
+          },
+          "rescued_recently": {
+            "default": false,
+            "title": "Rescued Recently",
+            "type": "boolean"
+          },
+          "reservist_owned": {
+            "default": false,
+            "title": "Reservist Owned",
+            "type": "boolean"
           },
           "reviews_count": {
             "default": 0,
@@ -7485,11 +8012,6 @@
             "title": "Availability State",
             "type": "string"
           },
-          "availability_status": {
-            "default": "available",
-            "title": "Availability Status",
-            "type": "string"
-          },
           "avg_rating": {
             "default": 0,
             "title": "Avg Rating",
@@ -7692,11 +8214,6 @@
             "title": "Images",
             "type": "array"
           },
-          "is_available_today": {
-            "default": false,
-            "title": "Is Available Today",
-            "type": "boolean"
-          },
           "is_recommended": {
             "default": false,
             "title": "Is Recommended",
@@ -7870,6 +8387,16 @@
             "default": 0,
             "title": "Products Count",
             "type": "integer"
+          },
+          "rescued_recently": {
+            "default": false,
+            "title": "Rescued Recently",
+            "type": "boolean"
+          },
+          "reservist_owned": {
+            "default": false,
+            "title": "Reservist Owned",
+            "type": "boolean"
           },
           "reviews_count": {
             "default": 0,
@@ -8817,11 +9344,6 @@
             "title": "Availability State",
             "type": "string"
           },
-          "availability_status": {
-            "default": "available",
-            "title": "Availability Status",
-            "type": "string"
-          },
           "avg_rating": {
             "default": 0,
             "title": "Avg Rating",
@@ -9133,11 +9655,6 @@
             ],
             "title": "Instagram"
           },
-          "is_available_today": {
-            "default": false,
-            "title": "Is Available Today",
-            "type": "boolean"
-          },
           "is_recommended": {
             "default": false,
             "title": "Is Recommended",
@@ -9390,6 +9907,16 @@
               }
             ],
             "title": "Requested Changes"
+          },
+          "rescued_recently": {
+            "default": false,
+            "title": "Rescued Recently",
+            "type": "boolean"
+          },
+          "reservist_owned": {
+            "default": false,
+            "title": "Reservist Owned",
+            "type": "boolean"
           },
           "resubmission_count": {
             "default": 0,
@@ -10415,17 +10942,6 @@
             ],
             "title": "Availability State"
           },
-          "availability_status": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Availability Status"
-          },
           "category_ids": {
             "anyOf": [
               {
@@ -10473,6 +10989,17 @@
               }
             ],
             "title": "Contact Name"
+          },
+          "coverage_cta_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coverage Cta Enabled"
           },
           "custom_questions": {
             "anyOf": [
@@ -10701,17 +11228,6 @@
             ],
             "title": "Instagram"
           },
-          "is_available_today": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is Available Today"
-          },
           "is_recommended": {
             "anyOf": [
               {
@@ -10926,6 +11442,17 @@
             ],
             "title": "Recommended Note"
           },
+          "reservist_owned": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reservist Owned"
+          },
           "short_description": {
             "anyOf": [
               {
@@ -11074,6 +11601,21 @@
       },
       "ProductCreate": {
         "properties": {
+          "allergens": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 50,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allergens"
+          },
           "description": {
             "anyOf": [
               {
@@ -11096,6 +11638,17 @@
               }
             ],
             "title": "Image Url"
+          },
+          "ingredients": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ingredients"
           },
           "is_gluten_free": {
             "default": false,
@@ -11233,6 +11786,20 @@
       },
       "ProductOut": {
         "properties": {
+          "allergens": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allergens"
+          },
           "description": {
             "anyOf": [
               {
@@ -11259,6 +11826,17 @@
               }
             ],
             "title": "Image Url"
+          },
+          "ingredients": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ingredients"
           },
           "is_gluten_free": {
             "default": false,
@@ -11337,6 +11915,21 @@
       },
       "ProductUpdate": {
         "properties": {
+          "allergens": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 50,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allergens"
+          },
           "description": {
             "anyOf": [
               {
@@ -11359,6 +11952,17 @@
               }
             ],
             "title": "Image Url"
+          },
+          "ingredients": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ingredients"
           },
           "is_gluten_free": {
             "anyOf": [
@@ -11564,6 +12168,142 @@
         "title": "RegisterAck",
         "type": "object"
       },
+      "RegistrationCancelInfoOut": {
+        "description": "GET by cancel token — enough for the cancel page to say what it is.",
+        "properties": {
+          "event_date": {
+            "format": "date",
+            "title": "Event Date",
+            "type": "string"
+          },
+          "item_id": {
+            "format": "uuid",
+            "title": "Item Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "event",
+              "experience"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "item_id",
+          "title",
+          "event_date",
+          "status"
+        ],
+        "title": "RegistrationCancelInfoOut",
+        "type": "object"
+      },
+      "RegistrationCreate": {
+        "description": "The on-site sign-up form: name, phone and email, all required, no\naccount (approved 6/11).",
+        "properties": {
+          "email": {
+            "format": "email",
+            "maxLength": 200,
+            "title": "Email",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "phone": {
+            "maxLength": 20,
+            "minLength": 1,
+            "title": "Phone",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "phone",
+          "email"
+        ],
+        "title": "RegistrationCreate",
+        "type": "object"
+      },
+      "RegistrationCreatedOut": {
+        "description": "What the visitor gets back. Deliberately nothing she did not type, and\nnot the cancel token — that goes to her inbox only.",
+        "properties": {
+          "status": {
+            "const": "registered",
+            "default": "registered",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "title": "RegistrationCreatedOut",
+        "type": "object"
+      },
+      "RegistrationOwnerOut": {
+        "description": "One row of the owner's list (owner / admin only).",
+        "properties": {
+          "cancelled_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelled At"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "phone": {
+            "title": "Phone",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "phone",
+          "email",
+          "status",
+          "created_at"
+        ],
+        "title": "RegistrationOwnerOut",
+        "type": "object"
+      },
       "RejectionPresetOut": {
         "description": "MEH-226: one row of GET /admin/producers/rejection-presets.\n\nTyped rather than a bare dict so the MEH-1748 codegen chain emits a real\nschema for this route — an untyped handler generates `zod.unknown()`,\nwhich makes the drift guard structurally unable to notice the shape\nchanging.",
         "properties": {
@@ -11615,6 +12355,1197 @@
           }
         },
         "title": "RequestChangesIn",
+        "type": "object"
+      },
+      "RescueDonatedIn": {
+        "description": "How many uncollected bags were given away free. A set, not an\nincrement: a second tap with the same number is a no-op, and a mistake is\ncorrected by sending the right number.",
+        "properties": {
+          "qty": {
+            "maximum": 20.0,
+            "minimum": 0.0,
+            "title": "Qty",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "qty"
+        ],
+        "title": "RescueDonatedIn",
+        "type": "object"
+      },
+      "RescueMetricsOut": {
+        "description": "The pilot's read-only numbers (chunk 5).\n\n`sell_through` and `no_show_rate` are fractions 0..1, not percentages, so\nthe UI decides how to render them and nothing is rounded twice. Both are\nNone when their denominator is zero — a pilot with no bags yet has no\nsell-through, and reporting 0% would read as \"nothing sold\" rather than\n\"nothing published\".",
+        "properties": {
+          "bags_donated": {
+            "default": 0,
+            "title": "Bags Donated",
+            "type": "integer"
+          },
+          "bags_offered": {
+            "title": "Bags Offered",
+            "type": "integer"
+          },
+          "bags_reserved": {
+            "title": "Bags Reserved",
+            "type": "integer"
+          },
+          "buyers_total": {
+            "title": "Buyers Total",
+            "type": "integer"
+          },
+          "days": {
+            "title": "Days",
+            "type": "integer"
+          },
+          "no_show_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "No Show Rate"
+          },
+          "no_shows": {
+            "title": "No Shows",
+            "type": "integer"
+          },
+          "offers_cancelled": {
+            "title": "Offers Cancelled",
+            "type": "integer"
+          },
+          "offers_per_day": {
+            "title": "Offers Per Day",
+            "type": "number"
+          },
+          "offers_total": {
+            "title": "Offers Total",
+            "type": "integer"
+          },
+          "orders_cancelled": {
+            "title": "Orders Cancelled",
+            "type": "integer"
+          },
+          "orders_total": {
+            "title": "Orders Total",
+            "type": "integer"
+          },
+          "repeat_buyers": {
+            "title": "Repeat Buyers",
+            "type": "integer"
+          },
+          "sell_through": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sell Through"
+          }
+        },
+        "required": [
+          "days",
+          "offers_total",
+          "offers_per_day",
+          "bags_offered",
+          "bags_reserved",
+          "orders_total",
+          "no_shows",
+          "orders_cancelled",
+          "offers_cancelled",
+          "buyers_total",
+          "repeat_buyers"
+        ],
+        "title": "RescueMetricsOut",
+        "type": "object"
+      },
+      "RescueMyOrderOut": {
+        "description": "One of the caller's own reservations for today, read back (MEH-2680).\n\nThe confirmation lived only in component state, so a reload lost the code\nthe buyer must say at the counter, and the review — offered once the order\nis «handed» — could never appear. `reviewed` says whether to offer it.",
+        "properties": {
+          "cancel_until": {
+            "format": "date-time",
+            "title": "Cancel Until",
+            "type": "string"
+          },
+          "cancelled_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelled At"
+          },
+          "cancelled_by_business": {
+            "title": "Cancelled By Business",
+            "type": "boolean"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "handed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Handed At"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "offer_id": {
+            "format": "uuid",
+            "title": "Offer Id",
+            "type": "string"
+          },
+          "pickup_code": {
+            "maxLength": 4,
+            "minLength": 4,
+            "pattern": "^[0-9]{4}$",
+            "title": "Pickup Code",
+            "type": "string"
+          },
+          "pickup_end": {
+            "format": "date-time",
+            "title": "Pickup End",
+            "type": "string"
+          },
+          "pickup_start": {
+            "format": "date-time",
+            "title": "Pickup Start",
+            "type": "string"
+          },
+          "price_agorot": {
+            "title": "Price Agorot",
+            "type": "integer"
+          },
+          "producer_id": {
+            "format": "uuid",
+            "title": "Producer Id",
+            "type": "string"
+          },
+          "qty": {
+            "title": "Qty",
+            "type": "integer"
+          },
+          "reviewed": {
+            "default": false,
+            "title": "Reviewed",
+            "type": "boolean"
+          },
+          "status": {
+            "enum": [
+              "reserved",
+              "handed",
+              "no_show",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "offer_id",
+          "user_id",
+          "qty",
+          "pickup_code",
+          "status",
+          "created_at",
+          "price_agorot",
+          "cancel_until",
+          "pickup_start",
+          "pickup_end",
+          "producer_id",
+          "cancelled_by_business"
+        ],
+        "title": "RescueMyOrderOut",
+        "type": "object"
+      },
+      "RescueNoShowStateOut": {
+        "description": "What the admin reset returns, so the operator can see the effect.\n\n`active_no_shows` is the windowed count the 422 gate actually reads — not\nthe lifetime `no_show_count`. After a reset it is 0 by construction, and\nshowing both is what makes the reset verifiable rather than hopeful.",
+        "properties": {
+          "active_no_shows": {
+            "title": "Active No Shows",
+            "type": "integer"
+          },
+          "block_cleared_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Block Cleared At"
+          },
+          "blocked": {
+            "title": "Blocked",
+            "type": "boolean"
+          },
+          "no_show_count": {
+            "title": "No Show Count",
+            "type": "integer"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "no_show_count",
+          "active_no_shows",
+          "blocked"
+        ],
+        "title": "RescueNoShowStateOut",
+        "type": "object"
+      },
+      "RescueOfferCreate": {
+        "description": "What a verified business POSTs to publish one day's bags.\n\n`qty_left` is not accepted: it is initialised to `qty_total` server-side,\nso a client cannot publish an offer that is already half sold. `status` is\nnot accepted either — a new offer is always `active`.",
+        "properties": {
+          "cancel_until": {
+            "format": "date-time",
+            "title": "Cancel Until",
+            "type": "string"
+          },
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "pickup_end": {
+            "format": "date-time",
+            "title": "Pickup End",
+            "type": "string"
+          },
+          "pickup_start": {
+            "format": "date-time",
+            "title": "Pickup Start",
+            "type": "string"
+          },
+          "price_agorot": {
+            "minimum": 0.0,
+            "title": "Price Agorot",
+            "type": "integer"
+          },
+          "producer_location_id": {
+            "format": "uuid",
+            "title": "Producer Location Id",
+            "type": "string"
+          },
+          "qty_total": {
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Qty Total",
+            "type": "integer"
+          },
+          "value_max_agorot": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value Max Agorot"
+          },
+          "value_min_agorot": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value Min Agorot"
+          }
+        },
+        "required": [
+          "producer_location_id",
+          "date",
+          "qty_total",
+          "price_agorot",
+          "pickup_start",
+          "pickup_end",
+          "cancel_until"
+        ],
+        "title": "RescueOfferCreate",
+        "type": "object"
+      },
+      "RescueOfferOut": {
+        "description": "One offer as the public list and the dashboard both serialize it.\n\n`qty_left` is the only stock number published: `qty_total` is included so\nthe UI can say \"נותרו 2 מתוך 6\", and nothing here reveals who reserved.",
+        "properties": {
+          "cancel_until": {
+            "format": "date-time",
+            "title": "Cancel Until",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "pickup_end": {
+            "format": "date-time",
+            "title": "Pickup End",
+            "type": "string"
+          },
+          "pickup_start": {
+            "format": "date-time",
+            "title": "Pickup Start",
+            "type": "string"
+          },
+          "price_agorot": {
+            "title": "Price Agorot",
+            "type": "integer"
+          },
+          "producer_location_id": {
+            "format": "uuid",
+            "title": "Producer Location Id",
+            "type": "string"
+          },
+          "qty_left": {
+            "title": "Qty Left",
+            "type": "integer"
+          },
+          "qty_total": {
+            "title": "Qty Total",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "active",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "value_max_agorot": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value Max Agorot"
+          },
+          "value_min_agorot": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value Min Agorot"
+          }
+        },
+        "required": [
+          "id",
+          "producer_location_id",
+          "date",
+          "qty_total",
+          "qty_left",
+          "price_agorot",
+          "pickup_start",
+          "pickup_end",
+          "cancel_until",
+          "status",
+          "created_at"
+        ],
+        "title": "RescueOfferOut",
+        "type": "object"
+      },
+      "RescueOfferPublicOut": {
+        "description": "One row of `GET /rescue/offers` — the offer, who is selling it, what is\nusually in it, and how far away it is.\n\n`distance_km` is None unless the caller sent lat/lng; chunk 4 renders it\nonly when present rather than inventing a zero.",
+        "properties": {
+          "allergens": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allergens"
+          },
+          "cancel_until": {
+            "format": "date-time",
+            "title": "Cancel Until",
+            "type": "string"
+          },
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "distance_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Distance Km"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "pickup_end": {
+            "format": "date-time",
+            "title": "Pickup End",
+            "type": "string"
+          },
+          "pickup_start": {
+            "format": "date-time",
+            "title": "Pickup Start",
+            "type": "string"
+          },
+          "price_agorot": {
+            "title": "Price Agorot",
+            "type": "integer"
+          },
+          "producer": {
+            "$ref": "#/components/schemas/RescueProducerSummary"
+          },
+          "qty_left": {
+            "title": "Qty Left",
+            "type": "integer"
+          },
+          "qty_total": {
+            "title": "Qty Total",
+            "type": "integer"
+          },
+          "typical_items": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Typical Items",
+            "type": "array"
+          },
+          "value_max_agorot": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value Max Agorot"
+          },
+          "value_min_agorot": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value Min Agorot"
+          }
+        },
+        "required": [
+          "id",
+          "date",
+          "qty_left",
+          "qty_total",
+          "price_agorot",
+          "pickup_start",
+          "pickup_end",
+          "cancel_until",
+          "producer"
+        ],
+        "title": "RescueOfferPublicOut",
+        "type": "object"
+      },
+      "RescueOrderCreate": {
+        "description": "What a logged-in buyer POSTs to reserve. `qty` is capped at the pilot's\ntwo bags per order — the same bound as rescue_orders_qty_check.",
+        "properties": {
+          "offer_id": {
+            "format": "uuid",
+            "title": "Offer Id",
+            "type": "string"
+          },
+          "qty": {
+            "default": 1,
+            "maximum": 2.0,
+            "minimum": 1.0,
+            "title": "Qty",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "offer_id"
+        ],
+        "title": "RescueOrderCreate",
+        "type": "object"
+      },
+      "RescueOrderCreatedOut": {
+        "description": "What a successful reservation returns. Same shape as RescueOrderOut\nplus the two numbers the confirmation screen shows without a second\nrequest — the price to pay at the counter and when the free cancel ends.",
+        "properties": {
+          "cancel_until": {
+            "format": "date-time",
+            "title": "Cancel Until",
+            "type": "string"
+          },
+          "cancelled_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelled At"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "handed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Handed At"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "offer_id": {
+            "format": "uuid",
+            "title": "Offer Id",
+            "type": "string"
+          },
+          "pickup_code": {
+            "maxLength": 4,
+            "minLength": 4,
+            "pattern": "^[0-9]{4}$",
+            "title": "Pickup Code",
+            "type": "string"
+          },
+          "pickup_end": {
+            "format": "date-time",
+            "title": "Pickup End",
+            "type": "string"
+          },
+          "pickup_start": {
+            "format": "date-time",
+            "title": "Pickup Start",
+            "type": "string"
+          },
+          "price_agorot": {
+            "title": "Price Agorot",
+            "type": "integer"
+          },
+          "qty": {
+            "title": "Qty",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "reserved",
+              "handed",
+              "no_show",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "offer_id",
+          "user_id",
+          "qty",
+          "pickup_code",
+          "status",
+          "created_at",
+          "price_agorot",
+          "cancel_until",
+          "pickup_start",
+          "pickup_end"
+        ],
+        "title": "RescueOrderCreatedOut",
+        "type": "object"
+      },
+      "RescueOrderOut": {
+        "description": "One reservation, as returned to its own buyer.\n\n`pickup_code` IS included: the buyer has to read it aloud at the counter,\nand chunk 4 renders it at 56px. The business sees the same field for its\nown offers' orders; nobody else can reach either route (chunk 2).",
+        "properties": {
+          "cancelled_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelled At"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "handed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Handed At"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "offer_id": {
+            "format": "uuid",
+            "title": "Offer Id",
+            "type": "string"
+          },
+          "pickup_code": {
+            "maxLength": 4,
+            "minLength": 4,
+            "pattern": "^[0-9]{4}$",
+            "title": "Pickup Code",
+            "type": "string"
+          },
+          "qty": {
+            "title": "Qty",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "reserved",
+              "handed",
+              "no_show",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "offer_id",
+          "user_id",
+          "qty",
+          "pickup_code",
+          "status",
+          "created_at"
+        ],
+        "title": "RescueOrderOut",
+        "type": "object"
+      },
+      "RescueOwnerOfferOut": {
+        "description": "One of today's bags as the business's dashboard sees it (MEH-2703).\n\n`leftover` is what was not collected once the window closed: bags never\nreserved (`qty_left`) plus bags reserved by someone who did not come\n(`no_show` orders). It is 0 until `pickup_end` — before that a bag may\nstill be reserved or picked up — and 0 for a cancelled offer, which\nnever went on sale. `qty_donated` is the business's own report, capped at\n`leftover` by the API.",
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "leftover": {
+            "title": "Leftover",
+            "type": "integer"
+          },
+          "pickup_end": {
+            "format": "date-time",
+            "title": "Pickup End",
+            "type": "string"
+          },
+          "pickup_start": {
+            "format": "date-time",
+            "title": "Pickup Start",
+            "type": "string"
+          },
+          "qty_donated": {
+            "title": "Qty Donated",
+            "type": "integer"
+          },
+          "qty_left": {
+            "title": "Qty Left",
+            "type": "integer"
+          },
+          "qty_total": {
+            "title": "Qty Total",
+            "type": "integer"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "qty_total",
+          "qty_left",
+          "status",
+          "pickup_start",
+          "pickup_end",
+          "leftover",
+          "qty_donated"
+        ],
+        "title": "RescueOwnerOfferOut",
+        "type": "object"
+      },
+      "RescueOwnerOrderOut": {
+        "description": "One of today's reservations, as the business's own dashboard sees it.\n\nCarries `pickup_code` — the business has to read it back against what the\nbuyer says at the counter — and the offer's `pickup_end`, because the\n«לא הגיע» control is only legal after that moment and the dashboard must\ndecide that without a second request.\n\nDeliberately NOT the buyer's name, email or phone: handing over a bag\nneeds four digits, and a list of today's customers on a dashboard screen\nis more personal data than the job requires.",
+        "properties": {
+          "cancelled_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelled At"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "handed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Handed At"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "offer_id": {
+            "format": "uuid",
+            "title": "Offer Id",
+            "type": "string"
+          },
+          "pickup_code": {
+            "title": "Pickup Code",
+            "type": "string"
+          },
+          "pickup_end": {
+            "format": "date-time",
+            "title": "Pickup End",
+            "type": "string"
+          },
+          "pickup_start": {
+            "format": "date-time",
+            "title": "Pickup Start",
+            "type": "string"
+          },
+          "qty": {
+            "title": "Qty",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "reserved",
+              "handed",
+              "no_show",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "offer_id",
+          "qty",
+          "pickup_code",
+          "status",
+          "created_at",
+          "pickup_start",
+          "pickup_end"
+        ],
+        "title": "RescueOwnerOrderOut",
+        "type": "object"
+      },
+      "RescueProducerSummary": {
+        "description": "The business fields the public bag list needs, and no more.\n\nDeliberately NOT `ProducerListOut`: a bag row shows a name, a photo, a\ntown and a pickup point, and nothing on this list should carry the badge\nblock, the rating aggregate or the contact details — chunk 4's row has no\nplace to put them and serializing them would publish more than the screen\nneeds.",
+        "properties": {
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Url"
+          },
+          "location_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Address"
+          },
+          "location_city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location City"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "RescueProducerSummary",
+        "type": "object"
+      },
+      "RescueReviewCreate": {
+        "description": "The buyer's review of a collected bag. Every field but `rating` is\noptional — chunk 4's screen submits one star row and nothing else.",
+        "properties": {
+          "comment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment"
+          },
+          "contents_tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contents Tags"
+          },
+          "highlight_tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Highlight Tags"
+          },
+          "photo_url": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Photo Url"
+          },
+          "rating": {
+            "maximum": 5.0,
+            "minimum": 1.0,
+            "title": "Rating",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "rating"
+        ],
+        "title": "RescueReviewCreate",
+        "type": "object"
+      },
+      "RescueReviewOut": {
+        "properties": {
+          "comment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment"
+          },
+          "contents_tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contents Tags"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "highlight_tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Highlight Tags"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "order_id": {
+            "format": "uuid",
+            "title": "Order Id",
+            "type": "string"
+          },
+          "photo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Photo Url"
+          },
+          "rating": {
+            "title": "Rating",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "order_id",
+          "rating",
+          "created_at"
+        ],
+        "title": "RescueReviewOut",
+        "type": "object"
+      },
+      "RescueTypicalItemsIn": {
+        "description": "«בדרך כלל: …» — the list a business edits once. Bounded so the line\nstays one line on a phone.",
+        "properties": {
+          "allergens": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allergens"
+          },
+          "items": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 12,
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "title": "RescueTypicalItemsIn",
+        "type": "object"
+      },
+      "RescueTypicalItemsOut": {
+        "properties": {
+          "allergens": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allergens"
+          },
+          "items": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "producer_id": {
+            "format": "uuid",
+            "title": "Producer Id",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "producer_id",
+          "items",
+          "updated_at"
+        ],
+        "title": "RescueTypicalItemsOut",
         "type": "object"
       },
       "ResetPasswordRequest": {
@@ -12013,6 +13944,27 @@
             ],
             "title": "Producer Name"
           },
+          "producer_phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Producer Phone"
+          },
+          "registered_count": {
+            "default": 0,
+            "title": "Registered Count",
+            "type": "integer"
+          },
+          "registration_method": {
+            "default": "site_form",
+            "title": "Registration Method",
+            "type": "string"
+          },
           "registration_url": {
             "anyOf": [
               {
@@ -12028,6 +13980,17 @@
             "format": "date-time",
             "title": "Saved At",
             "type": "string"
+          },
+          "spots_left": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spots Left"
           },
           "title": {
             "title": "Title",
@@ -12160,6 +14123,17 @@
             ],
             "title": "Max Participants"
           },
+          "min_participants": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Participants"
+          },
           "participants_count": {
             "default": 0,
             "title": "Participants Count",
@@ -12186,6 +14160,27 @@
               }
             ],
             "title": "Recurring Schedule"
+          },
+          "registered_count": {
+            "default": 0,
+            "title": "Registered Count",
+            "type": "integer"
+          },
+          "registration_method": {
+            "default": "site_form",
+            "title": "Registration Method",
+            "type": "string"
+          },
+          "registration_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Registration Url"
           },
           "saved_at": {
             "format": "date-time",
@@ -14082,7 +16077,7 @@
     },
     "/admin/outreach": {
       "get": {
-        "description": "List leads, newest first. Optional filters: status, city\n(case-insensitive contains).",
+        "description": "List leads, newest first. Optional filters: status, city\n(case-insensitive contains), source (MEH-2633, exact).",
         "operationId": "list_leads_admin_outreach_get",
         "parameters": [
           {
@@ -14115,6 +16110,22 @@
                 }
               ],
               "title": "City"
+            }
+          },
+          {
+            "in": "query",
+            "name": "source",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Source"
             }
           }
         ],
@@ -14202,7 +16213,7 @@
     },
     "/admin/outreach/metrics/summary": {
       "get": {
-        "description": "Counters for the admin outreach page header.\n\nNaming maps to the spec wording:\n  total      = all leads\n  contacted  = פניתי\n  replied    = ענו\n  registered = נרשמו",
+        "description": "Counters for the admin outreach page header.\n\nNaming maps to the spec wording:\n  total      = all leads\n  contacted  = פניתי\n  replied    = ענו\n  registered = נרשמו\n  community  = המלצות קהילה (source, not status — MEH-2633)",
         "operationId": "metrics_summary_admin_outreach_metrics_summary_get",
         "responses": {
           "200": {
@@ -14366,6 +16377,55 @@
           }
         ],
         "summary": "Mint Prefill Token",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/outreach/{lead_id}/thank-suggester": {
+      "post": {
+        "description": "Email the person who suggested this business that it has joined.\n\nFour separate 409s rather than one, each with its own Hebrew detail, so the\nadmin UI can say WHY the button is unavailable instead of just greying it\nout — and so a test can tell the four rules apart (a single shared message\nwould make any of the four pass a test written for another).\n\nIdempotent through `suggester_thanked_at`: the second call takes the\nalready-thanked branch and sends nothing. The stamp is written AFTER\nsend_email returns, but note what that can and cannot promise —\n`send_email` is fail-open by contract (services/email.py:139, returns None\non every path and raises nothing), so the stamp means \"we handed this to\nResend\", never \"it was delivered\". A swallowed failure is reported to\nSentry by that module (MEH-1613), which is where a missing thank-you is\ndiagnosed from; it is deliberately not re-derived here, because retrying\non a signal we do not have would send duplicates.",
+        "operationId": "thank_suggester_admin_outreach__lead_id__thank_suggester_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "lead_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Lead Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OutreachLeadOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Thank Suggester",
         "tags": [
           "admin"
         ]
@@ -16072,6 +18132,106 @@
         ]
       }
     },
+    "/admin/rescue/metrics": {
+      "get": {
+        "description": "The pilot's four numbers, read-only.\n\nRates come back as fractions, and as None when their denominator is zero:\na pilot with no bags published yet has no sell-through, and reporting 0%\nwould read as \"nothing sold\" rather than \"nothing offered\". That\ndistinction is the whole point of a pilot metric.",
+        "operationId": "pilot_metrics_admin_rescue_metrics_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "days",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "maximum": 365,
+              "minimum": 1,
+              "title": "Days",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RescueMetricsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Pilot Metrics",
+        "tags": [
+          "admin-rescue"
+        ]
+      }
+    },
+    "/admin/rescue/users/{user_id}/clear-block": {
+      "post": {
+        "description": "Release a buyer's no-show block.\n\nWrites `rescue_block_cleared_at` instead of zeroing the counter, so the\nno-show rows stay in the history for the chunk-5 metrics while stopping\ncounting against the buyer. Returns both numbers, because a reset whose\neffect you cannot see is a reset you have to trust.",
+        "operationId": "clear_no_show_block_admin_rescue_users__user_id__clear_block_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RescueNoShowStateOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Clear No Show Block",
+        "tags": [
+          "admin-rescue"
+        ]
+      }
+    },
     "/admin/reviews": {
       "get": {
         "description": "All reviews (including hidden) for moderation.",
@@ -17317,6 +19477,53 @@
         ]
       }
     },
+    "/business-suggestions": {
+      "post": {
+        "description": "Accept a community suggestion.\n\nEvery path answers the SAME body, `{\"ok\": true}` (BusinessSuggestionAck):\na new lead, a duplicate, and a bot caught by the honeypot are\nindistinguishable from outside. That is deliberate — a different status or\nbody for the duplicate case would turn this endpoint into an oracle for\n\"is this business already in your outreach queue?\", which is private\ncommercial information about businesses that have not agreed to anything.\n\n`request` is required by slowapi, which reads it via introspection.",
+        "operationId": "submit_business_suggestion_business_suggestions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BusinessSuggestionCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessSuggestionAck"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Submit Business Suggestion",
+        "tags": [
+          "business-suggestions"
+        ]
+      }
+    },
     "/categories": {
       "get": {
         "operationId": "list_categories_categories_get",
@@ -17515,6 +19722,86 @@
         "summary": "Submit Contact",
         "tags": [
           "marketing"
+        ]
+      }
+    },
+    "/delivery-waitlist/host-confirm": {
+      "post": {
+        "description": "MEH-2673: «מאשרים, אפשר להעביר» — the signed link from the host\nconfirmation email. Turns the entry's wants_to_host on, so the business\nsees this email in its pickup_hosts list. Idempotent. 400 on a token\nthat does not verify or an entry that no longer exists (unsubscribed).\n\n410 on an expired token — and, because the token still names the entry,\na FRESH link is mailed to the same address right here (under the usual\ncooldown/cap), so the page is never a dead end (the double-opt-in norm:\nan expired link offers a new one). The body carries `resent` so the page\ncan say whether to look in the inbox. An expired link never confirms.",
+        "operationId": "confirm_delivery_waitlist_host_delivery_waitlist_host_confirm_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeliveryWaitlistHostConfirmIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Confirm Delivery Waitlist Host",
+        "tags": [
+          "producers"
+        ]
+      }
+    },
+    "/delivery-waitlist/unsubscribe": {
+      "post": {
+        "description": "Remove one delivery-waitlist entry via the signed token from its email.\n\nIdempotent: an already-removed entry is still 200. 400 on a token that\ndoes not verify.",
+        "operationId": "unsubscribe_delivery_waitlist_delivery_waitlist_unsubscribe_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeliveryWaitlistUnsubscribeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Unsubscribe Delivery Waitlist",
+        "tags": [
+          "producers"
         ]
       }
     },
@@ -17914,6 +20201,109 @@
         ]
       }
     },
+    "/events/{event_id}/registrations": {
+      "get": {
+        "operationId": "list_event_registrations_events__event_id__registrations_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "event_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Event Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RegistrationOwnerOut"
+                  },
+                  "title": "Response List Event Registrations Events  Event Id  Registrations Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List Event Registrations",
+        "tags": [
+          "registrations"
+        ]
+      },
+      "post": {
+        "operationId": "register_for_event_events__event_id__registrations_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "event_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Event Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistrationCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistrationCreatedOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Register For Event",
+        "tags": [
+          "registrations"
+        ]
+      }
+    },
     "/experiences": {
       "get": {
         "description": "Only approved + upcoming (event_date >= today), and only from an\napproved business (MEH-1749). Past experiences drop out of the public\nfeed automatically.",
@@ -18285,6 +20675,109 @@
         "summary": "Update Experience",
         "tags": [
           "experiences"
+        ]
+      }
+    },
+    "/experiences/{experience_id}/registrations": {
+      "get": {
+        "operationId": "list_experience_registrations_experiences__experience_id__registrations_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "experience_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Experience Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RegistrationOwnerOut"
+                  },
+                  "title": "Response List Experience Registrations Experiences  Experience Id  Registrations Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List Experience Registrations",
+        "tags": [
+          "registrations"
+        ]
+      },
+      "post": {
+        "operationId": "register_for_experience_experiences__experience_id__registrations_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "experience_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Experience Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistrationCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistrationCreatedOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Register For Experience",
+        "tags": [
+          "registrations"
         ]
       }
     },
@@ -19258,6 +21751,25 @@
           },
           {
             "in": "query",
+            "name": "cities",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cities"
+            }
+          },
+          {
+            "in": "query",
             "name": "near_city",
             "required": false,
             "schema": {
@@ -19270,22 +21782,6 @@
                 }
               ],
               "title": "Near City"
-            }
-          },
-          {
-            "in": "query",
-            "name": "is_available_today",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "boolean"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Is Available Today"
             }
           },
           {
@@ -19775,7 +22271,7 @@
     },
     "/producers/me/analytics": {
       "get": {
-        "description": "Rich analytics for the producer dashboard.\n\nReturns:\n  - profile_views / search_appearances / whatsapp_clicks as {last_7d, last_30d, total}\n  - follower_count + new_followers_this_week\n  - average_rating + total_reviews (from the producers.avg_rating aggregate)\n  - home_products_count (active only, scoped to the owning user)\n  - views_by_day: 30-entry zero-filled daily series for the line chart\n  - top_cities: top 5 cities the views come from (NULL excluded)",
+        "description": "Rich analytics for the producer dashboard.\n\nReturns:\n  - profile_views / search_appearances / whatsapp_clicks as {last_7d, last_30d, total}\n  - follower_count + new_followers_this_week\n  - average_rating + total_reviews (from the producers.avg_rating aggregate)\n  - home_products_count (active only, scoped to the owning user)\n  - views_by_day: 30-entry zero-filled daily series for the line chart\n  - top_cities: top 5 cities the views come from (NULL excluded)\n  - pickup_hosts: [{email, city}] waitlist visitors who offered to host a\n    pickup point for THIS business (MEH-2673), newest first, max 50",
         "operationId": "producer_analytics_producers_me_analytics_get",
         "responses": {
           "200": {
@@ -19793,31 +22289,6 @@
           }
         ],
         "summary": "Producer Analytics",
-        "tags": [
-          "producer-management"
-        ]
-      }
-    },
-    "/producers/me/availability": {
-      "post": {
-        "description": "Toggle today's availability for the logged-in producer.\n\nLegacy endpoint — kept during MEH-291 7-day overlap. Mirrors the toggle to\n`availability_state` so consumers reading the new column stay consistent.",
-        "operationId": "toggle_availability_producers_me_availability_post",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "summary": "Toggle Availability",
         "tags": [
           "producer-management"
         ]
@@ -19862,51 +22333,6 @@
           }
         ],
         "summary": "Set Availability State",
-        "tags": [
-          "producer-management"
-        ]
-      }
-    },
-    "/producers/me/availability-status": {
-      "post": {
-        "description": "Legacy endpoint — kept during MEH-291 7-day overlap. Mirrors the\ndurable status to `availability_state`.",
-        "operationId": "set_availability_status_producers_me_availability_status_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AvailabilityStatusUpdate"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "summary": "Set Availability Status",
         "tags": [
           "producer-management"
         ]
@@ -20756,6 +23182,199 @@
         ]
       }
     },
+    "/producers/me/rescue/offers": {
+      "get": {
+        "description": "Today's bags across this business's pickup points, with what was left.\n\nToday only, by the Israel clock, like the orders list beside it.",
+        "operationId": "list_my_offers_producers_me_rescue_offers_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RescueOwnerOfferOut"
+                  },
+                  "title": "Response List My Offers Producers Me Rescue Offers Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List My Offers",
+        "tags": [
+          "rescue"
+        ]
+      }
+    },
+    "/producers/me/rescue/offers/{offer_id}/donated": {
+      "put": {
+        "description": "Record how many uncollected bags were given away free.\n\nOwner (or admin) of the offer's point only. Only after the window\nclosed, and never more than was left over — a number above the leftover\nwould inflate the pilot's «ניצלו» count with bags that were sold.",
+        "operationId": "set_donated_producers_me_rescue_offers__offer_id__donated_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "offer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Offer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RescueDonatedIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RescueOwnerOfferOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Set Donated",
+        "tags": [
+          "rescue"
+        ]
+      }
+    },
+    "/producers/me/rescue/orders": {
+      "get": {
+        "description": "Today's reservations across this business's pickup points.\n\nToday only, by the Israel clock: the dashboard is a counter tool, and a\nbag from last week is not something anyone hands over. Cancelled rows are\nincluded — a business that sees four codes and three people should be able\nto tell which one cancelled rather than wonder.\n\nNo buyer identity is returned; see RescueOwnerOrderOut for why.",
+        "operationId": "list_my_orders_producers_me_rescue_orders_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RescueOwnerOrderOut"
+                  },
+                  "title": "Response List My Orders Producers Me Rescue Orders Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List My Orders",
+        "tags": [
+          "rescue"
+        ]
+      }
+    },
+    "/producers/me/rescue/typical-items": {
+      "get": {
+        "description": "«בדרך כלל: …» as it stands. An empty list when never set — the read\nnever has to distinguish \"no row\" from \"empty\", only the first.",
+        "operationId": "get_typical_items_producers_me_rescue_typical_items_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RescueTypicalItemsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Get Typical Items",
+        "tags": [
+          "rescue"
+        ]
+      },
+      "put": {
+        "description": "Upsert the list. One row per business (uq_rescue_typical_items_producer),\nso this writes the existing row rather than racing a second insert.",
+        "operationId": "set_typical_items_producers_me_rescue_typical_items_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RescueTypicalItemsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RescueTypicalItemsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Set Typical Items",
+        "tags": [
+          "rescue"
+        ]
+      }
+    },
     "/producers/me/review-link": {
       "get": {
         "description": "The owner's shareable \"request a review\" URL.\n\nApproved producers only: the public page the link opens exists only once\nthe business is live, and a pending/draft business has no customers to\nask yet. The token is a 30-day HS256 JWT bound to THIS producer (auth.py\ncreate_review_invite_token) — not single-use, so one link serves every\ncustomer the owner sends it to; a fresh call re-mints it, which is how a\nlink is \"renewed\" after expiry. No DB write.\n\nURL shape: `{frontend_url}/p/{slug}?rt=<token>` when the business has a\ncustom slug, else `{frontend_url}/producer/{id}?rt=<token>` — both are\nthe live public routes (frontend/app/[locale]/p/[slug], .../producer/[id]).",
@@ -20993,6 +23612,65 @@
           }
         ],
         "summary": "Record Contact Click",
+        "tags": [
+          "producers"
+        ]
+      }
+    },
+    "/producers/{producer_id}/delivery-waitlist": {
+      "post": {
+        "description": "«תודיעו לי כשתגיעו ל{עיר}» — join a business's per-city delivery waitlist.\n\nNo account needed: email + city. Returns 201 `added`, or 200 `exists`\nwhen this email already waits for this business and city. Known and\naccepted: `exists` and `host_confirm` tell an anonymous caller whether an\naddress is on this list / already a host — the same disclosure the\nwaitlist made since MEH-2618, kept so the form can be honest about\nwhether a mail went out (double-opt-in UX norm). 404 for an\nunknown or not-yet-live business. When the business later adds the\ncity to its delivery areas, one email goes out (see\nservices/delivery_waitlist). Rate-limited 10/minute per IP.",
+        "operationId": "join_delivery_waitlist_producers__producer_id__delivery_waitlist_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "producer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Producer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeliveryWaitlistIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeliveryWaitlistOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Join Delivery Waitlist",
         "tags": [
           "producers"
         ]
@@ -21536,6 +24214,90 @@
         ]
       }
     },
+    "/registrations/{token}": {
+      "get": {
+        "operationId": "get_registration_registrations__token__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistrationCancelInfoOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Registration",
+        "tags": [
+          "registrations"
+        ]
+      }
+    },
+    "/registrations/{token}/cancel": {
+      "post": {
+        "operationId": "cancel_registration_registrations__token__cancel_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistrationCancelInfoOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cancel Registration",
+        "tags": [
+          "registrations"
+        ]
+      }
+    },
     "/reports/producer-info": {
       "post": {
         "description": "Email the admin about wrong info on a producer page. Returns 204.",
@@ -21568,6 +24330,474 @@
         "summary": "Report Producer Info",
         "tags": [
           "reports"
+        ]
+      }
+    },
+    "/rescue/offers": {
+      "get": {
+        "description": "Today's bags that still have stock. Public — no auth.\n\nSold-out and cancelled offers are omitted rather than greyed out: the list\nis \"what you can still get tonight\", and chunk 4 has no empty-stock state.",
+        "operationId": "list_offers_rescue_offers_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "city",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "City"
+            }
+          },
+          {
+            "in": "query",
+            "name": "lat",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 90,
+                  "minimum": -90,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Lat"
+            }
+          },
+          {
+            "in": "query",
+            "name": "lng",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 180,
+                  "minimum": -180,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Lng"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RescueOfferPublicOut"
+                  },
+                  "title": "Response List Offers Rescue Offers Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Offers",
+        "tags": [
+          "rescue"
+        ]
+      },
+      "post": {
+        "description": "Publish today's bags at one pickup point.\n\nNOT VALIDATED, and it is worth knowing why: the spec asks that\n`pickup_end` be at least 15 minutes before the business closes. There is\nnothing to compute that against. `opening_hours` is unbounded free text on\nboth producers and locations, which the repo has already ruled is not\ncomputable (models.py:443-446), and `order_window` is a different fact —\nwhen ORDERS are accepted, not when the door shuts. Validating against it\nwould enforce the wrong rule convincingly. MEH-2646 carries the decision.",
+        "operationId": "create_offer_rescue_offers_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RescueOfferCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RescueOfferOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Create Offer",
+        "tags": [
+          "rescue"
+        ]
+      }
+    },
+    "/rescue/offers/{offer_id}/cancel": {
+      "post": {
+        "description": "The business pulls the whole bag offer. Every open reservation on it is\ncancelled with it; a bag already handed over stays handed.\n\nNo refund, because nothing was paid. MEH-2738: each buyer whose\nreservation went with it gets one email after the commit (fail-open), and\ntheir page says the business cancelled (`list_my_reservations`). A window\nthat already closed is refused: by then every bag is collected or a\nno-show, and cancelling would only rewrite the record.",
+        "operationId": "cancel_offer_rescue_offers__offer_id__cancel_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "offer_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Offer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RescueOfferOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Cancel Offer",
+        "tags": [
+          "rescue"
+        ]
+      }
+    },
+    "/rescue/orders": {
+      "post": {
+        "description": "Reserve bags and get the 4-digit code read out at the counter.",
+        "operationId": "create_order_rescue_orders_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RescueOrderCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RescueOrderCreatedOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Create Order",
+        "tags": [
+          "rescue"
+        ]
+      }
+    },
+    "/rescue/orders/mine": {
+      "get": {
+        "description": "The caller's own live reservations on today's bags (MEH-2680).\n\nOnly the caller's rows, only today's offers (Israel date), only\n`reserved` / `handed` — a no-show or a buyer's own cancel has no code\nleft to say and nothing to review. Carries the same fields as the\nreservation response, so the confirmation renders from either without a\nsecond shape.\n\nMEH-2738: plus the reservations the BUSINESS cancelled, flagged\n`cancelled_by_business`, so the page can say so instead of silently\ndropping the code. See `_business_cancelled_ids` for how they are told\napart from a buyer's own cancel without a column for it.",
+        "operationId": "list_my_reservations_rescue_orders_mine_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RescueMyOrderOut"
+                  },
+                  "title": "Response List My Reservations Rescue Orders Mine Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "List My Reservations",
+        "tags": [
+          "rescue"
+        ]
+      }
+    },
+    "/rescue/orders/{order_id}/cancel": {
+      "post": {
+        "description": "The buyer cancels, free, until the offer's `cancel_until`.",
+        "operationId": "cancel_order_rescue_orders__order_id__cancel_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Order Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RescueOrderOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Cancel Order",
+        "tags": [
+          "rescue"
+        ]
+      }
+    },
+    "/rescue/orders/{order_id}/handed": {
+      "post": {
+        "description": "The business hands the bag over against the code.\n\nA second call is a 409 naming `handed_at`, not a silent success: at the\ncounter a repeated tap usually means the first one was not seen, and the\nhonest answer is \"already done at 18:42\".",
+        "operationId": "mark_handed_rescue_orders__order_id__handed_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Order Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RescueOrderOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Mark Handed",
+        "tags": [
+          "rescue"
+        ]
+      }
+    },
+    "/rescue/orders/{order_id}/no_show": {
+      "post": {
+        "description": "The business records that nobody came for the bag.\n\nOnly after `pickup_end` — before that the buyer may still be on their way,\nand a no-show is what blocks them from reserving again.",
+        "operationId": "mark_no_show_rescue_orders__order_id__no_show_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Order Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RescueOrderOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Mark No Show",
+        "tags": [
+          "rescue"
+        ]
+      }
+    },
+    "/rescue/orders/{order_id}/review": {
+      "post": {
+        "description": "The buyer reviews a bag they actually collected. Once.",
+        "operationId": "create_review_rescue_orders__order_id__review_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Order Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RescueReviewCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RescueReviewOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "summary": "Create Review",
+        "tags": [
+          "rescue"
         ]
       }
     },

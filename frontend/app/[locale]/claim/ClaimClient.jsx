@@ -15,6 +15,7 @@ import { clearClaimToken, readClaimToken, stashClaimToken } from "@/lib/claim-to
 import GoogleAuthButton from "@/components/GoogleAuthButton";
 import StatusPage from "@/components/StatusPage";
 import BrandLoader from "@/components/BrandLoader";
+import Button from "@/components/ui/Button";
 
 /**
  * Module:   ClaimClient
@@ -189,13 +190,13 @@ export default function ClaimClient({ tokenFromPath = null }) {
         icon={LinkBreak}
         title={t("invalid.title")}
         body={t("invalid.body")}
-        primary={{ href: "/contact", label: t("invalid.contact") }}
+        primary={{ href: "/contact?topic=business", label: t("invalid.contact") }}
       />
     );
   }
 
   if (view === VIEW.CLAIMED) {
-    const contact = { href: "/contact", label: t("claimed.contact") };
+    const contact = { href: "/contact?topic=business", label: t("claimed.contact") };
     return (
       <StatusPage
         testid="claim-claimed"
@@ -240,7 +241,7 @@ export default function ClaimClient({ tokenFromPath = null }) {
           <p className="text-sm text-fg-muted">{t("logged_out.email_note")}</p>
           <p className="text-sm text-fg-muted">
             {t("logged_out.have_account")}{" "}
-            <Link href={loginHref} data-testid="claim-login" className="text-primary font-medium hover:underline">
+            <Link href={loginHref} data-testid="claim-login" className="text-primary font-medium underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current">
               {t("logged_out.login")}
             </Link>
           </p>
@@ -283,7 +284,7 @@ export default function ClaimClient({ tokenFromPath = null }) {
               type="button"
               onClick={logout}
               data-testid="claim-switch-account"
-              className="text-primary font-medium hover:underline"
+              className="text-primary font-medium underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current"
             >
               {t("eligible.switch_account")}
             </button>
@@ -299,8 +300,8 @@ export default function ClaimClient({ tokenFromPath = null }) {
             />
             <span className="leading-relaxed text-fg-muted">
               {tReg("terms.intro")}{" "}
-              <Link href="/terms" target="_blank" className="text-primary hover:underline">{tReg("terms.tos_link")}</Link>{" "}
-              {tReg("terms.and")}<Link href="/privacy" target="_blank" className="text-primary hover:underline">{tReg("terms.privacy_link")}</Link>
+              <Link href="/terms" target="_blank" className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current">{tReg("terms.tos_link")}</Link>{" "}
+              {tReg("terms.and")}<Link href="/privacy" target="_blank" className="text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current">{tReg("terms.privacy_link")}</Link>
             </span>
           </label>
 
@@ -334,14 +335,14 @@ export default function ClaimClient({ tokenFromPath = null }) {
             </p>
           )}
 
-          <button
+          <Button
             type="submit"
             data-testid="claim-submit"
             disabled={submitting}
-            className="min-h-[44px] w-full bg-primary text-white rounded-[12px] px-6 py-2 font-medium hover:bg-primary-dark transition disabled:opacity-50"
+            variant="primary" size="lg" className="w-full"
           >
             {submitting ? t("eligible.submitting") : t("eligible.submit")}
-          </button>
+          </Button>
         </form>
       )}
     </Shell>
@@ -351,7 +352,7 @@ export default function ClaimClient({ tokenFromPath = null }) {
 function Shell({ children, testid }) {
   return (
     <div className="max-w-xl mx-auto px-4 py-10" data-testid={testid}>
-      <div className="bg-white rounded-[12px] border border-border p-6">{children}</div>
+      <div className="bg-surface rounded-md border border-border p-6">{children}</div>
     </div>
   );
 }
@@ -374,7 +375,7 @@ function Preview({ preview, kicker }) {
     <div className="mb-4" data-testid="claim-preview">
       <p className="text-sm font-medium text-primary mb-2">{kicker}</p>
       {src && (
-        <div className="relative w-full aspect-video overflow-hidden rounded-[12px] bg-background mb-4">
+        <div className="relative w-full aspect-video overflow-hidden rounded-md bg-background mb-4">
           <Image src={src} alt={preview.name} fill sizes="(max-width: 640px) 100vw, 560px" className="object-cover" />
         </div>
       )}
@@ -392,7 +393,7 @@ function PrimaryLink({ href, children, testid }) {
     <Link
       href={href}
       data-testid={testid}
-      className="min-h-[44px] w-full sm:w-auto inline-flex items-center justify-center bg-primary text-white rounded-[12px] px-6 py-2 font-medium hover:bg-primary-dark transition"
+      className="min-h-touch w-full sm:w-auto inline-flex items-center justify-center bg-primary text-white rounded-md px-6 py-2 font-medium hover:bg-primary-dark transition"
     >
       {children}
     </Link>
@@ -405,7 +406,7 @@ function SwitchAccount({ onClick, children }) {
       type="button"
       onClick={onClick}
       data-testid="claim-switch-account"
-      className="min-h-[44px] w-full sm:w-auto bg-white border border-primary text-primary rounded-[12px] px-6 py-2 font-medium hover:bg-background transition"
+      className="min-h-touch w-full sm:w-auto bg-surface border border-primary text-primary rounded-md px-6 py-2 font-medium hover:bg-background transition"
     >
       {children}
     </button>

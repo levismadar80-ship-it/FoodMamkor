@@ -68,7 +68,7 @@ export function DraftLinkAge({ producer }) {
   const age = linkAge(producer.claim_link_sent_at, new Date());
   if (!age) return null;
   return (
-    <div className="flex flex-col items-start gap-0.5 text-[11px] text-muted" data-testid="draft-link-age">
+    <div className="flex flex-col items-start gap-0.5 text-2xs text-muted" data-testid="draft-link-age">
       <span data-testid="draft-link-sent">{t("link_sent", { date: age.sentDate })}</span>
       {age.expired ? (
         <span className="text-error font-medium" data-testid="draft-link-expired">
@@ -79,7 +79,7 @@ export function DraftLinkAge({ producer }) {
       )}
       {age.daysWaiting >= WAITING_MARK_DAYS && (
         <span
-          className="inline-flex items-center rounded-full bg-amber-100 text-amber-800 px-2 py-0.5 text-[10px] font-medium"
+          className="inline-flex items-center rounded-full bg-warning-100 text-warning-800 px-2 py-0.5 text-2xs font-medium"
           data-testid="draft-waiting-7"
         >
           {t("waiting_7_days")}

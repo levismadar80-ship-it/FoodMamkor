@@ -1,6 +1,6 @@
 # מהמקור — COPY BANK
 > Single source of truth for all copy decisions.
-> Last updated: 2026-07-26
+> Last updated: 2026-11-07
 > **Status key:** ✅ Merged to staging · ⏳ PR open · 🕐 Pending
 >
 > Rule: document only **merged** copy. Pending entries show the MEH ticket to watch.
@@ -20,12 +20,12 @@
 ### Subtitle — Homepage hero
 | Field | Value |
 |---|---|
-| **Current** | `ישר מהמקור אלייך. בתי עסק שכבר בדקנו בשבילך.` |
-| **Previous** | `ישר מהמקור אלייך. עסקים שכבר בדקנו בשבילך.` (MEH-620 wording; `עסקים` → `בתי עסק` in MEH-1308) · earlier `בתי עסק מקומיים, כולם במקום אחד.` |
+| **Current** | `ישר מהמקור אליכם. בתי עסק שכבר בדקנו בשבילכם.` |
+| **Previous** | `ישר מהמקור הביתה. בתי עסק שכבר בדקנו בשבילך.` (MEH-2661, 04/11 — the neutral-address sweep) · `ישר מהמקור אלייך. בתי עסק שכבר בדקנו בשבילך.` (the value still live on the site) · `ישר מהמקור אלייך. עסקים שכבר בדקנו בשבילך.` (MEH-620 wording; `עסקים` → `בתי עסק` in MEH-1308) · earlier `בתי עסק מקומיים, כולם במקום אחד.` |
 | **i18n key** | `home.hero.subtitle` |
-| **Status** | ✅ (MEH-620, PR #690; value corrected per MEH-1308, PR #1904) |
-| **Why** | MEH-522 ideation winner (variant κ). H1 asks "לא ידעת איפה" → Sub answers "אנחנו כבר בדקנו". Closes the arc; uses "כבר" work-already-done signal. |
-| **MEH** | MEH-620 (refs MEH-522) |
+| **Status** | ✅ (MEH-620, PR #690; value corrected per MEH-1308, PR #1904; `אלייך` → `הביתה` in MEH-2661; `הביתה` → `אליכם` in MEH-2842) |
+| **Why** | MEH-522 ideation winner (variant κ). H1 asks "לא ידעת איפה" → Sub answers "אנחנו כבר בדקנו". Closes the arc; uses "כבר" work-already-done signal. **08/11 (MEH-2842):** MEH-2661's `הביתה` reads oddly — Sapir rejected it and approved `אליכם` / `בשבילכם` verbatim. Neutral plural per ADR-014, and it keeps the κ arc intact. |
+| **MEH** | MEH-620 (refs MEH-522) · MEH-2661 · MEH-2842 |
 
 ### Subtitle — Friday variant
 | Field | Value |
@@ -430,7 +430,7 @@
 ### Footer CTA pitch (business owner)
 | Field | Value |
 |---|---|
-| **Current** | `יש לך עסק מזון מקומי?` |
+| **Current** | `יש לכם עסק מזון מקומי?` (neutral plural, Sapir verbatim 08/11, MEH-2827 row 5; was `יש לך…`) |
 | **Subpitch** | `הצטרפו לקהילה הראשונה של בתי עסק אמיתיים בישראל` |
 | **i18n keys** | `nav.footer.cta_pitch` / `nav.footer.cta_subpitch` |
 | **Status** | ✅ |
@@ -438,16 +438,19 @@
 ### Homepage bottom CTA
 | Field | Value |
 |---|---|
-| **Heading** | `יש לך עסק? בואו אלינו` |
+| **Heading** | `יש לכם עסק? בואו אלינו` |
+| **Previous heading** | `יש לך עסק? בואו אלינו` (singular «לך» beside plural «בואו» / «תקבלו», against BRAND §9; neutral plural approved by Sapir verbatim 08/11, MEH-2824) |
 | **Body (l1)** | `מהמקור הוא הבית של בתי עסק מקומיים בישראל — כל עסק נבחר אישית.` |
 | **Body (l2)** | `תקבלו עמוד משלכם: תמונות, סיפור, וקו ישיר ללקוחות.` |
 | **Body (l3)** | `חינם, בלי עמלות. נשמח להכיר.` |
 | **Previous body** | `מהמקור הוא הבית של בתי עסק מקומיים בישראל. כל עסק כאן נבחר אישית. עמוד מלא, תמונות, סיפור — שלכם. נשמח להכיר.` (MEH-605 single-`body` → 3-line split) |
-| **Button** | `הוסיפו את העסק שלך` |
-| **i18n keys** | `home.cta.heading` / `home.cta.body_l1` / `home.cta.body_l2` / `home.cta.body_l3` / `home.cta.button` |
+| **Button** | `מצטרפים` — the shared closing band's one button, same key as /join (`join.cta`). Sapir 08/11, MEH-2824: one band, one button site-wide |
+| **Previous button** | `הוסיפו את העסק שלכם` (`home.cta.button`, retired in MEH-2824) |
+| **i18n keys** | `home.cta.heading` / `home.cta.body_l1` / `home.cta.body_l2` / `home.cta.body_l3` · button `join.cta` |
+| **Also used on** | `/about/for-businesses` closing band — title `home.cta.heading` (same key, not a copy), button `join.cta`, no body (Sapir 08/11, MEH-2824) |
 | **Status** | ✅ (variant B — MEH-980; ⏳ Sapir veto at merge) |
 | **Why** | Variant B leads with what the business gets (own page, direct line to customers) and adds the free/no-commission reassurance. Keeps the "no partial category list" + no-"דירקטורי" rules from MEH-605. |
-| **MEH** | MEH-605 → MEH-980 |
+| **MEH** | MEH-605 → MEH-980 → MEH-2824 (heading, button, reuse on /about/for-businesses) |
 
 ### Footer made-with-love
 | Field | Value |
@@ -462,6 +465,8 @@
 
 | Date | MEH | Changed | Before | After | Why |
 |---|---|---|---|---|---|
+| 2026-11-08 | MEH-2841 | /join copy wave — `join.trust_hint`, `join.meta_line`, `join.subhead`, `join.closing.line` (he+en) + new `join.faq.{q,a}_price` and `join.faq.{q,a}_updates`; FAQ order 4 → 6 items | `חינם להצטרף` · `חינם · כ-5 דקות · …` · the two-«הסיפור שלכם» subhead · `עמוד אחד עם כל הפרטים…` | `חינם, בלי עמלות` · `חינם · בלי עמלות · …` · the shorter subhead · `קישור אחד עם כל מה שצריך לדעת עליכם…` | Businesses answer enquiries and do not register; «בלי עמלות» was buried in an FAQ answer and the price question had no answer at all. Commission is a known fear (ynet 03/2019: group-buy organisers take 10%–15%). «זה עוד מקום שצריך לעדכן» is a recurring objection in Topaz's calls. Sapir approved every string word-for-word 08/11. Full table in Section 9. |
+| 2026-11-08 | MEH-2842 | Home hero subtitle — `home.hero.subtitle` (he only) | `ישר מהמקור הביתה. בתי עסק שכבר בדקנו בשבילך.` | `ישר מהמקור אליכם. בתי עסק שכבר בדקנו בשבילכם.` | `הביתה` came from the MEH-2661 neutral-address sweep (04/11) and reads oddly; Sapir approved this wording verbatim 08/11. Neutral plural per ADR-014. `en.json` untouched — `Straight from the source. Businesses we've already vetted for you.` is already neutral. **Side effect on MEH-1692:** that row below closed the hero/trust-band duplication from the band side only and recorded the hero as unchanged. The retired lead `בתי עסק שכבר בדקנו בשבילך` was a byte-exact substring of the old subtitle; with `בשבילכם` it no longer is, so it now renders **zero** times page-wide — which is what MEH-1692's own acceptance criterion asked for and could not reach while the hero was locked. `HomeTrustBandCountGate.test.jsx` updated from `toBe(1)` to `toBe(0)` accordingly. |
 | 2026-10-25 | MEH-2313 | Canonical brand sentence — `CANONICAL_SENTENCE` (`lib/constants.js`) + `public/llms.txt` line 3 + `about.consumer.hero.subheading` (he+en); `seo.login.og_description` (he) | `אוכל מבתי עסק קטנים שבדקנו אישית — קרוב אלייך, בלי לחפש שעות.` / `Food from small businesses we've personally checked — …`; `…ולתמוך בעסקים קטנים מהסביבה שלך.` | `אוכל מבתי עסק מקומיים שבחרנו אישית — קרוב אלייך, בלי לחפש שעות.` / `Food from local businesses we've personally chosen — …`; `…ולתמוך בעסקים מהסביבה שלך.` | Not every business on the site is small. «בדקנו» read as a promise that the food was checked, which collides with the «מאומת» badge (a licence check only); «נבחר» matches «כל בית עסק נבחר אישית» (MEH-1692). Approved verbatim by Sapir 25/10. `about.consumer.story.p4` and `about.consumer.benefits.local.body` keep «קטנים» on purpose: they say some businesses are small, not all. |
 | 2026-07-31 | MEH-1692 | Home trust band — `home.trust.lead` + new count key (threshold 25) | `home.trust.lead` = `בתי עסק שכבר בדקנו בשבילך` (single state, shown at any catalog depth) | below 25: `בלי מתווך באמצע · איסוף עצמי או משלוח, ישירות מבית העסק` · at/above 25: `{count} בתי עסק · כל אחד נבחר אישית` | Closes a **byte-exact** duplication: the old value was a verbatim substring of `home.hero.subtitle`, rendering the same sentence twice on one screen. Replaces compliance register ("נבדקו" — over-claims across `license` \| `exemption` \| `cosmetics`, MEH-762 / ADR-022) with a structural fact (no intermediary; pickup-or-delivery) below the threshold, and with editorial judgement ("נבחר אישית", value 1 of Brand Hub `04-mission-vision-values`, external) above it. Deliberately avoids an outcome promise ("cheaper") — Barn2Door's `no markups` precedent. Numbers-above-threshold follows CrowdFarming / LocalHarvest / Open Food Network, none of which leads on a verification claim. **`home.hero.subtitle` and `nav.trust_strip` are unchanged** — the duplication is closed from the trust-band side only; `Header.jsx` and `HomeHero.jsx` are out of scope. |
 | 2026-06-05 | MEH-756 | /events S10 copy wave — 12 keys across `events.list.*`, `events.detail.*`, `dashboard.producer.quick_links.add_event.title`, `sweep_tail.event_new.submit`, `experiences.list.cross_link_events` (he+en) | mixed-voice set: `subtitle` `סדנאות, סיורים, ימים פתוחים וטעימות — ישר מהמקור`; feminine-singular `הוסיפי אירוע` / `הגישי חוויה` / `סנן לפי עיר` / `חפשי עיר...` / `טוענת אירועים...` / `טוענת חוויות...` / `טוענת את האירוע...` / `מחפשת… ראי את…`; masculine-imperative outliers `צור קשר עם בית העסק` / `הוסף אירוע` / `פרסם אירוע` | S10-aligned + ADR-014 neutralized: `subtitle` `מה קורה החודש — סוף שבוע אחרי סוף שבוע, ישר מהמקור` / `What's on this month — weekend after weekend, straight from the source` · `add_event` `הוסיפו אירוע` · `submit_experience` `הוסיפו חוויה` / `Add experience` (unified add verb) · `filter_city_label` `חיפוש לפי עיר` / `Search by city` · `filter_city_placeholder` `שם עיר או יישוב` / `City or town name` · `loading_events` `טוענים אירועים...` · `loading_experiences` `טוענים חוויות...` (ellipsis `...` preserved per file convention) · `events.detail.loading` `טוענים את האירוע...` · `events.detail.contact_producer` `יצירת קשר עם בית העסק` (noun phrase — drops masculine imperative) · `dashboard.producer.quick_links.add_event.title` `הוסיפו אירוע` · `sweep_tail.event_new.submit` `פרסמו אירוע` · `experiences.list.cross_link_events` `מחפשים גם אירועים בחוות? כל האירועים והחוויות ביחד ←` / `Also looking for farm events? All events and experiences together ←` (arrow `←` preserved) | ADR-014 HYBRID — UI chrome is gender-neutral. Aligns the /events surfaces to S10 design (MEH-134, Direction A "The Almanac") ahead of the visual port so it stays visual-only. Zero JSX. Zero copy-of-verification (not blocked by MEH-742). EN mirror updates only where HE meaning shifted (subtitle, submit_experience, filter_city_*, cross_link_events); other 7 EN strings already neutral. **Out of scope:** `events.list.empty_*` + eyebrow + per-tab H1 (JSX-dependent — land with MEH-134 port); rest of `sweep_tail.event_new.*` (~30 keys — needs separate extraction probe); `events.list.title` + tab keys + `events.categories.*` (untouched). |
@@ -504,7 +509,7 @@
 - ❌ `יצרן` / `יצרנית` — use "בית עסק" (ישות) / "בעלי עסקים" (גנרי) / "בעלת/בעל עסק" (ספציפיים), per ADR-024
 - ❌ "marketplace" / "פלטפורמה" — we are a directory, not a marketplace  
 - ❌ `שגיאה התרחשה` — use `משהו השתבש, נסו שוב`
-- ❌ מגדר לפי surface (ADR-024): functional=רבים ניטרלי · narrative/warmth=נקבה. אסור: slash · פנייה זכרית לקוראת ("המשתמש שלך")
+- ❌ פנייה ממוגדרת לקורא/ת (ADR-037, 04/11/2026 — מחליף את חלוקת ADR-024): כל פנייה לקוראים ניטרלית (רבים / שם פעולה / סתמי). נקבה רק בגוף ראשון של ספיר ובאדמין. אסור: slash · פנייה זכרית ביחיד לקורא ("המשתמש שלך")
 - ❌ `מוצרים` for food business pages — use `פריטים` or category-specific terms
 
 ---
@@ -643,7 +648,7 @@ selling cheese in Tel Aviv. Use "מישהי שמחפשת אוכל מקומי ב�
 | **Current (he)** | `אין תג 'מאומת'? זה לא אומר פחות. חלק מהקטגוריות פטורות מרישיון לפי החוק — אין מסמך להציג, פשוט כי הוא לא נדרש. העסק חתם על הצהרה מחייבת שהוא פועל כדין, ועבר את אותה היכרות אישית כמו כולם.` |
 | **en** | `No 'Verified' badge? It doesn't mean less. Some categories are legally exempt from licensing — there's no document to show, simply because none is required. The business signed a binding declaration that it operates lawfully, and went through the same personal introduction as everyone else.` (⏳ en pending Sapir review) |
 | **i18n key** | `producer.badge.declared_explainer` |
-| **Status** | ✅ MEH-1170 — rendered as quiet **visible copy** on the producer-detail hero (`ProducerHeader.jsx`, declared tier only). Was briefly the tap-tooltip of an S12 "מוצהר" chip (MEH-76/#1051); that chip contradicted ADR-022 ("tier 2 = no badge") and was removed. The sibling keys `declared_label` / `aria_declared` were retired with the chip. |
+| **Status** | 🗑️ **Retired — MEH-2710 (06/11/2026, Sapir).** Key deleted from he/en; the producer page shows nothing for the declared tier (a line about a badge the business lacks was noise, and a negative label). ADR-022 gate 1 is carried by `process.badge.absence_*` on /about/process. History: MEH-1170 — rendered as quiet **visible copy** on the producer-detail hero (`ProducerHeader.jsx`, declared tier only). Was briefly the tap-tooltip of an S12 "מוצהר" chip (MEH-76/#1051); that chip contradicted ADR-022 ("tier 2 = no badge") and was removed. The sibling keys `declared_label` / `aria_declared` were retired with the chip. |
 | **Why** | template-05 research: absence of a badge needs a **positive** explanation, not silence (Yelp FAQ pattern; Saeedi et al. — relative effect is inherent, only mitigable). Affirms the מוצהר tier without negative labeling. Source MEH-758 / ADR-022 / S11-FINAL. |
 
 ### Gate 3 — /terms §5 two-tier (MEH-760)
@@ -692,7 +697,7 @@ outstanding. Source MEH-760 / ADR-022 / Brief Q1+Q3.
 | `process.badge.oneliner` | `תג "מאומת" אומר דבר אחד… ואנחנו בדקנו אותו.` | ⏳ draft (gold `<em>` on closing clause) |
 | `process.badge.absence_h3 / _body / _kicker` | `אין תג מאומת? זה לא אומר פחות` / explainer / `התג מסמן מסמך נוסף — לא אמון נוסף.` | ⏳ draft — **3 separate keys, NOT collapsed** |
 | `process.matrix.*` (groupA/B + 16 cats + caveat) | published criteria matrix by category | ⏳ draft (honey = 3-license row; candles = `מוצהר`-only, no badge path) |
-| `process.cta.*` | `יש לך בית עסק שמגיע לו בית?` + `ספרו לנו על העסק` → `/register/producer` | ⏳ draft |
+| `process.cta.*` | `יש לכם בית עסק שמגיע לו בית?` + `ספרו לנו על העסק` → `/register/producer` | ✅ h2 neutral plural, approved by Sapir verbatim 08/11 (MEH-2824; was `יש לך…`) · rest ⏳ draft |
 | `process.tier.verified` / `.declared` | `מאומת` / `מוצהר` | ⏳ draft (tag labels, page-wide) |
 | `process.crosslink_from_about` | `כך אנחנו מכירות כל בית עסק` (/about → /about/process link) | ⏳ draft |
 | `nav.footer.process` | `תהליך הקבלה` (footer nav link — only non-`process.*` key added) | ⏳ draft |
@@ -700,11 +705,14 @@ outstanding. Source MEH-760 / ADR-022 / Brief Q1+Q3.
 **Reused (not recreated):** the illustrative badge tooltip uses the existing
 `producer.badge.verified_tooltip_license` (`{date}` → literal `5.6.2026` here).
 
-**Cross-ref:** `process.badge.absence_body` mirrors the tier-2 framing of
-`producer.badge.declared_explainer` — **sync if the tier-2 wording changes
-(lawyer/ADR-022).** Kept as a separate string (not a shared key) so the page's
-editorial voice can diverge from the per-producer badge surface; the two must
-stay semantically aligned on the "exempt ≠ less trustworthy" message.
+**Cross-ref (historical):** `process.badge.absence_body` used to mirror the tier-2
+framing of `producer.badge.declared_explainer`, and the two were kept in sync. That key
+was retired in MEH-2710 (06/11/2026), so /about/process is now the only tier-2
+explanation surface and there is nothing left to sync with. Its old "exempt category"
+wording was inaccurate for override businesses (lawyer brief, 06/11 addendum); it was
+replaced in MEH-2746 with copy Sapir approved word for word on 06/11: "a badge appears
+only when a document was shown and checked; without one, the business signed the
+declaration and we did not check its documents."
 
 ## Brand phrasings
 
@@ -738,7 +746,7 @@ multiple surfaces, lock it here so future copy edits stay consistent.
 | Part | Rule |
 | -- | -- |
 | The quote | Exempt — verbatim, no voice rules applied |
-| Editorial framing | Feminine allowed (reader-address) · brand-we plural |
+| Editorial framing | Neutral reader-address (ADR-037) · brand-we feminine/plural |
 | UI chrome (button/link) | gerund/plural, never feminine |
 | Attribution noun (ADR-024) | `בית העסק` (entity) · `בעלת עסק` (woman) · `בעל עסק` (man) — never `יצרן`/`יצרנית` |
 
@@ -770,7 +778,7 @@ multiple surfaces, lock it here so future copy edits stay consistent.
 |---|---|---|---|
 | 01 | `נרשמים` | `טופס קצר על העסק ופרטי קשר. כ־3 דקות. את התמונות מעלים אחר כך, מלוח הבקרה.` | MEH-2185 duration lock · MEH-2305 (no photos in the form) |
 | 02 | `היכרות אישית` | `הצוות שלנו עובר על העסק והסיפור, ואם צריך יוצר קשר להיכרות קצרה.` (MEH-2305, 24.10 — no unconditional call promise) | MEH-994 after_body |
-| 03 | `העמוד עולה` | `תוך עד 3 ימי עסקים מהשליחה לבדיקה, העסק שלכם מופיע באתר.` | MEH-2305 — the 3-business-day clock starts at «שליחה לבדיקה» |
+| 03 | `העמוד עולה` | `בלוח הבקרה מוסיפים תמונה, מוצר אחד ואימות טלפון, ולוחצים «שליחה לבדיקה». תוך עד 3 ימי עסקים העסק שלכם באתר.` (MEH-2799, #4123; was `תוך עד 3 ימי עסקים מהשליחה לבדיקה, העסק שלכם מופיע באתר.`) | MEH-2305 — the 3-business-day clock starts at «שליחה לבדיקה» |
 | 04 | `לקוחות פונים ישירות` | `כפתור WhatsApp בעמוד פותח שיחה ישירה אתכם. הקשר והתשלום — ביניכם ובין הלקוחות בלבד.` | MEH-1003 neutral no-fees copy (avoids forbidden "מתווכים") |
 
 Keys: `join.how.*`. Link out: `לתהליך הקבלה המלא` → `/about/process`.
@@ -779,13 +787,147 @@ Keys: `join.how.*`. Link out: `לתהליך הקבלה המלא` → `/about/pro
 | Field | Value |
 |---|---|
 | **Checklist** | mirrors the MEH-994 pre-flight items verbatim (`join.prepare.*`) — keep the two surfaces in sync on any copy change |
-| **Card title** | `כל בית עסק עובר היכרות אישית` (MEH-2305, was `…שיחה אישית`) — positive framing; definition-by-negation ("לא בירוקרטיה") is **forbidden** |
+| **Card title** | 🗑️ RETIRED in MEH-2799 (#4123) — the card duplicated step 2 and left the page with its keys. Was `כל בית עסק עובר היכרות אישית` (MEH-2305, was `…שיחה אישית`) — positive framing; definition-by-negation ("לא בירוקרטיה") is **forbidden** |
 | **Card body** | `כל בית עסק במהמקור עובר היכרות אישית — זהות, סיפור, ולפעמים גם שיחה. כך כל עמוד באתר נשאר אמין ואישי.` — extends the approved `success.tier_trust` |
-| **FAQ Q/A** | `כמה זה עולה?` → `חינם להצטרף ולהופיע. אין עמלות על עסקאות — לעולם.` — the no-fees LOCK lives HERE (Etsy pattern), never in the headline. Link: `לכל השאלות` → `/about/for-businesses` |
+| **FAQ Q/A** | `כמה זה עולה?` → `חינם להצטרף ולהופיע. אין עמלות על עסקאות.` (MEH-2799, 07/11: «— לעולם» removed here and on /about/for-businesses — ADR-030 §5) — the no-fees promise lives HERE (Etsy pattern), never in the headline. Link: `לכל השאלות` → `/about/for-businesses` |
 | **Status** | ⏳ MEH-995 |
 
-### Testimonial slot — placeholder ONLY (Section 8 guardrail applies)
+### Testimonial slot — 🗑️ RETIRED in MEH-2799 (#4123): the slot and its keys left the page. Real social proof gets its own card when it exists (Section 8 guardrail applies)
 The slot renders a self-describing placeholder (`join.testimonial.*`): `כאן תופיע עדות אמיתית של בעלת עסק — מילה במילה, באישורה.` + eyebrow `בקרוב — עדות ראשונה`. **Do NOT replace with invented business copy** — the real quote arrives via Template 10 verbatim intake (MEH-931) pre-launch and gets its own Section-8 row.
+
+### /join v2 — the approved 07/11 design (MEH-2799) — ✅ #4123
+
+> **Source:** the MEH-2799 handoff package, `SPEC.md` §4–§5 + `design/copy-in-order.txt` (Sapir approved the design 07/11: «מאשרת את העיצוב מהמם»). Hebrew is verbatim from those two files. The rows above in this section stay the record of what is **live** until PR 3 merges; they are then updated to the strings below and this block's status flips to ✅. Keys marked *(new)* are proposed names; PR 3's body carries the final key | old | new table. Pattern pointer: BRAND.md §6 row "Join page: feature groups …".
+>
+> **Channel-neutral rule (SPEC §5):** the contact button is never described as WhatsApp-only. WhatsApp is named only where it is literally WhatsApp (the prefill message, the WhatsApp group).
+
+#### Sapir's word-for-word decisions (07/11)
+
+| # | String | Where |
+|---|---|---|
+| 1 | `עסק לדוגמה` | ✅ approved — HTML corner label on every group clip and on both videos (not burned into the media) |
+| 2 | `קניות קבוצתיות, סדנאות, מתכונים והטבות.` | ✅ approved — `business_features.groups.return.card_line_no_rescue` — the «שיחזרו לקנות» card line while the rescue-bags flag is off (it is off in production as of 07/11: `/rescue` → 404) |
+| 3 | The English twins | `en.json` — plain translations; Sapir reviews them in #4123 |
+
+#### Changed strings (existing keys)
+
+| Key | Old | New |
+|---|---|---|
+| `business_features.items.product_wa.label` | `כפתור "שאלו על המוצר בוואטסאפ" בכל מוצר` | `כפתור "שאלו על המוצר" בכל מוצר, בערוץ שבחרתם` |
+| `business_features.total_line` | `{count} כלים בשש קטגוריות. כולם בחינם.` | `{count} כלים, כולם בחינם. לחצו על כרטיס לכל הכלים שלו.` — `{count}` from `countVisibleBusinessFeatures()`, shown **once** under the features heading, never per panel. `note_line` keeps its key (registry test) and is not rendered. |
+| `join.how.step3_text` | `תוך עד 3 ימי עסקים מהשליחה לבדיקה, העסק שלכם מופיע באתר.` | `בלוח הבקרה מוסיפים תמונה, מוצר אחד ואימות טלפון, ולוחצים «שליחה לבדיקה». תוך עד 3 ימי עסקים העסק שלכם באתר.` |
+| `join.faq.a_cost` | `חינם להצטרף ולהופיע. אין עמלות על עסקאות — לעולם.` | `חינם להצטרף ולהופיע. אין עמלות על עסקאות.` — **Sapir, 07/11 (later the same day):** «— לעולם» removed. This reverses her earlier keep-it call; ADR-030 §5 was rewritten the same evening: «לעולם» is allowed only in the zero-fee promise and no surface is required to use it. |
+
+#### New page strings (in page order)
+
+| Proposed key | he |
+|---|---|
+| hero photo alt | `ארגזים של פירות וירקות טריים` — **not shipped**: `EditorialPhoto` deliberately carries no alt (decorative, MEH-2597), and the prop is outside #4123's scope. Follow-up if wanted. |
+| `join.draft.title` *(new)* | `אין זמן למלא טפסים? נכין לכם טיוטה` |
+| `join.draft.body` *(new)* | `שלחו לנו קישור לאינסטגרם או כמה תמונות. אנחנו בונים טיוטה של העמוד עם המוצרים, ואתם מקבלים קישור אישי לבדוק, לתקן ולאשר. העמוד לא עולה בלי האישור שלכם.` |
+| `join.draft.cta` *(new)* | `כתבו לנו` |
+| `join.video.eyebrow` *(new)* | `סרטון קצר` |
+| `join.video.heading` *(new)* | `עמוד של בית עסק, בטלפון` |
+| `join.video.aria` *(new)* | `סרטון: ככה נראה עמוד של בית עסק במהמקור` |
+| `join.features.eyebrow` *(new)* | `מה מקבלים` |
+| `join.features.heading` *(new)* | `ממלאים פרטים פעם אחת. העמוד עובד בשבילכם.` |
+| `join.features.shelf_aria` *(new)* | `החלקים` |
+| `join.features.more` *(new)* | `כל {n} הכלים` — phone only; `{n}` = visible items in that group |
+| `join.features.panel_hint` *(new)* | `הכלים בחלק הזה מוצגים למטה` |
+| `join.features.pause` *(new)* | `עצירת הסרטון` |
+| `join.features.play` *(new)* | `הפעלת הסרטון` |
+| `join.features.sample_label` *(new)* | `עסק לדוגמה` — see approval item 1 |
+| toggletip trigger | `מה זה?` — reuses `whats_this.trigger` (identical text) |
+| `join.features.media_alt.page` *(new)* | `העמוד של מאפיית רוח השדה בטלפון` |
+| `join.features.media_alt.found` *(new)* | `המפה באתר, ממוקדת על זכרון יעקב, עם הסיכה של בית העסק` |
+| `join.features.media_alt.contact` *(new)* | `בדיקת משלוח לעיר ונקודות איסוף` |
+| `join.features.media_alt.return` *(new)* | `עמוד קנייה קבוצתית` |
+| `join.features.media_alt.trust` *(new)* | `ביקורות בעמוד בית העסק` |
+| `join.features.media_alt.insights` *(new)* | `לוח הבקרה: גרף צפיות וערים מובילות` |
+| `join.how.signup_video_aria` *(new)* | `סרטון: ככה נרשמים` |
+| `join.faq.heading` *(new)* | `מה שבתי עסק שואלים` |
+| `join.faq.q_google` *(new)* | `במה זה שונה מגוגל ומאינסטגרם?` |
+| `join.faq.a_google` *(new)* | `גוגל טוב כדי שימצאו אתכם בחיפוש, ושווה להמשיך להשתמש בו. כאן יש לכם עמוד משלכם בסגנון כתבה, כפתור פנייה בערוץ שבחרתם (בוואטסאפ גם עם הודעה מוכנה), וביקורות רק ממי שפנה אליכם. ואפשר לשים את הקישור לעמוד במהמקור גם בפרופיל שלכם בגוגל. את האינסטגרם ממשיכים כרגיל ומקשרים אליו מהעמוד, וכאן הלקוח רואה גם מחירים, אזורי משלוח ושעות בלי לשאול.` |
+| `join.faq.q_revenue` *(new)* | `אם הכול חינם, איך אתם מרוויחים?` |
+| `join.faq.a_revenue` *(new)* | `כרגע לא מרוויחים. בעתיד ההכנסה תגיע ממנוי משודרג שבתי עסק יבחרו בו מרצון. לא מעמלות ולא ממכירת מקום בראש הרשימה.` — first premium mention on /join; consistent with ADR-027/ADR-030 (premium = tools only, never ranking). The older "zero premium mention anywhere on the page" note in the Hero row above predates ADR-027. |
+| `join.faq.q_customers` *(new)* | `מי מקבל את הלקוחות?` |
+| `join.faq.a_customers` *(new)* | `אתם. כל פנייה מגיעה ישירות אליכם, והקשר נשאר שלכם גם אם תחליטו לעזוב.` |
+| `join.closing.heading` *(new)* | `מוסיפים עכשיו את בתי העסק הראשונים` |
+| `join.closing.line` *(new)* | `עמוד אחד עם כל הפרטים, והלקוח פונה ישירות אליכם.` |
+| closing button | `מצטרפים` — reuses `join.cta` |
+| `join.meta_line` *(new)* | `חינם · כ-5 דקות · עולה תוך עד 3 ימי עסקים` — closing band and sticky bar (one key, two surfaces) |
+| `join.closing.question` *(new)* | `שאלה לפני?` + link `כתבו לנו` (reuses `join.draft.cta`) |
+| sticky bar button | `מצטרפים` — reuses `join.cta` |
+
+Unchanged and reused as-is: `join.eyebrow` · `join.h1` · `join.subhead` · `join.cta` · `join.trust_hint` · `join.how.*` (except step 3) · `join.prepare.*` · `join.faq.eyebrow` · `join.faq.q_cost` · `join.faq.all_link` · `business_features.groups.{g}.label` / `.lead`.
+
+**Removed from the page and from he/en in #4123** (grep-before-delete: only `join/page.js` read them): `join.card.*` (the duplicate «כל בית עסק עובר היכרות אישית» card) · `join.testimonial.*` (already render-gated off, MEH-2419) · the per-panel total line.
+
+#### Group cards — `business_features.groups.{g}.card_title` / `.card_line` *(new)*
+
+| g | card_title | card_line |
+|---|---|---|
+| page | `עמוד משלכם` | `תמונות, סיפור, מוצרים ומחירים. ואם אין זמן, נכין לכם טיוטה.` |
+| found | `שימצאו אתכם` | `במפה, בחיפוש לפי עיר ותזונה, ובגוגל.` |
+| contact | `שיפנו אליכם` | `פנייה בלחיצה, בערוץ שבחרתם. בדיקת משלוח לעיר של הלקוח.` |
+| return | `שיחזרו לקנות` | `קניות קבוצתיות, סדנאות, מתכונים, הטבות וסלי הפתעה.` · flag off → `card_line_no_rescue` (approval item 2) |
+| trust | `שיסמכו עליכם` | `תג מאומת, ביקורות רק ממי שפנה אליכם, ואתם מגיבים.` |
+| insights | `תדעו מה עובד` | `צפיות, לחיצות על כפתור הפנייה, ומאילו ערים מגיעים. הכול מהטלפון.` |
+
+#### Tiles — `business_features.items.{id}.tile_title` / `.tile_line` *(new)*, 4 per group, in this order
+
+| group | id | Phosphor icon | tile_title | tile_line |
+|---|---|---|---|---|
+| page | gallery_story | Image | `גלריה וסיפור` | `תמונות, "אודות" ו"מאחורי העסק"` |
+| page | product_details | Tag | `מוצרים` | `עם מחיר, רכיבים ואלרגנים` |
+| page | hours | Clock | `שעות` | `פתיחה, הזמנה וחגים` |
+| page | draft_claim | PencilSimple | `טיוטה מוכנה` | `אנחנו כותבים, אתם מאשרים` |
+| found | vanity_link | LinkSimple | `קישור קצר` | `לאינסטגרם ולוואטסאפ` |
+| found | discovery | MapPin | `במפה ובחיפוש` | `לפי עיר, תזונה ובדף הבית` |
+| found | share_cards | ShareNetwork | `כרטיסים לשיתוף` | `לסטורי ולביקורות` |
+| found | qr_code | QrCode | `קוד QR` | `להדפסה, לדלפק או לדוכן` |
+| contact | primary_cta | ChatCircleText | `כפתור פנייה` | `וואטסאפ, טלפון או אתר, לפי הבחירה שלכם` |
+| contact | wa_prefill | PaperPlaneTilt | `הודעה מוכנה` | `בוואטסאפ: "הגעתי דרך מהמקור"` |
+| contact | delivery_checker | Truck | `בדיקת משלוח` | `"יש משלוח לעיר שלך?"` |
+| contact | nav_buttons | NavigationArrow | `ניווט לאיסוף` | `Waze ו-Google Maps` |
+| return | group_buys | UsersThree | `קניות קבוצתיות` | `כמה לקוחות מזמינים יחד, במחיר נמוך יותר` |
+| return | events | CalendarBlank | `אירועים וסדנאות` | `עם הרשמה באתר` |
+| return | recipes | CookingPot | `מתכונים` | `כל מתכון בעמוד משלו, שמקשר אליכם` |
+| return | rescue_bags | ShoppingBag | `סלי הפתעה` | `למה שנשאר בסוף היום, במחיר מוזל` — flag-gated: off → «שיחזרו לקנות» shows 3 tiles |
+| trust | verified_badge | ShieldCheck | `תג מאומת` | `אחרי בדיקה ידנית של הרישיון` |
+| trust | kashrut_verified | Certificate | `כשרות מאומתת` | `אחרי שהתעודה נבדקה` |
+| trust | editor_pick | Medal | `בחירת העורכת` | `לא עומדת למכירה` |
+| trust | reviews_contacted | Star | `ביקורות אמיתיות` | `רק ממי שפנה, ואתם מגיבים` |
+| insights | views | Eye | `צפיות` | `ל-7 ימים, 30 יום או מההתחלה` |
+| insights | contact_clicks | CursorClick | `לחיצות` | `וואטסאפ, טלפון ואתר` |
+| insights | top_cities | MapPin | `ערים` | `מאיפה מגיעים המבקרים` |
+| insights | demand_cities | TrendUp | `ביקוש חדש` | `ערים שעוד אין אליהן משלוח` |
+
+### /join copy wave — 08/11 (MEH-2841)
+
+> **Source:** Sapir approved every Hebrew string below word-for-word on 08/11. **Why this wave:** businesses answer enquiries and do not register. These changes move the two answers that matter most for them — there is no commission, and the price is theirs — to the top of the page, and add the objection that kept coming back in Topaz's calls («it's one more place to keep updated»). Commission is a known fear: per ynet (03/2019) group-buy organisers take 10%–15%. Neutral plural per ADR-014.
+
+#### Changed strings (existing keys)
+
+| Key | Old | New | Why |
+|---|---|---|---|
+| `join.trust_hint` | `חינם להצטרף` | `חינם, בלי עמלות` | «בלי עמלות» lived only in the answer to «כמה זה עולה?», far down the page. It now sits next to the button. |
+| `join.meta_line` | `חינם · כ-5 דקות · עולה תוך עד 3 ימי עסקים` | `חינם · בלי עמלות · כ-5 דקות · עולה תוך עד 3 ימי עסקים` | Same reason. One key, two surfaces — the closing band and the sticky bar (no code change). |
+| `join.subhead` | `עמוד עם התמונות והסיפור שלכם, כל עסק נבחר אישית, ופנייה ישירה אליכם, בוואטסאפ או בערוץ שתבחרו — לקוחות מקומיים פוגשים את הסיפור שלכם.` | `עמוד עם התמונות והסיפור שלכם, ולקוחות מקומיים פונים אליכם ישירות, בערוץ שתבחרו.` | «הסיפור שלכם» appeared twice in one sentence, and the line was long for a phone. Channel-neutral rule kept (SPEC §5): the channel is named, WhatsApp is not. |
+| `join.closing.line` | `עמוד אחד עם כל הפרטים, והלקוח פונה ישירות אליכם.` | `קישור אחד עם כל מה שצריך לדעת עליכם: לביו באינסטגרם, לסטטוס בוואטסאפ, ולכל מי ששואל.` | Says what the page is *for* — somewhere to point people — instead of restating the subhead. WhatsApp and Instagram are named because they are literally those surfaces. |
+
+#### New keys
+
+| Key | he | Where |
+|---|---|---|
+| `join.faq.q_price` | `מי קובע את המחיר?` | FAQ, position 2 |
+| `join.faq.a_price` | `אתם. המחיר בעמוד הוא שלכם, ואנחנו לא לוקחים אחוז מאף מכירה.` | |
+| `join.faq.q_updates` | `זה עוד מקום שצריך לעדכן?` | FAQ, position 4 |
+| `join.faq.a_updates` | `כמעט לא. אין באתר הזמנות ואין מלאי, אז כשמשהו נגמר הלקוחות פשוט שואלים אתכם. מעדכנים רק כשמשהו קבוע משתנה.` | |
+
+**FAQ order is now** `["cost", "price", "google", "updates", "revenue", "customers"]` (`join/page.js`): cost and price first because they are the two questions that stop a registration, then discovery, then the update objection.
+
+English twins land in `en.json` in the same PR (parity guard, MEH-978/840).
 
 ## Section 10 — /share "ספרו עלינו" (MEH-1160)
 
@@ -940,3 +1082,127 @@ precedes the code rather than documenting it after the fact.
 - **Not the complete fix, and recorded as such.** USWDS's guidance is that a full language
   selector over partially-translated content is the wrong component to begin with. This
   banner is the pragmatic correction; revisiting the selector itself is post-launch.
+
+---
+
+## Section 14 — Producer-page «שעות» section (MEH-2803)
+
+One hours section on the business page, each set under its own label (Google
+Business Profile «More hours» pattern). Replaces «מתי מקבלים הזמנות» + the
+unlabelled store-hours card under «הגעה ומיקום», which read as the same fact
+twice. Neutral Hebrew (BRAND.md §9) — no gendered verb.
+
+| Key | he | en | Where it appears |
+|---|---|---|---|
+| `producer.detail.hours.heading` | `שעות` | `Hours` | Section heading, where «מתי מקבלים הזמנות» was |
+| `producer.detail.hours.label_orders` | `מקבלים הזמנות` | `Taking orders` | Label over the order-window set |
+| `producer.detail.hours.label_visit` | `פתוח למבקרים` | `Open to visitors` | Label over the store-hours set |
+| `producer.detail.hours.label_both` | `הזמנות וביקור במקום` | `Orders and visits` | The ONE label when both sets parse and match day by day |
+
+**Status:** ⏳ PR open — watch MEH-2803.
+
+**Retired with it:** `producer.detail.order_window.schedule_subtitle`
+(«הימים והשעות שבהם בית העסק מקבל הזמנות») — it restated the heading directly
+above it.
+
+---
+
+## Section 15 — Location opening hours: picker note (MEH-2805)
+
+The location's «שעות» field is a day-row picker (MEH-2805), not free text. A
+value saved before the switch that the parser cannot read is shown verbatim
+above the rows, and is not overwritten until the owner saves her own choice.
+
+| Key | he | en | Where it appears |
+|---|---|---|---|
+| `settings.locations.form.hours_unreadable` | `השעות שנשמרו: {value} — כדאי לבחור אותן מחדש למטה` | `Saved hours: {value} — please pick them again below` | Owner dashboard → מיקומים → edit a location, above the day rows, only when the stored hours are unreadable |
+
+Day names, «סגור» and the range controls reuse existing keys
+(`opening_hours.weekdays.*`, `opening_hours.closed_day`,
+`dashboard.producer.order_window.{from_label,to_label,add_range,remove_range,invalid_range,invalid_overlap}`).
+The order-window day toggle copy («מקבלים הזמנות ביום זה» / «לא מקבלים הזמנות»)
+is NOT reused — it is about orders, not opening hours.
+
+**Status:** ⏳ PR open — watch MEH-2805.
+
+**Retired with it:** `settings.locations.form.hours_placeholder`
+(«למשל: ימים א׳–ה׳, 9:00–17:00») — it invited exactly the free-text format the
+picker replaces, and is unused once the text field is gone. The admin
+ProducerForm's own `opening_hours_placeholder` is untouched.
+## Section 16 — Home trust band: the sentence + a count line from 25; «כניסה חופשית» (MEH-2804)
+
+The three-column fact row (`home.trust.col_*`, #4143) was rejected 07/11 and its
+four keys are removed. The band is `home.trust.lead` at every count; from
+`TRUST_COUNT_THRESHOLD` (25) one quiet line is added under it. Below 25 there is
+no number (MEH-521). The count line reuses the MEH-524-approved wording.
+
+| Key | he | en | Where it appears |
+|---|---|---|---|
+| `home.trust.lead` | `בלי מתווך באמצע · איסוף עצמי או משלוח, ישירות מבית העסק` | `No middleman in between · pickup or delivery, straight from the business` | Home trust band, always (unchanged) |
+| `home.trust.count_line` | `<num>{count}</num> בתי עסק שהצטרפו עד היום` | `<num>{count}</num> businesses joined so far` | Home trust band, under the sentence, ≥ 25 only |
+
+**«חינם» → «כניסה חופשית»** (en `Free entry`) for the event/experience price only:
+`home.events.free`, `producer.detail.sections.events.free`, `events.list.free`,
+`events.detail.free`, `experiences.detail.free`. **Unchanged:**
+`group_buys.delivery.free`, `admin.experiences.free`, DeliveryBlock pickup — those
+say a delivery or a listing costs nothing, not that entry is free.
+
+**Status:** price token + «כניסה חופשית» ✅ merged in #4143 (`1a9464fd`); the band as above in the MEH-2804 follow-up PR #4148.
+
+---
+
+## Section 17 — Location hours: where they appear (MEH-2819)
+
+The dashboard field standard asks every field for a «where it appears» line.
+The location hours picker (MEH-2805) shows one, chosen by the location's kind,
+because the hours really appear in a different place for each:
+
+| Key | he | en | When |
+|---|---|---|---|
+| `settings.locations.form.hours_where_primary` | `מופיעות בעמוד העסק, בסקשן «שעות»` | `Shown on your business page, in the «Hours» section` | The primary location (`resolveStoreHours`) |
+| `settings.locations.form.hours_where_pickup` | `מופיעות בעמוד העסק ליד הנקודה, תחת «איסוף עצמי»` | `Shown on your business page next to this point, under «Self pickup»` | A pickup point or market stall that is not primary (DeliveryBlock `PickupRow`) |
+| `settings.locations.form.hours_where_map` | `מופיעות בעמוד העסק, בחלון של הנקודה במפה` | `Shown on your business page, in this point's map popup` | Any other non-primary point (MiniMap popup) |
+
+Approved by Sapir 07/11 («תעשה מה שאתה חושב»). Neutral Hebrew — plural
+passive («מופיעות»), no addressed verb.
+
+**Status:** ✅ Merged to staging — PR #4144 (`85cfe44f`).
+
+### MEH-2833 — status pages: «בתי עסק» (approved by Sapir verbatim 08/11)
+| # | Key | Before | After | Status |
+|---|---|---|---|---|
+| 1 | `errors.not_found.discover` | `גלו עסקים במפה` | `גלו בתי עסק במפה` | ✅ PR 9 (#4201) |
+| 2 | `errors.producer_not_found.discover` | `גלו עסקים במפה` | `גלו בתי עסק במפה` | ✅ PR 9 (#4201) |
+
+### MEH-2827 — content pages, neutral plural (approved by Sapir verbatim 08/11)
+| # | Key | Before | After | Status |
+|---|---|---|---|---|
+| 1 | `about.biz_strip_lead` | `בעלת עסק?` | `יש לכם עסק?` | ✅ PR 1 (#4169) |
+| 2 | `about.consumer.cta.heading` | `בנית עסק שמגיע לו בית? אנחנו רוצות להכיר.` | `בניתם עסק שמגיע לו בית? אנחנו רוצות להכיר.` | ✅ PR 1 (#4169) |
+| 3 | `about_why_local.changes_1` | `מבית העסק, ישר אליך.` | `מבית העסק, ישר אליכם.` | ✅ PR 2 (#4172) |
+| 4 | `nav.footer.brand_tagline` + 4 `seo.*` descriptions + `SITE_DESCRIPTION` | `…של העסק שלך…` | `…של העסק שלכם…` | ⏳ **not applied** — the line is LOCKED by ADR-011 (also BRAND.md, CONTEXT.md, `lib/constants.js`, guarded by `adr011-tagline.test.js`). Changing it amends the ADR; waiting for Sapir's call |
+| 5 | `nav.footer.cta_pitch` | `יש לך עסק מזון מקומי?` | `יש לכם עסק מזון מקומי?` | ✅ PR 3 |
+| 6 | `about.consumer.badges_link.label` (new) | — | `לכל התגים באתר` (en `All badges on the site`) | ✅ PR 1 (#4169) |
+| 7 | `account.sheet.biz_cta` | `יש לך בית עסק?` | `יש לכם בית עסק?` | ✅ PR 3 |
+| 8 | `recommend.subtitle` | `ספרו לנו עליו. אנחנו בודקים כל המלצה, פונים לבית העסק ומצרפים רק בתי עסק עם רישיון.` | `ספרו לנו עליו. אנחנו בודקות כל המלצה, פונות לבית העסק, ומצרפות רק בתי עסק שפועלים כדין.` | ✅ PR 4 (`seo.recommend.description` / `og_description` still carry the old sentence — not in the approved table, open for Sapir) |
+
+### MEH-2832 — one contact form: guides footer (approved by Sapir verbatim 08/11)
+Every «כתבו לנו» / «צרו קשר» leads to /contact (with ?topic=); no Instagram as a support channel (the site footer keeps Instagram as social).
+| # | Key | Before | After | Status |
+|---|---|---|---|---|
+| 1 | `guides.index.footer_prefix` (`footer_suffix` removed) | `יש שאלה שמדריך לא ענה עליה? כתבו לי באינסטגרם @meha_makor.` | `יש שאלה שהמדריכים לא ענו עליה? <link>כתבו לנו</link>` — the link → `/contact?topic=business` | ✅ PR 2 |
+
+### MEH-2827 PR 9 — «קבוצות רכישה» everywhere (approved by Sapir verbatim 08/11)
+Brand rule: BRAND.md §7. Mechanical replacement in every he.json string and every Hebrew user-facing backend string: «קבוצת רכש» → «קבוצת רכישה», «קבוצת הרכש» → «קבוצת הרכישה», «קבוצות רכש» → «קבוצות רכישה», «קבוצות הרכש» → «קבוצות הרכישה» (incl. ל/ב/ה prefixes). Reworded rows:
+| # | Key | Before | After | Status |
+|---|---|---|---|---|
+| 9 | `producer.detail.sections.group_buys.heading` | `רכישות קבוצתיות פתוחות` | `קבוצות רכישה פתוחות` | ✅ PR 9 |
+| 10 | `seo.group_buy.title_fallback` | `רכישה קבוצתית — מהמקור` | `קבוצת רכישה — מהמקור` | ✅ PR 9 |
+| 11 | `seo.group_buy.description_fallback` | `רכישות קבוצתיות מבתי עסק מקומיים.` | `קבוצות רכישה מבתי עסק מקומיים.` | ✅ PR 9 |
+| 12 | `business_features.items.group_buys.label` + `.tile_title` | `קניות קבוצתיות` | `קבוצות רכישה` | ✅ PR 9 (launch tier ב׳) |
+| 13 | `business_features.groups.return.card_line` + `card_line_no_rescue` | `קניות קבוצתיות, סדנאות…` | `קבוצות רכישה, סדנאות…` (rest unchanged) | ✅ PR 9 (launch tier ב׳) |
+| 14 | `join.features.media_alt.return` | `עמוד קנייה קבוצתית` | `עמוד קבוצת רכישה` | ✅ PR 9 |
+| 15 | `business_features.items.email_alerts.label` | `…או קנייה קבוצתית שהתמלאה` | `…או קבוצת רכישה שהתמלאה` | ✅ PR 9 |
+| 16 | demo seed title (staging only) | `רכישה קבוצתית: שק קמח כוסמין מלא` | `קבוצת רכישה: שק קמח כוסמין מלא` | ✅ PR 9 |
+| 17 | `producer.detail.sections.group_buys.show_all` (new) | — | `הצגת כל קבוצות הרכישה` | ✅ PR 7 |
+

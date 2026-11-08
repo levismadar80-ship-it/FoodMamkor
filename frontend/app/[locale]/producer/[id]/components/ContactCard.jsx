@@ -1,29 +1,30 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import {
+  Bell,
   EnvelopeSimple,
   FacebookLogo,
   Globe,
   InstagramLogo,
   Phone,
   Receipt,
-  WhatsappLogo,
 } from "@phosphor-icons/react";
 
 import PrimaryContactButton from "@/components/PrimaryContactButton";
 import WhatsAppQuestionChips from "@/components/WhatsAppQuestionChips";
 import { getPrimaryMethod } from "@/lib/contact-method";
-import { instagramUrl } from "@/lib/social-links";
+import { instagramHandle, instagramUrl } from "@/lib/social-links";
 import { withReferralParams } from "@/lib/utils";
+import { whatsappUpdatesHref } from "@/components/WhatsAppUpdatesPill";
 import { markWhatsAppClickedLocal, pingWhatsAppBeacon, trackContactClick } from "@/lib/contact-tracking";
 import { showToast } from "@/lib/toast";
 
 // MEH-1221: silent-mailto fallback window. mailto: fails silently on desktops
-// with no mail handler (no error, no navigation). The email icon is a bare
-// mailto and the address is not shown anywhere on the card, so a customer on
-// such a desktop has NO email path at all. We race this timer against window
-// "blur" / visibilitychange (either fires when a handler grabs focus); timer
-// wins → no handler → copy the address + toast so she can paste it.
+// with no mail handler (no error, no navigation). The email circle is a bare
+// mailto and shows no address (MEH-2775: only the SOLE-channel row shows it),
+// so a customer on such a desktop has NO email path at all. We race this
+// timer against window "blur" / visibilitychange (either fires when a handler
+// grabs focus); timer wins → no handler → copy the address + toast so she can paste it.
 // REUSES: frontend/app/[locale]/share/ShareClient.jsx:104-143 (MEH-1220/1223)
 // — same detection mechanics + MEH-1223 real-success flag (a double failure
 // shows the failure toast, never a false "copied").
@@ -92,31 +93,65 @@ function armMailtoFallback(email, t) {
  *           MEH-1551 (degenerate states — sole channel renders a labeled row,
  *           phone reveal swaps in place instead of appending a sibling);
  *           MEH-1583 (reveal adopts the geometry of the element it replaces —
- *           one row anatomy across every cell of the count x state matrix).
+ *           one row anatomy across every cell of the count x state matrix);
+ *           MEH-2626 (whatsapp_group circle → tracked «עדכונים» bell).
  */
 
 // Secondary contact channels rendered as the quiet icon row. Each entry
 // resolves its own href from the producer with the trim/prefix guards the
 // prior ContactSidebar tiles carried. The channel equal to the primary
 // method is filtered out so it never duplicates the big CTA.
+//
+// MEH-2775: `display` is what the SOLE-channel info row shows instead of the
+// channel's name — the value people recognise (the number, @handle, domain,
+// address), the way Google Maps / Yelp list contact details on desktop. A
+// channel without one (facebook / order form / updates: their value is a long
+// URL that says nothing) keeps its `single.*` label.
 const CHANNELS = [
-  { key: "phone", Icon: Phone, href: (p) => (p.phone ? `tel:${p.phone}` : null) },
-  { key: "instagram", Icon: InstagramLogo, href: (p) => instagramUrl(p.instagram) },
+  {
+    key: "phone",
+    Icon: Phone,
+    href: (p) => (p.phone?.trim() ? `tel:${p.phone.trim()}` : null),
+    display: (p) => p.phone?.trim() || null,
+  },
+  {
+    key: "instagram",
+    Icon: InstagramLogo,
+    href: (p) => instagramUrl(p.instagram),
+    display: (p) => {
+      const handle = instagramHandle(p.instagram);
+      // A legacy row stored as a full URL is not a handle — keep the label
+      // rather than print "@https://…" (social-links.js: URL rows out of scope).
+      return handle && !/[/:]/.test(handle) ? `@${handle}` : null;
+    },
+  },
   // MEH-1525: the business-website tile carries referral UTM (rel drops
   // noreferrer at the render site below). Social / order tiles are untouched.
-  { key: "website", Icon: Globe, href: (p) => withReferralParams(httpUrl(p.website)) },
+  {
+    key: "website",
+    Icon: Globe,
+    href: (p) => withReferralParams(httpUrl(p.website)),
+    display: (p) => websiteHost(p.website),
+  },
   {
     key: "email",
     Icon: EnvelopeSimple,
     href: (p) => (p.contact_email?.trim() ? `mailto:${p.contact_email.trim()}` : null),
+    display: (p) => p.contact_email?.trim() || null,
   },
   { key: "facebook", Icon: FacebookLogo, href: (p) => httpUrl(p.facebook) },
   { key: "external_order", Icon: Receipt, href: (p) => httpUrl(p.external_order_form) },
+  // MEH-2626: the WhatsApp updates link (group or channel) — the «עדכונים»
+  // bell. REPLACES the untracked WhatsappLogo circle that sat here: a neutral
+  // Bell so it never reads as a second «שליחת הודעה» (MEH-1466 / MEH-1049),
+  // and a tap is now a contact click (method "whatsapp_group", reviews gate).
+  // `ariaKey`: the circle's visible name is the short «עדכונים»; the accessible
+  // name spells out what it opens and still starts with that word (WCAG 2.5.3).
   {
     key: "whatsapp_group",
-    Icon: WhatsappLogo,
-    href: (p) => (p.whatsapp_group?.trim() ? p.whatsapp_group.trim() : null),
-    track: false,
+    Icon: Bell,
+    href: whatsappUpdatesHref,
+    ariaKey: "producer.detail.whatsapp_updates.full",
   },
 ];
 
@@ -125,6 +160,14 @@ function httpUrl(raw) {
   const v = (raw || "").trim();
   if (!v) return null;
   return v.startsWith("http") ? v : `https://${v}`;
+}
+
+/** MEH-2775: "https://www.x.co.il/shop/" → "x.co.il" — the host people know. */
+function websiteHost(raw) {
+  const v = (raw || "").trim();
+  if (!v) return null;
+  const host = v.replace(/^[a-z]+:\/\//i, "").replace(/^www\./i, "").split(/[/?#]/)[0];
+  return host || null;
 }
 
 // MEH-1551: the circle and the single-channel row are two renderings of the
@@ -143,8 +186,14 @@ const linkAttrs = (key) =>
 // wearing pill anatomy (inline-flex + rounded-full + no w-full), so a card
 // could show two geometric languages at once. Only the trailing state classes
 // (hover/text colour) differ per affordance.
-const ROW_ANATOMY =
-  "flex w-full items-center gap-2 min-h-[44px] px-3 rounded-[10px] border border-border bg-white text-sm";
+// MEH-2775: the box is gone. A bordered full-width row sitting right under the
+// bordered «שאלה אחרת?» pill read as one more question (Sapir 06/11). The row
+// is now a plain info line — icon + value — under the same hairline the
+// circle grid already has, so a sole channel reads as a contact DETAIL.
+const ROW_ANATOMY = "flex w-full min-w-0 items-center gap-2 min-h-touch text-sm rounded-md";
+
+/** MEH-2775: a value in Latin script runs LTR so "@handle" keeps its "@" first. */
+const isLatinValue = (v) => /[a-z0-9]/i.test(v) && !/[\u0590-\u05FF]/.test(v);
 
 export default function ContactCard({ producer, isVacation }) {
   const t = useTranslations();
@@ -177,24 +226,28 @@ export default function ContactCard({ producer, isVacation }) {
   // circle would re-create the very orphan MEH-1551 closed.
   const single = channels.length === 1;
 
-  // The row also has to render when the reveal emptied `channels` (the
-  // sole-channel card): the number row is then its only child.
+  // `|| revealed` is defensive only: since MEH-2775 a SOLE phone never reveals
+  // (its number is already on the row), so a reveal always leaves ≥1 survivor.
   const showChannelRow = channels.length > 0 || revealed;
 
   // Shared by both affordances (circle + single row) so the tracking and the
   // desktop phone-reveal behave identically whichever one is rendered.
-  const onChannelClick = (e, { key, track }) => {
+  const onChannelClick = (e, { key }) => {
     // MEH-1334: on desktop a phone tap reveals the number inline (no dialer)
     // — swallow the tel: navigation and show the pill.
+    // MEH-2775: a SOLE phone already shows its number, so there is nothing to
+    // reveal — the tap stays a plain tel: link (desktop softphone can act).
     if (
       key === "phone" &&
+      !single &&
       typeof window !== "undefined" &&
       window.matchMedia("(min-width: 1024px)").matches
     ) {
       e.preventDefault();
       setPhoneRevealed(true);
     }
-    if (track === false) return;
+    // MEH-2626: every channel is tracked now — the `track: false` opt-out
+    // existed only for the old untracked whatsapp_group circle.
     // Fires exactly once per click (fallback must not double-track).
     trackContactClick(producer.id, key);
     // MEH-1221: email-only silent-mailto fallback.
@@ -209,7 +262,7 @@ export default function ContactCard({ producer, isVacation }) {
   // anywhere else would satisfy the negative check alone (MEH-1592). Class
   // selectors are brittle; docs/E2E-LOCATORS.md mandates data-testid.
   return (
-    <div className="bg-white rounded-lg p-6 border border-border" data-testid="contact-card">
+    <div className="bg-surface rounded-lg p-6 border border-border" data-testid="contact-card">
       <div className={isVacation ? "opacity-50 pointer-events-auto" : ""}>
         {/* MEH-1334: the "פתוח להזמנות" status line moved to the header meta
             line (3 states, one status home per page — revision-2 #2). */}
@@ -256,7 +309,7 @@ export default function ContactCard({ producer, isVacation }) {
           <div
             className={
               single
-                ? "flex flex-wrap items-center gap-2 mt-3 mb-1"
+                ? "flex flex-col gap-1 mt-4 pt-3 border-t border-border"
                 : "grid grid-cols-4 gap-x-1 gap-y-3 mt-4 pt-4 border-t border-border"
             }
             role="list"
@@ -266,7 +319,9 @@ export default function ContactCard({ producer, isVacation }) {
 
               // MEH-1551: sole channel → a labeled quiet row (the visible label
               // IS the accessible name here, so no aria-label overriding it).
+              // MEH-2775: the label is the channel's VALUE when it has one.
               if (single) {
+                const value = channel.display?.(producer);
                 return (
                   <a
                     key={key}
@@ -274,11 +329,30 @@ export default function ContactCard({ producer, isVacation }) {
                     {...linkAttrs(key)}
                     role="listitem"
                     data-testid="contact-single-row"
+                    // MEH-2775: a bare value ("0501234567") says nothing to a
+                    // screen reader — prefix the channel's existing aria name.
+                    // The visible value stays inside the name (WCAG 2.5.3).
+                    aria-label={
+                      value
+                        ? `${t(channel.ariaKey ?? `producer.detail.contact_card.aria.${key}`)} ${value}`
+                        : undefined
+                    }
                     onClick={(e) => onChannelClick(e, channel)}
-                    className={`${ROW_ANATOMY} text-primary-dark hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40`}
+                    className={`${ROW_ANATOMY} text-primary-dark hover:text-primary hover:underline underline-offset-2 transition focus-visible:ring-2 focus-visible:ring-primary/40`}
                   >
-                    <Icon size={18} aria-hidden="true" />
-                    {t(`producer.detail.contact_card.single.${key}`)}
+                    <Icon size={18} className="shrink-0" aria-hidden="true" />
+                    {value ? (
+                      <span
+                        dir={isLatinValue(value) ? "ltr" : undefined}
+                        // full value on hover when a long email/domain truncates
+                        title={value}
+                        className={`truncate${key === "phone" ? " numeric" : ""}`}
+                      >
+                        {value}
+                      </span>
+                    ) : (
+                      t(`producer.detail.contact_card.single.${key}`)
+                    )}
                   </a>
                 );
               }
@@ -295,7 +369,7 @@ export default function ContactCard({ producer, isVacation }) {
                   data-testid={`contact-channel-${key}`}
                   // Same string as the visible name (WCAG 2.5.3 holds); kept so
                   // the accessible name is the name alone, not "name + icon".
-                  aria-label={t(`producer.detail.contact_card.aria.${key}`)}
+                  aria-label={t(channel.ariaKey ?? `producer.detail.contact_card.aria.${key}`)}
                   onClick={(e) => onChannelClick(e, channel)}
                   className="group flex flex-col items-center gap-1.5 text-center text-xs leading-tight text-text rounded-lg focus-visible:ring-2 focus-visible:ring-primary/40"
                 >
@@ -317,14 +391,14 @@ export default function ContactCard({ producer, isVacation }) {
                 tel: link so a desktop softphone / click-to-call can act on it. */}
             {revealed && (
               <a
-                href={`tel:${producer.phone}`}
+                href={`tel:${producer.phone.trim()}`}
                 data-testid="revealed-phone"
                 role="listitem"
-                className={`${ROW_ANATOMY} ${single ? "" : "col-span-4"} text-text focus-visible:ring-2 focus-visible:ring-primary/40`}
+                className={`${ROW_ANATOMY} ${single ? "" : "col-span-4"} text-primary-dark focus-visible:ring-2 focus-visible:ring-primary/40`}
               >
-                <Phone size={18} className="text-primary-dark" aria-hidden="true" />
+                <Phone size={18} className="shrink-0" aria-hidden="true" />
                 <span dir="ltr" className="numeric">
-                  {producer.phone}
+                  {producer.phone.trim()}
                 </span>
               </a>
             )}

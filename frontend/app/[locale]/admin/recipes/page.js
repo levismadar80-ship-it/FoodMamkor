@@ -136,7 +136,7 @@ export default function AdminRecipesPage() {
             className={`px-4 py-2 rounded-full text-sm whitespace-nowrap transition ${
               tab === value
                 ? "bg-primary text-white"
-                : "bg-white border border-border text-text hover:bg-green-50"
+                : "bg-surface border border-border text-text hover:bg-green-50"
             }`}
           >
             {t(`recipes.tabs.${value}`)}
@@ -145,7 +145,7 @@ export default function AdminRecipesPage() {
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 rounded-[12px] p-4">
+        <div className="bg-danger-50 border border-danger-200 text-danger-700 rounded-md p-4">
           {error}
         </div>
       )}
@@ -155,7 +155,7 @@ export default function AdminRecipesPage() {
       ) : rows.length === 0 ? (
         <div
           data-testid="admin-recipes-empty"
-          className="bg-white border border-border rounded-[16px] p-8 text-center text-fg-muted"
+          className="bg-surface border border-border rounded-lg p-8 text-center text-fg-muted"
         >
           {t("recipes.empty")}
         </div>
@@ -163,7 +163,7 @@ export default function AdminRecipesPage() {
         // overflow-x-auto (never -hidden) keeps the actions reachable between
         // md and lg; below md the table is one card per row (MEH-2426,
         // globals.css .table-stack), so nothing scrolls sideways on a phone.
-        <div className="bg-white border border-border rounded-[16px] overflow-x-auto">
+        <div className="bg-surface border border-border rounded-lg overflow-x-auto">
           <table className="table-stack w-full text-sm">
             <thead className="bg-green-50 text-fg-muted text-xs">
               <tr>
@@ -194,10 +194,10 @@ export default function AdminRecipesPage() {
 
       {/* Feedback modal */}
       {modalRecipe && (
-        <div className="fixed inset-0 bg-black/50 z-[9000] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/40 z-[9000] flex items-center justify-center p-4">
           <div
             data-testid="admin-recipes-feedback-modal"
-            className="bg-background rounded-[16px] p-6 max-w-lg w-full border border-border"
+            className="bg-background rounded-lg p-6 max-w-lg w-full border border-border"
           >
             <h2 className="font-headline-md text-xl font-bold text-text mb-2">
               {modalAction === "changes" ? t("recipes.modal.changes_title") : t("recipes.modal.reject_title")}
@@ -212,7 +212,7 @@ export default function AdminRecipesPage() {
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}
               rows={5}
-              className="w-full border border-border rounded-[12px] px-3 py-2 text-sm bg-white"
+              className="w-full border border-border rounded-md px-3 py-2 text-sm bg-surface"
               placeholder={
                 modalAction === "changes"
                   ? t("recipes.modal.changes_placeholder")
@@ -223,17 +223,17 @@ export default function AdminRecipesPage() {
               <button
                 onClick={closeModal}
                 disabled={busy}
-                className="px-4 py-2 rounded-[8px] border border-border text-text hover:bg-green-50"
+                className="px-4 py-2 rounded-sm border border-border text-text hover:bg-green-50"
               >
                 {t("common.cancel")}
               </button>
               <button
                 onClick={submitModal}
                 disabled={busy}
-                className={`px-4 py-2 rounded-[8px] text-white ${
+                className={`px-4 py-2 rounded-sm text-white ${
                   modalAction === "changes"
                     ? "bg-accent hover:opacity-90"
-                    : "bg-red-600 hover:bg-red-700"
+                    : "bg-danger-600 hover:bg-danger-700"
                 } disabled:opacity-50`}
               >
                 {busy ? t("common.sending") : t("recipes.modal.submit")}
@@ -253,7 +253,7 @@ const STATUS_BADGE = {
   pending: "bg-gray-100 text-gray-600",
   needs_revision: "bg-yellow-100 text-yellow-800",
   approved: "bg-green-50 text-primary",
-  rejected: "bg-red-50 text-red-700",
+  rejected: "bg-danger-50 text-danger-700",
 };
 
 function RecipeRow({ recipe, busy, t, locale, onApprove, onChanges, onReject }) {
@@ -307,7 +307,7 @@ function RecipeRow({ recipe, busy, t, locale, onApprove, onChanges, onReject }) 
               <button
                 onClick={() => onReject(recipe)}
                 disabled={busy}
-                className="bg-red-600 text-white px-3 py-1 rounded-full text-xs hover:bg-red-700 disabled:opacity-50"
+                className="bg-danger-600 text-white px-3 py-1 rounded-full text-xs hover:bg-danger-700 disabled:opacity-50"
               >
                 {t("recipes.actions.reject")}
               </button>
@@ -331,7 +331,7 @@ function RecipeRow({ recipe, busy, t, locale, onApprove, onChanges, onReject }) 
               </p>
               <p className="whitespace-pre-wrap text-fg-muted">{recipe.instructions}</p>
               {recipe.moderation_notes && (
-                <div className="mt-3 bg-white border border-border rounded-[12px] p-3">
+                <div className="mt-3 bg-surface border border-border rounded-md p-3">
                   <p className="font-medium text-xs mb-1">
                     {t("recipes.notes_label")}
                   </p>

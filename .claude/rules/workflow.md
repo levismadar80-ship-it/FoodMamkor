@@ -143,10 +143,14 @@ PR for its comment; never infer reviewer status from this file.
    no Vercel deployment (MEH-2062) unless Sapir runs `vercel deploy`; else cite
    the 375/1440 bundle + staging and never report an absent preview as
    rendered. Wait for approval before merging to staging.
-10. **After every PR — update docs/MANUAL_TESTING.md** with new features:
-    `[ ] Test — איך לבדוק — תוצאה מצופה`.
+10. **After every PR — a test, not a checklist line (MEH-2796).** New
+    behaviour gets an automated test (pytest / vitest / Playwright). Only what
+    automation cannot see (real iPhone Safari, a third-party console, a flag
+    flipped by hand) gets one line in
+    [docs/RELEASE_CHECKLIST.md](../../docs/RELEASE_CHECKLIST.md), cap 30.
+    `docs/MANUAL_TESTING.md` is archived — never add to it.
 11. **After every PR — auto-update every doc your code touched**, same PR
-    (DATA / ADMIN / DESIGN / FEATURES / MANUAL_TESTING / SECURITY / DEPLOYMENT,
+    (DATA / ADMIN / DESIGN / FEATURES / SECURITY / DEPLOYMENT,
     `.ai/diagrams/`; CHANGELOG via rule 31). Stop hooks run build + pytest.
 12. **After every PR that touches `backend/app/routers/**`,
     `backend/app/models/**` or `backend/app/auth.py` — update `.ai/diagrams/`.**
@@ -267,7 +271,8 @@ skips per [docs/EMERGENCY_OVERRIDE.md](../../docs/EMERGENCY_OVERRIDE.md).
      (`/`, `/map`, `/about`, `/login`, `/register`, producer detail) →
      regenerate `parity.spec.ts-snapshots/` in the SAME PR.
 3. **Add a regression rule** here if the pattern is likely to recur.
-4. **Add a test** that would have caught it; else a MANUAL_TESTING.md case.
+4. **Add a test** that would have caught it; else (real device only) a
+   line in `docs/RELEASE_CHECKLIST.md`.
 5. **Update docs** if the fix reveals a non-obvious convention.
 6. **An anomaly seen during QA is explained or reported — never attributed to
    the harness and dropped.** Label an unverified diagnosis as unverified. A
@@ -381,9 +386,10 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
 
     Never wait for or report "waiting on Sapir's mobile check". Before merging
     UI: both gates green on the head · 375 + 1440 screenshots in
-    `qa-artifacts/MEH-XXXX/` (compressed), **read** by CC, linked · VRT clean or
-    each re-baselined PNG reviewed · say when only Chromium covered it. Rules
-    22 and 30 and the permission gates still apply.
+    `qa-artifacts/MEH-XXXX/` (compressed), **read** by CC, linked · VRT clean (add
+    the `run-e2e` label to get the run, MEH-2779) or each re-baselined PNG
+    reviewed · say when only Chromium covered it. Rules 22 and 30 and the
+    permission gates still apply.
 24. **Scope-creep prevention for copy changes (MEH-579 lesson).** Never touch
     headings, subtitles or taglines not named in `<acceptance_criteria>`; grep
     before any positional copy edit; if a change seems needed, stop and ask.
@@ -462,3 +468,39 @@ concurrent loops. Tiers + `mehamakor-dod` self-check: ADR-025.
     the branch; slug = sub-issue id; body ends `Closes MEH-<sub>` on its own
     line. Auto-close-parent is ON — so a parent that must stay open (e.g. a
     drain control card) never gets its docs sub-issue as a child.
+37. **Placement research before code for every new UI feature (MEH-2725).**
+    A new block, row, button or banner gets a short placement study before the
+    first edit: (1) who sees it and what she came to do at that moment; (2) a
+    375 screenshot of the screen today; (3) 2–4 candidate positions rendered for
+    real, including "don't add it"; (4) for each, where it lands in px and what
+    it pushes down; (5) what comparable sites do, with sources; (6) earlier
+    decisions on the same screen (e.g. MEH-912); (7) a recommendation. Sapir
+    picks, then code. Post-launch, add a PostHog click event on the feature.
+    Precedent: MEH-2724 built under the hero before the study was asked for.
+38. **A PR that changes what users see is never merged by CC — even a small fix
+    (MEH-2825).** Open the PR, send Sapir a preview + 390 and 1280 screenshots,
+    and stop until she writes «go merge». Docs-only / tests-only / CI PRs: CC
+    merges when green. "Changes what users see" = any rendered pixel or copy on
+    any surface, `/admin` included; unsure → treat it as UI. Until Vercel
+    previews for feature branches are on (Sapir's switch), the screenshots come
+    from CC's own local production build, and the message says so. This adds to
+    rule 23 (375/1440 in `qa-artifacts/`) and replaces none of it; a per-batch
+    instruction to merge UI does not carry over to the next PR.
+
+---
+
+## Launch tier (/join tool list) — MEH-2830
+
+`frontend/lib/business-features.js` feeds the tool list on /join (MEH-2791).
+Its test catches a tool that was **removed**, not one that was **added and
+never listed** — so every PR that adds or changes something a **business** can
+use states its tier in the PR body:
+
+- **א׳ new tool** → add an entry to `frontend/lib/business-features.js`, with
+  the he/en copy from the issue's approved table. No tile unless the issue says
+  so (max 4 tiles per group — Sapir decides).
+- **ב׳ change to an existing tool** → update that entry's copy / `codeRef`.
+- **ג׳ internal** (bug, design, perf) → no registry change; CHANGELOG only.
+
+If the issue states no tier and the PR touches a business-facing tool →
+**STOP and ask.** No registry copy without word-by-word approval in the issue.

@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { Star, StarOfDavid } from "@phosphor-icons/react";
@@ -7,6 +7,7 @@ import AlertPrefsPanel from "@/components/AlertPrefsPanel";
 import BadgeRow from "@/components/BadgeRow";
 import FavoriteButton from "@/components/FavoriteButton";
 import KashrutBadgeStrip from "@/components/KashrutBadgeStrip";
+import OfferBadge from "@/components/OfferBadge";
 import ProducerUpdatesButton from "@/components/ProducerUpdatesButton";
 import ShareButton from "@/components/ShareButton";
 import { useAuth } from "@/lib/auth-context";
@@ -27,13 +28,12 @@ import { resolveCategoryGlyph, styleForProducer } from "@/lib/category-registry"
 // docs/CLAUDE-REVIEW.md rule 5.)
 import { israelDayKey, israelTime, resolveHeaderStatus, statusTagTone } from "../lib/order-status";
 import { humanTime } from "@/lib/time-format";
-import { isFullThisWeek } from "@/lib/availability";
 
 // MEH-2592: the kosher chip — outlined, on the card surface, 13px text-text so
 // it reads as a fact tag next to the tinted status tag, never as a second
 // status (no tint, no dot, no colour of its own).
 const KOSHER_CHIP =
-  "inline-flex min-h-[28px] items-center rounded-full border border-border bg-surface-card px-2.5 py-0.5 text-[13px] text-text";
+  "inline-flex min-h-[28px] items-center rounded-full border border-border bg-surface-card px-2.5 py-0.5 text-sm text-text";
 
 // The «·» between facts on the one line. aria-hidden: a screen reader gets the
 // facts as separate runs already.
@@ -75,8 +75,9 @@ function CategoryGlyph({ category }) {
  * pull-quote. Removed per decision 4: premium chip, favorites count,
  * TrustBadge, secondary-category chips, grass_fed/delivery highlight chips,
  * contact_name line (relocated to OwnerCard). Kept: declared explainer
- * (ADR-022 gate 1) + the full_this_week banner. The vacation banner was
- * removed in chunk 3 — it repeated the return date the meta status owns.
+ * (ADR-022 gate 1); the full_this_week banner left in MEH-2759. The
+ * vacation banner was removed in chunk 3 — it repeated the return date the
+ * meta status owns.
  *
  * The 3-state order status lives HERE and only here (one green per page —
  * revision-2 #2): open = primary, closed = muted, vacation = gold-deep
@@ -145,12 +146,37 @@ export default function ProducerHeader({
 
   const showAlerts = Boolean(favorited && user);
 
-  // MEH-1334: 3-state status. Anything not closed/vacation reads as open —
-  // matches the old ContactCard OPEN_STATES default-open behavior.
-  // MEH-1854: the helper returns the CANONICAL enum, so the legacy "full"
-  // twin is already normalised to full_this_week and no longer needs its own
-  // comparison here.
-  const isClosed = !isVacation && isFullThisWeek(producer);
+  // MEH-2770: a floating panel needs a way out that an in-flow one did not —
+  // the same Esc + outside-click contract as the /favorites bell panel
+  // (MEH-1359). Esc hands focus back to whatever opened the panel. A tap on
+  // the bell itself counts as outside: the bell is a toggle and keeps its own
+  // click (it re-opens the panel when updates go on without a channel).
+  const alertsPanelRef = useRef(null);
+  const alertsOpener = useRef(null);
+  const panelVisible = showAlerts && alertsOpen;
+  useEffect(() => {
+    if (!panelVisible) return undefined;
+    alertsOpener.current = document.activeElement;
+    const handleDown = (e) => {
+      if (!alertsPanelRef.current?.contains(e.target)) onCloseAlerts?.();
+    };
+    const handleKey = (e) => {
+      if (e.key !== "Escape") return;
+      onCloseAlerts?.();
+      alertsOpener.current?.focus?.();
+    };
+    document.addEventListener("mousedown", handleDown);
+    document.addEventListener("touchstart", handleDown, { passive: true });
+    window.addEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("mousedown", handleDown);
+      document.removeEventListener("touchstart", handleDown);
+      window.removeEventListener("keydown", handleKey);
+    };
+  }, [panelVisible, onCloseAlerts]);
+
+  // MEH-2759: «עמוס השבוע» no longer closes the page — the availability
+  // choice is pause-only, so the status is vacation or the order window.
   const vacationDate = getVacationReturnDate(producer, locale);
 
   // MEH-1546: order_window status is time-derived, so it must not run during
@@ -165,7 +191,7 @@ export default function ProducerHeader({
   const orderStatus = mounted
     ? getOrderWindowStatus(producer.order_window, new Date(), producer.special_hours)
     : null;
-  const status = resolveHeaderStatus({ isVacation, isClosed, orderStatus });
+  const status = resolveHeaderStatus({ isVacation, orderStatus });
   const statusLabel = {
     vacation: () =>
       vacationDate
@@ -223,7 +249,7 @@ export default function ProducerHeader({
         <span className="numeric font-headline-md text-lg font-bold" dir="ltr">
           {Number(producer.avg_rating).toFixed(1)}
         </span>
-        <span className="text-[13px] text-muted underline underline-offset-4">
+        <span className="text-sm text-muted underline underline-offset-4">
           {t("producer.detail.header.review_count", { count: producer.reviews_count })}
         </span>
         {/* MEH-1048 a11y: sr-only nav hint so AT users hear the link scrolls to reviews */}
@@ -236,11 +262,19 @@ export default function ProducerHeader({
       <Link
         key="category"
         href={categoryListingHref(primaryCategory.id)}
-        className="inline-flex min-h-[24px] items-center gap-1 font-medium text-text underline-offset-[3px] hover:underline hover:text-primary transition"
+        className="group inline-flex min-h-[24px] items-center gap-1 font-medium text-text hover:text-primary focus-visible:text-primary transition"
         data-testid="producer-header-category-link"
       >
         <CategoryGlyph category={primaryCategory} />
-        {primaryCategory.name}
+        {/* MEH-2831: a phone has no hover, so the name carries a permanent
+            subtle underline (the «3 ביקורות» cue beside it); hover/focus
+            strengthens it to primary. The glyph stays un-underlined. */}
+        <span
+          data-testid="producer-header-category-name"
+          className="underline decoration-text/35 decoration-[1.5px] underline-offset-[5px] group-hover:decoration-primary group-focus-visible:decoration-primary"
+        >
+          {primaryCategory.name}
+        </span>
       </Link>,
     );
   }
@@ -281,7 +315,7 @@ export default function ProducerHeader({
           adversarial-review fix (imageless-desktop overlap). */}
       {producer.short_description && (
         // MEH-2596: a muted 17px deck under the name, not body text.
-        <p className={`text-[17px] leading-relaxed text-fg-muted mt-2.5${hasImages ? "" : " lg:pe-72"}`}>
+        <p className={`text-lg leading-relaxed text-fg-muted mt-2.5${hasImages ? "" : " lg:pe-72"}`}>
           {producer.short_description}
         </p>
       )}
@@ -318,7 +352,7 @@ export default function ProducerHeader({
       {/* Status line — the status ALONE (Sapir, 30/10: a separate line, so a
           longer tags row never crowds it; this keeps MEH-2403's "status alone"
           half). It is the page's ONLY order-status element (MEH-1546:
-          five-branch precedence in resolveHeaderStatus; order_window feeds it
+          branch precedence in resolveHeaderStatus; order_window feeds it
           instead of adding a second line) and the page's one green. MEH-2596
           tag styling: dot + 10% tint of its own colour via color-mix on
           currentColor. */}
@@ -334,6 +368,13 @@ export default function ProducerHeader({
           {statusLabel}
         </span>
       </p>
+
+      {/* MEH #2659: the active offer, right under the status (it used to sit
+          above the delivery block, two scrolls down). Renders nothing when
+          there is no live offer, so no gap. */}
+      {producer.active_offer && (
+        <OfferBadge offer={producer.active_offer} variant="line" className="mt-2" />
+      )}
 
       {/* Tags row — the fact tags under the status: today the kosher chip,
           tomorrow whatever else earns a tag. Kosher renders ONCE and as ONE
@@ -375,8 +416,10 @@ export default function ProducerHeader({
           so it stays plain text under the tags, not a tag: no badge / icon /
           checkmark (MEH-1259 self-declaration pattern, NOT the MEH-1087
           verified pattern — a checkmark would imply a certificate). Renders
-          ONLY for shared / dedicated; 'unknown' shows nothing. §6.4. */}
-      {producer.gluten_free_facility === "shared" && (
+          ONLY for shared / dedicated; 'unknown' shows nothing. §6.4.
+          PR #3974: with products, the line moves to the products section
+          (ProducerSections) — here only for a business with no products. */}
+      {!(producer.products?.length > 0) && producer.gluten_free_facility === "shared" && (
         <p
           className="text-xs text-fg-muted leading-relaxed max-w-prose mt-2"
           data-testid="gluten-facility-shared"
@@ -384,7 +427,7 @@ export default function ProducerHeader({
           {t("producer.detail.header.gluten_facility.shared")}
         </p>
       )}
-      {producer.gluten_free_facility === "dedicated" && (
+      {!(producer.products?.length > 0) && producer.gluten_free_facility === "dedicated" && (
         <p
           className="text-xs text-fg-muted leading-relaxed max-w-prose mt-2"
           data-testid="gluten-facility-dedicated"
@@ -393,14 +436,15 @@ export default function ProducerHeader({
         </p>
       )}
 
-      {/* MEH-1170: declared (tier 2) carries NO chip — ADR-022 gate 1 requires
-          the badge absence to stay "affirmatively explained in consumer copy",
-          so this block survives the MEH-1334 restructure (decision 4). */}
-      {producer.verification_tier === "declared" && (
-        <p className="text-xs text-fg-muted leading-relaxed mt-2 max-w-prose">
-          {t("producer.badge.declared_explainer")}
-        </p>
-      )}
+      {/* MEH-2710: the declared (tier 2) tier renders NOTHING here. The
+          «ללא תג מאומת · מה זה אומר?» trigger (MEH-1170 → MEH-2634) labelled the
+          business by a badge it does NOT have — noise about the platform, not
+          the business, and itself a negative label (ADR-022: "never negatively
+          labeled"). Directories show a badge only when it exists (Yelp
+          Verified License, Airbnb, Thumbtack). ADR-022 gate 1 ("absence
+          affirmatively explained in consumer copy") is met by /about/process
+          (`process.badge.absence_*`, `process.steps.badge_aside_body`), which
+          the verified badge's «איך אנחנו מאמתים?» link and the footer reach. */}
 
       {/* Quiet actions row (MEH-1334): שמירה · שיתוף. DESKTOP ONLY.
           Desktop: absolutely pinned to the title row's inline-end, two labeled
@@ -446,7 +490,7 @@ export default function ProducerHeader({
       </div>
 
       {/* MEH-1609 built this mount; MEH-1693 keeps it and changes only what
-          opens it. It sits OUTSIDE the actions row, in normal flow: the row is
+          opens it. It sits OUTSIDE the actions row (out of flow since MEH-2770): the row is
           `lg:absolute`-pinned to the title's inline-end, so a block panel
           inside it would be pinned too — the exact layout break MEH-1334 cited
           when it suppressed the auto-open panel for variant="quiet". It is
@@ -460,25 +504,40 @@ export default function ProducerHeader({
           (per-card bell). Accepted so the ask lands at the moment of interest
           rather than before it. Restoring re-entry here means a new control,
           not a revert of this wiring. */}
+      {/* MEH-2770: the mount stays here, but the panel is now OUT OF FLOW, so
+          opening it no longer pushes the page down (Sapir picked option א׳,
+          https://claude.ai/artifact/YEJXmQBcycfCg5MMx5aG2T — the YouTube /
+          GitHub bell-menu shape). lg+ → absolute, dropping from under the
+          pinned actions row (top-12 = the row's 44px + a gap), 320px wide,
+          inline-end aligned with «קבלת עדכונים». Below lg → the same floating
+          sheet above BottomNav that /favorites uses (FavoritesClient.jsx,
+          MEH-1359), with a scrim, because the mobile bell sits on the hero
+          and an in-flow panel under the title opened far from the thumb. The
+          scrim shares the panel's z token; DOM order puts the panel on top. */}
       {showAlerts && alertsOpen && (
-        <div className="mt-3" data-testid="alerts-reentry-panel">
-          <AlertPrefsPanel
-            key={panelKey}
-            producerId={producer.id}
-            producerName={producer.name}
-            onClose={onCloseAlerts}
+        <>
+          <div
+            aria-hidden="true"
+            data-testid="alerts-panel-scrim"
+            className="fixed inset-0 z-[1150] bg-black/40 lg:hidden"
           />
-        </div>
+          <div
+            ref={alertsPanelRef}
+            data-testid="alerts-reentry-panel"
+            className="fixed inset-x-3 bottom-[calc(var(--bottom-nav-clearance,calc(4.5rem+env(safe-area-inset-bottom,0px)))+8px)] z-[1150] lg:absolute lg:inset-x-auto lg:bottom-auto lg:top-12 lg:end-0 lg:w-80 lg:z-30"
+          >
+            <AlertPrefsPanel
+              key={panelKey}
+              producerId={producer.id}
+              producerName={producer.name}
+              onClose={onCloseAlerts}
+            />
+          </div>
+        </>
       )}
 
-      {/* MEH-291 — full_this_week banner (response-time hint, not a closure
-          signal; kept per decision 4 alongside the closed status text).
-          Suppressed during vacation since that banner already dominates. */}
-      {producer.availability_state === "full_this_week" && !isVacation && (
-        <div className="mx-0 mt-3 bg-background border border-border rounded-xl p-3">
-          <p className="text-sm font-bold text-text">{t("producer.detail.header.slow_response")}</p>
-        </div>
-      )}
+      {/* MEH-2759: the MEH-291 full_this_week «slow response» box is gone
+          with the state (pause-only availability). */}
 
       {/* MEH-1334 chunk 3: the vacation banner was REMOVED — it repeated the
           return date the gold meta status already owns ("one home per fact").

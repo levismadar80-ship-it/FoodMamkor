@@ -132,10 +132,10 @@ async function openTrustGroup(browser, width, height, grassFed) {
     await page.waitForTimeout(300);
   }
 
-  // Expand the unified trust accordion (license + kashrut + dietary + grass_fed).
-  await page.getByRole("button", { name: /אישורים ותעודות/ }).first().click();
+  // MEH-2729: grass_fed now lives in the «תגים» card (section tags-section-grass-fed).
+  await page.getByRole("button", { name: /^תגים/ }).first().click();
   await page.waitForTimeout(400);
-  await page.locator("#grass-fed").scrollIntoViewIfNeeded();
+  await page.locator('[data-testid="tags-section-grass-fed"]').scrollIntoViewIfNeeded();
   await page.waitForTimeout(200);
   return { ctx, page };
 }
@@ -148,7 +148,7 @@ async function main() {
     // ---- State 1: not declared (the DB default) ----
     {
       const { ctx, page } = await openTrustGroup(browser, width, height, false);
-      const box = page.locator("#grass-fed input[type=checkbox]");
+      const box = page.locator('[data-testid="tags-section-grass-fed"] input[type=checkbox]');
       const checked = await box.isChecked();
       // Assert the label against he.json rather than a literal — and via the
       // checkbox's ACCESSIBLE NAME, not a text match. Two reasons: a bare
@@ -156,11 +156,11 @@ async function main() {
       // violation), and the accessible name is what actually ties the string
       // to the control a screen-reader user would hear.
       const labelSeen = await page
-        .locator("#grass-fed")
+        .locator('[data-testid="tags-section-grass-fed"]')
         .getByRole("checkbox", { name: GRASS_FED_LABEL })
         .isVisible();
-      // The save button inside the grass-fed sub-section, not a sibling card's.
-      const save = page.locator("#grass-fed").getByRole("button", { name: SAVE_CTA });
+      // The one save button of the «תגים» card, not a sibling card's.
+      const save = page.locator("#tags").getByRole("button", { name: SAVE_CTA });
       const disabled = await save.isDisabled();
       console.log(`[${label}] state=off  checked=${checked} saveDisabled=${disabled} labelSeen=${labelSeen}`);
       await page.screenshot({ path: `${OUT}/grass-fed-${label}-1-off.png`, fullPage: false });
@@ -180,7 +180,7 @@ async function main() {
     // ---- Seeded ON: the value round-trips back into the checkbox ----
     {
       const { ctx, page } = await openTrustGroup(browser, width, height, true);
-      const checked = await page.locator("#grass-fed input[type=checkbox]").isChecked();
+      const checked = await page.locator('[data-testid="tags-section-grass-fed"] input[type=checkbox]').isChecked();
       console.log(`[${label}] seeded=true checked=${checked}`);
       await ctx.close();
     }
