@@ -13,7 +13,6 @@
  *           components/FooterSlot.jsx (/map renders no footer).
  * History:  MEH-2824 (creation).
  */
-import { PNG } from "pngjs";
 import { test, expect, type Page } from "../_cloudinary-stub";
 
 const PHONE = { width: 390, height: 844 };
@@ -31,10 +30,24 @@ async function settle(page: Page, path: string) {
   await page.waitForTimeout(400);
 }
 
-/** RGB of one viewport pixel, read from a real screenshot. */
-async function pixel(page: Page, x: number, y: number) {
-  const png = PNG.sync.read(await page.screenshot({ clip: { x, y, width: 1, height: 1 }, scale: "css" }));
-  return [png.data[0], png.data[1], png.data[2]];
+/**
+ * RGB of one viewport pixel, read from a real screenshot. Decoded in the page
+ * (canvas getImageData) so the spec needs no PNG library — Knip's
+ * unlisted-dependency ratchet, and MEH-2824's "no new deps".
+ */
+async function pixel(page: Page, x: number, y: number): Promise<number[]> {
+  const shot = await page.screenshot({ clip: { x, y, width: 1, height: 1 }, scale: "css" });
+  return page.evaluate(async (src) => {
+    const img = new Image();
+    img.src = src;
+    await img.decode();
+    const canvas = document.createElement("canvas");
+    canvas.width = 1;
+    canvas.height = 1;
+    const ctx = canvas.getContext("2d")!;
+    ctx.drawImage(img, 0, 0);
+    return [...ctx.getImageData(0, 0, 1, 1).data.slice(0, 3)];
+  }, `data:image/png;base64,${shot.toString("base64")}`);
 }
 
 const rgb = (css: string) => (css.match(/\d+/g) || []).slice(0, 3).map(Number);
