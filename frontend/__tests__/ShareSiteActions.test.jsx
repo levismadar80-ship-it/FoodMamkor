@@ -29,7 +29,6 @@ vi.mock("@/i18n/navigation", () => ({
   Link: ({ href, children, prefetch, ...p }) => <a href={typeof href === "string" ? href : href?.pathname} {...p}>{children}</a>,
   getPathname: ({ href, locale }) => (locale === "he" ? href : `/${locale}${href}`),
 }));
-vi.mock("next/navigation", () => ({ permanentRedirect: vi.fn() }));
 vi.mock("next/image", () => ({ default: ({ priority, ...p }) => <img alt="" {...p} /> }));
 const authState = { user: null, loading: false };
 vi.mock("@/lib/auth-context", () => ({ useAuth: () => authState }));
@@ -42,10 +41,9 @@ vi.mock("@/lib/use-events-nav-gate", () => ({ useEventsNavGate: () => false }));
 
 import ShareSiteActions from "@/components/ShareSiteActions";
 import RecommendClient from "@/app/[locale]/recommend/RecommendClient";
-import SharePage from "@/app/[locale]/share/page";
+import { GET as shareRedirect } from "@/app/[locale]/share/route";
 import Footer from "@/components/Footer";
 import RegistrationCta from "@/components/RegistrationCta";
-import { permanentRedirect } from "next/navigation";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 
@@ -144,11 +142,12 @@ describe("/recommend carries «ספרו עלינו»", () => {
 });
 
 describe("/share", () => {
-  it("permanently redirects to /recommend#share, per locale", async () => {
-    await SharePage({ params: Promise.resolve({ locale: "he" }) });
-    expect(permanentRedirect).toHaveBeenLastCalledWith("/recommend#share");
-    await SharePage({ params: Promise.resolve({ locale: "en" }) });
-    expect(permanentRedirect).toHaveBeenLastCalledWith("/en/recommend#share");
+  it("answers a real 308 to /recommend#share, per locale", async () => {
+    const he = await shareRedirect(new Request("https://mehamakor.co.il/share"), { params: Promise.resolve({ locale: "he" }) });
+    expect(he.status).toBe(308);
+    expect(he.headers.get("location")).toBe("https://mehamakor.co.il/recommend#share");
+    const en = await shareRedirect(new Request("https://mehamakor.co.il/en/share"), { params: Promise.resolve({ locale: "en" }) });
+    expect(en.headers.get("location")).toBe("https://mehamakor.co.il/en/recommend#share");
   });
 });
 
