@@ -5,8 +5,8 @@ import { render, screen, waitFor } from "@testing-library/react";
 // the window between registering and being approved.
 //
 // The backend genuinely 403-gates creation on approval (group_buys.py:187,
-// "רק בעלי עסק מאושרים יכולים לפתוח קבוצת רכש"), and that gate is correct.
-// Its UI expression was not: a muted, non-responding "+ קבוצת רכש חדשה" in
+// "רק בעלי עסק מאושרים יכולים לפתוח קבוצת רכישה"), and that gate is correct.
+// Its UI expression was not: a muted, non-responding "+ קבוצת רכישה חדשה" in
 // the header, a why-locked line in its own paragraph below it, and — because
 // EmptyState self-hides a CTA whose handler is missing — an empty state with
 // no button either. Two empty regions, and the only thing on screen that

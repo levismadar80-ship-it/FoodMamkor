@@ -43,7 +43,7 @@ vi.mock("@/lib/format-date", () => ({ formatEventDate: () => "1 בינואר 209
 
 const COMMITTED_GB = {
   id: "gb-1",
-  title: "קבוצת רכש לדוגמה",
+  title: "קבוצת רכישה לדוגמה",
   status: "open",
   deadline: "2099-01-01T00:00:00Z",
   min_participants: 2,
