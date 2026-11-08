@@ -19,6 +19,7 @@ import { Link } from "@/i18n/navigation";
 import { ArrowRight } from "@phosphor-icons/react/ssr";
 import { getTranslations } from "next-intl/server";
 import { BRAND_NAME } from "@/lib/constants";
+import SeedMark from "@/components/brand/SeedMark";
 
 // MEH-821: brand colors via canonical ADR-019 token classes (text-primary,
 // text-primary-dark, text-text, text-accent, bg-background, border-border) —
@@ -105,8 +106,14 @@ function renderBlock(block, i) {
         </blockquote>
       );
     case "hr":
+      // MEH-2833 (seed layer, board 2): a true section break between two
+      // titled parts of a guide is a small centred bloom instead of a hairline
+      // — the magazine dinkus. Decoration only (aria-hidden); the next <h3>
+      // still marks the new part for assistive tech.
       return (
-        <hr key={key} className="my-8 border-0 border-t border-border" />
+        <div key={key} aria-hidden="true" data-testid="seed-dinkus" className="flex justify-center py-7">
+          <SeedMark size={28} />
+        </div>
       );
     case "callout":
       return (
