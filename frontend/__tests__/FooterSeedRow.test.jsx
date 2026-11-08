@@ -1,10 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 
-// MEH-1177 (ADR-024): the footer nav split into two audience groups —
-// "גלו" (readers) and "לבתי עסק" (producers) — each with a real <h3> heading.
-// Return each translation key verbatim so we can assert on the group-heading
-// keys and locate links by href.
+// Same module stubs as FooterNavGroups.test.jsx, so <Footer /> renders in
+// isolation; this file is only about the seed row (MEH-2833). Translation keys
+// come back verbatim.
 vi.mock("next-intl", () => ({
   useTranslations: () => (key) => key,
 }));
@@ -44,9 +43,8 @@ vi.mock("@phosphor-icons/react", () => ({
 vi.mock("@/components/ButtonSpinner", () => ({ default: () => <span /> }));
 // MEH-1918: the footer now asks GET /experiences/count to decide whether the
 // data-gated "חוויות" link appears. A promise that never settles keeps the gate
-// in its fail-closed state for this spec, so the link counts below stay about
-// the MEH-1177 split and not about experience supply. The gate's own behaviour
-// is asserted in ExperiencesNavGate.test.jsx.
+// in its fail-closed state for this spec. The gate's own behaviour is asserted
+// in ExperiencesNavGate.test.jsx.
 // MEH-2554: Footer reads the signed-in user (the guest-only login link).
 vi.mock("@/lib/auth-context", () => ({ useAuth: () => ({ user: null }) }));
 vi.mock("@/lib/api", () => ({
