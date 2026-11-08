@@ -22,7 +22,7 @@ const mm = (reduce) => {
 afterEach(() => vi.restoreAllMocks());
 
 describe("SeedBurst", () => {
-  it("dark: the on-dark bloom at the centre + two rings (8 + 12) of on-dark seeds; outer at 65%; aria-hidden", async () => {
+  it("dark: the on-dark bloom + two rings of on-dark seeds (7 + 10: open below); outer at 65%; aria-hidden", async () => {
     mm(false);
     window.requestAnimationFrame = (cb) => { cb(0); return 1; };
     window.cancelAnimationFrame = () => {};
@@ -32,7 +32,7 @@ describe("SeedBurst", () => {
     expect(box.querySelector('svg[data-seed-mark="dark"]')).not.toBeNull();
     const inner = box.querySelectorAll('[data-burst-ring="0"]');
     const outer = box.querySelectorAll('[data-burst-ring="1"]');
-    expect([inner.length, outer.length]).toEqual([8, 12]);
+    expect([inner.length, outer.length]).toEqual([7, 10]);
     const fills = new Set([...box.querySelectorAll("[data-burst-ring] svg")].map((s) => s.getAttribute("data-seed-color")));
     for (const f of fills) expect(SEEDS_DARK.map((s) => s.fill)).toContain(f);
     await act(async () => {});
@@ -64,6 +64,19 @@ describe("SeedBurst", () => {
     expect(container.querySelector('[data-testid="seed-burst"]').getAttribute("data-open")).toBe("true");
     expect(container.querySelector('[data-burst-ring="0"]').style.transform).not.toBe("translate(0, 0)");
     expect(window.requestAnimationFrame).not.toHaveBeenCalled();
+  });
+
+  it("open below the bloom, where the headline sits: no seed within 40° of straight down", () => {
+    mm(true);
+    const { container } = render(<SeedBurst />);
+    const seeds = [...container.querySelectorAll("[data-burst-ring]")];
+    expect(seeds).toHaveLength(17);
+    for (const s of seeds) {
+      const [x, y] = s.style.transform.match(/-?[\d.]+/g).map(Number);
+      // the angle from straight down, measured on the rendered offset
+      const fromDown = (Math.atan2(Math.abs(x), y) * 180) / Math.PI;
+      expect(fromDown, s.getAttribute("data-angle")).toBeGreaterThanOrEqual(40);
+    }
   });
 
   it("light variant uses the light set", () => {
