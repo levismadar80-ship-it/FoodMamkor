@@ -13,6 +13,7 @@
  *           בדרך" three-line block between the sections and the CTA).
  */
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { ArrowLeft } from "@phosphor-icons/react/ssr";
 import { Link } from "@/i18n/navigation";
 import EditorialPhoto from "@/components/EditorialPhoto";
 import { BRAND_NAME } from "@/lib/constants";
@@ -69,6 +70,11 @@ const SECTIONS = [
 // hierarchy is unbroken) over three short lines. Copy locked by Sapir.
 const CHANGES_LINES = ["changes_1", "changes_2", "changes_3"];
 
+// MEH-2827 (FinalWhyLocal, Sapir 08/11): the five REASONS get a numeral mark
+// in the /about Chapter style; «איפה מתחילים» (the last SECTIONS entry) is
+// the turn to the answer, not a sixth reason, so it gets none.
+const NUMBERED_REASONS = 5;
+
 // MEH-476 PR 3b2: async + setRequestLocale + getTranslations enables ● SSG.
 export default async function WhyLocalPage({ params }) {
   const { locale } = await params;
@@ -76,6 +82,7 @@ export default async function WhyLocalPage({ params }) {
   const t = await getTranslations({ locale, namespace: "about_why_local" });
 
   return (
+    <>
     <section className="min-h-screen bg-background text-text">
       <article data-testid="why-local-article" className="max-w-3xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
         <header className="mb-8 sm:mb-10">
@@ -90,7 +97,21 @@ export default async function WhyLocalPage({ params }) {
         <div>
           {SECTIONS.map((s, i) => (
             <section key={s.heading}>
-              <h2 className="font-headline-md mt-10 mb-3 sm:mt-12 text-primary text-2xl font-bold">
+              {i < NUMBERED_REASONS ? (
+                <div
+                  data-testid="why-local-numeral"
+                  aria-hidden="true"
+                  className="flex items-center gap-3 mt-10 sm:mt-12 mb-2"
+                >
+                  <span className="font-body-md text-sm font-semibold text-gold-deep shrink-0">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <span className="h-px flex-1 bg-accent/35" />
+                </div>
+              ) : null}
+              <h2
+                className={`font-headline-md mb-3 text-primary text-2xl font-bold ${i < NUMBERED_REASONS ? "" : "mt-10 sm:mt-12"}`}
+              >
                 {t(s.heading)}
               </h2>
               <p className="mb-4 text-base sm:text-lg leading-[1.8] text-text/90">
@@ -120,35 +141,26 @@ export default async function WhyLocalPage({ params }) {
             </section>
           ))}
 
+          {/* MEH-2827: the three short lines read as a list in one card, not
+              three one-line paragraphs. Same keys, same words. */}
           <section>
-            <h2 className="font-headline-md mt-10 mb-3 sm:mt-12 text-primary text-2xl font-bold">
-              {t("changes_h")}
-            </h2>
-            {CHANGES_LINES.map((line) => (
-              <p
-                key={line}
-                className="mb-4 text-base sm:text-lg leading-[1.8] text-text/90"
-              >
-                {t(line)}
-              </p>
-            ))}
+            <div data-testid="why-local-changes" className="rounded-xl bg-background-alt p-5 mt-10 sm:mt-12">
+              <h2 className="font-headline-md mb-3 text-primary text-2xl font-bold">
+                {t("changes_h")}
+              </h2>
+              <ul className="grid gap-2.5">
+                {CHANGES_LINES.map((line) => (
+                  <li key={line} className="flex gap-2.5 text-base sm:text-lg leading-[1.8] text-text/90">
+                    <span aria-hidden="true" className="mt-[0.75em] h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
+                    <span>{t(line)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </section>
         </div>
 
-        <div className="mt-12 sm:mt-14">
-          <Link
-            // MEH-2634: /producers → /map. The copy says «באזור שלכם», and
-            // the paginated catalog has no area axis; /map is the surface that
-            // answers it.
-            href="/map"
-            data-testid="why-local-cta"
-            className="inline-flex items-center gap-2 font-medium transition hover:opacity-90 bg-primary text-white rounded-sm px-6 py-3 focus-ring"
-          >
-            {t("cta")}
-          </Link>
-        </div>
-
-        <footer data-testid="why-local-sources" className="mt-12 sm:mt-14 border-t border-border pt-6">
+        <footer data-testid="why-local-sources" className="mt-10 border-t border-border pt-6">
           <p className="text-sm leading-relaxed text-fg-muted">
             {t("sources_prefix")}{" "}
             <a
@@ -173,5 +185,22 @@ export default async function WhyLocalPage({ params }) {
         </footer>
       </article>
     </section>
+    {/* MEH-2827: the ending is a full-green band with the page's one CTA,
+        running straight into the footer (data-meets-footer, MEH-2487) — the
+        same cream-on-green button as the /about close. Not ClosingCtaBand:
+        that band is for BUSINESS calls to action (title + BusinessCtaLink),
+        and this one is a consumer link to /map with no title. MEH-2634: /map,
+        not /producers — the copy says «באזור שלכם». */}
+    <section data-meets-footer className="bg-primary text-background py-12 text-center">
+      <Link
+        href="/map"
+        data-testid="why-local-cta"
+        className="inline-flex items-center gap-2 min-h-[56px] px-9 py-4 bg-background text-primary rounded-lg font-semibold text-lg hover:bg-background-alt transition-colors duration-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-on-dark focus-visible:ring-offset-2 focus-visible:ring-offset-primary"
+      >
+        {t("cta")}
+        <ArrowLeft size={20} aria-hidden="true" />
+      </Link>
+    </section>
+    </>
   );
 }
