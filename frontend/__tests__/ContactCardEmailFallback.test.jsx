@@ -59,7 +59,10 @@ vi.mock("@/components/WhatsAppQuestionChips", () => ({ default: () => null }));
 import ContactCard from "@/app/[locale]/producer/[id]/components/ContactCard";
 
 const EMAIL = "hi@shikma.co.il";
-const producer = { id: 7, name: "חוות השקמה", contact_email: EMAIL, primary_contact_method: "whatsapp" };
+// MEH-2836: the CTA uses the resolved method, so a bare declared WhatsApp (no
+// number) would make the email the CTA and drop its row. A primary with its
+// own data keeps the email a row, which is what this suite exercises.
+const producer = { id: 7, name: "חוות השקמה", contact_email: EMAIL, primary_contact_method: "external_order", external_order_form: "forms.gle/order" };
 const renderCard = () =>
   render(<ContactCard producer={producer} isVacation={false} primaryCategory={null} shareUrl="x" />);
 
