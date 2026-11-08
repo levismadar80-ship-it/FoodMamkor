@@ -39,11 +39,17 @@ describe("ChatWidgetLazy", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("suppresses the FAB on the producer detail route (/producer/[id])", () => {
-    mockUsePathname.mockReturnValue("/producer/abc-123");
-    render(<ChatWidgetLazy />);
-    expect(screen.queryByTestId("chat-widget-stub")).not.toBeInTheDocument();
-  });
+  // MEH-2835 replaces the MEH-1168 / MEH-2811 route gate: the widget renders
+  // on the business page (both URLs) and steps aside only while the sticky
+  // contact bar is shown (data-chat-hide — see ChatFabHide.test.jsx).
+  it.each(["/producer/abc-123", "/ruach-hasadeh", "/%D7%97%D7%95%D7%95%D7%AA"])(
+    "renders the widget on the business page %s (no route gate; data-chat-hide does the job)",
+    async (route) => {
+      mockUsePathname.mockReturnValue(route);
+      render(<ChatWidgetLazy />);
+      expect(await screen.findByTestId("chat-widget-stub")).toHaveAttribute("data-hide-on-mobile", "false");
+    },
+  );
 
   it("keeps the FAB on the producer dashboard subtree", async () => {
     mockUsePathname.mockReturnValue("/producer/dashboard/edit");
@@ -78,8 +84,7 @@ describe("ChatWidgetLazy", () => {
   );
 
   it("does not match a path that only shares a prefix (/contact-us/faq)", async () => {
-    // two segments: a single-segment "/contact-us" is slug-shaped and would be
-    // gated as a business page (isProducerDetail), proving nothing here.
+    // two segments, so the prefix check is the only thing that could match.
     mockUsePathname.mockReturnValue("/contact-us/faq");
     render(<ChatWidgetLazy />);
     expect(await screen.findByTestId("chat-widget-stub")).toHaveAttribute("data-hide-on-mobile", "false");

@@ -4,9 +4,9 @@ import dynamic from "next/dynamic";
 // Locale-stripping usePathname — returns "/map" for /he/map AND /en/map
 // (same import BottomNav.jsx:7 uses for its route-awareness).
 import { usePathname } from "@/i18n/navigation";
-// MEH-1202: isProducerDetail moved to a shared helper so BottomNav's new gate
-// and this FAB gate share one owner (no keep-in-sync drift).
-import { isProducerDetail } from "@/lib/producer-route";
+// MEH-2835: the business-page route gate (isProducerDetail, MEH-1168/MEH-2811)
+// is gone from here — the launcher steps aside via data-chat-hide on the
+// sticky contact bar instead. BottomNav still uses isProducerDetail.
 
 // Client boundary so `ssr: false` is valid: the root layout is a Server
 // Component (it exports generateMetadata), where next/dynamic ssr:false is
@@ -48,7 +48,10 @@ export default function ChatWidgetLazy() {
   // chat chunk; ChatWidget internals and its positioning on every other page
   // are untouched.
   if (pathname === "/map" || pathname.startsWith("/map/")) return null;
-  if (isProducerDetail(pathname)) return null;
+  // MEH-2835: the business page is no longer route-gated (MEH-1168 / MEH-2811
+  // hid the launcher on the whole page). It now steps aside only while the
+  // page's sticky contact bar is shown — StickyContactBar carries
+  // data-chat-hide then, and ChatWidget watches that attribute.
   // MEH-1203: /favorites is the third page where the FAB does damage — at the
   // canonical 2-col grid the launcher's bottom-END corner (insetInlineEnd,
   // z-9999) sits over the first card. Same pathname-gate pattern as /map and

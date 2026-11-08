@@ -88,6 +88,9 @@ describe("ChatWidget publishes --chat-fab-clearance", () => {
     render(withIntl(<ChatWidget />));
     const cls = screen.getByTestId("chat-launcher").className.split(/\s+/);
     expect(cls).toEqual(expect.arrayContaining(["ring-2", "ring-background"]));
+    // Focus must not swap the cream ring for a green one that vanishes on green.
+    expect(cls.filter((c) => c.startsWith("focus-visible:ring"))).toEqual([]);
+    expect(cls).toEqual(expect.arrayContaining(["focus-visible:outline-2", "focus-visible:outline-offset-2", "focus-visible:outline-text"]));
   });
 });
 
