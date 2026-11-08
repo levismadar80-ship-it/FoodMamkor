@@ -109,7 +109,7 @@ export default function AdminHome() {
                 </div>
                 <Link
                   href={`/admin/producers/${p.id}/edit`}
-                  className="text-sm text-primary hover:underline whitespace-nowrap"
+                  className="text-sm text-primary underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current whitespace-nowrap"
                 >
                   {t("dashboard.pending_panel.check")}
                 </Link>

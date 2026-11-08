@@ -41,7 +41,7 @@ export default function AdminLoadError({ onRetry, testId = "admin-load-error", m
           type="button"
           onClick={onRetry}
           data-testid={`${testId}-retry`}
-          className="text-sm text-primary font-medium hover:underline"
+          className="text-sm text-primary font-medium underline decoration-[1.5px] underline-offset-[5px] decoration-primary/35 hover:decoration-current"
         >
           {t("error.retry")}
         </button>
