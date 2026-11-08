@@ -5091,6 +5091,7 @@
       "row_new_product": "New products",
       "row_delivery_area": "New delivery areas",
       "row_new_recipe": "New recipes",
+      "row_new_group_buy": "New group buys",
       "row_whatsapp_opt_in": "Send via WhatsApp",
       "phone_required_prompt": "To get WhatsApp updates we'll need your phone number",
       "phone_save_cta": "Save and enable",
@@ -6380,7 +6381,7 @@
         "tile_line": "Each recipe on its own page, linking to you"
       },
       "follower_updates": {
-        "label": "An update to customers who saved you, about a new product or event"
+        "label": "Updates to customers who saved you about a new product, event, recipe or group buy"
       },
       "waitlist": {
         "label": "A waiting list: whoever waited gets an email when you reach their city"
