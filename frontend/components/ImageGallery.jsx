@@ -83,7 +83,8 @@ export default function ImageGallery({ images = [], producerId = null, producerN
     setLightboxOpen(true);
   }, []);
 
-  // MEH-2833: the supergraphic bloom on the imageless masthead.
+  // MEH-2833: the supergraphic bloom on the imageless masthead — 280px from md;
+  // 200px on a phone (CSS below), where board 1's bloom is about half the card.
   const SUPERGRAPHIC_PX = 280;
 
   // MEH-815: imageless state renders the "Tinted Masthead" editorial hero
@@ -100,20 +101,23 @@ export default function ImageGallery({ images = [], producerId = null, producerN
         data-testid="gallery-empty-state"
       >
         {/* MEH-2833 (seed layer, board 1): the masthead is sand
-            (background-alt) and carries the logo as a supergraphic — a 280px
-            bloom at the END side, half of it past the edge and cropped by the
-            card's overflow-hidden (it is also cropped top and bottom). Never
-            rotated or mirrored; the visible half shows green, terracotta and
-            half the gold seed in RTL — as on the board — and sand, sage and half
-            the gold in LTR. Replaces
-            the 6% green tint and the מ·ה corner monogram. */}
+            (background-alt) and carries the logo as a supergraphic at the END
+            side, half of it past the edge and cropped by the card's
+            overflow-hidden. Phone: 200px, sitting low (40px below the bottom
+            edge) so the share/heart cluster at the top-end corner stays on
+            sand and the name keeps ~200px, as on the board. md+: 280px,
+            vertically centred (the 150px-tall masthead also crops it top and
+            bottom). Never rotated or mirrored; the visible half shows green,
+            terracotta and half the gold seed in RTL — as on the board — and
+            sand, sage and half the gold in LTR. Replaces the 6% green tint and
+            the מ·ה corner monogram. */}
         <div
           className="relative bg-background-alt px-6 pb-6 pt-16 md:pt-20 flex items-end min-h-[120px] md:min-h-[150px]"
           data-testid="gallery-tint-layer"
         >
           <SeedMark
             size={SUPERGRAPHIC_PX}
-            className="absolute top-1/2 -translate-y-1/2 -end-[140px] pointer-events-none select-none"
+            className="absolute w-[200px] h-[200px] -bottom-10 -end-[100px] md:w-[280px] md:h-[280px] md:bottom-auto md:top-1/2 md:-translate-y-1/2 md:-end-[140px] pointer-events-none select-none"
           />
           {/* MEH-815: h1 rendered unconditionally — ProducerHeader always omits
               its own name h1 when imageless, so the masthead must always supply
@@ -122,11 +126,12 @@ export default function ImageGallery({ images = [], producerId = null, producerN
               MEH-1168 P2: the verified seal sits inline after the name (anchored
               to it, not floating in the header badge row). Masthead is otherwise
               unchanged (MEH-815 LOCK). */}
-          {/* MEH-2833: the name block stops short of the bloom (140px visible +
-              a 12px gap), so the h1 never sits on a seed at any width. */}
+          {/* MEH-2833: the name block stops short of the bloom (100px visible
+              on a phone, 140px from md, + a 12px gap), so the h1 never sits on
+              a seed at any width. */}
           <div
             data-testid="masthead-name-block"
-            className="relative flex items-center flex-wrap gap-x-3 gap-y-2 max-w-[calc(100%-9.5rem)]"
+            className="relative flex items-center flex-wrap gap-x-3 gap-y-2 max-w-[calc(100%-7rem)] md:max-w-[calc(100%-9.5rem)]"
           >
             {/* MEH-2833: a long single word wraps inside the capped block
                 instead of running into the bloom. */}

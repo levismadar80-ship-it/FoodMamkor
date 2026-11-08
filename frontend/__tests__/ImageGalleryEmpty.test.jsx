@@ -88,8 +88,8 @@ describe("ImageGallery empty state — Tinted Masthead (MEH-815)", () => {
   });
 
   // MEH-2833 (seed layer, board 1): the מ·ה monogram is replaced by the logo
-  // as a supergraphic — a 280px bloom at the end side, cropped by the card,
-  // never rotated.
+  // as a supergraphic — a 200px (phone) / 280px (md+) bloom at the end side,
+  // half past the edge so the card crops it, never rotated.
   it("shows the seed supergraphic (intact logo, not rotated), no monogram, never the old leaf/emoji", () => {
     render(<ImageGallery images={[]} producerName="חוות הדבש" />);
     expect(screen.queryByText("מ·ה")).not.toBeInTheDocument();
@@ -99,7 +99,10 @@ describe("ImageGallery empty state — Tinted Masthead (MEH-815)", () => {
     expect(bloom.getAttribute("width")).toBe("280");
     expect(bloom.getAttribute("aria-hidden")).toBe("true");
     const cls = bloom.getAttribute("class");
-    expect(cls).toMatch(/-end-\[140px\]/); // half past the END edge → cropped
+    // half past the END edge at each size → cropped
+    expect(cls).toMatch(/(^|\s)w-\[200px\] h-\[200px\] -bottom-10 -end-\[100px\]/);
+    expect(cls).toMatch(/md:w-\[280px\] md:h-\[280px\]/);
+    expect(cls).toMatch(/md:-end-\[140px\]/);
     expect(cls).not.toMatch(/rotate|scale-x/); // never rotated or mirrored
     expect(bloom.querySelectorAll("[data-seed]")).toHaveLength(5);
     // the card crops it
@@ -109,7 +112,9 @@ describe("ImageGallery empty state — Tinted Masthead (MEH-815)", () => {
   it("the name block stops short of the bloom, so the h1 never sits on a seed", () => {
     render(<ImageGallery images={[]} producerName="מאפיית רוח השדה של משפחת כהן בזכרון יעקב" />);
     const block = screen.getByTestId("masthead-name-block");
-    expect(block.className).toMatch(/max-w-\[calc\(100%-9\.5rem\)\]/);
+    // 100px of bloom + 12px gap on a phone; 140 + 12 from md
+    expect(block.className).toMatch(/(^|\s)max-w-\[calc\(100%-7rem\)\]/);
+    expect(block.className).toMatch(/md:max-w-\[calc\(100%-9\.5rem\)\]/);
     const h1 = screen.getByRole("heading", { level: 1 });
     expect(block).toContainElement(h1);
     // a long unbreakable word wraps inside the cap instead of overflowing it
