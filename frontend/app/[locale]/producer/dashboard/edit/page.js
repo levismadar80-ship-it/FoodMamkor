@@ -1030,7 +1030,7 @@ function EditPageInner() {
         >
           {t("badge_request.prompt")}{" "}
           <Link
-            href="/about#contact"
+            href="/contact?topic=business"
             className="inline-flex items-center min-h-touch font-medium text-primary underline underline-offset-2"
           >
             {t("badge_request.link")}

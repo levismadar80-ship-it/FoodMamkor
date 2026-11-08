@@ -77,7 +77,8 @@ describe("Missing-badge request line (MEH-2695)", () => {
     expect(line).toHaveTextContent(copy.prompt);
 
     const link = within(line).getByRole("link", { name: copy.link });
-    expect(link).toHaveAttribute("href", "/about#contact");
+    // MEH-2832: the one contact form, with the business topic preselected.
+    expect(link).toHaveAttribute("href", "/contact?topic=business");
 
     // Order: the line comes right after the «תגים» card (MEH-2729).
     const grass = group.querySelector("#tags");
