@@ -11,6 +11,8 @@ import {
   MAP_REFERRER,
   readMapViewState,
   writeMapViewState,
+  readMapSelection,
+  writeMapSelection,
 } from "../lib/map-view-state.js";
 
 function memoryStorage(initial = {}) {
@@ -100,3 +102,53 @@ describe("MAP_REFERRER", () => {
     expect(MAP_REFERRER).toBe("map");
   });
 });
+
+describe("MEH-2049 — the selected business rides in the same record", () => {
+  it("round-trips the selection (+ which point) under the camera's TTL", () => {
+    const storage = memoryStorage();
+    writeMapViewState(view, { storage, now: NOW });
+    expect(writeMapSelection("p-7", "loc-2", { storage, now: NOW })).toBe(true);
+    expect(readMapSelection({ storage, now: NOW + 1000 })).toEqual({ producerId: "p-7", locationId: "loc-2" });
+    expect(readMapViewState({ storage, now: NOW + 1000 })).toEqual(view);
+  });
+
+  it("a later camera write (e.g. the focusProducer flyTo) keeps the selection", () => {
+    const storage = memoryStorage();
+    writeMapViewState(view, { storage, now: NOW });
+    writeMapSelection("p-7", null, { storage, now: NOW });
+    writeMapViewState({ lat: 32.1, lng: 34.8, zoom: 15 }, { storage, now: NOW + 5 });
+    expect(readMapSelection({ storage, now: NOW + 10 })).toEqual({ producerId: "p-7", locationId: null });
+    expect(readMapViewState({ storage, now: NOW + 10 })).toEqual({ lat: 32.1, lng: 34.8, zoom: 15 });
+  });
+
+  it("closing the card clears it, and the camera stays", () => {
+    const storage = memoryStorage();
+    writeMapViewState(view, { storage, now: NOW });
+    writeMapSelection("p-7", null, { storage, now: NOW });
+    writeMapSelection(null, null, { storage, now: NOW + 1 });
+    expect(readMapSelection({ storage, now: NOW + 2 })).toBeNull();
+    expect(readMapViewState({ storage, now: NOW + 2 })).toEqual(view);
+  });
+
+  it("stale → no selection (the fresh-visit default wins)", () => {
+    const storage = memoryStorage();
+    writeMapViewState(view, { storage, now: NOW });
+    writeMapSelection("p-7", null, { storage, now: NOW });
+    expect(readMapSelection({ storage, now: NOW + MAP_VIEW_STATE_TTL_MS + 1 })).toBeNull();
+  });
+
+  it("no saved camera yet: the camera on screen is saved with the selection", () => {
+    const storage = memoryStorage();
+    expect(writeMapSelection("p-7", null, { storage, now: NOW, camera: view })).toBe(true);
+    expect(readMapViewState({ storage, now: NOW + 1 })).toEqual(view);
+    expect(readMapSelection({ storage, now: NOW + 1 })).toEqual({ producerId: "p-7", locationId: null });
+  });
+
+  it("without a saved camera nothing is written — a selection needs a camera to come back to", () => {
+    const storage = memoryStorage();
+    expect(writeMapSelection("p-7", null, { storage, now: NOW })).toBe(false);
+    expect(storage.dump()[MAP_VIEW_STATE_KEY]).toBeUndefined();
+    expect(readMapSelection({ storage, now: NOW })).toBeNull();
+  });
+});
+
