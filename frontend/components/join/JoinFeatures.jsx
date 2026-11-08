@@ -522,7 +522,7 @@ export default function JoinFeatures() {
               role="group"
               aria-label={tj("shelf_aria")}
               data-testid="join-shelf"
-              className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 min-[700px]:flex-col min-[700px]:overflow-visible min-[700px]:pb-0"
+              className="flex snap-x snap-mandatory gap-3 overflow-x-auto scrollbar-hide pb-1 min-[700px]:flex-col min-[700px]:overflow-visible min-[700px]:pb-0"
             >
               {BUSINESS_FEATURE_GROUPS.map((group, index) => (
                 <GroupCard
