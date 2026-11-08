@@ -1143,11 +1143,11 @@ passive («מופיעות»), no addressed verb.
 ### MEH-2827 — content pages, neutral plural (approved by Sapir verbatim 08/11)
 | # | Key | Before | After | Status |
 |---|---|---|---|---|
-| 1 | `about.biz_strip_lead` | `בעלת עסק?` | `יש לכם עסק?` | ✅ |
-| 2 | `about.consumer.cta.heading` | `בנית עסק שמגיע לו בית? אנחנו רוצות להכיר.` | `בניתם עסק שמגיע לו בית? אנחנו רוצות להכיר.` | ✅ |
-| 3 | `about_why_local.changes_1` | `מבית העסק, ישר אליך.` | `מבית העסק, ישר אליכם.` | ✅ |
+| 1 | `about.biz_strip_lead` | `בעלת עסק?` | `יש לכם עסק?` | ✅ PR 1 (#4169) |
+| 2 | `about.consumer.cta.heading` | `בנית עסק שמגיע לו בית? אנחנו רוצות להכיר.` | `בניתם עסק שמגיע לו בית? אנחנו רוצות להכיר.` | ✅ PR 1 (#4169) |
+| 3 | `about_why_local.changes_1` | `מבית העסק, ישר אליך.` | `מבית העסק, ישר אליכם.` | ✅ PR 2 (#4172) |
 | 4 | `nav.footer.brand_tagline` + 4 `seo.*` descriptions + `SITE_DESCRIPTION` | `…של העסק שלך…` | `…של העסק שלכם…` | ⏳ **not applied** — the line is LOCKED by ADR-011 (also BRAND.md, CONTEXT.md, `lib/constants.js`, guarded by `adr011-tagline.test.js`). Changing it amends the ADR; waiting for Sapir's call |
-| 5 | `nav.footer.cta_pitch` | `יש לך עסק מזון מקומי?` | `יש לכם עסק מזון מקומי?` | ✅ |
-| 6 | `about.consumer.badges_link.label` (new) | — | `לכל התגים באתר` (en `All badges on the site`) | ✅ |
-| 7 | `account.sheet.biz_cta` | `יש לך בית עסק?` | `יש לכם בית עסק?` | ✅ |
+| 5 | `nav.footer.cta_pitch` | `יש לך עסק מזון מקומי?` | `יש לכם עסק מזון מקומי?` | ✅ PR 3 |
+| 6 | `about.consumer.badges_link.label` (new) | — | `לכל התגים באתר` (en `All badges on the site`) | ✅ PR 1 (#4169) |
+| 7 | `account.sheet.biz_cta` | `יש לך בית עסק?` | `יש לכם בית עסק?` | ✅ PR 3 |
 
