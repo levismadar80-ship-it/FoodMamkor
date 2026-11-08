@@ -43,6 +43,7 @@ describe("the Leaf is retired as the brand mark", () => {
     "app/[locale]/[slug]/ProducerGone.jsx",
     "app/[locale]/delivery-waitlist/host-confirm/HostConfirmClient.jsx",
     "app/[locale]/delivery-waitlist/unsubscribe/UnsubscribeClient.jsx",
+    "app/[locale]/newsletter/unsubscribe/UnsubscribeClient.jsx",
     "app/[locale]/events/[id]/EventDetailClient.jsx",
     "app/[locale]/experiences/[id]/ExperienceDetailClient.jsx",
     "app/[locale]/producer/dashboard/experiences/new/page.js",
@@ -55,7 +56,17 @@ describe("the Leaf is retired as the brand mark", () => {
     for (const f of ["app/[locale]/not-found.js", "app/[locale]/producer/[id]/not-found.js", "app/[locale]/[slug]/ProducerGone.jsx", "app/[locale]/delivery-waitlist/host-confirm/HostConfirmClient.jsx"]) {
       expect(read(f)).toContain('icon="seed"');
     }
-    expect(read("app/[locale]/delivery-waitlist/unsubscribe/UnsubscribeClient.jsx")).toContain('icon={ok ? "seed" : LinkBreak}');
+    for (const f of ["app/[locale]/delivery-waitlist/unsubscribe/UnsubscribeClient.jsx", "app/[locale]/newsletter/unsubscribe/UnsubscribeClient.jsx"]) {
+      expect(read(f)).toContain('icon={ok ? "seed" : LinkBreak}');
+    }
+  });
+
+  it("the event / experience «not found» states render the bloom at 76px in place of the Leaf", () => {
+    for (const f of ["app/[locale]/events/[id]/EventDetailClient.jsx", "app/[locale]/experiences/[id]/ExperienceDetailClient.jsx"]) {
+      const s = read(f);
+      expect(s).toContain('import SeedMark from "@/components/brand/SeedMark";');
+      expect(s).toContain("<SeedMark size={76} />");
+    }
   });
 });
 

@@ -1143,8 +1143,8 @@ passive («מופיעות»), no addressed verb.
 ### MEH-2833 — status pages: «בתי עסק» (approved by Sapir verbatim 08/11)
 | # | Key | Before | After | Status |
 |---|---|---|---|---|
-| 1 | `errors.not_found.discover` | `גלו עסקים במפה` | `גלו בתי עסק במפה` | ✅ PR 9 |
-| 2 | `errors.producer_not_found.discover` | `גלו עסקים במפה` | `גלו בתי עסק במפה` | ✅ PR 9 |
+| 1 | `errors.not_found.discover` | `גלו עסקים במפה` | `גלו בתי עסק במפה` | ✅ PR 9 (#4201) |
+| 2 | `errors.producer_not_found.discover` | `גלו עסקים במפה` | `גלו בתי עסק במפה` | ✅ PR 9 (#4201) |
 
 ### MEH-2827 — content pages, neutral plural (approved by Sapir verbatim 08/11)
 | # | Key | Before | After | Status |
