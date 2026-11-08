@@ -16,6 +16,8 @@ import { useExperiencesNavGate } from "@/lib/use-experiences-nav-gate";
 import { useEventsNavGate } from "@/lib/use-events-nav-gate";
 import { useAuth } from "@/lib/auth-context";
 import ShareSiteActions from "@/components/ShareSiteActions";
+import Seed from "@/components/brand/Seed";
+import { SEEDS_DARK } from "@/lib/brand-seeds";
 
 /**
  * Footer (MEH-37 redesign) — brings the implementation in line with the
@@ -338,14 +340,20 @@ export default function Footer() {
           </div>
         </div>
 
+        {/* MEH-2833 (seed layer, board 6): the divider above the © line is a
+            row of the five seeds in the on-dark set, logo order, then a hairline
+            filling the rest. Decoration only. Replaces the plain top border. */}
+        <div aria-hidden="true" data-testid="footer-seed-row" className="flex items-center gap-1.5 mt-8">
+          {SEEDS_DARK.map((seed) => (
+            <Seed key={seed.name} color={seed.fill} size={10} />
+          ))}
+          <span className="h-px flex-1 bg-background/25 ms-1.5" />
+        </div>
+
         {/* ================= Copyright bar ================= */}
         <div
           className="flex flex-col sm:flex-row items-center justify-between gap-3"
-          style={{
-            borderTop: "1px solid rgba(255,255,255,0.1)",
-            paddingTop: "12px",
-            marginTop: "32px",
-          }}
+          style={{ paddingTop: "12px" }}
         >
           {/* MEH-788 copy-Δ: P5-v2 bottom-row lock — wordmark only; the leaf
               emoji dropped per the UI-surface emoji LOCK (MEH-657). */}
