@@ -249,6 +249,24 @@ describe("ProducerCard — Phase B anatomy", () => {
   // opposite top corner, same size, so it is never under the heart. Below sm
   // it is cropped higher (−60px) so a 3-line name — which starts in that
   // corner — keeps clear of it.
+  // MEH-2844 (Sapir 08/11): the controls win. A caller that puts its own
+  // control in the top-start corner (/favorites' «עדכונים» bell) leaves no
+  // free corner, so the no-photo plate shows no seed; the name plate stays.
+  it("no seed when the caller holds the start corner too (startCornerControl)", () => {
+    render(<ProducerCard producer={minimalProducer} startCornerControl />);
+    const plate = screen.getByTestId("card-name-plate");
+    expect(plate.textContent).toBe("חנות פשוטה");
+    expect(plate.parentElement.querySelector("svg[data-seed-color]")).toBeNull();
+    // the heart is still there, at top-end
+    expect(screen.getAllByRole("button").some((b) => /end-2/.test(b.className))).toBe(true);
+  });
+
+  it("default (no start-corner control): the seed is drawn", () => {
+    render(<ProducerCard producer={minimalProducer} />);
+    const plate = screen.getByTestId("card-name-plate");
+    expect(plate.parentElement.querySelector(":scope > svg[data-seed-color]")).not.toBeNull();
+  });
+
   it("the seed sits in the top-START corner, opposite the heart (same size)", () => {
     render(<ProducerCard producer={minimalProducer} />);
     const plate = screen.getByTestId("card-name-plate");
