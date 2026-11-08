@@ -22,7 +22,8 @@ import { rescueBagsEnabled } from "@/lib/rescue";
 // dangling lead-in.
 const GROUP_LINKS = {
   "admin-verified": "/about/process",
-  "self-declared": "/contact",
+  // MEH-2832: a self-declared badge that looks wrong is a correction.
+  "self-declared": "/contact?topic=correction",
 };
 
 const ITEM_CLASS = "grid gap-1.5 rounded-xl border border-border bg-surface-card p-4";

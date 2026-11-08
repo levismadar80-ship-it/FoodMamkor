@@ -362,10 +362,10 @@ export default function Footer() {
               // MEH-867: IL IS 5568 — accessibility statement must be reachable
               // from the global footer.
               { href: "/accessibility", label: t("nav.footer.accessibility") },
-              // MEH-1312: "צרו קשר" → contact-form anchor on /about (id="contact",
-              // AboutClient.jsx:388). Sapir-approved ADR-024 exception (18/07) —
-              // contact is a top-3 expected footer utility link.
-              { href: "/about#contact", label: t("nav.footer.contact") },
+              // MEH-1312: "צרו קשר" — Sapir-approved ADR-024 exception (18/07),
+              // contact is a top-3 expected footer utility link. MEH-2832: the
+              // target is /contact, the site's one contact form (was /about#contact).
+              { href: "/contact", label: t("nav.footer.contact") },
               // MEH-2633: next to "צרו קשר", per the card. Sixth utility link —
               // the row already wraps and centres at 375 (MEH-2417 above), so
               // this does not re-open the edge-to-edge overflow that fixed.

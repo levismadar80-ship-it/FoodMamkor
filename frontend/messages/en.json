@@ -3993,8 +3993,7 @@
       "intro": "Joined recently? These are the three guides I send to every new business owner on Mehamakor. Short, direct, no big promises — just what works.",
       "minutes_label": "About {minutes} min read",
       "cta": "Read the guide →",
-      "footer_prefix": "Is there a question a guide didn't answer? Write to me on Instagram",
-      "footer_suffix": ".",
+      "footer_prefix": "Have a question the guides didn't answer? <link>Write to us</link>",
       "card_previews": {
         "business_story": "The one field that changes everything on your profile — how to write it once, right, without it reading like an ad.",
         "product_photography": "No professional camera, no studio. 5 principles + a 30-minute workflow enough for a full page.",

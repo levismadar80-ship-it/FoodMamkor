@@ -101,6 +101,7 @@ describe("FooterSlot routing (MEH-1954)", () => {
     expect(links).toContain("/accessibility");
     expect(links).toContain("/terms");
     expect(links).toContain("/privacy");
-    expect(links).toContain("/about#contact");
+    expect(links).toContain("/contact");
+    expect(links).not.toContain("/about#contact");
   });
 });

@@ -1152,6 +1152,12 @@ passive («מופיעות»), no addressed verb.
 | 7 | `account.sheet.biz_cta` | `יש לך בית עסק?` | `יש לכם בית עסק?` | ✅ PR 3 |
 | 8 | `recommend.subtitle` | `ספרו לנו עליו. אנחנו בודקים כל המלצה, פונים לבית העסק ומצרפים רק בתי עסק עם רישיון.` | `ספרו לנו עליו. אנחנו בודקות כל המלצה, פונות לבית העסק, ומצרפות רק בתי עסק שפועלים כדין.` | ✅ PR 4 (`seo.recommend.description` / `og_description` still carry the old sentence — not in the approved table, open for Sapir) |
 
+### MEH-2832 — one contact form: guides footer (approved by Sapir verbatim 08/11)
+Every «כתבו לנו» / «צרו קשר» leads to /contact (with ?topic=); no Instagram as a support channel (the site footer keeps Instagram as social).
+| # | Key | Before | After | Status |
+|---|---|---|---|---|
+| 1 | `guides.index.footer_prefix` (`footer_suffix` removed) | `יש שאלה שמדריך לא ענה עליה? כתבו לי באינסטגרם @meha_makor.` | `יש שאלה שהמדריכים לא ענו עליה? <link>כתבו לנו</link>` — the link → `/contact?topic=business` | ✅ PR 2 |
+
 ### MEH-2827 PR 9 — «קבוצות רכישה» everywhere (approved by Sapir verbatim 08/11)
 Brand rule: BRAND.md §7. Mechanical replacement in every he.json string and every Hebrew user-facing backend string: «קבוצת רכש» → «קבוצת רכישה», «קבוצת הרכש» → «קבוצת הרכישה», «קבוצות רכש» → «קבוצות רכישה», «קבוצות הרכש» → «קבוצות הרכישה» (incl. ל/ב/ה prefixes). Reworded rows:
 | # | Key | Before | After | Status |
