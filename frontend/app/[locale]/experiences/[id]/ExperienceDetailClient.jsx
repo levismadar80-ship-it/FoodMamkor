@@ -1,5 +1,6 @@
 "use client";
 
+import SeedMark from "@/components/brand/SeedMark";
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -14,7 +15,6 @@ import {
   Check,
   Clock,
   CurrencyCircleDollar,
-  Leaf,
   MapPin,
   Users,
 } from "@phosphor-icons/react";
@@ -108,7 +108,7 @@ export default function ExperienceDetailClient() {
     return (
       <div className="max-w-3xl mx-auto px-4 py-16 text-center">
         <div className="mb-4 flex justify-center">
-          <Leaf size={56} className="text-primary" aria-hidden="true" />
+          <SeedMark size={76} />
         </div>
         <p className="text-fg-muted mb-6">{t("not_found")}</p>
         <Link href="/experiences" className="text-primary hover:underline">

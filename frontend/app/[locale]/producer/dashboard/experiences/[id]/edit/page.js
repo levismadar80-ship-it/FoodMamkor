@@ -12,7 +12,7 @@ import { useRouter } from "@/i18n/navigation";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Leaf } from "@phosphor-icons/react";
+import Seed from "@/components/brand/Seed";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import { useAuth } from "@/lib/auth-context";
@@ -49,7 +49,7 @@ export default function EditExperiencePage() {
   if (authLoading || !user) return null;
 
   const handleSuccess = () => {
-    showToast.success(tNew("toast_submitted"), { icon: <Leaf size={18} /> });
+    showToast.success(tNew("toast_submitted"), { icon: <Seed size={12} /> });
     router.push(LIST_HREF);
   };
 
