@@ -1152,3 +1152,17 @@ passive («מופיעות»), no addressed verb.
 | 7 | `account.sheet.biz_cta` | `יש לך בית עסק?` | `יש לכם בית עסק?` | ✅ PR 3 |
 | 8 | `recommend.subtitle` | `ספרו לנו עליו. אנחנו בודקים כל המלצה, פונים לבית העסק ומצרפים רק בתי עסק עם רישיון.` | `ספרו לנו עליו. אנחנו בודקות כל המלצה, פונות לבית העסק, ומצרפות רק בתי עסק שפועלים כדין.` | ✅ PR 4 (`seo.recommend.description` / `og_description` still carry the old sentence — not in the approved table, open for Sapir) |
 
+### MEH-2827 PR 9 — «קבוצות רכישה» everywhere (approved by Sapir verbatim 08/11)
+Brand rule: BRAND.md §7. Mechanical replacement in every he.json string and every Hebrew user-facing backend string: «קבוצת רכש» → «קבוצת רכישה», «קבוצת הרכש» → «קבוצת הרכישה», «קבוצות רכש» → «קבוצות רכישה», «קבוצות הרכש» → «קבוצות הרכישה» (incl. ל/ב/ה prefixes). Reworded rows:
+| # | Key | Before | After | Status |
+|---|---|---|---|---|
+| 9 | `producer.detail.sections.group_buys.heading` | `רכישות קבוצתיות פתוחות` | `קבוצות רכישה פתוחות` | ✅ PR 9 |
+| 10 | `seo.group_buy.title_fallback` | `רכישה קבוצתית — מהמקור` | `קבוצת רכישה — מהמקור` | ✅ PR 9 |
+| 11 | `seo.group_buy.description_fallback` | `רכישות קבוצתיות מבתי עסק מקומיים.` | `קבוצות רכישה מבתי עסק מקומיים.` | ✅ PR 9 |
+| 12 | `business_features.items.group_buys.label` + `.tile_title` | `קניות קבוצתיות` | `קבוצות רכישה` | ✅ PR 9 (launch tier ב׳) |
+| 13 | `business_features.groups.return.card_line` + `card_line_no_rescue` | `קניות קבוצתיות, סדנאות…` | `קבוצות רכישה, סדנאות…` (rest unchanged) | ✅ PR 9 (launch tier ב׳) |
+| 14 | `join.features.media_alt.return` | `עמוד קנייה קבוצתית` | `עמוד קבוצת רכישה` | ✅ PR 9 |
+| 15 | `business_features.items.email_alerts.label` | `…או קנייה קבוצתית שהתמלאה` | `…או קבוצת רכישה שהתמלאה` | ✅ PR 9 |
+| 16 | demo seed title (staging only) | `רכישה קבוצתית: שק קמח כוסמין מלא` | `קבוצת רכישה: שק קמח כוסמין מלא` | ✅ PR 9 |
+| 17 | `producer.detail.sections.group_buys.show_all` (new) | — | `הצגת כל קבוצות הרכישה` | ✅ PR 7 |
+

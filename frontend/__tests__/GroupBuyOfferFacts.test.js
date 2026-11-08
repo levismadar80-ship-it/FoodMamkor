@@ -3,7 +3,7 @@
  *   - priceValidUntil is the deadline's ISRAEL date (the stored deadline is a
  *     naive UTC timestamp — 22:30 UTC on 1 Nov is already 2 Nov in Israel);
  *   - a full group buy (commits at max_participants) is SoldOut, never
- *     InStock — joining it is refused (group_buys.py «קבוצת הרכש מלאה»);
+ *     InStock — joining it is refused (group_buys.py «קבוצת הרכישה מלאה»);
  *   - a naive deadline is read as UTC whatever the runtime's time zone.
  */
 import { describe, it, expect } from "vitest";
