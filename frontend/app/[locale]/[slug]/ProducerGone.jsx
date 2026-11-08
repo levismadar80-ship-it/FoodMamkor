@@ -6,7 +6,6 @@
 // the link she followed was real. Same layout as producer/[id]/not-found.js;
 // the two buttons reuse its keys.
 // MEH-2422: locale-aware Link, so the buttons keep /en on /en/… pages.
-import { Leaf } from "@phosphor-icons/react";
 import StatusPage from "@/components/StatusPage";
 import { useTranslations } from "next-intl";
 
@@ -17,7 +16,7 @@ export default function ProducerGone() {
   return (
     <StatusPage
       testid="producer-gone"
-      icon={Leaf}
+      icon="seed"
       title={t("heading")}
       body={t("message")}
       primary={{ href: "/map", label: nav("discover") }}

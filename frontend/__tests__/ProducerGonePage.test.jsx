@@ -156,7 +156,7 @@ describe("MEH-2534 — ProducerGone copy", () => {
     expect(
       screen.getByText("הדף שלו הוסר מהאתר. במפה מחכים לכם בתי עסק מקומיים אחרים.")
     ).toBeTruthy();
-    expect(screen.getByRole("link", { name: /גלו עסקים במפה/ }).getAttribute("href")).toBe("/map");
+    expect(screen.getByRole("link", { name: /גלו בתי עסק במפה/ }).getAttribute("href")).toBe("/map");
     expect(screen.getByRole("link", { name: /חזרה לדף הבית/ }).getAttribute("href")).toBe("/");
   });
 });
