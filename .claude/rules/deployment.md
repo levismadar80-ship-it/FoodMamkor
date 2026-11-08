@@ -24,7 +24,7 @@ never from `main`.
 |---|---|---|
 | `main` | Production | mehamakor.co.il + Railway prod env |
 | `staging` | Pre-production testing | staging.mehamakor.online + Railway staging env |
-| `feature/*` | New work | Vercel preview URL only — **opt-in, and off by default**; see "PR approval flow" below (as of 2026-08-04, MEH-1900) |
+| `feature/*` | New work | Vercel preview only for a commit whose message contains `[preview]` (MEH-2845, 08/11); every other push is cancelled by the `ignoreCommand` **but still spends one of the 100 deployments/day** — see "✅ APPLIED … / ⚠️ REVERSED" below |
 
 - **Never push directly to `main` or `staging`.** Both are PR-only.
 - **Hotfixes** (the only direct-to-main exception) must be back-merged to
@@ -138,7 +138,18 @@ After every PR — send the Vercel preview URL:
 > `READY`, so deployment creation is alive and reporting — the absence is the
 > config, not a rate limit or a dead instrument.
 >
-> **Consequence for rule 9 (workflow.md), now live:** a feature branch gets a
+> ### ⚠️ REVERSED for `feature/*` 2026-11-08 (MEH-2845, Sapir's option א)
+>
+> `frontend/vercel.json` sets `"feature/*": true` again, so a `[preview]` commit
+> reaches the `ignoreCommand` and builds (proof on PR #4222: `[preview]` →
+> READY, plain push → CANCELED). **The MEH-2062 guard is therefore gone for
+> `feature/*`:** every push to a feature branch creates a deployment record and
+> spends one unit of `api-deployments-free-per-day` (100) whether it builds or
+> not, and a spent quota blocks `staging` and `main` deploys too. Keep feature
+> pushes few. `dependabot/*` and `vrt-regen/*` stay `false`. The paragraph below
+> describes 07/09 → 08/11 and is history.
+>
+> **Consequence for rule 9 (workflow.md), live 07/09 → 08/11:** a feature branch gets a
 > preview only by an explicit `vercel deploy` (Sapir's CLI) — the `[preview]`
 > commit-message token no longer reaches Vercel on those branches. Absent a
 > preview, the UI evidence is the 375/1440 Playwright bundle (rule 23 amendment)

@@ -9,7 +9,7 @@
     "deploymentEnabled": {
       "staging": true,
       "main": true,
-      "feature/*": false,
+      "feature/*": true,
       "dependabot/*": false,
       "vrt-regen/*": false
     }
